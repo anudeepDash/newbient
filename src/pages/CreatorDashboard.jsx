@@ -15,6 +15,7 @@ import EditCreatorModal from '../components/creator/EditCreatorModal';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { extractSocialUsername } from '../lib/socialUtils';
+import { isCampaignCityMatch } from '../lib/constants';
 
 // Lucide icon imports
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
@@ -64,11 +65,18 @@ import Pencil from 'lucide-react/dist/esm/icons/pencil';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-const getSubmissionStatus = (task, uid) => {
-    const sub = task.submissions?.[uid];
-    if (sub) return sub.status;
-    if ((task.verifiedBy || []).includes(uid)) return 'approved';
-    if ((task.completedBy || []).includes(uid)) return 'submitted';
+const getSubmissionStatus = (task, uidOrProfile) => {
+    if (!task) return 'not_started';
+    const targetUids = typeof uidOrProfile === 'object' && uidOrProfile !== null
+        ? [uidOrProfile.uid, uidOrProfile.id, uidOrProfile.creatorId].filter(Boolean)
+        : [uidOrProfile].filter(Boolean);
+
+    for (const targetUid of targetUids) {
+        const sub = task.submissions?.[targetUid];
+        if (sub && sub.status) return sub.status;
+        if ((task.verifiedBy || []).includes(targetUid)) return 'approved';
+        if ((task.completedBy || []).includes(targetUid)) return 'submitted';
+    }
     return 'not_started';
 };
 
@@ -698,18 +706,7 @@ const CreatorDashboard = () => {
         return () => { isCancelled = true; };
     }, [user, authInitialized, creators, subscriptionsLoaded?.creators, navigate, resolveCreatorProfile]);
 
-    const isCityMatch = (campCity, userCity) => {
-        if (!campCity) return true;
-        const c = campCity.trim().toLowerCase();
-        if (['any', 'all', 'universal', 'pan-india', 'global', 'remote', ''].includes(c)) return true;
-        if (!userCity) return true;
-        const u = userCity.trim().toLowerCase();
-        if (c === u) return true;
-        if ((c === 'bangalore' && u === 'bengaluru') || (c === 'bengaluru' && u === 'bangalore')) return true;
-        if ((c === 'mumbai' && u === 'bombay') || (c === 'bombay' && u === 'mumbai')) return true;
-        if (c.includes(u) || u.includes(c)) return true;
-        return false;
-    };
+    const isCityMatch = (campCity, userCity) => isCampaignCityMatch(campCity, userCity);
 
     const allCampaignsList = useMemo(() => {
         return (campaigns || []).filter(c => !c.status || c.status.toLowerCase() === 'open');

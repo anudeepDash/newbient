@@ -103,8 +103,11 @@ export const triggerNotification = async ({ userId, type, title, content, link, 
         await addNotification(notificationData);
         console.log(`[Notification Triggered] Type: ${type}, Title: ${title}`);
 
-        // Show Native OS Notification if permitted
-        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        // Show Native OS Notification only if the notification is targeted for the current logged-in user or is a broadcast to all
+        const currentUser = useStore.getState().user;
+        const isForCurrentUser = !userId || (currentUser && currentUser.uid === userId);
+
+        if (isForCurrentUser && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
             try {
                 new Notification(title, {
                     body: content,

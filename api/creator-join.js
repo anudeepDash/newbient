@@ -1316,6 +1316,53 @@ export default async function handler(req, res) {
         }
     }
 
+    // ── ACTION: SUBMIT CAMPAIGN TASK (SERVERLESS FALLBACK) ───────────────────
+    if (action === 'campaign-task-submit') {
+        if (req.method !== 'POST') {
+            return res.status(405).json({ success: false, error: 'Method not allowed' });
+        }
+        try {
+            const { campaignId, taskId, creatorUid, contentLink = '', proofUrl = '', updatedTasks } = req.body || {};
+            if (!campaignId || !taskId || !creatorUid) {
+                return res.status(400).json({ success: false, error: 'campaignId, taskId, and creatorUid are required' });
+            }
+
+            const campRef = adminDb.collection('campaigns').doc(campaignId);
+            const campSnap = await campRef.get();
+            if (!campSnap.exists) {
+                return res.status(404).json({ success: false, error: 'Campaign not found' });
+            }
+
+            const campData = campSnap.data();
+            let newTasks = updatedTasks;
+
+            if (!Array.isArray(newTasks)) {
+                newTasks = (campData.tasks || []).map(t => {
+                    if (t.id === taskId || String(t.id) === String(taskId)) {
+                        const submissions = { ...(t.submissions || {}) };
+                        submissions[creatorUid] = {
+                            status: 'submitted',
+                            contentLink: contentLink || '',
+                            proofUrl: proofUrl || '',
+                            submittedAt: new Date().toISOString(),
+                            reviewedAt: null,
+                            rejectionReason: ''
+                        };
+                        const completedBy = Array.from(new Set([...(t.completedBy || []), creatorUid]));
+                        return { ...t, submissions, completedBy };
+                    }
+                    return t;
+                });
+            }
+
+            await campRef.update({ tasks: newTasks });
+            return res.status(200).json({ success: true, tasks: newTasks });
+        } catch (subErr) {
+            console.error('[API/CREATOR-JOIN] campaign-task-submit error:', subErr);
+            return res.status(500).json({ success: false, error: subErr.message || 'Failed to persist task submission' });
+        }
+    }
+
     // ── ACTION: GET PROFILE / RESOLVE CREATOR ───────────────────────────────
     if (action === 'get-profile' || action === 'resolve-creator') {
         if (req.method !== 'POST' && req.method !== 'GET') {

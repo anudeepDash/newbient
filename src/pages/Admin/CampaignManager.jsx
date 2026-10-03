@@ -6,7 +6,7 @@ import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import Gift from 'lucide-react/dist/esm/icons/gift';
 import { notifySpecificUser, notifyAllUsers } from '../../lib/notificationTriggers';
-import { PREDEFINED_CITIES } from '../../lib/constants';
+import { PREDEFINED_CITIES, isCampaignCityMatch } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -67,10 +67,18 @@ import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import Settings from 'lucide-react/dist/esm/icons/settings';
 import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
 import Flame from 'lucide-react/dist/esm/icons/flame';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import CheckCheck from 'lucide-react/dist/esm/icons/check-check';
+import SlidersHorizontal from 'lucide-react/dist/esm/icons/sliders-horizontal';
+import ArrowUpDown from 'lucide-react/dist/esm/icons/arrow-up-down';
+import UserCheck from 'lucide-react/dist/esm/icons/user-check';
+import Phone from 'lucide-react/dist/esm/icons/phone';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import CreatorDetailModal from '../../components/admin/CreatorDetailModal';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { cn, getCampaignSpotsInfo } from '../../lib/utils';
+import { cn, getCampaignSpotsInfo, normalizePhoneNumber } from '../../lib/utils';
 import LivePreview from '../../components/admin/LivePreview';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioSelect from '../../components/ui/StudioSelect';
@@ -157,10 +165,10 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
     <motion.div 
         layoutId={`campaign-card-${campaign.id}`}
         onClick={onSelect}
-        className="group relative bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/[0.15] rounded-3xl p-4 md:p-6 cursor-pointer overflow-hidden transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_16px_60px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_16px_60px_rgba(0,0,0,0.6)] flex flex-col h-auto min-h-[510px]"
+        className="group relative bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/[0.15] rounded-3xl p-4 md:p-5 cursor-pointer overflow-hidden transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_16px_60px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_16px_60px_rgba(0,0,0,0.6)] flex flex-col h-auto min-h-[460px]"
     >
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-neon-green/[0.06] to-transparent rounded-full blur-3xl pointer-events-none -mr-20 -mt-20 group-hover:scale-110 transition-transform duration-700" />
-        <div className="relative mb-5 group-hover:scale-[1.02] transition-transform duration-500 z-10">
+        <div className="relative mb-4 group-hover:scale-[1.02] transition-transform duration-500 z-10">
             <div className="aspect-video rounded-2xl overflow-hidden bg-gray-50 dark:bg-black/20 border border-black/[0.08] dark:border-white/[0.08] relative flex items-center justify-center">
                 {campaign.thumbnail ? (
                     <img src={campaign.thumbnail} alt={campaign.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -172,7 +180,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                     </div>
                 )}
                 <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                    {spotsInfo.hasSpots && (
+                    {spotsInfo.hasSpots && campaign.status === 'Open' && (
                         <span className={cn(
                             "px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border backdrop-blur-md flex items-center gap-1 font-mono shadow-md",
                             spotsInfo.isFull 
@@ -189,9 +197,17 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
         </div>
 
         <div className="flex-1 flex flex-col px-1 relative z-10">
-            <div className="mb-5">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Campaign</p>
+            <div className="mb-3.5">
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-2">
+                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Campaign</p>
+                        {campaign.createdAt && (
+                            <span className="text-[9px] font-mono text-gray-400 dark:text-zinc-500 flex items-center gap-1">
+                                <Clock size={9} />
+                                {new Date(campaign.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                            </span>
+                        )}
+                    </div>
                     {(campaign.brand || campaign.brandLogo) && (
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 max-w-[180px]">
                             {campaign.brandLogo && (
@@ -210,7 +226,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                 </h3>
             </div>
 
-            <div className="flex flex-wrap gap-2 mb-6">
+            <div className="flex flex-wrap gap-2 mb-4">
                 <div className="flex items-center gap-2 text-gray-600 dark:text-zinc-400 text-[10px] font-black uppercase tracking-widest bg-black/5 dark:bg-white/5 px-3 py-1.5 rounded-full border border-black/[0.08] dark:border-white/[0.08] w-fit">
                     <MapPin size={12} className="text-neon-pink" />
                     <span>{campaign.targetCity || 'GLOBAL'}</span>
@@ -221,7 +237,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                         <span>{campaign.targetCollege}</span>
                     </div>
                 )}
-                {spotsInfo.hasSpots && (
+                {spotsInfo.hasSpots && campaign.status === 'Open' && (
                     <div className={cn(
                         "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border w-fit",
                         spotsInfo.isFull 
@@ -238,10 +254,10 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                 </div>
             </div>
 
-            <div className="mt-auto pt-5 border-t border-black/[0.08] dark:border-white/[0.08] flex flex-col gap-4">
+            <div className="mt-auto pt-4 border-t border-black/[0.08] dark:border-white/[0.08] flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">REWARDS</p>
+                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-0.5">REWARDS</p>
                         <p className="text-lg font-heading font-black text-neon-green tracking-tight truncate">{campaign.reward}</p>
                     </div>
                     <button 
@@ -249,7 +265,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                             e.stopPropagation();
                             onSelect();
                         }}
-                        className="h-10 px-4 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-emerald-400 active:scale-95 transition-all flex items-center gap-1 shrink-0"
+                        className="h-9 px-4 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-emerald-400 active:scale-95 transition-all flex items-center gap-1 shrink-0"
                         title="View Campaign Page"
                     >
                         <span>Manage</span>
@@ -257,7 +273,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                     </button>
                 </div>
 
-                <div className="flex items-center justify-between gap-2 pt-4 border-t border-black/[0.08] dark:border-white/[0.08] -mx-2 px-2">
+                <div className="flex items-center justify-between gap-2 pt-3 border-t border-black/[0.08] dark:border-white/[0.08] -mx-2 px-2">
                     <div className="flex items-center gap-2">
                         <button 
                             disabled={isUpdating}
@@ -268,30 +284,30 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                                     onDelete(campaign.id);
                                 }
                             }}
-                            className="w-10 h-10 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-red-500 hover:border-red-500/30 hover:bg-red-500/10 transition-all flex items-center justify-center disabled:opacity-50"
+                            className="w-9 h-9 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-red-500 hover:border-red-500/30 hover:bg-red-500/10 transition-all flex items-center justify-center disabled:opacity-50"
                             title="Delete Campaign"
                         >
-                            <Trash2 size={16} />
+                            <Trash2 size={15} />
                         </button>
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onCopyLink();
                             }}
-                            className="w-10 h-10 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-800 dark:text-zinc-200 hover:border-black/20 dark:hover:border-white/20 transition-all flex items-center justify-center"
+                            className="w-9 h-9 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-800 dark:text-zinc-200 hover:border-black/20 dark:hover:border-white/20 transition-all flex items-center justify-center"
                             title="Share Campaign"
                         >
-                            <Share2 size={16} />
+                            <Share2 size={15} />
                         </button>
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onEdit(campaign);
                             }}
-                            className="w-10 h-10 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-800 dark:text-zinc-200 hover:border-black/20 dark:hover:border-white/20 transition-all flex items-center justify-center"
+                            className="w-9 h-9 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-800 dark:text-zinc-200 hover:border-black/20 dark:hover:border-white/20 transition-all flex items-center justify-center"
                             title="Edit Campaign"
                         >
-                            <Edit size={16} />
+                            <Edit size={15} />
                         </button>
                     </div>
                     <button 
@@ -303,13 +319,15 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                             updateCampaign(campaign.id, { ...campaign, status: newStatus });
                         }}
                         className={cn(
-                            "h-10 px-3 rounded-xl border transition-all flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest disabled:opacity-50",
-                            campaign.status === 'Open' ? "bg-emerald-500/15 border-emerald-500/20 text-emerald-700 dark:text-neon-green" : "bg-red-500/15 border-red-500/20 text-red-600 dark:text-red-400"
+                            "h-9 px-3 rounded-xl border transition-all flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest disabled:opacity-50",
+                            campaign.status === 'Open' 
+                                ? "bg-red-500/10 hover:bg-red-500/20 border-red-500/20 text-red-500" 
+                                : "bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 text-emerald-600 dark:text-neon-green"
                         )}
-                        title={campaign.status === 'Open' ? "Close Campaign" : "Open Campaign"}
+                        title={campaign.status === 'Open' ? "Close Campaign" : "Reopen Campaign"}
                     >
-                        {campaign.status === 'Open' ? <Unlock size={14} /> : <Lock size={14} />}
-                        <span>{campaign.status}</span>
+                        {campaign.status === 'Open' ? <Lock size={12} /> : <Unlock size={12} />}
+                        <span>{campaign.status === 'Open' ? 'Close' : 'Reopen'}</span>
                     </button>
                 </div>
             </div>
@@ -370,11 +388,19 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
                 )}
                 <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
                 <p className="text-[9px] text-emerald-600 dark:text-emerald-400 font-black uppercase tracking-widest">{campaign.reward}</p>
+                {campaign.createdAt && (
+                    <>
+                        <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
+                        <p className="text-[9px] text-gray-400 dark:text-zinc-500 font-mono flex items-center gap-1">
+                            <Clock size={9} /> {new Date(campaign.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        </p>
+                    </>
+                )}
             </div>
         </div>
 
         <div className="w-44 hidden md:block">
-            {spotsInfo.hasSpots ? (
+            {spotsInfo.hasSpots && campaign.status === 'Open' ? (
                 <span className={cn(
                     "text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border inline-flex items-center gap-1.5",
                     spotsInfo.isFull 
@@ -386,7 +412,7 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
                 </span>
             ) : (
                 <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-black/5 dark:bg-white/5 border border-black/[0.08] dark:border-white/[0.08] px-3 py-1.5 rounded-full group-hover:bg-black/10 dark:group-hover:bg-white/10 transition-colors">
-                    Campaign
+                    {campaign.status === 'Closed' ? 'Closed' : 'Campaign'}
                 </span>
             )}
         </div>
@@ -442,11 +468,13 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
                     }}
                     className={cn(
                         "w-9 h-9 rounded-xl border transition-all flex items-center justify-center disabled:opacity-50",
-                        campaign.status === 'Open' ? "bg-emerald-500/15 border-emerald-500/20 text-emerald-700 dark:text-neon-green" : "bg-red-500/15 border-red-500/20 text-red-600 dark:text-red-400"
+                        campaign.status === 'Open' 
+                            ? "bg-red-500/10 hover:bg-red-500/20 border-red-500/20 text-red-500" 
+                            : "bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 text-emerald-600 dark:text-neon-green"
                     )}
-                    title={campaign.status === 'Open' ? "Close Campaign" : "Open Campaign"}
+                    title={campaign.status === 'Open' ? "Close Campaign" : "Reopen Campaign"}
                 >
-                    {campaign.status === 'Open' ? <Unlock size={14} /> : <Lock size={14} />}
+                    {campaign.status === 'Open' ? <Lock size={13} /> : <Unlock size={13} />}
                 </button>
             </div>
             <StatusPill status={campaign.status} />
@@ -468,13 +496,13 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
 
 const StatusPill = ({ status }) => {
     const config = {
-        Open: "bg-emerald-500/15 text-emerald-700 dark:text-neon-green border-emerald-500/20 dark:border-neon-green/20",
-        Closed: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20",
-        Archive: "bg-gray-500/15 text-gray-700 dark:text-gray-400 border-gray-500/20"
+        Open: "bg-black/75 dark:bg-black/80 text-emerald-400 dark:text-neon-green border-emerald-500/40 dark:border-neon-green/40 shadow-sm",
+        Closed: "bg-black/75 dark:bg-black/80 text-red-400 border-red-500/40 shadow-sm",
+        Archive: "bg-black/75 dark:bg-black/80 text-gray-400 border-gray-500/40 shadow-sm"
     };
     const style = config[status] || config.Open;
     return (
-        <span className={cn("px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border", style)}>
+        <span className={cn("px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border backdrop-blur-md font-mono shadow-xs", style)}>
             {status || 'OPEN'}
         </span>
     );
@@ -535,6 +563,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
     const [rejectionModal, setRejectionModal] = useState(null); 
     const [rejectionReason, setRejectionReason] = useState('');
     const [viewMode, setViewMode] = useState('grid');
+    const [statusFilter, setStatusFilter] = useState('All');
     const [isDeploying, setIsDeploying] = useState(false);
     const [isProcessingTask, setIsProcessingTask] = useState(false);
     const [isReviewing, setIsReviewing] = useState(false);
@@ -562,6 +591,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
         createdBy: user?.uid || '',
         whatsappLink: '',
         minInstagramFollowers: 0,
+        autoShortlistEligible: true,
         thumbnail: '',
         tasks: [],
         isPinned: false
@@ -570,12 +600,46 @@ const CampaignManager = ({ isEmbedded = false }) => {
 
 
     const filteredCampaigns = useMemo(() => {
-        return campaigns.filter(c =>
-            (c.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (c.brand || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (c.targetCity || '').toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [campaigns, searchTerm]);
+        const getTs = (c) => {
+            if (!c) return 0;
+            const raw = c.createdAt || c.dateAdded || c.updatedAt;
+            if (!raw) return 0;
+            if (typeof raw === 'number') return raw;
+            if (typeof raw === 'string') {
+                const p = Date.parse(raw);
+                return isNaN(p) ? 0 : p;
+            }
+            if (typeof raw === 'object') {
+                if (typeof raw.toDate === 'function') return raw.toDate().getTime();
+                if (typeof raw.seconds === 'number') return raw.seconds * 1000;
+            }
+            return 0;
+        };
+
+        return campaigns
+            .filter(c => {
+                const matchesSearch =
+                    (c.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (c.brand || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (c.targetCity || '').toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesStatus = statusFilter === 'All' ? true : c.status === statusFilter;
+                return matchesSearch && matchesStatus;
+            })
+            .sort((a, b) => {
+                // 1. Pinned campaigns first
+                if (Boolean(a.isPinned) !== Boolean(b.isPinned)) {
+                    return a.isPinned ? -1 : 1;
+                }
+                // 2. Open campaigns before Closed campaigns
+                const aIsOpen = a.status === 'Open';
+                const bIsOpen = b.status === 'Open';
+                if (aIsOpen !== bIsOpen) {
+                    return aIsOpen ? -1 : 1;
+                }
+                // 3. Date added / createdAt descending (newest first)
+                return getTs(b) - getTs(a);
+            });
+    }, [campaigns, searchTerm, statusFilter]);
 
     const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage);
     const paginatedCampaigns = useMemo(() => {
@@ -585,7 +649,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm]);
+    }, [searchTerm, statusFilter]);
 
     const stats = useMemo(() => {
         const activeCount = campaigns.filter(c => c.status === 'Open').length;
@@ -628,6 +692,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                         order: t.order ?? i,
                     })),
                     minInstagramFollowers: campaign.minInstagramFollowers || 0,
+                    autoShortlistEligible: campaign.autoShortlistEligible ?? true,
                     thumbnail: campaign.thumbnail || '',
                     isPinned: campaign.isPinned || false
                 });
@@ -651,6 +716,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
             createdBy: user?.uid || '', 
             whatsappLink: '', 
             minInstagramFollowers: 0,
+            autoShortlistEligible: true,
             thumbnail: '',
             tasks: [],
             isPinned: false
@@ -795,6 +861,51 @@ const CampaignManager = ({ isEmbedded = false }) => {
         }
     };
 
+    const handleAutoShortlist = async (campaignId, eligibleUids) => {
+        if (isUpdating || !eligibleUids || eligibleUids.length === 0) return;
+        setIsUpdating(true);
+        try {
+            await useStore.getState().bulkShortlistCreators(campaignId, eligibleUids, true);
+            const campaign = campaigns.find(c => c.id === campaignId);
+            
+            // Notify each shortlisted creator
+            await Promise.allSettled(
+                eligibleUids.map(uid => 
+                    notifySpecificUser(
+                        uid,
+                        'CAMPAIGN SELECTION',
+                        `CONGRATULATIONS! YOU HAVE BEEN SELECTED FOR "${(campaign?.title || 'CAMPAIGN').toUpperCase()}". VIEW YOUR TASKS IN YOUR CREATOR STUDIO.`,
+                        '/creator-dashboard',
+                        'campaign'
+                    )
+                )
+            );
+            useStore.getState().addToast(`Auto-shortlisted ${eligibleUids.length} qualifying creator${eligibleUids.length === 1 ? '' : 's'}!`, 'success');
+        } catch (error) {
+            console.error("Auto shortlist error:", error);
+            useStore.getState().addToast("Failed to auto-shortlist creators.", 'error');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleToggleAutoShortlistCampaign = async (campaignId) => {
+        const campaign = campaigns.find(c => c.id === campaignId);
+        if (!campaign) return;
+        const nextVal = !campaign.autoShortlistEligible;
+        try {
+            await updateCampaign(campaignId, { autoShortlistEligible: nextVal });
+            useStore.getState().addToast(
+                nextVal 
+                    ? "Auto-shortlist on apply enabled for this campaign!" 
+                    : "Auto-shortlist on apply disabled.", 
+                'info'
+            );
+        } catch (err) {
+            useStore.getState().addToast("Failed to toggle auto-shortlist setting.", 'error');
+        }
+    };
+
     const handleDeleteCampaign = async (id) => {
         if (isUpdating) return;
         setIsUpdating(true);
@@ -934,11 +1045,11 @@ const CampaignManager = ({ isEmbedded = false }) => {
     };
 
     const renderContent = () => (
-        <div className={cn("relative z-10 max-w-[1700px] mx-auto pb-20", (isCreating || expandedCampaignId) ? "pt-24 md:pt-32 px-4 md:px-12" : "")}>
+        <div className={cn("relative z-10 max-w-[1700px] mx-auto pb-20", (isCreating || expandedCampaignId) ? "pt-6 md:pt-8 px-4 md:px-12" : "")}>
             <div className={cn("pt-0", !(isCreating || expandedCampaignId) ? (isEmbedded ? "" : "px-4 md:px-12") : "")}>
                 {/* Control Panel */}
                 {!isCreating && !expandedCampaignId && (
-                    <div className="relative z-50 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-3 md:p-4 mb-8 md:mb-12 shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col xl:flex-row xl:items-center gap-4">
+                    <div className="relative z-20 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-3 md:p-4 mb-6 md:mb-8 shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col xl:flex-row xl:items-center gap-4">
                         
                         <div className="relative flex-1 min-w-[280px]">
                             <FilterSearchBar 
@@ -947,6 +1058,35 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                 placeholder="SEARCH CAMPAIGNS..."
                                 className="w-full"
                             />
+                        </div>
+
+                        {/* Status Filter Tabs */}
+                        <div className="flex items-center gap-1.5 shrink-0 bg-black/5 dark:bg-white/5 p-1 rounded-2xl border border-black/5 dark:border-white/5 overflow-x-auto hide-scrollbar">
+                            {[
+                                { id: 'All', label: 'All', count: campaigns.length },
+                                { id: 'Open', label: 'Open', count: stats.active },
+                                { id: 'Closed', label: 'Closed', count: campaigns.length - stats.active },
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setStatusFilter(tab.id)}
+                                    className={cn(
+                                        "px-3.5 h-10 rounded-xl flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest transition-all shrink-0",
+                                        statusFilter === tab.id
+                                            ? "bg-white text-black dark:bg-[#1a1c23] dark:text-white shadow-sm font-black border border-black/10 dark:border-white/10"
+                                            : "text-gray-600 dark:text-zinc-400 font-bold hover:text-black dark:hover:text-white"
+                                    )}
+                                >
+                                    <span className={cn(
+                                        "w-1.5 h-1.5 rounded-full",
+                                        tab.id === 'All' ? "bg-neon-blue" : tab.id === 'Open' ? "bg-neon-green shadow-[0_0_8px_rgba(57,255,20,0.5)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"
+                                    )} />
+                                    <span>{tab.label}</span>
+                                    <span className="text-[9px] font-mono opacity-70 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10">
+                                        {tab.count}
+                                    </span>
+                                </button>
+                            ))}
                         </div>
 
                         {/* View Switcher */}
@@ -1152,6 +1292,20 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                                     <label className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5">WHATSAPP GROUP LINK</label>
                                                     <Input value={formData.whatsappLink} onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })} placeholder="https://chat.whatsapp.com/..." className="w-full h-14 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
                                                 </div>
+                                                <div className={cn("p-5 rounded-2xl border flex items-center justify-between transition-all duration-300", formData.autoShortlistEligible ? "bg-neon-green/5 border-neon-green/30" : "bg-white dark:bg-black/40 border-black/[0.08] dark:border-white/[0.08]")}>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300", formData.autoShortlistEligible ? "bg-neon-green text-black" : "bg-black/5 dark:bg-white/5 text-gray-500")}>
+                                                            <Zap size={18} className={cn(formData.autoShortlistEligible && "fill-current")} />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-gray-900 dark:text-white text-sm font-black uppercase tracking-widest italic leading-tight">AUTO-SHORTLIST ON APPLY</h4>
+                                                            <p className="text-[10px] text-gray-500 mt-0.5 uppercase font-bold tracking-widest">AUTO-APPROVE CREATORS WHO MEET FOLLOWER CRITERIA</p>
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" onClick={() => setFormData({ ...formData, autoShortlistEligible: !formData.autoShortlistEligible })} className={cn("w-12 h-6 rounded-full relative transition-all border", formData.autoShortlistEligible ? "bg-neon-green border-neon-green" : "bg-white dark:bg-black/40 border-black/10 dark:border-white/10")}>
+                                                        <div className={cn("absolute top-0.5 w-4 h-4 rounded-full transition-all shadow-sm", formData.autoShortlistEligible ? "right-1 bg-black" : "left-1 bg-gray-400")} />
+                                                    </button>
+                                                </div>
                                                 <div className={cn("p-5 rounded-2xl border flex items-center justify-between transition-all duration-300", formData.isPinned ? "bg-neon-green/5 border-neon-green/30" : "bg-white dark:bg-black/40 border-black/[0.08] dark:border-white/[0.08]")}>
                                                     <div className="flex items-center gap-4">
                                                         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300", formData.isPinned ? "bg-neon-green text-black" : "bg-black/5 dark:bg-white/5 text-gray-500")}>
@@ -1353,6 +1507,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                     onClose={() => navigate('/admin/campaigns')}
                                     onEdit={(c) => handleEdit(c)}
                                     onToggleShortlist={handleToggleShortlist}
+                                    onAutoShortlist={handleAutoShortlist}
+                                    onToggleAutoShortlist={handleToggleAutoShortlistCampaign}
                                     onReviewSubmission={handleReviewSubmission}
                                     onDelete={handleDeleteCampaign}
                                     updateCampaign={handleUpdateCampaignStatus}
@@ -1382,54 +1538,52 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                             >
                                 {viewMode === 'grid' ? (
-                                    <div className="flex flex-col md:flex-row items-start gap-6 md:gap-8 overflow-x-auto hide-scrollbar pb-8 px-2">
-                                        {['Open', 'Closed'].map(status => (
-                                            <div key={status} className="relative group/column w-full md:w-[420px] shrink-0 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-3xl rounded-[2rem] p-5 md:p-6 border border-black/[0.04] dark:border-white/[0.06] shadow-[0_8px_32px_rgba(0,0,0,0.03)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)] overflow-hidden">
-                                                {/* Ambient Column Glow */}
-                                                <div className={cn(
-                                                    "absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20 transition-opacity duration-700 opacity-20 dark:opacity-10 group-hover/column:opacity-40 dark:group-hover/column:opacity-20",
-                                                    status === 'Open' ? "bg-neon-green" : "bg-red-500"
-                                                )} />
-                                                
-                                                <div className="relative z-10 flex items-center justify-between mb-8 px-1">
-                                                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-gray-900 dark:text-white flex items-center gap-3">
-                                                        <div className={cn("w-2 h-2 rounded-full", status === 'Open' ? "bg-neon-green shadow-[0_0_10px_rgba(57,255,20,0.5)]" : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]")} />
-                                                        {status} CAMPAIGNS
-                                                    </h3>
-                                                    <span className="text-xs font-bold bg-black/5 dark:bg-white/10 px-3 py-1.5 rounded-xl text-gray-600 dark:text-zinc-300 border border-black/[0.04] dark:border-white/[0.05]">
-                                                        {paginatedCampaigns.filter(c => c.status === status).length}
-                                                    </span>
-                                                </div>
-                                                <div className="relative z-10 flex flex-col gap-5">
-                                                    {paginatedCampaigns.filter(c => c.status === status).map((campaign, idx) => (
-                                                        <motion.div
-                                                            key={campaign.id}
-                                                            initial={{ opacity: 0, y: 20 }}
-                                                            animate={{ opacity: 1, y: 0 }}
-                                                            transition={{ delay: idx * 0.05 }}
-                                                            className="w-full"
-                                                        >
-                                                            <CampaignBadgeCard 
-                                                                campaign={campaign} 
-                                                                creators={creators}
-                                                                onSelect={() => navigate('/admin/campaigns/manage/' + campaign.id)}
-                                                                onEdit={() => handleEdit(campaign)}
-                                                                onDelete={handleDeleteCampaign}
-                                                                updateCampaign={handleUpdateCampaignStatus}
-                                                                onCopyLink={() => handleCopyLink(campaign.id)}
-                                                                isUpdating={isUpdating}
-                                                            />
-                                                        </motion.div>
-                                                    ))}
-                                                    {paginatedCampaigns.filter(c => c.status === status).length === 0 && (
-                                                        <div className="h-32 rounded-2xl border-2 border-dashed border-black/5 dark:border-white/5 flex items-center justify-center text-xs font-bold text-gray-400 dark:text-zinc-600">
-                                                            No {status.toLowerCase()} campaigns found
-                                                        </div>
-                                                    )}
-                                                </div>
+                                    paginatedCampaigns.length === 0 ? (
+                                        <div className="py-24 text-center bg-white/40 dark:bg-[#0c0e14]/40 backdrop-blur-xl rounded-[2.5rem] border border-black/[0.06] dark:border-white/[0.06] flex flex-col items-center justify-center gap-4">
+                                            <div className="w-16 h-16 rounded-2xl bg-black/5 dark:bg-white/5 flex items-center justify-center border border-black/5 dark:border-white/5">
+                                                <Target size={28} className="text-gray-400 dark:text-zinc-500" />
                                             </div>
-                                        ))}
-                                    </div>
+                                            <div className="space-y-1">
+                                                <h4 className="text-base font-black uppercase tracking-wider text-gray-900 dark:text-white">
+                                                    No {statusFilter !== 'All' ? statusFilter.toLowerCase() : ''} campaigns found
+                                                </h4>
+                                                <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium">
+                                                    {searchTerm ? `No results matching "${searchTerm}"` : 'Try switching the filter or create a new campaign'}
+                                                </p>
+                                            </div>
+                                            {(searchTerm || statusFilter !== 'All') && (
+                                                <button
+                                                    onClick={() => { setSearchTerm(''); setStatusFilter('All'); }}
+                                                    className="mt-2 h-9 px-4 rounded-xl bg-neon-green text-black text-[10px] font-black uppercase tracking-wider hover:bg-emerald-400 transition-all active:scale-95 shadow-sm"
+                                                >
+                                                    Clear Filters
+                                                </button>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start pb-8">
+                                            {paginatedCampaigns.map((campaign, idx) => (
+                                                <motion.div
+                                                    key={campaign.id}
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: idx * 0.05 }}
+                                                    className="w-full"
+                                                >
+                                                    <CampaignBadgeCard 
+                                                        campaign={campaign} 
+                                                        creators={creators}
+                                                        onSelect={() => navigate('/admin/campaigns/manage/' + campaign.id)}
+                                                        onEdit={() => handleEdit(campaign)}
+                                                        onDelete={handleDeleteCampaign}
+                                                        updateCampaign={handleUpdateCampaignStatus}
+                                                        onCopyLink={() => handleCopyLink(campaign.id)}
+                                                        isUpdating={isUpdating}
+                                                    />
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    )
                                 ) : (
                                     <div className="flex flex-col gap-3">
                                         <div className="flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-black/10 dark:border-white/5">
@@ -1611,180 +1765,586 @@ const CampaignManager = ({ isEmbedded = false }) => {
             )}
         </>
     );
-}/* --- Detailed Mission Modal --- */
+}
 
-const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, onReviewSubmission, onDelete, updateCampaign, onCopyLink, onCopyTaskLink }) => {
+/* --- Resilient Fixed-Size Creator Avatar --- */
+const CreatorApplicantAvatar = ({ creator, onClick, size = "md" }) => {
+    const [imgError, setImgError] = useState(false);
+    
+    // Check all potential avatar photo fields in creator profile
+    const photoSrc = !imgError ? (
+        creator?.profilePicture || 
+        creator?.instagramProfilePic || 
+        creator?.profilePic || 
+        creator?.photoURL || 
+        creator?.avatar || 
+        creator?.profile_pic_url
+    ) : null;
+
+    const initial = (creator?.name || creator?.instagram || 'C').trim().charAt(0).toUpperCase() || 'C';
+
+    // Deterministic palette based on creator name
+    const colorOptions = [
+        'bg-purple-500/20 text-purple-400 border-purple-500/30',
+        'bg-neon-pink/20 text-neon-pink border-neon-pink/30',
+        'bg-neon-blue/20 text-neon-blue border-neon-blue/30',
+        'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+        'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    ];
+    const charCode = (creator?.name || creator?.id || 'A').charCodeAt(0);
+    const colorClass = colorOptions[charCode % colorOptions.length] || colorOptions[0];
+
+    const sizeClasses = size === 'sm' 
+        ? "w-10 h-10 min-w-[40px] min-h-[40px] max-w-[40px] max-h-[40px] rounded-xl text-sm"
+        : "w-12 h-12 min-w-[48px] min-h-[48px] max-w-[48px] max-h-[48px] rounded-2xl text-base";
+
+    return (
+        <div 
+            onClick={onClick}
+            className={cn(
+                sizeClasses,
+                "overflow-hidden shrink-0 flex items-center justify-center font-heading font-black cursor-pointer hover:scale-105 transition-transform shadow-xs relative bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 select-none",
+                !photoSrc ? colorClass : ""
+            )}
+        >
+            {photoSrc ? (
+                <img 
+                    src={photoSrc} 
+                    alt="" 
+                    onError={() => setImgError(true)}
+                    className="w-full h-full object-cover" 
+                    referrerPolicy="no-referrer"
+                    loading="lazy"
+                />
+            ) : (
+                <span className="font-black leading-none">{initial}</span>
+            )}
+        </div>
+    );
+};
+
+/* --- Detailed Mission Modal --- */
+
+const CampaignDetailView = ({ 
+    campaignId, 
+    onClose, 
+    onEdit, 
+    onToggleShortlist, 
+    onAutoShortlist, 
+    onToggleAutoShortlist, 
+    onReviewSubmission, 
+    onDelete, 
+    updateCampaign, 
+    onCopyLink, 
+    onCopyTaskLink 
+}) => {
     const { campaigns, creators } = useStore();
     const campaign = campaigns.find(c => c.id === campaignId);
     const [activeTab, setActiveTab] = useState('applicants'); // applicants | tasks
+    
+    // Applications view controls
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all'); // all | eligible | shortlisted | pending | below
+    const [sortBy, setSortBy] = useState('followers_desc'); // followers_desc | followers_asc | shortlisted_first | name_asc
+    const [isAutoShortlisting, setIsAutoShortlisting] = useState(false);
+    const [selectedCreatorForModal, setSelectedCreatorForModal] = useState(null);
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+    
+    // Tasks view controls
+    const [taskFilter, setTaskFilter] = useState('all'); // all | needs_review | approved | not_started
+
+    const minFollowers = Number(campaign?.minInstagramFollowers || 0);
+
+    const appliedCreators = useMemo(() => {
+        if (!campaign) return [];
+        return (creators || []).filter(c => (c.joinedCampaigns || []).includes(campaign.id));
+    }, [campaign, creators]);
+
+    const approvedCreators = useMemo(() => {
+        if (!campaign) return [];
+        return appliedCreators.filter(c => (c.shortlistedCampaigns || []).includes(campaign.id));
+    }, [campaign, appliedCreators]);
+
+    // Criteria classification (must meet both minimum follower count AND target city)
+    const eligibleCreators = useMemo(() => {
+        if (!campaign) return [];
+        return appliedCreators.filter(c => {
+            const meetsFollowers = Number(c.instagramFollowers || 0) >= minFollowers;
+            const meetsCity = isCampaignCityMatch(campaign.targetCity, c.city);
+            return meetsFollowers && meetsCity;
+        });
+    }, [appliedCreators, minFollowers, campaign]);
+
+    const eligibleUnshortlisted = useMemo(() => {
+        if (!campaign) return [];
+        return eligibleCreators.filter(c => !(c.shortlistedCampaigns || []).includes(campaign.id));
+    }, [eligibleCreators, campaign]);
+
+    const belowCriteriaCreators = useMemo(() => {
+        if (!campaign) return [];
+        return appliedCreators.filter(c => {
+            const meetsFollowers = Number(c.instagramFollowers || 0) >= minFollowers;
+            const meetsCity = isCampaignCityMatch(campaign.targetCity, c.city);
+            return !(meetsFollowers && meetsCity);
+        });
+    }, [appliedCreators, minFollowers, campaign]);
+
+    // Filter & sort creators
+    const filteredCreators = useMemo(() => {
+        if (!campaign) return [];
+        let list = [...appliedCreators];
+
+        // Search query
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase().trim();
+            list = list.filter(c => 
+                (c.name || '').toLowerCase().includes(q) ||
+                (c.instagram || '').toLowerCase().includes(q) ||
+                (c.city || '').toLowerCase().includes(q) ||
+                (c.phone || '').includes(q)
+            );
+        }
+
+        // Status filter
+        if (filterStatus === 'eligible') {
+            list = list.filter(c => 
+                Number(c.instagramFollowers || 0) >= minFollowers && 
+                isCampaignCityMatch(campaign.targetCity, c.city)
+            );
+        } else if (filterStatus === 'shortlisted') {
+            list = list.filter(c => (c.shortlistedCampaigns || []).includes(campaign.id));
+        } else if (filterStatus === 'pending') {
+            list = list.filter(c => 
+                Number(c.instagramFollowers || 0) >= minFollowers && 
+                isCampaignCityMatch(campaign.targetCity, c.city) && 
+                !(c.shortlistedCampaigns || []).includes(campaign.id)
+            );
+        } else if (filterStatus === 'below') {
+            list = list.filter(c => 
+                !(Number(c.instagramFollowers || 0) >= minFollowers && isCampaignCityMatch(campaign.targetCity, c.city))
+            );
+        }
+
+        // Sorting
+        list.sort((a, b) => {
+            const fA = Number(a.instagramFollowers || 0);
+            const fB = Number(b.instagramFollowers || 0);
+            const isShortlistedA = (a.shortlistedCampaigns || []).includes(campaign.id);
+            const isShortlistedB = (b.shortlistedCampaigns || []).includes(campaign.id);
+
+            if (sortBy === 'followers_desc') return fB - fA;
+            if (sortBy === 'followers_asc') return fA - fB;
+            if (sortBy === 'shortlisted_first') {
+                if (isShortlistedA !== isShortlistedB) return isShortlistedB ? 1 : -1;
+                return fB - fA;
+            }
+            if (sortBy === 'name_asc') return (a.name || '').localeCompare(b.name || '');
+            return 0;
+        });
+
+        return list;
+    }, [appliedCreators, searchQuery, filterStatus, sortBy, minFollowers, campaign]);
 
     if (!campaign) return null;
 
-    const appliedCreators = creators.filter(c => (c.joinedCampaigns || []).includes(campaign.id));
-    const approvedCreators = appliedCreators.filter(c => (c.shortlistedCampaigns || []).includes(campaign.id));
     const spotsInfo = getCampaignSpotsInfo(campaign, creators);
+    const tasks = campaign.tasks || [];
+    
+    const totalPendingReviews = tasks.reduce((sum, t) => {
+        const subs = Object.values(t.submissions || {});
+        return sum + subs.filter(s => s.status === 'submitted').length;
+    }, 0);
+
+    // Format helper for follower labels
+    const fmtFollowers = (val) => {
+        const n = Number(val || 0);
+        if (n >= 1000000) return `${(n / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+        if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K`;
+        return n.toLocaleString();
+    };
+
+    // Handle Auto-Shortlist All Qualifying Creators
+    const handleTriggerAutoShortlist = async () => {
+        if (isAutoShortlisting || eligibleUnshortlisted.length === 0) return;
+        setIsAutoShortlisting(true);
+        try {
+            const uidsToShortlist = eligibleUnshortlisted.map(c => c.uid || c.id);
+            if (onAutoShortlist) {
+                await onAutoShortlist(campaign.id, uidsToShortlist);
+            } else {
+                await useStore.getState().bulkShortlistCreators(campaign.id, uidsToShortlist, true);
+                useStore.getState().addToast(`Auto-shortlisted ${uidsToShortlist.length} creators!`, 'success');
+            }
+        } catch (err) {
+            console.error("Auto-shortlist error:", err);
+            useStore.getState().addToast("Failed to run auto-shortlist.", 'error');
+        } finally {
+            setIsAutoShortlisting(false);
+        }
+    };
+
+    // Quick Clipboard Copy of Handles
+    const handleCopyAllHandles = (targetList = approvedCreators) => {
+        const handles = targetList
+            .map(c => c.instagram ? `@${c.instagram.replace(/^@/, '')}` : null)
+            .filter(Boolean)
+            .join(', ');
+        
+        if (!handles) {
+            useStore.getState().addToast("No Instagram handles found to copy.", 'error');
+            return;
+        }
+        navigator.clipboard.writeText(handles);
+        useStore.getState().addToast(`Copied ${targetList.length} handles to clipboard!`, 'success');
+    };
+
+    // Quick Clipboard Copy of Phones
+    const handleCopyAllPhones = (targetList = approvedCreators) => {
+        const phones = targetList
+            .map(c => c.phone ? normalizePhoneNumber(c.phone) : null)
+            .filter(Boolean)
+            .join(', ');
+        
+        if (!phones) {
+            useStore.getState().addToast("No phone numbers found to copy.", 'error');
+            return;
+        }
+        navigator.clipboard.writeText(phones);
+        useStore.getState().addToast(`Copied ${targetList.length} phone numbers!`, 'success');
+    };
 
     return (
         <motion.div 
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -30 }}
-            className="w-full space-y-8 pb-20 pt-4"
+            exit={{ opacity: 0, y: -20 }}
+            className="w-full space-y-8 pb-24 pt-0 relative"
         >
-            {/* Back Navigation Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/10 dark:border-white/5 pb-6">
+            {/* Ambient Background Glow Effect from Campaign Artwork */}
+            {campaign.thumbnail ? (
+                <div 
+                    className="absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-cover bg-center filter blur-[150px] opacity-20 dark:opacity-45 pointer-events-none rounded-full transform-gpu -z-10"
+                    style={{ backgroundImage: `url(${campaign.thumbnail})` }}
+                />
+            ) : (
+                <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-neon-green/10 dark:bg-neon-green/5 rounded-full blur-[160px] pointer-events-none -z-10" />
+            )}
+
+            {/* Top Glass Navigation Bar */}
+            <div className="relative z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-3xl bg-white/70 dark:bg-[#0c0e14]/70 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-sm">
                 <button 
                     onClick={onClose} 
-                    className="group flex items-center gap-3 px-6 py-3.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:bg-white hover:text-black transition-all text-xs font-black uppercase tracking-[0.2em] text-gray-600 dark:text-gray-400 hover:text-black shadow-lg backdrop-blur-xl w-fit"
+                    className="group flex items-center gap-2.5 px-5 py-3 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all text-xs font-black uppercase tracking-[0.18em] text-gray-700 dark:text-gray-300 w-fit active:scale-95"
                 >
-                    <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                    <ArrowLeft size={15} className="group-hover:-translate-x-1 transition-transform" />
                     BACK TO CAMPAIGNS
                 </button>
 
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
+                    {/* Active/Closed Status Toggle */}
                     <button 
                         onClick={() => {
                             const newStatus = campaign.status === 'Open' ? 'Closed' : 'Open';
                             updateCampaign(campaign.id, { ...campaign, status: newStatus });
                         }}
                         className={cn(
-                            "h-12 px-6 border rounded-full text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-xl backdrop-blur-xl",
-                            campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white"
+                            "h-11 px-5 border rounded-full text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm active:scale-95",
+                            campaign.status === 'Open' 
+                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-neon-green hover:bg-emerald-500 hover:text-black" 
+                                : "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white"
                         )}
+                        title="Toggle Campaign Open / Closed"
                     >
-                        {campaign.status === 'Open' ? <Unlock size={14} /> : <Lock size={14} />}
-                        {campaign.status === 'Open' ? 'ACTIVE (CLICK TO CLOSE)' : 'CLOSED (CLICK TO OPEN)'}
+                        <span className={cn("w-2 h-2 rounded-full", campaign.status === 'Open' ? "bg-emerald-500 dark:bg-neon-green animate-pulse" : "bg-red-500")} />
+                        {campaign.status === 'Open' ? <Unlock size={13} /> : <Lock size={13} />}
+                        <span>{campaign.status === 'Open' ? 'ACTIVE (CLICK TO CLOSE)' : 'CLOSED (CLICK TO OPEN)'}</span>
                     </button>
+
+                    {/* Auto-Shortlist on Apply Setting Toggle */}
+                    <button
+                        onClick={async () => {
+                            if (onToggleAutoShortlist) {
+                                await onToggleAutoShortlist(campaign.id);
+                            } else {
+                                const nextVal = !campaign.autoShortlistEligible;
+                                await updateCampaign(campaign.id, { autoShortlistEligible: nextVal });
+                            }
+                        }}
+                        className={cn(
+                            "h-11 px-4 border rounded-full text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-2 active:scale-95",
+                            campaign.autoShortlistEligible 
+                                ? "bg-neon-green/15 border-neon-green/30 text-emerald-800 dark:text-neon-green hover:bg-neon-green/25" 
+                                : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:bg-black/10 dark:hover:bg-white/10"
+                        )}
+                        title="Toggle Auto-Shortlist for new applicants who meet follower criteria"
+                    >
+                        <Zap size={13} className={campaign.autoShortlistEligible ? "text-emerald-600 dark:text-neon-green fill-current" : "text-gray-400"} />
+                        <span>AUTO-SHORTLIST: {campaign.autoShortlistEligible ? 'ON' : 'OFF'}</span>
+                    </button>
+
+                    {/* View Public Live Campaign */}
+                    <a
+                        href={`/campaign/${campaign.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-11 px-4 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-700 dark:text-gray-300 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider hover:bg-white hover:text-black dark:hover:bg-white/20 transition-all active:scale-95"
+                        title="View Public Campaign View"
+                    >
+                        <Eye size={13} />
+                        <span className="hidden sm:inline">VIEW LIVE</span>
+                    </a>
+
+                    {/* Share Link */}
                     <button 
                         onClick={onCopyLink} 
-                        className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white flex items-center justify-center hover:bg-white hover:text-black transition-all shadow-xl backdrop-blur-xl"
-                        title="Share Campaign"
+                        className="w-11 h-11 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-700 dark:text-gray-300 flex items-center justify-center hover:bg-white hover:text-black dark:hover:bg-white/20 transition-all shadow-sm active:scale-95"
+                        title="Copy Campaign Link"
                     >
-                        <Share2 size={18} />
+                        <Share2 size={15} />
                     </button>
+
+                    {/* Edit Campaign */}
                     <button 
                         onClick={() => onEdit(campaign)} 
-                        className="h-12 px-6 bg-black/10 dark:bg-white/10 border border-black/20 dark:border-white/20 text-gray-900 dark:text-white font-black uppercase tracking-widest rounded-full hover:bg-white hover:text-black transition-all text-xs flex items-center gap-2 shadow-xl backdrop-blur-xl"
+                        className="h-11 px-4 bg-black/10 dark:bg-white/10 border border-black/20 dark:border-white/20 text-gray-900 dark:text-white font-black uppercase tracking-wider rounded-full hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all text-[11px] flex items-center gap-1.5 active:scale-95"
                     >
-                        <Edit size={14} /> EDIT BRIEF
+                        <Edit size={13} /> EDIT BRIEF
                     </button>
+
+                    {/* Delete Campaign */}
                     <button 
-                        onClick={() => onDelete(campaign.id)} 
-                        className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all shadow-xl backdrop-blur-xl"
+                        onClick={() => {
+                            if (window.confirm(`Are you sure you want to delete "${campaign.title}"?`)) {
+                                onDelete(campaign.id);
+                            }
+                        }} 
+                        className="w-11 h-11 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
                         title="Delete Campaign"
                     >
-                        <Trash2 size={18} />
+                        <Trash2 size={15} />
                     </button>
                 </div>
             </div>
 
-            {/* Campaign Hero Card */}
-            <div className="relative bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl p-6 md:p-10 shadow-sm dark:shadow-none overflow-hidden">
-                <div className="relative z-10 flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full lg:w-auto">
-                        <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl bg-gray-50 dark:bg-black/20 border border-black/[0.08] dark:border-white/[0.08] overflow-hidden shrink-0 group relative flex items-center justify-center font-heading font-black text-gray-400 text-xs tracking-widest">
+            {/* Ultra-Aesthetic Campaign Showcase Hero Card */}
+            <div className="relative bg-white/80 dark:bg-[#0c0e14]/90 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.08] rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.06)] dark:shadow-[0_25px_70px_rgba(0,0,0,0.7)] overflow-hidden">
+                <div className="relative z-10 flex flex-col lg:flex-row gap-8 items-start justify-between">
+                    <div className="flex flex-col sm:flex-row items-start gap-6 w-full lg:w-auto flex-1">
+                        {/* High-Impact Thumbnail - Uncropped Widescreen */}
+                        <div className="w-full sm:w-60 md:w-72 aspect-video rounded-2xl sm:rounded-3xl bg-gray-100 dark:bg-black/60 border border-black/[0.08] dark:border-white/[0.1] overflow-hidden shrink-0 group relative flex items-center justify-center shadow-lg">
                             {campaign.thumbnail ? (
-                                <img src={campaign.thumbnail} alt={campaign.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                <>
+                                    {/* Ambient blurred backdrop so any aspect ratio never crops */}
+                                    <img 
+                                        src={campaign.thumbnail} 
+                                        alt="" 
+                                        className="absolute inset-0 w-full h-full object-cover filter blur-lg scale-110 opacity-40 pointer-events-none" 
+                                    />
+                                    <img 
+                                        src={campaign.thumbnail} 
+                                        alt={campaign.title} 
+                                        className="relative z-10 w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" 
+                                    />
+                                </>
                             ) : (
-                                <span>No Image</span>
+                                <span className="font-heading font-black text-gray-400 text-xs tracking-widest uppercase">No Image</span>
                             )}
-                            <div className="absolute top-2 right-2">
+                            <div className="absolute top-2.5 right-2.5 z-20">
                                 <StatusPill status={campaign.status} />
                             </div>
                         </div>
 
-                        <div className="space-y-3 flex-1 min-w-0">
+                        {/* Title, Brand & Metadata */}
+                        <div className="space-y-4 flex-1 min-w-0">
                             <div>
-                                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                    <span className="flex items-center gap-1.5 text-neon-green font-black tracking-widest text-[9px] uppercase">
-                                        <Target size={12} /> CAMPAIGN BRIEF
+                                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neon-green/10 text-emerald-700 dark:text-neon-green font-black tracking-widest text-[9px] uppercase border border-neon-green/20">
+                                        <Target size={11} /> CAMPAIGN BRIEF
                                     </span>
+
                                     {(campaign.brand || campaign.brandLogo) && (
-                                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
                                             {campaign.brandLogo && (
                                                 <img src={campaign.brandLogo} alt="" className="w-3.5 h-3.5 rounded object-contain shrink-0" />
                                             )}
                                             {campaign.brand && (
-                                                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-neon-green">
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-gray-800 dark:text-zinc-200">
                                                     {campaign.brand}
                                                 </span>
                                             )}
                                         </div>
                                     )}
+
+                                    {campaign.autoShortlistEligible && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-300 text-[9px] font-black uppercase tracking-wider font-mono">
+                                            <Zap size={10} className="fill-current" /> Auto-Shortlist Enabled
+                                        </span>
+                                    )}
                                 </div>
-                                <h1 className="text-2xl sm:text-4xl font-heading font-black text-gray-900 dark:text-white tracking-tight leading-tight">
+
+                                <h1 className="text-2xl sm:text-4xl font-heading font-black text-gray-950 dark:text-white tracking-tight leading-tight">
                                     {campaign.title}
                                 </h1>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-widest">
-                                <span className="flex items-center gap-1.5 bg-black/5 dark:bg-white/5 border border-black/[0.08] dark:border-white/[0.08] px-3 py-1.5 rounded-full text-gray-600 dark:text-zinc-400">
-                                    <MapPin size={12} className="text-neon-pink" /> {campaign.targetCity || 'GLOBAL'}
+                            {/* Metadata Pills */}
+                            <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-wider">
+                                <span className="flex items-center gap-1.5 bg-black/5 dark:bg-white/5 border border-black/[0.08] dark:border-white/[0.08] px-3.5 py-1.5 rounded-full text-gray-700 dark:text-zinc-300 shadow-xs">
+                                    <MapPin size={12} className="text-neon-pink" /> {campaign.targetCity || 'PAN-INDIA / GLOBAL'}
                                 </span>
+
                                 {campaign.targetCollege && campaign.targetCollege !== 'Any' && (
-                                    <span className="flex items-center gap-1.5 bg-neon-blue/10 border border-neon-blue/20 px-3 py-1.5 rounded-full text-neon-blue">
+                                    <span className="flex items-center gap-1.5 bg-neon-blue/10 border border-neon-blue/20 px-3.5 py-1.5 rounded-full text-neon-blue">
                                         <Layers size={12} /> {campaign.targetCollege}
                                     </span>
                                 )}
-                                <span className="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/20 px-3 py-1.5 rounded-full text-emerald-700 dark:text-neon-green">
-                                    <IndianRupee size={12} /> {campaign.reward}
+
+                                <span className="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/25 px-3.5 py-1.5 rounded-full text-emerald-700 dark:text-neon-green shadow-xs">
+                                    <IndianRupee size={12} /> {campaign.reward || 'Perks & Collab'}
                                 </span>
-                                <span className="flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 px-3 py-1.5 rounded-full text-purple-600 dark:text-purple-400">
-                                    <Users size={12} /> {campaign.minInstagramFollowers ? `${campaign.minInstagramFollowers}+ FOLLOWERS REQ.` : 'ANY FOLLOWERS'}
+
+                                {/* Minimum Followers Requirement Pill */}
+                                <span className={cn(
+                                    "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border shadow-xs transition-colors",
+                                    minFollowers > 0 
+                                        ? "bg-purple-500/10 border-purple-500/30 text-purple-700 dark:text-purple-300 font-mono" 
+                                        : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400"
+                                )}>
+                                    <Users size={12} className={minFollowers > 0 ? "text-purple-500" : ""} /> 
+                                    {minFollowers > 0 ? `${minFollowers.toLocaleString()}+ FOLLOWERS REQUIRED` : 'ANY FOLLOWER COUNT'}
                                 </span>
+
+                                {/* Spots Info */}
                                 {spotsInfo.hasSpots && (
                                     <span className={cn(
-                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full border",
+                                        "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border shadow-xs",
                                         spotsInfo.isFull 
-                                            ? "bg-red-500/10 border-red-500/20 text-red-500" 
-                                            : "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400"
+                                            ? "bg-red-500/10 border-red-500/25 text-red-500" 
+                                            : "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400"
                                     )}>
-                                        <Users size={12} /> {spotsInfo.isFull ? '0 SPOTS LEFT (FULL)' : `${spotsInfo.spotsLeft} SPOTS LEFT`} ({appliedCreators.length} APPLIED{spotsInfo.totalSpots ? ` / ${spotsInfo.totalSpots} TOTAL` : ''})
+                                        <Users size={12} /> 
+                                        {spotsInfo.isFull ? '0 SPOTS LEFT (FULL)' : `${spotsInfo.spotsLeft} SPOTS LEFT`} 
+                                        <span className="opacity-70">({approvedCreators.length} SHORTLISTED{spotsInfo.totalSpots ? ` / ${spotsInfo.totalSpots}` : ''})</span>
                                     </span>
                                 )}
+                            </div>
+
+                            {/* KPI Metrics Dashboard Bar */}
+                            <div className="pt-2 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2.5">
+                                <div className="p-3 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06]">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-zinc-500 mb-0.5">Total Applied</p>
+                                    <p className="text-xl font-heading font-black text-gray-950 dark:text-white">{appliedCreators.length}</p>
+                                </div>
+                                <div className="p-3 rounded-2xl bg-purple-500/[0.05] border border-purple-500/15">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-purple-600 dark:text-purple-400 mb-0.5">Criteria Met</p>
+                                    <p className="text-xl font-heading font-black text-purple-700 dark:text-purple-300">{eligibleCreators.length}</p>
+                                </div>
+                                <div className="p-3 rounded-2xl bg-emerald-500/[0.05] border border-emerald-500/15">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-0.5">Shortlisted</p>
+                                    <p className="text-xl font-heading font-black text-emerald-700 dark:text-neon-green">{approvedCreators.length}</p>
+                                </div>
+                                <div className="p-3 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06]">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-zinc-500 mb-0.5">Deliverables</p>
+                                    <p className="text-xl font-heading font-black text-gray-950 dark:text-white">{tasks.length}</p>
+                                </div>
+                                <div className={cn("p-3 rounded-2xl border col-span-2 sm:col-span-1", totalPendingReviews > 0 ? "bg-amber-500/[0.08] border-amber-500/20 text-amber-700 dark:text-amber-400" : "bg-black/[0.03] dark:bg-white/[0.03] border-black/[0.06] dark:border-white/[0.06]")}>
+                                    <p className="text-[9px] font-black uppercase tracking-widest mb-0.5">Reviews Due</p>
+                                    <p className="text-xl font-heading font-black">{totalPendingReviews}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
+                    {/* WhatsApp Community Action */}
                     {campaign.whatsappLink && (
-                        <a 
-                            href={campaign.whatsappLink} 
-                            target="_blank" 
-                            rel="noreferrer" 
-                            className="group flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500 hover:text-black text-emerald-600 dark:text-emerald-400 px-5 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all shrink-0 w-full lg:w-auto justify-center"
-                        >
-                            <ExternalLink size={16} className="group-hover:rotate-45 transition-transform" />
-                            JOIN WHATSAPP
-                        </a>
+                        <div className="shrink-0 w-full lg:w-auto flex flex-col items-stretch lg:items-end gap-2">
+                            <a 
+                                href={campaign.whatsappLink} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="group flex items-center justify-center gap-2.5 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3.5 rounded-2xl font-black uppercase tracking-wider text-xs transition-all shadow-lg active:scale-95"
+                            >
+                                <MessageCircle size={16} className="group-hover:rotate-12 transition-transform" />
+                                <span>CAMPAIGN WHATSAPP</span>
+                                <ExternalLink size={13} />
+                            </a>
+                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center lg:text-right">OFFICIAL CREATOR CHAT</span>
+                        </div>
                     )}
                 </div>
 
+                {/* Campaign Description */}
                 {campaign.description && (
-                    <div className="mt-6 pt-6 border-t border-black/[0.08] dark:border-white/[0.08] text-gray-700 dark:text-gray-300 text-sm font-medium leading-relaxed prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: campaign.description }} />
+                    <div className="mt-8 pt-6 border-t border-black/[0.08] dark:border-white/[0.08]">
+                        <div className={cn(
+                            "text-gray-700 dark:text-gray-300 text-sm font-medium leading-relaxed prose prose-invert max-w-none transition-all duration-300",
+                            !isDescriptionExpanded && "line-clamp-3"
+                        )} dangerouslySetInnerHTML={{ __html: campaign.description }} />
+                        <button 
+                            type="button"
+                            onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                            className="mt-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-neon-green hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                            {isDescriptionExpanded ? 'SHOW LESS' : 'READ FULL BRIEF'}
+                            <ChevronDown size={12} className={cn("transition-transform duration-200", isDescriptionExpanded && "rotate-180")} />
+                        </button>
+                    </div>
                 )}
             </div>
 
-            {/* Tabs & Content */}
+            {/* Tabs & Content Navigation */}
             <div className="space-y-6">
-                <div className="flex gap-2 border-b border-black/[0.08] dark:border-white/[0.08]">
-                    {['applicants', 'tasks'].map(tab => (
-                        <button 
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={cn(
-                                "relative px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-2",
-                                activeTab === tab ? "text-gray-900 dark:text-white" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
-                            )}
-                        >
-                            {tab === 'applicants' ? 'APPLICATIONS' : 'CAMPAIGN TASKS'}
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-black/5 dark:bg-white/5">
-                                {tab === 'applicants' ? appliedCreators.length : (campaign.tasks?.length || 0)}
-                            </span>
-                            {activeTab === tab && (
-                                <motion.div layoutId="tab-underline" className="absolute -bottom-px left-0 right-0 h-0.5 bg-neon-green" />
-                            )}
-                        </button>
-                    ))}
+                <div className="flex items-center justify-between border-b border-black/[0.08] dark:border-white/[0.08] pb-1">
+                    <div className="flex gap-2">
+                        {['applicants', 'tasks'].map(tab => (
+                            <button 
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={cn(
+                                    "relative px-5 py-3 text-[11px] font-black uppercase tracking-widest transition-colors flex items-center gap-2.5",
+                                    activeTab === tab ? "text-gray-950 dark:text-white" : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                )}
+                            >
+                                <span>{tab === 'applicants' ? 'APPLICATIONS' : 'CAMPAIGN TASKS'}</span>
+                                <span className={cn(
+                                    "px-2 py-0.5 rounded-full text-[10px] font-mono font-bold transition-colors",
+                                    activeTab === tab 
+                                        ? "bg-neon-green/20 text-emerald-800 dark:text-neon-green" 
+                                        : "bg-black/5 dark:bg-white/5 text-gray-500"
+                                )}>
+                                    {tab === 'applicants' ? appliedCreators.length : tasks.length}
+                                </span>
+                                {tab === 'tasks' && totalPendingReviews > 0 && (
+                                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" title={`${totalPendingReviews} submissions pending review`} />
+                                )}
+                                {activeTab === tab && (
+                                    <motion.div layoutId="tab-underline" className="absolute -bottom-1.5 left-0 right-0 h-0.5 bg-neon-green rounded-full shadow-[0_0_12px_rgba(46,255,142,0.8)]" />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Quick export tools on the right of tabs */}
+                    {activeTab === 'applicants' && appliedCreators.length > 0 && (
+                        <div className="hidden sm:flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => handleCopyAllHandles(approvedCreators.length > 0 ? approvedCreators : eligibleCreators)}
+                                className="h-8 px-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 transition-all active:scale-95"
+                                title="Copy handles for Instagram tag / group"
+                            >
+                                <Copy size={11} /> Copy Handles
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleCopyAllPhones(approvedCreators.length > 0 ? approvedCreators : eligibleCreators)}
+                                className="h-8 px-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 transition-all active:scale-95"
+                                title="Copy phones for WhatsApp broadcast"
+                            >
+                                <Phone size={11} /> Copy Phones
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -1797,35 +2357,341 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                     >
                         {activeTab === 'applicants' ? (
                             <div className="space-y-6">
-                                {appliedCreators.length === 0 ? (
-                                    <div className="py-16 text-center bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-2xl flex flex-col items-center gap-4">
-                                        <Users size={32} className="text-gray-400" />
-                                        <div className="space-y-1">
-                                            <p className="text-base font-heading font-black text-gray-900 dark:text-white">No Applications Yet</p>
-                                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Creators who apply will appear here</p>
+                                {/* Auto-Shortlist Automation Command Banner */}
+                                <div className="relative overflow-hidden rounded-3xl border border-neon-green/30 bg-gradient-to-r from-emerald-500/[0.08] via-neon-green/[0.05] to-purple-500/[0.05] p-5 sm:p-7 shadow-[0_10px_35px_rgba(46,255,142,0.06)]">
+                                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <div className="w-8 h-8 rounded-xl bg-neon-green/20 border border-neon-green/40 flex items-center justify-center text-emerald-800 dark:text-neon-green shadow-xs">
+                                                    <Zap size={16} className="fill-current text-neon-green" />
+                                                </div>
+                                                <h3 className="text-base sm:text-lg font-heading font-black text-gray-950 dark:text-white uppercase tracking-tight">
+                                                    AUTO-SHORTLIST ENGINE
+                                                </h3>
+                                                <span className="px-2.5 py-0.5 rounded-full bg-neon-green/20 text-emerald-800 dark:text-neon-green font-mono text-[10px] font-black uppercase">
+                                                    CRITERIA: ≥ {minFollowers.toLocaleString()} FOLLOWERS
+                                                </span>
+                                                {campaign.targetCity && !['any', 'all', 'universal', 'pan-india', 'global', 'remote', '', 'national', 'any hub', 'others', 'pan-india / remote'].includes(campaign.targetCity.toLowerCase()) && (
+                                                    <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 font-mono text-[10px] font-black uppercase flex items-center gap-1">
+                                                        <MapPin size={10} /> TARGET: {campaign.targetCity.toUpperCase()} ONLY
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <p className="text-xs sm:text-sm text-gray-600 dark:text-zinc-300 font-medium">
+                                                {eligibleUnshortlisted.length > 0 ? (
+                                                    <span>
+                                                        <strong className="text-emerald-700 dark:text-neon-green font-black">{eligibleUnshortlisted.length} eligible creator{eligibleUnshortlisted.length === 1 ? '' : 's'}</strong> meet both the {minFollowers.toLocaleString()} follower criteria and target city requirement ({campaign.targetCity || 'Universal'}) and {eligibleUnshortlisted.length === 1 ? 'is' : 'are'} awaiting shortlist approval.
+                                                    </span>
+                                                ) : eligibleCreators.length > 0 ? (
+                                                    <span className="text-emerald-700 dark:text-neon-green font-bold flex items-center gap-1.5">
+                                                        <CheckCircle2 size={15} /> All {eligibleCreators.length} qualifying creator{eligibleCreators.length === 1 ? '' : 's'} meeting the {minFollowers.toLocaleString()}+ follower and target city requirements are shortlisted!
+                                                    </span>
+                                                ) : (
+                                                    <span>No applicants currently meet both the {minFollowers.toLocaleString()}+ follower criteria and target city requirement ({campaign.targetCity || 'Universal'}).</span>
+                                                )}
+                                            </p>
                                         </div>
+
+                                        {/* Action Button */}
+                                        <div className="flex flex-wrap items-center gap-3 shrink-0">
+                                            <button 
+                                                onClick={handleTriggerAutoShortlist}
+                                                disabled={isAutoShortlisting || eligibleUnshortlisted.length === 0}
+                                                className={cn(
+                                                    "h-12 px-6 rounded-2xl font-black uppercase tracking-wider text-xs transition-all flex items-center gap-2.5 shadow-lg active:scale-95 cursor-pointer font-mono",
+                                                    eligibleUnshortlisted.length > 0
+                                                        ? "bg-gradient-to-r from-emerald-500 to-neon-green text-black hover:opacity-90 shadow-neon-green/20"
+                                                        : "bg-black/10 dark:bg-white/10 text-gray-400 dark:text-zinc-500 cursor-not-allowed border border-black/10 dark:border-white/10"
+                                                )}
+                                            >
+                                                {isAutoShortlisting ? (
+                                                    <>
+                                                        <LoadingSpinner size="xs" color="black" />
+                                                        <span>SHORTLISTING CREATORS...</span>
+                                                    </>
+                                                ) : eligibleUnshortlisted.length > 0 ? (
+                                                    <>
+                                                        <Zap size={15} className="fill-current" />
+                                                        <span>AUTO-SHORTLIST ({eligibleUnshortlisted.length} ELIGIBLE)</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Check size={15} />
+                                                        <span>ALL ELIGIBLE SHORTLISTED</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Search & Filtering Tool Bar */}
+                                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+                                    {/* Search Input */}
+                                    <div className="relative flex-1 min-w-[240px]">
+                                        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                                        <input 
+                                            type="text" 
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder="Search by creator name, @instagram, phone, city..." 
+                                            className="w-full h-10 pl-10 pr-10 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.08] text-xs font-medium text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-neon-green/50 transition-colors"
+                                        />
+                                        {searchQuery && (
+                                            <button 
+                                                onClick={() => setSearchQuery('')}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-white p-1"
+                                            >
+                                                <X size={13} />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Filter Status Pills */}
+                                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 custom-scrollbar">
+                                        {[
+                                            { id: 'all', label: `All (${appliedCreators.length})` },
+                                            { id: 'eligible', label: `Eligible (≥${fmtFollowers(minFollowers)}) (${eligibleCreators.length})` },
+                                            { id: 'shortlisted', label: `Shortlisted (${approvedCreators.length})` },
+                                            { id: 'pending', label: `Awaiting (${eligibleUnshortlisted.length})` },
+                                            { id: 'below', label: `Below Criteria (${belowCriteriaCreators.length})` },
+                                        ].map(f => (
+                                            <button 
+                                                key={f.id}
+                                                onClick={() => setFilterStatus(f.id)}
+                                                className={cn(
+                                                    "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap active:scale-95 shrink-0 border",
+                                                    filterStatus === f.id 
+                                                        ? "bg-gray-950 text-white dark:bg-white dark:text-black border-transparent shadow-xs" 
+                                                        : "bg-black/[0.02] dark:bg-white/[0.02] text-gray-600 dark:text-zinc-400 border-black/[0.06] dark:border-white/[0.06] hover:bg-black/5 dark:hover:bg-white/5"
+                                                )}
+                                            >
+                                                {f.label}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Sort Dropdown */}
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <ArrowUpDown size={14} className="text-gray-400" />
+                                        <select 
+                                            value={sortBy}
+                                            onChange={(e) => setSortBy(e.target.value)}
+                                            className="h-10 px-3 pr-8 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.08] text-xs font-black uppercase tracking-wider text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-neon-green/50 cursor-pointer"
+                                        >
+                                            <option value="followers_desc">Most Followers</option>
+                                            <option value="followers_asc">Least Followers</option>
+                                            <option value="shortlisted_first">Shortlisted First</option>
+                                            <option value="name_asc">Name (A - Z)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Applications Grid */}
+                                {filteredCreators.length === 0 ? (
+                                    <div className="py-20 text-center bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl flex flex-col items-center gap-4">
+                                        <div className="w-16 h-16 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] flex items-center justify-center text-gray-400">
+                                            <Users size={32} />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-base font-heading font-black text-gray-950 dark:text-white">
+                                                {appliedCreators.length === 0 ? 'No Applications Yet' : 'No Matching Creators'}
+                                            </p>
+                                            <p className="text-xs font-medium text-gray-500">
+                                                {appliedCreators.length === 0 
+                                                    ? 'Creators who apply to this campaign will appear here' 
+                                                    : 'Try clearing your search query or switching filters above'}
+                                            </p>
+                                        </div>
+                                        {appliedCreators.length > 0 && (
+                                            <button 
+                                                onClick={() => { setSearchQuery(''); setFilterStatus('all'); }}
+                                                className="px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-xs font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300 hover:bg-black/10 transition-colors"
+                                            >
+                                                Reset Filters
+                                            </button>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5">
-                                        {appliedCreators.map(creator => {
+                                        {filteredCreators.map(creator => {
                                             const isShortlisted = (creator.shortlistedCampaigns || []).includes(campaign.id);
+                                            const followersCount = Number(creator.instagramFollowers || 0);
+                                            const meetsFollowers = minFollowers <= 0 || followersCount >= minFollowers;
+                                            const meetsCity = isCampaignCityMatch(campaign.targetCity, creator.city);
+                                            const meetsCriteria = meetsFollowers && meetsCity;
+                                            const cleanInstagram = (creator.instagram || '').replace(/^@/, '');
+                                            const waNumber = creator.phone ? normalizePhoneNumber(creator.phone) : null;
+                                            const hasSpecificCity = campaign.targetCity && !['any', 'all', 'universal', 'pan-india', 'global', 'remote', '', 'national', 'any hub', 'others', 'pan-india / remote'].includes(campaign.targetCity.trim().toLowerCase());
+
                                             return (
-                                                <div key={creator.uid} className={cn("p-5 rounded-2xl border transition-all duration-300 group relative overflow-hidden bg-white dark:bg-[#0c0e14]", isShortlisted ? "border-neon-green/40 shadow-sm" : "border-black/[0.08] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20")}>
-                                                    <div className="flex items-start justify-between mb-5">
-                                                        <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-black/20 border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-lg font-heading font-black text-gray-900 dark:text-white">{creator.name.charAt(0)}</div>
-                                                        <button 
-                                                            onClick={() => onToggleShortlist(creator.uid, campaign.id)}
-                                                            className={cn(
-                                                                "px-3 h-8 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center",
-                                                                isShortlisted ? "bg-neon-green text-black border-transparent shadow-sm" : "bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20"
-                                                            )}
-                                                        >
-                                                            {isShortlisted ? '✓ SHORTLISTED' : '+ SHORTLIST'}
-                                                        </button>
+                                                <div 
+                                                    key={creator.uid || creator.id} 
+                                                    className={cn(
+                                                        "p-5 rounded-3xl border transition-all duration-300 group relative flex flex-col justify-between overflow-hidden bg-white dark:bg-[#0c0e14] h-full min-h-[174px]",
+                                                        isShortlisted 
+                                                            ? "border-neon-green/50 shadow-[0_4px_25px_rgba(46,255,142,0.12)] ring-1 ring-neon-green/30" 
+                                                            : meetsCriteria
+                                                                ? "border-black/[0.08] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20 shadow-xs"
+                                                                : "border-black/[0.05] dark:border-white/[0.05] bg-gray-50/50 dark:bg-[#08090d]/50 opacity-90"
+                                                    )}
+                                                >
+                                                    {/* Ambient top border gradient indicator */}
+                                                    <div className={cn(
+                                                        "absolute top-0 left-0 right-0 h-1 transition-colors",
+                                                        isShortlisted 
+                                                            ? "bg-neon-green" 
+                                                            : meetsCriteria 
+                                                                ? "bg-purple-500/30 group-hover:bg-purple-500" 
+                                                                : "bg-gray-300 dark:bg-zinc-800"
+                                                    )} />
+
+                                                    {/* Card Top: Avatar, Name, Shortlist Toggle */}
+                                                    <div>
+                                                        <div className="flex items-start justify-between gap-3 mb-3.5">
+                                                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                                <CreatorApplicantAvatar 
+                                                                    creator={creator} 
+                                                                    onClick={() => setSelectedCreatorForModal(creator)} 
+                                                                />
+
+                                                                <div className="min-w-0 flex-1">
+                                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                                        <h4 
+                                                                            onClick={() => setSelectedCreatorForModal(creator)}
+                                                                            className="text-sm sm:text-base font-heading font-black text-gray-950 dark:text-white tracking-tight truncate hover:text-neon-green transition-colors cursor-pointer"
+                                                                        >
+                                                                            {creator.name}
+                                                                        </h4>
+                                                                        {creator.instagramVerified && (
+                                                                            <ShieldCheck size={14} className="text-neon-blue shrink-0" title="Verified Instagram" />
+                                                                        )}
+                                                                    </div>
+
+                                                                    {cleanInstagram && (
+                                                                        <a 
+                                                                            href={`https://instagram.com/${cleanInstagram}`} 
+                                                                            target="_blank" 
+                                                                            rel="noreferrer"
+                                                                            className="inline-flex items-center gap-1 text-[11px] font-bold text-gray-500 hover:text-neon-pink transition-colors mt-0.5 group/insta max-w-full truncate"
+                                                                        >
+                                                                            <span className="truncate">@{cleanInstagram}</span>
+                                                                            <ExternalLink size={10} className="opacity-0 group-hover/insta:opacity-100 transition-opacity shrink-0" />
+                                                                        </a>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Shortlist Toggle Button */}
+                                                            <button 
+                                                                onClick={() => onToggleShortlist(creator.uid || creator.id, campaign.id)}
+                                                                className={cn(
+                                                                    "h-9 px-3.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shrink-0",
+                                                                    isShortlisted 
+                                                                        ? "bg-neon-green text-black border-transparent shadow-sm hover:bg-red-500 hover:text-white group/btn" 
+                                                                        : meetsCriteria
+                                                                            ? "bg-black/5 dark:bg-white/5 text-gray-800 dark:text-zinc-200 border-black/10 dark:border-white/10 hover:bg-neon-green hover:text-black hover:border-transparent"
+                                                                            : "bg-black/[0.02] dark:bg-white/[0.02] text-gray-400 dark:text-zinc-500 border-black/[0.06] dark:border-white/[0.06] hover:bg-black/5"
+                                                                )}
+                                                            >
+                                                                {isShortlisted ? (
+                                                                    <>
+                                                                        <Check size={12} strokeWidth={3} className="group-hover/btn:hidden" />
+                                                                        <span className="group-hover/btn:hidden">SHORTLISTED</span>
+                                                                        <span className="hidden group-hover/btn:inline">REMOVE</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Plus size={12} strokeWidth={3} />
+                                                                        <span>SHORTLIST</span>
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Follower Criteria & City Match Evaluation Badges */}
+                                                        <div className="flex flex-wrap items-center gap-2 mb-4">
+                                                            <div className={cn(
+                                                                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-xs font-mono",
+                                                                meetsFollowers
+                                                                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-neon-green"
+                                                                    : "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400"
+                                                            )}>
+                                                                <Instagram size={12} className="text-neon-pink shrink-0" />
+                                                                <span>{followersCount.toLocaleString()} FOLLOWERS</span>
+                                                                {minFollowers > 0 && (
+                                                                    <span className={cn(
+                                                                        "px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-widest",
+                                                                        meetsFollowers ? "bg-emerald-500/20 text-emerald-800 dark:text-neon-green" : "bg-amber-500/20 text-amber-700 dark:text-amber-400"
+                                                                    )}>
+                                                                        {meetsFollowers ? '✓ FOLLOWERS OK' : `BELOW ${minFollowers.toLocaleString()} REQ`}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+
+                                                            {creator.city ? (
+                                                                <div className={cn(
+                                                                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-[10px] font-bold font-mono",
+                                                                    hasSpecificCity 
+                                                                        ? (meetsCity 
+                                                                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-neon-green"
+                                                                            : "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400")
+                                                                        : "bg-black/5 dark:bg-white/5 border-black/[0.06] dark:border-white/[0.06] text-gray-600 dark:text-zinc-400"
+                                                                )}>
+                                                                    <MapPin size={10} className={hasSpecificCity ? (meetsCity ? "text-emerald-500 dark:text-neon-green" : "text-red-500") : "text-gray-400"} />
+                                                                    <span>{creator.city}</span>
+                                                                    {hasSpecificCity && (
+                                                                        <span className={cn(
+                                                                            "px-1.5 py-0.2 rounded text-[8px] font-black uppercase tracking-wider",
+                                                                            meetsCity ? "bg-emerald-500/20 text-emerald-800 dark:text-neon-green" : "bg-red-500/20 text-red-600 dark:text-red-400"
+                                                                        )}>
+                                                                            {meetsCity ? '✓ TARGET CITY' : 'MISMATCH'}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            ) : hasSpecificCity ? (
+                                                                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-[10px] font-bold font-mono text-red-600 dark:text-red-400">
+                                                                    <MapPin size={10} className="text-red-500" />
+                                                                    <span>NO CITY SET</span>
+                                                                    <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase tracking-wider bg-red-500/20 text-red-600 dark:text-red-400">
+                                                                        MISMATCH
+                                                                    </span>
+                                                                </div>
+                                                            ) : null}
+                                                        </div>
                                                     </div>
-                                                    <h4 className="text-lg font-heading font-black text-gray-900 dark:text-white tracking-tight mb-2 group-hover:text-neon-green transition-colors">{creator.name}</h4>
-                                                    <div className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest bg-black/5 dark:bg-white/5 border border-black/[0.08] dark:border-white/[0.08] px-3 py-1.5 rounded-full w-fit">
-                                                        <Instagram size={12} className="text-neon-pink" /> {Number(creator.instagramFollowers || 0).toLocaleString()} FOLLOWERS
+
+                                                    {/* Card Bottom: Quick Actions */}
+                                                    <div className="pt-3 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between gap-2">
+                                                        <div className="flex items-center gap-2">
+                                                            {waNumber && (
+                                                                <a 
+                                                                    href={`https://wa.me/${waNumber}`} 
+                                                                    target="_blank" 
+                                                                    rel="noreferrer"
+                                                                    className="h-8 px-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition-all"
+                                                                    title="Open WhatsApp Chat"
+                                                                >
+                                                                    <MessageCircle size={11} />
+                                                                    <span>CHAT</span>
+                                                                </a>
+                                                            )}
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => setSelectedCreatorForModal(creator)}
+                                                                className="h-8 px-2.5 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-700 dark:text-zinc-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition-all"
+                                                            >
+                                                                <Eye size={11} />
+                                                                <span>VIEW PROFILE</span>
+                                                            </button>
+                                                        </div>
+
+                                                        {isShortlisted && (
+                                                            <span className="text-[9px] font-mono font-bold text-emerald-600 dark:text-neon-green uppercase tracking-widest flex items-center gap-1">
+                                                                <CheckCheck size={12} /> CONFIRMED
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             );
@@ -1834,139 +2700,246 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                                 )}
                             </div>
                         ) : (
+                            /* --- CAMPAIGN TASKS TAB --- */
                             <div className="space-y-6">
-                                {(campaign.tasks || []).length === 0 ? (
-                                    <div className="py-16 text-center bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-2xl flex flex-col items-center gap-4">
-                                        <Target size={32} className="text-gray-400" />
+                                {tasks.length === 0 ? (
+                                    <div className="py-20 text-center bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl flex flex-col items-center gap-4">
+                                        <div className="w-16 h-16 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] flex items-center justify-center text-gray-400">
+                                            <Target size={32} />
+                                        </div>
                                         <div className="space-y-1">
-                                            <p className="text-base font-heading font-black text-gray-900 dark:text-white">No Tasks Configured</p>
-                                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Edit the campaign brief to add tasks for creators</p>
+                                            <p className="text-base font-heading font-black text-gray-950 dark:text-white">No Tasks Configured</p>
+                                            <p className="text-xs font-medium text-gray-500">Edit this campaign to add deliverables for your shortlisted creators</p>
                                         </div>
+                                        <button 
+                                            onClick={() => onEdit(campaign)} 
+                                            className="px-5 py-2.5 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:opacity-90 transition-opacity"
+                                        >
+                                            Add Deliverables
+                                        </button>
                                     </div>
-                                ) : (campaign.tasks || []).map((task, idx) => (
-                                    <div key={task.id} className="space-y-6 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl p-5 md:p-8 shadow-sm dark:shadow-none">
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/[0.08] dark:border-white/[0.08] pb-5">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-xl bg-neon-green/10 border border-neon-green/20 flex items-center justify-center font-black text-emerald-700 dark:text-neon-green text-base">{idx + 1}</div>
-                                                <div>
-                                                    <h4 className="text-xl font-heading font-black text-gray-900 dark:text-white tracking-tight mb-1">{task.title}</h4>
-                                                    <div className="flex items-center gap-3">
-                                                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{task.platform} TASK</p>
-                                                        {task.deadline && (
-                                                            <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">
-                                                                DEADLINE: {new Date(task.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                ) : tasks.map((task, idx) => {
+                                    const taskSubmissions = task.submissions || {};
+                                    const pendingForTask = Object.values(taskSubmissions).filter(s => s.status === 'submitted').length;
+                                    const approvedForTask = Object.values(taskSubmissions).filter(s => s.status === 'approved').length;
+
+                                    return (
+                                        <div key={task.id || idx} className="space-y-6 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl p-6 sm:p-8 shadow-sm">
+                                            {/* Task Header */}
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/[0.08] dark:border-white/[0.08] pb-5">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 rounded-2xl bg-neon-green/10 border border-neon-green/20 flex items-center justify-center font-black text-emerald-800 dark:text-neon-green text-lg font-heading shadow-xs">
+                                                        {idx + 1}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-xl font-heading font-black text-gray-950 dark:text-white tracking-tight mb-1">
+                                                            {task.title}
+                                                        </h4>
+                                                        <div className="flex items-center gap-3 flex-wrap">
+                                                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest bg-black/5 dark:bg-white/5 px-2.5 py-0.5 rounded-full border border-black/[0.06] dark:border-white/[0.06]">
+                                                                {task.platform || 'INSTAGRAM'} TASK
                                                             </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <button 
-                                                onClick={() => onCopyTaskLink(task.id)}
-                                                className="h-10 px-4 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-gray-800 dark:text-zinc-200 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 w-fit"
-                                                title="Share Task Link"
-                                            >
-                                                <Share2 size={14} /> SHARE TASK
-                                            </button>
-                                        </div>
-
-                                        {task.googleFormLink && (
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 rounded-2xl bg-purple-500/[0.06] dark:bg-purple-500/[0.12] border border-purple-500/20 text-xs">
-                                                <div className="flex items-center gap-2.5 min-w-0">
-                                                    <FileText size={15} className="text-purple-500 shrink-0" />
-                                                    <div className="min-w-0">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="font-black uppercase tracking-wider text-[10px] font-mono text-purple-700 dark:text-purple-300">Google Form Submission:</span>
-                                                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-700 dark:text-purple-200 font-mono">New Tab (File Upload)</span>
+                                                            {task.deadline && (
+                                                                <span className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest bg-red-500/10 px-2.5 py-0.5 rounded-full border border-red-500/20 flex items-center gap-1">
+                                                                    <Calendar size={11} /> DEADLINE: {new Date(task.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                                                </span>
+                                                            )}
+                                                            <span className="text-[10px] font-mono font-bold text-gray-400">
+                                                                {approvedForTask} Approved · {pendingForTask} Pending Review
+                                                            </span>
                                                         </div>
-                                                        <span className="font-mono text-[11px] text-gray-600 dark:text-zinc-300 truncate block mt-0.5">{task.googleFormLink}</span>
                                                     </div>
                                                 </div>
-                                                <a href={task.googleFormLink} target="_blank" rel="noopener noreferrer" className="shrink-0 h-8 px-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-[10px] font-black uppercase font-mono flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95">
-                                                    <span>Open Form</span>
-                                                    <ExternalLink size={11} />
-                                                </a>
-                                            </div>
-                                        )}
 
-                                        {task.description && (
-                                            <div className="text-gray-700 dark:text-gray-300 text-sm font-medium leading-relaxed prose prose-invert max-w-none bg-gray-50 dark:bg-black/20 p-5 rounded-2xl border border-black/[0.08] dark:border-white/[0.08]" dangerouslySetInnerHTML={{ __html: task.description }} />
-                                        )}
-
-                                        {/* Task Verification Dashboard */}
-                                        <div className="space-y-4 pt-2">
-                                            <div className="flex items-center justify-between">
-                                                <h5 className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                                    <CheckCircle2 size={14} className="text-neon-green" /> TASK VERIFICATION & SUBMISSIONS
-                                                </h5>
-                                                <div className="px-3 py-1 bg-neon-green/10 rounded-full text-[9px] font-black text-emerald-700 dark:text-neon-green uppercase tracking-widest border border-neon-green/20">
-                                                    Awaiting {Object.values(task.submissions || {}).filter(s => s.status === 'submitted').length} Reviews
-                                                </div>
+                                                <button 
+                                                    onClick={() => onCopyTaskLink(task.id)}
+                                                    className="h-10 px-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:bg-black/10 text-gray-800 dark:text-zinc-200 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 w-fit active:scale-95"
+                                                    title="Share Direct Task Link"
+                                                >
+                                                    <Share2 size={13} /> SHARE TASK
+                                                </button>
                                             </div>
 
-                                            <div className="space-y-3">
-                                                {approvedCreators.length === 0 ? (
-                                                    <div className="p-6 text-center bg-gray-50 dark:bg-black/20 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] text-gray-500 text-[10px] font-black uppercase tracking-widest">
-                                                        No shortlisted creators assigned to this campaign yet.
+                                            {/* Google Form Submission Callout */}
+                                            {task.googleFormLink && (
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-purple-500/[0.06] dark:bg-purple-500/[0.12] border border-purple-500/20 text-xs">
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <FileText size={18} className="text-purple-500 shrink-0" />
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-black uppercase tracking-wider text-[10px] font-mono text-purple-700 dark:text-purple-300">
+                                                                    Google Form Submission:
+                                                                </span>
+                                                                <span className="text-[9px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-700 dark:text-purple-200 font-mono">
+                                                                    File Upload Link
+                                                                </span>
+                                                            </div>
+                                                            <span className="font-mono text-[11px] text-gray-600 dark:text-zinc-300 truncate block mt-0.5">
+                                                                {task.googleFormLink}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                ) : approvedCreators.map(creator => {
-                                                    const sub = task.submissions?.[creator.uid];
-                                                    const status = sub?.status || 'not_started';
-                                                    
-                                                    return (
-                                                        <div key={creator.uid} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white dark:bg-[#0c0e14] rounded-2xl border border-black/[0.08] dark:border-white/[0.08] group hover:border-black/20 dark:hover:border-white/20 transition-all gap-4">
-                                                            <div className="flex items-center gap-4">
-                                                                <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-black/20 border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center font-heading font-black text-gray-900 dark:text-white">{creator.name.charAt(0)}</div>
-                                                                <div>
-                                                                    <p className="text-sm font-heading font-black text-gray-900 dark:text-white tracking-tight mb-0.5">{creator.name}</p>
-                                                                    <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase font-mono", 
-                                                                        status === 'approved' ? "bg-emerald-500/15 text-emerald-700 dark:text-neon-green" : 
-                                                                        status === 'submitted' ? "bg-amber-500/15 text-amber-700 dark:text-amber-400" : 
-                                                                        status === 'rejected' ? "bg-red-500/15 text-red-600 dark:text-red-400" : "bg-black/5 dark:bg-white/5 text-gray-500"
-                                                                    )}>
-                                                                        {status.replace('_', ' ')}
-                                                                    </span>
+                                                    <a 
+                                                        href={task.googleFormLink} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer" 
+                                                        className="shrink-0 h-9 px-4 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-[10px] font-black uppercase font-mono flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95"
+                                                    >
+                                                        <span>OPEN FORM</span>
+                                                        <ExternalLink size={11} />
+                                                    </a>
+                                                </div>
+                                            )}
+
+                                            {/* Task Guidelines / Description */}
+                                            {task.description && (
+                                                <div 
+                                                    className="text-gray-700 dark:text-gray-300 text-sm font-medium leading-relaxed prose prose-invert max-w-none bg-black/[0.02] dark:bg-black/30 p-5 rounded-2xl border border-black/[0.06] dark:border-white/[0.06]" 
+                                                    dangerouslySetInnerHTML={{ __html: task.description }} 
+                                                />
+                                            )}
+
+                                            {/* Task Verification Submissions Dashboard */}
+                                            <div className="space-y-4 pt-2">
+                                                <div className="flex items-center justify-between">
+                                                    <h5 className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest flex items-center gap-2">
+                                                        <CheckCircle2 size={14} className="text-neon-green" /> TASK VERIFICATION & SUBMISSIONS
+                                                    </h5>
+                                                    <div className={cn(
+                                                        "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
+                                                        pendingForTask > 0 
+                                                            ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400 animate-pulse" 
+                                                            : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-500"
+                                                    )}>
+                                                        {pendingForTask} Awaiting Review
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    {approvedCreators.length === 0 ? (
+                                                        <div className="p-8 text-center bg-black/[0.02] dark:bg-black/20 rounded-2xl border border-black/[0.06] dark:border-white/[0.06] text-gray-500 text-xs font-black uppercase tracking-widest space-y-2">
+                                                            <p>No shortlisted creators assigned to this campaign yet.</p>
+                                                            <button 
+                                                                onClick={() => setActiveTab('applicants')} 
+                                                                className="text-neon-green hover:underline text-[10px]"
+                                                            >
+                                                                Go to Applications to shortlist creators →
+                                                            </button>
+                                                        </div>
+                                                    ) : approvedCreators.map(creator => {
+                                                        const sub = task.submissions?.[creator.uid || creator.id];
+                                                        const status = sub?.status || 'not_started';
+                                                        const waNumber = creator.phone ? normalizePhoneNumber(creator.phone) : null;
+                                                        
+                                                        return (
+                                                            <div 
+                                                                key={creator.uid || creator.id} 
+                                                                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white dark:bg-[#0c0e14] rounded-2xl border border-black/[0.08] dark:border-white/[0.08] group hover:border-black/20 dark:hover:border-white/20 transition-all gap-4"
+                                                            >
+                                                                <div className="flex items-center gap-3.5">
+                                                                    <CreatorApplicantAvatar 
+                                                                        creator={creator} 
+                                                                        size="sm"
+                                                                        onClick={() => setSelectedCreatorForModal(creator)} 
+                                                                    />
+                                                                    <div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <p 
+                                                                                onClick={() => setSelectedCreatorForModal(creator)}
+                                                                                className="text-sm font-heading font-black text-gray-950 dark:text-white tracking-tight hover:text-neon-green transition-colors cursor-pointer"
+                                                                            >
+                                                                                {creator.name}
+                                                                            </p>
+                                                                            {creator.instagram && (
+                                                                                <span className="text-[10px] font-bold text-gray-400">
+                                                                                    @{creator.instagram.replace(/^@/, '')}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                                            <span className={cn(
+                                                                                "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase font-mono", 
+                                                                                status === 'approved' ? "bg-emerald-500/15 text-emerald-700 dark:text-neon-green" : 
+                                                                                status === 'submitted' ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 animate-pulse" : 
+                                                                                status === 'rejected' ? "bg-red-500/15 text-red-600 dark:text-red-400" : 
+                                                                                "bg-black/5 dark:bg-white/5 text-gray-500"
+                                                                            )}>
+                                                                                {status === 'submitted' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />}
+                                                                                {status.replace('_', ' ')}
+                                                                            </span>
+                                                                            {sub?.submittedAt && (
+                                                                                <span className="text-[9px] font-mono text-gray-400">
+                                                                                    {new Date(sub.submittedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="flex flex-wrap items-center gap-2.5">
+                                                                    {sub?.submissionUrl && (
+                                                                        <a 
+                                                                            href={sub.submissionUrl} 
+                                                                            target="_blank" 
+                                                                            rel="noreferrer" 
+                                                                            className="h-9 px-3.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-black/10 text-gray-800 dark:text-zinc-200 transition-all"
+                                                                        >
+                                                                            <ExternalLink size={12} /> VIEW PROOF
+                                                                        </a>
+                                                                    )}
+
+                                                                    {status === 'submitted' && (
+                                                                        <div className="flex gap-2">
+                                                                            <button 
+                                                                                onClick={() => onReviewSubmission(campaign.id, task.id, creator.uid || creator.id, 'approved')} 
+                                                                                className="h-9 px-4 rounded-xl bg-emerald-500 text-black border border-transparent flex items-center gap-1.5 hover:bg-emerald-400 transition-all text-[10px] font-black uppercase tracking-wider active:scale-95"
+                                                                                title="Approve Submission"
+                                                                            >
+                                                                                <Check size={13} strokeWidth={3} /> APPROVE
+                                                                            </button>
+                                                                            <button 
+                                                                                onClick={() => onReviewSubmission(campaign.id, task.id, creator.uid || creator.id, 'rejected')} 
+                                                                                className="h-9 px-4 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 flex items-center gap-1.5 hover:bg-red-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-wider active:scale-95"
+                                                                                title="Reject Submission"
+                                                                            >
+                                                                                <X size={13} strokeWidth={3} /> REJECT
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {status === 'not_started' && waNumber && (
+                                                                        <a 
+                                                                            href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Hi ${creator.name}! Gentle reminder from Newbi Entertainment regarding your deliverable "${task.title}" for ${campaign.title}. Please submit your update soon!`)}`}
+                                                                            target="_blank"
+                                                                            rel="noreferrer"
+                                                                            className="h-9 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition-all"
+                                                                            title="Send WhatsApp Nudge"
+                                                                        >
+                                                                            <MessageCircle size={11} /> NUDGE
+                                                                        </a>
+                                                                    )}
                                                                 </div>
                                                             </div>
-
-                                                            <div className="flex flex-wrap items-center gap-3">
-                                                                {sub?.submissionUrl && (
-                                                                    <a href={sub.submissionUrl} target="_blank" rel="noreferrer" className="h-9 px-4 bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 hover:border-black/20 dark:hover:border-white/20 text-gray-800 dark:text-zinc-200 transition-all">
-                                                                        <ExternalLink size={12} /> VIEW SUBMISSION
-                                                                    </a>
-                                                                )}
-                                                                {status === 'submitted' && (
-                                                                    <div className="flex gap-2">
-                                                                        <button 
-                                                                            onClick={() => onReviewSubmission(campaign.id, task.id, creator.uid, 'approved')} 
-                                                                            disabled={isReviewing}
-                                                                            className="h-9 px-4 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-neon-green border border-emerald-500/20 flex items-center gap-1.5 hover:bg-emerald-500/20 transition-all text-[10px] font-black uppercase tracking-wider"
-                                                                            title="Approve Submission"
-                                                                        >
-                                                                            {isReviewing ? <LoadingSpinner size="xs" color="neon-green" /> : <Check size={14} />} APPROVE
-                                                                        </button>
-                                                                        <button 
-                                                                            onClick={() => onReviewSubmission(campaign.id, task.id, creator.uid, 'rejected')} 
-                                                                            disabled={isReviewing}
-                                                                            className="h-9 px-4 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 flex items-center gap-1.5 hover:bg-red-500/20 transition-all text-[10px] font-black uppercase tracking-wider"
-                                                                            title="Reject Submission"
-                                                                        >
-                                                                            {isReviewing ? <LoadingSpinner size="xs" color="red" /> : <X size={14} />} REJECT
-                                                                        </button>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </motion.div>
                 </AnimatePresence>
             </div>
+
+            {/* Creator Detail Modal Viewer */}
+            {selectedCreatorForModal && (
+                <CreatorDetailModal 
+                    creator={selectedCreatorForModal} 
+                    onClose={() => setSelectedCreatorForModal(null)} 
+                />
+            )}
         </motion.div>
     );
 };

@@ -121,7 +121,7 @@ const Navbar = () => {
             {/* Top Navbar */}
             {!hideTopNav && (
                 <nav className={cn(
-                    "fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-full max-w-7xl xl:max-w-[1536px] 2xl:max-w-[1720px] px-4 sm:px-6 lg:px-8 xl:px-12",
+                    "fixed left-1/2 -translate-x-1/2 z-[60] transition-all duration-500 w-full max-w-7xl xl:max-w-[1536px] 2xl:max-w-[1720px] px-4 sm:px-6 lg:px-8 xl:px-12",
                 (maintenanceState.global && user?.role === 'developer') 
                     ? "top-14" 
                     : pinnedAnnouncement 
@@ -129,7 +129,7 @@ const Navbar = () => {
                     : "top-4 md:top-6"
             )}>
                 {/* Redesigned Floating Header Navigation - Unified Glassmorphic Capsule */}
-                <header className="w-full h-16 bg-white/70 dark:bg-zinc-950/35 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] rounded-2xl px-6 md:px-8 flex items-center justify-between shadow-[0_8px_30px_-15px_rgba(0,0,0,0.15)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] select-none">
+                <header className="w-full h-16 bg-white/90 dark:bg-[#0c0e14]/90 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-2xl px-6 md:px-8 flex items-center justify-between shadow-[0_8px_30px_-15px_rgba(0,0,0,0.15)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] select-none">
                     {/* Left: Logo */}
                     <div className="flex items-center gap-3">
                         <Link to={isCreatorRoute ? "/creator" : "/"} className="flex items-center gap-3 group">

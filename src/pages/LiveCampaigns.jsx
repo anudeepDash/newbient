@@ -23,7 +23,7 @@ import {
 import { getCampaignSpotsInfo } from '../lib/utils';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { PREDEFINED_CITIES } from '../lib/constants';
+import { PREDEFINED_CITIES, isCampaignCityMatch } from '../lib/constants';
 import StudioSelect from '../components/ui/StudioSelect';
 import CampaignDetailModal from '../components/creator/CampaignDetailModal';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -131,9 +131,7 @@ const LiveCampaigns = () => {
             const matchesPlatform = selectedPlatform === 'all' || 
                                     (camp.platform || 'instagram').toLowerCase() === selectedPlatform.toLowerCase();
             
-            const matchesCity = selectedCity === 'All' || 
-                                camp.targetCity?.toLowerCase() === 'any' ||
-                                camp.targetCity?.toLowerCase() === selectedCity.toLowerCase();
+            const matchesCity = selectedCity === 'All' || isCampaignCityMatch(camp.targetCity, selectedCity);
 
             return matchesSearch && matchesPlatform && matchesCity;
         });
