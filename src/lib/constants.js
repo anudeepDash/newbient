@@ -232,3 +232,45 @@ export const DEFAULT_CREATOR_GROUPS = [
         order: 14
     }
 ];
+
+export const normalizeCity = (cityStr = '') => {
+    const raw = String(cityStr || '').trim().toLowerCase();
+    if (!raw) return '';
+    if (/^bang[al]*o?re$/i.test(raw) || raw.includes('bengaluru') || raw.includes('bangalore')) return 'bengaluru';
+    if (raw.includes('hyderabad')) return 'hyderabad';
+    if (raw.includes('chandigarh')) return 'chandigarh';
+    if (raw.includes('mumbai') || raw.includes('bombay')) return 'mumbai';
+    if (raw.includes('pune')) return 'pune';
+    if (raw.includes('kolkata') || raw.includes('calcutta')) return 'kolkata';
+    if (raw.includes('kochi') || raw.includes('cochin')) return 'kochi';
+    if (raw.includes('delhi')) return 'delhi';
+    if (raw.includes('bhubaneswar') || raw.includes('bhubaneshwar') || raw.includes('cuttack')) return 'bhubaneswar & cuttack';
+    if (raw.includes('vizag') || raw.includes('visakhapatnam')) return 'vizag';
+    if (raw.includes('surat')) return 'surat';
+    if (raw.includes('ahmedabad')) return 'ahmedabad';
+    if (raw.includes('jaipur')) return 'jaipur';
+    if (raw.includes('chennai') || raw.includes('madras')) return 'chennai';
+    if (raw.includes('goa')) return 'goa';
+    if (raw.includes('indore')) return 'indore';
+    if (raw.includes('lucknow')) return 'lucknow';
+    if (raw.includes('guwahati')) return 'guwahati';
+    if (raw.includes('shillong')) return 'shillong';
+    if (raw.includes('bhopal')) return 'bhopal';
+    if (raw.includes('kolhapur')) return 'kolhapur';
+    return raw;
+};
+
+export const isCampaignCityMatch = (campCity, creatorCity) => {
+    if (!campCity) return true;
+    const c = String(campCity).trim().toLowerCase();
+    if (['any', 'all', 'universal', 'pan-india', 'global', 'remote', '', 'national', 'any hub', 'others', 'pan-india / remote'].includes(c)) {
+        return true;
+    }
+    if (!creatorCity) return false;
+    const normCamp = normalizeCity(campCity);
+    const normCreator = normalizeCity(creatorCity);
+    if (!normCreator) return false;
+    if (normCamp === normCreator) return true;
+    if (normCamp.includes(normCreator) || normCreator.includes(normCamp)) return true;
+    return false;
+};

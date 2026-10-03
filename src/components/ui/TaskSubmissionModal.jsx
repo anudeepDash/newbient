@@ -55,15 +55,24 @@ const TaskSubmissionModal = ({
     taskTypes,
     platforms
 }) => {
-    const [contentLink, setContentLink] = useState('');
+    const status = getSubmissionStatus(task, profileUid);
+    const submission = task?.submissions?.[profileUid] || 
+        (typeof profileUid === 'string' && Object.entries(task?.submissions || {}).find(([k]) => k === profileUid)?.[1]);
+
+    const [contentLink, setContentLink] = useState(submission?.contentLink || '');
     const [proofFile, setProofFile] = useState(null);
+    const [confirmComplete, setConfirmComplete] = useState(false);
     const [copiedCaption, setCopiedCaption] = useState(false);
     const [copiedShare, setCopiedShare] = useState(false);
     const [showManualForm, setShowManualForm] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
 
-    const status = getSubmissionStatus(task, profileUid);
-    const submission = task.submissions?.[profileUid];
+    React.useEffect(() => {
+        if (submission?.contentLink && !contentLink) {
+            setContentLink(submission.contentLink);
+        }
+    }, [submission]);
+
     const isDeadlinePassed = task.deadline && new Date(task.deadline) < new Date();
     const googleFormUrl = getTaskGoogleFormUrl(task);
     
@@ -113,7 +122,7 @@ const TaskSubmissionModal = ({
     return createPortal(
         <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 md:p-10"
+            className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4 md:p-10"
         >
             <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
             
@@ -266,6 +275,25 @@ const TaskSubmissionModal = ({
                                 </div>
                             ) : (
                                 <>
+                                    {status === 'submitted' && (
+                                        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[11px] font-bold text-amber-500 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                                                    <Clock size={12} /> Submission Under Verification
+                                                </span>
+                                                <span className="text-[10px] text-gray-400 font-mono">
+                                                    {submission?.submittedAt ? new Date(submission.submittedAt).toLocaleDateString() : 'Received'}
+                                                </span>
+                                            </div>
+                                            {submission?.contentLink && (
+                                                <p className="text-xs text-gray-700 dark:text-zinc-300 truncate">
+                                                    <span className="text-gray-400 font-mono text-[10px]">Submitted: </span>
+                                                    <span className="font-semibold">{submission.contentLink}</span>
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {status === 'rejected' && submission?.rejectionReason && (
                                         <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl space-y-2">
                                             <div className="flex items-center gap-2 text-red-500">
@@ -315,10 +343,10 @@ const TaskSubmissionModal = ({
                                                     <Button
                                                         type="button"
                                                         onClick={() => onSubmit(task.id, googleFormUrl || 'google_form_submitted', null)}
-                                                        disabled={isSubmitting || status === 'submitted'}
+                                                        disabled={isSubmitting}
                                                         className="w-full sm:w-auto h-11 px-5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-700 dark:text-purple-300 border border-purple-500/40 text-[11px] font-black uppercase font-mono tracking-wider transition-all disabled:opacity-50"
                                                     >
-                                                        {isSubmitting ? <LoadingSpinner size="xs" /> : status === 'submitted' ? 'Marked as Submitted' : 'Mark Task as Submitted'}
+                                                        {isSubmitting ? <LoadingSpinner size="xs" /> : status === 'submitted' ? 'Update / Mark as Submitted' : 'Mark Task as Submitted'}
                                                     </Button>
                                                 </div>
                                             </div>
@@ -363,13 +391,28 @@ const TaskSubmissionModal = ({
                                                             </label>
                                                         </div>
 
-                                                        <Button 
-                                                            onClick={() => onSubmit(task.id, contentLink, proofFile)}
-                                                            disabled={isSubmitting || (!contentLink && !proofFile)}
-                                                            className="w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neon-green dark:hover:text-black text-xs sm:text-sm font-black font-heading uppercase tracking-wider shadow-xl transition-all disabled:opacity-50"
-                                                        >
-                                                            {isSubmitting ? <LoadingSpinner size="xs" color="#000000" /> : status === 'rejected' ? 'Re-verify Submission' : 'Submit Performance'}
-                                                        </Button>
+                                                        <div className="space-y-3">
+                                                            <label className="flex items-center gap-2 cursor-pointer select-none text-[11px] font-mono text-gray-600 dark:text-zinc-400">
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    checked={confirmComplete} 
+                                                                    onChange={e => setConfirmComplete(e.target.checked)}
+                                                                    className="w-4 h-4 rounded border-gray-300 text-neon-green focus:ring-neon-green"
+                                                                />
+                                                                <span>I confirm that I have fulfilled this deliverable</span>
+                                                            </label>
+
+                                                            <Button 
+                                                                onClick={() => {
+                                                                    const linkToSubmit = contentLink.trim() || (confirmComplete ? 'Task completed by creator' : (submission?.contentLink || ''));
+                                                                    onSubmit(task.id, linkToSubmit, proofFile || submission?.proofUrl || null);
+                                                                }}
+                                                                disabled={isSubmitting || (!contentLink.trim() && !proofFile && !confirmComplete && !submission?.contentLink && !submission?.proofUrl)}
+                                                                className="w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neon-green dark:hover:text-black text-xs sm:text-sm font-black font-heading uppercase tracking-wider shadow-xl transition-all disabled:opacity-50"
+                                                            >
+                                                                {isSubmitting ? <LoadingSpinner size="xs" color="#000000" /> : status === 'rejected' ? 'Re-verify Submission' : status === 'submitted' ? 'Update Submission' : 'Submit Performance'}
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -403,13 +446,28 @@ const TaskSubmissionModal = ({
                                                 </label>
                                             </div>
 
-                                            <Button 
-                                                onClick={() => onSubmit(task.id, contentLink, proofFile)}
-                                                disabled={isSubmitting || (!contentLink && !proofFile)}
-                                                className="w-full h-12 sm:h-14 md:h-16 rounded-xl sm:rounded-2xl bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neon-green dark:hover:text-black text-xs sm:text-sm font-black font-heading uppercase tracking-wider shadow-xl transition-all disabled:opacity-50"
-                                            >
-                                                {isSubmitting ? <LoadingSpinner size="xs" color="#000000" /> : status === 'rejected' ? 'Re-verify Submission' : 'Submit Performance'}
-                                            </Button>
+                                            <div className="space-y-3">
+                                                <label className="flex items-center gap-2 cursor-pointer select-none text-[11px] font-mono text-gray-600 dark:text-zinc-400">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={confirmComplete} 
+                                                        onChange={e => setConfirmComplete(e.target.checked)}
+                                                        className="w-4 h-4 rounded border-gray-300 text-neon-green focus:ring-neon-green"
+                                                    />
+                                                    <span>I confirm that I have fulfilled this deliverable</span>
+                                                </label>
+
+                                                <Button 
+                                                    onClick={() => {
+                                                        const linkToSubmit = contentLink.trim() || (confirmComplete ? 'Task completed by creator' : (submission?.contentLink || ''));
+                                                        onSubmit(task.id, linkToSubmit, proofFile || submission?.proofUrl || null);
+                                                    }}
+                                                    disabled={isSubmitting || (!contentLink.trim() && !proofFile && !confirmComplete && !submission?.contentLink && !submission?.proofUrl)}
+                                                    className="w-full h-12 sm:h-14 md:h-16 rounded-xl sm:rounded-2xl bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neon-green dark:hover:text-black text-xs sm:text-sm font-black font-heading uppercase tracking-wider shadow-xl transition-all disabled:opacity-50"
+                                                >
+                                                    {isSubmitting ? <LoadingSpinner size="xs" color="#000000" /> : status === 'rejected' ? 'Re-verify Submission' : status === 'submitted' ? 'Update Submission' : 'Submit Performance'}
+                                                </Button>
+                                            </div>
                                         </div>
                                     )}
                                 </>

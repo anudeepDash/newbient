@@ -108,7 +108,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
     ];
 
     return (
-        <div className="min-h-screen bg-[#fafafa] dark:bg-[#08090d] text-gray-900 dark:text-white pt-32 md:pt-48 pb-32 relative overflow-x-hidden selection:bg-neon-green selection:text-black font-heading transition-colors duration-300">
+        <div className="min-h-screen bg-[#fafafa] dark:bg-[#08090d] text-gray-900 dark:text-white pt-28 md:pt-36 pb-32 relative overflow-x-hidden selection:bg-neon-green selection:text-black font-heading transition-colors duration-300">
 
             {/* Atmospheric Background */}
             <div className="fixed inset-0 z-0 pointer-events-none">

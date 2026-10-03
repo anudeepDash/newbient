@@ -10,12 +10,17 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
     const hasJoined = Boolean(profile && (profile.joinedCampaigns || []).includes(campaign.id));
     const isJoined = type === 'joined' || hasJoined;
     const isShortlisted = profile && (profile.shortlistedCampaigns || []).includes(campaign.id);
-    const uid = profile?.uid;
+    const targetUids = [profile?.uid, profile?.id, profile?.creatorId].filter(Boolean);
     
-    const getSubmissionStatus = (task, creatorUid) => {
-        if (!task.submissions || !creatorUid) return 'not_started';
-        const sub = task.submissions[creatorUid];
-        return sub ? sub.status : 'not_started';
+    const getSubmissionStatus = (task) => {
+        if (!task || targetUids.length === 0) return 'not_started';
+        for (const targetUid of targetUids) {
+            const sub = task.submissions?.[targetUid];
+            if (sub && sub.status) return sub.status;
+            if ((task.verifiedBy || []).includes(targetUid)) return 'approved';
+            if ((task.completedBy || []).includes(targetUid)) return 'submitted';
+        }
+        return 'not_started';
     };
 
     const campaignTasks = campaign.tasks || [];
@@ -26,12 +31,12 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
     let isFullyComplete = false;
     let hasNewTasks = false;
 
-    if (isJoined && uid) {
-        const approvedRequired = requiredTasks.filter(t => getSubmissionStatus(t, uid) === 'approved').length;
-        approvedTotal = campaignTasks.filter(t => getSubmissionStatus(t, uid) === 'approved').length;
+    if (isJoined && targetUids.length > 0) {
+        const approvedRequired = requiredTasks.filter(t => getSubmissionStatus(t) === 'approved').length;
+        approvedTotal = campaignTasks.filter(t => getSubmissionStatus(t) === 'approved').length;
         progress = campaignTasks.length > 0 ? (approvedTotal / campaignTasks.length) * 100 : 0;
         isFullyComplete = requiredTasks.length > 0 && approvedRequired === requiredTasks.length;
-        hasNewTasks = isShortlisted && campaignTasks.some(t => getSubmissionStatus(t, uid) === 'not_started');
+        hasNewTasks = isShortlisted && campaignTasks.some(t => getSubmissionStatus(t) === 'not_started');
     }
 
     const statusLabel = isFullyComplete ? 'Completed' : isShortlisted ? 'Ongoing' : 'Awaiting';

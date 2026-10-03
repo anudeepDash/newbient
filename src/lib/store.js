@@ -6,7 +6,7 @@ import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotifi
 import { normalizePhoneNumber } from './utils';
 import { extractSocialUsername, hasDisallowedLink } from './socialUtils';
 import { safeLocalStorage } from './storage';
-import { DEFAULT_CREATOR_GROUPS } from './constants';
+import { DEFAULT_CREATOR_GROUPS, isCampaignCityMatch } from './constants';
 
 const AUTH_CACHE_KEY = 'nb_auth_session';
 const getCachedSession = () => {
@@ -836,7 +836,37 @@ export const useStore = create((set, get) => ({
         });
         return data;
     }),
-    subscribeToCampaigns: () => get().subscribeToKey('campaigns', 'campaigns'),
+    subscribeToCampaigns: () => get().subscribeToKey('campaigns', 'campaigns', (data) => {
+        return data.sort((a, b) => {
+            // 1. Pinned to top
+            if (Boolean(a.isPinned) !== Boolean(b.isPinned)) {
+                return a.isPinned ? -1 : 1;
+            }
+            // 2. Open campaigns before Closed campaigns
+            const aIsOpen = a.status === 'Open';
+            const bIsOpen = b.status === 'Open';
+            if (aIsOpen !== bIsOpen) {
+                return aIsOpen ? -1 : 1;
+            }
+            // 3. Date added (newest first)
+            const getTs = (c) => {
+                if (!c) return 0;
+                const raw = c.createdAt || c.dateAdded || c.updatedAt;
+                if (!raw) return 0;
+                if (typeof raw === 'number') return raw;
+                if (typeof raw === 'string') {
+                    const p = Date.parse(raw);
+                    return isNaN(p) ? 0 : p;
+                }
+                if (typeof raw === 'object') {
+                    if (typeof raw.toDate === 'function') return raw.toDate().getTime();
+                    if (typeof raw.seconds === 'number') return raw.seconds * 1000;
+                }
+                return 0;
+            };
+            return getTs(b) - getTs(a);
+        });
+    }),
     subscribeToProposals: () => get().subscribeToKey('proposals', 'proposals', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToAgreements: () => get().subscribeToKey('agreements', 'agreements', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToSubscribers: () => get().subscribeToKey('subscribers', 'subscribers'),
@@ -3296,10 +3326,32 @@ export const useStore = create((set, get) => ({
         if (snap.exists()) {
             const data = snap.data();
             const joined = data.joinedCampaigns || [];
+            const shortlisted = data.shortlistedCampaigns || [];
+            
+            const campaign = (get().campaigns || []).find(c => c.id === campaignId);
+            const minFollowers = Number(campaign?.minInstagramFollowers || 0);
+            const creatorFollowers = Number(data.instagramFollowers || 0);
+            const meetsFollowers = creatorFollowers >= minFollowers;
+            const meetsCity = isCampaignCityMatch(campaign?.targetCity, data.city);
+            const shouldAutoShortlist = Boolean(campaign?.autoShortlistEligible) && meetsFollowers && meetsCity;
+
+            const updates = {};
             if (!joined.includes(campaignId)) {
-                await updateDoc(creatorRef, {
-                    joinedCampaigns: [...joined, campaignId]
-                });
+                updates.joinedCampaigns = [...joined, campaignId];
+            }
+            if (shouldAutoShortlist && !shortlisted.includes(campaignId)) {
+                updates.shortlistedCampaigns = [...shortlisted, campaignId];
+            }
+
+            if (Object.keys(updates).length > 0) {
+                await updateDoc(creatorRef, updates);
+                set(state => ({
+                    creators: (state.creators || []).map(c => 
+                        (c.id === uid || c.uid === uid)
+                            ? { ...c, ...updates }
+                            : c
+                    )
+                }));
             }
         }
     },
@@ -3335,13 +3387,23 @@ export const useStore = create((set, get) => ({
             console.error("Error fetching previous campaign status:", err);
         }
 
-        const cleanedUpdates = { ...updates };
+        const cleanedUpdates = {};
+        for (const [key, val] of Object.entries(updates || {})) {
+            if (key !== 'id' && val !== undefined) {
+                cleanedUpdates[key] = val;
+            }
+        }
         if (cleanedUpdates.totalSpots !== undefined) {
             cleanedUpdates.totalSpots = (cleanedUpdates.totalSpots !== '' && cleanedUpdates.totalSpots !== null) ? Number(cleanedUpdates.totalSpots) : null;
         }
         if (cleanedUpdates.spotsLeft !== undefined) {
             cleanedUpdates.spotsLeft = (cleanedUpdates.spotsLeft !== '' && cleanedUpdates.spotsLeft !== null) ? Number(cleanedUpdates.spotsLeft) : null;
         }
+
+        // Optimistically update local Zustand store immediately
+        set(state => ({
+            campaigns: (state.campaigns || []).map(c => c.id === id ? { ...c, ...cleanedUpdates } : c)
+        }));
 
         await updateDoc(doc(db, 'campaigns', id), cleanedUpdates);
 
@@ -3361,9 +3423,9 @@ export const useStore = create((set, get) => ({
     },
 
     // Task Submission & Review (Dynamic Task System)
-    submitTaskProof: async (campaignId, taskId, creatorUid, options = {}) => {
+    submitTaskProof: async (campaignId, taskId, creatorUid, options = {}, maybeProof = '') => {
         const contentLink = typeof options === 'string' ? options : (options?.contentLink || '');
-        const proofUrl = typeof options === 'object' && options !== null ? (options?.proofUrl || '') : (arguments[4] || '');
+        const proofUrl = typeof options === 'object' && options !== null ? (options?.proofUrl || '') : (maybeProof || '');
 
         const { campaigns } = get();
         let campaign = (campaigns || []).find(c => c.id === campaignId);
@@ -3376,9 +3438,9 @@ export const useStore = create((set, get) => ({
         if (!campaign) throw new Error("Campaign not found");
 
         const updatedTasks = (campaign.tasks || []).map(t => {
-            if (t.id === taskId) {
+            if (t.id === taskId || String(t.id) === String(taskId)) {
                 const submissions = { ...(t.submissions || {}) };
-                submissions[creatorUid] = {
+                const submissionData = {
                     status: 'submitted',
                     contentLink: contentLink || '',
                     proofUrl: proofUrl || '',
@@ -3386,8 +3448,11 @@ export const useStore = create((set, get) => ({
                     reviewedAt: null,
                     rejectionReason: ''
                 };
-                // Also add to legacy completedBy for backward compat
-                const completedBy = Array.from(new Set([...(t.completedBy || []), creatorUid]));
+                submissions[creatorUid] = submissionData;
+                if (get().user?.uid && get().user.uid !== creatorUid) {
+                    submissions[get().user.uid] = submissionData;
+                }
+                const completedBy = Array.from(new Set([...(t.completedBy || []), creatorUid, get().user?.uid].filter(Boolean)));
                 return { ...t, submissions, completedBy };
             }
             return t;
@@ -3400,8 +3465,43 @@ export const useStore = create((set, get) => ({
             )
         }));
 
-        // 2. Persist to Firestore
-        await updateDoc(doc(db, 'campaigns', campaignId), { tasks: updatedTasks });
+        // 2. Persist to Firestore with serverless fallback for security rule resilience
+        let directSuccess = false;
+        try {
+            await updateDoc(doc(db, 'campaigns', campaignId), { tasks: updatedTasks });
+            directSuccess = true;
+        } catch (fsErr) {
+            console.warn('[store] Direct updateDoc on campaigns failed, using serverless fallback:', fsErr.message);
+        }
+
+        if (!directSuccess) {
+            try {
+                const res = await fetch('/api/creator-join?action=campaign-task-submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        campaignId,
+                        taskId,
+                        creatorUid,
+                        contentLink,
+                        proofUrl,
+                        updatedTasks
+                    })
+                });
+                if (res.ok) {
+                    const resJson = await res.json();
+                    if (!resJson.success) {
+                        throw new Error(resJson.error || 'Server failed to save task submission');
+                    }
+                } else {
+                    const errJson = await res.json().catch(() => ({}));
+                    throw new Error(errJson.error || 'Failed to save task submission to database');
+                }
+            } catch (apiErr) {
+                console.error('[store] Both direct and serverless task submission failed:', apiErr);
+                throw apiErr;
+            }
+        }
     },
 
     // Alias for submitTaskProof with flexible argument support
@@ -3640,42 +3740,92 @@ export const useStore = create((set, get) => ({
     bulkShortlistCreators: async (campaignId, uidArray, shouldShortlist = true) => {
         const { creators } = get();
         const updatePromises = uidArray.map(async (uid) => {
-            const creator = creators.find(c => c.uid === uid);
+            const creator = (creators || []).find(c => c.uid === uid || c.id === uid);
             if (!creator) return;
+            const docId = creator.id || creator.uid || uid;
 
             const shortlisted = creator.shortlistedCampaigns || [];
             if (shouldShortlist) {
                 if (!shortlisted.includes(campaignId)) {
-                    await updateDoc(doc(db, 'creators', uid), { 
-                        shortlistedCampaigns: [...shortlisted, campaignId] 
-                    });
+                    try {
+                        await updateDoc(doc(db, 'creators', docId), { 
+                            shortlistedCampaigns: [...shortlisted, campaignId] 
+                        });
+                    } catch (fsErr) {
+                        console.warn('[store] Direct bulkShortlistCreators failed, falling back to server API:', fsErr?.message);
+                        await fetch('/api/creator-join?action=creator-update', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: docId, uid: creator.uid || uid, updates: { shortlistedCampaigns: [...shortlisted, campaignId] } })
+                        }).catch(err => console.error('[store] API fallback error:', err));
+                    }
                 }
             } else {
-                await updateDoc(doc(db, 'creators', uid), { 
-                    shortlistedCampaigns: shortlisted.filter(id => id !== campaignId) 
-                });
+                if (shortlisted.includes(campaignId)) {
+                    try {
+                        await updateDoc(doc(db, 'creators', docId), { 
+                            shortlistedCampaigns: shortlisted.filter(id => id !== campaignId) 
+                        });
+                    } catch (fsErr) {
+                        console.warn('[store] Direct bulkShortlistCreators failed, falling back to server API:', fsErr?.message);
+                        await fetch('/api/creator-join?action=creator-update', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: docId, uid: creator.uid || uid, updates: { shortlistedCampaigns: shortlisted.filter(id => id !== campaignId) } })
+                        }).catch(err => console.error('[store] API fallback error:', err));
+                    }
+                }
             }
         });
         await Promise.all(updatePromises);
+        set(state => ({
+            creators: (state.creators || []).map(c => {
+                if (uidArray.includes(c.uid) || uidArray.includes(c.id)) {
+                    const currentShortlisted = c.shortlistedCampaigns || [];
+                    return {
+                        ...c,
+                        shortlistedCampaigns: shouldShortlist
+                            ? Array.from(new Set([...currentShortlisted, campaignId]))
+                            : currentShortlisted.filter(id => id !== campaignId)
+                    };
+                }
+                return c;
+            })
+        }));
     },
 
     toggleShortlistStatus: async (campaignId, creatorUid) => {
         const { creators } = get();
-        const creator = creators.find(c => c.uid === creatorUid);
+        const creator = (creators || []).find(c => c.uid === creatorUid || c.id === creatorUid);
         if (!creator) return;
+        const docId = creator.id || creator.uid || creatorUid;
 
         const shortlisted = creator.shortlistedCampaigns || [];
         const isCurrentlyShortlisted = shortlisted.includes(campaignId);
+        const nextShortlisted = isCurrentlyShortlisted
+            ? shortlisted.filter(id => id !== campaignId)
+            : [...shortlisted, campaignId];
 
-        if (isCurrentlyShortlisted) {
-            await updateDoc(doc(db, 'creators', creatorUid), {
-                shortlistedCampaigns: shortlisted.filter(id => id !== campaignId)
+        try {
+            await updateDoc(doc(db, 'creators', docId), {
+                shortlistedCampaigns: nextShortlisted
             });
-        } else {
-            await updateDoc(doc(db, 'creators', creatorUid), {
-                shortlistedCampaigns: [...shortlisted, campaignId]
-            });
+        } catch (fsErr) {
+            console.warn('[store] Direct toggleShortlistStatus failed, falling back to server API:', fsErr?.message);
+            await fetch('/api/creator-join?action=creator-update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: docId, uid: creator.uid || creatorUid, updates: { shortlistedCampaigns: nextShortlisted } })
+            }).catch(err => console.error('[store] API fallback error:', err));
         }
+
+        set(state => ({
+            creators: (state.creators || []).map(c => 
+                (c.id === docId || c.uid === docId || c.uid === creatorUid)
+                    ? { ...c, shortlistedCampaigns: nextShortlisted }
+                    : c
+            )
+        }));
     },
 
     verifyInstagramFollowers: async (uid, accessToken) => {

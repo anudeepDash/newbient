@@ -28,6 +28,7 @@ const Layout = () => {
         location.pathname === '/admin/blog/create' ||
         location.pathname === '/admin/forms/create' ||
         location.pathname === '/admin/campaigns/create' ||
+        location.pathname.startsWith('/admin/campaigns/edit/') ||
         location.pathname.startsWith('/admin/campaigns/manage/');
 
     const isHeightLockedPage = 

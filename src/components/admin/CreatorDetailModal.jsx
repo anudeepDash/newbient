@@ -376,7 +376,7 @@ const CreatorDetailModal = ({
                         {/* Blurred avatar background */}
                         {avatar && !avatarError && (
                             <div className="absolute inset-0 overflow-hidden">
-                                <img src={avatar} alt="" onError={() => setAvatarError(true)} className="w-full h-full object-cover scale-[2] blur-[80px] opacity-[0.2] saturate-150" />
+                                <img src={avatar} alt="" onError={() => setAvatarError(true)} referrerPolicy="no-referrer" className="w-full h-full object-cover scale-[2] blur-[80px] opacity-[0.2] saturate-150" />
                                 <div className="absolute inset-0 bg-gradient-to-b from-black/[0.02] via-white/50 to-white/95 dark:from-white/[0.02] dark:via-[#0a0c12]/50 dark:to-[#0a0c12]/80" />
                             </div>
                         )}
@@ -388,10 +388,10 @@ const CreatorDetailModal = ({
                                 <div className="relative shrink-0">
                                     <div className={cn(
                                         "w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#0a0c12]",
-                                        bothVerified ? "ring-neon-green/40" : phoneOnly ? "ring-neon-green/30" : "ring-black/[0.08] dark:ring-white/[0.08]"
+                                        bothVerified ? "ring-neon-green/40" : phoneOnly ? "ring-neon-green/30" : "ring-black/[0.08] dark:border-white/[0.08]"
                                     )}>
                                         {avatar && !avatarError ? (
-                                            <img src={avatar} alt={creatorData.name} onError={() => setAvatarError(true)} className="w-full h-full object-cover" />
+                                            <img src={avatar} alt={creatorData.name} onError={() => setAvatarError(true)} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                                         ) : (
                                             <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center font-heading font-black text-2xl sm:text-3xl text-emerald-600 dark:text-neon-green">{creatorData.name?.charAt(0) || 'C'}</div>
                                         )}
