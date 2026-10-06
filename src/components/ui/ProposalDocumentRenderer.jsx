@@ -480,58 +480,12 @@ export default function ProposalDocumentRenderer({
                                 </div>
                             </div>
 
-                            {/* Digital Signatures & Seal if signatureArea is supplied or enabled */}
+                            {/* Digital Signatures & Seal only if explicit signatureArea component supplied */}
                             {signatureArea ? (
                                 <div className="mt-auto border-t border-gray-100 pt-6">
                                     {signatureArea}
                                 </div>
-                            ) : (formData.showSignatures || formData.status === 'Accepted') && (
-                                <div className="mt-auto bg-[#F9FAFB] p-5 rounded-2xl border border-gray-200 space-y-4">
-                                    <div className="grid grid-cols-2 gap-8 items-end">
-                                        <div>
-                                            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-2">PROVIDER AUTHORIZATION</p>
-                                            <div className="h-16 flex items-end">
-                                                {formData.ourSignature ? (
-                                                    <img src={formData.ourSignature} alt="Provider Signature" className="max-h-full object-contain mix-blend-multiply" />
-                                                ) : (
-                                                    <p className="text-xl font-signature text-black opacity-80">Authorized Signatory</p>
-                                                )}
-                                            </div>
-                                            <p className="text-[10px] font-bold uppercase text-gray-700 pt-2 border-t border-gray-200 mt-2">NewBi Entertainment & Marketing LLP</p>
-                                        </div>
-
-                                        <div className="text-right">
-                                            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-2">COUNTERPARTY ACCEPTANCE</p>
-                                            <div className="h-16 flex items-end justify-end">
-                                                {formData.approvalMetadata?.clientSignature || formData.clientSignature ? (
-                                                    <img src={formData.approvalMetadata?.clientSignature || formData.clientSignature} alt="Client Signature" className="max-h-full object-contain mix-blend-multiply" />
-                                                ) : (formData.status === 'Accepted' || formData.approvalMetadata?.signedBy) ? (
-                                                    <p className="text-2xl sm:text-3xl font-signature text-black leading-none select-none">
-                                                        {formData.approvalMetadata?.signedBy || formData.clientName || 'Authorized Signatory'}
-                                                    </p>
-                                                ) : (
-                                                    <p className="text-xs font-mono text-gray-400 italic">Awaiting Digital Signature</p>
-                                                )}
-                                            </div>
-                                            <p className="text-[10px] font-bold uppercase text-gray-700 pt-2 border-t border-gray-200 mt-2">
-                                                {formData.approvalMetadata?.signedBy || formData.clientName || 'Authorized Signatory'}
-                                            </p>
-                                            {formData.status === 'Accepted' && formData.approvalMetadata?.signedAt && (
-                                                <p className="text-[8px] font-mono text-gray-500 mt-1">
-                                                    SIGNED: {new Date(formData.approvalMetadata.signedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                                    {formData.approvalMetadata.ip ? ` · IP: ${formData.approvalMetadata.ip}` : ''}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {(formData.showSeal || formData.status === 'Accepted') && (
-                                        <div className="pt-2 flex justify-end">
-                                            <DocumentSeal type="proposal" date={formData.approvalMetadata?.signedAt} className="w-24 h-24" />
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                            ) : null}
                         </div>
                     )}
 
@@ -743,35 +697,6 @@ export default function ProposalDocumentRenderer({
                                         We'd welcome the opportunity to walk {formData.clientName || 'the client'} through this plan in detail and tailor scope, mix, and budget to the confirmed dates.
                                     </p>
                                 </div>
-
-                                {(formData.status === 'Accepted' || formData.showSignatures) && (
-                                    <div className="grid grid-cols-2 gap-8 items-end pt-6 border-t border-gray-200">
-                                        <div>
-                                            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-2">PROVIDER AUTHORIZATION</p>
-                                            <div className="h-14 flex items-end">
-                                                {formData.ourSignature ? (
-                                                    <img src={formData.ourSignature} alt="Provider Signature" className="max-h-full object-contain mix-blend-multiply" />
-                                                ) : (
-                                                    <p className="text-xl font-signature text-black opacity-80">Authorized Signatory</p>
-                                                )}
-                                            </div>
-                                            <p className="text-[10px] font-bold uppercase text-gray-700 pt-1 border-t border-gray-200 mt-2">NewBi Entertainment & Marketing LLP</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-2">COUNTERPARTY ACCEPTANCE</p>
-                                            <div className="h-14 flex items-end justify-end">
-                                                {formData.approvalMetadata?.clientSignature || formData.clientSignature ? (
-                                                    <img src={formData.approvalMetadata?.clientSignature || formData.clientSignature} alt="Client Signature" className="max-h-full object-contain mix-blend-multiply" />
-                                                ) : (formData.status === 'Accepted' || formData.approvalMetadata?.signedBy) ? (
-                                                    <p className="text-2xl font-signature text-black leading-none">{formData.approvalMetadata?.signedBy || formData.clientName || 'Authorized Signatory'}</p>
-                                                ) : (
-                                                    <p className="text-xs font-mono text-gray-400 italic">Awaiting Digital Signature</p>
-                                                )}
-                                            </div>
-                                            <p className="text-[10px] font-bold uppercase text-gray-700 pt-1 border-t border-gray-200 mt-2">{formData.approvalMetadata?.signedBy || formData.clientName || 'Authorized Signatory'}</p>
-                                        </div>
-                                    </div>
-                                )}
                                 
                                 <div className="flex items-center justify-between border-t border-gray-200 pt-6">
                                     <div>

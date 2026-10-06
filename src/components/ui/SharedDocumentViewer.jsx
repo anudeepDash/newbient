@@ -15,6 +15,7 @@ import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import PdfDocumentViewer from './PdfDocumentViewer';
 
 // Safely render content that might be HTML (e.g. from rich text editor) or plain text
 const renderSafeContent = (rawText) => {
@@ -70,12 +71,19 @@ export default function SharedDocumentViewer({
     onShare,
     onDownloadPDF,
     onOpenAttachments,
+    pdfBlobUrl: externalPdfBlobUrl,
     actionPanel,
     children
 }) {
-    const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
+    const [internalPdfBlobUrl, setInternalPdfBlobUrl] = useState(null);
+    const pdfBlobUrl = internalPdfBlobUrl || externalPdfBlobUrl || null;
     const [pdfViewerFailed, setPdfViewerFailed] = useState(false);
-    const [isLoadingPdf, setIsLoadingPdf] = useState(false);
+    // Start loading if we have an uploaded file that needs blob processing
+    const needsPdfProcessing = Boolean(
+        documentData.isUploaded && documentData.fileUrl &&
+        (documentData.fileType === 'pdf' || documentData.fileUrl.toLowerCase().includes('.pdf') || documentData.fileUrl.includes('/raw/upload/'))
+    );
+    const [isLoadingPdf, setIsLoadingPdf] = useState(needsPdfProcessing);
     const [scale, setScale] = useState(1);
 
     useEffect(() => {
@@ -95,6 +103,7 @@ export default function SharedDocumentViewer({
         let isMounted = true;
         
         if (!documentData.fileUrl || (documentData.fileType !== 'pdf' && !documentData.fileUrl.toLowerCase().includes('.pdf') && !documentData.fileUrl.includes('/raw/upload/'))) {
+            setIsLoadingPdf(false);
             return;
         }
 
@@ -126,88 +135,23 @@ export default function SharedDocumentViewer({
                     } catch (stampErr) {
                         console.warn('Could not embed proposal number into PDF:', stampErr);
                     }
-                } else if (clientSig || ourSig) {
-                    try {
-                        const pdfDoc = await PDFDocument.load(arrayBuffer);
-                        const pages = pdfDoc.getPages();
-                        
-                        let sigImage = null;
-                        if (clientSig && clientSig.startsWith('data:image')) {
-                            try {
-                                const base64Data = clientSig.split(',')[1];
-                                const imgBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-                                sigImage = await pdfDoc.embedPng(imgBytes);
-                            } catch (e) {
-                                console.error("Could not embed client signature", e);
-                            }
-                        }
-                        
-                        let ourSigImage = null;
-                        if (ourSig && ourSig.startsWith('data:image')) {
-                            try {
-                                const base64Data = ourSig.split(',')[1];
-                                const imgBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-                                ourSigImage = await pdfDoc.embedPng(imgBytes);
-                            } catch (e) {
-                                console.error("Could not embed our signature", e);
-                            }
-                        }
-                        
-                        const targetPage = pages[pages.length - 1];
-                        if (targetPage && (sigImage || ourSigImage)) {
-                            const { width } = targetPage.getSize();
-                            const helveticaFont = await pdfDoc.embedFont('Helvetica');
-
-                            if (sigImage) {
-                                targetPage.drawImage(sigImage, {
-                                    x: 50,
-                                    y: 50,
-                                    width: 120,
-                                    height: 60,
-                                });
-                                targetPage.drawText(documentData.clientName ? `${documentData.clientName} (Signed)` : "Client Signature", {
-                                    x: 50,
-                                    y: 35,
-                                    size: 10,
-                                    font: helveticaFont,
-                                });
-                            }
-
-                            if (ourSigImage) {
-                                targetPage.drawImage(ourSigImage, {
-                                    x: width - 170,
-                                    y: 50,
-                                    width: 120,
-                                    height: 60,
-                                });
-                                targetPage.drawText(documentData.senderName || "Newbi Entertainment", {
-                                    x: width - 170,
-                                    y: 35,
-                                    size: 10,
-                                    font: helveticaFont,
-                                });
-                            }
-                        }
-
-                        finalBytes = await pdfDoc.save();
-                    } catch (stampErr) {
-                        console.warn("Could not stamp signatures onto PDF, falling back to original PDF:", stampErr);
-                    }
                 }
+
                 
                 const blob = new Blob([finalBytes], { type: 'application/pdf' });
                 const blobUrl = URL.createObjectURL(blob);
                 
                 if (isMounted) {
-                    setPdfBlobUrl(blobUrl);
+                    setInternalPdfBlobUrl(blobUrl);
                     setIsLoadingPdf(false);
                 }
             } catch (err) {
                 console.error("Error creating PDF blob:", err);
                 if (isMounted) {
                     setIsLoadingPdf(false);
-                    // If fetch failed (e.g. offline/CORS), fallback to direct URL
-                    setPdfBlobUrl(documentData.fileUrl);
+                    // If fetch failed (e.g. offline/CORS), fallback to direct URL as blob
+                    // Create a blob from a direct fetch attempt, or use the URL directly
+                    setInternalPdfBlobUrl(null);
                 }
             }
         };
@@ -216,8 +160,8 @@ export default function SharedDocumentViewer({
 
         return () => {
             isMounted = false;
-            if (pdfBlobUrl) {
-                URL.revokeObjectURL(pdfBlobUrl);
+            if (internalPdfBlobUrl) {
+                URL.revokeObjectURL(internalPdfBlobUrl);
             }
         };
     }, [
@@ -333,7 +277,7 @@ export default function SharedDocumentViewer({
     ];
     const currentLogo = logoOptions.find(l => l.id === documentData.selectedLogo) || logoOptions[0];
 
-    const effectivePdfUrl = pdfBlobUrl || documentData.fileUrl;
+    const effectivePdfUrl = pdfBlobUrl || externalPdfBlobUrl || documentData.fileUrl;
 
     return (
         <div className={cn("min-h-screen bg-[#FAFAFA] dark:bg-[#050505] font-sans text-gray-900 dark:text-gray-100 flex flex-col lg:flex-row", theme.selection)}>
@@ -506,40 +450,57 @@ export default function SharedDocumentViewer({
                 
                 <div className="w-full flex flex-col items-center pb-20 relative z-10">
                     {documentData.isUploaded && (documentData.fileUrl || pdfBlobUrl) ? (
-                        <div className="proposal-page-render w-[794px] max-w-full h-[calc(100vh-6rem)] bg-white relative shadow-[0_60px_120px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col rounded-[2px]">
-                            {isLoadingPdf ? (
-                                <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-zinc-900 text-white">
-                                    <RefreshCw size={28} className={cn("animate-spin", theme.text)} />
-                                    <p className={cn("text-[10px] font-mono uppercase tracking-widest", theme.text)}>
-                                        Rendering document preview...
-                                    </p>
+                        isLoadingPdf ? (
+                            <div className="w-full min-h-[500px] flex flex-col items-center justify-center gap-4 py-24">
+                                <div className="w-16 h-16 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center backdrop-blur-md">
+                                    <RefreshCw size={24} className={cn("animate-spin", theme.text)} />
                                 </div>
+                                <p className={cn("text-[10px] font-mono uppercase tracking-[0.2em]", theme.text)}>
+                                    Preparing document preview...
+                                </p>
+                            </div>
+                        ) : (
+                            Boolean(
+                                (documentData.fileType === 'pdf') ||
+                                (documentData.fileName && documentData.fileName.toLowerCase().endsWith('.pdf')) ||
+                                (effectivePdfUrl && (
+                                    effectivePdfUrl.startsWith('blob:') ||
+                                    effectivePdfUrl.toLowerCase().includes('.pdf') ||
+                                    effectivePdfUrl.includes('/raw/upload/') ||
+                                    effectivePdfUrl.includes('application/pdf')
+                                ))
+                            ) ? (
+                                <PdfDocumentViewer
+                                    pdfUrl={effectivePdfUrl}
+                                    documentData={documentData}
+                                    theme={theme}
+                                    onDownload={() => {
+                                        if (onDownloadPDF) {
+                                            onDownloadPDF(pdfBlobUrl);
+                                        } else {
+                                            const a = document.createElement('a');
+                                            a.href = effectivePdfUrl;
+                                            a.download = documentData.fileName || `${documentData.clientName || 'Document'}.pdf`;
+                                            a.target = '_blank';
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            document.body.removeChild(a);
+                                        }
+                                    }}
+                                    onPrint={() => {
+                                        window.open(effectivePdfUrl, '_blank');
+                                    }}
+                                />
                             ) : (
-                                <>
-                                    <iframe 
-                                        key={effectivePdfUrl}
-                                        src={effectivePdfUrl?.startsWith('blob:') 
-                                            ? effectivePdfUrl 
-                                            : (effectivePdfUrl?.includes('firebasestorage') || effectivePdfUrl?.endsWith('.pdf') 
-                                                ? `${effectivePdfUrl}#view=FitH&toolbar=0&navpanes=0&scrollbar=0` 
-                                                : `https://docs.google.com/viewer?url=${encodeURIComponent(effectivePdfUrl || '')}&embedded=true`)}
-                                        className="w-full h-full border-none bg-white"
-                                        title=""
-                                        onError={() => setPdfViewerFailed(true)}
+                                <div className="proposal-page-render w-[794px] max-w-full bg-white relative shadow-[0_20px_60px_rgba(0,0,0,0.12)] dark:shadow-[0_30px_90px_rgba(0,0,0,0.55)] border border-black/5 dark:border-white/10 overflow-hidden flex flex-col rounded-[2px] p-4">
+                                    <img 
+                                        src={documentData.fileUrl} 
+                                        alt={documentData.fileName || "Uploaded document"} 
+                                        className="w-full h-auto object-contain rounded-[2px]" 
                                     />
-                                    {pdfViewerFailed && (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8 bg-zinc-100 dark:bg-zinc-900">
-                                            <AlertTriangle size={48} className="text-yellow-500 mb-4 opacity-50" />
-                                            <p className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-widest mb-2">Preview Unavailable</p>
-                                            <p className="text-xs text-gray-500 mb-6 max-w-md">The document cannot be previewed natively inline.</p>
-                                            <a href={documentData.fileUrl} target="_blank" rel="noopener noreferrer" className={cn("px-6 py-3 text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-all", theme.bg)}>
-                                                Open Document in New Tab
-                                            </a>
-                                        </div>
-                                    )}
-                                </>
-                            )}
-                        </div>
+                                </div>
+                            )
+                        )
                     ) : (
                         <div className="w-full flex flex-col items-center">
                             {children}
