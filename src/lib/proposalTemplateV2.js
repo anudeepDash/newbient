@@ -183,8 +183,8 @@ export const DEFAULT_V2_PROPOSAL_DATA = {
     closingTitle: '06 · Next Steps',
     closingText: "We'd welcome the opportunity to walk ITW Playworks through this plan in detail and confirm city scope, creator mix, and budget against the final tour schedule and city list.",
     preparedBy: 'NewBi Entertainment & Marketing LLP',
-    showSignatures: true,
-    showSeal: true,
+    showSignatures: false,
+    showSeal: false,
     ourSignature: null,
     clientSignature: null,
     approvalMetadata: null,
@@ -206,6 +206,7 @@ export function normalizeProposalData(raw = {}) {
     return {
         ...DEFAULT_V2_PROPOSAL_DATA,
         ...raw,
+        showSignatures: Boolean(raw.showSignatures),
         templateVersion: 'v2',
         whatsInside: raw.whatsInside || DEFAULT_V2_PROPOSAL_DATA.whatsInside,
         executiveParagraphs: raw.executiveParagraphs || (raw.overview ? [raw.overview] : DEFAULT_V2_PROPOSAL_DATA.executiveParagraphs),
