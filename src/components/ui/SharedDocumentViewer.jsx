@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { PDFDocument } from 'pdf-lib';
 import { embedProposalNumberInPdf } from '../../lib/pdfStampUtils';
 import { Link } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import Share2 from 'lucide-react/dist/esm/icons/share-2';
 import Printer from 'lucide-react/dist/esm/icons/printer';
 import Download from 'lucide-react/dist/esm/icons/download';
@@ -15,7 +17,9 @@ import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import X from 'lucide-react/dist/esm/icons/x';
 import PdfDocumentViewer from './PdfDocumentViewer';
+import DocumentShareModal from './DocumentShareModal';
 
 // Safely render content that might be HTML (e.g. from rich text editor) or plain text
 const renderSafeContent = (rawText) => {
@@ -78,6 +82,9 @@ export default function SharedDocumentViewer({
     const [internalPdfBlobUrl, setInternalPdfBlobUrl] = useState(null);
     const pdfBlobUrl = internalPdfBlobUrl || externalPdfBlobUrl || null;
     const [pdfViewerFailed, setPdfViewerFailed] = useState(false);
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [pdfPagePreview, setPdfPagePreview] = useState(null);
+    const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
     // Start loading if we have an uploaded file that needs blob processing
     const needsPdfProcessing = Boolean(
         documentData.isUploaded && documentData.fileUrl &&
@@ -279,6 +286,134 @@ export default function SharedDocumentViewer({
 
     const effectivePdfUrl = pdfBlobUrl || externalPdfBlobUrl || documentData.fileUrl;
 
+    const handleDownloadPDF = () => {
+        if (onDownloadPDF) {
+            onDownloadPDF(pdfBlobUrl);
+        } else if (documentData.isUploaded) {
+            const a = document.createElement('a');
+            a.href = pdfBlobUrl || documentData.fileUrl;
+            a.download = documentData.fileName || `${documentData.clientName || 'Document'}.pdf`;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } else {
+            window.print();
+        }
+    };
+
+    const handlePrint = () => {
+        if (documentData.isUploaded && (effectivePdfUrl || documentData.fileUrl)) {
+            window.open(effectivePdfUrl || documentData.fileUrl, '_blank');
+        } else {
+            window.print();
+        }
+    };
+
+    const renderSidebarBody = () => (
+        <>
+            {/* Status & Amount */}
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-center gap-3">
+                    <span className={cn("px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border", statusColorClass)}>
+                        <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", statusDotClass)} />
+                        {status}
+                    </span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <Clock size={12} />
+                        {new Date(documentData.createdAt || documentData.invoiceDate || documentData.effectiveDate || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </span>
+                </div>
+                
+                {(documentData.dealValue || documentData.totalOverride || documentData.amount || documentData.commercials?.totalValue || documentData.subtotal) && (
+                    <div>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Commercial Value</p>
+                        <h2 className="text-3xl lg:text-4xl font-black tracking-tighter" style={{ color: theme.primary }}>
+                            ₹{Number(documentData.dealValue || documentData.totalOverride || documentData.amount || documentData.commercials?.totalValue || documentData.subtotal || 0).toLocaleString('en-IN')}
+                        </h2>
+                    </div>
+                )}
+            </div>
+
+            {/* Title & Document Meta */}
+            <div>
+                <h1 className="text-lg lg:text-xl font-black uppercase italic tracking-tight font-heading text-gray-900 dark:text-white leading-tight mb-2">
+                    {title}
+                </h1>
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className={cn("text-[9px] font-black font-mono tracking-widest px-2.5 py-1 rounded-full border", theme.text, theme.bgSubtle, theme.borderSubtle)}>
+                        {docNumber}
+                    </span>
+                </div>
+            </div>
+
+            {/* Entities Info */}
+            <div className="p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 space-y-4">
+                <div>
+                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1.5">Prepared For</p>
+                    <p className="font-bold text-sm leading-tight text-gray-900 dark:text-white">{documentData.clientName || documentData.parties?.secondParty?.name || 'Client'}</p>
+                    {(documentData.clientEmail || documentData.parties?.secondParty?.email) && (
+                        <p className="text-xs text-gray-500 mt-0.5 truncate">{documentData.clientEmail || documentData.parties?.secondParty?.email}</p>
+                    )}
+                </div>
+                <div className="w-full h-px bg-black/5 dark:bg-white/5" />
+                <div>
+                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1.5">Prepared By</p>
+                    <p className="font-bold text-sm leading-tight text-gray-900 dark:text-white">{documentData.senderName || documentData.parties?.firstParty?.name || 'Newbi Entertainment'}</p>
+                    {(documentData.senderEmail || documentData.parties?.firstParty?.email) && (
+                        <p className="text-xs text-gray-500 mt-0.5 truncate">{documentData.senderEmail || documentData.parties?.firstParty?.email}</p>
+                    )}
+                </div>
+            </div>
+
+            {/* Attachments Note */}
+            {documentData.attachments && documentData.attachments.length > 0 && onOpenAttachments && (
+                <button onClick={onOpenAttachments} className="w-full p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 flex items-center justify-between hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors group">
+                    <div className="flex items-center gap-3">
+                        <div className={cn("w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-500 transition-colors", theme.groupHoverText)}>
+                            <Paperclip size={18} />
+                        </div>
+                        <div className="text-left">
+                            <p className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Attachments</p>
+                            <p className="text-[9px] text-gray-500 uppercase tracking-widest">{documentData.attachments.length} Files Included</p>
+                        </div>
+                    </div>
+                    <ArrowRight size={14} className={cn("text-gray-400 group-hover:translate-x-1 transition-all", theme.groupHoverText)} />
+                </button>
+            )}
+
+            {/* Executive Memo / Note if present */}
+            {(documentData.coverDescription || documentData.note) && (
+                <div className="p-4 bg-zinc-100 dark:bg-zinc-900/60 rounded-2xl relative overflow-hidden border border-black/5 dark:border-white/5">
+                    <div className={cn("w-1 h-full absolute left-0 top-0", theme.accentBar)} />
+                    <p className={cn("text-[8px] font-black uppercase tracking-[0.2em] mb-1.5", theme.text)}>{type === 'invoice' ? 'Invoice Note' : type === 'agreement' ? 'Instrument Notice' : 'Memorandum'}</p>
+                    <div className="text-xs font-medium leading-relaxed text-gray-700 dark:text-gray-300">
+                        {renderSafeContent(documentData.coverDescription || documentData.note)}
+                    </div>
+                </div>
+            )}
+
+            {/* Action Panel (e.g. Signature, Status, Payment) */}
+            {actionPanel && (
+                <div className="flex flex-col gap-3">
+                    {actionPanel}
+                </div>
+            )}
+
+            {/* Export / Print Actions */}
+            <div className="flex flex-col gap-3 mt-auto pt-6 border-t border-black/5 dark:border-white/5">
+                <div className="grid grid-cols-2 gap-3">
+                    <button onClick={handleDownloadPDF} disabled={isExporting} className="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-black font-black uppercase tracking-widest text-[10px] rounded-2xl hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg">
+                        <Download size={14} /> {isExporting ? 'Exporting...' : 'Save PDF'}
+                    </button>
+                    <button onClick={handlePrint} className="w-full py-3.5 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center justify-center gap-2 border border-black/5 dark:border-white/5">
+                        <Printer size={14} /> Print
+                    </button>
+                </div>
+            </div>
+        </>
+    );
+
     return (
         <div className={cn("min-h-screen bg-[#FAFAFA] dark:bg-[#050505] font-sans text-gray-900 dark:text-gray-100 flex flex-col lg:flex-row", theme.selection)}>
             <style dangerouslySetInnerHTML={{ __html: `
@@ -299,152 +434,135 @@ export default function SharedDocumentViewer({
                 }
             `}} />
 
-            {/* Left Sidebar / Action Panel */}
+            {/* Mobile Compact Top Bar (< lg) */}
             {!isExporting && (
-                <aside className="print-hidden w-full lg:w-[400px] xl:w-[420px] shrink-0 bg-white dark:bg-[#0A0A0A] border-b lg:border-b-0 lg:border-r border-black/5 dark:border-white/5 flex flex-col h-auto lg:h-screen lg:sticky top-0 z-[100] shadow-[10px_0_40px_rgba(0,0,0,0.03)] dark:shadow-none">
-                    
+                <header className="print-hidden lg:hidden sticky top-0 z-40 bg-white/95 dark:bg-[#0A0A0A]/95 backdrop-blur-md border-b border-black/5 dark:border-white/5 h-14 px-3 sm:px-4 flex items-center justify-between shadow-sm">
+                    {/* Back button */}
+                    <Link to={backLink} className="flex items-center gap-1.5 p-2 rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                        <ArrowLeft size={16} />
+                        <span className="text-[10px] font-black uppercase tracking-wider hidden sm:inline">{isAdmin ? 'Admin' : 'Back'}</span>
+                    </Link>
+
+                    {/* Center Document Overview Dropdown Button */}
+                    <button
+                        onClick={() => setIsMobileDetailsOpen(prev => !prev)}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/5 dark:border-white/5 transition-all max-w-[210px] text-left"
+                    >
+                        <span className={cn("w-2 h-2 rounded-full shrink-0", statusDotClass)} />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[11px] font-black font-mono tracking-tight text-gray-900 dark:text-white truncate leading-none">
+                                {docNumber}
+                            </span>
+                            <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest leading-none mt-0.5 truncate">
+                                {status} • Details
+                            </span>
+                        </div>
+                        <ChevronDown size={13} className={cn("text-gray-400 transition-transform duration-200 shrink-0 ml-0.5", isMobileDetailsOpen && "rotate-180")} />
+                    </button>
+
+                    {/* Quick Right Actions */}
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={handleDownloadPDF}
+                            disabled={isExporting}
+                            className="p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                            title="Download PDF"
+                        >
+                            <Download size={16} />
+                        </button>
+                        <button
+                            onClick={() => {
+                                setIsShareModalOpen(true);
+                                if (onShare) onShare();
+                            }}
+                            className={cn("p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors", theme.hoverText)}
+                            title="Share"
+                        >
+                            <Share2 size={16} />
+                        </button>
+                    </div>
+                </header>
+            )}
+
+            {/* Mobile Collapsible Details Drawer */}
+            <AnimatePresence>
+                {!isExporting && isMobileDetailsOpen && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsMobileDetailsOpen(false)}
+                            className="lg:hidden fixed inset-0 top-14 bg-black/60 backdrop-blur-sm z-40 print-hidden"
+                        />
+                        <motion.div
+                            initial={{ y: -20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: -20, opacity: 0 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                            className="lg:hidden fixed top-14 left-0 right-0 max-h-[85vh] overflow-y-auto bg-white dark:bg-[#0A0A0A] border-b border-black/10 dark:border-white/10 z-50 shadow-2xl p-5 flex flex-col gap-6 custom-scrollbar print-hidden"
+                        >
+                            <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Document Overview</span>
+                                <button
+                                    onClick={() => setIsMobileDetailsOpen(false)}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            {renderSidebarBody()}
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* Mobile Floating Action Indicator (e.g. for signing/approving) */}
+            {!isExporting && actionPanel && !isAccepted && !isMobileDetailsOpen && (
+                <div className="lg:hidden fixed bottom-6 left-4 right-4 z-30 flex justify-center pointer-events-none print-hidden">
+                    <button
+                        onClick={() => setIsMobileDetailsOpen(true)}
+                        className="pointer-events-auto px-5 py-3 rounded-2xl bg-gray-900 text-white dark:bg-white dark:text-black shadow-2xl font-black text-xs uppercase tracking-wider flex items-center gap-2.5 border border-black/10 dark:border-white/10 active:scale-95 transition-transform"
+                    >
+                        <ShieldCheck size={16} />
+                        <span>Review & Authorize</span>
+                        <ChevronDown size={14} className="-rotate-90 text-gray-400" />
+                    </button>
+                </div>
+            )}
+
+            {/* Desktop Left Sidebar (lg+) */}
+            {!isExporting && (
+                <aside className="print-hidden hidden lg:flex w-full lg:w-[400px] xl:w-[420px] shrink-0 bg-white dark:bg-[#0A0A0A] border-r border-black/5 dark:border-white/5 flex-col h-screen sticky top-0 z-[100] shadow-[10px_0_40px_rgba(0,0,0,0.03)] dark:shadow-none">
                     {/* Top Header inside Sidebar */}
                     <div className="h-20 px-6 lg:px-8 flex items-center justify-between border-b border-black/5 dark:border-white/5 shrink-0">
                         <Link to={backLink} className="flex items-center gap-3 text-[10px] font-black text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all uppercase tracking-widest">
                             <ArrowLeft size={16} /> 
                             <span>Back to {isAdmin ? 'Admin' : 'Dashboard'}</span>
                         </Link>
-                        {onShare && (
-                            <button onClick={onShare} className={cn("p-2 text-gray-400 transition-colors", theme.hoverText)} title="Share Document">
-                                <Share2 size={18} />
-                            </button>
-                        )}
+                        <button 
+                            onClick={() => {
+                                setIsShareModalOpen(true);
+                                if (onShare) onShare();
+                            }} 
+                            className={cn("p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/5 dark:border-white/5", theme.hoverText)} 
+                            title="Share Document"
+                        >
+                            <Share2 size={15} />
+                            <span className="text-[10px] font-black uppercase tracking-wider">Share</span>
+                        </button>
                     </div>
 
                     {/* Scrollable Sidebar Content */}
                     <div className="flex-1 overflow-y-auto p-6 lg:p-8 flex flex-col gap-6 custom-scrollbar">
-                        
-                        {/* Status & Amount */}
-                        <div className="flex flex-col gap-4">
-                            <div className="flex flex-wrap items-center gap-3">
-                                <span className={cn("px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border", statusColorClass)}>
-                                    <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", statusDotClass)} />
-                                    {status}
-                                </span>
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                                    <Clock size={12} />
-                                    {new Date(documentData.createdAt || documentData.invoiceDate || documentData.effectiveDate || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                </span>
-                            </div>
-                            
-                            {(documentData.dealValue || documentData.totalOverride || documentData.amount || documentData.commercials?.totalValue || documentData.subtotal) && (
-                                <div>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Commercial Value</p>
-                                    <h2 className="text-3xl lg:text-4xl font-black tracking-tighter" style={{ color: theme.primary }}>
-                                        ₹{Number(documentData.dealValue || documentData.totalOverride || documentData.amount || documentData.commercials?.totalValue || documentData.subtotal || 0).toLocaleString('en-IN')}
-                                    </h2>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Title & Document Meta */}
-                        <div>
-                            <h1 className="text-lg lg:text-xl font-black uppercase italic tracking-tight font-heading text-gray-900 dark:text-white leading-tight mb-2">
-                                {title}
-                            </h1>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className={cn("text-[9px] font-black font-mono tracking-widest px-2.5 py-1 rounded-full border", theme.text, theme.bgSubtle, theme.borderSubtle)}>
-                                    {docNumber}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Entities Info */}
-                        <div className="p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 space-y-4">
-                            <div>
-                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1.5">Prepared For</p>
-                                <p className="font-bold text-sm leading-tight text-gray-900 dark:text-white">{documentData.clientName || documentData.parties?.secondParty?.name || 'Client'}</p>
-                                {(documentData.clientEmail || documentData.parties?.secondParty?.email) && (
-                                    <p className="text-xs text-gray-500 mt-0.5 truncate">{documentData.clientEmail || documentData.parties?.secondParty?.email}</p>
-                                )}
-                            </div>
-                            <div className="w-full h-px bg-black/5 dark:bg-white/5" />
-                            <div>
-                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1.5">Prepared By</p>
-                                <p className="font-bold text-sm leading-tight text-gray-900 dark:text-white">{documentData.senderName || documentData.parties?.firstParty?.name || 'Newbi Entertainment'}</p>
-                                {(documentData.senderEmail || documentData.parties?.firstParty?.email) && (
-                                    <p className="text-xs text-gray-500 mt-0.5 truncate">{documentData.senderEmail || documentData.parties?.firstParty?.email}</p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Attachments Note */}
-                        {documentData.attachments && documentData.attachments.length > 0 && onOpenAttachments && (
-                            <button onClick={onOpenAttachments} className="w-full p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 flex items-center justify-between hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors group">
-                                <div className="flex items-center gap-3">
-                                    <div className={cn("w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-500 transition-colors", theme.groupHoverText)}>
-                                        <Paperclip size={18} />
-                                    </div>
-                                    <div className="text-left">
-                                        <p className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Attachments</p>
-                                        <p className="text-[9px] text-gray-500 uppercase tracking-widest">{documentData.attachments.length} Files Included</p>
-                                    </div>
-                                </div>
-                                <ArrowRight size={14} className={cn("text-gray-400 group-hover:translate-x-1 transition-all", theme.groupHoverText)} />
-                            </button>
-                        )}
-
-                        {/* Executive Memo / Note if present */}
-                        {(documentData.coverDescription || documentData.note) && (
-                            <div className="p-4 bg-zinc-100 dark:bg-zinc-900/60 rounded-2xl relative overflow-hidden border border-black/5 dark:border-white/5">
-                                <div className={cn("w-1 h-full absolute left-0 top-0", theme.accentBar)} />
-                                <p className={cn("text-[8px] font-black uppercase tracking-[0.2em] mb-1.5", theme.text)}>{type === 'invoice' ? 'Invoice Note' : type === 'agreement' ? 'Instrument Notice' : 'Memorandum'}</p>
-                                <div className="text-xs font-medium leading-relaxed text-gray-700 dark:text-gray-300">
-                                    {renderSafeContent(documentData.coverDescription || documentData.note)}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Action Panel (e.g. Signature, Status, Payment) */}
-                        {actionPanel && (
-                            <div className="flex flex-col gap-3">
-                                {actionPanel}
-                            </div>
-                        )}
-
-                        {/* Export / Print Actions */}
-                        <div className="flex flex-col gap-3 mt-auto pt-6 border-t border-black/5 dark:border-white/5">
-                            <div className="grid grid-cols-2 gap-3">
-                                <button onClick={() => {
-                                    if (onDownloadPDF) {
-                                        onDownloadPDF(pdfBlobUrl);
-                                    } else if (documentData.isUploaded) {
-                                        const a = document.createElement('a');
-                                        a.href = pdfBlobUrl || documentData.fileUrl;
-                                        a.download = documentData.fileName || `${documentData.clientName || 'Document'}.pdf`;
-                                        a.target = '_blank';
-                                        document.body.appendChild(a);
-                                        a.click();
-                                        document.body.removeChild(a);
-                                    } else {
-                                        window.print();
-                                    }
-                                }} disabled={isExporting} className="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-black font-black uppercase tracking-widest text-[10px] rounded-2xl hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg">
-                                    <Download size={14} /> {isExporting ? 'Exporting...' : 'Save PDF'}
-                                </button>
-                                <button onClick={() => {
-                                    if (documentData.isUploaded && (effectivePdfUrl || documentData.fileUrl)) {
-                                        window.open(effectivePdfUrl || documentData.fileUrl, '_blank');
-                                    } else {
-                                        window.print();
-                                    }
-                                }} className="w-full py-3.5 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center justify-center gap-2 border border-black/5 dark:border-white/5">
-                                    <Printer size={14} /> Print
-                                </button>
-                            </div>
-                        </div>
-
+                        {renderSidebarBody()}
                     </div>
                 </aside>
             )}
 
             {/* Document Viewer Area (Right Panel) */}
-            <main className="flex-1 relative overflow-y-auto min-h-[500px] lg:h-screen bg-[#F3F4F6] dark:bg-[#0B0F17] flex items-start justify-center p-4 md:p-8 lg:p-12 custom-scrollbar">
+            <main className="flex-1 relative overflow-y-auto min-h-[500px] lg:h-screen bg-[#F3F4F6] dark:bg-[#0B0F17] flex items-start justify-center p-2 sm:p-4 md:p-8 lg:p-12 custom-scrollbar">
                 {/* Subtle Background Pattern */}
                 <div className="absolute inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.02]" style={{ backgroundImage: "radial-gradient(circle at center, black 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
                 
@@ -474,6 +592,7 @@ export default function SharedDocumentViewer({
                                     pdfUrl={effectivePdfUrl}
                                     documentData={documentData}
                                     theme={theme}
+                                    onFirstPageRendered={setPdfPagePreview}
                                     onDownload={() => {
                                         if (onDownloadPDF) {
                                             onDownloadPDF(pdfBlobUrl);
@@ -508,6 +627,16 @@ export default function SharedDocumentViewer({
                     )}
                 </div>
             </main>
+
+            {/* Document Share & Social Link Preview Modal */}
+            <DocumentShareModal
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                documentData={documentData}
+                type={type}
+                pdfPagePreview={pdfPagePreview}
+                theme={theme}
+            />
         </div>
     );
 }

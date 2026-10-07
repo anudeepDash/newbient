@@ -23,6 +23,8 @@ import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
 import NotificationBell from '../components/NotificationBell';
 import MarkAsPaidModal from '../components/invoice/MarkAsPaidModal';
+import useDynamicMeta from '../hooks/useDynamicMeta';
+import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
 import { notifyAdmins } from '../lib/notificationTriggers';
 
 
@@ -222,19 +224,13 @@ const Invoice = () => {
         customColumns: []
     };
 
-    React.useEffect(() => {
-        if (displayInvoice) {
-            const originalTitle = document.title;
-            const name = displayInvoice.clientName 
-                ? `${displayInvoice.clientName} - ${displayInvoice.invoiceNumber || displayInvoice.id}`
-                : (displayInvoice.invoiceNumber || 'Invoice');
-            document.title = `${name} | Document Viewer`;
-            
-            return () => {
-                document.title = originalTitle;
-            };
-        }
-    }, [displayInvoice]);
+    const invoiceShareMeta = getDocumentShareMeta(displayInvoice, 'invoice');
+    useDynamicMeta({
+        title: invoiceShareMeta.title,
+        description: invoiceShareMeta.description,
+        image: invoiceShareMeta.previewImage,
+        url: typeof window !== 'undefined' ? window.location.href : undefined
+    });
 
     if (loading) {
         return (

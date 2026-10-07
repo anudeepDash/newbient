@@ -33,7 +33,8 @@ const SinglePdfPage = React.memo(function SinglePdfPage({
     containerWidth,
     onVisible,
     totalPages,
-    theme
+    theme,
+    onFirstPageRendered
 }) {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
@@ -42,26 +43,42 @@ const SinglePdfPage = React.memo(function SinglePdfPage({
     const [isRendered, setIsRendered] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
 
-    // Track visibility to only render pages near viewport
+    // Track visibility to render pages when approaching viewport
     useEffect(() => {
         const el = containerRef.current;
         if (!el) return;
 
-        const observer = new IntersectionObserver(
+        const renderObserver = new IntersectionObserver(
             (entries) => {
                 const entry = entries[0];
                 if (entry.isIntersecting) {
                     setIsVisible(true);
-                    if (onVisible) onVisible(pageNumber);
-                } else {
-                    // Keep rendered once loaded, but don't re-render off-screen
                 }
             },
-            { rootMargin: '400px 0px 400px 0px', threshold: 0.1 }
+            { rootMargin: '600px 0px 600px 0px', threshold: 0.01 }
         );
 
-        observer.observe(el);
-        return () => observer.disconnect();
+        renderObserver.observe(el);
+        return () => renderObserver.disconnect();
+    }, []);
+
+    // Track active page currently in the center focus area of the viewport
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el || !onVisible) return;
+
+        const activeObserver = new IntersectionObserver(
+            (entries) => {
+                const entry = entries[0];
+                if (entry.isIntersecting) {
+                    onVisible(pageNumber);
+                }
+            },
+            { rootMargin: '-30% 0px -30% 0px', threshold: 0 }
+        );
+
+        activeObserver.observe(el);
+        return () => activeObserver.disconnect();
     }, [pageNumber, onVisible]);
 
     // Initial page dimension probe
@@ -133,6 +150,14 @@ const SinglePdfPage = React.memo(function SinglePdfPage({
 
                 if (!isCancelled) {
                     setIsRendered(true);
+                    if (pageNumber === 1 && onFirstPageRendered && canvasRef.current) {
+                        try {
+                            const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.85);
+                            onFirstPageRendered(dataUrl);
+                        } catch (e) {
+                            // ignore cross-origin canvas security errors
+                        }
+                    }
                 }
             } catch (err) {
                 if (err?.name !== 'RenderingCancelledException') {
@@ -162,7 +187,7 @@ const SinglePdfPage = React.memo(function SinglePdfPage({
         <div
             id={`pdf-page-${pageNumber}`}
             ref={containerRef}
-            className="group relative flex flex-col items-center transition-all duration-300"
+            className="group relative flex flex-col items-center mb-4 sm:mb-8 transition-all duration-300"
             style={{ width: `${targetWidth}px` }}
         >
             {/* White Paper Canvas Card */}
@@ -189,13 +214,6 @@ const SinglePdfPage = React.memo(function SinglePdfPage({
                     </div>
                 )}
             </div>
-
-            {/* Subtle page indicator badge below page */}
-            <div className="mt-3 mb-8 flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                <span className="text-[9px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 text-gray-500 dark:text-gray-400">
-                    Page {pageNumber} of {totalPages}
-                </span>
-            </div>
         </div>
     );
 });
@@ -206,7 +224,8 @@ export default function PdfDocumentViewer({
     documentData = {},
     theme = { primary: '#39FF14', text: 'text-neon-green', bg: 'bg-neon-green' },
     onDownload,
-    onPrint
+    onPrint,
+    onFirstPageRendered
 }) {
     const [pdfDoc, setPdfDoc] = useState(null);
     const [numPages, setNumPages] = useState(0);
@@ -218,6 +237,7 @@ export default function PdfDocumentViewer({
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [containerWidth, setContainerWidth] = useState(794);
     const containerRef = useRef(null);
+    const [hudCenter, setHudCenter] = useState(null);
 
     // Responsive container measurement
     useEffect(() => {
@@ -283,22 +303,75 @@ export default function PdfDocumentViewer({
     const handleZoomOut = () => setZoom(prev => Math.max(0.6, +(prev - 0.15).toFixed(2)));
     const handleResetZoom = () => setZoom(1);
 
-    // Jump to page
+    const isProgrammaticScrollRef = useRef(false);
+    const scrollTimeoutRef = useRef(null);
+
+    useEffect(() => {
+        return () => {
+            if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+        };
+    }, []);
+
+    const handlePageVisible = useCallback((pageNum) => {
+        if (isProgrammaticScrollRef.current) return;
+        setCurrentPage(pageNum);
+    }, []);
+
+    // Jump to page reliably across mobile (window scroll) and desktop (main scroll)
     const scrollToPage = useCallback((pageNum) => {
         setCurrentPage(pageNum);
+        isProgrammaticScrollRef.current = true;
+        if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = setTimeout(() => {
+            isProgrammaticScrollRef.current = false;
+        }, 800);
+
         const el = document.getElementById(`pdf-page-${pageNum}`);
-        if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (!el) return;
+
+        // Detect if an ancestor container has an active scrollbar
+        let scrollParent = null;
+        let curr = el.parentElement;
+        while (curr && curr !== document.body && curr !== document.documentElement) {
+            const style = window.getComputedStyle(curr);
+            const overflowY = style.overflowY;
+            if ((overflowY === 'auto' || overflowY === 'scroll') && curr.scrollHeight > curr.clientHeight + 4) {
+                scrollParent = curr;
+                break;
+            }
+            curr = curr.parentElement;
+        }
+
+        if (scrollParent) {
+            // Container with scrollbar (e.g. desktop <main>)
+            const parentRect = scrollParent.getBoundingClientRect();
+            const elRect = el.getBoundingClientRect();
+            const targetTop = scrollParent.scrollTop + (elRect.top - parentRect.top) - 16;
+            scrollParent.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+        } else {
+            // Mobile viewport where window/body is the scrolling element
+            const elRect = el.getBoundingClientRect();
+            const currentY = window.pageYOffset || document.documentElement.scrollTop;
+            const targetTop = currentY + elRect.top - 68; // 68px leaves 12px breathing room below 56px sticky header
+            window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
         }
     }, []);
 
-    const handlePrevPage = () => {
-        if (currentPage > 1) scrollToPage(currentPage - 1);
-    };
+    const handlePrevPage = useCallback((e) => {
+        e?.stopPropagation?.();
+        e?.preventDefault?.();
+        if (currentPage > 1) {
+            scrollToPage(currentPage - 1);
+        }
+    }, [currentPage, scrollToPage]);
 
-    const handleNextPage = () => {
-        if (currentPage < numPages) scrollToPage(currentPage + 1);
-    };
+    const handleNextPage = useCallback((e) => {
+        e?.stopPropagation?.();
+        e?.preventDefault?.();
+        if (currentPage < numPages) {
+            scrollToPage(currentPage + 1);
+        }
+    }, [currentPage, numPages, scrollToPage]);
 
     // Fullscreen toggle
     const toggleFullscreen = () => {
@@ -318,6 +391,60 @@ export default function PdfDocumentViewer({
         document.addEventListener('fullscreenchange', handleFsChange);
         return () => document.removeEventListener('fullscreenchange', handleFsChange);
     }, []);
+
+    // Calculate and track the exact horizontal center of the PDF document
+    const updateHudPosition = useCallback(() => {
+        if (isFullscreen) {
+            setHudCenter(window.innerWidth / 2);
+            return;
+        }
+
+        // Target the active PDF page canvas/wrapper or the viewer container
+        const pageEl = document.getElementById(`pdf-page-${currentPage}`) || document.getElementById('pdf-page-1') || containerRef.current;
+        if (pageEl) {
+            const rect = pageEl.getBoundingClientRect();
+            if (rect.width > 0) {
+                setHudCenter(rect.left + rect.width / 2);
+                return;
+            }
+        }
+
+        if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            if (rect.width > 0) {
+                setHudCenter(rect.left + rect.width / 2);
+            }
+        }
+    }, [currentPage, isFullscreen]);
+
+    useEffect(() => {
+        updateHudPosition();
+        const rafId = requestAnimationFrame(updateHudPosition);
+
+        const handleResizeOrScroll = () => {
+            updateHudPosition();
+        };
+
+        window.addEventListener('resize', handleResizeOrScroll);
+
+        const scrollParent = containerRef.current?.closest('main') || window;
+        scrollParent.addEventListener('scroll', handleResizeOrScroll, { passive: true });
+
+        let ro = null;
+        if (typeof ResizeObserver !== 'undefined' && containerRef.current) {
+            ro = new ResizeObserver(() => {
+                updateHudPosition();
+            });
+            ro.observe(containerRef.current);
+        }
+
+        return () => {
+            cancelAnimationFrame(rafId);
+            window.removeEventListener('resize', handleResizeOrScroll);
+            scrollParent.removeEventListener('scroll', handleResizeOrScroll);
+            if (ro) ro.disconnect();
+        };
+    }, [updateHudPosition, zoom, numPages]);
 
     // Error State Fallback
     if (error) {
@@ -381,21 +508,131 @@ export default function PdfDocumentViewer({
                             zoom={zoom}
                             containerWidth={containerWidth}
                             totalPages={numPages}
-                            onVisible={setCurrentPage}
+                            onVisible={handlePageVisible}
                             theme={theme}
+                            onFirstPageRendered={onFirstPageRendered}
                         />
                     ))}
                 </div>
             )}
 
-            {/* Floating Glassmorphic Viewer Controls HUD */}
+            {/* Mobile Sleek Floating Bottom Control Pill (< md) */}
             {!isLoading && pdfDoc && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300">
+                <div className="md:hidden fixed bottom-4 inset-x-0 flex justify-center z-40 px-4 pointer-events-none select-none">
+                    <div className="pointer-events-auto bg-zinc-950/85 dark:bg-black/90 backdrop-blur-2xl border border-white/15 text-white shadow-[0_12px_36px_rgba(0,0,0,0.6)] rounded-full px-3.5 py-1.5 flex items-center gap-2.5">
+                        {/* Prev Page Button */}
+                        <button
+                            type="button"
+                            onClick={handlePrevPage}
+                            disabled={currentPage <= 1}
+                            className="p-1 rounded-full text-gray-300 hover:text-white hover:bg-white/10 active:scale-95 disabled:opacity-20 disabled:hover:bg-transparent transition-all"
+                            title="Previous Page"
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+
+                        {/* Interactive Page Scrubber & Trigger */}
+                        <button
+                            onClick={() => setShowThumbnails(!showThumbnails)}
+                            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 hover:bg-white/15 active:scale-95 border border-white/10 transition-all"
+                            title="Browse all pages"
+                        >
+                            <span className="text-xs font-mono font-bold tracking-tight">
+                                {currentPage} <span className="opacity-40 font-normal">/</span> {numPages}
+                            </span>
+                            <LayoutGrid size={11} className={cn("ml-0.5", theme.text)} />
+                        </button>
+
+                        {/* Next Page Button */}
+                        <button
+                            type="button"
+                            onClick={handleNextPage}
+                            disabled={currentPage >= numPages}
+                            className="p-1 rounded-full text-gray-300 hover:text-white hover:bg-white/10 active:scale-95 disabled:opacity-20 disabled:hover:bg-transparent transition-all"
+                            title="Next Page"
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Mobile Slide-Up Thumbnails Sheet (< md) */}
+            {showThumbnails && (
+                <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end">
+                    <div 
+                        onClick={() => setShowThumbnails(false)} 
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in"
+                    />
+                    <div className="relative bg-zinc-950/95 border-t border-white/15 rounded-t-3xl max-h-[75vh] flex flex-col p-5 shadow-2xl z-10 animate-in slide-in-from-bottom duration-200">
+                        <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+                            <div className="flex items-center gap-2">
+                                <LayoutGrid size={16} className={cn(theme.text)} />
+                                <h4 className="text-xs font-black uppercase tracking-wider text-white">All Pages ({numPages})</h4>
+                            </div>
+                            <button
+                                onClick={() => setShowThumbnails(false)}
+                                className="p-1.5 text-gray-400 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-3 overflow-y-auto max-h-[50vh] custom-scrollbar p-1 pb-4">
+                            {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => (
+                                <button
+                                    key={pageNum}
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        scrollToPage(pageNum);
+                                        setShowThumbnails(false);
+                                    }}
+                                    className={cn(
+                                        "h-24 w-full rounded-2xl border flex flex-col items-center justify-center gap-1.5 p-2 transition-all active:scale-95 select-none relative",
+                                        currentPage === pageNum
+                                            ? "bg-neon-green/15 border-neon-green text-white shadow-lg shadow-neon-green/10 ring-1 ring-neon-green"
+                                            : "bg-white/[0.04] border-white/10 text-gray-400 hover:bg-white/[0.08] hover:text-white"
+                                    )}
+                                >
+                                    <span className={cn(
+                                        "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-mono font-bold shrink-0",
+                                        currentPage === pageNum ? "bg-neon-green text-black shadow-sm" : "bg-white/10 text-gray-200"
+                                    )}>
+                                        {pageNum}
+                                    </span>
+                                    <span className="text-[11px] font-bold tracking-tight text-white/90">
+                                        Page {pageNum}
+                                    </span>
+                                    {currentPage === pageNum && (
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-neon-green">
+                                            Current
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Desktop Floating Glassmorphic Viewer Controls HUD (md+) */}
+            {!isLoading && pdfDoc && (
+                <div 
+                    style={{ left: hudCenter != null ? `${hudCenter}px` : undefined }}
+                    className={cn(
+                        "hidden md:block fixed bottom-6 z-50 transition-[bottom,opacity] duration-200 -translate-x-1/2",
+                        isFullscreen 
+                            ? "left-1/2" 
+                            : "left-1/2 lg:left-[calc(50%+200px)] xl:left-[calc(50%+210px)]"
+                    )}
+                >
                     <div className="bg-zinc-950/80 dark:bg-black/85 backdrop-blur-2xl border border-white/15 text-white shadow-[0_20px_50px_rgba(0,0,0,0.55)] rounded-full px-4 py-2 flex items-center gap-2 select-none">
                         
                         {/* Page Navigation */}
                         <div className="flex items-center gap-1 border-r border-white/10 pr-2">
                             <button
+                                type="button"
                                 onClick={handlePrevPage}
                                 disabled={currentPage <= 1}
                                 className="p-1.5 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
@@ -407,6 +644,7 @@ export default function PdfDocumentViewer({
                                 {currentPage} <span className="opacity-40">/</span> {numPages}
                             </span>
                             <button
+                                type="button"
                                 onClick={handleNextPage}
                                 disabled={currentPage >= numPages}
                                 className="p-1.5 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
@@ -481,9 +719,9 @@ export default function PdfDocumentViewer({
                 </div>
             )}
 
-            {/* Slide-out Thumbnails Drawer */}
+            {/* Slide-out Thumbnails Drawer (md+) */}
             {showThumbnails && (
-                <div className="fixed inset-y-0 right-0 z-50 w-72 bg-zinc-950/90 backdrop-blur-2xl border-l border-white/10 shadow-2xl p-6 flex flex-col transition-all duration-300 animate-in slide-in-from-right">
+                <div className="hidden md:flex fixed inset-y-0 right-0 z-50 w-72 bg-zinc-950/90 backdrop-blur-2xl border-l border-white/10 shadow-2xl p-6 flex-col transition-all duration-300 animate-in slide-in-from-right">
                     <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
                         <div className="flex items-center gap-2">
                             <LayoutGrid size={16} className="text-neon-green" />
