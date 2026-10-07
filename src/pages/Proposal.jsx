@@ -47,6 +47,8 @@ import SignatureModal from '../components/ui/SignatureModal';
 import NotificationBell from '../components/NotificationBell';
 import { getV2PaginatedPages, normalizeProposalData } from '../lib/proposalTemplateV2';
 import ProposalDocumentRenderer from '../components/ui/ProposalDocumentRenderer';
+import useDynamicMeta from '../hooks/useDynamicMeta';
+import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
 
 const isHtmlEmpty = (html) => {
     if (!html) return true;
@@ -477,19 +479,13 @@ const Proposal = () => {
         fetchIpAndLog();
     }, [id, isAdmin, proposal, user, location.search]);
 
-    useEffect(() => {
-        if (displayProposal) {
-            const originalTitle = document.title;
-            const name = displayProposal.clientName 
-                ? `${displayProposal.clientName} - ${displayProposal.proposalNumber || displayProposal.id}`
-                : (displayProposal.proposalNumber || 'Proposal');
-            document.title = `${name} | Proposal Viewer`;
-            
-            return () => {
-                document.title = originalTitle;
-            };
-        }
-    }, [displayProposal]);
+    const proposalShareMeta = getDocumentShareMeta(displayProposal, 'proposal');
+    useDynamicMeta({
+        title: proposalShareMeta.title,
+        description: proposalShareMeta.description,
+        image: proposalShareMeta.previewImage,
+        url: typeof window !== 'undefined' ? window.location.href : undefined
+    });
 
     if (loading) {
         return (
@@ -676,23 +672,6 @@ const Proposal = () => {
         }
     };
 
-    const handleShare = async () => {
-        const url = window.location.href;
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: `Strategic Proposal - ${displayProposal.clientName}`,
-                    text: `View our Strategic Memorandum for ${displayProposal.campaignName}.`,
-                    url: url
-                });
-            } catch (err) {
-                console.error("Share failed:", err);
-            }
-        } else {
-            navigator.clipboard.writeText(url);
-            useStore.getState().addToast("Link copied to clipboard!", 'success');
-        }
-    };
 
     const isHidden = (f) => (displayProposal.hiddenFields || []).includes(f);
 
@@ -1276,7 +1255,6 @@ const Proposal = () => {
                 type="proposal"
                 isAdmin={isAdmin}
                 isExporting={isExporting}
-                onShare={handleShare}
                 onDownloadPDF={handleDownloadPDF}
                 pdfBlobUrl={pdfBlobUrl}
                 onOpenAttachments={displayProposal.attachments?.length > 0 ? () => setIsAttachmentDrawerOpen(true) : null}

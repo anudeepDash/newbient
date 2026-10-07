@@ -25,6 +25,8 @@ import jsPDF from 'jspdf';
 import DocumentSeal from '../components/ui/DocumentSeal';
 import SharedDocumentViewer from '../components/ui/SharedDocumentViewer';
 import SignatureModal from '../components/ui/SignatureModal';
+import useDynamicMeta from '../hooks/useDynamicMeta';
+import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
 
 const inlineFmt = (t) => t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
 
@@ -205,18 +207,13 @@ const Agreement = () => {
         fetchIpAndLog();
     }, [id, isAdmin, displayAgreement, user, location.search]);
 
-    useEffect(() => {
-        if (displayAgreement) {
-            const originalTitle = document.title;
-            const clientName = displayAgreement.parties?.secondParty?.name || 'Client';
-            const name = `${clientName} - ${displayAgreement.agreementNumber || displayAgreement.id}`;
-            document.title = `${name} | Agreement Viewer`;
-            
-            return () => {
-                document.title = originalTitle;
-            };
-        }
-    }, [displayAgreement]);
+    const agreementShareMeta = getDocumentShareMeta(displayAgreement, 'agreement');
+    useDynamicMeta({
+        title: agreementShareMeta.title,
+        description: agreementShareMeta.description,
+        image: agreementShareMeta.previewImage,
+        url: typeof window !== 'undefined' ? window.location.href : undefined
+    });
 
     if (!displayAgreement) return (
         <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">

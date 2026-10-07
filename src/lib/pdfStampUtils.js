@@ -205,44 +205,42 @@ export async function embedProposalNumberInPdf(pdfData, proposalNumber, options 
             color: rgb(0, 0, 0), // solid black
         });
 
-        // =========================================================================
-        // 2. ADDITIONAL QUOTE REFERENCE REPLACEMENT (Cover page & Closing page)
-        // =========================================================================
-        // Cover page (Page 1): Quote Reference at x = 60.5, y = 174.6
+        // Clean up any historical stamp over "PREPARED BY" on page 1
         if (i === 0) {
             page.drawRectangle({
-                x: 58,
-                y: 166,
-                width: 130,
-                height: 22,
+                x: 54,
+                y: 164,
+                width: 155,
+                height: 24,
                 color: rgb(1, 1, 1),
             });
-            page.drawText(propNum, {
-                x: 60.5,
-                y: 174.6,
-                size: 10.5,
+            const senderLabel = options.senderName || 'Newbi Entertainment & Marketing LLP';
+            page.drawText(senderLabel, {
+                x: 54,
+                y: 173.5,
+                size: 9.5,
                 font: fontBold,
                 color: rgb(0, 0, 0),
             });
         }
+    }
 
-        // Closing page (Last page): Quote Reference at x = 311.45, y = 549.55
-        if (i === pages.length - 1) {
-            page.drawRectangle({
-                x: 308,
-                y: 541,
-                width: 130,
-                height: 22,
-                color: rgb(1, 1, 1),
-            });
-            page.drawText(propNum, {
-                x: 311.45,
-                y: 549.55,
-                size: 10.5,
-                font: fontBold,
-                color: rgb(0, 0, 0),
-            });
-        }
+    // =========================================================================
+    // 2. REMOVE ANY STAMPED SIGNATURE / AUTHORIZATION BOX FROM THE PDF
+    // =========================================================================
+    if (pages.length > 0) {
+        const lastPage = pages[pages.length - 1];
+        const { width: lastWidth } = lastPage.getSize();
+        
+        // Solid white rectangle erasing the signature/authorization card box
+        // (originally stamped at x: 30, y: 160, width: width - 60, height: 125)
+        lastPage.drawRectangle({
+            x: 28,
+            y: 156,
+            width: lastWidth - 56,
+            height: 133,
+            color: rgb(1, 1, 1), // solid white to completely remove the signature box
+        });
     }
 
     // =========================================================================
