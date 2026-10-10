@@ -730,11 +730,15 @@ const CreatorJoin = () => {
             } else if (code.includes('auth/too-many-requests')) {
                 msg = "Too many SMS requests sent. Please wait a few moments before trying again.";
             } else if (code.includes('auth/quota-exceeded')) {
-                msg = "SMS daily limit reached. Please try again later or contact support.";
+                msg = "SMS daily limit reached. Please try again later or skip verification.";
             } else if (code.includes('auth/network-request-failed')) {
                 msg = "Network connection error. Please check your internet connection.";
             } else if (code.includes('auth/unauthorized-domain')) {
-                msg = "SMS domain configuration issue. Please contact support.";
+                msg = "SMS domain configuration issue. You can skip and continue below.";
+            } else if (code.includes('auth/operation-not-allowed')) {
+                msg = "Phone verification is not active. You can skip and continue below.";
+            } else if (err?.code) {
+                msg = `Could not send SMS code right now (${err.code}). You can skip and continue below.`;
             } else if (err.message && !err.message.includes('auth/')) {
                 msg = err.message;
             }
@@ -1802,9 +1806,18 @@ const CreatorJoin = () => {
                                                 <div className="pt-1">
                                                     <p className="text-xs text-red-400 font-medium">{phoneError}</p>
                                                     {smsFailed && (
-                                                        <p className="text-[11px] text-gray-900 dark:text-white/60 mt-1">
-                                                            Having trouble verifying? You can still click <strong className="font-bold">Next</strong> and we will manually verify your number later.
-                                                        </p>
+                                                        <div className="mt-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                                            <p className="text-[11px] text-amber-700 dark:text-amber-300 font-medium leading-relaxed">
+                                                                Having trouble verifying? You can skip this step and we will verify your number manually later.
+                                                            </p>
+                                                            <button
+                                                                type="button"
+                                                                onClick={nextStep}
+                                                                className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-[11px] font-black rounded-lg uppercase tracking-wider shrink-0 transition-all self-start sm:self-auto cursor-pointer shadow-sm active:scale-95"
+                                                            >
+                                                                Skip & Continue →
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </div>
                                             )}
