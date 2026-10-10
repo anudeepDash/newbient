@@ -1101,6 +1101,8 @@ export default async function handler(req, res) {
             const updates = {
                 isPhoneVerified: true,
                 phoneVerifiedAt: now,
+                phoneVerificationPending: false,
+                needsPhoneVerificationNotice: false,
                 isEmailVerified: true,
                 emailVerifiedAt: now,
                 verificationToken: null,
@@ -1782,6 +1784,9 @@ export default async function handler(req, res) {
             instagramVerifiedAt: creatorData.instagramVerifiedAt || (cleanInsta ? now : null),
             isPhoneVerified,
             phoneVerifiedAt: isPhoneVerified ? (creatorData.phoneVerifiedAt || now) : null,
+            phoneVerificationPending: !isPhoneVerified,
+            phoneVerificationSuspendedAt: !isPhoneVerified ? (creatorData.phoneVerificationSuspendedAt || now) : null,
+            needsPhoneVerificationNotice: !isPhoneVerified,
             isEmailVerified,
             createdAt: creatorData.createdAt || now,
             updatedAt: now

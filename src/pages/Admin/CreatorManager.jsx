@@ -527,13 +527,15 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
     };
     
     const exportToCSV = () => {
-        const headers = ['Name', 'Email', 'Phone', 'City', 'Instagram', 'Instagram Followers', 'LinkedIn', 'LinkedIn Connections', 'YouTube', 'YouTube Subs', 'Specializations', 'Status'];
+        const headers = ['Name', 'Email', 'Phone', 'Phone Verified', 'Phone Verification Pending', 'City', 'Instagram', 'Instagram Followers', 'LinkedIn', 'LinkedIn Connections', 'YouTube', 'YouTube Subs', 'Specializations', 'Status'];
         const csvRows = [
             headers.join(','),
             ...filteredCreators.map(c => [
                 `"${(c.name || '').replace(/"/g, '""')}"`,
                 `"${(c.email || '').replace(/"/g, '""')}"`,
                 `"${(c.phone || '').replace(/"/g, '""')}"`,
+                `"${c.isPhoneVerified ? 'YES' : 'NO'}"`,
+                `"${c.phoneVerificationPending || !c.isPhoneVerified ? 'YES' : 'NO'}"`,
                 `"${(c.city || '').replace(/"/g, '""')}"`,
                 `"${buildSocialUrl(c.instagram, 'instagram')}"`,
                 `"${c.instagramFollowers || 0}"`,
@@ -1813,9 +1815,13 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
                         <div className="flex items-center gap-2 min-w-0">
                             <Phone size={10} className="shrink-0 text-gray-900 dark:text-white/15" /><span className="truncate">{creator.phone || 'N/A'}</span>
                         </div>
-                        {creator.isPhoneVerified && (
+                        {creator.isPhoneVerified ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 dark:bg-neon-green/15 text-emerald-700 dark:text-neon-green text-[9px] font-black uppercase font-mono">
                                 <Check size={8} strokeWidth={3} /> OK
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase font-mono" title="Phone verification pending">
+                                Pending OTP
                             </span>
                         )}
                     </div>
@@ -1891,9 +1897,13 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight truncate">{creator.name}</h4>
-                        {creator.isPhoneVerified && (
+                        {creator.isPhoneVerified ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 dark:bg-neon-green/15 text-emerald-700 dark:text-neon-green text-[9px] font-black uppercase font-mono">
                                 <Check size={8} strokeWidth={3} /> OK
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase font-mono" title="Phone verification pending">
+                                Pending OTP
                             </span>
                         )}
                     </div>

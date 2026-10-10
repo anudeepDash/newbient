@@ -876,24 +876,7 @@ const CreatorJoin = () => {
                 useStore.getState().addToast("Please enter a valid 10-digit mobile number.", 'warning');
                 return;
             }
-            const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-            if (isLocal && !isPhoneVerified) {
-                const fullFormattedPhone = `${countryCode} ${cleanDigits}`;
-                setIsPhoneVerified(true);
-                setVerifiedPhoneNumber(fullFormattedPhone);
-                useStore.getState().addToast("Local mode: Phone verified automatically!", 'info');
-            } else if (!isPhoneVerified) {
-                if (smsFailed) {
-                    useStore.getState().addToast("Skipping phone verification due to SMS failure. We will verify later.", 'info');
-                } else {
-                    if (!otpSent) {
-                        useStore.getState().addToast("Please tap 'Send Code' and verify your phone number with the 6-digit SMS OTP.", 'warning');
-                    } else {
-                        useStore.getState().addToast("Please verify your phone number with the 6-digit code.", 'warning');
-                    }
-                    return;
-                }
-            }
+            // Phone OTP suspended: creators advance smoothly without SMS verification requirement
         }
 
         if (step === 3) {
@@ -982,16 +965,6 @@ const CreatorJoin = () => {
             return;
         }
 
-        const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        if (isLocal && !isPhoneVerified) {
-            setIsPhoneVerified(true);
-        } else if (!isPhoneVerified) {
-            if (!smsFailed) {
-                useStore.getState().addToast("Please verify your phone number with the 6-digit OTP before submitting.", 'warning');
-                return;
-            }
-        }
-
         setIsSubmitting(true);
         try {
             let finalCity = formData.city === 'Others' ? formData.customCity.trim() : formData.city;
@@ -1037,8 +1010,11 @@ const CreatorJoin = () => {
                 city: finalCity,
                 categories: finalNiche,
                 specializations: [finalNiche],
-                isPhoneVerified: true,
-                phoneVerifiedAt: new Date().toISOString()
+                isPhoneVerified: false,
+                phoneVerifiedAt: null,
+                phoneVerificationPending: true,
+                phoneVerificationSuspendedAt: new Date().toISOString(),
+                needsPhoneVerificationNotice: true
             });
 
             if (result?.id) {
@@ -1642,187 +1618,62 @@ const CreatorJoin = () => {
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">WhatsApp Contact Number *</label>
-                                        {isPhoneVerified && (
-                                            <span className="text-neon-green font-bold text-[10px] flex items-center gap-1 uppercase tracking-wider">
-                                                <ShieldCheck size={13} /> Verified
-                                            </span>
-                                        )}
+                                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold uppercase tracking-wider flex items-center gap-1">
+                                            <Clock size={11} /> Verification on Onboarding
+                                        </span>
                                     </div>
 
-                                    {isPhoneVerified ? (
-                                        /* Verified Banner */
-                                        <div className="p-3.5 sm:p-4 bg-neon-green/10 border border-neon-green/20 rounded-xl sm:rounded-2xl flex items-center justify-between gap-2">
-                                            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                                                <div className="w-8 h-8 rounded-xl bg-neon-green text-black flex items-center justify-center font-bold shrink-0">
-                                                    <Check size={16} strokeWidth={3} />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-xs font-bold text-gray-900 dark:text-white font-mono truncate">{verifiedPhoneNumber || `${countryCode} ${formData.phone.slice(-10)}`}</p>
-                                                    <p className="text-[10px] text-gray-900 dark:text-white/40 truncate sm:whitespace-normal">Verified for direct brand deals & payment receipts.</p>
-                                                </div>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setIsPhoneVerified(false);
-                                                    setVerifiedPhoneNumber('');
-                                                    setOtpSent(false);
-                                                }}
-                                                className="text-[10px] text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white underline font-bold uppercase tracking-wider shrink-0"
-                                            >
-                                                Change
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        /* Unverified Phone Input with Safe Boundaries */
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-1.5 sm:gap-2">
-                                                {/* Country Code Dropdown */}
-                                                <div className="relative shrink-0" ref={countryCodeRef}>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsCountryCodeOpen(!isCountryCodeOpen)}
-                                                        className="h-11 sm:h-12 px-2.5 sm:px-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] rounded-xl text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1 hover:border-black/20 dark:hover:border-white/20 transition-all"
-                                                    >
-                                                        <span>{countryCode}</span>
-                                                        <ChevronDown size={11} className="text-gray-900 dark:text-white/30" />
-                                                    </button>
-                                                    {isCountryCodeOpen && (
-                                                        <div className="absolute z-50 top-full left-0 mt-1 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-xl p-1 shadow-2xl w-28 space-y-0.5">
-                                                            {COUNTRY_OPTIONS.map(opt => (
-                                                                <button
-                                                                    key={opt.value}
-                                                                    type="button"
-                                                                    onClick={() => { setCountryCode(opt.value); setIsCountryCodeOpen(false); }}
-                                                                    className={cn(
-                                                                        "w-full px-2.5 py-1.5 text-left text-xs font-bold rounded-lg transition-colors",
-                                                                        countryCode === opt.value ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" : "text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white"
-                                                                    )}
-                                                                >
-                                                                    {opt.label}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Phone Number Input */}
-                                                <div className="relative flex-1 min-w-0">
-                                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-900 dark:text-white/20" size={13} />
-                                                    <input
-                                                        type="tel"
-                                                        name="phone"
-                                                        value={formData.phone}
-                                                        onChange={handleChange}
-                                                        disabled={otpSent || isSendingOtp}
-                                                        placeholder="98765 43210"
-                                                        maxLength={15}
-                                                        className="w-full h-11 sm:h-12 pl-8 sm:pl-9 pr-2 sm:pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl text-xs sm:text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 disabled:opacity-50"
-                                                    />
-                                                </div>
-
-                                                {/* Send OTP Button */}
-                                                {!otpSent && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleSendOTP}
-                                                        disabled={isSendingOtp || formData.phone.replace(/\D/g, '').length < 10}
-                                                        className="h-11 sm:h-12 px-3 sm:px-4 bg-white text-black hover:bg-neon-pink font-bold rounded-xl text-[11px] sm:text-xs uppercase tracking-wider shrink-0 transition-all disabled:opacity-30 whitespace-nowrap active:scale-95"
-                                                    >
-                                                        {isSendingOtp ? <LoadingSpinner size="xs" color="black" /> : 'Send Code'}
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            {/* 6-Digit OTP Box (Safe responsive grid) */}
-                                            <AnimatePresence>
-                                                {otpSent && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, height: 0 }}
-                                                        animate={{ opacity: 1, height: 'auto' }}
-                                                        exit={{ opacity: 0, height: 0 }}
-                                                        className="p-3.5 sm:p-4 bg-white dark:bg-black/60 border border-black/[0.1] dark:border-white/[0.08] rounded-xl sm:rounded-2xl space-y-3"
-                                                    >
-                                                        <div className="flex items-center justify-between text-xs gap-2">
-                                                            <span className="text-gray-900 dark:text-white/60 text-[11px] truncate">
-                                                                Enter 6-digit code sent to <strong className="text-gray-900 dark:text-white font-mono">{countryCode} {formData.phone.slice(-10)}</strong>
-                                                            </span>
+                                    {/* Phone Input with Country Code Dropdown */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-1.5 sm:gap-2">
+                                            {/* Country Code Dropdown */}
+                                            <div className="relative shrink-0" ref={countryCodeRef}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsCountryCodeOpen(!isCountryCodeOpen)}
+                                                    className="h-11 sm:h-12 px-2.5 sm:px-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] rounded-xl text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1 hover:border-black/20 dark:hover:border-white/20 transition-all cursor-pointer"
+                                                >
+                                                    <span>{countryCode}</span>
+                                                    <ChevronDown size={11} className="text-gray-900 dark:text-white/30" />
+                                                </button>
+                                                {isCountryCodeOpen && (
+                                                    <div className="absolute z-50 top-full left-0 mt-1 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-xl p-1 shadow-2xl w-28 space-y-0.5">
+                                                        {COUNTRY_OPTIONS.map(opt => (
                                                             <button
+                                                                key={opt.value}
                                                                 type="button"
-                                                                onClick={() => { setOtpSent(false); setOtpDigits(['','','','','','']); }}
-                                                                className="text-[10px] text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white underline uppercase font-bold shrink-0"
-                                                            >
-                                                                Edit
-                                                            </button>
-                                                        </div>
-
-                                                        {/* Mobile Safe Grid of 6 PIN Boxes */}
-                                                        <div className="grid grid-cols-6 gap-1.5 sm:gap-2.5 max-w-[290px] sm:max-w-[360px] w-full mx-auto" onPaste={handleOtpPaste}>
-                                                            {otpDigits.map((digit, index) => (
-                                                                <input
-                                                                  key={index}
-                                                                  ref={el => otpInputRefs.current[index] = el}
-                                                                  type="text"
-                                                                  inputMode="numeric"
-                                                                  maxLength={1}
-                                                                  value={digit}
-                                                                  onChange={(e) => handleOtpDigitChange(e.target.value, index)}
-                                                                  onKeyDown={(e) => handleOtpKeyDown(e, index)}
-                                                                  className="w-full aspect-square text-center bg-gray-50 dark:bg-white/[0.04] border border-black/[0.1] dark:border-white/[0.1] rounded-xl text-base sm:text-xl font-bold text-gray-900 dark:text-white focus:border-neon-green focus:ring-1 focus:ring-neon-green outline-none transition-all"
-                                                                />
-                                                            ))}
-                                                        </div>
-
-                                                        <div className="flex items-center justify-between text-[11px] pt-1">
-                                                            {isVerifyingOtp ? (
-                                                                <div className="flex items-center gap-1.5 text-neon-green font-bold">
-                                                                    <LoadingSpinner size="xs" color="neon-green" />
-                                                                    <span>Verifying...</span>
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-gray-900 dark:text-white/30 text-[10px]">Auto-verifies on 6th digit</span>
-                                                            )}
-
-                                                            <div>
-                                                                {otpCooldown > 0 ? (
-                                                                    <span className="text-gray-900 dark:text-white/30 text-[10px]">Resend in {otpCooldown}s</span>
-                                                                ) : (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={handleSendOTP}
-                                                                        disabled={isSendingOtp}
-                                                                        className="text-[10px] font-bold text-neon-green hover:underline uppercase"
-                                                                    >
-                                                                        Resend Code
-                                                                    </button>
+                                                                onClick={() => { setCountryCode(opt.value); setIsCountryCodeOpen(false); }}
+                                                                className={cn(
+                                                                    "w-full px-2.5 py-1.5 text-left text-xs font-bold rounded-lg transition-colors cursor-pointer",
+                                                                    countryCode === opt.value ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" : "text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white"
                                                                 )}
-                                                            </div>
-                                                        </div>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-
-                                            {phoneError && (
-                                                <div className="pt-1">
-                                                    <p className="text-xs text-red-400 font-medium">{phoneError}</p>
-                                                    {smsFailed && (
-                                                        <div className="mt-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                                                            <p className="text-[11px] text-amber-700 dark:text-amber-300 font-medium leading-relaxed">
-                                                                Having trouble verifying? You can skip this step and we will verify your number manually later.
-                                                            </p>
-                                                            <button
-                                                                type="button"
-                                                                onClick={nextStep}
-                                                                className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-[11px] font-black rounded-lg uppercase tracking-wider shrink-0 transition-all self-start sm:self-auto cursor-pointer shadow-sm active:scale-95"
                                                             >
-                                                                Skip & Continue →
+                                                                {opt.label}
                                                             </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Phone Number Input */}
+                                            <div className="relative flex-1 min-w-0">
+                                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-900 dark:text-white/20" size={13} />
+                                                <input
+                                                    type="tel"
+                                                    name="phone"
+                                                    value={formData.phone}
+                                                    onChange={handleChange}
+                                                    placeholder="98765 43210"
+                                                    maxLength={15}
+                                                    className="w-full h-11 sm:h-12 pl-8 sm:pl-9 pr-2 sm:pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl text-xs sm:text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                                />
+                                            </div>
                                         </div>
-                                    )}
+
+                                        <p className="text-[11px] text-gray-500 dark:text-white/40 leading-snug">
+                                            Used for direct brand gig offers, concert pass delivery, and payments. WhatsApp verification will be completed during creator onboarding.
+                                        </p>
+                                    </div>
                                 </div>
                             </motion.div>
                         )}
