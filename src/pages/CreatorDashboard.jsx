@@ -1209,7 +1209,7 @@ const CreatorDashboard = () => {
                                 <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-500/[0.08] border border-amber-200 dark:border-amber-500/20 rounded-2xl">
                                     <Phone size={14} className="text-amber-600 dark:text-amber-400 shrink-0" />
                                     <p className="flex-1 text-xs text-amber-800 dark:text-amber-300 min-w-0">
-                                        <span className="font-bold">Phone number unverified</span> — complete verification to unlock exclusive brand invitations and payouts.
+                                        <span className="font-bold">WhatsApp contact saved</span> — your creator profile is active! Complete phone verification when prompted to unlock instant brand deal payouts.
                                     </p>
                                     <button
                                         type="button"
