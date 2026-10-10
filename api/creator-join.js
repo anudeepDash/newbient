@@ -7,52 +7,59 @@ export const maxDuration = 60;
 let adminDb = null;
 let adminAuth = null;
 
-try {
-    if (!getApps().length) {
-        const projectId = (process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || "newbi-ent-v2")?.trim();
-        const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
-        let privateKey = process.env.FIREBASE_PRIVATE_KEY?.trim();
+export const initFirebaseAdmin = () => {
+    if (adminDb && adminAuth) return { adminDb, adminAuth };
 
-        if (projectId && clientEmail && privateKey) {
-            let formattedKey = privateKey.trim();
-            if ((formattedKey.startsWith('"') && formattedKey.endsWith('"')) || 
-                (formattedKey.startsWith("'") && formattedKey.endsWith("'"))) {
-                formattedKey = formattedKey.slice(1, -1).trim();
-            }
-            const header = '-----BEGIN PRIVATE KEY-----';
-            const footer = '-----END PRIVATE KEY-----';
-            let rawBase64 = formattedKey;
-            if (rawBase64.includes(header)) rawBase64 = rawBase64.replace(header, '');
-            if (rawBase64.includes(footer)) rawBase64 = rawBase64.replace(footer, '');
-            rawBase64 = rawBase64.replace(/\\n/g, '').replace(/\s+/g, '');
-            const pemLines = [];
-            for (let i = 0; i < rawBase64.length; i += 64) {
-                pemLines.push(rawBase64.substring(i, i + 64));
-            }
-            formattedKey = `${header}\n${pemLines.join('\n')}\n${footer}`;
+    try {
+        if (!getApps().length) {
+            const projectId = (process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || "newbi-ent-v2")?.trim();
+            const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
+            let privateKey = process.env.FIREBASE_PRIVATE_KEY?.trim();
 
-            const app = initializeApp({
-                credential: cert({
-                    projectId,
-                    clientEmail,
-                    privateKey: formattedKey,
-                }),
-            });
-            adminDb = getFirestore(app);
-            adminAuth = getAuth(app);
-        } else if (projectId) {
-            const app = initializeApp({ projectId });
+            if (projectId && clientEmail && privateKey) {
+                let formattedKey = privateKey.trim();
+                if ((formattedKey.startsWith('"') && formattedKey.endsWith('"')) || 
+                    (formattedKey.startsWith("'") && formattedKey.endsWith("'"))) {
+                    formattedKey = formattedKey.slice(1, -1).trim();
+                }
+                const header = '-----BEGIN PRIVATE KEY-----';
+                const footer = '-----END PRIVATE KEY-----';
+                let rawBase64 = formattedKey;
+                if (rawBase64.includes(header)) rawBase64 = rawBase64.replace(header, '');
+                if (rawBase64.includes(footer)) rawBase64 = rawBase64.replace(footer, '');
+                rawBase64 = rawBase64.replace(/\\n/g, '').replace(/\s+/g, '');
+                const pemLines = [];
+                for (let i = 0; i < rawBase64.length; i += 64) {
+                    pemLines.push(rawBase64.substring(i, i + 64));
+                }
+                formattedKey = `${header}\n${pemLines.join('\n')}\n${footer}`;
+
+                const app = initializeApp({
+                    credential: cert({
+                        projectId,
+                        clientEmail,
+                        privateKey: formattedKey,
+                    }),
+                });
+                adminDb = getFirestore(app);
+                adminAuth = getAuth(app);
+            } else if (projectId) {
+                const app = initializeApp({ projectId });
+                adminDb = getFirestore(app);
+                adminAuth = getAuth(app);
+            }
+        } else {
+            const app = getApps()[0];
             adminDb = getFirestore(app);
             adminAuth = getAuth(app);
         }
-    } else {
-        const app = getApps()[0];
-        adminDb = getFirestore(app);
-        adminAuth = getAuth(app);
+    } catch (e) {
+        console.warn('[API/CREATOR-JOIN] Firebase Admin init notice:', e.message);
     }
-} catch (e) {
-    console.warn('[API/CREATOR-JOIN] Firebase Admin init notice:', e.message);
-}
+    return { adminDb, adminAuth };
+};
+
+initFirebaseAdmin();
 
 const normalizePhoneNumber = (phone) => {
     if (!phone) return '';
@@ -875,6 +882,16 @@ export default async function handler(req, res) {
     if (!res.status) res.status = (c) => { res.statusCode = c; return res; };
     if (!res.json) res.json = (d) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(d)); return res; };
 
+    initFirebaseAdmin();
+
+    if (typeof req.body === 'string') {
+        try {
+            req.body = JSON.parse(req.body);
+        } catch (e) {
+            req.body = {};
+        }
+    }
+
     if (!req.query) {
         try {
             const parsedUrl = new URL(req.url || '', 'http://localhost');
@@ -1623,55 +1640,67 @@ export default async function handler(req, res) {
         const callerUid = decodedToken?.uid || null;
         const targetUid = creatorData.uid || callerUid || adminDb.collection('creators').doc().id;
 
-        // Fetch existing creators for deduplication
-        const creatorsSnap = await adminDb.collection('creators').get();
-        const existingCreators = [];
-        creatorsSnap.forEach(d => {
-            existingCreators.push({ id: d.id, ...d.data() });
-        });
-
-        // 1. Phone number deduplication
+        // 1. Phone number deduplication via targeted query
         if (normPhone) {
-            const conflictPhone = existingCreators.find(c =>
-                c.id !== targetUid &&
-                c.uid !== targetUid &&
-                normalizePhoneNumber(c.phone) === normPhone
-            );
-            if (conflictPhone) {
-                return res.status(409).json({
-                    success: false,
-                    error: `The mobile number ${rawPhone} is already linked to another Creator profile (${conflictPhone.displayName || conflictPhone.name || 'Existing Account'}). Multiple creator accounts for the same mobile number are not allowed.`
-                });
+            try {
+                const phoneQuery = await adminDb.collection('creators')
+                    .where('phone', '==', rawPhone)
+                    .limit(1)
+                    .get();
+                if (!phoneQuery.empty) {
+                    const matchDoc = phoneQuery.docs[0];
+                    if (matchDoc.id !== targetUid && matchDoc.data()?.uid !== targetUid) {
+                        const conflictPhone = matchDoc.data();
+                        return res.status(409).json({
+                            success: false,
+                            error: `The mobile number ${rawPhone} is already linked to another Creator profile (${conflictPhone.displayName || conflictPhone.name || 'Existing Account'}). Multiple creator accounts for the same mobile number are not allowed.`
+                        });
+                    }
+                }
+            } catch (phoneErr) {
+                console.warn('[API/CREATOR-JOIN] Phone dedup check warning:', phoneErr.message);
             }
         }
 
-        // 2. Email deduplication
+        // 2. Email deduplication via targeted query
         if (normEmail) {
-            const conflictEmail = existingCreators.find(c =>
-                c.id !== targetUid &&
-                c.uid !== targetUid &&
-                c.email && c.email.trim().toLowerCase() === normEmail
-            );
-            if (conflictEmail) {
-                return res.status(409).json({
-                    success: false,
-                    error: `The email address ${rawEmail} is already registered to an existing Creator profile. Please sign in to access your dashboard.`
-                });
+            try {
+                const emailQuery = await adminDb.collection('creators')
+                    .where('email', '==', normEmail)
+                    .limit(1)
+                    .get();
+                if (!emailQuery.empty) {
+                    const matchDoc = emailQuery.docs[0];
+                    if (matchDoc.id !== targetUid && matchDoc.data()?.uid !== targetUid) {
+                        return res.status(409).json({
+                            success: false,
+                            error: `The email address ${rawEmail} is already registered to an existing Creator profile. Please sign in to access your dashboard.`
+                        });
+                    }
+                }
+            } catch (emailErr) {
+                console.warn('[API/CREATOR-JOIN] Email dedup check warning:', emailErr.message);
             }
         }
 
-        // 3. Instagram handle deduplication
+        // 3. Instagram handle deduplication via targeted query
         if (cleanInsta) {
-            const conflictInsta = existingCreators.find(c =>
-                c.id !== targetUid &&
-                c.uid !== targetUid &&
-                c.instagram && c.instagram.trim().replace(/^@/, '').toLowerCase() === cleanInsta
-            );
-            if (conflictInsta) {
-                return res.status(409).json({
-                    success: false,
-                    error: `The Instagram handle @${cleanInsta} is already linked to an existing Creator profile.`
-                });
+            try {
+                const instaQuery = await adminDb.collection('creators')
+                    .where('instagram', '==', cleanInsta)
+                    .limit(1)
+                    .get();
+                if (!instaQuery.empty) {
+                    const matchDoc = instaQuery.docs[0];
+                    if (matchDoc.id !== targetUid && matchDoc.data()?.uid !== targetUid) {
+                        return res.status(409).json({
+                            success: false,
+                            error: `The Instagram handle @${cleanInsta} is already linked to an existing Creator profile.`
+                        });
+                    }
+                }
+            } catch (instaErr) {
+                console.warn('[API/CREATOR-JOIN] Instagram dedup check warning:', instaErr.message);
             }
         }
 
@@ -1695,8 +1724,13 @@ export default async function handler(req, res) {
             }
         }
 
+        const isManualFollowers = Boolean(
+            creatorData.manualFollowerEntry || 
+            creatorData.isManualFollowerEntry || 
+            creatorData.requiresManualVerification
+        );
         const submittedFollowers = Number(creatorData.instagramFollowers) || 0;
-        if (cleanInsta && requireInstagramVerification && minInstagramFollowers > 0) {
+        if (cleanInsta && requireInstagramVerification && minInstagramFollowers > 0 && !isManualFollowers) {
             if (submittedFollowers < minInstagramFollowers) {
                 return res.status(400).json({
                     success: false,
@@ -1719,11 +1753,6 @@ export default async function handler(req, res) {
 
         // Determine auto-verification:
         // Only creators who manually entered their followers require manual verification.
-        const isManualFollowers = Boolean(
-            creatorData.manualFollowerEntry || 
-            creatorData.isManualFollowerEntry || 
-            creatorData.requiresManualVerification
-        );
         const shouldAutoVerify = !isManualFollowers;
         const profileStatus = creatorData.profileStatus 
             ? creatorData.profileStatus 
@@ -1764,16 +1793,19 @@ export default async function handler(req, res) {
         // Handle Referral notification
         if (creatorData.referredBy) {
             const referredBy = String(creatorData.referredBy).trim();
-            const referrer = existingCreators.find(c =>
-                c.uid === referredBy ||
-                c.id === referredBy ||
-                (c.creatorId && c.creatorId.toUpperCase() === referredBy.toUpperCase()) ||
-                (c.instagram && c.instagram.toLowerCase() === referredBy.toLowerCase()) ||
-                (c.linkedin && c.linkedin.toLowerCase() === referredBy.toLowerCase())
-            );
+            try {
+                let referrer = null;
+                const refDoc = await adminDb.collection('creators').doc(referredBy).get();
+                if (refDoc.exists) {
+                    referrer = { id: refDoc.id, ...refDoc.data() };
+                } else {
+                    const refSnap = await adminDb.collection('creators').where('creatorId', '==', referredBy.toUpperCase()).limit(1).get();
+                    if (!refSnap.empty) {
+                        referrer = { id: refSnap.docs[0].id, ...refSnap.docs[0].data() };
+                    }
+                }
 
-            if (referrer) {
-                try {
+                if (referrer) {
                     await adminDb.collection('notifications').add({
                         userId: referrer.uid || referrer.id,
                         title: "New Creator Referral! 🚀",
@@ -1782,9 +1814,9 @@ export default async function handler(req, res) {
                         isRead: false,
                         createdAt: now
                     });
-                } catch (notiErr) {
-                    console.warn('[API/CREATOR-JOIN] Referral notification notice:', notiErr.message);
                 }
+            } catch (notiErr) {
+                console.warn('[API/CREATOR-JOIN] Referral notification notice:', notiErr.message);
             }
         }
 

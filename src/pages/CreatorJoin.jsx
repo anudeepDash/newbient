@@ -1045,9 +1045,7 @@ const CreatorJoin = () => {
             try { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); } catch (err) {}
         } catch (error) {
             console.error("Error submitting application:", error);
-            const msg = error.message?.includes('permission')
-                ? "Unable to complete submission due to security permissions. Please ensure your contact details are valid or try again shortly."
-                : (error.message || "Couldn't submit application. Please try again.");
+            const msg = error.message || "Couldn't submit application. Please try again.";
             useStore.getState().addToast(msg, 'error');
         } finally {
             setIsSubmitting(false);

@@ -2833,8 +2833,14 @@ export const useStore = create((set, get) => ({
                 })
             });
 
-            const json = await res.json();
-            if (res.ok && json.success) {
+            let json = null;
+            try {
+                json = await res.json();
+            } catch (parseErr) {
+                // non-JSON response
+            }
+
+            if (res.ok && json?.success) {
                 if (json.creator) {
                     set(state => {
                         const existingList = state.creators || [];
@@ -2856,18 +2862,26 @@ export const useStore = create((set, get) => ({
                     creatorId: json.creatorId,
                     verificationToken: json.verificationToken
                 };
-            } else if (res.status === 409 || (json.error && !json.error.includes('Database service unavailable') && !json.error.includes('Failed to fetch'))) {
-                throw new Error(json.error || 'Failed to submit application.');
+            }
+
+            if (json && json.error) {
+                throw new Error(json.error);
+            }
+            if (!res.ok) {
+                throw new Error(`Server returned error (${res.status}). Please check your connection or try again shortly.`);
             }
         } catch (apiErr) {
-            if (apiErr.message && (
-                apiErr.message.includes('already linked') ||
-                apiErr.message.includes('already registered') ||
-                apiErr.message.includes('required fields')
-            )) {
+            const isLocalDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+            const isOfflineNetworkErr = apiErr.message && (
+                apiErr.message.includes('Failed to fetch') ||
+                apiErr.message.includes('NetworkError') ||
+                apiErr.message.includes('Load failed')
+            );
+
+            if (!isLocalDev || !isOfflineNetworkErr) {
                 throw apiErr;
             }
-            console.warn('[Store] Creator join API notice, falling back to direct Firestore:', apiErr.message);
+            console.warn('[Store] Local offline dev notice, falling back to direct Firestore:', apiErr.message);
         }
 
         // 5. Fallback: Direct Firestore setDoc if API is unavailable (e.g. offline dev)
