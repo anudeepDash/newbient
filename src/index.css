@@ -1311,18 +1311,88 @@
 
 
 
-/* Toast banners: remaining-time bar */
-@keyframes toast-progress {
-  from { transform: scaleX(1); }
-  to { transform: scaleX(0); }
+/* ─── Liquid glass banners ─────────────────────────────────────────────
+   Translucent, blurred and saturated backdrop with a specular top edge and a
+   light-catching rim, in the spirit of Apple's Liquid Glass material. */
+.liquid-glass {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.34) 55%, rgba(255, 255, 255, 0.46) 100%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%) brightness(1.04);
+  backdrop-filter: blur(28px) saturate(190%) brightness(1.04);
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.95),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.35),
+    inset 0 0 24px rgba(255, 255, 255, 0.18),
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 14px 40px -12px rgba(15, 23, 42, 0.32);
 }
 
-.animate-toast-progress {
-  animation-name: toast-progress;
-  animation-timing-function: linear;
-  animation-fill-mode: forwards;
+/* Light-catching rim: a gradient hairline that is bright top-left and fades out. */
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.15) 40%, rgba(255, 255, 255, 0.05) 60%, rgba(255, 255, 255, 0.6));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .animate-toast-progress { animation: none; opacity: 0; }
+/* Specular sheen across the upper half. */
+.liquid-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(120% 70% at 20% -10%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 60%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.dark .liquid-glass {
+  background:
+    linear-gradient(160deg, rgba(58, 60, 72, 0.58) 0%, rgba(24, 25, 32, 0.48) 55%, rgba(38, 40, 50, 0.55) 100%);
+  -webkit-backdrop-filter: blur(28px) saturate(170%) brightness(0.95);
+  backdrop-filter: blur(28px) saturate(170%) brightness(0.95);
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.22),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.06),
+    inset 0 0 24px rgba(255, 255, 255, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 18px 48px -12px rgba(0, 0, 0, 0.75);
+}
+
+.dark .liquid-glass::before {
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.06) 40%, rgba(255, 255, 255, 0.02) 60%, rgba(255, 255, 255, 0.2));
+}
+
+.dark .liquid-glass::after {
+  background: radial-gradient(120% 70% at 20% -10%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 60%);
+}
+
+/* Browsers without backdrop blur get a near-solid surface so text stays readable. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .liquid-glass { background: rgba(250, 250, 252, 0.97); }
+  .dark .liquid-glass { background: rgba(28, 28, 34, 0.97); }
+}
+
+/* Respect "Reduce transparency" style preferences. */
+@media (prefers-reduced-transparency: reduce) {
+  .liquid-glass { background: rgba(250, 250, 252, 0.98); }
+  .dark .liquid-glass { background: rgba(28, 28, 34, 0.98); }
+}
+
+/* Glossy squircle icon tile used inside banners. */
+.liquid-glass-icon {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.12),
+    0 2px 6px -1px rgba(0, 0, 0, 0.25);
 }
