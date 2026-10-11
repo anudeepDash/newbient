@@ -480,9 +480,7 @@ const CampaignDetailModal = ({
     const handleJoin = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
 
-        if (isWebsiteApplyDisabled) {
-            return useStore.getState().addToast("Applications for this campaign are not open on the website.", 'error');
-        }
+        if (isWebsiteApplyDisabled) return;
 
         if (spotsInfo.hasSpots && spotsInfo.isFull) {
             return useStore.getState().addToast("This campaign has reached full capacity. No spots left.", 'error');
@@ -1351,22 +1349,7 @@ const CampaignDetailModal = ({
                                         </a>
                                     )}
                                 </div>
-                            ) : isWebsiteApplyDisabled ? (
-                                /* ── Website applications turned off by admin ── */
-                                <div className="flex items-start gap-3 p-4 sm:p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/10 dark:border-white/[0.08]">
-                                    <div className="w-9 h-9 rounded-xl bg-black/5 dark:bg-white/[0.06] flex items-center justify-center shrink-0">
-                                        <Lock size={15} className="text-gray-500 dark:text-zinc-400" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <h2 className="text-sm font-black uppercase tracking-wider text-gray-900 dark:text-white">
-                                            Applications not open on website
-                                        </h2>
-                                        <p className="text-xs text-gray-500 dark:text-zinc-400 leading-relaxed">
-                                            This campaign isn't accepting applications through the website right now. Reach out to the Newbi team if you'd like to take part.
-                                        </p>
-                                    </div>
-                                </div>
-                            ) : (
+                            ) : isWebsiteApplyDisabled ? null : (
                                 /* ── Application flow ── */
                                 <div className="space-y-6">
                                     {/* Application Section Header */}
