@@ -1420,7 +1420,11 @@ const CreatorProfileManager = ({
             cleanupRecaptcha();
             const container = document.createElement('div');
             container.id = recaptchaId;
-            container.className = "z-50";
+            container.style.position = 'fixed';
+            container.style.bottom = '-9999px';
+            container.style.right = '-9999px';
+            container.style.opacity = '0';
+            container.style.pointerEvents = 'none';
             document.body.appendChild(container);
 
             recaptchaVerifier.current = new RecaptchaVerifier(auth, container, {

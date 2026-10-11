@@ -680,10 +680,14 @@ const CreatorJoin = () => {
         try {
             cleanupRecaptcha();
 
-            // Create a clean, dynamic container element for RecaptchaVerifier
+            // Create an invisible off-screen container element for RecaptchaVerifier
             const container = document.createElement('div');
             container.id = recaptchaContainerId;
-            container.className = "fixed bottom-4 right-4 z-[9999]";
+            container.style.position = 'fixed';
+            container.style.bottom = '-9999px';
+            container.style.right = '-9999px';
+            container.style.opacity = '0';
+            container.style.pointerEvents = 'none';
             document.body.appendChild(container);
 
             recaptchaVerifierRef.current = new RecaptchaVerifier(auth, container, {
