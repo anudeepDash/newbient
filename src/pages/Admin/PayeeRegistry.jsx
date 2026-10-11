@@ -88,13 +88,13 @@ const PayeeRegistry = () => {
     // Handle delete payee
     const handleDeletePayee = (id) => {
         if (user?.role === 'editor' || user?.role === 'content_admin') {
-            useStore.getState().addToast("Only administrators can delete registry records.", 'error');
+            useStore.getState().addToast("Only admins can delete payees.", 'error');
             return;
         }
 
         if (window.confirm('Are you sure you want to remove this payee from the registry?')) {
             deleteFinancePayee(id);
-            useStore.getState().addToast('Payee registration purged.', 'success');
+            useStore.getState().addToast('Payee deleted.', 'success');
         }
     };
 
@@ -102,7 +102,7 @@ const PayeeRegistry = () => {
     const handleCopyDetails = (details) => {
         if (!details) return;
         navigator.clipboard.writeText(details);
-        useStore.getState().addToast('Payee payout info copied!', 'success');
+        useStore.getState().addToast('Payout details copied.', 'success');
     };
 
     // Generate targeted payee registration link
@@ -133,7 +133,7 @@ const PayeeRegistry = () => {
                         buttonText: 'LEARN MORE',
                         updatedAt: new Date().toISOString()
                     });
-                    useStore.getState().addToast(`Created new event entry: ${eventName}`, 'success');
+                    useStore.getState().addToast(`New event created: ${eventName}.`, 'success');
                 } catch (err) {
                     console.error("Failed to auto-create event:", err);
                 }
@@ -143,7 +143,7 @@ const PayeeRegistry = () => {
         setGeneratedLink(url);
         navigator.clipboard.writeText(url);
         setCopiedLink(true);
-        useStore.getState().addToast('Registration link generated and copied!', 'success');
+        useStore.getState().addToast('Registration link created and copied.', 'success');
         setTimeout(() => setCopiedLink(false), 2000);
     };
 
@@ -293,7 +293,7 @@ const PayeeRegistry = () => {
                                             onClick={() => {
                                                 navigator.clipboard.writeText(generatedLink);
                                                 setCopiedLink(true);
-                                                useStore.getState().addToast('Registration link copied!', 'success');
+                                                useStore.getState().addToast('Registration link copied.', 'success');
                                                 setTimeout(() => setCopiedLink(false), 2000);
                                             }}
                                             className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-colors shrink-0"

@@ -46,13 +46,13 @@ const Contact = () => {
 
             // Notify Admins
             await notifyAdmins(
-                'NEW INBOUND MESSAGE',
-                `RECEIVED A MESSAGE FROM ${formData.name.toUpperCase()}. MESSAGE DETAILS ATTACHED.` ,
+                'New contact message',
+                `${formData.name} sent a message through the contact form.` ,
                 '/admin/messages',
                 'message'
             );
 
-            useStore.getState().addToast('Message sent! We will get back to you soon.', 'success');
+            useStore.getState().addToast("Message sent. We'll get back to you soon.", 'success');
             setFormData({ name: '', email: '', message: '' });
         } catch (error) {
             console.error("Error sending message: ", error);

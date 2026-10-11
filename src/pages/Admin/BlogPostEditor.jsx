@@ -87,7 +87,7 @@ const BlogPostEditor = () => {
 
     const handleSave = async () => {
         if (!formData.title || !formData.slug) {
-            addToast('TITLE_AND_SLUG_REQUIRED.', 'error');
+            addToast('Add a title and a URL slug before saving.', 'error');
             return;
         }
 
@@ -105,8 +105,8 @@ const BlogPostEditor = () => {
                 await updatePost(id, finalData);
                 if (finalData.status === 'Published' && oldPost?.status !== 'Published') {
                     await notifyAllUsers(
-                        `New Article: ${finalData.title}`,
-                        finalData.shortDescription || 'Check out our latest blog post!',
+                        `New article: ${finalData.title}`,
+                        finalData.shortDescription || 'Our latest blog post is up. Take a look.',
                         `/concertzone/${finalData.category?.toLowerCase().replace(' ', '-') || 'news'}/${finalData.slug}`,
                         finalData.coverImage
                     );
@@ -115,18 +115,18 @@ const BlogPostEditor = () => {
                 await addPost({ ...finalData, createdAt: new Date().toISOString() });
                 if (finalData.status === 'Published') {
                     await notifyAllUsers(
-                        `New Article: ${finalData.title}`,
-                        finalData.shortDescription || 'Check out our latest blog post!',
+                        `New article: ${finalData.title}`,
+                        finalData.shortDescription || 'Our latest blog post is up. Take a look.',
                         `/concertzone/${finalData.category?.toLowerCase().replace(' ', '-') || 'news'}/${finalData.slug}`,
                         finalData.coverImage
                     );
                 }
             }
-            addToast("STORY_ARCHIVED_SUCCESSFULLY.", 'success');
+            addToast("Story saved.", 'success');
             navigate('/admin/blog');
         } catch (err) {
             console.error('Save failed:', err);
-            addToast('SAVE_FAILED.', 'error');
+            addToast("Couldn't save the story. Please try again.", 'error');
         } finally {
             setIsSaving(false);
         }
@@ -166,11 +166,11 @@ const BlogPostEditor = () => {
                         } else if (type === 'sponsor') {
                             setFormData(prev => ({ ...prev, sponsorLogo: url }));
                         }
-                        addToast("Image pasted successfully!", 'success');
+                        addToast("Image pasted.", 'success');
                     }
                 } catch (err) {
                     console.error("Paste upload failed:", err);
-                    addToast("Upload failed.", "error");
+                    addToast("Couldn't upload the image. Please try again.", "error");
                 } finally {
                     setIsUploading(false);
                 }
@@ -180,7 +180,7 @@ const BlogPostEditor = () => {
 
     const generateAI = async (type) => {
         if (!formData.content && type !== 'title') {
-            addToast("ADD_SOME_CONTENT_FIRST.", 'error');
+            addToast("Write some content first, then try again.", 'error');
             return;
         }
         
@@ -197,9 +197,9 @@ const BlogPostEditor = () => {
                 const snippet = formData.content?.replace(/<[^>]*>/g, '').substring(0, 150) || "Explore the latest insights...";
                 setFormData(prev => ({ ...prev, shortDescription: snippet + "..." }));
             }
-            addToast("AI_SYNTHESIS_COMPLETE.", 'success');
+            addToast("AI suggestion added.", 'success');
         } catch (e) {
-            addToast("AI_SERVICE_UNAVAILABLE.", 'error');
+            addToast("The AI assistant isn't available right now. Please try again later.", 'error');
         } finally {
             setAiGenerating(false);
         }

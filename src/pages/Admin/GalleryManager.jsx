@@ -39,7 +39,7 @@ const GalleryManager = () => {
             const uploadedImage = await res.json();
             return uploadedImage.secure_url;
         } catch (error) {
-            useStore.getState().addToast("Network error during uplink.", 'error');
+            useStore.getState().addToast("Couldn't upload the image. Check your connection and try again.", 'error');
             return null;
         }
     };
@@ -54,7 +54,7 @@ const GalleryManager = () => {
                 const url = await handleFileUpload(file);
                 if (url) {
                     setNewImage(prev => ({ ...prev, src: url }));
-                    useStore.getState().addToast("Image pasted from clipboard!", 'success');
+                    useStore.getState().addToast("Image pasted and uploaded.", 'success');
                 }
                 setUploading(false);
                 e.preventDefault();

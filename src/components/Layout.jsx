@@ -2,7 +2,6 @@ import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
-import NotificationToast from './NotificationToast';
 import { useStore } from '../lib/store';
 import { cn } from '../lib/utils';
 
@@ -45,7 +44,6 @@ const Layout = () => {
             isHeightLockedPage ? "h-screen overflow-hidden" : "min-h-screen"
         )}>
             {!isSpecialPage && <Navbar />}
-            <NotificationToast />
             <main className={cn(
                 "flex-grow transition-all duration-300", 
                 isSpecialPage ? "pb-0" : "pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:pb-12",

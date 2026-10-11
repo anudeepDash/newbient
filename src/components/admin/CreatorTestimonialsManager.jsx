@@ -46,9 +46,9 @@ const CreatorTestimonialsManager = () => {
         try {
             const url = await uploadToCloudinary(file);
             setForm(prev => ({ ...prev, avatarUrl: url }));
-            useStore.getState().addToast('Creator photo uploaded!', 'success');
+            useStore.getState().addToast('Creator photo uploaded.', 'success');
         } catch (err) {
-            useStore.getState().addToast('Photo upload failed.', 'error');
+            useStore.getState().addToast("Couldn't upload the photo. Please try again.", 'error');
         } finally {
             setUploadingAvatar(false);
         }
@@ -57,7 +57,7 @@ const CreatorTestimonialsManager = () => {
     const handleAdd = async (e) => {
         if (e) e.preventDefault();
         if (!form.name.trim() || !form.quote.trim()) {
-            useStore.getState().addToast('Creator Name and Testimonial Quote are required.', 'error');
+            useStore.getState().addToast("Add the creator's name and a quote before saving.", 'error');
             return;
         }
 
@@ -84,10 +84,10 @@ const CreatorTestimonialsManager = () => {
                 rating: 5,
                 isActive: true
             });
-            useStore.getState().addToast('Authentic testimonial added!', 'success');
+            useStore.getState().addToast('Testimonial added.', 'success');
         } catch (err) {
             console.error('Error adding testimonial:', err);
-            useStore.getState().addToast('Failed to add testimonial.', 'error');
+            useStore.getState().addToast("Couldn't add the testimonial. Please try again.", 'error');
         } finally {
             setSubmitting(false);
         }
@@ -99,16 +99,16 @@ const CreatorTestimonialsManager = () => {
             await deleteCreatorTestimonial(id);
             useStore.getState().addToast('Testimonial removed.', 'success');
         } catch (err) {
-            useStore.getState().addToast('Failed to delete testimonial.', 'error');
+            useStore.getState().addToast("Couldn't delete the testimonial. Please try again.", 'error');
         }
     };
 
     const handleToggleActive = async (id, currentStatus) => {
         try {
             await updateCreatorTestimonial(id, { isActive: !currentStatus });
-            useStore.getState().addToast(`Testimonial marked ${!currentStatus ? 'Active' : 'Hidden'}.`, 'info');
+            useStore.getState().addToast(`Testimonial is now ${!currentStatus ? 'visible' : 'hidden'}.`, 'info');
         } catch (err) {
-            useStore.getState().addToast('Failed to update status.', 'error');
+            useStore.getState().addToast("Couldn't update the testimonial. Please try again.", 'error');
         }
     };
 

@@ -391,14 +391,14 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         try {
             await resetPassword(user.email);
             addNotification({
-                title: "Security Link Dispatched",
-                content: "Check your inbox for password reset instructions.",
+                title: "Password reset email sent",
+                content: "Check your inbox for a link to reset your password.",
                 type: 'message'
             });
         } catch (err) {
             addNotification({
-                title: "Dispatch Failed",
-                content: err.message || "Unable to send reset email.",
+                title: "Couldn't send reset email",
+                content: "We couldn't send the password reset email. Please try again.",
                 type: 'default'
             });
         } finally {
@@ -412,8 +412,8 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         try {
             await deleteCreator(creatorProfile.uid);
             addNotification({
-                title: "Creator Profile Deactivated",
-                content: "Your creator profile was deactivated. Your tickets and main account remain active.",
+                title: "Creator profile deactivated",
+                content: "Your creator profile is deactivated. Your tickets and main account are still active.",
                 type: 'message'
             });
             setShowDeleteCreatorConfirm(false);
@@ -421,8 +421,8 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         } catch (err) {
             console.error("Creator profile deletion failed:", err);
             addNotification({
-                title: "Deactivation Failed",
-                content: err.message || "Failed to deactivate creator profile.",
+                title: "Couldn't deactivate profile",
+                content: "We couldn't deactivate your creator profile. Please try again.",
                 type: 'default'
             });
         } finally {
@@ -450,16 +450,16 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
             try {
                 await revokeSessions();
                 addNotification({
-                    title: "Sessions Revoked",
-                    content: "Successfully signed out of all devices.",
+                    title: "Signed out everywhere",
+                    content: "You've been signed out of all your devices.",
                     type: 'message'
                 });
                 onClose();
                 navigate('/');
             } catch (err) {
                 addNotification({
-                    title: "Revocation Failed",
-                    content: err.message || "Unable to revoke sessions.",
+                    title: "Couldn't sign out everywhere",
+                    content: "We couldn't sign you out of all devices. Please try again.",
                     type: 'default'
                 });
             } finally {
@@ -475,14 +475,14 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
             await updateDisplayName(newDisplayName);
             setIsEditingName(false);
             addNotification({
-                title: "Identity Updated",
-                content: "Your display name has been successfully updated.",
+                title: "Name updated",
+                content: "Your display name has been updated.",
                 type: 'message'
             });
         } catch (err) {
             addNotification({
-                title: "Update Error",
-                content: "Failed to sync identity changes.",
+                title: "Couldn't update name",
+                content: "We couldn't save your new display name. Please try again.",
                 type: 'default'
             });
         } finally {
@@ -497,14 +497,14 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
             await useStore.getState().updateUserProfile(user.uid, { phoneNumber: newPhone });
             setIsEditingPhone(false);
             addNotification({
-                title: "Security Uplinked",
+                title: "Phone number updated",
                 content: "Your phone number has been updated.",
                 type: 'security'
             });
         } catch (err) {
             addNotification({
-                title: "Uplink Error",
-                content: "Failed to sync phone changes.",
+                title: "Couldn't update phone number",
+                content: "We couldn't save your new phone number. Please try again.",
                 type: 'default'
             });
         } finally {
@@ -1766,7 +1766,7 @@ const CreatorProfileManager = ({
         const file = e.target.files?.[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
-            if (addToast) addToast("Image size must be under 10MB", "error");
+            if (addToast) addToast("That image is too large. Please choose one under 10MB.", "error");
             return;
         }
         const localPreview = URL.createObjectURL(file);
@@ -1777,7 +1777,7 @@ const CreatorProfileManager = ({
             if (uploadFn) {
                 const url = await uploadFn(file);
                 setForm(prev => ({ ...prev, profilePicture: url }));
-                if (addToast) addToast("Profile photo uploaded!", "success");
+                if (addToast) addToast("Profile photo uploaded.", "success");
             }
         } catch (err) {
             console.error("Cloudinary upload failed, using local preview fallback:", err);
@@ -1793,14 +1793,14 @@ const CreatorProfileManager = ({
 
     const handleSendOTP = async () => {
         if (!form.phone) {
-            if (addToast) addToast("Please enter a phone number", "error");
+            if (addToast) addToast("Enter your phone number first.", "error");
             return;
         }
         const normPhone = normalizePhoneNumber(form.phone);
         if (normPhone) {
             const existing = creators.find(c => c.uid !== creatorProfile.uid && normalizePhoneNumber(c.phone) === normPhone);
             if (existing) {
-                if (addToast) addToast(`This number is already linked to another account (${existing.email || 'existing creator'}).`, "error");
+                if (addToast) addToast(`This number is already linked to another account (${existing.email || 'existing creator'}). Try a different one.`, "error");
                 return;
             }
         }
@@ -1809,7 +1809,7 @@ const CreatorProfileManager = ({
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             if (isLocal) {
                 setOtpSent(true);
-                if (addToast) addToast("Local mode: enter any 6-digit code to verify.", "success");
+                if (addToast) addToast("Local test mode: enter any 6-digit code to verify.", "info");
                 setIsSendingOtp(false);
                 return;
             }
@@ -1827,7 +1827,7 @@ const CreatorProfileManager = ({
                 size: 'invisible',
                 callback: () => {},
                 'expired-callback': () => {
-                    if (addToast) addToast("reCAPTCHA expired. Please try again.", 'error');
+                    if (addToast) addToast("The security check timed out. Please try again.", 'error');
                     cleanupRecaptcha();
                 }
             });
@@ -1843,10 +1843,10 @@ const CreatorProfileManager = ({
             );
             setConfirmationResult(verificationId);
             setOtpSent(true);
-            if (addToast) addToast("Verification code sent to your phone!", "success");
+            if (addToast) addToast("Verification code sent to your phone.", "success");
         } catch (err) {
             console.error("OTP send error:", err);
-            if (addToast) addToast(err.message || "Could not send SMS verification code.", "error");
+            if (addToast) addToast("Couldn't send the verification code. Please try again.", "error");
             cleanupRecaptcha();
         } finally {
             setIsSendingOtp(false);
@@ -1856,7 +1856,7 @@ const CreatorProfileManager = ({
     const handleVerifyOTP = async (codeToVerify) => {
         const fullCode = typeof codeToVerify === 'string' ? codeToVerify : otpValues.join('');
         if (fullCode.length !== 6) {
-            if (addToast) addToast("Please enter the complete 6-digit code.", "error");
+            if (addToast) addToast("Enter all 6 digits of the code.", "error");
             return;
         }
         setIsVerifyingOtp(true);
@@ -1874,7 +1874,7 @@ const CreatorProfileManager = ({
             }
             setIsPhoneVerified(true);
             setOtpSent(false);
-            if (addToast) addToast("Phone verified successfully!", "success");
+            if (addToast) addToast("Phone number verified.", "success");
             await updateCreator(creatorProfile.uid, { 
                 isPhoneVerified: true, 
                 phone: form.phone,
@@ -1882,7 +1882,7 @@ const CreatorProfileManager = ({
             });
         } catch (err) {
             console.error("OTP verification error:", err);
-            if (addToast) addToast(err.message || "Invalid verification code.", "error");
+            if (addToast) addToast("Couldn't verify that code. Please check it and try again.", "error");
         } finally {
             setIsVerifyingOtp(false);
         }
@@ -1906,29 +1906,29 @@ const CreatorProfileManager = ({
     const handleSaveCreatorSettings = async (e) => {
         if (e) e.preventDefault();
         if (!form.name?.trim()) {
-            if (addToast) addToast("Please enter your creator name", "error");
+            if (addToast) addToast("Add your creator name.", "error");
             return;
         }
         if (!form.city) {
-            if (addToast) addToast("Please select your city", "error");
+            if (addToast) addToast("Select your city.", "error");
             return;
         }
         if (form.city === 'Others' && !form.customCity?.trim()) {
-            if (addToast) addToast("Please specify your city name", "error");
+            if (addToast) addToast("Type in your city name.", "error");
             return;
         }
         if (!form.categories) {
-            if (addToast) addToast("Please select your primary niche", "error");
+            if (addToast) addToast("Select your main niche.", "error");
             return;
         }
         if (form.categories === 'Others' && !form.customNiche?.trim()) {
-            if (addToast) addToast("Please specify your custom niche", "error");
+            if (addToast) addToast("Type in your niche.", "error");
             return;
         }
 
         for (const field of ['instagram', 'linkedin', 'youtube', 'twitter']) {
             if (form[field] && hasDisallowedLink(form[field])) {
-                if (addToast) addToast(`Links are not allowed. Please enter only your ${field} username/handle.`, "error");
+                if (addToast) addToast(`Enter just your ${field} username, without a link.`, "error");
                 return;
             }
         }
@@ -1968,10 +1968,10 @@ const CreatorProfileManager = ({
             };
 
             await updateCreator(creatorProfile.uid, payload);
-            if (addToast) addToast("Creator profile updated successfully!", "success");
+            if (addToast) addToast("Creator profile updated.", "success");
             if (addNotification) {
                 addNotification({
-                    title: "Creator Profile Updated",
+                    title: "Creator profile updated",
                     content: "Your creator details and settings have been saved.",
                     type: 'message'
                 });
@@ -1979,7 +1979,7 @@ const CreatorProfileManager = ({
             setSubTab('overview');
         } catch (err) {
             console.error("Failed to update creator profile:", err);
-            if (addToast) addToast(err.message || "Failed to update creator profile.", "error");
+            if (addToast) addToast(err.message || "Couldn't update your creator profile. Please try again.", "error");
         } finally {
             setIsSaving(false);
         }

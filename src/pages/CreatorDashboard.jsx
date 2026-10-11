@@ -98,7 +98,7 @@ const CreatorReferralsView = ({ profile }) => {
     const handleCopy = () => {
         navigator.clipboard.writeText(referralLink);
         setCopied(true);
-        useStore.getState().addToast('Referral link copied!', 'success');
+        useStore.getState().addToast('Referral link copied.', 'success');
         setTimeout(() => setCopied(false), 2000);
     };
 
@@ -808,7 +808,7 @@ const CreatorDashboard = () => {
         if (!id) return;
         navigator.clipboard.writeText(id);
         setCopiedId(true);
-        useStore.getState().addToast('Creator ID copied!', 'success');
+        useStore.getState().addToast('Creator ID copied.', 'success');
         setTimeout(() => setCopiedId(false), 2000);
     };
 
@@ -1053,7 +1053,7 @@ const CreatorDashboard = () => {
                                 onClick={() => {
                                     const link = `${window.location.origin}/creator/join?ref=${creatorId}`;
                                     navigator.clipboard.writeText(link);
-                                    useStore.getState().addToast('Referral invite link copied!', 'success');
+                                    useStore.getState().addToast('Referral invite link copied.', 'success');
                                 }}
                                 className="h-10 px-4 rounded-xl bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-xs font-bold text-gray-700 dark:text-zinc-200 transition-colors flex items-center gap-1.5 active:scale-95"
                                 title="Share Creator Invite Link"

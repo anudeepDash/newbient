@@ -59,17 +59,17 @@ const CityGroupManager = () => {
         if (e) e.preventDefault();
         const targetCity = form.city === 'Others' ? form.customCity.trim() : form.city;
         if (!targetCity) {
-            useStore.getState().addToast('Please select or specify a city.', 'error');
+            useStore.getState().addToast('Select a city, or type one in.', 'error');
             return;
         }
         if (!form.groupUrl.trim()) {
-            useStore.getState().addToast('Please provide a valid group invite link.', 'error');
+            useStore.getState().addToast('Add the group invite link.', 'error');
             return;
         }
 
         // Basic URL check
         if (!/^https?:\/\//i.test(form.groupUrl.trim())) {
-            useStore.getState().addToast('Link must begin with http:// or https://', 'error');
+            useStore.getState().addToast('The link needs to start with http:// or https://.', 'error');
             return;
         }
 
@@ -94,10 +94,10 @@ const CityGroupManager = () => {
                 description: '',
                 isActive: true
             });
-            useStore.getState().addToast(`${targetCity} Creator Group added!`, 'success');
+            useStore.getState().addToast(`${targetCity} creator group added.`, 'success');
         } catch (err) {
             console.error('Error adding creator group:', err);
-            useStore.getState().addToast(err?.message || 'Failed to add creator group.', 'error');
+            useStore.getState().addToast("Couldn't add the creator group. Please try again.", 'error');
         } finally {
             setSubmitting(false);
         }
@@ -109,16 +109,16 @@ const CityGroupManager = () => {
             await deleteCreatorGroup(id);
             useStore.getState().addToast('Creator group removed.', 'success');
         } catch (err) {
-            useStore.getState().addToast(err?.message || 'Failed to delete group.', 'error');
+            useStore.getState().addToast("Couldn't remove the group. Please try again.", 'error');
         }
     };
 
     const handleToggleActive = async (id, currentStatus) => {
         try {
             await updateCreatorGroup(id, { isActive: !currentStatus });
-            useStore.getState().addToast(`Group marked ${!currentStatus ? 'Active' : 'Inactive'}.`, 'info');
+            useStore.getState().addToast(`Group is now ${!currentStatus ? 'active' : 'inactive'}.`, 'success');
         } catch (err) {
-            useStore.getState().addToast(err?.message || 'Failed to update group status.', 'error');
+            useStore.getState().addToast("Couldn't update the group status. Please try again.", 'error');
         }
     };
 
@@ -126,7 +126,7 @@ const CityGroupManager = () => {
         if (!url) return;
         navigator.clipboard.writeText(url);
         setCopiedId(id);
-        useStore.getState().addToast('Invite link copied!', 'success');
+        useStore.getState().addToast('Invite link copied.', 'success');
         setTimeout(() => setCopiedId(null), 2000);
     };
 
@@ -137,10 +137,10 @@ const CityGroupManager = () => {
             if (seedDefaultCreatorGroups) {
                 await seedDefaultCreatorGroups();
             }
-            useStore.getState().addToast('Successfully synced 8 official city groups to Firestore!', 'success');
+            useStore.getState().addToast('All 8 official city groups have been added.', 'success');
         } catch (err) {
             console.error('Error syncing groups:', err);
-            useStore.getState().addToast('Failed to sync groups to database.', 'error');
+            useStore.getState().addToast("Couldn't add the official city groups. Please try again.", 'error');
         } finally {
             setIsSyncingDefaults(false);
         }

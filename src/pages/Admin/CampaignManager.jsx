@@ -745,9 +745,9 @@ const CampaignManager = ({ isEmbedded = false }) => {
         try {
             const url = await uploadToCloudinary(file);
             setFormData(prev => ({ ...prev, brandLogo: url }));
-            useStore.getState().addToast("Brand logo uploaded!", 'success');
+            useStore.getState().addToast("Brand logo uploaded.", 'success');
         } catch (error) {
-            useStore.getState().addToast("Couldn't upload brand logo. Please try again.", 'error');
+            useStore.getState().addToast("Couldn't upload the brand logo. Please try again.", 'error');
         } finally {
             setIsUploadingBrandLogo(false);
         }
@@ -764,9 +764,9 @@ const CampaignManager = ({ isEmbedded = false }) => {
                 try {
                     const url = await uploadToCloudinary(file);
                     setFormData(prev => ({ ...prev, brandLogo: url }));
-                    useStore.getState().addToast("Brand logo pasted from clipboard!", 'success');
+                    useStore.getState().addToast("Brand logo pasted and uploaded.", 'success');
                 } catch (error) {
-                    useStore.getState().addToast("Couldn't upload the pasted logo.", 'error');
+                    useStore.getState().addToast("Couldn't upload the pasted logo. Please try again.", 'error');
                 } finally {
                     setIsUploadingBrandLogo(false);
                 }
@@ -786,7 +786,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                 try {
                     const url = await uploadToCloudinary(file);
                     setFormData(prev => ({ ...prev, thumbnail: url }));
-                    useStore.getState().addToast("Image pasted from clipboard!", 'success');
+                    useStore.getState().addToast("Image pasted and uploaded.", 'success');
                 } catch (error) {
                     useStore.getState().addToast("Couldn't upload the pasted image. Please try again.", 'error');
                 } finally {
@@ -806,8 +806,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
             } else {
                 await addCampaign(formData);
                 await notifyAllUsers(
-                    `NEW CAMPAIGN ACTIVE: ${formData.title.toUpperCase()}`,
-                    `REWARD: ${formData.reward}. LOCATION: ${formData.targetCity}. VIEW DETAILS NOW.`,
+                    `New campaign: ${formData.title}`,
+                    `Reward: ${formData.reward}. Location: ${formData.targetCity}. Open it to see the details.`,
                     '/creator-dashboard',
                     ''
                 );
@@ -815,7 +815,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
             resetForm();
         } catch (error) {
             console.error("Failed to save campaign:", error);
-            useStore.getState().addToast(`Storage error: ${error.message || error}`, 'error');
+            useStore.getState().addToast("Couldn't save the campaign. Please try again.", 'error');
         } finally {
             setIsDeploying(false);
         }
@@ -828,13 +828,13 @@ const CampaignManager = ({ isEmbedded = false }) => {
     const handleCopyLink = (id) => {
         const url = `${window.location.origin}/campaign/${id}`;
         navigator.clipboard.writeText(url);
-        useStore.getState().addToast("Campaign link copied to clipboard!", 'success');
+        useStore.getState().addToast("Campaign link copied.", 'success');
     };
 
     const handleCopyTaskLink = (campaignId, taskId) => {
         const url = `${window.location.origin}/campaign/${campaignId}?taskId=${taskId}`;
         navigator.clipboard.writeText(url);
-        useStore.getState().addToast("Task link copied to clipboard!", 'success');
+        useStore.getState().addToast("Task link copied.", 'success');
     };
 
     const handleToggleShortlist = async (creatorUid, campaignId) => {
@@ -848,14 +848,14 @@ const CampaignManager = ({ isEmbedded = false }) => {
                 const campaign = campaigns.find(c => c.id === campaignId);
                 await notifySpecificUser(
                     creatorUid,
-                    'CAMPAIGN SELECTION',
-                    `CONGRATULATIONS! YOU HAVE BEEN SELECTED FOR "${campaign.title.toUpperCase()}". VIEW YOUR TASKS IN YOUR CREATOR STUDIO.`,
+                    "You're in!",
+                    `You've been selected for "${campaign.title}". Open your Creator Studio to see your tasks.`,
                     '/creator-dashboard',
                     'campaign'
                 );
             }
         } catch (error) {
-            useStore.getState().addToast("Failed to toggle shortlist.", 'error');
+            useStore.getState().addToast("Couldn't update the shortlist. Please try again.", 'error');
         } finally {
             setIsUpdating(false);
         }
@@ -873,17 +873,17 @@ const CampaignManager = ({ isEmbedded = false }) => {
                 eligibleUids.map(uid => 
                     notifySpecificUser(
                         uid,
-                        'CAMPAIGN SELECTION',
-                        `CONGRATULATIONS! YOU HAVE BEEN SELECTED FOR "${(campaign?.title || 'CAMPAIGN').toUpperCase()}". VIEW YOUR TASKS IN YOUR CREATOR STUDIO.`,
+                        "You're in!",
+                        `You've been selected for "${campaign?.title || 'a campaign'}". Open your Creator Studio to see your tasks.`,
                         '/creator-dashboard',
                         'campaign'
                     )
                 )
             );
-            useStore.getState().addToast(`Auto-shortlisted ${eligibleUids.length} qualifying creator${eligibleUids.length === 1 ? '' : 's'}!`, 'success');
+            useStore.getState().addToast(`Shortlisted ${eligibleUids.length} qualifying creator${eligibleUids.length === 1 ? '' : 's'}.`, 'success');
         } catch (error) {
             console.error("Auto shortlist error:", error);
-            useStore.getState().addToast("Failed to auto-shortlist creators.", 'error');
+            useStore.getState().addToast("Couldn't shortlist those creators. Please try again.", 'error');
         } finally {
             setIsUpdating(false);
         }
@@ -897,12 +897,12 @@ const CampaignManager = ({ isEmbedded = false }) => {
             await updateCampaign(campaignId, { autoShortlistEligible: nextVal });
             useStore.getState().addToast(
                 nextVal 
-                    ? "Auto-shortlist on apply enabled for this campaign!" 
-                    : "Auto-shortlist on apply disabled.", 
+                    ? "Creators who qualify will now be shortlisted when they apply." 
+                    : "Auto-shortlisting on apply is turned off.", 
                 'info'
             );
         } catch (err) {
-            useStore.getState().addToast("Failed to toggle auto-shortlist setting.", 'error');
+            useStore.getState().addToast("Couldn't change the auto-shortlist setting. Please try again.", 'error');
         }
     };
 
@@ -915,7 +915,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                 navigate('/admin/campaigns');
             }
         } catch (error) {
-            useStore.getState().addToast("Failed to delete campaign.", 'error');
+            useStore.getState().addToast("Couldn't delete the campaign. Please try again.", 'error');
         } finally {
             setIsUpdating(false);
         }
@@ -927,7 +927,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
         try {
             await updateCampaign(id, updatedData);
         } catch (error) {
-            useStore.getState().addToast("Failed to update status.", 'error');
+            useStore.getState().addToast("Couldn't update the campaign status. Please try again.", 'error');
         } finally {
             setIsUpdating(false);
         }
@@ -979,7 +979,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                 return { ...prev, tasks };
             });
         } catch (err) {
-            useStore.getState().addToast("Upload failed", 'error');
+            useStore.getState().addToast("Couldn't upload the file. Please try again.", 'error');
         } finally {
             setIsUploadingTaskAsset(false);
         }
@@ -1000,13 +1000,13 @@ const CampaignManager = ({ isEmbedded = false }) => {
             
             await notifySpecificUser(
                 creatorUid,
-                'TASK APPROVED',
-                `YOUR SUBMISSION FOR "${task?.title?.toUpperCase()}" HAS BEEN VERIFIED. GREAT WORK!`,
+                'Task approved',
+                `Your submission for "${task?.title}" has been approved. Great work!`,
                 '/creator-dashboard',
                 'campaign'
             );
         } catch (error) {
-            useStore.getState().addToast("Review failed.", 'error');
+            useStore.getState().addToast("Couldn't save your review. Please try again.", 'error');
         } finally {
             setIsReviewing(false);
         }
@@ -1029,8 +1029,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
             
             await notifySpecificUser(
                 rejectionModal.creatorUid,
-                'TASK FEEDBACK',
-                `YOUR SUBMISSION FOR "${task?.title?.toUpperCase()}" REQUIRES ATTENTION: ${rejectionReason.toUpperCase()}`,
+                'Changes requested on your task',
+                `Your submission for "${task?.title}" needs a few changes: ${rejectionReason}`,
                 '/creator-dashboard',
                 'campaign'
             );
@@ -1038,7 +1038,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
             setRejectionModal(null);
             setRejectionReason('');
         } catch (error) {
-            useStore.getState().addToast("Rejection failed.", 'error');
+            useStore.getState().addToast("Couldn't send the feedback. Please try again.", 'error');
         } finally {
             setIsReviewing(false);
         }
@@ -1973,11 +1973,11 @@ const CampaignDetailView = ({
                 await onAutoShortlist(campaign.id, uidsToShortlist);
             } else {
                 await useStore.getState().bulkShortlistCreators(campaign.id, uidsToShortlist, true);
-                useStore.getState().addToast(`Auto-shortlisted ${uidsToShortlist.length} creators!`, 'success');
+                useStore.getState().addToast(`Shortlisted ${uidsToShortlist.length} creators.`, 'success');
             }
         } catch (err) {
             console.error("Auto-shortlist error:", err);
-            useStore.getState().addToast("Failed to run auto-shortlist.", 'error');
+            useStore.getState().addToast("Couldn't run auto-shortlist. Please try again.", 'error');
         } finally {
             setIsAutoShortlisting(false);
         }
@@ -1991,11 +1991,11 @@ const CampaignDetailView = ({
             .join(', ');
         
         if (!handles) {
-            useStore.getState().addToast("No Instagram handles found to copy.", 'error');
+            useStore.getState().addToast("There are no Instagram handles to copy.", 'warning');
             return;
         }
         navigator.clipboard.writeText(handles);
-        useStore.getState().addToast(`Copied ${targetList.length} handles to clipboard!`, 'success');
+        useStore.getState().addToast(`${targetList.length} handles copied.`, 'success');
     };
 
     // Quick Clipboard Copy of Phones
@@ -2006,11 +2006,11 @@ const CampaignDetailView = ({
             .join(', ');
         
         if (!phones) {
-            useStore.getState().addToast("No phone numbers found to copy.", 'error');
+            useStore.getState().addToast("There are no phone numbers to copy.", 'warning');
             return;
         }
         navigator.clipboard.writeText(phones);
-        useStore.getState().addToast(`Copied ${targetList.length} phone numbers!`, 'success');
+        useStore.getState().addToast(`${targetList.length} phone numbers copied.`, 'success');
     };
 
     return (

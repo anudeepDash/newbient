@@ -37,7 +37,7 @@ const NewsletterStudio = () => {
             setSelectedPosts(selectedPosts.filter(p => p.id !== post.id));
         } else {
             if (selectedPosts.length >= 6) {
-                addToast("Recommended max is 6 stories for optimal flow.", "info");
+                addToast("Heads up: newsletters read best with 6 stories or fewer.", "info");
                 return;
             }
             setSelectedPosts([...selectedPosts, post]);
@@ -159,17 +159,17 @@ const NewsletterStudio = () => {
 
     const handleGenerateAIExtract = async () => {
         if (selectedPosts.length === 0) {
-            addToast("Please select at least one story to generate a briefing.", "warning");
+            addToast("Select at least one story to create a briefing.", "warning");
             return;
         }
         setGeneratingAI(true);
         try {
             const briefingHtml = await generateNewsletterBriefing(selectedPosts, aiGuidance);
             setEditorialText(briefingHtml);
-            addToast("Editorial briefing generated successfully by Concert Zone AI.", "success");
+            addToast("Briefing written by Concert Zone AI.", "success");
         } catch (error) {
             console.error("AI Briefing failed:", error);
-            addToast("AI briefing generation failed: " + error.message, "error");
+            addToast("Couldn't write the briefing. Please try again.", "error");
         } finally {
             setGeneratingAI(false);
         }
@@ -188,7 +188,7 @@ const NewsletterStudio = () => {
             .map(email => recipients.find(r => r.email === email));
 
         if (uniqueRecipients.length === 0) {
-            addToast("No recipients found for this category.", "error");
+            addToast("There's no one to send to in this group yet.", "warning");
             return;
         }
 
@@ -208,12 +208,12 @@ const NewsletterStudio = () => {
             );
 
             if (result.success) {
-                addToast(`Newsletter delivered to ${result.sent} recipients across ${result.batches} batch(es).`, "success");
+                addToast(`Newsletter sent to ${result.sent} recipients.`, "success");
             } else {
-                addToast(`Sent ${result.sent}/${result.total} — some batches failed: ${result.error}`, result.sent > 0 ? "info" : "error");
+                addToast(`Sent to ${result.sent} of ${result.total} recipients. Some emails didn't go out, so please try again.`, result.sent > 0 ? "warning" : "error");
             }
         } catch (error) {
-            addToast("Failed to dispatch: " + error.message, "error");
+            addToast("Couldn't send the newsletter. Please try again.", "error");
         } finally {
             setSending(false);
             setSendProgress(null);

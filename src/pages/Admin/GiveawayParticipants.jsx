@@ -82,14 +82,14 @@ const GiveawayParticipants = () => {
             if (isNowWinner && entry.userId) {
                 await notifySpecificUser(
                     entry.userId,
-                    'YOU ARE A WINNER! 🏆',
-                    `CONGRATULATIONS! YOU HAVE WON ${prize.toUpperCase()} IN THE ${giveaway.name.toUpperCase()} GIVEAWAY.`,
+                    'You won! 🏆',
+                    `Congratulations, you've won ${prize} in the ${giveaway.name} giveaway. Open the giveaway for details.`,
                     `/giveaway/${giveaway.slug}`,
                     'giveaway'
                 );
             }
         } catch (error) {
-            useStore.getState().addToast("Error selecting winner", 'error');
+            useStore.getState().addToast("Couldn't update the winner. Please try again.", 'error');
         }
     };
 

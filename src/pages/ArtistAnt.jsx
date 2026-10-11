@@ -183,7 +183,7 @@ const ArtistAnt = () => {
             } else {
                 setArtistData(prev => ({ ...prev, image: url }));
             }
-            addToast("Profile picture uploaded!", 'success');
+            addToast("Profile picture uploaded.", 'success');
         } catch (error) {
             addToast("Couldn't upload your photo. Please try again.", 'error');
         } finally {

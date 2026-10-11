@@ -191,12 +191,12 @@ const CreatorJoin = () => {
             if (result?.city) {
                 setFormData(prev => ({ ...prev, city: result.city }));
                 if (!isSilent) {
-                    useStore.getState().addToast(`📍 Location auto-selected: ${result.city}`, 'success');
+                    useStore.getState().addToast(`We set your city to ${result.city} based on your location.`, 'success');
                 }
             }
         } catch {
             if (!isSilent) {
-                useStore.getState().addToast('Could not access location. Please select your city manually.', 'info');
+                useStore.getState().addToast("We couldn't get your location. Please pick your city from the list.", 'info');
             }
         } finally {
             setIsLocatingCity(false);
@@ -267,13 +267,13 @@ const CreatorJoin = () => {
                         instagram: cleanHandle,
                         instagramFollowers: String(mockFollowers)
                     }));
-                    useStore.getState().addToast(`Local dev mode: Instagram verification passed (${mockFollowers.toLocaleString()} followers).`, 'info');
+                    useStore.getState().addToast(`Test mode: Instagram verified with ${mockFollowers.toLocaleString()} followers.`, 'info');
                     return;
                 }
                 if (data.requiresManualEntry) {
                     setIsManualFollowerEntry(true);
                     setInstagramVerificationError('');
-                    useStore.getState().addToast(`Instagram verification blocked by Meta. Please enter followers manually.`, 'info');
+                    useStore.getState().addToast("We couldn't fetch your Instagram followers automatically. Please enter the count yourself.", 'info');
                     return;
                 }
                 const errMsg = data.error || `Could not verify @${cleanHandle}. Make sure account is public.`;
@@ -307,9 +307,9 @@ const CreatorJoin = () => {
             }));
 
             if (!meetsCriteria) {
-                useStore.getState().addToast(`Requirement not met: ${minInstagramFollowers.toLocaleString()}+ followers needed to register.`, 'warning');
+                useStore.getState().addToast(`You need at least ${minInstagramFollowers.toLocaleString()} Instagram followers to join.`, 'warning');
             } else {
-                useStore.getState().addToast(`Instagram verified: ${count.toLocaleString()} followers!`, 'success');
+                useStore.getState().addToast(`Instagram verified with ${count.toLocaleString()} followers.`, 'success');
             }
         } catch (err) {
             const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -332,12 +332,12 @@ const CreatorJoin = () => {
                     instagram: cleanHandle,
                     instagramFollowers: String(mockFollowers)
                 }));
-                useStore.getState().addToast(`Local dev mode: Instagram verification passed (${mockFollowers.toLocaleString()} followers).`, 'info');
+                useStore.getState().addToast(`Test mode: Instagram verified with ${mockFollowers.toLocaleString()} followers.`, 'info');
                 return;
             }
             setIsManualFollowerEntry(true);
             setInstagramVerificationError('');
-            useStore.getState().addToast(`Instagram verification blocked by Meta. Please enter followers manually.`, 'info');
+            useStore.getState().addToast("We couldn't fetch your Instagram followers automatically. Please enter the count yourself.", 'info');
         } finally {
             setIsInstagramVerifying(false);
         }
@@ -437,12 +437,12 @@ const CreatorJoin = () => {
                     email: loggedInUser.email || prev.email,
                     profilePicture: loggedInUser.photoURL || prev.profilePicture
                 }));
-                useStore.getState().addToast(`Connected as ${loggedInUser.displayName || loggedInUser.email}! Basic details pre-filled.`, 'success');
+                useStore.getState().addToast(`Signed in as ${loggedInUser.displayName || loggedInUser.email}. We've filled in your basic details.`, 'success');
             }
         } catch (err) {
             console.error("Google login error in CreatorJoin:", err);
             if (err.code !== 'auth/popup-closed-by-user') {
-                useStore.getState().addToast("Could not complete Google sign-in. You can enter details manually.", 'error');
+                useStore.getState().addToast("Couldn't sign you in with Google. You can enter your details yourself instead.", 'error');
             }
         } finally {
             setIsLoggingInWithGoogle(false);
@@ -638,9 +638,9 @@ const CreatorJoin = () => {
         try {
             const url = await uploadToCloudinary(file);
             setFormData(prev => ({ ...prev, profilePicture: url }));
-            useStore.getState().addToast("Profile photo uploaded!", 'success');
+            useStore.getState().addToast("Profile photo uploaded.", 'success');
         } catch (error) {
-            useStore.getState().addToast("Couldn't upload photo to cloud, but local preview is saved.", 'error');
+            useStore.getState().addToast("Couldn't upload your photo, but the preview is still saved here. Please try again.", 'error');
         } finally {
             setIsUploadingPhoto(false);
         }
@@ -669,7 +669,7 @@ const CreatorJoin = () => {
             setIsPhoneVerified(true);
             setVerifiedPhoneNumber(fullFormattedPhone);
             setOtpSent(false);
-            useStore.getState().addToast("Local mode: Phone verified automatically!", 'success');
+            useStore.getState().addToast("Test mode: phone number verified automatically.", 'success');
             try { confetti({ particleCount: 50, spread: 60, origin: { y: 0.5 } }); } catch (e) {}
             return;
         }
@@ -715,7 +715,7 @@ const CreatorJoin = () => {
             setOtpCooldown(30);
             setOtpDigits(['', '', '', '', '', '']);
             setSmsFailed(false);
-            useStore.getState().addToast(`6-digit code sent to ${countryCode} ${cleanDigits}`, 'success');
+            useStore.getState().addToast(`We sent a 6-digit code to ${countryCode} ${cleanDigits}.`, 'success');
             setTimeout(() => {
                 otpInputRefs.current[0]?.focus();
             }, 150);
@@ -840,7 +840,7 @@ const CreatorJoin = () => {
             setIsPhoneVerified(true);
             setVerifiedPhoneNumber(fullFormattedPhone);
             setOtpSent(false);
-            useStore.getState().addToast("Phone verified successfully!", 'success');
+            useStore.getState().addToast("Phone number verified.", 'success');
             try { confetti({ particleCount: 50, spread: 60, origin: { y: 0.5 } }); } catch (e) {}
         } catch (err) {
             console.error("OTP confirmation error:", err);
@@ -885,15 +885,15 @@ const CreatorJoin = () => {
                 const fullFormattedPhone = `${countryCode} ${cleanDigits}`;
                 setIsPhoneVerified(true);
                 setVerifiedPhoneNumber(fullFormattedPhone);
-                useStore.getState().addToast("Local mode: Phone verified automatically!", 'info');
+                useStore.getState().addToast("Test mode: phone number verified automatically.", 'info');
             } else if (!isPhoneVerified) {
                 if (smsFailed) {
-                    useStore.getState().addToast("Skipping phone verification due to SMS failure. We will verify later.", 'info');
+                    useStore.getState().addToast("We couldn't send a text right now, so we'll verify your phone number later.", 'info');
                 } else {
                     if (!otpSent) {
-                        useStore.getState().addToast("Please tap 'Send Code' and verify your phone number with the 6-digit SMS OTP.", 'warning');
+                        useStore.getState().addToast("Please tap 'Send Code', then enter the 6-digit code we text you.", 'warning');
                     } else {
-                        useStore.getState().addToast("Please verify your phone number with the 6-digit code.", 'warning');
+                        useStore.getState().addToast("Please enter the 6-digit code to verify your phone number.", 'warning');
                     }
                     return;
                 }
@@ -906,18 +906,18 @@ const CreatorJoin = () => {
                 return;
             }
             if (formData.categories === 'Others' && !formData.customNiche.trim()) {
-                useStore.getState().addToast("Please specify your content niche.", 'warning');
+                useStore.getState().addToast("Please tell us your content niche.", 'warning');
                 return;
             }
             if (!formData.instagram.trim() && !formData.linkedin.trim()) {
-                useStore.getState().addToast("Please provide at least your Instagram or LinkedIn username.", 'warning');
+                useStore.getState().addToast("Please add your Instagram or LinkedIn username.", 'warning');
                 return;
             }
 
             for (const field of ['instagram', 'linkedin', 'youtube', 'twitter']) {
                 const val = formData[field]?.trim();
                 if (val && hasDisallowedLink(val)) {
-                    useStore.getState().addToast(`Links are not allowed. Please enter only your ${field} username/handle.`, 'error');
+                    useStore.getState().addToast(`Please enter just your ${field} username, not a link.`, 'error');
                     return;
                 }
             }
@@ -949,18 +949,18 @@ const CreatorJoin = () => {
                     const isVerified = Boolean(instagramVerifiedData && instagramVerifiedData.handle === cleanInsta);
 
                     if (requireInstagramVerification && !isVerified && !isManualFollowerEntry) {
-                        useStore.getState().addToast("Please auto-verify your Instagram profile before proceeding.", 'warning');
+                        useStore.getState().addToast("Please verify your Instagram profile before continuing.", 'warning');
                         return;
                     }
 
                     if (isManualFollowerEntry && !formData.instagramFollowers) {
-                        useStore.getState().addToast("Please enter your follower count manually.", 'warning');
+                        useStore.getState().addToast("Please enter your Instagram follower count.", 'warning');
                         return;
                     }
 
                     const followerCount = Number(formData.instagramFollowers || instagramVerifiedData?.followers || 0);
                     if (minInstagramFollowers > 0 && followerCount < minInstagramFollowers) {
-                        useStore.getState().addToast(`Application requirement: Minimum ${minInstagramFollowers.toLocaleString()} followers required to join. Your account has ${followerCount.toLocaleString()}.`, 'error');
+                        useStore.getState().addToast(`You need at least ${minInstagramFollowers.toLocaleString()} followers to join. Your account has ${followerCount.toLocaleString()}.`, 'error');
                         return;
                     }
                 }
@@ -982,7 +982,7 @@ const CreatorJoin = () => {
         if (e) e.preventDefault();
         
         if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.city || !formData.categories) {
-            useStore.getState().addToast("Please complete all required fields.", 'error');
+            useStore.getState().addToast("Please fill in all the required fields.", 'error');
             return;
         }
 
@@ -991,7 +991,7 @@ const CreatorJoin = () => {
             setIsPhoneVerified(true);
         } else if (!isPhoneVerified) {
             if (!smsFailed) {
-                useStore.getState().addToast("Please verify your phone number with the 6-digit OTP before submitting.", 'warning');
+                useStore.getState().addToast("Please verify your phone number with the 6-digit code before submitting.", 'warning');
                 return;
             }
         }
@@ -1094,7 +1094,7 @@ const CreatorJoin = () => {
             if (targetId) {
                 try {
                     await markCreatorCityGroupJoined(targetId);
-                    useStore.getState().addToast(`Joined ${matchedCityGroup?.city || 'city'} creator group!`, 'success');
+                    useStore.getState().addToast(`You've joined the ${matchedCityGroup?.city || 'city'} creator group!`, 'success');
                 } catch (e) {
                     console.error('Error marking city group joined:', e);
                 }
@@ -1290,7 +1290,7 @@ const CreatorJoin = () => {
                                         navigate('/creator-dashboard');
                                         return;
                                     } else {
-                                        useStore.getState().addToast('You are logged in with an account that does not match this creator profile. Please sign in with the correct email or phone.', 'error');
+                                        useStore.getState().addToast("You're signed in with a different account. Please sign in with this profile's email or phone.", 'error');
                                     }
                                 }
                                 setAuthModal(true);

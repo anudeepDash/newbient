@@ -156,8 +156,8 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete, up
                             variant="outline" 
                             onClick={async () => {
                                 if (confirm(`Send a notification for "${gig.title}"?`)) {
-                                    await notifyAllUsers(`Volunteers Needed: ${gig.title}`, `Join the squad for ${gig.title} at ${gig.location}. Apply now!`, `/community`, '');
-                                    useStore.getState().addToast("Notification sent to all volunteers!", 'success');
+                                    await notifyAllUsers(`Volunteers needed for ${gig.title}`, `Join the squad for ${gig.title} at ${gig.location}. Apply now in the community tab.`, `/community`, '');
+                                    useStore.getState().addToast("Notification sent to all volunteers.", 'success');
                                 }
                             }}
                             className="flex-1 h-14 rounded-2xl border-black/10 dark:border-white/5 bg-yellow-500/5 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all flex items-center justify-center gap-3 group/btn"
@@ -326,17 +326,17 @@ const VolunteerGigManager = () => {
             } else {
                 await addVolunteerGig(gigData);
                 await notifyAllUsers(
-                    'New Volunteer Opportunity!',
-                    `A new opportunity for ${gigData.title} is now available. Apply now!`,
+                    'New volunteer opportunity',
+                    `${gigData.title} is looking for volunteers. Apply now in the community tab.`,
                     '/community',
                     'gig'
                 );
             }
-            useStore.getState().addToast(`Gig ${editingId ? 'updated' : 'created'} successfully!`, 'success');
+            useStore.getState().addToast(`Gig ${editingId ? 'updated' : 'created'}.`, 'success');
             resetForm();
         } catch (error) {
             console.error(error);
-            useStore.getState().addToast(`Something went wrong while saving. Please try again.`, 'error');
+            useStore.getState().addToast(`Couldn't save the gig. Please try again.`, 'error');
         } finally {
             setSaving(false);
         }
@@ -352,7 +352,7 @@ const VolunteerGigManager = () => {
         if (existingEvent) {
             if (confirm(`Remove "${gig.title}" from Home Upcoming Events?`)) {
                 await deleteUpcomingEvent(existingEvent.id);
-                useStore.getState().addToast(`"${gig.title}" removed from Home Upcoming Events`, 'info');
+                useStore.getState().addToast(`"${gig.title}" removed from upcoming events on the home page.`, 'info');
             }
         } else {
             const eventData = {
@@ -370,7 +370,7 @@ const VolunteerGigManager = () => {
                 isVolunteerGig: true
             };
             await addUpcomingEvent(eventData);
-            useStore.getState().addToast(`"${gig.title}" added to Home Upcoming Events!`, 'success');
+            useStore.getState().addToast(`"${gig.title}" added to upcoming events on the home page.`, 'success');
         }
     };
 
@@ -384,7 +384,7 @@ const VolunteerGigManager = () => {
                 link: gig.applyLink || '',
                 type: 'volunteer_gig'
             });
-            useStore.getState().addToast('Announcement posted!', 'success');
+            useStore.getState().addToast('Announcement posted.', 'success');
         }
     };
 
@@ -414,7 +414,7 @@ const VolunteerGigManager = () => {
                 try {
                     const url = await uploadToCloudinary(file);
                     setFormData(prev => ({ ...prev, image: url }));
-                    useStore.getState().addToast("Image pasted from clipboard!", 'success');
+                    useStore.getState().addToast("Image pasted and uploaded.", 'success');
                 } catch (error) {
                     console.error("Upload failed:", error);
                     useStore.getState().addToast("Couldn't upload the pasted image. Please try again.", 'error');

@@ -107,7 +107,8 @@ export const triggerNotification = async ({ userId, type, title, content, link, 
         const currentUser = useStore.getState().user;
         const isForCurrentUser = !userId || (currentUser && currentUser.uid === userId);
 
-        if (isForCurrentUser && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        // Skipped while the tab is visible: the in-app banner already shows it, so this avoids a double pop-up.
+        if (isForCurrentUser && typeof Notification !== 'undefined' && Notification.permission === 'granted' && document.visibilityState !== 'visible') {
             try {
                 new Notification(title, {
                     body: content,

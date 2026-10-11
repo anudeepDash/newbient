@@ -266,7 +266,7 @@ const Invoice = () => {
             const pageElements = document.querySelectorAll('.invoice-page-render');
             
             if (!pageElements.length) {
-                useStore.getState().addToast("Nothing to download. The invoice might still be loading.", 'error');
+                useStore.getState().addToast("The invoice is still loading. Try downloading again in a moment.", 'warning');
                 return;
             }
 
@@ -418,8 +418,8 @@ const Invoice = () => {
             });
             // Notify admins
             await notifyAdmins(
-                'Payment Verification Required',
-                `${claimData.name} (${claimData.email}) claims payment for Invoice #${displayInvoice.invoiceNumber || id}. Amount: ₹${(displayInvoice.total || displayInvoice.amount || 0).toLocaleString()}`,
+                'Payment to verify',
+                `${claimData.name} (${claimData.email}) says they've paid ₹${(displayInvoice.total || displayInvoice.amount || 0).toLocaleString()} for invoice #${displayInvoice.invoiceNumber || id}.`,
                 `/admin/invoices`,
                 'message'
             );

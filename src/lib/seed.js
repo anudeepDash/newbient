@@ -92,9 +92,9 @@ export const seedDatabase = async () => {
         }
 
         console.log("Seeding complete!");
-        useStore.getState().addToast("Database populated with default data!", 'error');
+        useStore.getState().addToast("Default data added.", 'success');
     } catch (error) {
         console.error("Error seeding database:", error);
-        useStore.getState().addToast("Error seeding data. Check console.", 'error');
+        useStore.getState().addToast("Couldn't add the default data. Please try again.", 'error');
     }
 };

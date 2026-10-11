@@ -103,7 +103,7 @@ const ConcertManager = () => {
             if (editingId) await updatePortfolioItem(editingId, data);
             else await addPortfolioItem({ id: `p-${Date.now()}`, ...data });
             resetForms();
-        } catch { useStore.getState().addToast('Storage error.', 'error'); }
+        } catch { useStore.getState().addToast("Couldn't save the portfolio item. Please try again.", 'error'); }
         finally { setUploading(false); }
     };
 
@@ -111,7 +111,7 @@ const ConcertManager = () => {
         e.preventDefault();
         if (!newCategoryName.trim()) return;
         try { await addCategory(newCategoryName.trim()); setNewCategoryName(''); }
-        catch { useStore.getState().addToast('Category sync failure.', 'error'); }
+        catch { useStore.getState().addToast("Couldn't add the category. Please try again.", 'error'); }
     };
 
     const filtered = filterCategory === 'all' ? portfolio : portfolio.filter(i => i.category === filterCategory);

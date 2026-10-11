@@ -83,12 +83,12 @@ const CreatorPassCard = ({
                 setSelectedCity(result.city);
                 setIsAutoDetected(true);
                 if (!isSilent) {
-                    useStore.getState().addToast(`📍 Auto-selected ${result.city} based on your location`, 'success');
+                    useStore.getState().addToast(`We picked ${result.city} based on your location.`, 'success');
                 }
             }
         } catch {
             if (!isSilent) {
-                useStore.getState().addToast('Location access denied or unavailable. Please pick your city.', 'info');
+                useStore.getState().addToast("We couldn't detect your location. Please pick your city.", 'info');
             }
         } finally {
             setIsLocating(false);

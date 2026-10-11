@@ -148,9 +148,9 @@ const DocumentPDFManagement = () => {
         if (!window.confirm(`Delete "${doc.documentTitle || 'this document'}"? This cannot be undone.`)) return;
         try {
             await deleteGenDocument(doc.id);
-            addToast('Document deleted', 'success');
+            addToast('Document deleted.', 'success');
         } catch (err) {
-            addToast('Failed to delete document', 'error');
+            addToast("Couldn't delete the document. Please try again.", 'error');
         }
     };
 
@@ -160,7 +160,7 @@ const DocumentPDFManagement = () => {
             // Navigate to the editor with a download trigger
             navigate(`/admin/edit-gen-document/${doc.id}?download=true`);
         } catch (err) {
-            addToast('Failed to download PDF', 'error');
+            addToast("Couldn't download the PDF. Please try again.", 'error');
         } finally {
             setDownloadingId(null);
         }

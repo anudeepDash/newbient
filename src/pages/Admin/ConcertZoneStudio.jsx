@@ -66,9 +66,9 @@ const ConcertZoneStudio = () => {
             await updateGeneralSettings({
                 concertzone: layoutSettings
             });
-            addToast("HUB_LAYOUT_SYNCHRONIZED.", "success");
+            addToast("Layout saved.", "success");
         } catch (error) {
-            addToast("Failed to sync layout.", "error");
+            addToast("Couldn't save the layout. Please try again.", "error");
         } finally {
             setIsSaving(false);
         }

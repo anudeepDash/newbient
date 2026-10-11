@@ -68,7 +68,7 @@ const LiveCampaigns = () => {
 
         const spotsInfo = getCampaignSpotsInfo(campaign, creators);
         if (spotsInfo.isFull) {
-            useStore.getState().addToast("Sorry, this campaign has reached maximum capacity!", 'error');
+            useStore.getState().addToast("Sorry, this campaign is already full.", 'error');
             return;
         }
 
@@ -82,14 +82,14 @@ const LiveCampaigns = () => {
         const meetsCriteria = minFollowers <= 0 || count >= minFollowers || isAutoVerified;
 
         if (!meetsCriteria) {
-            useStore.getState().addToast(`Requires at least ${minFollowers.toLocaleString()} followers (${count.toLocaleString()} on profile).`, 'error');
+            useStore.getState().addToast(`This campaign needs at least ${minFollowers.toLocaleString()} followers. Your profile shows ${count.toLocaleString()}.`, 'error');
             setSelectedCampaignForModal(campaign);
             return;
         }
 
         const currentJoined = profile.joinedCampaigns || [];
         if (currentJoined.includes(campaign.id)) {
-            useStore.getState().addToast("You've already applied to this campaign!", 'info');
+            useStore.getState().addToast("You've already applied to this campaign.", 'info');
             return;
         }
 
@@ -109,10 +109,10 @@ const LiveCampaigns = () => {
 
             await updateCreator(user.uid, creatorData);
             setProfile(creatorData);
-            useStore.getState().addToast(`Applied to ${campaign.title} successfully!`, 'success');
+            useStore.getState().addToast(`You've applied to ${campaign.title}!`, 'success');
         } catch (err) {
             console.error("Direct apply failed:", err);
-            useStore.getState().addToast(err.message || "Failed to apply directly. Opening campaign details...", 'error');
+            useStore.getState().addToast(err.message || "Couldn't apply right now. Opening the campaign details instead.", 'error');
             setSelectedCampaignForModal(campaign);
         } finally {
             setApplyingCampaignId(null);

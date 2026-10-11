@@ -83,7 +83,7 @@ const GiveawayManager = () => {
     const handlePickWinner = async (campaignId, campaignName) => {
         const participants = giveawayEntries.filter(e => e.campaignId === campaignId);
         if (participants.length === 0) {
-            useStore.getState().addToast("No participants in this campaign yet.", 'error');
+            useStore.getState().addToast("No one has entered this giveaway yet.", 'warning');
             return;
         }
 
@@ -109,7 +109,7 @@ const GiveawayManager = () => {
                 // await updateGiveawayEntry(winner.id, { isWinner: true, winnerReward: true }); 
                 // Close the giveaway
                 await handleCloseGiveaway(campaignId);
-                useStore.getState().addToast(`🎊 ${winner.name} HAS BEEN SELECTED AND GIVEAWAY CLOSED!`, 'error');
+                useStore.getState().addToast(`🎊 ${winner.name} is the winner! The giveaway is now closed.`, 'success');
             }
         }
     };
@@ -123,7 +123,7 @@ const GiveawayManager = () => {
                 endDate: new Date().toISOString().split('T')[0] // Set to today
             });
         } catch (error) {
-            useStore.getState().addToast("Error closing giveaway.", 'error');
+            useStore.getState().addToast("Couldn't close the giveaway. Please try again.", 'error');
         }
     };
 
@@ -135,10 +135,10 @@ const GiveawayManager = () => {
                 const file = item.getAsFile();
                 if (type === 'poster') {
                     setSelectedFile(file);
-                    useStore.getState().addToast("Poster pasted from clipboard!", 'success');
+                    useStore.getState().addToast("Poster pasted.", 'success');
                 } else if (type === 'venueLayout') {
                     setVenueLayoutFile(file);
-                    useStore.getState().addToast("Layout pasted from clipboard!", 'success');
+                    useStore.getState().addToast("Layout pasted.", 'success');
                 }
                 e.preventDefault();
             }
@@ -148,7 +148,7 @@ const GiveawayManager = () => {
     const handleExportCSV = (campaignId, campaignName) => {
         const participants = giveawayEntries.filter(e => e.campaignId === campaignId);
         if (participants.length === 0) {
-            useStore.getState().addToast("No data to export.", 'error');
+            useStore.getState().addToast("There's nothing to export yet.", 'info');
             return;
         }
         
@@ -223,7 +223,7 @@ const GiveawayManager = () => {
             setSelectedFile(null);
             setVenueLayoutFile(null);
         } catch (error) {
-            useStore.getState().addToast(error.message, 'error');
+            useStore.getState().addToast("Couldn't save the giveaway. Please try again.", 'error');
         } finally {
             setUploading(false);
         }
@@ -372,12 +372,12 @@ const GiveawayManager = () => {
                                         onClick={async () => {
                                             if (window.confirm(`Send push notification for "${giveaway.name}"?`)) {
                                                 await notifyAllUsers(
-                                                    `New Giveaway: ${giveaway.name}`,
+                                                    `New giveaway: ${giveaway.name}`,
                                                     giveaway.description,
                                                     `/giveaways/${giveaway.slug}`,
                                                     giveaway.posterUrl
                                                 );
-                                                useStore.getState().addToast("Notification sent successfully.", 'success');
+                                                useStore.getState().addToast("Notification sent.", 'success');
                                             }
                                         }}
                                         className="p-2.5 bg-neon-blue/10 rounded-xl text-neon-blue border border-neon-blue/20 hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_15px_rgba(0,255,255,0.1)]"

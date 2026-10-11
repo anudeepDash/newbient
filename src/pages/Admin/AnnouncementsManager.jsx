@@ -55,7 +55,7 @@ const AnnouncementsManager = () => {
             if (item.kind === 'file' && item.type.startsWith('image/')) {
                 const file = item.getAsFile();
                 setSelectedFile(file);
-                useStore.getState().addToast("Image pasted from clipboard!", 'success');
+                useStore.getState().addToast("Image pasted.", 'success');
                 e.preventDefault();
             }
         }
@@ -89,7 +89,7 @@ const AnnouncementsManager = () => {
             } else {
                 await addAnnouncement({ ...newAnnouncement, image: imageUrl });
                 await notifyAllUsers(
-                    `New Announcement: ${newAnnouncement.title}`,
+                    `New announcement: ${newAnnouncement.title}`,
                     newAnnouncement.content,
                     newAnnouncement.link,
                     imageUrl
@@ -553,7 +553,7 @@ const AnnouncementsManager = () => {
                                                                 onClick={async () => {
                                                                     if (window.confirm(`Resend notification for "${item.title}"?`)) {
                                                                         await notifyAllUsers(item.title, item.content, item.link || `/announcements`, item.image);
-                                                                        useStore.getState().addToast("Notification sent successfully!", 'success');
+                                                                        useStore.getState().addToast("Notification sent to all users.", 'success');
                                                                     }
                                                                 }}
                                                                 className="w-9 h-9 rounded-xl bg-neon-pink/20 backdrop-blur-md border border-neon-pink/30 flex items-center justify-center text-neon-pink hover:bg-neon-pink hover:text-black transition-all"

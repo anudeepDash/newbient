@@ -60,10 +60,10 @@ const CreatorProgramSettingsManager = () => {
                 showCreatorTestimonials: formData.showCreatorTestimonials,
                 creatorAnnouncement: formData.creatorAnnouncement.trim()
             });
-            useStore.getState().addToast('Creator program settings saved!', 'success');
+            useStore.getState().addToast('Creator program settings saved.', 'success');
         } catch (err) {
             console.error('Save settings error:', err);
-            useStore.getState().addToast('Failed to save settings.', 'error');
+            useStore.getState().addToast("Couldn't save the settings. Please try again.", 'error');
         } finally {
             setSaving(false);
         }

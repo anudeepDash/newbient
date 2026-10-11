@@ -191,10 +191,10 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
             const result = await requestAutoLocation({ onlyPrimaryHubs: false });
             if (result?.city) {
                 setForm(prev => ({ ...prev, city: result.city }));
-                addToast(`📍 Location auto-selected: ${result.city}`, 'success');
+                addToast(`City set to ${result.city} based on your location.`, 'success');
             }
         } catch {
-            addToast('Could not access location. Please select city manually.', 'info');
+            addToast("Couldn't get your location. Please pick the city from the list.", 'info');
         } finally {
             setIsLocatingCity(false);
         }
@@ -240,14 +240,14 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
                         instagram: cleanHandle,
                         instagramFollowers: String(mockFollowers)
                     }));
-                    addToast(`Local dev: Instagram verified with ${mockFollowers.toLocaleString()} followers!`, 'info');
+                    addToast(`Test mode: Instagram verified with ${mockFollowers.toLocaleString()} followers.`, 'info');
                     return;
                 }
 
                 if (data.requiresManualEntry) {
                     setIsManualFollowerEntry(true);
                     setInstagramVerificationError('');
-                    addToast('Instagram auto-sync blocked by Meta. Please enter follower count manually.', 'info');
+                    addToast("We couldn't fetch Instagram followers automatically. Please enter the count yourself.", 'info');
                     return;
                 }
 
@@ -282,7 +282,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
                 ...(data.profilePic && !prev.profilePicture ? { profilePicture: data.profilePic } : {})
             }));
 
-            addToast(`Instagram verified: @${data.handle} (${count.toLocaleString()} followers)!`, 'success');
+            addToast(`Instagram verified: @${data.handle} has ${count.toLocaleString()} followers.`, 'success');
         } catch (err) {
             console.warn("Instagram verification error:", err);
             const isLocal = typeof window !== 'undefined' && 
@@ -305,7 +305,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
                     instagram: cleanHandle,
                     instagramFollowers: String(mockFollowers)
                 }));
-                addToast(`Local dev: Instagram verified with ${mockFollowers.toLocaleString()} followers!`, 'info');
+                addToast(`Test mode: Instagram verified with ${mockFollowers.toLocaleString()} followers.`, 'info');
                 return;
             }
             setIsManualFollowerEntry(true);
@@ -338,7 +338,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
         const file = e.target.files?.[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
-            addToast("Image size must be under 10MB", "error");
+            addToast("This image is too large. Please choose one under 10MB.", "error");
             return;
         }
         const localPreview = URL.createObjectURL(file);
@@ -349,12 +349,12 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
                 const url = await uploadToCloudinary(file);
                 if (url) {
                     setForm(prev => ({ ...prev, profilePicture: url }));
-                    addToast("Profile avatar uploaded!", "success");
+                    addToast("Profile photo uploaded.", "success");
                 }
             }
         } catch (err) {
             console.error("Cloudinary upload failed, using local preview:", err);
-            addToast("Could not upload to cloud, using preview.", "info");
+            addToast("Couldn't upload the photo, so we're using the preview for now.", "info");
         } finally {
             setIsUploadingPhoto(false);
         }
@@ -365,31 +365,31 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
 
         if (!form.name.trim()) {
             setActiveTab('identity');
-            addToast("Please enter creator full name.", "error");
+            addToast("Please enter the creator's full name.", "error");
             return;
         }
 
         if (!form.city) {
             setActiveTab('identity');
-            addToast("Please select operating city.", "error");
+            addToast("Please select the creator's city.", "error");
             return;
         }
 
         if (form.city === 'Others' && !form.customCity?.trim()) {
             setActiveTab('identity');
-            addToast("Please specify the custom city name.", "error");
+            addToast("Please enter the city name.", "error");
             return;
         }
 
         if (!form.categories) {
             setActiveTab('niche');
-            addToast("Please select primary creator niche.", "error");
+            addToast("Please select the creator's main niche.", "error");
             return;
         }
 
         if (form.categories === 'Others' && !form.customNiche?.trim()) {
             setActiveTab('niche');
-            addToast("Please specify the custom content niche.", "error");
+            addToast("Please enter the content niche.", "error");
             return;
         }
 
@@ -398,7 +398,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
                            form.categories === 'College Pages';
         if (showCollege && !form.collegeName?.trim()) {
             setActiveTab('niche');
-            addToast("Please specify college or university name.", "error");
+            addToast("Please enter the college or university name.", "error");
             return;
         }
 
@@ -406,7 +406,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
             const val = form[field]?.trim();
             if (val && hasDisallowedLink(val)) {
                 setActiveTab('socials');
-                addToast(`Links are not allowed. Please enter only the ${field} username/handle.`, 'error');
+                addToast(`Please enter just the ${field} username, not a link.`, 'error');
                 return;
             }
         }
@@ -418,7 +418,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
                 const existing = creators.find(c => normalizePhoneNumber(c.phone) === normPhone);
                 if (existing) {
                     setActiveTab('identity');
-                    addToast(`Phone number is already registered to ${existing.name || existing.displayName} (${existing.email || 'Existing'}).`, 'error');
+                    addToast(`This phone number already belongs to ${existing.name || existing.displayName} (${existing.email || 'existing creator'}).`, 'error');
                     return;
                 }
             }
@@ -429,7 +429,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
             const existing = creators.find(c => c.email && c.email.trim().toLowerCase() === normEmail);
             if (existing) {
                 setActiveTab('identity');
-                addToast(`Email is already registered to ${existing.name || existing.displayName}.`, 'error');
+                addToast(`This email already belongs to ${existing.name || existing.displayName}.`, 'error');
                 return;
             }
         }
@@ -439,21 +439,21 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
             const existing = creators.find(c => c.instagram && c.instagram.trim().replace(/^@/, '').toLowerCase() === cleanInsta);
             if (existing) {
                 setActiveTab('socials');
-                addToast(`Instagram @${cleanInsta} is already registered to ${existing.name || existing.displayName}.`, 'error');
+                addToast(`Instagram @${cleanInsta} already belongs to ${existing.name || existing.displayName}.`, 'error');
                 return;
             }
 
             const isVerified = Boolean(instagramVerifiedData && instagramVerifiedData.handle === cleanInsta);
             if (!isVerified && !form.instagramFollowers?.trim() && !isManualFollowerEntry) {
                 setActiveTab('socials');
-                addToast("Please verify the Instagram handle or enter the follower count manually.", 'warning');
+                addToast("Please verify the Instagram handle or enter the follower count.", 'warning');
                 return;
             }
         }
 
         if (sendWelcomeMail && !form.email?.trim()) {
             setActiveTab('rates');
-            addToast("Please provide an email address to send the welcome email.", 'error');
+            addToast("Add an email address so we can send the welcome email.", 'error');
             return;
         }
 
@@ -522,12 +522,12 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
             };
 
             const result = await addCreator(payload, sendWelcomeMail);
-            addToast(`Creator "${form.name.trim()}" onboarded successfully!`, 'success');
+            addToast(`Creator "${form.name.trim()}" added.`, 'success');
             onCreated?.(result);
             onClose?.();
         } catch (err) {
             console.error("Error adding creator profile:", err);
-            addToast(err.message || "Failed to add creator profile.", 'error');
+            addToast(err.message || "Couldn't add the creator. Please try again.", 'error');
         } finally {
             setIsSaving(false);
         }

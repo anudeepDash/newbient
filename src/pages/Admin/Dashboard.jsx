@@ -388,10 +388,10 @@ const Dashboard = () => {
                 addedBy: 'SYSTEM_BOOTSTRAP',
                 createdAt: new Date().toISOString()
             });
-            useStore.getState().addToast("You're now the admin!", 'success');
+            useStore.getState().addToast("You're now the admin.", 'success');
             checkUserRole(user);
             setIsFirstRun(false);
-        } catch (error) { useStore.getState().addToast("Something went wrong. Please try again.", 'error'); }
+        } catch (error) { useStore.getState().addToast("Couldn't make you the admin. Please try again.", 'error'); }
     };
 
     const totalPaidRevenue = (invoices || [])
@@ -626,16 +626,16 @@ const Dashboard = () => {
 
         const handleSave = async () => {
             if (selected.length !== 4) {
-                useStore.getState().addToast('Please select exactly 4 metrics', 'error');
+                useStore.getState().addToast('Pick exactly 4 metrics to show.', 'error');
                 return;
             }
             setSaving(true);
             try {
                 await saveDashboardWidgets(selected);
-                useStore.getState().addToast('Dashboard widgets updated', 'success');
+                useStore.getState().addToast('Dashboard widgets updated.', 'success');
                 setIsWidgetConfigOpen(false);
             } catch (err) {
-                useStore.getState().addToast('Failed to save config', 'error');
+                useStore.getState().addToast("Couldn't save your widget choices. Please try again.", 'error');
             } finally {
                 setSaving(false);
             }

@@ -529,7 +529,7 @@ const BlogPostDetail = () => {
                                         onClick={() => {
                                             if (s.label === 'copy link') {
                                                 navigator.clipboard.writeText(window.location.href);
-                                                useStore.getState().addToast('LINK_COPIED', 'success');
+                                                useStore.getState().addToast('Link copied.', 'success');
                                             } else {
                                                 handleShare(s.label);
                                             }

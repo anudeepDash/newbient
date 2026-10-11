@@ -162,7 +162,7 @@ const UpcomingEvents = () => {
             }
 
             if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
-                useStore.getState().addToast("Link copied to clipboard! Paste it to share with the image.", 'success');
+                useStore.getState().addToast("Link copied. Paste it alongside the image when you share.", 'success');
                 await navigator.share(shareData);
             } else {
                 const link = document.createElement('a');
@@ -170,14 +170,14 @@ const UpcomingEvents = () => {
                 link.download = `${event.title.replace(/\s+/g, '_')}_event.png`;
                 link.click();
                 
-                useStore.getState().addToast("Image downloaded and event link copied to clipboard!", 'success');
+                useStore.getState().addToast("Image downloaded and event link copied.", 'success');
             }
         } catch (error) {
             console.error("Share failed:", error);
             try {
                 await navigator.clipboard.writeText(eventUrl);
             } catch (e2) {}
-            useStore.getState().addToast("Link copied to clipboard!", 'success');
+            useStore.getState().addToast("Link copied.", 'success');
         }
     };
 

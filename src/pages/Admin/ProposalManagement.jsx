@@ -118,12 +118,12 @@ const ProposalManagement = () => {
     const handleCopyLink = (id) => {
         const link = `${window.location.origin}/proposal/${id}?via=link`;
         navigator.clipboard.writeText(link);
-        useStore.getState().addToast(`Proposal link copied!`, 'success');
+        useStore.getState().addToast(`Proposal link copied.`, 'success');
     };
 
     const handleDelete = (id) => {
         if (user?.role === 'editor' || user?.role === 'content_admin') {
-            useStore.getState().addToast("Only admins can delete documents.", 'error');
+            useStore.getState().addToast("Only admins can delete proposals.", 'error');
             return;
         }
         if (window.confirm('Are you sure you want to delete this proposal?')) {
@@ -157,7 +157,7 @@ const ProposalManagement = () => {
             });
             const result = await response.json();
             if (result.success) {
-                useStore.getState().addToast('Proposal email sent successfully!', 'success');
+                useStore.getState().addToast('Proposal emailed.', 'success');
                 if (emailModalProposal) {
                     updateProposalStatus(emailModalProposal.id, 'Sent');
                 }
@@ -205,7 +205,7 @@ const ProposalManagement = () => {
         if (window.confirm('Duplicate this proposal for a revision?')) {
             try {
                 const newId = await duplicateProposal(id);
-                useStore.getState().addToast('Proposal duplicated as Draft.', 'success');
+                useStore.getState().addToast('Proposal duplicated as a draft.', 'success');
             } catch (err) {
                 console.error(err);
                 useStore.getState().addToast("Couldn't duplicate the proposal. Please try again.", 'error');
@@ -221,7 +221,7 @@ const ProposalManagement = () => {
                     approvalMetadata: null,
                     rejectionMetadata: null
                 });
-                useStore.getState().addToast('Signature revoked successfully. Document is now active.', 'success');
+                useStore.getState().addToast('Signature revoked. The proposal is active again.', 'success');
                 setSelectedAnalytics(null);
             } catch (err) {
                 console.error(err);

@@ -267,10 +267,10 @@ const GuestlistManager = () => {
                 try {
                     const url = await uploadToCloudinary(file);
                     setFormData(prev => ({ ...prev, image: url }));
-                    useStore.getState().addToast("Image pasted from clipboard!", 'success');
+                    useStore.getState().addToast("Image pasted.", 'success');
                 } catch (error) {
                     console.error("Upload failed:", error);
-                    useStore.getState().addToast("Couldn't upload the pasted image. Please check your data and try again.", 'error', 'GUEST-UP-01');
+                    useStore.getState().addToast("Couldn't upload the pasted image. Please try again.", 'error', 'GUEST-UP-01');
                 } finally {
                     setIsUploading(false);
                 }
@@ -329,15 +329,15 @@ const GuestlistManager = () => {
                 await addGuestlist(glData);
                 if (window.confirm('Send notification to all users about this new guestlist?')) {
                     await notifyAllUsers(
-                        `GUESTLIST OPEN: ${glData.title.toUpperCase()}`,
-                        `Secure your spot for ${glData.title} at ${glData.location}. Limited slots available!`,
+                        `Guestlist open: ${glData.title}`,
+                        `Grab your spot for ${glData.title} at ${glData.location}. Spots are limited.`,
                         '/guestlists',
                         glData.image,
                         true // sendEmail
                     );
                 }
             }
-            useStore.getState().addToast(`Guestlist ${editingId ? 'updated' : 'created'} successfully!`, 'success');
+            useStore.getState().addToast(`Guestlist ${editingId ? 'updated' : 'created'}.`, 'success');
             resetForm();
         } catch (error) {
             console.error(error);
@@ -357,7 +357,7 @@ const GuestlistManager = () => {
         if (existingEvent) {
             if (confirm(`Remove "${gl.title}" from Home Upcoming Events?`)) {
                 await deleteUpcomingEvent(existingEvent.id);
-                useStore.getState().addToast(`"${gl.title}" removed from Home Upcoming Events`, 'info');
+                useStore.getState().addToast(`"${gl.title}" removed from upcoming events on the home page.`, 'info');
             }
         } else {
             const eventData = {
@@ -378,7 +378,7 @@ const GuestlistManager = () => {
                 link: `/ticket/${gl.id}`
             };
             await addUpcomingEvent(eventData);
-            useStore.getState().addToast(`"${gl.title}" added to Home Upcoming Events!`, 'success');
+            useStore.getState().addToast(`"${gl.title}" added to upcoming events on the home page.`, 'success');
         }
     };
 

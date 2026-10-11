@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Zap, Star, Users, LogOut, Settings, Home, Music, Image as ImageIcon, User as UserIcon, PlusCircle, LayoutGrid, Mic2, Search, ChevronRight, GraduationCap, Sun, Moon } from 'lucide-react';
+import { Menu, X, Zap, Star, Megaphone, AlertTriangle, Users, LogOut, Settings, Home, Music, Image as ImageIcon, User as UserIcon, PlusCircle, LayoutGrid, Mic2, Search, ChevronRight, GraduationCap, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, normalizePhoneNumber } from '../lib/utils';
 import NotificationBell from './NotificationBell';
@@ -13,8 +13,8 @@ import newbiCreatorsLogoLight from '../assets/newbi-creators-logo-light.png';
 import { useTheme } from '../hooks/useTheme';
 
 const Navbar = () => {
-    const { maintenanceState, user, siteSettings, creators, artists, announcements, isProfilePanelOpen } = useStore();
-    const pinnedAnnouncement = announcements?.find(a => a.isPinned);
+    const { maintenanceState, user, siteSettings, creators, artists, announcements, isProfilePanelOpen, dismissedAnnouncementId, dismissPinnedAnnouncement } = useStore();
+    const pinnedAnnouncement = announcements?.find(a => a.isPinned && a.id !== dismissedAnnouncementId);
     const [isOpen, setIsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const location = useLocation();
@@ -81,40 +81,57 @@ const Navbar = () => {
         <>
             {/* Global Maintenance Bypass Banner for Developer */}
             {(maintenanceState.global && user?.role === 'developer') && (
-                <div className="fixed top-0 left-0 right-0 z-[60] bg-red-600 text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-[0.2em] py-1 text-center ">
-                    ⚠️ Global Maintenance Active - Bypassing as {user.role?.replace('_', ' ')} ⚠️
+                <div role="status" className="fixed top-0 left-0 right-0 z-[60] h-11 px-4 flex items-center justify-center gap-2 bg-amber-400 text-black text-[12px] md:text-[13px] font-semibold">
+                    <AlertTriangle size={14} className="shrink-0" aria-hidden="true" />
+                    <span className="truncate">Maintenance mode is on. You can still browse because you're signed in as a {user.role?.replace('_', ' ')}.</span>
                 </div>
             )}
 
             {/* Global Pinned Announcement Banner */}
             {(pinnedAnnouncement && !(maintenanceState.global && user?.role === 'developer')) && (
-                <motion.div 
-                    initial={{ y: -50, opacity: 0 }}
+                <motion.div
+                    initial={{ y: -44, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    className="fixed top-0 left-0 right-0 z-[55] bg-white/60 dark:bg-zinc-950/20 backdrop-blur-2xl border-b border-gray-200 dark:border-white/5 py-4 px-6 text-center shadow-[0_4px_30px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_30px_rgba(0,0,0,0.5)] overflow-hidden group"
+                    transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+                    role="region"
+                    aria-label="Announcement"
+                    className="fixed top-0 left-0 right-0 z-[55] h-11 flex items-center bg-white/90 dark:bg-zinc-950/90 backdrop-blur-2xl border-b border-black/[0.06] dark:border-white/[0.08]"
                 >
-                    {/* Animated Neon Underline */}
-
                     {(() => {
                         const destination = pinnedAnnouncement.link || (pinnedAnnouncement.linkedEventId ? `/?event=${pinnedAnnouncement.linkedEventId}` : null);
                         const content = (
-                            <div className="flex items-center justify-center gap-3">
-                                <Star size={12} className="text-neon-green " />
-                                <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-gray-700 dark:text-white/90">
-                                    <span className="text-neon-green mr-2">{pinnedAnnouncement.title}</span>
-                                    <span className="opacity-60">{pinnedAnnouncement.content}</span>
+                            <div className="flex items-center justify-center gap-2 min-w-0 text-[12px] md:text-[13px]">
+                                <Megaphone size={14} className="shrink-0 text-emerald-600 dark:text-neon-green" aria-hidden="true" />
+                                <p className="truncate text-gray-700 dark:text-gray-300">
+                                    <span className="font-semibold text-gray-900 dark:text-white">{pinnedAnnouncement.title}</span>
+                                    {pinnedAnnouncement.content && <span className="hidden sm:inline"> · {pinnedAnnouncement.content}</span>}
                                 </p>
+                                {destination && (
+                                    <span className="shrink-0 inline-flex items-center font-semibold text-emerald-700 dark:text-neon-green">
+                                        Learn more <ChevronRight size={14} aria-hidden="true" />
+                                    </span>
+                                )}
                             </div>
                         );
 
-                        if (!destination) return content;
-
                         return (
-                            <Link to={destination} className="hover:opacity-80 transition-all block">
-                                {content}
-                            </Link>
+                            <div className="flex-1 min-w-0 flex items-center justify-center pl-4 pr-1">
+                                {destination ? (
+                                    <Link to={destination} className="min-w-0 hover:opacity-80 transition-opacity">
+                                        {content}
+                                    </Link>
+                                ) : content}
+                            </div>
                         );
                     })()}
+                    <button
+                        type="button"
+                        onClick={() => dismissPinnedAnnouncement(pinnedAnnouncement.id)}
+                        className="shrink-0 mr-2 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                        aria-label="Dismiss announcement"
+                    >
+                        <X size={16} />
+                    </button>
                 </motion.div>
             )}
 

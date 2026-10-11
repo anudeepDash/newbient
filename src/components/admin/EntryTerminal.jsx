@@ -81,7 +81,7 @@ const EntryTerminal = ({ eventId }) => {
                 });
             }
         } catch (error) {
-            useStore.getState().addToast("Update Failed: " + error.message, 'error');
+            useStore.getState().addToast("Couldn't update this guest's check-in. Please try again.", 'error');
         }
     };
 
@@ -115,7 +115,7 @@ const EntryTerminal = ({ eventId }) => {
         ];
 
         if (allEntries.length === 0) {
-            useStore.getState().addToast("No data to export.", 'error');
+            useStore.getState().addToast("There's nothing to export yet.", 'info');
             return;
         }
 

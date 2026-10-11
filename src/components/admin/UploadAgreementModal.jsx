@@ -296,10 +296,10 @@ const UploadAgreementModal = ({ isOpen, onClose, editingAgreement = null, onSucc
             let savedId = editingAgreement?.id;
             if (editingAgreement?.id) {
                 await updateAgreement(editingAgreement.id, agreementData);
-                useStore.getState().addToast('Hosted contract updated successfully!', 'success');
+                useStore.getState().addToast('Contract updated.', 'success');
             } else {
                 savedId = await addAgreement(agreementData);
-                useStore.getState().addToast('Pre-made contract hosted in Vault!', 'success');
+                useStore.getState().addToast('Contract saved to the Vault.', 'success');
             }
 
             if (onSuccess) onSuccess(savedId);

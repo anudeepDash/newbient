@@ -698,14 +698,14 @@ const ProposalGenerator = () => {
             } else {
                 setFormData(prev => ({ ...prev, [fieldKey]: refined }));
             }
-            addToast(`"${inlineRefineState.fieldLabel}" refined successfully!`, 'success');
+            addToast(`"${inlineRefineState.fieldLabel}" refined.`, 'success');
             setInlineRefineSuccess(true);
             setTimeout(() => {
                 setInlineRefineState(null);
                 setInlineRefineSuccess(false);
             }, 1200);
         } catch (err) {
-            addToast(`Oops! Couldn't refine "${inlineRefineState.fieldLabel}". ${err.message || 'Try again with a different prompt.'}`, 'error');
+            addToast(`Couldn't refine "${inlineRefineState.fieldLabel}". ${err.message || 'Try again with a different prompt.'}`, 'error');
                     } finally {
             setInlineRefineLoading(false);
         }
@@ -732,7 +732,7 @@ const ProposalGenerator = () => {
         };
         pages.splice(idx + 1, 0, cloned);
         setFormData({ ...formData, customPages: pages });
-        addToast("Page duplicated successfully", "success");
+        addToast("Page duplicated.", "success");
     };
 
     const duplicateAllCustomPages = () => {
@@ -744,7 +744,7 @@ const ProposalGenerator = () => {
             title: `${page.title} (Copy)`
         }));
         setFormData({ ...formData, customPages: [...pages, ...copies] });
-        addToast("All pages duplicated successfully", "success");
+        addToast("All pages duplicated.", "success");
     };
 
     // Chat popup resizer handlers
@@ -1455,20 +1455,20 @@ const ProposalGenerator = () => {
             const proposalData = JSON.parse(JSON.stringify(rawProposalData));
             if (id) {
                 await updateProposal(id, proposalData);
-                addToast('Strategic Memorandum Updated', 'success');
+                addToast('Proposal updated.', 'success');
                 isDirtyRef.current = false;
                 setAutosaveStatus('saved');
                 setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
             } else {
                 const newDocId = await addProposal(proposalData);
-                addToast('Strategic Memorandum Created', 'success');
+                addToast('Proposal created.', 'success');
                 isDirtyRef.current = false;
                 setAutosaveStatus('saved');
                 setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
                 navigate(`/admin/edit-proposal/${newDocId}`);
             }
         } catch (err) {
-            addToast(`Storage integrity breach: ${err.message}`, 'error');
+            addToast("Couldn't save the proposal. Please try again.", 'error');
         } finally {
             setIsSaving(false);
         }
@@ -1584,7 +1584,7 @@ const ProposalGenerator = () => {
 
     const handleBulkGenerate = async () => {
         if (!bulkRawText || !bulkRawText.trim()) {
-            addToast("Please enter raw requirements or client data for bulk generation.", "error");
+            addToast("Add client details or requirements to generate proposals in bulk.", "error");
             return;
         }
         setIsBulkGenerating(true);
@@ -1695,9 +1695,9 @@ const ProposalGenerator = () => {
                 setSelectedBulkIndex(newVault.length - generatedProposals.length);
                 return newVault;
             });
-            addToast(`Successfully generated ${generatedProposals.length} premium proposals!`, 'success');
+            addToast(`${generatedProposals.length} proposals generated.`, 'success');
         } catch (err) {
-            addToast(`Failed to process bulk data: ${err.message}`, 'error');
+            addToast(err.message || "Couldn't generate the proposals. Please try again.", 'error');
         }
         setIsBulkGenerating(false);
     };
@@ -1716,10 +1716,10 @@ const ProposalGenerator = () => {
                 await addProposal(proposalData);
                 savedCount++;
             }
-            addToast(`Successfully saved all ${savedCount} proposals to the Vault!`, 'success');
+            addToast(`All ${savedCount} proposals saved.`, 'success');
             navigate('/admin/proposals');
         } catch (error) {
-            addToast(`Error saving bulk proposals: ${error.message}`, 'error');
+            addToast("Couldn't save all the proposals. Please try again.", 'error');
         } finally {
             setIsSaving(false);
         }
@@ -1756,10 +1756,10 @@ const ProposalGenerator = () => {
                     pdf.save(`Newbi-Quotation-${bulkProposals[b].clientName || `Bulk-${b+1}`}.pdf`);
                 }
             }
-            addToast(`Successfully exported all ${bulkProposals.length} proposals as PDFs!`, 'success');
+            addToast(`All ${bulkProposals.length} proposals downloaded as PDFs.`, 'success');
         } catch (error) {
             console.error(error);
-            addToast("Failed to export bulk PDFs: " + error.message, 'error');
+            addToast("Couldn't download the PDFs. Please try again.", 'error');
         } finally {
             setPreviewScale(originalScale);
             setSelectedBulkIndex(originalIndex);
@@ -1794,10 +1794,10 @@ const ProposalGenerator = () => {
             } else {
                 setSingleFormData(prev => ({ ...prev, ...updatedDoc }));
             }
-            addToast('Refinement applied successfully!', 'success');
+            addToast('Changes applied to your proposal.', 'success');
         } catch (err) {
             console.error(err);
-            addToast(`Refinement failed: ${err.message}`, 'error');
+            addToast(err.message || "Couldn't apply the changes. Please try again.", 'error');
         } finally {
             setIsRefining(false);
         }
@@ -1862,7 +1862,7 @@ const ProposalGenerator = () => {
                 }]);
                 setRefinementContext(null);
                 if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
-                addToast(`Field "${refinementContext.fieldLabel}" successfully refined!`, 'success');
+                addToast(`"${refinementContext.fieldLabel}" refined.`, 'success');
             } else {
                 const isBulk = isBulkMode || detectBulkMode(currentPrompt);
                 const isInitialGeneration = !singleFormData.clientName || singleFormData.clientName.trim() === '' || messages.length <= 1 || isBulk;
@@ -1937,7 +1937,7 @@ const ProposalGenerator = () => {
                     }
 
                     if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
-                    addToast(isBulk ? 'Pre-generated proposal text imported!' : 'Proposal successfully generated!', 'success');
+                    addToast(isBulk ? 'Proposal text imported.' : 'Proposal generated.', 'success');
                 } else {
                     const currentDoc = singleFormData;
                     const currentDocWithItems = { ...currentDoc, items };
@@ -1971,7 +1971,7 @@ const ProposalGenerator = () => {
                         text: `✓ Document refined according to request: "${currentPrompt}". You can inspect the updated preview on the right.`
                     }]);
                     if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
-                    addToast('Document successfully refined!', 'success');
+                    addToast('Proposal updated.', 'success');
                 }
             }
         } catch (err) {
@@ -2024,7 +2024,7 @@ const ProposalGenerator = () => {
                                     ]);
                                     setPromptText('');
                                     setRefinementContext(null);
-                                    addToast('Chat reset to initial state', 'info');
+                                    addToast('Chat cleared. You can start fresh.', 'info');
                                 }}
                                 className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
                                 title="Reset conversation"
@@ -4001,10 +4001,10 @@ const ProposalGenerator = () => {
                                                                     ...prev,
                                                                     attachments: [...(prev.attachments || []), newAttachment]
                                                                 }));
-                                                                addToast('Attachment uploaded successfully', 'success');
+                                                                addToast('Attachment uploaded.', 'success');
                                                             } catch (err) {
                                                                 console.error("Upload error:", err);
-                                                                addToast(`Upload failed: ${err.message}`, 'error');
+                                                                addToast("Couldn't upload the attachment. Please try again.", 'error');
                                                             } finally {
                                                                 setIsUploadingFile(false);
                                                                 if (e.target) e.target.value = '';
@@ -4048,7 +4048,7 @@ const ProposalGenerator = () => {
                                                     <Button 
                                                         onClick={() => {
                                                             if (!linkName.trim() || !linkUrl.trim()) {
-                                                                addToast('Please enter both name and link URL', 'error');
+                                                                addToast('Add a name and a link URL.', 'error');
                                                                 return;
                                                             }
                                                             let fileType = 'other';
@@ -4073,7 +4073,7 @@ const ProposalGenerator = () => {
                                                             }));
                                                             setLinkName('');
                                                             setLinkUrl('');
-                                                            addToast('Link added successfully', 'success');
+                                                            addToast('Link added.', 'success');
                                                         }}
                                                         className="w-full bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white hover:bg-neon-green hover:text-black uppercase tracking-widest text-[9px] font-black h-12"
                                                     >
@@ -4146,7 +4146,7 @@ const ProposalGenerator = () => {
                                                                         onClick={() => {
                                                                             const updated = (formData.attachments || []).filter(a => a.id !== attachment.id);
                                                                             setFormData({ ...formData, attachments: updated });
-                                                                            addToast('Attachment removed', 'success');
+                                                                            addToast('Attachment removed.', 'success');
                                                                         }}
                                                                         className="p-2 bg-red-500/5 hover:bg-red-500/10 text-red-400/70 hover:text-red-400 rounded-xl border border-red-500/10 transition-colors"
                                                                         title="Delete Attachment"

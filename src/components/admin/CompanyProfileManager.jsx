@@ -25,11 +25,11 @@ const CompanyProfileManager = ({ onInsert }) => {
         setIsSaving(true);
         try {
             await updateSiteSettings({ companyProfile: tempContent });
-            addToast('Company profile saved successfully', 'success');
+            addToast('Company profile saved.', 'success');
             setIsEditing(false);
         } catch (error) {
             console.error("Failed to save company profile:", error);
-            addToast('Failed to save company profile', 'error');
+            addToast("Couldn't save the company profile. Please try again.", 'error');
         } finally {
             setIsSaving(false);
         }
@@ -37,12 +37,12 @@ const CompanyProfileManager = ({ onInsert }) => {
 
     const handleInsert = () => {
         if (!siteSettings?.companyProfile) {
-            addToast('Company profile is empty. Please edit the template first.', 'error');
+            addToast('The company profile is empty. Please fill in the template first.', 'error');
             return;
         }
         if (onInsert) {
             onInsert(siteSettings.companyProfile);
-            addToast('Company profile inserted', 'success');
+            addToast('Company profile inserted.', 'success');
         }
     };
 

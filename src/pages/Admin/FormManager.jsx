@@ -40,7 +40,7 @@ const FormManager = () => {
         if (existingEvent) {
             if (window.confirm(`Remove "${form.title}" from Home Upcoming Events?`)) {
                 await deleteUpcomingEvent(existingEvent.id);
-                useStore.getState().addToast(`"${form.title}" removed from Home Upcoming Events`, 'info');
+                useStore.getState().addToast(`"${form.title}" removed from upcoming events on the home page.`, 'info');
             }
         } else {
             const eventData = {
@@ -59,7 +59,7 @@ const FormManager = () => {
                 isForm: true
             };
             await addUpcomingEvent(eventData);
-            useStore.getState().addToast(`"${form.title}" added to Home Upcoming Events!`, 'success');
+            useStore.getState().addToast(`"${form.title}" added to upcoming events on the home page.`, 'success');
         }
     };
 
@@ -75,13 +75,13 @@ const FormManager = () => {
         await addAnnouncement(announcement);
         
         await notifyAllUsers(
-            `New Form: ${form.title}`,
-            form.description || "We value your input! Please complete this form at your convenience.",
+            `New form: ${form.title}`,
+            form.description || "We'd love your input. Fill out this form whenever you have a moment.",
             `/forms/${form.id}`,
             'form'
         );
         
-        useStore.getState().addToast('Notification sent to all users!', 'success');
+        useStore.getState().addToast('Notification sent to all users.', 'success');
     };
 
     const handleShareWhatsApp = (form) => {

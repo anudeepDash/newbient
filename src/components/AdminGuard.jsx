@@ -129,7 +129,7 @@ const AdminGuard = ({ children }) => {
                                         setRequesting(true);
                                         await useStore.getState().requestAdminAccess();
                                     } catch (err) {
-                                        useStore.getState().addToast(err.message || "Failed to send request", 'error');
+                                        useStore.getState().addToast(err.message || "Couldn't send your access request. Please try again.", 'error');
                                         setRequesting(false);
                                     }
                                 }}

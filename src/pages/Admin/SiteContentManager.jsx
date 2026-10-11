@@ -65,10 +65,10 @@ const SiteContentManager = () => {
         e.preventDefault();
         try {
             await updateSiteDetails(formData);
-            useStore.getState().addToast('Site details updated successfully!', 'success');
+            useStore.getState().addToast('Site details updated.', 'success');
             navigate('/admin');
         } catch (error) {
-            useStore.getState().addToast('Failed to update details.', 'error');
+            useStore.getState().addToast("Couldn't update the site details. Please try again.", 'error');
         }
     };
 
@@ -79,9 +79,9 @@ const SiteContentManager = () => {
         try {
             const url = await uploadToCloudinary(file);
             setNewClient(prev => ({ ...prev, logoUrl: url }));
-            useStore.getState().addToast('Logo uploaded!', 'success');
+            useStore.getState().addToast('Logo uploaded.', 'success');
         } catch (err) {
-            useStore.getState().addToast('Logo upload failed.', 'error');
+            useStore.getState().addToast("Couldn't upload the logo. Please try again.", 'error');
         } finally {
             setUploadingLogo(false);
         }
@@ -92,9 +92,9 @@ const SiteContentManager = () => {
         try {
             await addPastClient(newClient);
             setNewClient({ name: '', logoUrl: '' });
-            useStore.getState().addToast('Client added!', 'success');
+            useStore.getState().addToast('Client added.', 'success');
         } catch (err) {
-            useStore.getState().addToast('Failed to add client.', 'error');
+            useStore.getState().addToast("Couldn't add the client. Please try again.", 'error');
         }
     };
 
@@ -104,7 +104,7 @@ const SiteContentManager = () => {
             await deletePastClient(id);
             useStore.getState().addToast('Client removed.', 'success');
         } catch (err) {
-            useStore.getState().addToast('Failed to remove client.', 'error');
+            useStore.getState().addToast("Couldn't remove the client. Please try again.", 'error');
         }
     };
 

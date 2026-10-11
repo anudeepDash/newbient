@@ -54,7 +54,7 @@ const PayeeRegistration = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!name || !email || !phone) {
-            useStore.getState().addToast('Please fill in all required fields.', 'error');
+            useStore.getState().addToast('Fill in all the required fields to continue.', 'error');
             return;
         }
 
@@ -62,13 +62,13 @@ const PayeeRegistration = () => {
         let destinationDetails = '';
         if (paymentMode === 'UPI') {
             if (!upiId) {
-                useStore.getState().addToast('Please provide a UPI ID.', 'error');
+                useStore.getState().addToast('Add your UPI ID to continue.', 'error');
                 return;
             }
             destinationDetails = `UPI: ${upiId.trim()}`;
         } else if (paymentMode === 'Bank Transfer') {
             if (!bankName || !accountNumber || !ifscCode) {
-                useStore.getState().addToast('Please fill all Bank details.', 'error');
+                useStore.getState().addToast('Fill in all your bank details to continue.', 'error');
                 return;
             }
             destinationDetails = `Bank: ${bankName.trim()} | A/C: ${accountNumber.trim()} | IFSC: ${ifscCode.trim()}`;
@@ -104,18 +104,18 @@ const PayeeRegistration = () => {
                     ...payeeData,
                     updatedAt: new Date().toISOString()
                 });
-                useStore.getState().addToast('Payment details updated for existing registration!', 'success');
+                useStore.getState().addToast('Your payment details have been updated.', 'success');
             } else {
                 await addFinancePayee({
                     ...payeeData,
                     createdAt: new Date().toISOString()
                 });
-                useStore.getState().addToast('Payment mode registered successfully!', 'success');
+                useStore.getState().addToast('Your payment details have been saved.', 'success');
             }
             setIsSubmitted(true);
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast('Failed to submit details. Please try again.', 'error');
+            useStore.getState().addToast("Couldn't submit your details. Please try again.", 'error');
         } finally {
             setLoading(false);
         }

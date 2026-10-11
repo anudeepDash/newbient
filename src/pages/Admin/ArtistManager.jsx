@@ -155,7 +155,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                 setSelectedArtist(prev => ({ ...prev, profileStatus: newStatus }));
             }
         } catch (error) {
-            useStore.getState().addToast("Status update failed.", 'error');
+            useStore.getState().addToast("Couldn't update the artist's status. Please try again.", 'error');
         } finally {
             setIsUpdating(false);
         }
@@ -167,9 +167,9 @@ const ArtistManager = ({ isEmbedded = false }) => {
             await deleteArtist(id);
             setSelectedArtist(null);
             setShowDeleteConfirmId(null);
-            useStore.getState().addToast("Artist profile deleted successfully.", 'success');
+            useStore.getState().addToast("Artist profile deleted.", 'success');
         } catch (error) {
-            useStore.getState().addToast("Deletion failed: " + error.message, 'error');
+            useStore.getState().addToast("Couldn't delete the artist. Please try again.", 'error');
         } finally {
             setIsDeleting(false);
         }
@@ -183,17 +183,17 @@ const ArtistManager = ({ isEmbedded = false }) => {
 
     const handleCastToGig = async (artistId, gigId) => {
         if (!artistId || !gigId) {
-            useStore.getState().addToast("Internal Error: Missing Talent or Mission ID", 'error');
+            useStore.getState().addToast("Pick an artist and a gig, then try again.", 'error');
             return;
         }
 
         setIsUpdating(true);
         try {
             await useStore.getState().castArtistToGig(artistId, gigId);
-            useStore.getState().addToast("TALENT DEPLOYED TO MISSION.", 'success');
+            useStore.getState().addToast("Artist added to the gig.", 'success');
         } catch (error) {
             console.error("Casting error:", error);
-            useStore.getState().addToast("Deployment failed: " + error.message, 'error');
+            useStore.getState().addToast("Couldn't add the artist to the gig. Please try again.", 'error');
         } finally {
             setIsUpdating(false);
         }
