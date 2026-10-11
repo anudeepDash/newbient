@@ -171,7 +171,7 @@ const SpendsManagement = () => {
                     reference: autoTxnId, 
                     status: 'Paid' 
                 }));
-                useStore.getState().addToast('Payment marked as cleared via UPI!', 'success');
+                useStore.getState().addToast('Payment marked as paid via UPI.', 'success');
             } catch (e) {
                 console.error("Error updating upi spend status: ", e);
             }
@@ -233,7 +233,7 @@ const SpendsManagement = () => {
 
     const handleCopy = (text, label) => {
         navigator.clipboard.writeText(text);
-        useStore.getState().addToast(`${label} copied!`, 'success');
+        useStore.getState().addToast(`${label} copied.`, 'success');
     };
 
     const renderPrinterSlot = (statusText, statusColorClass) => (
@@ -363,10 +363,10 @@ const SpendsManagement = () => {
             link.download = `newbi_receipt_${activeSlipData?.reference || 'payout'}.png`;
             link.href = imgData;
             link.click();
-            useStore.getState().addToast('Receipt downloaded successfully!', 'success');
+            useStore.getState().addToast('Receipt downloaded.', 'success');
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast('Failed to download receipt image.', 'error');
+            useStore.getState().addToast("Couldn't download the receipt. Please try again.", 'error');
         }
     };
 
@@ -445,7 +445,7 @@ const SpendsManagement = () => {
             });
             const result = await response.json();
             if (result.success) {
-                useStore.getState().addToast('Receipt email sent successfully!', 'success');
+                useStore.getState().addToast('Receipt emailed.', 'success');
             } else {
                 throw new Error(result.error || 'Failed to send email');
             }
@@ -556,9 +556,9 @@ const SpendsManagement = () => {
         try {
             const url = await uploadToCloudinary(file);
             setUrl(url);
-            useStore.getState().addToast('Receipt uploaded successfully!', 'success');
+            useStore.getState().addToast('Receipt uploaded.', 'success');
         } catch (err) {
-            useStore.getState().addToast(err.message || 'Failed to upload receipt.', 'error');
+            useStore.getState().addToast("Couldn't upload the receipt. Please try again.", 'error');
         } finally {
             setUploadingReceipt(false);
         }
@@ -568,7 +568,7 @@ const SpendsManagement = () => {
     const copyToClipboard = (text) => {
         if (!text) return;
         navigator.clipboard.writeText(text);
-        useStore.getState().addToast('Payout info copied to clipboard!', 'success');
+        useStore.getState().addToast('Payout details copied.', 'success');
     };
 
     // Create Spend submission
@@ -576,7 +576,7 @@ const SpendsManagement = () => {
         if (e && e.preventDefault) e.preventDefault();
         
         if (!title || !amount || !date) {
-            useStore.getState().addToast('Please fill in all required fields.', 'error');
+            useStore.getState().addToast('Add a title, amount and date before saving.', 'error');
             return;
         }
 
@@ -610,7 +610,7 @@ const SpendsManagement = () => {
 
             await addSpend(spendData);
 
-            useStore.getState().addToast('Spend record added successfully.', 'success');
+            useStore.getState().addToast('Spend added.', 'success');
             setShowAddModal(false);
             
             // Only trigger receipt printer if status is Paid
@@ -636,14 +636,14 @@ const SpendsManagement = () => {
             setShowUPIFlow(false);
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast('Failed to save spend. Please check database rules.', 'error');
+            useStore.getState().addToast("Couldn't save the spend. Please try again.", 'error');
         }
     };
 
     // Create Bulk Event Payout submission
     const handleCreateBulkPayout = async () => {
         if (!selectedBulkEvent || selectedVolunteerIds.length === 0) {
-            useStore.getState().addToast('Please select an event and at least one volunteer.', 'error');
+            useStore.getState().addToast('Choose an event and at least one volunteer first.', 'error');
             return;
         }
 
@@ -680,7 +680,7 @@ const SpendsManagement = () => {
 
             await Promise.all(promises);
 
-            useStore.getState().addToast(`Successfully logged ${targets.length} volunteer payouts!`, 'success');
+            useStore.getState().addToast(`${targets.length} volunteer payouts logged.`, 'success');
             
             // Set slip data to trigger receipt printer for the bulk txn
             const bulkSlip = {
@@ -702,7 +702,7 @@ const SpendsManagement = () => {
             resetBulkForm();
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast('Failed to execute bulk payout log.', 'error');
+            useStore.getState().addToast("Couldn't log the volunteer payouts. Please try again.", 'error');
         }
     };
 
@@ -710,7 +710,7 @@ const SpendsManagement = () => {
     const handleUpdateSpend = async (e) => {
         e.preventDefault();
         if (!title || !amount || !date) {
-            useStore.getState().addToast('Please fill in all required fields.', 'error');
+            useStore.getState().addToast('Add a title, amount and date before saving.', 'error');
             return;
         }
 
@@ -742,23 +742,23 @@ const SpendsManagement = () => {
                 paymentRef: newSpendRef
             });
 
-            useStore.getState().addToast('Spend record updated.', 'success');
+            useStore.getState().addToast('Spend updated.', 'success');
             setShowEditModal(null);
             resetForm();
         } catch (err) {
-            useStore.getState().addToast('Failed to update spend record.', 'error');
+            useStore.getState().addToast("Couldn't update the spend. Please try again.", 'error');
         }
     };
 
     const handleDeleteSpend = (id) => {
         if (user?.role === 'editor' || user?.role === 'content_admin') {
-            useStore.getState().addToast("Only administrators can delete spend records.", 'error');
+            useStore.getState().addToast("Only admins can delete spends.", 'error');
             return;
         }
 
         if (window.confirm('Are you sure you want to delete this spend record?')) {
             deleteSpend(id);
-            useStore.getState().addToast('Spend record purged.', 'success');
+            useStore.getState().addToast('Spend deleted.', 'success');
         }
     };
 
@@ -769,7 +769,7 @@ const SpendsManagement = () => {
             await updateSpend(spend.id, { status: newStatus, paymentRef: autoTxnId });
             useStore.getState().addToast(`Spend marked as ${newStatus}.`, 'success');
         } catch (err) {
-            useStore.getState().addToast('Failed to update spend status.', 'error');
+            useStore.getState().addToast("Couldn't update the spend status. Please try again.", 'error');
         }
     };
 
@@ -823,7 +823,7 @@ const SpendsManagement = () => {
     // CSV Exporter
     const handleExportCSV = () => {
         if (filteredSpends.length === 0) {
-            useStore.getState().addToast('No records to export.', 'error');
+            useStore.getState().addToast("There's nothing to export yet.", 'info');
             return;
         }
 
@@ -1411,7 +1411,7 @@ const SpendsManagement = () => {
                                                         setPayoutType('Artist Fee');
                                                         setTitle('Artist Clearance');
                                                     }
-                                                    useStore.getState().addToast(`Pre-filled details for ${payee.name}!`, 'success');
+                                                    useStore.getState().addToast(`Details filled in for ${payee.name}.`, 'success');
                                                 }
                                             }}
                                             className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
@@ -1702,7 +1702,7 @@ const SpendsManagement = () => {
                                                             type="button"
                                                             onClick={async () => {
                                                                 if (!customUTR) {
-                                                                    useStore.getState().addToast('Please enter UTR to complete registration.', 'error');
+                                                                    useStore.getState().addToast('Enter the UTR number to mark this payment as paid.', 'error');
                                                                     return;
                                                                 }
                                                                 setStatus('Paid');
@@ -1792,7 +1792,7 @@ const SpendsManagement = () => {
                                                         setPayoutType('Artist Fee');
                                                         setTitle('Artist Clearance');
                                                     }
-                                                    useStore.getState().addToast(`Pre-filled details for ${payee.name}!`, 'success');
+                                                    useStore.getState().addToast(`Details filled in for ${payee.name}.`, 'success');
                                                 }
                                             }}
                                             className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
@@ -2077,7 +2077,7 @@ const SpendsManagement = () => {
                                                         if (exists) {
                                                             setSelectedBulkEvent(exists.title);
                                                             setBulkNewEventName('');
-                                                            useStore.getState().addToast('Event already exists, selected it.', 'info');
+                                                            useStore.getState().addToast('That event already exists, so we selected it for you.', 'info');
                                                             return;
                                                         }
                                                         try {
@@ -2090,10 +2090,10 @@ const SpendsManagement = () => {
                                                             });
                                                             setSelectedBulkEvent(eventName);
                                                             setBulkNewEventName('');
-                                                            useStore.getState().addToast(`Event "${eventName}" created!`, 'success');
+                                                            useStore.getState().addToast(`Event "${eventName}" created.`, 'success');
                                                         } catch (err) {
                                                             console.error(err);
-                                                            useStore.getState().addToast('Failed to create event.', 'error');
+                                                            useStore.getState().addToast("Couldn't create the event. Please try again.", 'error');
                                                         }
                                                     }}
                                                     className="h-9 px-4 bg-neon-blue/10 hover:bg-neon-blue/20 text-neon-blue text-[8px] font-black uppercase tracking-widest rounded-lg border border-neon-blue/20 transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
@@ -2279,7 +2279,7 @@ const SpendsManagement = () => {
                                                                 type="button"
                                                                 onClick={() => {
                                                                     if (!vol.upiId) {
-                                                                        useStore.getState().addToast('No UPI ID registered for this payee.', 'error');
+                                                                        useStore.getState().addToast("This payee doesn't have a UPI ID saved yet.", 'error');
                                                                         return;
                                                                     }
                                                                     const deepLink = `upi://pay?pa=${vol.upiId}&pn=${encodeURIComponent(vol.name)}&am=${vol.amount || bulkPayoutAmount}&cu=INR`;
@@ -2557,7 +2557,7 @@ const SpendsManagement = () => {
                                                                     if (verificationReceiptUrl) updateData.receiptUrl = verificationReceiptUrl;
                                                                     await updateSpend(activeSlipData.id, updateData);
                                                                     setActiveSlipData(prev => ({ ...prev, reference: autoTxnId, status: 'Paid', receiptUrl: verificationReceiptUrl || prev.receiptUrl, proofUrl: verificationReceiptUrl || prev.receiptUrl }));
-                                                                    useStore.getState().addToast('Transaction cleared!', 'success');
+                                                                    useStore.getState().addToast('Payment marked as paid.', 'success');
                                                                 } catch (e) {
                                                                     console.error(e);
                                                                 }
@@ -2584,7 +2584,7 @@ const SpendsManagement = () => {
                                                                     await updateSpend(activeSlipData.id, updateData);
                                                                     setActiveSlipData(prev => ({ ...prev, reference: utrValue, status: 'Paid', receiptUrl: verificationReceiptUrl || prev.receiptUrl, proofUrl: verificationReceiptUrl || prev.receiptUrl }));
                                                                     if (verificationUTR) {
-                                                                        useStore.getState().addToast('Transaction details updated & cleared!', 'success');
+                                                                        useStore.getState().addToast('Payment details updated and marked as paid.', 'success');
                                                                     }
                                                                 } catch (e) {
                                                                     console.error(e);
@@ -2670,7 +2670,7 @@ const SpendsManagement = () => {
                                                                 await updateSpend(activeSlipData.id, updateData);
                                                                 setActiveSlipData(prev => ({ ...prev, reference: utrValue, status: 'Paid', receiptUrl: verificationReceiptUrl || prev.receiptUrl, proofUrl: verificationReceiptUrl || prev.receiptUrl }));
                                                                 if (verificationUTR) {
-                                                                    useStore.getState().addToast('Transaction details updated!', 'success');
+                                                                    useStore.getState().addToast('Payment details updated.', 'success');
                                                                 }
                                                             } catch (e) {
                                                                 console.error(e);

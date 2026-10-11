@@ -368,7 +368,7 @@ const InvoiceGenerator = () => {
             }
             navigate('/admin/invoices');
         } catch (error) {
-            useStore.getState().addToast("Save Error: " + error.message, 'error');
+            useStore.getState().addToast("Couldn't save the invoice. Please try again.", 'error');
         } finally {
             setIsGenerating(false);
         }
@@ -384,7 +384,7 @@ const InvoiceGenerator = () => {
             const url = await uploadToCloudinary(file);
             if (url) setFormData(prev => ({ ...prev, signatoryImage: url, showSignatory: 'image' }));
         } catch (error) {
-            useStore.getState().addToast("Upload Failed.", 'error');
+            useStore.getState().addToast("Couldn't upload the signature. Please try again.", 'error');
         } finally {
             setIsGenerating(false);
         }
@@ -435,7 +435,7 @@ const InvoiceGenerator = () => {
             pdf.save(`Newbi-Invoice-${formData.invoiceNumber}.pdf`);
         } catch (error) {
             console.error(error);
-            useStore.getState().addToast("PDF Export failed. Check console.", 'error');
+            useStore.getState().addToast("Couldn't create the PDF. Please try again.", 'error');
         } finally {
             document.body.removeChild(hiddenContainer);
             setPreviewScale(originalScale);

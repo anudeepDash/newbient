@@ -259,13 +259,13 @@ const UpcomingEventsManager = () => {
                     if (file) {
                         if (type === 'image') {
                             setSelectedFile(file);
-                            useStore.getState().addToast("Thumbnail pasted from clipboard!", 'success');
+                            useStore.getState().addToast("Thumbnail pasted.", 'success');
                         } else if (type === 'hubImage') {
                             setSelectedHubBanner(file);
-                            useStore.getState().addToast("Hub banner pasted from clipboard!", 'success');
+                            useStore.getState().addToast("Hub banner pasted.", 'success');
                         } else if (type === 'venueLayout') {
                             setVenueLayoutFile(file);
-                            useStore.getState().addToast("Layout image pasted from clipboard!", 'success');
+                            useStore.getState().addToast("Layout image pasted.", 'success');
                         }
                         e.preventDefault();
                         return;
@@ -279,15 +279,15 @@ const UpcomingEventsManager = () => {
             if (type === 'image') {
                 setSelectedFile(null);
                 setNewEvent(prev => ({ ...prev, image: text.trim() }));
-                useStore.getState().addToast("Thumbnail URL pasted!", 'success');
+                useStore.getState().addToast("Thumbnail link pasted.", 'success');
             } else if (type === 'hubImage') {
                 setSelectedHubBanner(null);
                 setNewEvent(prev => ({ ...prev, hubImage: text.trim() }));
-                useStore.getState().addToast("Hub banner URL pasted!", 'success');
+                useStore.getState().addToast("Hub banner link pasted.", 'success');
             } else if (type === 'venueLayout') {
                 setVenueLayoutFile(null);
                 setNewEvent(prev => ({ ...prev, venueLayout: text.trim() }));
-                useStore.getState().addToast("Venue layout URL pasted!", 'success');
+                useStore.getState().addToast("Venue layout link pasted.", 'success');
             }
             e.preventDefault();
         }
@@ -299,7 +299,7 @@ const UpcomingEventsManager = () => {
     const handleVideoUpload = async (file) => {
         if (!file) return;
         if (file.size > 100 * 1024 * 1024) {
-            useStore.getState().addToast("Video file is larger than 100MB. Please choose a video under 100MB.", 'error');
+            useStore.getState().addToast("This video is over 100MB. Please choose a smaller file.", 'error');
             return;
         }
         setIsUploadingVideo(true);
@@ -311,11 +311,11 @@ const UpcomingEventsManager = () => {
             if (url) {
                 setNewEvent(prev => ({ ...prev, videoUrl: url }));
                 setVideoFile(null);
-                useStore.getState().addToast("Video uploaded successfully!", 'success');
+                useStore.getState().addToast("Video uploaded.", 'success');
             }
         } catch (error) {
             console.error("Video upload failed:", error);
-            useStore.getState().addToast(error.message || "Failed to upload video. Please try again.", 'error');
+            useStore.getState().addToast("Couldn't upload the video. Please try again.", 'error');
         } finally {
             setIsUploadingVideo(false);
             setVideoUploadProgress(0);
@@ -357,8 +357,8 @@ const UpcomingEventsManager = () => {
             } else {
                 await addUpcomingEvent(eventData, newEvent.alsoPostToAnnouncements);
                 await notifyAllUsers(
-                    `NEW EVENT: ${eventData.title.toUpperCase()}`,
-                    `${eventData.date} @ ${eventData.location}`,
+                    `New event: ${eventData.title}`,
+                    `Join us on ${eventData.date} at ${eventData.location}.`,
                     '/events',
                     eventData.image,
                     true // sendEmail
@@ -367,7 +367,7 @@ const UpcomingEventsManager = () => {
             resetForm();
         } catch (error) {
             console.error("Save failed:", error);
-            useStore.getState().addToast("Couldn't save the event. Please check your data and try again.", 'error', 'EVT-01');
+            useStore.getState().addToast("Couldn't save the event. Please check the details and try again.", 'error', 'EVT-01');
         } finally {
             setUploading(false);
         }
@@ -1607,8 +1607,8 @@ const UpcomingEventsManager = () => {
                                                     onClick={async (e) => {
                                                         e.stopPropagation();
                                                         if (window.confirm(`Resend notification for "${item.title}"?`)) {
-                                                            await notifyAllUsers(`NEW EVENT: ${item.title.toUpperCase()}`, `${item.date} @ ${item.location}`, '/events', item.image, true);
-                                                            useStore.getState().addToast("Notification sent successfully!", 'success');
+                                                            await notifyAllUsers(`New event: ${item.title}`, `Join us on ${item.date} at ${item.location}.`, '/events', item.image, true);
+                                                            useStore.getState().addToast("Notification sent.", 'success');
                                                         }
                                                     }}
                                                     className="w-9 h-9 rounded-xl bg-neon-pink/20 backdrop-blur-md border border-neon-pink/30 flex items-center justify-center text-neon-pink hover:bg-neon-pink hover:text-black transition-all"

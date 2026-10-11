@@ -166,7 +166,7 @@ const DocumentPDFGenerator = () => {
             const pages = document.querySelectorAll('.doc-pdf-export .doc-page-render');
             
             if (pages.length === 0) {
-                 addToast('No pages found to render.', 'error');
+                 addToast('There are no pages to add to the PDF yet.', 'error');
                  return;
             }
 
@@ -176,10 +176,10 @@ const DocumentPDFGenerator = () => {
                 pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297, '', 'FAST');
             }
             pdf.save(`Newbi-Document-${formData.documentTitle || 'Document'}.pdf`);
-            addToast('PDF downloaded successfully', 'success');
+            addToast('PDF downloaded.', 'success');
         } catch (error) {
             console.error(error);
-            addToast('Failed to generate PDF', 'error');
+            addToast("Couldn't create the PDF. Please try again.", 'error');
         } finally {
             setPreviewScale(originalScale);
             setIsSaving(false);

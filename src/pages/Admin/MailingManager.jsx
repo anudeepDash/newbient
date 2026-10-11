@@ -114,7 +114,7 @@ const MailingManager = () => {
             theme: 'light'
         });
         localStorage.removeItem('nb_mailing_draft');
-        addToast("Started new blank draft", "info");
+        addToast("Started a new blank draft.", "info");
     };
 
     const allKnownUsers = useMemo(() => {
@@ -142,24 +142,24 @@ const MailingManager = () => {
         
         const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
         if (!isEmail) {
-            addToast("Please enter a valid email address (e.g. name@example.com)", 'error');
+            addToast("Enter a valid email address, like name@example.com.", 'error');
             return;
         }
 
         if (selectedIndividuals.some(u => u.email?.toLowerCase() === trimmed)) {
-            addToast("Email is already in the recipient list", 'error');
+            addToast("That email is already on the recipient list.", 'warning');
             return;
         }
 
         setSelectedIndividuals(prev => [...prev, { name: trimmed.split('@')[0], email: trimmed, isCustom: true }]);
         setSearchQuery('');
-        addToast(`Added ${trimmed}`, 'success');
+        addToast(`${trimmed} added.`, 'success');
     };
 
     const handleSaveTemplate = async (saveAsNew = false) => {
         const subject = mailData.subject?.trim();
         if (!subject) {
-            addToast("Please enter a subject line before saving as a template", 'error');
+            addToast("Add a subject line before saving this as a template.", 'error');
             return;
         }
         setSavingTemplate(true);
@@ -177,10 +177,10 @@ const MailingManager = () => {
             });
 
             if (!saveAsNew && selectedTemplateId) {
-                addToast("Template updated successfully!", "success");
+                addToast("Template updated.", "success");
             } else {
                 setSelectedTemplateId(templateId);
-                addToast("Template saved successfully!", "success");
+                addToast("Template saved.", "success");
             }
         } catch (error) {
             console.error("Save template notice:", error);
@@ -188,7 +188,7 @@ const MailingManager = () => {
                 const noticeMsg = error.message.replace("SAVED_LOCALLY: ", "");
                 addToast(noticeMsg, "info");
             } else {
-                addToast(error.message || "Failed to save template", 'error');
+                addToast("Couldn't save the template. Please try again.", 'error');
             }
         } finally {
             setSavingTemplate(false);
@@ -201,9 +201,9 @@ const MailingManager = () => {
         try {
             await deleteEmailTemplate(templateId);
             if (selectedTemplateId === templateId) setSelectedTemplateId('');
-            addToast("Template deleted", "success");
+            addToast("Template deleted.", "success");
         } catch (err) {
-            addToast("Failed to delete template", "error");
+            addToast("Couldn't delete the template. Please try again.", "error");
         }
     };
 
@@ -224,14 +224,14 @@ const MailingManager = () => {
                 customCategory: !isPresetCat ? rawCat : (template.customCategory || ''),
                 theme: template.theme || 'light'
             });
-            addToast("Template loaded into editor", "success");
+            addToast("Template loaded into the editor.", "success");
         }
     };
 
     const handleSendEmails = async (e) => {
         if (e) e.preventDefault();
         if (recipients.length === 0) {
-            addToast("No recipients found for this broadcast.", 'error');
+            addToast("Add at least one recipient before sending.", 'error');
             return;
         }
 
@@ -262,11 +262,11 @@ const MailingManager = () => {
             }
 
             setStatus({ type: 'success', text: `Broadcast complete! Delivered to ${recipients.length} address(es) with Tracking ID: ${mailResult.campaignId}` });
-            addToast("Broadcast transmitted successfully with open & link tracking enabled!", "success");
+            addToast("Broadcast sent. Opens and link clicks are being tracked.", "success");
         } catch (error) {
             console.error("Send failed:", error);
             setStatus({ type: 'error', text: 'Broadcast failed. Check API configuration.' });
-            addToast(error.message || "Failed to broadcast email", "error");
+            addToast("Couldn't send the broadcast. Please try again.", "error");
         } finally {
             setSending(false);
             setTimeout(() => setStatus(null), 8000);
@@ -339,7 +339,7 @@ const MailingManager = () => {
             theme: campaign.theme || 'light'
         });
         setActiveTab('composer');
-        addToast(`Loaded broadcast "${campaign.subject}" into Composer`, "success");
+        addToast(`"${campaign.subject}" loaded into the composer.`, "success");
     };
 
     const handleDeleteCampaign = async (campaignId, e) => {
@@ -348,9 +348,9 @@ const MailingManager = () => {
         try {
             await deleteEmailCampaign(campaignId);
             if (selectedCampaign?.id === campaignId) setSelectedCampaign(null);
-            addToast("Broadcast record deleted", "success");
+            addToast("Broadcast deleted.", "success");
         } catch (err) {
-            addToast("Failed to delete broadcast record", "error");
+            addToast("Couldn't delete the broadcast. Please try again.", "error");
         }
     };
 

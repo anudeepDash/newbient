@@ -88,9 +88,9 @@ const SystemControlCenter = () => {
         try {
             await updateSiteDetails(formData);
             setIsDirty(false);
-            addToast('System configuration synchronized.', 'success');
+            addToast('Site settings saved.', 'success');
         } catch (error) {
-            addToast('Synchronization failed.', 'error');
+            addToast("Couldn't save the site settings. Please try again.", 'error');
         }
     };
 

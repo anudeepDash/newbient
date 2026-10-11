@@ -110,7 +110,7 @@ const InvoiceManagement = () => {
     const handleCopyLink = (id) => {
         const link = `${window.location.origin}/invoice/${id}?via=link`;
         navigator.clipboard.writeText(link);
-        useStore.getState().addToast(`Invoice link copied!`, 'success');
+        useStore.getState().addToast(`Invoice link copied.`, 'success');
     };
 
     const handleNativeShare = async (invoice) => {
@@ -134,7 +134,7 @@ const InvoiceManagement = () => {
         // Permission Check: Editor cannot delete anything. Super Admin can delete anything except developer docs? 
         // User said: "editors cannot delete anything... they can create new document which can be deleted by super admin and developer"
         if (user?.role === 'editor' || user?.role === 'content_admin') {
-            useStore.getState().addToast("Only admins can delete invoices.", 'error');
+            useStore.getState().addToast("Only admins can delete invoices.", 'warning');
             return;
         }
 
@@ -184,7 +184,7 @@ const InvoiceManagement = () => {
             });
             const result = await response.json();
             if (result.success) {
-                useStore.getState().addToast('Invoice email sent successfully!', 'success');
+                useStore.getState().addToast('Invoice email sent.', 'success');
             } else {
                 throw new Error(result.error);
             }
@@ -215,7 +215,7 @@ const InvoiceManagement = () => {
             const invoiceUrl = `${window.location.origin}/invoice/${invoice.id}`;
             await sendPaymentApprovedEmail(claim.email, claim.name || invoice.clientName, invoice.invoiceNumber, invoiceUrl);
         }
-        useStore.getState().addToast('Payment claim approved & client notified.', 'success');
+        useStore.getState().addToast("Payment claim approved. We've let the client know.", 'success');
     };
 
     const handleDeclinePaymentClaim = async (invoice) => {
@@ -230,7 +230,7 @@ const InvoiceManagement = () => {
             const invoiceUrl = `${window.location.origin}/invoice/${invoice.id}`;
             await sendPaymentDeclinedEmail(claim.email, claim.name || invoice.clientName, invoice.invoiceNumber, invoiceUrl);
         }
-        useStore.getState().addToast('Payment claim declined & client notified.', 'success');
+        useStore.getState().addToast("Payment claim declined. We've let the client know.", 'success');
     };
 
     const handleMarkAsPaid = async (invoice) => {

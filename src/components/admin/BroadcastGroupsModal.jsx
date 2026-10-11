@@ -93,7 +93,7 @@ const BroadcastGroupsModal = ({ onClose, preselectedCity = 'All' }) => {
     const handleSend = async (e) => {
         e.preventDefault();
         if (targetRecipients.length === 0) {
-            useStore.getState().addToast('No eligible creators found for this city selection.', 'error');
+            useStore.getState().addToast('No creators to email in the selected city. Try a different city.', 'error');
             return;
         }
 
@@ -121,13 +121,13 @@ const BroadcastGroupsModal = ({ onClose, preselectedCity = 'All' }) => {
                     sent: result.sentCount || targetRecipients.length,
                     failed: result.failedCount || 0
                 });
-                useStore.getState().addToast(`Broadcast complete! Dispatched to ${result.sentCount || targetRecipients.length} creators.`, 'success');
+                useStore.getState().addToast(`Broadcast sent to ${result.sentCount || targetRecipients.length} creators.`, 'success');
             } else {
                 throw new Error(result?.error || 'Email dispatch failed.');
             }
         } catch (err) {
             console.error('Broadcast error:', err);
-            useStore.getState().addToast(err.message || 'Failed to send broadcast.', 'error');
+            useStore.getState().addToast("Couldn't send the broadcast. Please try again.", 'error');
         } finally {
             setIsSending(false);
         }

@@ -829,10 +829,10 @@ const AIStudio = () => {
             if (msgs) setMessages(JSON.parse(msgs));
             if (eng) setActiveEngine(eng);
 
-            addToast("Draft session successfully restored!", "success");
+            addToast("Your draft has been restored.", "success");
         } catch (e) {
             console.error("Failed to restore draft:", e);
-            addToast("Draft restoration failed", "error");
+            addToast("Couldn't restore your draft. You can start a new one.", "error");
         } finally {
             setShowDraftBanner(false);
         }
@@ -845,7 +845,7 @@ const AIStudio = () => {
         localStorage.removeItem('newbi_aistudio_draft_messages');
         localStorage.removeItem('newbi_aistudio_draft_engine');
         setShowDraftBanner(false);
-        addToast("Draft cleared", "info");
+        addToast("Draft cleared.", "info");
     };
 
     useEffect(() => {
@@ -1142,7 +1142,7 @@ const AIStudio = () => {
                     }));
                     await addProposal(proposalData);
                 }
-                addToast(`Successfully saved all bulk proposals!`, 'success');
+                addToast(`All proposals saved.`, 'success');
                 navigate('/admin/proposals');
             } else {
                 const rawProposalData = { 
@@ -1163,11 +1163,11 @@ const AIStudio = () => {
                 localStorage.removeItem('newbi_aistudio_draft_engine');
                 isDirtyRef.current = false;
 
-                addToast(`Proposal saved successfully!`, 'success');
+                addToast(`Proposal saved.`, 'success');
                 navigate('/admin/proposals');
             }
         } catch (error) {
-            addToast("Couldn't save the proposal: " + error.message, 'error');
+            addToast("Couldn't save the proposal. Please try again.", 'error');
         } finally {
             setIsSaving(false);
         }
@@ -1210,10 +1210,10 @@ const AIStudio = () => {
             localStorage.removeItem('newbi_aistudio_draft_engine');
             isDirtyRef.current = false;
 
-            addToast("Agreement saved successfully!", "success");
+            addToast("Agreement saved.", "success");
             navigate('/admin/agreements');
         } catch (error) {
-            addToast("Agreement save failed: " + error.message, 'error');
+            addToast("Couldn't save the agreement. Please try again.", 'error');
         } finally {
             setIsSaving(false);
         }
@@ -1492,7 +1492,7 @@ const AIStudio = () => {
                 sender: 'ai',
                 text: `⚠ Error during generation: ${err.message}`
             }]);
-            addToast(`AI Generation failed: ${err.message}`, 'error');
+            addToast(`Couldn't generate the document. Check the chat for details and try again.`, 'error');
         } finally {
             setIsGenerating(false);
             setIsBulkGenerating(false);
@@ -1566,7 +1566,7 @@ const AIStudio = () => {
                 sender: 'ai',
                 text: `⚠ Failed to refine document: ${err.message}`
             }]);
-            addToast(`Refinement failed: ${err.message}`, 'error');
+            addToast(`Couldn't refine the document. Check the chat for details and try again.`, 'error');
         } finally {
             setIsGenerating(false);
         }
@@ -1617,7 +1617,7 @@ const AIStudio = () => {
             }
         } catch (error) {
             console.error("PDF Export failed:", error);
-            addToast("Failed to generate PDF.", "error");
+            addToast("Couldn't create the PDF. Please try again.", "error");
         } finally {
             setPreviewScale(originalScale);
             setIsSaving(false);

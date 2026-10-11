@@ -103,13 +103,13 @@ const ContractManagement = () => {
 
     const handleDelete = async (id) => { 
         if (user?.role === 'editor' || user?.role === 'content_admin') {
-            useStore.getState().addToast("Permission Denied: Editors and Content Admins cannot delete documents.", 'error');
+            useStore.getState().addToast("Editors and content admins can't delete agreements.", 'error');
             return;
         }
-        try { await deleteAgreement(id); setShowDeleteModal(null); } catch (e) { useStore.getState().addToast("Error: " + e.message, 'error'); } 
+        try { await deleteAgreement(id); setShowDeleteModal(null); } catch (e) { useStore.getState().addToast("Couldn't delete the agreement. Please try again.", 'error'); } 
     };
-    const handleDuplicate = async (id) => { try { await duplicateAgreement(id); } catch (e) { useStore.getState().addToast("Error: " + e.message, 'error'); } };
-    const handleCopyLink = (id) => { navigator.clipboard.writeText(`${window.location.origin}/agreement/${id}?via=link`); useStore.getState().addToast('Link copied!', 'success'); };
+    const handleDuplicate = async (id) => { try { await duplicateAgreement(id); } catch (e) { useStore.getState().addToast("Couldn't duplicate the agreement. Please try again.", 'error'); } };
+    const handleCopyLink = (id) => { navigator.clipboard.writeText(`${window.location.origin}/agreement/${id}?via=link`); useStore.getState().addToast('Link copied.', 'success'); };
     const handleWhatsApp = (a) => { const url = `${window.location.origin}/agreement/${a.id}?via=whatsapp`; window.open(`https://wa.me/?text=${encodeURIComponent(`Contract from Newbi Entertainment: ${url}`)}`, '_blank'); };
     const handleNativeShare = async (a) => {
         const url = `${window.location.origin}/agreement/${a.id}?via=share`;
@@ -145,7 +145,7 @@ const ContractManagement = () => {
             });
             const result = await response.json();
             if (result.success) {
-                useStore.getState().addToast('Contract email sent successfully!', 'success');
+                useStore.getState().addToast('Contract email sent.', 'success');
             } else {
                 throw new Error(result.error);
             }
@@ -163,11 +163,11 @@ const ContractManagement = () => {
                     status: 'Final',
                     approvalMetadata: null
                 });
-                useStore.getState().addToast('Signature revoked successfully. Contract is now active.', 'success');
+                useStore.getState().addToast('Signature revoked. The contract is active again.', 'success');
                 setSelectedAnalytics(null);
             } catch (err) {
                 console.error(err);
-                useStore.getState().addToast('Failed to revoke signature.', 'error');
+                useStore.getState().addToast("Couldn't revoke the signature. Please try again.", 'error');
             }
         }
     };

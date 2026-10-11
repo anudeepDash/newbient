@@ -262,7 +262,7 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
     // Handlers
     const handleSendIndividualWhatsApp = (creator) => {
         const phone = formatPhoneForWhatsApp(creator.phone).replace(/\+/g, '');
-        if (!phone) { addToast(`No valid phone for ${creator.name}`, 'error'); return; }
+        if (!phone) { addToast(`${creator.name} doesn't have a valid phone number.`, 'warning'); return; }
         
         // Fix for WhatsApp Web preview: convert LF to CRLF so newlines don't get stripped
         const rawMessage = getInviteMessageForCreator(creator);
@@ -280,15 +280,15 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
         if (updateCreator) {
             try {
                 await updateCreator(id, { inviteLinkSent: false, inviteLinkSentAt: null, inviteLinkChannel: null });
-                addToast(`Unmarked ${creator.name} as sent.`, 'info');
+                addToast(`${creator.name} is no longer marked as sent.`, 'info');
             } catch (err) {
-                addToast('Failed to undo status.', 'error');
+                addToast("Couldn't undo that. Please try again.", 'error');
             }
         }
     };
 
     const handleStartQueue = () => {
-        if (!queueCandidates.length) { addToast('No eligible creators in selection.', 'error'); return; }
+        if (!queueCandidates.length) { addToast('No one in your selection has a phone number and still needs an invite.', 'warning'); return; }
         setQueueIndex(0); setIsQueueActive(true);
     };
 
@@ -296,17 +296,17 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
         if (!currentQueueCreator) { setIsQueueActive(false); return; }
         handleSendIndividualWhatsApp(currentQueueCreator);
         if (queueIndex + 1 < queueCandidates.length) setQueueIndex(prev => prev + 1);
-        else { setIsQueueActive(false); setQueueIndex(0); addToast('Queue completed!', 'success'); }
+        else { setIsQueueActive(false); setQueueIndex(0); addToast('All done. Every creator in the queue has been messaged.', 'success'); }
     };
 
     const handleQueueSkip = () => {
         if (queueIndex + 1 < queueCandidates.length) setQueueIndex(prev => prev + 1);
-        else { setIsQueueActive(false); setQueueIndex(0); addToast('Queue finished.', 'info'); }
+        else { setIsQueueActive(false); setQueueIndex(0); addToast('You reached the end of the queue.', 'info'); }
     };
 
     const handleBulkSendEmail = async () => {
         const targetCreators = cityCreators.filter(c => currentSelectedIds.has(c.id || c.uid) && c.email?.includes('@'));
-        if (!targetCreators.length) { addToast('No creators with valid email addresses.', 'error'); return; }
+        if (!targetCreators.length) { addToast('None of these creators have a valid email address.', 'warning'); return; }
 
         setIsEmailSending(true);
         setEmailProgress({ current: 0, total: targetCreators.length });
@@ -329,10 +329,10 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
 
             if (result?.success || result?.sentCount > 0) {
                 if (bulkMarkCreatorInvitesSent) await bulkMarkCreatorInvitesSent(targetCreators.map(c => c.id || c.uid), 'email');
-                addToast(`Dispatched emails to ${result.sentCount || targetCreators.length} creators!`, 'success');
+                addToast(`Emails sent to ${result.sentCount || targetCreators.length} creators.`, 'success');
             } else throw new Error(result?.error || 'Email dispatch failed.');
         } catch (err) {
-            addToast(err.message || 'Failed to send emails.', 'error');
+            addToast("Couldn't send the emails. Please try again.", 'error');
         } finally {
             setIsEmailSending(false);
         }

@@ -49,7 +49,8 @@ export const initForegroundMessaging = async () => {
         onMessage(msg, (payload) => {
             try {
                 // 1. Show Native Browser Notification if supported and permitted
-                if (typeof window !== 'undefined' && 'Notification' in window && window.Notification.permission === 'granted') {
+                // Skipped while the tab is visible: the in-app banner already shows it, so this avoids a double pop-up.
+                if (typeof window !== 'undefined' && 'Notification' in window && window.Notification.permission === 'granted' && document.visibilityState !== 'visible') {
                     const notification = payload.notification || {};
                     const title = notification.title || 'Newbi Entertainment';
                     const body = notification.body || '';
@@ -70,7 +71,7 @@ export const initForegroundMessaging = async () => {
                 // 2. Add to store notifications (In-app center)
                 const notif = payload.notification || {};
                 useStore.getState().addNotification({
-                    title: notif.title || 'New Notification',
+                    title: notif.title || 'New notification',
                     content: notif.body || '',
                     type: payload.data?.type || 'push',
                     link: payload.data?.link || '',

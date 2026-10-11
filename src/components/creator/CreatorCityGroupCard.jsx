@@ -146,14 +146,14 @@ const CreatorCityGroupCard = ({
             }
         }
         if (onJoinMarked) onJoinMarked(currentGroup);
-        addToast(`Verified! You're in the ${currentGroup.city} Creators Hub. 🎉`, 'success');
+        addToast(`You're in the ${currentGroup.city} Creators Hub! 🎉`, 'success');
     };
 
     const handleCopyInvite = () => {
         if (!currentGroup?.groupUrl) return;
         navigator.clipboard.writeText(currentGroup.groupUrl);
         setCopied(true);
-        addToast('WhatsApp invite link copied!', 'success');
+        addToast('WhatsApp invite link copied.', 'success');
         setTimeout(() => setCopied(false), 2000);
     };
 

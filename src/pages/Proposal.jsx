@@ -565,7 +565,7 @@ const Proposal = () => {
     const handleApproveProposal = async () => {
         if (displayProposal.status === 'Accepted' || displayProposal.status === 'Rejected') return;
         if (!signatureName.trim()) {
-            useStore.getState().addToast('Please enter your full name to authorize this quotation.', 'error');
+            useStore.getState().addToast('Enter your full name to sign this quotation.', 'error');
             return;
         }
 
@@ -638,10 +638,10 @@ const Proposal = () => {
             await useStore.getState().updateProposal(id, updates);
 
             setIsVerifying(false);
-            useStore.getState().addToast('Proposal signed and accepted successfully!', 'success');
+            useStore.getState().addToast('Proposal signed and accepted.', 'success');
         } catch (error) {
             console.error('Error approving proposal:', error);
-            useStore.getState().addToast('Signing failed. Please contact support for help.', 'error');
+            useStore.getState().addToast("Couldn't sign the proposal. Please try again or contact support.", 'error');
         } finally {
             setIsSubmitting(false);
         }

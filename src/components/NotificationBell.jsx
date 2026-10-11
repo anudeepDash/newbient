@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../lib/store';
 import { cn } from '../lib/utils';
 import { formatDistanceToNow, isToday, isYesterday } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 const NotificationBell = () => {
     const { 
@@ -15,6 +16,7 @@ const NotificationBell = () => {
     } = useStore();
     
     const [isOpen, setIsOpen] = useState(false);
+    const navigate = useNavigate();
     const dropdownRef = useRef(null);
 
     // Close on click outside
@@ -126,7 +128,7 @@ const NotificationBell = () => {
                                         <Bell size={28} className="text-gray-600" />
                                     </div>
                                     <h4 className="text-gray-900 dark:text-white font-bold mb-2">You're all caught up!</h4>
-                                    <p className="text-sm text-gray-500">No new notifications right now.</p>
+                                    <p className="text-sm text-gray-500">We'll let you know when something new comes in.</p>
                                 </div>
                             ) : (
                                 <div className="p-4 space-y-6">
@@ -158,9 +160,9 @@ const NotificationBell = () => {
                                                                     markNotificationRead(item.id);
                                                                     if (item.link && item.link.trim() !== '') {
                                                                         if (item.link.startsWith('http')) {
-                                                                            window.open(item.link, '_blank');
+                                                                            window.open(item.link, '_blank', 'noopener,noreferrer');
                                                                         } else {
-                                                                            window.location.href = item.link;
+                                                                            navigate(item.link);
                                                                         }
                                                                     }
                                                                     setIsOpen(false);
@@ -198,7 +200,7 @@ const NotificationBell = () => {
                                                                             "text-xs leading-relaxed line-clamp-2 mb-2",
                                                                             item.isRead ? "text-gray-500" : "text-gray-600 dark:text-gray-400"
                                                                         )}>
-                                                                            {item.content}
+                                                                            {item.content || item.message}
                                                                         </p>
                                                                         <span className="text-[10px] text-gray-600 font-medium tracking-wide">
                                                                             {timeAgo}
@@ -212,8 +214,9 @@ const NotificationBell = () => {
                                                                         e.stopPropagation();
                                                                         deleteNotification(item.id);
                                                                     }}
-                                                                    className="absolute top-1/2 -translate-y-1/2 right-4 opacity-0 group-hover:opacity-100 p-2 rounded-full bg-red-500/10 text-red-500/60 hover:text-red-500 hover:bg-red-500/20 transition-all"
+                                                                    className="absolute top-1/2 -translate-y-1/2 right-4 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 p-2 rounded-full bg-red-500/10 text-red-500/60 hover:text-red-500 hover:bg-red-500/20 transition-all"
                                                                     title="Delete notification"
+                                                                    aria-label="Delete notification"
                                                                 >
                                                                     <Trash2 size={14} />
                                                                 </button>

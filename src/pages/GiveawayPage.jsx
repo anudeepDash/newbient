@@ -104,7 +104,7 @@ const GiveawayPage = () => {
         try {
             await enterGiveaway(giveaway.id, { ...formData, referredBy });
         } catch (error) {
-            useStore.getState().addToast("Something went wrong. Please try again.", 'error');
+            useStore.getState().addToast("Couldn't enter you into the giveaway. Please try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -169,7 +169,7 @@ const GiveawayPage = () => {
         } else {
             // Copy and prompt for Instagram
             navigator.clipboard.writeText(link);
-            useStore.getState().addToast('Link copied! Open Instagram Stories and paste it as a link sticker.', 'success');
+            useStore.getState().addToast('Link copied. Open Instagram Stories and paste it as a link sticker.', 'success');
         }
     };
 

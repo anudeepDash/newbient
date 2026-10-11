@@ -132,9 +132,9 @@ const OtherIncomeManagement = () => {
         try {
             const url = await uploadToCloudinary(file);
             setUrl(url);
-            useStore.getState().addToast('Attachment uploaded successfully!', 'success');
+            useStore.getState().addToast('Attachment uploaded.', 'success');
         } catch (err) {
-            useStore.getState().addToast(err.message || 'Failed to upload attachment.', 'error');
+            useStore.getState().addToast("Couldn't upload the attachment. Please try again.", 'error');
         } finally {
             setUploadingAttachment(false);
         }
@@ -143,7 +143,7 @@ const OtherIncomeManagement = () => {
     const handleCreateIncome = async (e) => {
         e.preventDefault();
         if (!sourceName || !amount || !date) {
-            useStore.getState().addToast('Please fill in all required fields.', 'error');
+            useStore.getState().addToast('Fill in all the required fields before saving.', 'error');
             return;
         }
 
@@ -163,18 +163,18 @@ const OtherIncomeManagement = () => {
                 createdAt: new Date().toISOString()
             });
 
-            useStore.getState().addToast('Income record added.', 'success');
+            useStore.getState().addToast('Income entry added.', 'success');
             setShowAddModal(false);
             resetForm();
         } catch (err) {
-            useStore.getState().addToast('Failed to save income record. Please try again.', 'error');
+            useStore.getState().addToast("Couldn't save the income entry. Please try again.", 'error');
         }
     };
 
     const handleUpdateIncome = async (e) => {
         e.preventDefault();
         if (!sourceName || !amount || !date) {
-            useStore.getState().addToast('Please fill in all required fields.', 'error');
+            useStore.getState().addToast('Fill in all the required fields before saving.', 'error');
             return;
         }
 
@@ -193,23 +193,23 @@ const OtherIncomeManagement = () => {
                 transactionRef
             });
 
-            useStore.getState().addToast('Income record updated.', 'success');
+            useStore.getState().addToast('Income entry updated.', 'success');
             setShowEditModal(null);
             resetForm();
         } catch (err) {
-            useStore.getState().addToast('Failed to update income record. Please try again.', 'error');
+            useStore.getState().addToast("Couldn't update the income entry. Please try again.", 'error');
         }
     };
 
     const handleDeleteIncome = (id) => {
         if (user?.role === 'editor' || user?.role === 'content_admin') {
-            useStore.getState().addToast("Only administrators can delete income records.", 'error');
+            useStore.getState().addToast("Only admins can delete income entries.", 'warning');
             return;
         }
 
         if (window.confirm('Are you sure you want to delete this income record?')) {
             deleteOtherIncome(id);
-            useStore.getState().addToast('Income record deleted.', 'success');
+            useStore.getState().addToast('Income entry deleted.', 'success');
         }
     };
 
@@ -219,7 +219,7 @@ const OtherIncomeManagement = () => {
             await updateOtherIncome(income.id, { status: newStatus });
             useStore.getState().addToast(`Income marked as ${newStatus}.`, 'success');
         } catch (err) {
-            useStore.getState().addToast('Failed to update status.', 'error');
+            useStore.getState().addToast("Couldn't update the status. Please try again.", 'error');
         }
     };
 
@@ -255,12 +255,12 @@ const OtherIncomeManagement = () => {
     const copyToClipboard = (text) => {
         if (!text) return;
         navigator.clipboard.writeText(text);
-        useStore.getState().addToast('Transaction details copied to clipboard!', 'success');
+        useStore.getState().addToast('Payment details copied.', 'success');
     };
 
     const handleExportCSV = () => {
         if (filteredIncomes.length === 0) {
-            useStore.getState().addToast('No records to export.', 'error');
+            useStore.getState().addToast('There are no income entries to export.', 'warning');
             return;
         }
 

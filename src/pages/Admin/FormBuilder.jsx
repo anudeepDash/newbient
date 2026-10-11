@@ -129,18 +129,18 @@ const FormBuilder = () => {
                     createdAt: new Date().toISOString()
                 });
                 await notifyAllUsers(
-                    `NEW FORM: ${formData.title.toUpperCase()}`,
-                    `Please take a moment to review and complete our latest form.`,
+                    `New form: ${formData.title}`,
+                    `We've shared a new form. Please take a moment to fill it out.`,
                     '/forms',
                     formData.image,
                     true // sendEmail
                 );
             }
             navigate('/admin/forms');
-            useStore.getState().addToast(`Form ${id ? 'updated' : 'created'} successfully!`, 'success');
+            useStore.getState().addToast(`Form ${id ? 'updated' : 'created'}.`, 'success');
         } catch (error) {
             console.error("Error saving form:", error);
-            useStore.getState().addToast("Failed to save form. Please try again.", 'error');
+            useStore.getState().addToast("Couldn't save the form. Please try again.", 'error');
         } finally {
             setSaving(false);
         }

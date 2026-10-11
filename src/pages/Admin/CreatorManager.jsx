@@ -295,10 +295,10 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
         setIsMergingBangalore(true);
         try {
             const res = await mergeBangaloreCreatorsToBengaluru();
-            useStore.getState().addToast(`Successfully merged ${res?.updatedCount || 0} creators to Bengaluru.`, 'success');
+            useStore.getState().addToast(`Moved ${res?.updatedCount || 0} creators to Bengaluru.`, 'success');
         } catch (err) {
             console.error('Error merging Bangalore creators:', err);
-            useStore.getState().addToast('Failed to merge Bangalore creators.', 'error');
+            useStore.getState().addToast("Couldn't move Bangalore creators to Bengaluru. Please try again.", 'error');
         } finally {
             setIsMergingBangalore(false);
         }
@@ -322,7 +322,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
             const csvText = event.target.result;
             const lines = csvText.split('\n').filter(line => line.trim() !== '');
             if (lines.length < 2) {
-                useStore.getState().addToast("CSV file is empty or invalid.", 'error');
+                useStore.getState().addToast("This CSV file is empty or couldn't be read. Please check it and try again.", 'error');
                 return;
             }
 
@@ -382,17 +382,17 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
             }
 
             if (creatorsToImport.length === 0) {
-                useStore.getState().addToast("No valid creators found to import.", 'error');
+                useStore.getState().addToast("We couldn't find any creators to import in this file.", 'error');
                 return;
             }
 
             try {
                 const { addCreator } = useStore.getState();
                 await Promise.all(creatorsToImport.map(c => addCreator(c, false)));
-                useStore.getState().addToast(`Imported ${creatorsToImport.length} creators successfully!`, 'success');
+                useStore.getState().addToast(`${creatorsToImport.length} creators imported.`, 'success');
             } catch (err) {
                 console.error("CSV Import error:", err);
-                useStore.getState().addToast("Failed to import creators.", 'error');
+                useStore.getState().addToast("Couldn't import the creators. Please try again.", 'error');
             }
         };
         reader.readAsText(file);
@@ -501,10 +501,10 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
             if (selectedCreator && (selectedCreator.uid === uid || selectedCreator.id === uid)) {
                 setSelectedCreator({ ...selectedCreator, profileStatus: newStatus });
             }
-            useStore.getState().addToast(`Creator ${newStatus === 'approved' ? 'verified' : newStatus} successfully!`, 'success');
+            useStore.getState().addToast(`Creator marked as ${newStatus === 'approved' ? 'verified' : newStatus}.`, 'success');
         } catch (error) {
             console.error("Error updating creator status:", error);
-            useStore.getState().addToast(error?.message || "Couldn't update the status. Please try again.", 'error');
+            useStore.getState().addToast("Couldn't update the creator's status. Please try again.", 'error');
         } finally {
             setIsUpdating(false);
         }
@@ -516,10 +516,10 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
             try {
                 await deleteCreator(uid);
                 navigate('/admin/creators');
-                useStore.getState().addToast("Creator profile deleted successfully.", 'success');
+                useStore.getState().addToast("Creator profile deleted.", 'success');
             } catch (error) {
                 console.error("Error deleting creator:", error);
-                useStore.getState().addToast(error?.message || "Couldn't delete the creator. Please try again.", 'error');
+                useStore.getState().addToast("Couldn't delete the creator. Please try again.", 'error');
             } finally {
                 setIsDeleting(false);
             }
@@ -2409,7 +2409,7 @@ const BulkEmailModal = ({ selectedUids, creators, onClose }) => {
     const handleSendBulkEmail = async (e) => {
         e.preventDefault();
         if (!emailSubject.trim() || !emailBody.trim()) {
-            useStore.getState().addToast("Please fill in subject and body.", 'warning');
+            useStore.getState().addToast("Add a subject and a message before sending.", 'warning');
             return;
         }
 
@@ -2435,7 +2435,7 @@ const BulkEmailModal = ({ selectedUids, creators, onClose }) => {
         }
 
         setIsSending(false);
-        useStore.getState().addToast(`Bulk email process completed: ${successCount} sent, ${failCount} failed.`, 'success');
+        useStore.getState().addToast(failCount > 0 ? `${successCount} emails sent, ${failCount} couldn't be delivered.` : `All ${successCount} emails sent.`, failCount > 0 ? 'warning' : 'success');
         onClose();
     };
 

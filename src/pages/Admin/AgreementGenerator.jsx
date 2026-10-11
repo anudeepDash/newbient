@@ -223,12 +223,12 @@ const ContractGenerator = () => {
                 updateField(fieldKey, refined);
             }
 
-            addToast(`Field "${refinementContext.fieldLabel}" refined!`, 'success');
+            addToast(`"${refinementContext.fieldLabel}" has been refined.`, 'success');
             setRefinementContext(null);
             setRefinementPrompt('');
         } catch (err) {
             console.error(err);
-            addToast(`Refinement failed: ${err.message}`, 'error');
+            addToast("Couldn't refine that field. Please try again.", 'error');
         } finally {
             setIsRefining(false);
         }
@@ -460,17 +460,17 @@ const ContractGenerator = () => {
                 isDirtyRef.current = false;
                 setAutosaveStatus('saved');
                 setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-                addToast("Agreement draft saved!", "success");
+                addToast("Agreement draft saved.", "success");
             } else {
                 const newDocId = await addAgreement(data);
                 isDirtyRef.current = false;
                 setAutosaveStatus('saved');
                 setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-                addToast("Agreement successfully created!", "success");
+                addToast("Agreement created.", "success");
                 navigate(`/admin/agreements/edit/${newDocId}`, { replace: true });
             }
         } catch (error) {
-            addToast("Save Error: " + error.message, 'error');
+            addToast("Couldn't save the agreement. Please try again.", 'error');
         } finally {
             setIsSaving(false);
         }
@@ -511,7 +511,7 @@ const ContractGenerator = () => {
                     text: `✓ Refinement applied to "${refinementContext.fieldLabel}"! Output updated in the preview.`
                 }]);
                 setRefinementContext(null);
-                addToast(`Field "${refinementContext.fieldLabel}" successfully refined!`, 'success');
+                addToast(`"${refinementContext.fieldLabel}" has been refined.`, 'success');
             } else {
                 const isInitialGeneration = !formData.parties?.secondParty?.name || formData.parties.secondParty.name.trim() === '' || messages.length <= 1;
                 if (isInitialGeneration) {
@@ -557,7 +557,7 @@ const ContractGenerator = () => {
                         sender: 'ai',
                         text: `✓ Agreement for "${data.parties?.secondParty?.name || 'Client'}" drafted successfully with ${data.clauses?.length || 0} legal clauses!\n\nYou can switch to the document editor to customize every field, or continue chatting to refine.`
                     }]);
-                    addToast('Agreement generated! Switch to Document Editor to inspect all fields.', 'success');
+                    addToast('Agreement generated. Open the Document Editor to review every field.', 'success');
                 } else {
                     const updatedDoc = await reviseDocument(formData, currentPrompt, 'Premium');
                     setFormData(prev => ({
@@ -587,7 +587,7 @@ const ContractGenerator = () => {
                         sender: 'ai',
                         text: `✓ Document refined according to request: "${currentPrompt}". Live preview updated.`
                     }]);
-                    addToast('Document successfully refined!', 'success');
+                    addToast('Document refined.', 'success');
                 }
             }
         } catch (err) {
@@ -596,7 +596,7 @@ const ContractGenerator = () => {
                 sender: 'ai',
                 text: `⚠ Failed to process request: ${err.message}`
             }]);
-            addToast(`Error: ${err.message}`, 'error');
+            addToast("Couldn't process your request. Please try again.", 'error');
         } finally {
             setIsGenerating(false);
         }
@@ -623,10 +623,10 @@ const ContractGenerator = () => {
                 pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297, '', 'FAST');
             }
             pdf.save(`Newbi-Contract-${formData.parties?.secondParty?.name || 'Draft'}.pdf`);
-            addToast("Contract PDF exported successfully!", "success");
+            addToast("Contract PDF exported.", "success");
         } catch (error) {
             console.error(error);
-            addToast("Export failed: " + error.message, "error");
+            addToast("Couldn't export the PDF. Please try again.", "error");
         } finally {
             setPreviewScale(originalScale);
             setIsSaving(false);
@@ -638,7 +638,7 @@ const ContractGenerator = () => {
             navigator.clipboard.writeText(formData.agreementNumber);
             setCopiedAgreementId(true);
             setTimeout(() => setCopiedAgreementId(false), 2000);
-            addToast("Agreement ID copied to clipboard!", "info");
+            addToast("Agreement ID copied.", "info");
         }
     };
 
@@ -755,7 +755,7 @@ const ContractGenerator = () => {
                                     ]);
                                     setPromptText('');
                                     setRefinementContext(null);
-                                    addToast('Chat reset to initial draft state', 'info');
+                                    addToast('Chat reset to the original draft.', 'info');
                                 }}
                                 className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
                                 title="Reset conversation"

@@ -37,10 +37,10 @@ const BrandPartnersManager = () => {
         try {
             const url = await uploadToCloudinary(file);
             setNewClient(prev => ({ ...prev, logoUrl: url }));
-            useStore.getState().addToast('Brand logo uploaded!', 'success');
+            useStore.getState().addToast('Brand logo uploaded.', 'success');
         } catch (err) {
             console.error('Logo upload error:', err);
-            useStore.getState().addToast('Failed to upload logo image.', 'error');
+            useStore.getState().addToast("Couldn't upload the logo. Please try again.", 'error');
         } finally {
             setUploadingLogo(false);
         }
@@ -49,7 +49,7 @@ const BrandPartnersManager = () => {
     const handleAddClient = async (e) => {
         if (e) e.preventDefault();
         if (!newClient.name.trim()) {
-            useStore.getState().addToast('Brand name is required.', 'error');
+            useStore.getState().addToast('Add a brand name to continue.', 'error');
             return;
         }
 
@@ -61,10 +61,10 @@ const BrandPartnersManager = () => {
                 websiteUrl: newClient.websiteUrl?.trim() || ''
             });
             setNewClient({ name: '', logoUrl: '', websiteUrl: '' });
-            useStore.getState().addToast('Brand partner added!', 'success');
+            useStore.getState().addToast('Brand partner added.', 'success');
         } catch (err) {
             console.error('Add brand error:', err);
-            useStore.getState().addToast('Failed to add brand partner.', 'error');
+            useStore.getState().addToast("Couldn't add the brand partner. Please try again.", 'error');
         } finally {
             setSubmitting(false);
         }
@@ -76,7 +76,7 @@ const BrandPartnersManager = () => {
             await deletePastClient(id);
             useStore.getState().addToast('Brand partner removed.', 'success');
         } catch (err) {
-            useStore.getState().addToast('Failed to delete brand partner.', 'error');
+            useStore.getState().addToast("Couldn't remove the brand partner. Please try again.", 'error');
         }
     };
 
@@ -85,11 +85,11 @@ const BrandPartnersManager = () => {
         try {
             await updateGeneralSettings({ showPastClients: nextState });
             useStore.getState().addToast(
-                `Brand partners marquee is now ${nextState ? 'visible' : 'hidden'} on landing pages.`,
+                `Brand partner logos are now ${nextState ? 'visible' : 'hidden'} on landing pages.`,
                 'info'
             );
         } catch (err) {
-            useStore.getState().addToast('Failed to update visibility setting.', 'error');
+            useStore.getState().addToast("Couldn't change the visibility. Please try again.", 'error');
         }
     };
 

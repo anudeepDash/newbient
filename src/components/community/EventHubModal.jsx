@@ -79,7 +79,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
     
     const handleInternalAction = () => {
         if (event.isTicketed && maintenanceState.features?.tickets) {
-            useStore.getState().addToast("Ticketing is currently paused for maintenance.", 'error');
+            useStore.getState().addToast("Ticket sales are paused for maintenance. Please check back soon.", 'warning');
             return;
         }
         if (event.isGuestlistEnabled && !event.isTicketed && !user) {
@@ -92,7 +92,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
     const handleShare = () => {
         const url = `${window.location.origin}/?event=${event.id}`;
         navigator.clipboard.writeText(url);
-        useStore.getState().addToast("Event link copied to clipboard!", 'success');
+        useStore.getState().addToast("Event link copied.", 'success');
     };
 
     return createPortal(

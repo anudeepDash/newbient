@@ -7,6 +7,10 @@ import { normalizePhoneNumber } from './utils';
 import { extractSocialUsername, hasDisallowedLink } from './socialUtils';
 import { safeLocalStorage } from './storage';
 import { DEFAULT_CREATOR_GROUPS, isCampaignCityMatch } from './constants';
+import { TOAST_TYPES, toFriendlyMessage, getSupportHint, getToastDuration } from './toastCopy';
+
+const MAX_TOASTS = 4;
+let toastSeq = 0;
 
 const AUTH_CACHE_KEY = 'nb_auth_session';
 const getCachedSession = () => {
@@ -668,6 +672,7 @@ export const useStore = create((set, get) => ({
     documents: [], // Document Hub
     portfolioCategories: [], // Dynamic categories
     toasts: [], // Ephemeral UI notifications
+    dismissedAnnouncementId: safeLocalStorage.getItem('nb_dismissed_announcement'),
     aiConfig: { geminiKey: '', defaultModel: 'gemini-3.5-flash' }, // Global AI Config
     activeModel: 'Gemini 3.5 Flash',
     dashboardWidgets: ['total_members', 'active_users', 'administrators', 'ticket_sales'], // Configurable 4-card metric keys
@@ -1100,24 +1105,70 @@ export const useStore = create((set, get) => ({
     },
 
     // Toast System
-    addToast: (message, type = 'error', code = null) => {
-        const id = Date.now();
-        
-        let finalMessage = message;
-        // Append support email for specific non-auto-resolvable errors (like ticketing/payments)
-        if (type === 'error' && (code?.startsWith('TKT') || code?.startsWith('EVT') || code?.startsWith('PAY') || message.toLowerCase().includes('ticket') || message.toLowerCase().includes('payment'))) {
-            finalMessage = `${message} For assistance, contact support@newbi.live`;
+    // addToast(message, type, codeOrOptions)
+    //   type: 'success' | 'error' | 'warning' | 'info'
+    //   codeOrOptions: an error code string (legacy) or { title, code, duration, action: { label, onClick } }
+    addToast: (message, type = 'error', codeOrOptions = null) => {
+        const options = codeOrOptions && typeof codeOrOptions === 'object' ? codeOrOptions : { code: codeOrOptions };
+        const kind = TOAST_TYPES.includes(type) ? type : 'info';
+        const text = toFriendlyMessage(message, kind);
+        const now = Date.now();
+
+        // Repeated identical toasts collapse into one with a counter instead of stacking up.
+        const existing = get().toasts.find(t => t.kind === 'toast' && t.type === kind && t.message === text);
+        if (existing) {
+            set(state => ({
+                toasts: [
+                    { ...existing, count: (existing.count || 1) + 1, updatedAt: now },
+                    ...state.toasts.filter(t => t.id !== existing.id)
+                ]
+            }));
+            return existing.id;
         }
 
-        set(state => ({
-            toasts: [...state.toasts, { id, message: finalMessage, type, code }]
-        }));
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            set(state => ({
-                toasts: state.toasts.filter(t => t.id !== id)
-            }));
-        }, 5000);
+        const id = `toast-${now}-${++toastSeq}`;
+        const toast = {
+            id,
+            kind: 'toast',
+            type: kind,
+            title: options.title || null,
+            message: text,
+            hint: getSupportHint(text, kind, options.code),
+            code: options.code || null,
+            action: options.action || null,
+            duration: options.duration ?? getToastDuration(kind, text),
+            count: 1,
+            createdAt: now,
+            updatedAt: now,
+        };
+        set(state => ({ toasts: [toast, ...state.toasts].slice(0, MAX_TOASTS) }));
+        return id;
+    },
+    // Shows an incoming in-app notification as a banner in the same stack as other toasts.
+    showNotificationToast: (notification) => {
+        const id = `notif-${notification.id}`;
+        if (get().toasts.some(t => t.id === id)) return;
+        const now = Date.now();
+        const toast = {
+            id,
+            kind: 'notification',
+            type: 'info',
+            notificationId: notification.id,
+            title: notification.title || 'New notification',
+            message: notification.content || notification.message || '',
+            image: notification.image || null,
+            link: notification.link || '',
+            category: notification.type || null,
+            duration: 7000,
+            count: 1,
+            createdAt: now,
+            updatedAt: now,
+        };
+        set(state => ({ toasts: [toast, ...state.toasts].slice(0, MAX_TOASTS) }));
+    },
+    dismissPinnedAnnouncement: (id) => {
+        safeLocalStorage.setItem('nb_dismissed_announcement', id);
+        set({ dismissedAnnouncementId: id });
     },
     removeToast: (id) => {
         set(state => ({
@@ -4123,7 +4174,7 @@ export const useStore = create((set, get) => ({
                     const { getAuth } = await import('firebase/auth');
                     const auth = getAuth();
                     await auth.signOut();
-                    useStore.getState().addToast("Your account has been suspended. Please contact support.", 'error');
+                    useStore.getState().addToast("Your account has been suspended. Contact support@newbi.live if you think this is a mistake.", 'error');
                     return;
                 }
 
@@ -4137,7 +4188,7 @@ export const useStore = create((set, get) => ({
                         const { getAuth } = await import('firebase/auth');
                         const auth = getAuth();
                         await auth.signOut();
-                        useStore.getState().addToast("Your session has expired. Please sign in again.", 'warning');
+                        useStore.getState().addToast("You've been signed out for your security. Please sign in again.", 'warning');
                         return;
                     }
                 }
@@ -4348,13 +4399,13 @@ export const useStore = create((set, get) => ({
             
             // Clean up state
             get().logout();
-            get().addToast("Your account has been successfully deleted.", "success");
+            get().addToast("Your account has been deleted. Sorry to see you go.", "success");
         } catch (error) {
             console.error("Error deleting account:", error);
             if (error.code === 'auth/requires-recent-login') {
-                get().addToast("For security reasons, please log out and log back in before deleting your account.", "error");
+                get().addToast("For your security, please sign out and sign back in, then try deleting your account again.", "warning");
             } else {
-                get().addToast("Failed to delete account. Please contact support.", "error");
+                get().addToast("Couldn't delete your account. Please contact support@newbi.live.", "error");
             }
         }
     },
@@ -4375,7 +4426,7 @@ export const useStore = create((set, get) => ({
                 if (userData.isBlocked) {
                     console.warn("User is blocked. Revoking local session.");
                     get().logout();
-                    get().addToast("Your account has been suspended. Please contact support.", 'error');
+                    get().addToast("Your account has been suspended. Contact support@newbi.live if you think this is a mistake.", 'error');
                     return;
                 }
 
@@ -4386,7 +4437,7 @@ export const useStore = create((set, get) => ({
                     if (sessionTimestamp < forceLogoutTime) {
                         console.warn("User session has been revoked. Revoking local session.");
                         get().logout();
-                        get().addToast("Your session has expired. Please sign in again.", 'warning');
+                        get().addToast("You've been signed out for your security. Please sign in again.", 'warning');
                         return;
                     }
                 }
@@ -4522,7 +4573,7 @@ export const useStore = create((set, get) => ({
             } catch (e) {}
 
             if (!silent) {
-                useStore.getState().addToast(data.message || `Successfully synced ${data.syncedCount || 0} members!`, 'success');
+                useStore.getState().addToast(data.message || `${data.syncedCount || 0} members updated.`, 'success');
             }
 
             return data;
@@ -4530,7 +4581,7 @@ export const useStore = create((set, get) => ({
             console.error('[Store] syncAuthUsers error:', error);
             set({ isSyncingUsers: false, authSyncError: error.message });
             if (!silent) {
-                useStore.getState().addToast(error.message || "Failed to synchronize users.", 'error');
+                useStore.getState().addToast(error.message || "Couldn't update the member list. Please try again.", 'error');
                 throw error;
             }
         }
@@ -4667,7 +4718,7 @@ export const useStore = create((set, get) => ({
             await setDoc(doc(db, 'app_state', maintenanceDocId), newState, { merge: true });
         } catch (error) {
             console.error(`[Maintenance] Failed to update global in ${maintenanceDocId}:`, error);
-            useStore.getState().addToast(`Firestore Global Update Failed: ${error.message}`, 'error');
+            useStore.getState().addToast("Couldn't save the update. Please try again.", 'error');
         }
     },
 
@@ -4902,7 +4953,7 @@ export const useStore = create((set, get) => ({
             set({ emailTemplates: mergedList });
 
             if (isPermissionError) {
-                throw new Error("SAVED_LOCALLY: Template saved locally in your browser. (Note: Grant write access to 'email_templates' in Firestore Security Rules to sync across all admin devices).");
+                throw new Error("SAVED_LOCALLY: Template saved on this device only. It won't appear for other admins until cloud saving is enabled.");
             }
             return fallbackId;
         }

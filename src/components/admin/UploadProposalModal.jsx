@@ -265,10 +265,10 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
             let savedId = editingProposal?.id;
             if (editingProposal?.id) {
                 await updateProposal(editingProposal.id, proposalData);
-                useStore.getState().addToast('Hosted proposal updated successfully!', 'success');
+                useStore.getState().addToast('Proposal updated.', 'success');
             } else {
                 savedId = await addProposal(proposalData);
-                useStore.getState().addToast('Pre-made proposal uploaded & hosted in Vault!', 'success');
+                useStore.getState().addToast('Proposal uploaded and saved to the Vault.', 'success');
             }
 
             if (onSuccess) onSuccess(savedId);

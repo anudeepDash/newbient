@@ -210,7 +210,7 @@ const CreatorDetailModal = ({
         if (e) e.preventDefault();
         const instagramUrl = buildSocialUrl(creatorData.instagram, 'instagram');
         if (!instagramUrl) {
-            useStore.getState().addToast('No Instagram handle found to verify', 'error');
+            useStore.getState().addToast("This creator hasn't added an Instagram handle, so there's nothing to verify.", 'warning');
             return;
         }
         window.open(instagramUrl, '_blank', 'noopener,noreferrer');
@@ -230,10 +230,10 @@ const CreatorDetailModal = ({
             await updateCreator(creatorData.id || creatorData.uid, updates);
             setCreatorData(prev => ({ ...prev, ...updates }));
             setVerifyInstagramState('idle');
-            useStore.getState().addToast(`Followers verified! (${Number(creatorData.instagramFollowers).toLocaleString()})`, 'success');
+            useStore.getState().addToast(`Followers verified (${Number(creatorData.instagramFollowers).toLocaleString()}).`, 'success');
         } catch (err) {
             console.error('Failed to verify instagram followers:', err);
-            useStore.getState().addToast('Failed to update verification status', 'error');
+            useStore.getState().addToast("Couldn't update the verification status. Please try again.", 'error');
         } finally {
             setIsSavingInstagram(false);
         }
@@ -242,7 +242,7 @@ const CreatorDetailModal = ({
     const handleSaveEditedFollowers = async () => {
         const raw = editFollowersInput.trim();
         if (!raw) {
-            useStore.getState().addToast('Please enter follower count', 'error');
+            useStore.getState().addToast('Enter a follower count first.', 'error');
             return;
         }
         const cleanCount = String(Number(raw) || 0);
@@ -258,10 +258,10 @@ const CreatorDetailModal = ({
             await updateCreator(creatorData.id || creatorData.uid, updates);
             setCreatorData(prev => ({ ...prev, ...updates }));
             setVerifyInstagramState('idle');
-            useStore.getState().addToast(`Followers updated to ${Number(cleanCount).toLocaleString()} and verified!`, 'success');
+            useStore.getState().addToast(`Followers updated to ${Number(cleanCount).toLocaleString()} and verified.`, 'success');
         } catch (err) {
             console.error('Failed to save edited followers:', err);
-            useStore.getState().addToast('Failed to save follower count', 'error');
+            useStore.getState().addToast("Couldn't save the follower count. Please try again.", 'error');
         } finally {
             setIsSavingInstagram(false);
         }
@@ -271,40 +271,40 @@ const CreatorDetailModal = ({
     const handleToggleFeatured = async () => {
         const next = !isFeatured;
         setIsFeatured(next);
-        try { await updateCreator(creatorData.id || creatorData.uid, { isFeatured: next }); useStore.getState().addToast(next ? 'Featured' : 'Unfeatured', 'success'); }
-        catch { setIsFeatured(!next); useStore.getState().addToast('Failed', 'error'); }
+        try { await updateCreator(creatorData.id || creatorData.uid, { isFeatured: next }); useStore.getState().addToast(next ? 'Creator is now featured.' : 'Creator is no longer featured.', 'success'); }
+        catch { setIsFeatured(!next); useStore.getState().addToast("Couldn't update featured status. Please try again.", 'error'); }
     };
 
     const handleAddBadge = async (badgeId) => {
         if (adminBadges.includes(badgeId)) return;
         const u = [...adminBadges, badgeId]; setAdminBadges(u); setShowBadgePicker(false);
-        try { await updateCreator(creatorData.id || creatorData.uid, { adminBadges: u }); useStore.getState().addToast(`Added Badge`, 'success'); }
-        catch { setAdminBadges(adminBadges); useStore.getState().addToast('Failed', 'error'); }
+        try { await updateCreator(creatorData.id || creatorData.uid, { adminBadges: u }); useStore.getState().addToast(`Badge added.`, 'success'); }
+        catch { setAdminBadges(adminBadges); useStore.getState().addToast("Couldn't add the badge. Please try again.", 'error'); }
     };
 
     const handleRemoveBadge = async (badgeId) => {
         const u = adminBadges.filter(b => b !== badgeId); setAdminBadges(u);
-        try { await updateCreator(creatorData.id || creatorData.uid, { adminBadges: u }); useStore.getState().addToast(`Removed Badge`, 'success'); }
-        catch { setAdminBadges(adminBadges); useStore.getState().addToast('Failed', 'error'); }
+        try { await updateCreator(creatorData.id || creatorData.uid, { adminBadges: u }); useStore.getState().addToast(`Badge removed.`, 'success'); }
+        catch { setAdminBadges(adminBadges); useStore.getState().addToast("Couldn't remove the badge. Please try again.", 'error'); }
     };
 
-    const handleCopy = (text, label) => { if (!text) return; navigator.clipboard.writeText(text); useStore.getState().addToast(`Copied ${label}`, 'success'); };
+    const handleCopy = (text, label) => { if (!text) return; navigator.clipboard.writeText(text); useStore.getState().addToast(`${label} copied.`, 'success'); };
 
     const handleSendEmail = async (e) => {
         e.preventDefault();
-        if (!creatorData.email || !emailSubject.trim() || !emailBody.trim()) { useStore.getState().addToast('Fill subject & message', 'error'); return; }
+        if (!creatorData.email || !emailSubject.trim() || !emailBody.trim()) { useStore.getState().addToast('Add a subject and a message before sending.', 'error'); return; }
         setSendingEmail(true);
         try {
             const { sendCustomEmail } = await import('../../lib/email');
             const r = await sendCustomEmail({ toEmail: creatorData.email, toName: creatorData.name, subject: emailSubject, message: emailBody, html: livePreviewHtml });
-            if (r?.success) { useStore.getState().addToast('Email sent!', 'success'); setEmailBody(''); } else throw new Error();
-        } catch { useStore.getState().addToast('Failed', 'error'); } finally { setSendingEmail(false); }
+            if (r?.success) { useStore.getState().addToast('Email sent.', 'success'); setEmailBody(''); } else throw new Error();
+        } catch { useStore.getState().addToast("Couldn't send the email. Please try again.", 'error'); } finally { setSendingEmail(false); }
     };
 
     const handleSendNotification = async (e) => {
         e.preventDefault(); if (!messageText.trim()) return; setSendingMsg(true);
-        try { await addNotification({ userId: creatorData.uid || creatorData.id, title: 'Message from Newbi Admin', message: messageText.trim(), type: 'admin_message', createdAt: new Date().toISOString(), read: false }); useStore.getState().addToast('Sent!', 'success'); setMessageText(''); }
-        catch { useStore.getState().addToast('Failed', 'error'); } finally { setSendingMsg(false); }
+        try { await addNotification({ userId: creatorData.uid || creatorData.id, title: 'Message from the Newbi team', message: messageText.trim(), type: 'admin_message', createdAt: new Date().toISOString(), read: false }); useStore.getState().addToast('Message sent.', 'success'); setMessageText(''); }
+        catch { useStore.getState().addToast("Couldn't send the message. Please try again.", 'error'); } finally { setSendingMsg(false); }
     };
 
     // Computed

@@ -297,8 +297,8 @@ const Agreement = () => {
 
     const handleApprove = async () => {
         if (displayAgreement.status === 'Executed') return;
-        if (!signatureName.trim()) { useStore.getState().addToast('Please enter your full name.', 'error'); return; }
-        if (!verificationEmail.trim() || !verificationEmail.includes('@')) { useStore.getState().addToast('Please enter a valid email address.', 'error'); return; }
+        if (!signatureName.trim()) { useStore.getState().addToast('Enter your full name to sign.', 'error'); return; }
+        if (!verificationEmail.trim() || !verificationEmail.includes('@')) { useStore.getState().addToast('Enter a valid email address to sign.', 'error'); return; }
         
         setIsSubmitting(true);
         try {
@@ -322,10 +322,10 @@ const Agreement = () => {
                 clientSignature: clientSignature || null
             }));
             setIsVerifying(false);
-            useStore.getState().addToast('Instrument officially signed & executed!', 'success');
+            useStore.getState().addToast('Agreement signed. Thank you!', 'success');
         } catch (error) {
             console.error(error);
-            useStore.getState().addToast('Signing failed. Please try again or contact support.', 'error');
+            useStore.getState().addToast("Couldn't sign the agreement. Please try again or contact support.", 'error');
         } finally { setIsSubmitting(false); }
     };
 

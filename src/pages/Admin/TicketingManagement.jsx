@@ -409,13 +409,13 @@ const TicketingManagement = () => {
 
     const handleBulkUpload = (e) => {
         if (!selectedCategory) {
-            useStore.getState().addToast("Please select a ticket category first.", 'error');
+            useStore.getState().addToast("Choose a ticket category first.", 'error');
             return;
         }
         setIsUploading(true);
         setTimeout(() => {
             setIsUploading(false);
-            useStore.getState().addToast(`Offline PDFs uploaded and mapped to approved buyers in category: ${selectedCategory}.`, 'success');
+            useStore.getState().addToast(`Ticket PDFs uploaded and matched to approved buyers in ${selectedCategory}.`, 'success');
         }, 2000);
     };
 
@@ -429,7 +429,7 @@ const TicketingManagement = () => {
                     console.error("Failed to dispatch order", order.id);
                 }
             }
-            useStore.getState().addToast('Tickets dispatched successfully!', 'success');
+            useStore.getState().addToast('Tickets sent to buyers.', 'success');
         }
     };
 
@@ -448,7 +448,7 @@ const TicketingManagement = () => {
         const hasGuestlist = event?.isGuestlistEnabled || event?.guestlistEnabled;
 
         if (eventOrders.length === 0 && guestlistEntries.length === 0) {
-            useStore.getState().addToast("No data to export.", 'error');
+            useStore.getState().addToast("There's nothing to export yet.", 'info');
             return;
         }
 
@@ -710,7 +710,7 @@ const TicketingManagement = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        useStore.getState().addToast("Branded spreadsheet downloaded successfully!", 'success');
+        useStore.getState().addToast("Spreadsheet downloaded.", 'success');
     };
 
     const handleUpdateEventPayment = async (e) => {
@@ -722,7 +722,7 @@ const TicketingManagement = () => {
         try {
             const { updateUpcomingEvent } = useStore.getState();
             await updateUpcomingEvent(selectedEventId, { upiId, qrCodeUrl, gatewayUrl });
-            useStore.getState().addToast("Payment settings saved!", 'success');
+            useStore.getState().addToast("Payment settings saved.", 'success');
         } catch (err) {
             console.error(err);
             useStore.getState().addToast("Couldn't save payment settings. Please try again.", 'error');
@@ -748,7 +748,7 @@ const TicketingManagement = () => {
             
             const { updateUpcomingEvent } = useStore.getState();
             await updateUpcomingEvent(selectedEventId, { qrCodeUrl: data.secure_url });
-            useStore.getState().addToast("QR Code uploaded and mapped.", 'success');
+            useStore.getState().addToast("QR code uploaded.", 'success');
         } catch (err) {
             console.error(err);
             useStore.getState().addToast("Couldn't upload the QR code. Please try again.", 'error');
@@ -836,7 +836,7 @@ const TicketingManagement = () => {
                                                     isActive: true
                                                 };
                                                 await useStore.getState().addCoupon(coupon);
-                                                useStore.getState().addToast("Coupon created successfully!", 'success');
+                                                useStore.getState().addToast("Coupon created.", 'success');
                                                 e.target.reset();
                                             } catch (err) {
                                                 useStore.getState().addToast("Couldn't create the coupon. Please try again.", 'error');
@@ -1163,10 +1163,10 @@ const TicketingManagement = () => {
                                                                                 try {
                                                                                     await updateGuestlistEntryStatus(targetId, entry.id, 'approved');
                                                                                     setGuestlistEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'approved' } : e));
-                                                                                    useStore.getState().addToast(`Approved ${entry.customerName || entry.name}!`, 'success');
+                                                                                    useStore.getState().addToast(`${entry.customerName || entry.name} approved.`, 'success');
                                                                                 } catch (err) {
                                                                                     console.error(err);
-                                                                                    useStore.getState().addToast('Failed to approve application.', 'error');
+                                                                                    useStore.getState().addToast("Couldn't approve the application. Please try again.", 'error');
                                                                                 }
                                                                             }}
                                                                             className="p-2.5 rounded-xl bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black transition-all"
@@ -1181,10 +1181,10 @@ const TicketingManagement = () => {
                                                                                     try {
                                                                                         await updateGuestlistEntryStatus(targetId, entry.id, 'rejected');
                                                                                         setGuestlistEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'rejected' } : e));
-                                                                                        useStore.getState().addToast(`Rejected application for ${entry.customerName || entry.name}.`, 'info');
+                                                                                        useStore.getState().addToast(`Application from ${entry.customerName || entry.name} rejected.`, 'info');
                                                                                     } catch (err) {
                                                                                         console.error(err);
-                                                                                        useStore.getState().addToast('Failed to reject application.', 'error');
+                                                                                        useStore.getState().addToast("Couldn't reject the application. Please try again.", 'error');
                                                                                     }
                                                                                 }
                                                                             }}
@@ -1313,9 +1313,9 @@ const TicketingManagement = () => {
                                                                             try {
                                                                                 await updateGuestlistEntryStatus(targetId, entry.id, 'approved');
                                                                                 setGuestlistEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'approved' } : e));
-                                                                                useStore.getState().addToast(`Approved!`, 'success');
+                                                                                useStore.getState().addToast(`Entry approved.`, 'success');
                                                                             } catch (err) {
-                                                                                useStore.getState().addToast('Failed to approve.', 'error');
+                                                                                useStore.getState().addToast("Couldn't approve the entry. Please try again.", 'error');
                                                                             }
                                                                         }}
                                                                         className="px-3 py-1.5 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/20 text-[10px] font-black uppercase"
@@ -1329,9 +1329,9 @@ const TicketingManagement = () => {
                                                                                 try {
                                                                                     await updateGuestlistEntryStatus(targetId, entry.id, 'rejected');
                                                                                     setGuestlistEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'rejected' } : e));
-                                                                                    useStore.getState().addToast(`Rejected.`, 'info');
+                                                                                    useStore.getState().addToast(`Entry rejected.`, 'info');
                                                                                 } catch (err) {
-                                                                                    useStore.getState().addToast('Failed to reject.', 'error');
+                                                                                    useStore.getState().addToast("Couldn't reject the entry. Please try again.", 'error');
                                                                                 }
                                                                             }
                                                                         }}
@@ -1356,7 +1356,7 @@ const TicketingManagement = () => {
                                                                         useStore.getState().addToast('Entry removed.', 'success');
                                                                     } catch (err) {
                                                                         console.error(err);
-                                                                        useStore.getState().addToast("Couldn't remove entry.", 'error');
+                                                                        useStore.getState().addToast("Couldn't remove the entry. Please try again.", 'error');
                                                                     }
                                                                 }
                                                             }}

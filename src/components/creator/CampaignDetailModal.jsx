@@ -133,7 +133,7 @@ const CampaignDetailModal = ({
         try {
             const loggedInUser = await loginWithGoogle();
             if (loggedInUser) {
-                useStore.getState().addToast(`Fast-track signed in as ${loggedInUser.displayName || loggedInUser.email}!`, 'success');
+                useStore.getState().addToast(`Signed in as ${loggedInUser.displayName || loggedInUser.email}.`, 'success');
                 setForm(prev => ({
                     ...prev,
                     name: prev.name || loggedInUser.displayName || '',
@@ -146,7 +146,7 @@ const CampaignDetailModal = ({
             }
         } catch (err) {
             console.error("Fast track login error:", err);
-            useStore.getState().addToast("Could not sign in with Google. You can complete the fields below.", 'info');
+            useStore.getState().addToast("Couldn't sign you in with Google. You can fill in the fields below instead.", 'info');
         } finally {
             setIsLoggingInWithGoogle(false);
         }
@@ -306,7 +306,7 @@ const CampaignDetailModal = ({
         if (navigator.clipboard) {
             await navigator.clipboard.writeText(directUrl);
             setCopiedTaskId(task.id);
-            useStore.getState().addToast("Task link copied to clipboard!", 'success');
+            useStore.getState().addToast("Task link copied.", 'success');
             setTimeout(() => setCopiedTaskId(null), 2200);
         }
     };
@@ -360,7 +360,7 @@ const CampaignDetailModal = ({
         const cleanHandle = extractSocialUsername(raw || '', 'instagram');
         if (!cleanHandle) {
             setInstagramVerificationError('Please enter your Instagram username (links are not allowed).');
-            return useStore.getState().addToast("Please enter only your Instagram username without links.", 'error');
+            return useStore.getState().addToast("Enter just your Instagram username, without a link.", 'error');
         }
         setIsVerifying(true);
         setVerificationStep('verifying');
@@ -425,7 +425,7 @@ const CampaignDetailModal = ({
                     }));
                     setIsVerifying(false);
                     setVerificationStep('success');
-                    useStore.getState().addToast(`Local dev mode: Instagram verification passed (${mockFollowers.toLocaleString()} followers).`, 'info');
+                    useStore.getState().addToast(`Local test mode: Instagram check passed (${mockFollowers.toLocaleString()} followers).`, 'info');
                     return;
                 }
                 // Seamlessly allow follower count input without dead-ending
@@ -433,7 +433,7 @@ const CampaignDetailModal = ({
                 setVerificationStep('idle');
                 setIsManualFollowerEntry(true);
                 setInstagramVerificationError('');
-                useStore.getState().addToast(`Please enter your follower count below to proceed.`, 'info');
+                useStore.getState().addToast(`We couldn't fetch your Instagram followers automatically. Please enter the count below.`, 'info');
                 return;
             }
 
@@ -471,7 +471,7 @@ const CampaignDetailModal = ({
             setVerificationStep('idle');
             setIsManualFollowerEntry(true);
             setInstagramVerificationError('');
-            useStore.getState().addToast(`Please enter your follower count below.`, 'info');
+            useStore.getState().addToast(`We couldn't fetch your Instagram followers automatically. Please enter the count below.`, 'info');
         }
     };
 
@@ -480,12 +480,12 @@ const CampaignDetailModal = ({
         if (e && e.preventDefault) e.preventDefault();
 
         if (spotsInfo.hasSpots && spotsInfo.isFull) {
-            return useStore.getState().addToast("This campaign has reached full capacity. No spots left.", 'error');
+            return useStore.getState().addToast("Sorry, this campaign is full. There are no spots left.", 'warning');
         }
 
         const cleanInsta = extractSocialUsername(form.instagram || profile?.instagram || '', 'instagram');
         if (!cleanInsta) {
-            return useStore.getState().addToast("Please provide your Instagram handle.", 'error');
+            return useStore.getState().addToast("Add your Instagram handle to apply.", 'error');
         }
 
         const rawFollowers = form.followers || profile?.instagramFollowers || (instagramVerifiedData?.followers ?? 0);
@@ -494,23 +494,23 @@ const CampaignDetailModal = ({
         // If minFollowers is required and no follower count was entered or verified, prompt user
         if (minFollowers > 0 && !parsedFollowers && !profile) {
             setIsManualFollowerEntry(true);
-            return useStore.getState().addToast(`Please enter your follower count (Min. ${minFollowers.toLocaleString()} required).`, 'warning');
+            return useStore.getState().addToast(`Enter your follower count to apply. You need at least ${minFollowers.toLocaleString()}.`, 'warning');
         }
 
         if (minFollowers > 0 && parsedFollowers < minFollowers && !profile) {
-            return useStore.getState().addToast(`Requirement not met: Min. ${minFollowers.toLocaleString()} followers needed to apply.`, 'error');
+            return useStore.getState().addToast(`This campaign needs at least ${minFollowers.toLocaleString()} followers to apply.`, 'error');
         }
 
         // Validate contact details for guests or non-profile users
         if (!profile) {
             if (!form.name?.trim()) {
-                return useStore.getState().addToast("Please enter your full name.", 'error');
+                return useStore.getState().addToast("Add your full name to apply.", 'error');
             }
             if (!form.phone?.trim()) {
-                return useStore.getState().addToast("Please enter your WhatsApp / mobile number.", 'error');
+                return useStore.getState().addToast("Add your WhatsApp or mobile number to apply.", 'error');
             }
             if (!form.email?.trim()) {
-                return useStore.getState().addToast("Please enter your email address.", 'error');
+                return useStore.getState().addToast("Add your email address to apply.", 'error');
             }
         }
 
@@ -519,7 +519,7 @@ const CampaignDetailModal = ({
         if (normPhone && creators) {
             const existing = creators.find(c => c.uid !== (user?.uid || null) && normalizePhoneNumber(c.phone) === normPhone);
             if (existing) {
-                return useStore.getState().addToast(`The mobile number ${phoneToValidate} is already linked to another creator profile (${existing.email || 'existing account'}).`, 'error');
+                return useStore.getState().addToast(`${phoneToValidate} is already linked to another creator account (${existing.email || 'existing account'}). Try a different number.`, 'error');
             }
         }
 
@@ -529,10 +529,10 @@ const CampaignDetailModal = ({
 
         if (isSpecificCity) {
             if (!creatorCity) {
-                return useStore.getState().addToast(`Please select your city to apply. This campaign is restricted to creators in ${campCity}.`, 'warning');
+                return useStore.getState().addToast(`Select your city to apply. This campaign is only open to creators in ${campCity}.`, 'warning');
             }
             if (!isCampaignCityMatch(campCity, creatorCity)) {
-                return useStore.getState().addToast(`Location requirement: This campaign is exclusively open to creators located in ${campCity}.`, 'error');
+                return useStore.getState().addToast(`Sorry, this campaign is only open to creators in ${campCity}.`, 'error');
             }
         }
 
@@ -540,7 +540,7 @@ const CampaignDetailModal = ({
         try {
             const currentJoined = profile?.joinedCampaigns || [];
             if (currentJoined.includes(campaign.id)) {
-                useStore.getState().addToast("You've already applied to this campaign!", 'error');
+                useStore.getState().addToast("You've already applied to this campaign.", 'info');
                 setIsJoining(false);
                 return;
             }
@@ -592,7 +592,7 @@ const CampaignDetailModal = ({
             }
 
             setJoinSuccess(true);
-            useStore.getState().addToast("Application submitted successfully! Welcome to the campaign.", 'success');
+            useStore.getState().addToast("Application sent! Welcome to the campaign.", 'success');
         } catch (error) {
             console.error("Apply error:", error);
             useStore.getState().addToast(error.message || "Couldn't submit your application. Please try again.", 'error');
@@ -605,7 +605,7 @@ const CampaignDetailModal = ({
     const handleTaskSubmit = async (taskId, contentLink, proofFile) => {
         const creatorUid = user?.uid || profile?.uid || profile?.id || profile?.creatorId;
         if (!creatorUid) {
-            useStore.getState().addToast("Please apply to the campaign below first to submit deliverables.", 'info');
+            useStore.getState().addToast("Apply to the campaign below first, then you can submit your work.", 'info');
             const applyEl = document.getElementById('campaign-apply-section');
             if (applyEl) {
                 applyEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -613,7 +613,7 @@ const CampaignDetailModal = ({
             return;
         }
         if (!contentLink && !proofFile) {
-            useStore.getState().addToast("Please provide a content link, confirmation, or upload proof.", 'error');
+            useStore.getState().addToast("Add a content link, a confirmation, or upload proof before submitting.", 'error');
             return;
         }
         setIsSubmitting(true);
@@ -624,7 +624,7 @@ const CampaignDetailModal = ({
                 if (typeof proofFile === 'string') {
                     proofUrl = proofFile;
                 } else {
-                    useStore.getState().addToast("Uploading proof file...", 'info');
+                    useStore.getState().addToast("Uploading your proof file. Hang tight a moment.", 'info');
                     if (typeof useStore.getState().uploadTaskProof === 'function') {
                         proofUrl = await useStore.getState().uploadTaskProof(proofFile, creatorUid, campaign.id, taskId);
                     } else if (typeof useStore.getState().uploadToCloudinary === 'function') {
@@ -652,11 +652,11 @@ const CampaignDetailModal = ({
                 }
             }
 
-            useStore.getState().addToast("Task submitted successfully! Brand will review.", 'success');
+            useStore.getState().addToast("Task submitted. The brand will review it soon.", 'success');
             setExpandedTaskId(null);
         } catch (error) {
             console.error("Task submission error:", error);
-            useStore.getState().addToast(error?.message || "Submission failed. Please try again.", 'error');
+            useStore.getState().addToast("Couldn't submit your task. Please try again.", 'error');
         } finally {
             setIsSubmitting(false);
             setSubmittingTaskId(null);
@@ -666,7 +666,7 @@ const CampaignDetailModal = ({
     const handleMarkTaskSubmitted = async (task, customLink = null, customProofFile = null) => {
         const creatorUid = user?.uid || profile?.uid || profile?.id || profile?.creatorId;
         if (!creatorUid) {
-            useStore.getState().addToast("Please apply to the campaign below first to submit deliverables.", 'info');
+            useStore.getState().addToast("Apply to the campaign below first, then you can submit your work.", 'info');
             const applyEl = document.getElementById('campaign-apply-section');
             if (applyEl) {
                 applyEl.scrollIntoView({ behavior: 'smooth', block: 'start' });

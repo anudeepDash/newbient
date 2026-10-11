@@ -199,7 +199,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
         const file = e.target.files?.[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
-            addToast("Image size must be under 10MB", "error");
+            addToast("Please choose an image under 10MB.", "error");
             return;
         }
         const localPreview = URL.createObjectURL(file);
@@ -210,7 +210,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
             if (uploadFn) {
                 const url = await uploadFn(file);
                 setForm(prev => ({ ...prev, profilePicture: url }));
-                addToast("Profile photo uploaded successfully!", "success");
+                addToast("Profile photo uploaded.", "success");
             }
         } catch (err) {
             console.error("Cloudinary upload failed, using local preview fallback:", err);
@@ -226,7 +226,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
 
     const handleSendOTP = async () => {
         if (!form.phone) {
-            addToast("Please enter a mobile number", "error");
+            addToast("Enter your mobile number to get a verification code.", "error");
             return;
         }
         const normPhone = normalizePhoneNumber(form.phone);
@@ -236,7 +236,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
                 normalizePhoneNumber(c.phone) === normPhone
             );
             if (conflict) {
-                addToast(`This phone number is already registered to another creator account.`, "error");
+                addToast(`This number is already linked to another creator account. Please use a different one.`, "error");
                 return;
             }
         }
@@ -245,7 +245,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             if (isLocal) {
                 setOtpSent(true);
-                addToast("Dev mode: Enter any 6-digit code to verify instantly.", "success");
+                addToast("Test mode: enter any 6-digit code to verify.", "info");
                 setIsSendingOtp(false);
                 return;
             }
@@ -259,7 +259,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
                 size: 'invisible',
                 callback: () => {},
                 'expired-callback': () => {
-                    addToast("reCAPTCHA expired. Please try again.", 'error');
+                    addToast("The security check timed out. Please try again.", 'error');
                     cleanupRecaptcha();
                 }
             });
@@ -275,10 +275,10 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
             );
             setConfirmationResult(verificationId);
             setOtpSent(true);
-            addToast("Verification code dispatched via SMS!", "success");
+            addToast("Verification code sent by SMS.", "success");
         } catch (err) {
             console.error("OTP send error:", err);
-            addToast(err.message || "Could not dispatch SMS verification code.", "error");
+            addToast("Couldn't send the verification code. Please check the number and try again.", "error");
             cleanupRecaptcha();
         } finally {
             setIsSendingOtp(false);
@@ -306,7 +306,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
             }
             setIsPhoneVerified(true);
             setOtpSent(false);
-            addToast("Phone number verified successfully!", "success");
+            addToast("Phone number verified.", "success");
 
             const creatorId = profile?.uid || profile?.id;
             if (creatorId) {
@@ -318,7 +318,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
             }
         } catch (err) {
             console.error("OTP verification error:", err);
-            addToast(err.message || "Invalid verification code. Please check and try again.", "error");
+            addToast("That code didn't work. Please check it and try again.", "error");
         } finally {
             setIsVerifyingOtp(false);
         }
@@ -344,34 +344,34 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
 
         if (!form.name?.trim()) {
             setActiveSection('identity');
-            addToast("Please enter your creator name", "error");
+            addToast("Enter your creator name.", "error");
             return;
         }
         if (!form.city) {
             setActiveSection('identity');
-            addToast("Please select your operating city", "error");
+            addToast("Choose the city you work in.", "error");
             return;
         }
         if (form.city === 'Others' && !form.customCity?.trim()) {
             setActiveSection('identity');
-            addToast("Please specify your custom city name", "error");
+            addToast("Enter your city name.", "error");
             return;
         }
         if (!form.categories) {
             setActiveSection('niche');
-            addToast("Please select your primary niche", "error");
+            addToast("Choose your main niche.", "error");
             return;
         }
         if (form.categories === 'Others' && !form.customNiche?.trim()) {
             setActiveSection('niche');
-            addToast("Please specify your custom niche", "error");
+            addToast("Enter your niche.", "error");
             return;
         }
 
         for (const field of ['instagram', 'linkedin', 'youtube', 'twitter']) {
             if (form[field] && hasDisallowedLink(form[field])) {
                 setActiveSection('socials');
-                addToast(`Links are not allowed. Please enter only your ${field} username or handle.`, "error");
+                addToast(`Please enter just your ${field} username, not a link.`, "error");
                 return;
             }
         }
@@ -416,12 +416,12 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
             }
 
             await updateCreator(creatorId, payload);
-            addToast("Creator details updated successfully!", "success");
+            addToast("Creator details saved.", "success");
             
             if (addNotification) {
                 addNotification({
-                    title: "Creator Profile Updated",
-                    content: "Your creator details and campaign commercials have been saved.",
+                    title: "Creator profile updated",
+                    content: "Your creator details and commercials have been saved.",
                     type: 'message'
                 });
             }
@@ -432,7 +432,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
             onClose();
         } catch (err) {
             console.error("Failed to update creator profile:", err);
-            addToast(err.message || "Failed to update creator details.", "error");
+            addToast("Couldn't save your creator details. Please try again.", "error");
         } finally {
             setIsSaving(false);
         }

@@ -460,7 +460,7 @@ const AdminManager = () => {
         setIsRefreshing(true);
         try {
             await fetchAdmins();
-            useStore.getState().addToast('Member registry updated!', 'success');
+            useStore.getState().addToast('Member list refreshed.', 'success');
         } catch (error) {
             console.error('Refresh error:', error);
         } finally {
@@ -472,10 +472,10 @@ const AdminManager = () => {
         if (window.confirm(`Suspend clearance for ${member.email || member.displayName}? They will lose account access immediately.`)) {
             try {
                 await blockUser(member.id);
-                useStore.getState().addToast(`Suspended ${member.displayName || member.email}.`, 'success');
+                useStore.getState().addToast(`${member.displayName || member.email} has been suspended.`, 'success');
             } catch (error) {
                 console.error('Suspend error:', error);
-                useStore.getState().addToast("Something went wrong. Please try again.", 'error');
+                useStore.getState().addToast("Couldn't suspend this member. Please try again.", 'error');
             }
         }
     };
@@ -483,10 +483,10 @@ const AdminManager = () => {
     const handleUnblockUser = async (member) => {
         try {
             await unblockUser(member.id);
-            useStore.getState().addToast(`Reinstated clearance for ${member.displayName || member.email}.`, 'success');
+            useStore.getState().addToast(`Access restored for ${member.displayName || member.email}.`, 'success');
         } catch (error) {
             console.error('Reinstate error:', error);
-            useStore.getState().addToast("Something went wrong. Please try again.", 'error');
+            useStore.getState().addToast("Couldn't restore this member's access. Please try again.", 'error');
         }
     };
 
@@ -494,9 +494,9 @@ const AdminManager = () => {
         if (window.confirm(`Log ${member.displayName || member.email} out of all active devices?`)) {
             try {
                 await useStore.getState().revokeSessions(member.id, member.email);
-                useStore.getState().addToast(`Successfully revoked sessions for ${member.displayName || member.email}.`, 'success');
+                useStore.getState().addToast(`${member.displayName || member.email} has been signed out of all devices.`, 'success');
             } catch (error) {
-                useStore.getState().addToast(error.message || "Failed to revoke sessions", 'error');
+                useStore.getState().addToast("Couldn't sign them out of their devices. Please try again.", 'error');
             }
         }
     };
@@ -505,9 +505,9 @@ const AdminManager = () => {
         if (window.confirm(`Log operative ${admin.displayName || admin.email} out of all active devices?`)) {
             try {
                 await useStore.getState().revokeSessions(admin.uid || null, admin.email);
-                useStore.getState().addToast(`Successfully revoked sessions for ${admin.displayName || admin.email}.`, 'success');
+                useStore.getState().addToast(`${admin.displayName || admin.email} has been signed out of all devices.`, 'success');
             } catch (error) {
-                useStore.getState().addToast(error.message || "Failed to revoke sessions", 'error');
+                useStore.getState().addToast("Couldn't sign them out of their devices. Please try again.", 'error');
             }
         }
     };
@@ -522,7 +522,7 @@ const AdminManager = () => {
             const q = query(collection(db, 'admins'), where('email', '==', newAdminEmail.trim()));
             const existing = await getDocs(q);
             if (!existing.empty) {
-                useStore.getState().addToast('This account is already registered as an admin.', 'error');
+                useStore.getState().addToast('This person is already an admin.', 'info');
                 return;
             }
             await addDoc(collection(db, 'admins'), {
@@ -536,11 +536,11 @@ const AdminManager = () => {
             setNewAdminEmail('');
             setIsInviteOpen(false);
             await fetchAdmins();
-            useStore.getState().addToast("Admin credentials dispatched successfully!", 'success');
+            useStore.getState().addToast("Admin added. They'll get an email with their access details.", 'success');
             sendStaffAuthorizedEmail(emailSentTo, roleAssigned).catch(err => console.error('Failed to send authorization email:', err));
         } catch (err) {
             console.error('Failed to add admin:', err);
-            useStore.getState().addToast("Couldn't add admin. Please try again.", 'error');
+            useStore.getState().addToast("Couldn't add the admin. Please try again.", 'error');
         }
     };
 
@@ -553,26 +553,26 @@ const AdminManager = () => {
             const adminDoc = admins.find(a => a.id === id);
             await updateDoc(doc(db, 'admins', id), { role });
             await fetchAdmins();
-            useStore.getState().addToast(`Clearance approved and role assigned: ${role}.`, 'success');
+            useStore.getState().addToast(`Request approved. Role set to ${role}.`, 'success');
             if (adminDoc?.email) sendStaffAuthorizedEmail(adminDoc.email, role).catch(err => console.error('Failed to send authorization email:', err));
         } catch (err) {
             console.error('Failed to approve request:', err);
-            useStore.getState().addToast("Couldn't approve request. Please try again.", 'error');
+            useStore.getState().addToast("Couldn't approve the request. Please try again.", 'error');
         }
     };
 
     const handleUpdateRole = async (id, newRole) => {
         if (!canEditRoles) {
-            useStore.getState().addToast("You don't have permission to change this operative's role.", 'error');
+            useStore.getState().addToast("You don't have permission to change this admin's role.", 'error');
             return;
         }
         try {
             await updateDoc(doc(db, 'admins', id), { role: newRole });
             await fetchAdmins();
-            useStore.getState().addToast(`Clearance level updated to ${newRole}.`, 'success');
+            useStore.getState().addToast(`Role updated to ${newRole}.`, 'success');
         } catch (err) {
             console.error('Failed to update role:', err);
-            useStore.getState().addToast("Couldn't update role. Please try again.", 'error');
+            useStore.getState().addToast("Couldn't update the role. Please try again.", 'error');
         }
     };
 
@@ -585,10 +585,10 @@ const AdminManager = () => {
             try {
                 await deleteDoc(doc(db, 'admins', id));
                 await fetchAdmins();
-                useStore.getState().addToast("Admin clearance revoked.", 'success');
+                useStore.getState().addToast("Admin removed.", 'success');
             } catch (err) {
                 console.error('Failed to remove admin:', err);
-                useStore.getState().addToast("Couldn't remove admin. Please try again.", 'error');
+                useStore.getState().addToast("Couldn't remove the admin. Please try again.", 'error');
             }
         }
     };
@@ -1345,7 +1345,7 @@ const AdminManager = () => {
                                                                     onClick={async () => {
                                                                         if (window.confirm(`Send password reset credentials to ${admin.email}?`)) {
                                                                             await useStore.getState().resetPassword(admin.email);
-                                                                            useStore.getState().addToast("Password reset email sent!", 'success');
+                                                                            useStore.getState().addToast("Password reset email sent.", 'success');
                                                                         }
                                                                     }}
                                                                     className="flex-1 h-10 bg-black/5 dark:bg-white/5 hover:bg-neon-pink/10 text-gray-500 hover:text-neon-pink border border-black/10 dark:border-white/5 hover:border-neon-pink/20 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5"

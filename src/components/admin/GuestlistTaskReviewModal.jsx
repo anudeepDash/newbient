@@ -52,7 +52,7 @@ export const GuestlistTaskReviewModal = ({
             navigator.clipboard.writeText(entry.bookingRef);
             setCopiedRef(true);
             setTimeout(() => setCopiedRef(false), 2000);
-            useStore.getState().addToast('Booking reference copied!', 'success');
+            useStore.getState().addToast('Booking reference copied.', 'success');
         }
     };
 
@@ -60,11 +60,11 @@ export const GuestlistTaskReviewModal = ({
         setActionLoading(true);
         try {
             await onStatusChange(entry.id, 'approved');
-            useStore.getState().addToast(`Approved guestlist application for ${entry.customerName || entry.name}!`, 'success');
+            useStore.getState().addToast(`Guestlist application from ${entry.customerName || entry.name} approved.`, 'success');
             onClose();
         } catch (error) {
             console.error('Error approving entry:', error);
-            useStore.getState().addToast('Failed to approve application.', 'error');
+            useStore.getState().addToast("Couldn't approve the application. Please try again.", 'error');
         } finally {
             setActionLoading(false);
         }
@@ -77,11 +77,11 @@ export const GuestlistTaskReviewModal = ({
         setActionLoading(true);
         try {
             await onStatusChange(entry.id, 'rejected');
-            useStore.getState().addToast(`Rejected application for ${entry.customerName || entry.name}.`, 'info');
+            useStore.getState().addToast(`Application from ${entry.customerName || entry.name} rejected.`, 'info');
             onClose();
         } catch (error) {
             console.error('Error rejecting entry:', error);
-            useStore.getState().addToast('Failed to reject application.', 'error');
+            useStore.getState().addToast("Couldn't reject the application. Please try again.", 'error');
         } finally {
             setActionLoading(false);
         }

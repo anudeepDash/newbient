@@ -83,7 +83,7 @@ const LetterheadGenerator = () => {
     const handleLoadTemplate = (tpl) => {
         setDocTitle(tpl.title);
         setContent(tpl.content);
-        addToast(`${tpl.name} template loaded!`, 'success');
+        addToast(`${tpl.name} template loaded.`, 'success');
     };
 
     const handlePrint = () => {

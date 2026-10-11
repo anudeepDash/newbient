@@ -40,13 +40,13 @@ const BlogManager = () => {
     const handleDelete = async (id) => {
         if (window.confirm('Delete this article? This action is irreversible.')) {
             await deletePost(id);
-            useStore.getState().addToast("ARTICLE_DELETED_SUCCESSFULLY.", 'success');
+            useStore.getState().addToast("Article deleted.", 'success');
         }
     };
 
     const toggleFeatured = async (post) => {
         await updatePost(post.id, { featured: !post.featured });
-        useStore.getState().addToast(post.featured ? "REMOVED_FROM_FEATURED." : "MARKED_AS_FEATURED.", 'success');
+        useStore.getState().addToast(post.featured ? "Article removed from featured." : "Article is now featured.", 'success');
     };
 
     const handleSendNewsletter = (post) => {
@@ -148,7 +148,7 @@ const BlogManager = () => {
                                 </button>
                                 <button onClick={async () => {
                                     await updateGeneralSettings({ blogTicker: tickerItems.filter(i => i.trim()) });
-                                    useStore.getState().addToast('Ticker updated successfully.', 'success');
+                                    useStore.getState().addToast('Ticker updated.', 'success');
                                 }}
                                     className="h-8 px-4 bg-neon-blue text-black rounded-lg text-[10px] font-bold uppercase tracking-wider hover:scale-105 transition-all">
                                     Save Ticker
@@ -314,12 +314,12 @@ const BlogManager = () => {
                                                             onClick={async () => {
                                                                 if (window.confirm(`TRANSMIT DIRECT PUSH SIGNAL FOR "${post.title}"?`)) {
                                                                     await notifyAllUsers(
-                                                                        `New Post: ${post.title}`,
+                                                                        `New post: ${post.title}`,
                                                                         post.shortDescription || (post.content ? post.content.substring(0, 100) + '...' : ''),
                                                                         `/concertzone/${post.category?.toLowerCase().replace(' ', '-') || 'news'}/${post.slug}`,
                                                                         post.coverImage
                                                                     );
-                                                                    useStore.getState().addToast("PUSH_SIGNAL_TRANSMITTED.", 'success');
+                                                                    useStore.getState().addToast("Push notification sent.", 'success');
                                                                 }
                                                             }}
                                                             className="w-full p-4 flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 hover:text-neon-blue hover:bg-neon-blue/5 rounded-xl transition-all"

@@ -349,7 +349,7 @@ const DocumentHub = () => {
 
     const handleSaveGoogleDoc = async () => {
         if (!googleUrl || !detectedType || !docTitle.trim()) {
-            addToast('Please fill in all required fields', 'error');
+            addToast('Add a valid link and a title before saving.', 'error');
             return;
         }
         setSaving(true);
@@ -371,12 +371,12 @@ const DocumentHub = () => {
                 updatedAt: new Date().toISOString(),
                 createdBy: user?.displayName || user?.email || 'admin',
             });
-            addToast('Document added successfully', 'success');
+            addToast('Document added.', 'success');
             resetForm();
             setShowAddModal(false);
         } catch (err) {
             console.error('Failed to add document:', err);
-            addToast('Failed to add document', 'error');
+            addToast("Couldn't add the document. Please try again.", 'error');
         } finally {
             setSaving(false);
         }
@@ -386,7 +386,7 @@ const DocumentHub = () => {
 
     const handleSaveDrive = async () => {
         if (!driveUrl || !driveTitle.trim()) {
-            addToast('Please fill in all required fields', 'error');
+            addToast('Add a Drive link and a title before saving.', 'error');
             return;
         }
         setSaving(true);
@@ -408,12 +408,12 @@ const DocumentHub = () => {
                 updatedAt: new Date().toISOString(),
                 createdBy: user?.displayName || user?.email || 'admin',
             });
-            addToast('Drive link added successfully', 'success');
+            addToast('Drive link added.', 'success');
             resetForm();
             setShowAddModal(false);
         } catch (err) {
             console.error('Failed to add drive link:', err);
-            addToast('Failed to add drive link', 'error');
+            addToast("Couldn't add the Drive link. Please try again.", 'error');
         } finally {
             setSaving(false);
         }
@@ -441,7 +441,7 @@ const DocumentHub = () => {
 
     const handleSaveUpload = async () => {
         if (!selectedFile || !uploadTitle.trim()) {
-            addToast('Please select a file and enter a title', 'error');
+            addToast('Choose a file and add a title before uploading.', 'error');
             return;
         }
         setSaving(true);
@@ -469,12 +469,12 @@ const DocumentHub = () => {
                 updatedAt: new Date().toISOString(),
                 createdBy: user?.displayName || user?.email || 'admin',
             });
-            addToast('File uploaded successfully', 'success');
+            addToast('File uploaded.', 'success');
             resetForm();
             setShowAddModal(false);
         } catch (err) {
             console.error('Failed to upload file:', err);
-            addToast(err.message || 'Failed to upload file', 'error');
+            addToast("Couldn't upload the file. Please try again.", 'error');
         } finally {
             setSaving(false);
         }
@@ -485,15 +485,15 @@ const DocumentHub = () => {
     const handleCopyLink = (doc) => {
         const url = `${window.location.origin}/doc/${doc.id}`;
         navigator.clipboard.writeText(url);
-        addToast('Link copied to clipboard', 'success');
+        addToast('Link copied.', 'success');
     };
 
     const handleTogglePublic = async (doc) => {
         try {
             await updateDocument(doc.id, { isPublic: !doc.isPublic, updatedAt: new Date().toISOString() });
-            addToast(doc.isPublic ? 'Document set to private' : 'Document set to public', 'success');
+            addToast(doc.isPublic ? 'Document is now private.' : 'Document is now public.', 'success');
         } catch (err) {
-            addToast('Failed to update visibility', 'error');
+            addToast("Couldn't change the document's visibility. Please try again.", 'error');
         }
     };
 
@@ -501,9 +501,9 @@ const DocumentHub = () => {
         if (!window.confirm(`Delete "${doc.title}"? This cannot be undone.`)) return;
         try {
             await deleteDocument(doc.id);
-            addToast('Document deleted', 'success');
+            addToast('Document deleted.', 'success');
         } catch (err) {
-            addToast('Failed to delete document', 'error');
+            addToast("Couldn't delete the document. Please try again.", 'error');
         }
     };
 

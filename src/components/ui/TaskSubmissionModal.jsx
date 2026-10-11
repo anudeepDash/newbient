@@ -103,7 +103,7 @@ const TaskSubmissionModal = ({
         if (navigator.clipboard) {
             await navigator.clipboard.writeText(directUrl);
             setCopiedShare(true);
-            useStore.getState().addToast("Task link copied to clipboard!", 'success');
+            useStore.getState().addToast("Task link copied.", 'success');
             setTimeout(() => setCopiedShare(false), 2200);
         }
     };

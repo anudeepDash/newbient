@@ -70,17 +70,17 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
         if (step === 0) {
             setStep(1);
         } else if (step === 1) {
-            if (cartTotalCount === 0) return useStore.getState().addToast("Please select at least one ticket.", 'error');
+            if (cartTotalCount === 0) return useStore.getState().addToast("Pick at least one ticket to continue.", 'error');
             setStep(2);
         } else if (step === 2) {
-            if (!formData.name || !formData.email || !formData.phone) return useStore.getState().addToast("Please fill all details.", 'error');
+            if (!formData.name || !formData.email || !formData.phone) return useStore.getState().addToast("Add your name, email, and phone number to continue.", 'error');
             setStep(3);
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!paymentRef) return useStore.getState().addToast("Please enter the UTR/Reference No.", 'error');
+        if (!paymentRef) return useStore.getState().addToast("Enter the UTR or reference number from your payment.", 'error');
 
         setLoading(true);
         try {
@@ -109,15 +109,15 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
 
             // Notify Admins about the new order
             await notifyAdmins(
-                'NEW TICKETING OPERATION',
-                `INBOUND TRANSACTION FROM ${formData.name.toUpperCase()} FOR "${event.title.toUpperCase()}". VERIFICATION REQUIRED.`,
+                'New ticket purchase to verify',
+                `${formData.name} bought tickets for "${event.title}". Please verify the payment.`,
                 '/admin/tickets',
                 'ticket'
             );
             setStep(4);
         } catch (error) {
             console.error("Order failed:", error);
-            useStore.getState().addToast("Failed to submit order. Please try again.", 'error');
+            useStore.getState().addToast("Couldn't place your order. Please try again.", 'error');
         }
         setLoading(false);
     };

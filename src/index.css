@@ -1310,3 +1310,19 @@
 
 
 
+
+/* Toast banners: remaining-time bar */
+@keyframes toast-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+.animate-toast-progress {
+  animation-name: toast-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-toast-progress { animation: none; opacity: 0; }
+}
