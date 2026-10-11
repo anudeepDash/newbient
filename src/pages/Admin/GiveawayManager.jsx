@@ -109,7 +109,7 @@ const GiveawayManager = () => {
                 // await updateGiveawayEntry(winner.id, { isWinner: true, winnerReward: true }); 
                 // Close the giveaway
                 await handleCloseGiveaway(campaignId);
-                useStore.getState().addToast(`🎊 ${winner.name} is the winner! The giveaway is now closed.`, 'success');
+                useStore.getState().addToast(`${winner.name} is the winner! The giveaway is now closed.`, 'success');
             }
         }
     };

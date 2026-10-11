@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, X, Megaphone, Ticket, MessageSquare, Gift, FileText, CheckCheck, Trash2, Users, Zap, Heart } from 'lucide-react';
+import { Bell, X, CheckCheck, Trash2 } from 'lucide-react';
+import { NotificationIcon } from './ui/NotificationIcon';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../lib/store';
 import { cn } from '../lib/utils';
@@ -31,20 +32,6 @@ const NotificationBell = () => {
     }, []);
 
     const hasNotifications = unreadNotificationsCount > 0;
-
-    const getTypeIcon = (type) => {
-        switch (type) {
-            case 'announcement': return <Megaphone className="text-neon-blue" size={18} />;
-            case 'ticket': return <Ticket className="text-neon-pink" size={18} />;
-            case 'message': return <MessageSquare className="text-neon-green" size={18} />;
-            case 'giveaway': return <Gift className="text-neon-yellow" size={18} />;
-            case 'blog': return <FileText className="text-gray-900 dark:text-white" size={18} />;
-            case 'campaign': return <Zap className="text-neon-purple" size={18} />;
-            case 'gig': return <Users className="text-neon-cyan" size={18} />;
-            case 'volunteer': return <Heart className="text-red-500" size={18} />;
-            default: return <Bell className="text-gray-600 dark:text-gray-400" size={18} />;
-        }
-    };
 
     // Group notifications by date
     const groupedNotifications = notifications.reduce((groups, item) => {
@@ -171,16 +158,7 @@ const NotificationBell = () => {
                                                                 <div className="flex gap-4">
                                                                     {/* Icon/Image */}
                                                                     <div className="shrink-0 pt-0.5">
-                                                                        <div className={cn(
-                                                                            "w-10 h-10 rounded-full flex items-center justify-center transition-transform group-hover:scale-110",
-                                                                            item.isRead ? "bg-black/5 dark:bg-white/5" : "bg-black/10 dark:bg-white/10"
-                                                                        )}>
-                                                                            {item.image ? (
-                                                                                <img src={item.image} alt="" className="w-full h-full rounded-full object-cover" />
-                                                                            ) : (
-                                                                                getTypeIcon(item.type)
-                                                                            )}
-                                                                        </div>
+                                                                        <NotificationIcon notification={item} size={40} muted={item.isRead} />
                                                                     </div>
 
                                                                     {/* Content */}
