@@ -1,44 +1,17 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import {
-    Check, X, AlertTriangle, Info, ChevronRight,
-    Bell, Megaphone, Ticket, MessageSquare, Gift, FileText, Zap, Users, Heart
-} from 'lucide-react';
+import { X, ChevronRight } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { TOAST_LABELS } from '../../lib/toastCopy';
 import { cn } from '../../lib/utils';
+import { StatusIcon, NotificationIcon } from './NotificationIcon';
 
-// Liquid-glass banners in the style of iOS notifications.
-// Every banner in the app (action feedback and incoming notifications) renders in this one stack:
-// top of the screen on phones, top-right under the navbar on larger screens.
+// Liquid-glass banners in the style of iOS / Dynamic Island alerts.
+// Every banner in the app (action feedback and incoming notifications) drops in at the top centre
+// of the screen. Short messages render as a compact pill; longer ones as a full card.
 // Several banners collapse into a stack; hover (desktop) or tap (mobile) fans them out.
 // Swipe up or sideways to dismiss.
-
-const TYPE_STYLES = {
-    success: { icon: Check, tile: 'from-emerald-400 to-emerald-600' },
-    error: { icon: X, tile: 'from-rose-500 to-red-600' },
-    warning: { icon: AlertTriangle, tile: 'from-amber-400 to-orange-500' },
-    info: { icon: Info, tile: 'from-sky-400 to-blue-600' },
-};
-const NOTIFICATION_TILE = 'from-cyan-400 to-indigo-600';
-
-const CATEGORY_ICONS = [
-    [/volunteer/, Heart],
-    [/gig|hiring/, Users],
-    [/giveaway|winner/, Gift],
-    [/campaign|task/, Zap],
-    [/ticket|booking/, Ticket],
-    [/message/, MessageSquare],
-    [/blog|post/, FileText],
-    [/announcement/, Megaphone],
-];
-
-const getNotificationIcon = (toast) => {
-    const text = `${toast.category || ''} ${toast.title || ''}`.toLowerCase();
-    const match = CATEGORY_ICONS.find(([pattern]) => pattern.test(text));
-    return match ? match[1] : Bell;
-};
 
 const GAP = 8;               // space between banners when fanned out
 const PEEK = 9;              // how much each stacked banner peeks out below the one in front
@@ -95,30 +68,32 @@ const useAutoDismiss = (toast, paused, onDismiss) => {
     }, [paused, toast.updatedAt, toast.duration, onDismiss]);
 };
 
-const ToastCard = ({ toast, index, total, expanded, offset, frontHeight, paused, onDismiss, onHeight, onExpand }) => {
+const ToastCard = ({ toast, index, total, expanded, offset, frontSize, paused, onDismiss, onSize, onExpand }) => {
     const navigate = useNavigate();
     const reduceMotion = useReducedMotion();
     const markNotificationRead = useStore(state => state.markNotificationRead);
-    const [imgError, setImgError] = useState(false);
     const contentRef = useRef(null);
+    const cardRef = useRef(null);
     const draggedRef = useRef(false);
 
     useAutoDismiss(toast, paused, onDismiss);
 
-    // Report natural height so the stack can lay itself out.
+    // Report natural size so the stack can lay itself out.
     useLayoutEffect(() => {
-        const el = contentRef.current;
-        if (!el) return;
-        const report = () => onHeight(toast.id, el.offsetHeight);
+        const content = contentRef.current;
+        const card = cardRef.current;
+        if (!content || !card) return;
+        const report = () => onSize(toast.id, { h: content.offsetHeight, w: card.offsetWidth });
         report();
         const observer = new ResizeObserver(report);
-        observer.observe(el);
+        observer.observe(content);
+        observer.observe(card);
         return () => observer.disconnect();
-    }, [toast.id, onHeight]);
+    }, [toast.id, onSize]);
 
     const isNotification = toast.kind === 'notification';
-    const style = TYPE_STYLES[toast.type] || TYPE_STYLES.info;
-    const Icon = isNotification ? getNotificationIcon(toast) : style.icon;
+    // Short, single-line feedback becomes a compact pill.
+    const isPill = !isNotification && !toast.title && !toast.hint && !toast.action && String(toast.message || '').length <= 46;
     const hasLink = isNotification && toast.link && toast.link.trim() !== '';
     const isFront = index === 0;
     const collapsedBehind = !expanded && !isFront;
@@ -141,6 +116,7 @@ const ToastCard = ({ toast, index, total, expanded, offset, frontHeight, paused,
         // A tap on a collapsed stack fans it out first, like iOS.
         if (!expanded && total > 1) { onExpand(); return; }
         if (isNotification) openNotification();
+        else if (!toast.action) onDismiss();
     };
 
     const handleAction = () => {
@@ -161,7 +137,7 @@ const ToastCard = ({ toast, index, total, expanded, offset, frontHeight, paused,
                 : { opacity: 0, y: stackY - 48, scale: 0.94, transition: { duration: 0.22, ease: [0.4, 0, 1, 1] } }}
             transition={reduceMotion ? { duration: 0.15 } : SPRING}
             style={{ zIndex: total - index, transformOrigin: 'top center' }}
-            className={cn('absolute inset-x-0 top-0', hiddenInStack ? 'pointer-events-none' : 'pointer-events-auto')}
+            className="absolute inset-x-0 top-0 flex justify-center pointer-events-none"
             role={toast.type === 'error' ? 'alert' : 'status'}
             aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
             aria-hidden={hiddenInStack || undefined}
@@ -182,37 +158,33 @@ const ToastCard = ({ toast, index, total, expanded, offset, frontHeight, paused,
                 onClick={handleTap}
                 whileTap={reduceMotion ? undefined : { scale: 0.985 }}
                 className={cn(
-                    'liquid-glass group rounded-[24px] md:rounded-[22px] overflow-hidden touch-none select-none',
-                    (isNotification || (!expanded && total > 1)) && 'cursor-pointer'
+                    'liquid-glass group overflow-hidden touch-none select-none cursor-pointer',
+                    hiddenInStack ? 'pointer-events-none' : 'pointer-events-auto',
+                    isPill ? 'w-fit max-w-full rounded-full' : 'w-full rounded-[24px] md:rounded-[22px]'
                 )}
-                style={collapsedBehind && frontHeight ? { height: frontHeight } : undefined}
+                ref={cardRef}
+                style={collapsedBehind && frontSize ? { height: frontSize.h, width: frontSize.w } : undefined}
             >
                 <div
                     ref={contentRef}
                     className={cn(
-                        'relative z-[2] flex items-start gap-3 px-3.5 pt-3 pb-4 md:pb-3 md:pr-2.5 transition-opacity duration-200',
+                        'relative z-[2] flex transition-opacity duration-200',
+                        isPill ? 'items-center gap-2.5 pl-2 pr-5 py-2' : 'items-start gap-3 px-3.5 py-3 md:pr-2.5',
                         collapsedBehind && 'opacity-0'
                     )}
                 >
-                    {/* Icon tile */}
-                    <div className={cn(
-                        'liquid-glass-icon shrink-0 w-[38px] h-[38px] rounded-[11px] overflow-hidden flex items-center justify-center text-white bg-gradient-to-br',
-                        isNotification ? NOTIFICATION_TILE : style.tile
-                    )}>
-                        {isNotification && toast.image && !imgError ? (
-                            <img src={toast.image} alt="" className="w-full h-full object-cover" onError={() => setImgError(true)} draggable={false} />
-                        ) : (
-                            <Icon size={20} strokeWidth={2.6} aria-hidden="true" />
-                        )}
-                    </div>
+                    {isNotification
+                        ? <NotificationIcon notification={{ type: toast.category, title: toast.title, image: toast.image }} size={36} />
+                        : <StatusIcon type={toast.type} size={isPill ? 30 : 36} />}
 
-                    <div className="flex-1 min-w-0 min-h-[38px] flex flex-col justify-center">
+                    <div className={cn('min-w-0 flex flex-col justify-center', isPill ? 'flex-initial' : 'flex-1 min-h-[36px]')}>
                         <span className="sr-only">{isNotification ? 'New notification: ' : `${TOAST_LABELS[toast.type]}: `}</span>
 
                         <div className="flex items-baseline gap-2">
                             <p className={cn(
-                                'flex-1 min-w-0 text-[15px] md:text-[14px] leading-[1.3] font-semibold text-gray-950 dark:text-white tracking-[-0.01em]',
-                                toast.title ? 'line-clamp-1' : 'line-clamp-3'
+                                'min-w-0 text-[15px] md:text-[14px] leading-[1.3] font-semibold text-gray-950 dark:text-white tracking-[-0.01em]',
+                                isPill ? 'truncate' : 'flex-1',
+                                !isPill && (toast.title ? 'line-clamp-1' : 'line-clamp-3')
                             )}>
                                 {toast.title || toast.message}
                             </p>
@@ -255,21 +227,20 @@ const ToastCard = ({ toast, index, total, expanded, offset, frontHeight, paused,
                         )}
                     </div>
 
-                    {/* Close: desktop only — on phones banners are swiped away */}
+                    {/* Close: desktop cards only — pills and phone banners are tapped or swiped away */}
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onDismiss(); }}
-                        className="hidden md:flex shrink-0 w-7 h-7 -mt-0.5 rounded-full items-center justify-center text-gray-500 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-black/[0.06] dark:hover:bg-white/10 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+                        className={cn(
+                            'hidden shrink-0 w-7 h-7 -mt-0.5 rounded-full items-center justify-center text-gray-500 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-black/[0.06] dark:hover:bg-white/10 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity',
+                            !isPill && 'md:flex'
+                        )}
                         aria-label="Dismiss"
                     >
                         <X size={15} />
                     </button>
                 </div>
 
-                {/* Grabber hint for swipe-to-dismiss on touch screens */}
-                {isFront && (
-                    <span className="md:hidden absolute z-[2] bottom-[5px] left-1/2 -translate-x-1/2 w-9 h-[4px] rounded-full bg-black/15 dark:bg-white/25" aria-hidden="true" />
-                )}
             </motion.div>
         </motion.li>
     );
@@ -282,7 +253,7 @@ const NewbiToast = () => {
     const [focused, setFocused] = useState(false);
     const [tappedOpen, setTappedOpen] = useState(false);
     const [pageHidden, setPageHidden] = useState(typeof document !== 'undefined' && document.hidden);
-    const [heights, setHeights] = useState({});
+    const [sizes, setSizes] = useState({});
     const stackRef = useRef(null);
 
     useIncomingNotificationToasts();
@@ -307,8 +278,8 @@ const NewbiToast = () => {
         if (toasts.length <= 1) setTappedOpen(false);
     }, [toasts.length]);
 
-    const onHeight = useCallback((id, h) => {
-        setHeights(prev => (prev[id] === h ? prev : { ...prev, [id]: h }));
+    const onSize = useCallback((id, size) => {
+        setSizes(prev => (prev[id]?.h === size.h && prev[id]?.w === size.w ? prev : { ...prev, [id]: size }));
     }, []);
 
     // Stable per-id dismiss callbacks so timers aren't reset on every render.
@@ -317,7 +288,7 @@ const NewbiToast = () => {
         if (!dismissersRef.current.has(id)) {
             dismissersRef.current.set(id, () => {
                 dismissersRef.current.delete(id);
-                setHeights(prev => {
+                setSizes(prev => {
                     const next = { ...prev };
                     delete next[id];
                     return next;
@@ -328,12 +299,6 @@ const NewbiToast = () => {
         return dismissersRef.current.get(id);
     };
 
-    // Sit just under the floating navbar, which drops lower when a top banner is showing.
-    const hasTopBanner = useStore(state =>
-        (state.maintenanceState?.global && state.user?.role === 'developer') ||
-        Boolean(state.announcements?.some(a => a.isPinned && a.id !== state.dismissedAnnouncementId))
-    );
-
     const expanded = toasts.length > 1 && (hovered || focused || tappedOpen);
     const paused = hovered || focused || tappedOpen || pageHidden;
 
@@ -342,9 +307,10 @@ const NewbiToast = () => {
     let running = 0;
     toasts.forEach((t, i) => {
         offsets[i] = running;
-        running += (heights[t.id] || 72) + GAP;
+        running += (sizes[t.id]?.h || 56) + GAP;
     });
-    const frontHeight = toasts[0] ? heights[toasts[0].id] || 72 : 0;
+    const frontSize = toasts[0] ? sizes[toasts[0].id] : null;
+    const frontHeight = frontSize?.h || 56;
     const stackHeight = toasts.length === 0
         ? 0
         : expanded
@@ -354,16 +320,13 @@ const NewbiToast = () => {
     return (
         <section
             aria-label="Notifications"
-            className={cn(
-                'pointer-events-none fixed z-[9999] inset-x-0 top-0 px-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] md:inset-x-auto md:right-6 md:px-0 md:pt-0',
-                hasTopBanner ? 'md:top-[8rem]' : 'md:top-[6rem]'
-            )}
+            className="pointer-events-none fixed z-[9999] inset-x-0 top-0 px-3 pt-[calc(env(safe-area-inset-top)+0.625rem)] md:pt-4"
         >
             <motion.ol
                 ref={stackRef}
                 animate={{ height: stackHeight }}
                 transition={SPRING}
-                className="relative mx-auto w-full max-w-[440px] md:w-[372px]"
+                className="relative mx-auto w-full max-w-[420px]"
                 onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHovered(true); }}
                 onPointerLeave={(e) => { if (e.pointerType === 'mouse') setHovered(false); }}
                 onFocus={() => setFocused(true)}
@@ -379,10 +342,10 @@ const NewbiToast = () => {
                             total={toasts.length}
                             expanded={expanded}
                             offset={offsets[index]}
-                            frontHeight={frontHeight}
+                            frontSize={frontSize}
                             paused={paused}
                             onDismiss={getDismiss(toast.id)}
-                            onHeight={onHeight}
+                            onSize={onSize}
                             onExpand={() => setTappedOpen(true)}
                         />
                     ))}

@@ -146,7 +146,7 @@ const CreatorCityGroupCard = ({
             }
         }
         if (onJoinMarked) onJoinMarked(currentGroup);
-        addToast(`You're in the ${currentGroup.city} Creators Hub! 🎉`, 'success');
+        addToast(`You're in the ${currentGroup.city} Creators Hub.`, 'success');
     };
 
     const handleCopyInvite = () => {

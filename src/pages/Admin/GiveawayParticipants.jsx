@@ -82,7 +82,7 @@ const GiveawayParticipants = () => {
             if (isNowWinner && entry.userId) {
                 await notifySpecificUser(
                     entry.userId,
-                    'You won! 🏆',
+                    'You won!',
                     `Congratulations, you've won ${prize} in the ${giveaway.name} giveaway. Open the giveaway for details.`,
                     `/giveaway/${giveaway.slug}`,
                     'giveaway'
