@@ -89,10 +89,14 @@ const AuthOverlay = () => {
                 const existing = document.getElementById(recaptchaId);
                 if (existing) existing.remove();
 
-                // Create a new container element dynamically
+                // Create an invisible off-screen container element dynamically
                 const container = document.createElement('div');
                 container.id = recaptchaId;
-                container.className = "fixed bottom-0 right-0 z-[200]";
+                container.style.position = 'fixed';
+                container.style.bottom = '-9999px';
+                container.style.right = '-9999px';
+                container.style.opacity = '0';
+                container.style.pointerEvents = 'none';
                 document.body.appendChild(container);
 
                 try {
@@ -214,10 +218,14 @@ const AuthOverlay = () => {
                 const existing = document.getElementById(recaptchaId);
                 if (existing) existing.remove();
 
-                // Create a new container element dynamically
+                // Create an invisible off-screen container element dynamically
                 const container = document.createElement('div');
                 container.id = recaptchaId;
-                container.className = "fixed bottom-0 right-0 z-[200]";
+                container.style.position = 'fixed';
+                container.style.bottom = '-9999px';
+                container.style.right = '-9999px';
+                container.style.opacity = '0';
+                container.style.pointerEvents = 'none';
                 document.body.appendChild(container);
 
                 try {

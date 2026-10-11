@@ -1293,6 +1293,17 @@
   letter-spacing: -0.02em !important;
 }
 
+/* Hide floating Google reCAPTCHA badge completely */
+.grecaptcha-badge {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  position: fixed !important;
+  bottom: -9999px !important;
+  right: -9999px !important;
+}
+
+
 
 
 
