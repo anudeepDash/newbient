@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../lib/firebase';
 import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import StudioSelect from './ui/StudioSelect';
+import CampaignDetailModal from './creator/CampaignDetailModal';
 
 const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
     const { 
@@ -23,7 +24,8 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         resetPassword, updateDisplayName, 
         ticketOrders, notifications, upcomingEvents, portfolio, guestlists,
         revokeSessions, deleteAccount, deleteCreator, updateCreator,
-        isProfilePanelOpen, profilePanelTab, closeProfilePanel, resolveCreatorProfile
+        isProfilePanelOpen, profilePanelTab, closeProfilePanel, resolveCreatorProfile,
+        campaigns
     } = useStore();
     const navigate = useNavigate();
     
@@ -65,6 +67,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
     const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showDeleteCreatorConfirm, setShowDeleteCreatorConfirm] = useState(false);
+    const [selectedCampaignForModal, setSelectedCampaignForModal] = useState(null);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -90,6 +93,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         const unsub3 = store.subscribeToPortfolio ? store.subscribeToPortfolio() : null;
         const unsub4 = store.subscribeToGuestlists ? store.subscribeToGuestlists() : null;
         const unsub5 = store.subscribeToCreators ? store.subscribeToCreators() : null;
+        const unsub6 = store.subscribeToCampaigns ? store.subscribeToCampaigns() : null;
 
         if (resolveCreatorProfile) {
             resolveCreatorProfile(user).then((res) => {
@@ -161,6 +165,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
             if (unsub3) unsub3();
             if (unsub4) unsub4();
             if (unsub5) unsub5();
+            if (unsub6) unsub6();
         };
     }, [isOpen, user?.uid, user?.email, resolveCreatorProfile]);
 
@@ -168,6 +173,8 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
     const userEmailNorm = user?.email ? user.email.toLowerCase() : null;
     const creatorFromCache = user ? creators?.find(c => 
         c.uid === user.uid || 
+        c.id === user.uid ||
+        c.userId === user.uid ||
         (userEmailNorm && c.email && c.email.toLowerCase() === userEmailNorm) ||
         (userPhoneNorm && c.phone && normalizePhoneNumber(c.phone) === userPhoneNorm)
     ) : null;
@@ -235,6 +242,119 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
                 return dateB - dateA;
             }
         });
+
+    // Participated campaigns computation for both Creator and Non-Creator views
+    const participatedCampaigns = useMemo(() => {
+        if (!user && !creatorProfile) return [];
+        
+        const matchingCreators = (creators || []).filter(c => 
+            (user?.uid && (c.uid === user.uid || c.id === user.uid || c.userId === user.uid)) ||
+            (userEmailNorm && c.email && c.email.toLowerCase() === userEmailNorm) ||
+            (userPhoneNorm && c.phone && normalizePhoneNumber(c.phone) === userPhoneNorm)
+        );
+        
+        const joinedIds = new Set();
+        if (creatorProfile?.joinedCampaigns) {
+            creatorProfile.joinedCampaigns.forEach(id => joinedIds.add(String(id)));
+        }
+        if (creatorProfile?.shortlistedCampaigns) {
+            creatorProfile.shortlistedCampaigns.forEach(id => joinedIds.add(String(id)));
+        }
+        if (user?.joinedCampaigns) {
+            user.joinedCampaigns.forEach(id => joinedIds.add(String(id)));
+        }
+        
+        matchingCreators.forEach(c => {
+            (c.joinedCampaigns || []).forEach(id => joinedIds.add(String(id)));
+            (c.shortlistedCampaigns || []).forEach(id => joinedIds.add(String(id)));
+        });
+
+        const targetUids = new Set([
+            user?.uid,
+            creatorProfile?.uid,
+            creatorProfile?.id,
+            creatorProfile?.creatorId,
+            ...matchingCreators.map(c => c.uid || c.id)
+        ].filter(Boolean));
+
+        return (campaigns || []).filter(campaign => {
+            if (!campaign || !campaign.id) return false;
+            
+            if (joinedIds.has(String(campaign.id))) return true;
+            if (Array.isArray(campaign.creatorIds) && [...targetUids].some(id => campaign.creatorIds.includes(id))) return true;
+            if (Array.isArray(campaign.appliedCreators) && [...targetUids].some(id => campaign.appliedCreators.includes(id))) return true;
+
+            if (Array.isArray(campaign.tasks)) {
+                const hasSubmission = campaign.tasks.some(task => {
+                    if (!task) return false;
+                    for (const uid of targetUids) {
+                        if (task.submissions && task.submissions[uid]) return true;
+                        if (Array.isArray(task.completedBy) && task.completedBy.includes(uid)) return true;
+                        if (Array.isArray(task.verifiedBy) && task.verifiedBy.includes(uid)) return true;
+                    }
+                    if (task.submissions && userEmailNorm) {
+                        const subs = Object.values(task.submissions);
+                        if (subs.some(s => s.userEmail && s.userEmail.toLowerCase() === userEmailNorm)) return true;
+                    }
+                    return false;
+                });
+                if (hasSubmission) return true;
+            }
+
+            return false;
+        }).map(campaign => {
+            const campaignTasks = campaign.tasks || [];
+            const requiredTasks = campaignTasks.filter(t => t.priority !== 'optional');
+            
+            let approvedCount = 0;
+            let submittedCount = 0;
+            
+            campaignTasks.forEach(task => {
+                for (const uid of targetUids) {
+                    const sub = task.submissions?.[uid];
+                    if (sub?.status === 'approved' || (task.verifiedBy || []).includes(uid)) {
+                        approvedCount++;
+                        break;
+                    } else if (sub?.status === 'submitted' || (task.completedBy || []).includes(uid)) {
+                        submittedCount++;
+                        break;
+                    }
+                }
+            });
+
+            const isFullyComplete = requiredTasks.length > 0 
+                ? requiredTasks.every(t => {
+                    return [...targetUids].some(uid => t.submissions?.[uid]?.status === 'approved' || (t.verifiedBy || []).includes(uid));
+                })
+                : approvedCount > 0 && approvedCount >= campaignTasks.length;
+
+            const isCampaignClosed = campaign.status === 'completed' || campaign.status === 'closed' || campaign.status === 'concluded' || campaign.status === 'archived';
+
+            const isShortlisted = [...targetUids].some(uid => {
+                const c = matchingCreators.find(mc => (mc.uid || mc.id) === uid) || creatorProfile;
+                return (c?.shortlistedCampaigns || []).includes(campaign.id);
+            });
+
+            let participationStatus = 'joined';
+            if (isFullyComplete || isCampaignClosed) {
+                participationStatus = 'completed';
+            } else if (submittedCount > 0) {
+                participationStatus = 'submitted';
+            } else if (isShortlisted) {
+                participationStatus = 'shortlisted';
+            }
+
+            return {
+                ...campaign,
+                approvedTasks: approvedCount,
+                totalTasks: campaignTasks.length,
+                isFullyComplete,
+                isCampaignClosed,
+                isShortlisted,
+                participationStatus
+            };
+        });
+    }, [user, creatorProfile, creators, campaigns, userEmailNorm, userPhoneNorm]);
 
     // Universal navigation tabs - Creator Hub is present for all users
     const tabs = [
@@ -398,6 +518,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
     if (!user) return null;
 
     return (
+        <>
         <AnimatePresence>
             {isOpen && (
                 <>
@@ -753,11 +874,15 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
                                                 updateCreator={updateCreator}
                                                 addToast={addToast}
                                                 addNotification={addNotification}
+                                                participatedCampaigns={participatedCampaigns}
+                                                onOpenCampaign={(camp) => setSelectedCampaignForModal(camp)}
                                             />
                                         ) : (
                                             <CreatorNonMemberView 
                                                 onClose={onClose}
                                                 navigate={navigate}
+                                                participatedCampaigns={participatedCampaigns}
+                                                onOpenCampaign={(camp) => setSelectedCampaignForModal(camp)}
                                             />
                                         )
                                     )}
@@ -1164,11 +1289,272 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
                 </>
             )}
         </AnimatePresence>
+
+        {selectedCampaignForModal && (
+            <CampaignDetailModal 
+                campaign={selectedCampaignForModal}
+                onClose={() => setSelectedCampaignForModal(null)}
+            />
+        )}
+        </>
+    );
+};
+
+/* --- Participated Campaigns Section for Creator Tab --- */
+const ParticipatedCampaignsSection = ({ participatedCampaigns = [], onOpenCampaign, onClose, navigate }) => {
+    const [filter, setFilter] = useState('all'); // 'all', 'completed', 'active'
+
+    const completedCampaigns = useMemo(() => 
+        participatedCampaigns.filter(c => c.participationStatus === 'completed'),
+        [participatedCampaigns]
+    );
+
+    const activeCampaigns = useMemo(() => 
+        participatedCampaigns.filter(c => c.participationStatus !== 'completed'),
+        [participatedCampaigns]
+    );
+
+    const displayedCampaigns = useMemo(() => {
+        if (filter === 'completed') return completedCampaigns;
+        if (filter === 'active') return activeCampaigns;
+        return participatedCampaigns;
+    }, [filter, participatedCampaigns, completedCampaigns, activeCampaigns]);
+
+    return (
+        <div className="space-y-4 pt-1">
+            {/* Section Header */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-neon-green/10 border border-neon-green/30 flex items-center justify-center text-neon-green shadow-xs">
+                        <Award size={16} />
+                    </div>
+                    <div>
+                        <h4 className="text-sm font-black uppercase italic tracking-tight text-gray-900 dark:text-white font-heading">
+                            Past Campaigns Participated
+                        </h4>
+                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 font-medium">
+                            Brand briefs, gigs &amp; deliverables history
+                        </p>
+                    </div>
+                </div>
+
+                <div className="px-2.5 py-1 rounded-full bg-neon-green/10 border border-neon-green/20 text-[10px] font-mono font-black text-neon-green">
+                    {participatedCampaigns.length} {participatedCampaigns.length === 1 ? 'Campaign' : 'Campaigns'}
+                </div>
+            </div>
+
+            {/* Filter Pills if multiple campaigns exist */}
+            {participatedCampaigns.length > 1 && (
+                <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/5 text-[10px] font-bold">
+                    <button
+                        type="button"
+                        onClick={() => setFilter('all')}
+                        className={cn(
+                            "flex-1 py-1.5 px-2 rounded-lg transition-all",
+                            filter === 'all'
+                                ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-xs font-black"
+                                : "text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white"
+                        )}
+                    >
+                        All ({participatedCampaigns.length})
+                    </button>
+                    {activeCampaigns.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setFilter('active')}
+                            className={cn(
+                                "flex-1 py-1.5 px-2 rounded-lg transition-all",
+                                filter === 'active'
+                                    ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-xs font-black"
+                                    : "text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white"
+                            )}
+                        >
+                            Active ({activeCampaigns.length})
+                        </button>
+                    )}
+                    {completedCampaigns.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setFilter('completed')}
+                            className={cn(
+                                "flex-1 py-1.5 px-2 rounded-lg transition-all",
+                                filter === 'completed'
+                                    ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-xs font-black"
+                                    : "text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white"
+                            )}
+                        >
+                            Completed ({completedCampaigns.length})
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {/* Campaign Cards or Empty State */}
+            {displayedCampaigns.length > 0 ? (
+                <div className="space-y-3">
+                    {displayedCampaigns.map((camp) => {
+                        const isComplete = camp.participationStatus === 'completed';
+                        const isShortlisted = camp.participationStatus === 'shortlisted';
+                        const isSubmitted = camp.participationStatus === 'submitted';
+                        const progressPct = camp.totalTasks > 0 ? Math.round((camp.approvedTasks / camp.totalTasks) * 100) : 0;
+
+                        return (
+                            <div
+                                key={camp.id}
+                                className="p-4 sm:p-5 rounded-[1.6rem] bg-gradient-to-br from-white via-gray-50/70 to-gray-100/40 dark:from-zinc-900/90 dark:via-zinc-900/50 dark:to-zinc-950 border border-gray-200 dark:border-white/10 hover:border-neon-green/40 dark:hover:border-neon-green/40 transition-all shadow-xs space-y-3.5 group"
+                            >
+                                <div className="flex items-start gap-3.5">
+                                    {/* Campaign Thumbnail / Logo */}
+                                    <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-white/10 overflow-hidden shrink-0 relative flex items-center justify-center shadow-xs">
+                                        {camp.thumbnail || camp.banner ? (
+                                            <img
+                                                src={camp.thumbnail || camp.banner}
+                                                alt={camp.title}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-gradient-to-br from-neon-green/10 to-neon-blue/10 flex items-center justify-center text-neon-green font-black">
+                                                <Zap size={22} />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Info Block */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-1.5">
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-zinc-400 truncate">
+                                                {camp.brandName || camp.brand || 'Brand Partner'}
+                                            </span>
+                                            
+                                            {/* Status Badge */}
+                                            {isComplete ? (
+                                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
+                                                    <CheckCircle2 size={10} /> Completed
+                                                </span>
+                                            ) : isShortlisted ? (
+                                                <span className="px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-600 dark:text-purple-400 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
+                                                    <Sparkles size={10} /> Shortlisted
+                                                </span>
+                                            ) : isSubmitted ? (
+                                                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
+                                                    <Clock size={10} /> In Review
+                                                </span>
+                                            ) : (
+                                                <span className="px-2.5 py-0.5 rounded-full bg-neon-blue/10 border border-neon-blue/30 text-neon-blue text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
+                                                    <Check size={10} /> Joined
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <h5 className="text-sm font-black font-heading uppercase italic text-gray-900 dark:text-white truncate mt-0.5">
+                                            {camp.title}
+                                        </h5>
+
+                                        <div className="flex flex-wrap items-center gap-2.5 mt-1.5 text-[10px] text-gray-500 dark:text-zinc-400">
+                                            {(camp.targetCity || camp.city) && (
+                                                <div className="flex items-center gap-1">
+                                                    <MapPin size={11} className="text-neon-green" />
+                                                    <span>{camp.targetCity || camp.city}</span>
+                                                </div>
+                                            )}
+                                            {camp.platform && (
+                                                <div className="flex items-center gap-1">
+                                                    <Instagram size={11} className="text-pink-500" />
+                                                    <span className="capitalize">{camp.platform}</span>
+                                                </div>
+                                            )}
+                                            {(camp.commercials || camp.budget || camp.payout) && (
+                                                <div className="flex items-center gap-1 font-bold text-gray-800 dark:text-zinc-200">
+                                                    <IndianRupee size={11} className="text-neon-green" />
+                                                    <span>{camp.commercials || camp.budget || camp.payout}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Task Progress Bar (if tasks exist) */}
+                                {camp.totalTasks > 0 && (
+                                    <div className="pt-2 border-t border-gray-100 dark:border-white/5 space-y-1.5">
+                                        <div className="flex items-center justify-between text-[10px]">
+                                            <span className="font-bold text-gray-500 dark:text-zinc-400">Deliverables Progress</span>
+                                            <span className="font-mono font-black text-gray-900 dark:text-white">
+                                                {camp.approvedTasks}/{camp.totalTasks} Done ({progressPct}%)
+                                            </span>
+                                        </div>
+                                        <div className="w-full h-1.5 rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden">
+                                            <div
+                                                className="h-full bg-neon-green rounded-full transition-all duration-500"
+                                                style={{ width: `${progressPct}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Action Buttons */}
+                                <div className="flex items-center gap-2 pt-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (onOpenCampaign) {
+                                                onOpenCampaign(camp);
+                                            } else {
+                                                navigate(`/creator-dashboard?campaignId=${camp.id}`);
+                                                onClose();
+                                            }
+                                        }}
+                                        className="flex-1 py-2.5 px-3 rounded-xl bg-gray-950 text-white hover:bg-black dark:bg-white dark:text-black dark:hover:bg-zinc-100 text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                                    >
+                                        <span>View Brief &amp; Tasks</span>
+                                        <ArrowRight size={12} className="text-neon-green dark:text-black group-hover:translate-x-0.5 transition-transform" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            navigate(`/creator-dashboard?campaignId=${camp.id}`);
+                                            onClose();
+                                        }}
+                                        className="px-3 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-800 dark:text-zinc-200 text-[10px] font-bold uppercase tracking-wider transition-colors"
+                                        title="Open in Studio Workspace"
+                                    >
+                                        Studio
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            ) : (
+                /* Empty state */
+                <div className="p-6 rounded-[2rem] bg-gray-50/80 dark:bg-zinc-900/40 border border-dashed border-gray-200 dark:border-white/10 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center mx-auto text-gray-400 dark:text-zinc-500">
+                        <History size={22} />
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-xs font-black uppercase text-gray-900 dark:text-white tracking-wider">
+                            No Past Campaigns Yet
+                        </p>
+                        <p className="text-[11px] text-gray-500 dark:text-zinc-400 max-w-xs mx-auto leading-relaxed">
+                            Once you apply to brand campaigns or complete deliverables, your participation history, submission statuses, and verified rewards will appear here.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => { navigate('/creator-dashboard'); onClose(); }}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gray-950 text-white hover:bg-black dark:bg-white dark:text-black dark:hover:bg-zinc-100 text-[10px] font-black uppercase tracking-wider transition-all shadow-xs"
+                    >
+                        <Sparkles size={12} className="text-neon-green dark:text-black" />
+                        <span>Explore Live Campaigns</span>
+                        <ArrowRight size={12} />
+                    </button>
+                </div>
+            )}
+        </div>
     );
 };
 
 /* --- Non-Member Gateway for Creator Hub --- */
-const CreatorNonMemberView = ({ onClose, navigate }) => {
+const CreatorNonMemberView = ({ onClose, navigate, participatedCampaigns = [], onOpenCampaign }) => {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -1231,6 +1617,14 @@ const CreatorNonMemberView = ({ onClose, navigate }) => {
                 </div>
             </div>
 
+            {/* Past Campaigns Participated Section */}
+            <ParticipatedCampaignsSection 
+                participatedCampaigns={participatedCampaigns}
+                onOpenCampaign={onOpenCampaign}
+                onClose={onClose}
+                navigate={navigate}
+            />
+
             {/* Campaign Explorer Shortcut */}
             <div className="p-5 rounded-2xl bg-gray-50 dark:bg-zinc-900/40 border border-gray-200 dark:border-white/5 flex items-center justify-between">
                 <div>
@@ -1281,7 +1675,9 @@ const CreatorProfileManager = ({
     setIsUpdating, 
     updateCreator, 
     addToast, 
-    addNotification 
+    addNotification,
+    participatedCampaigns = [],
+    onOpenCampaign
 }) => {
     const [subTab, setSubTab] = useState('overview'); // 'overview' | 'settings'
     const [isSaving, setIsSaving] = useState(false);
@@ -2222,6 +2618,14 @@ const CreatorProfileManager = ({
                 </div>
                 <ChevronRight size={16} className="text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white group-hover:translate-x-0.5 transition-transform" />
             </button>
+
+            {/* Past Campaigns Participated Section */}
+            <ParticipatedCampaignsSection 
+                participatedCampaigns={participatedCampaigns}
+                onOpenCampaign={onOpenCampaign}
+                onClose={onClose}
+                navigate={navigate}
+            />
 
             {/* Studio Workspace Actions */}
             <div className="space-y-2.5 pt-1">
