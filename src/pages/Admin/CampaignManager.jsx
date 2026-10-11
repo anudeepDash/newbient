@@ -592,6 +592,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
         whatsappLink: '',
         minInstagramFollowers: 0,
         autoShortlistEligible: true,
+        websiteApplyEnabled: true,
         thumbnail: '',
         tasks: [],
         isPinned: false
@@ -693,6 +694,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                     })),
                     minInstagramFollowers: campaign.minInstagramFollowers || 0,
                     autoShortlistEligible: campaign.autoShortlistEligible ?? true,
+                    websiteApplyEnabled: campaign.websiteApplyEnabled ?? true,
                     thumbnail: campaign.thumbnail || '',
                     isPinned: campaign.isPinned || false
                 });
@@ -717,6 +719,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
             whatsappLink: '', 
             minInstagramFollowers: 0,
             autoShortlistEligible: true,
+            websiteApplyEnabled: true,
             thumbnail: '',
             tasks: [],
             isPinned: false
@@ -1304,6 +1307,20 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                                     </div>
                                                     <button type="button" onClick={() => setFormData({ ...formData, autoShortlistEligible: !formData.autoShortlistEligible })} className={cn("w-12 h-6 rounded-full relative transition-all border", formData.autoShortlistEligible ? "bg-neon-green border-neon-green" : "bg-white dark:bg-black/40 border-black/10 dark:border-white/10")}>
                                                         <div className={cn("absolute top-0.5 w-4 h-4 rounded-full transition-all shadow-sm", formData.autoShortlistEligible ? "right-1 bg-black" : "left-1 bg-gray-400")} />
+                                                    </button>
+                                                </div>
+                                                <div className={cn("p-5 rounded-2xl border flex items-center justify-between transition-all duration-300", formData.websiteApplyEnabled ? "bg-neon-green/5 border-neon-green/30" : "bg-white dark:bg-black/40 border-black/[0.08] dark:border-white/[0.08]")}>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300", formData.websiteApplyEnabled ? "bg-neon-green text-black" : "bg-black/5 dark:bg-white/5 text-gray-500")}>
+                                                            <Globe size={18} />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-gray-900 dark:text-white text-sm font-black uppercase tracking-widest italic leading-tight">WEBSITE APPLICATIONS</h4>
+                                                            <p className="text-[10px] text-gray-500 mt-0.5 uppercase font-bold tracking-widest">ALLOW CREATORS TO APPLY THROUGH THE WEBSITE</p>
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" onClick={() => setFormData({ ...formData, websiteApplyEnabled: !formData.websiteApplyEnabled })} className={cn("w-12 h-6 rounded-full relative transition-all border", formData.websiteApplyEnabled ? "bg-neon-green border-neon-green" : "bg-white dark:bg-black/40 border-black/10 dark:border-white/10")}>
+                                                        <div className={cn("absolute top-0.5 w-4 h-4 rounded-full transition-all shadow-sm", formData.websiteApplyEnabled ? "right-1 bg-black" : "left-1 bg-gray-400")} />
                                                     </button>
                                                 </div>
                                                 <div className={cn("p-5 rounded-2xl border flex items-center justify-between transition-all duration-300", formData.isPinned ? "bg-neon-green/5 border-neon-green/30" : "bg-white dark:bg-black/40 border-black/[0.08] dark:border-white/[0.08]")}>
@@ -2080,6 +2097,32 @@ const CampaignDetailView = ({
                     >
                         <Zap size={13} className={campaign.autoShortlistEligible ? "text-emerald-600 dark:text-neon-green fill-current" : "text-gray-400"} />
                         <span>AUTO-SHORTLIST: {campaign.autoShortlistEligible ? 'ON' : 'OFF'}</span>
+                    </button>
+
+                    {/* Website Apply Toggle */}
+                    <button
+                        onClick={async () => {
+                            const nextVal = campaign.websiteApplyEnabled === false;
+                            try {
+                                await updateCampaign(campaign.id, { websiteApplyEnabled: nextVal });
+                                useStore.getState().addToast(
+                                    nextVal ? "Website applications enabled for this campaign." : "Website applications turned off for this campaign.",
+                                    'info'
+                                );
+                            } catch (err) {
+                                useStore.getState().addToast("Failed to update website apply setting.", 'error');
+                            }
+                        }}
+                        className={cn(
+                            "h-11 px-4 border rounded-full text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-2 active:scale-95",
+                            campaign.websiteApplyEnabled !== false
+                                ? "bg-neon-green/15 border-neon-green/30 text-emerald-800 dark:text-neon-green hover:bg-neon-green/25"
+                                : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:bg-black/10 dark:hover:bg-white/10"
+                        )}
+                        title="Toggle whether creators can apply through the website"
+                    >
+                        <Globe size={13} className={campaign.websiteApplyEnabled !== false ? "text-emerald-600 dark:text-neon-green" : "text-gray-400"} />
+                        <span>WEBSITE APPLY: {campaign.websiteApplyEnabled !== false ? 'ON' : 'OFF'}</span>
                     </button>
 
                     {/* View Public Live Campaign */}
