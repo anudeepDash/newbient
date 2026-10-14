@@ -1,7 +1,8 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { useTheme } from '../hooks/useTheme';
 import { cn, normalizePhoneNumber } from '../lib/utils';
@@ -13,7 +14,6 @@ import {
 import { Button } from '../components/ui/Button';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import useBodyScrollLock from '../hooks/useBodyScrollLock';
-import ProfilePanel from '../components/ProfilePanel';
 import NotificationBell from '../components/NotificationBell';
 import PastClients from '../components/home/PastClients';
 import CreatorPassCard from '../components/creator/CreatorPassCard';
@@ -22,6 +22,8 @@ import CampaignCard from '../components/ui/CampaignCard';
 import { HorizontalCarousel } from '../components/ui/HorizontalCarousel';
 import newbiCreatorsLogoDark from '../assets/newbi-creators-logo.png';
 import newbiCreatorsLogoLight from '../assets/newbi-creators-logo-light.png';
+
+const ProfilePanel = lazy(() => import('../components/ProfilePanel'));
 
 /**
  * Intelligent, warm, time-aware greetings in Claude's signature conversational style.
@@ -81,7 +83,14 @@ const CreatorLanding = () => {
     });
 
     const navigate = useNavigate();
-    const { user, campaigns, siteSettings, creatorTestimonials, resolveCreatorProfile } = useStore();
+    const { user, campaigns, siteSettings, creatorTestimonials, resolveCreatorProfile, isProfilePanelOpen } = useStore(useShallow(s => ({
+        user: s.user,
+        campaigns: s.campaigns,
+        siteSettings: s.siteSettings,
+        creatorTestimonials: s.creatorTestimonials,
+        resolveCreatorProfile: s.resolveCreatorProfile,
+        isProfilePanelOpen: s.isProfilePanelOpen
+    })));
     const { theme, toggleTheme } = useTheme();
     const isDark = theme === 'dark';
 
@@ -92,6 +101,9 @@ const CreatorLanding = () => {
     const activeTestimonials = useMemo(() => (creatorTestimonials || []).filter(t => t.isActive !== false), [creatorTestimonials]);
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    // ProfilePanel is lazy-loaded on first open (local or store-driven) and stays mounted afterwards.
+    const [profilePanelMounted, setProfilePanelMounted] = useState(false);
+    if ((isProfileOpen || isProfilePanelOpen) && !profilePanelMounted) setProfilePanelMounted(true);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [openFaq, setOpenFaq] = useState(null);
     const [selectedCampaignForModal, setSelectedCampaignForModal] = useState(null);
@@ -104,7 +116,7 @@ const CreatorLanding = () => {
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 50);
         };
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
@@ -1110,7 +1122,11 @@ const CreatorLanding = () => {
                 )}
             </AnimatePresence>
 
-            <ProfilePanel isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+            {profilePanelMounted && (
+                <Suspense fallback={null}>
+                    <ProfilePanel isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+                </Suspense>
+            )}
 
             {/* Campaign Detail Modal */}
             <AnimatePresence>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '../../lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 
 const DEFAULT_CLIENTS = [
@@ -20,7 +21,7 @@ const DEFAULT_CLIENTS = [
 
 const PastClients = () => {
     useStoreSubscription(['pastClients']);
-    const { pastClients, siteSettings } = useStore();
+    const { pastClients, siteSettings } = useStore(useShallow(s => ({ pastClients: s.pastClients, siteSettings: s.siteSettings })));
 
     if (siteSettings?.showPastClients === false) {
         return null;
@@ -69,6 +70,8 @@ const PastClients = () => {
                                 <img
                                     src={client.logoUrl}
                                     alt={client.name}
+                                    loading="lazy"
+                                    decoding="async"
                                     className="h-10 md:h-16 w-auto object-contain group-hover:scale-110 transition-transform duration-500"
                                 />
                             ) : (

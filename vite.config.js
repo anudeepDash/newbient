@@ -375,8 +375,23 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (id.includes('node_modules/jspdf') || id.includes('node_modules/html2canvas') || id.includes('node_modules/jspdf-autotable')) {
-              return 'vendor-pdf';
+            // Keep Vite's preload helper / commonjs helpers out of lazy vendor chunks,
+            // otherwise every chunk statically imports whichever chunk they land in.
+            if (id.includes('vite/preload-helper') || id.includes('commonjsHelpers')) {
+              return 'vendor-react';
+            }
+            if (id.includes('node_modules/jspdf') || id.includes('node_modules/jspdf-autotable')) {
+              return 'vendor-jspdf';
+            }
+            if (id.includes('node_modules/html2canvas')) {
+              return 'vendor-html2canvas';
+            }
+            if (id.includes('node_modules/@firebase/storage') || id.includes('node_modules/firebase/storage')) {
+              return 'vendor-firebase-storage';
+            }
+            // (idb stays in vendor-firebase: @firebase/app imports it too, so moving it would create a chunk cycle.)
+            if (id.includes('node_modules/@firebase/messaging') || id.includes('node_modules/firebase/messaging') || id.includes('node_modules/@firebase/installations')) {
+              return 'vendor-firebase-messaging';
             }
             if (id.includes('node_modules/firebase') || id.includes('node_modules/@firebase')) {
               return 'vendor-firebase';

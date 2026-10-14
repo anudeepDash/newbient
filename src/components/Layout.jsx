@@ -2,11 +2,13 @@ import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import ErrorBoundary from './ErrorBoundary';
 import { useStore } from '../lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { cn } from '../lib/utils';
 
 const Layout = () => {
-    const { maintenanceState, user } = useStore();
+    const { maintenanceState, user } = useStore(useShallow(s => ({ maintenanceState: s.maintenanceState, user: s.user })));
     const location = useLocation();
     const isBypassing = maintenanceState.global && user?.role === 'developer';
     
@@ -49,15 +51,17 @@ const Layout = () => {
                 isSpecialPage ? "pb-0" : "pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:pb-12",
                 isHeightLockedPage && "h-full overflow-hidden flex flex-col"
             )}>
-                <Outlet />
+                <ErrorBoundary resetKey={location.pathname}>
+                    <Outlet />
+                </ErrorBoundary>
             </main>
             {!isSpecialPage && <Footer />}
 
             {/* Background Glow Effects - Enhanced */}
             <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none transition-opacity duration-500 opacity-0 dark:opacity-100">
-                <div className="absolute top-[-10%] left-[-10%] w-[30%] h-[30%] md:w-[40%] md:h-[40%] bg-neon-blue/10 rounded-full blur-[60px] md:blur-[120px] animate-pulse" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] md:w-[40%] md:h-[40%] bg-neon-pink/10 rounded-full blur-[60px] md:blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
-                <div className="absolute top-[40%] left-[50%] translate-x-[-50%] w-[20%] h-[20%] md:w-[30%] md:h-[30%] bg-neon-green/5 rounded-full blur-[50px] md:blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
+                <div className="absolute top-[-10%] left-[-10%] w-[30%] h-[30%] md:w-[40%] md:h-[40%] bg-neon-blue/10 rounded-full blur-[60px] md:blur-[120px]" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] md:w-[40%] md:h-[40%] bg-neon-pink/10 rounded-full blur-[60px] md:blur-[120px]" />
+                <div className="absolute top-[40%] left-[50%] translate-x-[-50%] w-[20%] h-[20%] md:w-[30%] md:h-[30%] bg-neon-green/5 rounded-full blur-[50px] md:blur-[100px]" />
             </div>
         </div>
     );

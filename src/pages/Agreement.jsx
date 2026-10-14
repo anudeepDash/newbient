@@ -116,6 +116,7 @@ const Agreement = () => {
     const { id } = useParams();
     const { agreements, updateAgreement, logDocumentAccess, user, loading: storeLoading } = useStore();
     const [displayAgreement, setDisplayAgreement] = useState(null);
+    const [agreementMissing, setAgreementMissing] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [signatureName, setSignatureName] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -156,9 +157,12 @@ const Agreement = () => {
                     const docSnap = await getDoc(doc(db, 'agreements', id));
                     if (docSnap.exists()) {
                         setDisplayAgreement({ ...docSnap.data(), id: docSnap.id });
+                    } else {
+                        setAgreementMissing(true);
                     }
                 } catch (err) {
                     console.error("Error fetching agreement directly:", err);
+                    setAgreementMissing(true);
                 }
             };
             fetchAgreement();
@@ -259,6 +263,16 @@ const Agreement = () => {
             }
         }
     }, [displayAgreement]);
+
+    if (!displayAgreement && agreementMissing) return (
+        <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center p-6 text-gray-900 dark:text-white">
+            <div className="text-center space-y-4 max-w-md">
+                <h1 className="text-2xl font-black">Agreement not found</h1>
+                <p className="text-sm text-gray-500">This link may be wrong, or the agreement may have been removed. Please check with the person who sent it.</p>
+                <a href="/" className="inline-block text-xs font-bold underline">Return Home</a>
+            </div>
+        </div>
+    );
 
     if (!displayAgreement) return (
         <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">

@@ -13,7 +13,6 @@ import { useStore } from '../../lib/store';
 import { db, auth } from '../../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
-import html2canvas from 'html2canvas';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import GuestlistTaskSubmissionStep from '../community/GuestlistTaskSubmissionStep';
 
@@ -108,13 +107,16 @@ const OTPVerificationSuccess = () => {
     );
 };
 
-const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => {
+// Don't render if open but no event data. Kept in a wrapper so the body's hooks
+// always run in the same order when `event` arrives after the modal opens.
+const EventTicketingModal = (props) => {
+    if (!props.event && props.isOpen) return null;
+    return <EventTicketingModalBody {...props} />;
+};
+
+const EventTicketingModalBody = ({ isOpen, onClose, event, isEmbedded = false }) => {
     const user = useStore(state => state.user);
     const setAuthModal = useStore(state => state.setAuthModal);
-
-    if (!event && isOpen) {
-        return null; // Don't render if open but no event data
-    }
     
     // Core state
     const [activeTab, setActiveTab] = useState('tickets'); // 'tickets' or 'guestlist'
@@ -741,6 +743,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
         
         setIsDownloading(true);
         try {
+            const { default: html2canvas } = await import('html2canvas');
             const canvas = await html2canvas(element, {
                 backgroundColor: '#000000',
                 scale: 2,

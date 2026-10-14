@@ -1,4 +1,4 @@
-import React, { useEffect, lazy, Suspense } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import ScrollToTop from './components/ScrollToTop';
@@ -10,11 +10,11 @@ import Layout from './components/Layout';
 import GlobalLoader from './components/ui/GlobalLoader';
 
 import Home from './pages/Home';
-import CreatorLanding from './pages/CreatorLanding';
-import CreatorJoin from './pages/CreatorJoin';
-import Contact from './pages/Contact';
 
 // Lazy-loaded Public Pages
+const CreatorLanding = lazy(() => import('./pages/CreatorLanding'));
+const CreatorJoin = lazy(() => import('./pages/CreatorJoin'));
+const Contact = lazy(() => import('./pages/Contact'));
 const ConcertZone = lazy(() => import('./pages/ConcertZone'));
 const Invoice = lazy(() => import('./pages/Invoice'));
 const Proposal = lazy(() => import('./pages/Proposal'));
@@ -85,13 +85,16 @@ const DocumentHub = lazy(() => import('./pages/Admin/DocumentHub'));
 
 
 // Guards & Components
-import AuthOverlay from './components/auth/AuthOverlay';
+const AuthOverlay = lazy(() => import('./components/auth/AuthOverlay'));
 import AdminGuard from './components/AdminGuard';
 import FinanceGuard from './components/FinanceGuard';
 import MaintenanceGuard from './components/MaintenanceGuard';
 import NewbiToast from './components/ui/NewbiToast';
 
-import { safeLocalStorage } from './lib/storage';
+
+// artistant.in serves this same app; Vercel rewrites its root server-side but the
+// browser URL stays '/', so pick the landing page by host.
+const IS_ARTISTANT_HOST = typeof window !== 'undefined' && /(^|\.)artistant\.in$/.test(window.location.hostname);
 
 // Redirect that keeps the query string (?ref=, ?campaignId=, ?taskId=) and fills
 // in :params, so old or hand-typed creator links still land in the right place.
@@ -103,7 +106,15 @@ function RedirectKeepQuery({ to }) {
 }
 
 function AppContent() {
-  const { user, subscribeToData, subscribeToNotifications, checkUserRole, loading, authInitialized } = useStore();
+  const user = useStore(s => s.user);
+  const subscribeToData = useStore(s => s.subscribeToData);
+  const subscribeToNotifications = useStore(s => s.subscribeToNotifications);
+  const loading = useStore(s => s.loading);
+  const isAuthOpen = useStore(s => s.isAuthOpen);
+  // Mount the (lazy) auth overlay on first open and keep it mounted afterwards so
+  // its internal state behaves exactly as before.
+  const [authOverlayMounted, setAuthOverlayMounted] = useState(isAuthOpen);
+  if (isAuthOpen && !authOverlayMounted) setAuthOverlayMounted(true);
   const location = useLocation();
 
   const getColorByPath = (path) => {
@@ -114,12 +125,16 @@ function AppContent() {
   };
 
   const currentColor = getColorByPath(location.pathname);
-  const isAdmin = ['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'].includes(user?.role) || safeLocalStorage.getItem('adminAuth') === 'true';
+  const isAdmin = ['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'].includes(user?.role);
+
+  // Register the foreground FCM handler once (not on every user/isAdmin change).
+  useEffect(() => {
+    initForegroundMessaging();
+  }, []);
 
   useEffect(() => {
     const unsubscribeData = subscribeToData ? subscribeToData(isAdmin) : null;
     const unsubscribeNotifications = subscribeToNotifications ? subscribeToNotifications(user?.uid) : null;
-    initForegroundMessaging();
     
     let unsubAuth = null;
     if (auth) {
@@ -154,7 +169,11 @@ function AppContent() {
       <Suspense fallback={<GlobalLoader color={currentColor} />}>
         <Routes>
           <Route path="/" element={<Layout />}>
-            <Route index element={<MaintenanceGuard isPage featureId="home"><Home /></MaintenanceGuard>} />
+            <Route index element={
+              IS_ARTISTANT_HOST
+                ? <MaintenanceGuard isPage featureId="artistant_public"><ArtistAnt /></MaintenanceGuard>
+                : <MaintenanceGuard isPage featureId="home"><Home /></MaintenanceGuard>
+            } />
             <Route path="contact" element={<MaintenanceGuard isPage featureId="contact"><Contact /></MaintenanceGuard>} />
             <Route path="invoice/:id" element={<Invoice />} />
             <Route path="proposal/:id" element={<MaintenanceGuard isPage featureId="docs"><Proposal /></MaintenanceGuard>} />
@@ -287,7 +306,11 @@ function AppContent() {
           </Route>
         </Routes>
       </Suspense>
-      <AuthOverlay />
+      {authOverlayMounted && (
+        <Suspense fallback={null}>
+          <AuthOverlay />
+        </Suspense>
+      )}
       <NewbiToast />
     </>
   );

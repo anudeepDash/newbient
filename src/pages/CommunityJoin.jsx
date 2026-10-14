@@ -20,7 +20,6 @@ import { cn } from '../lib/utils';
 import CommunityCard from '../components/community/CommunityCard';
 import EventTicketingModal from '../components/tickets/EventTicketingModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
-import html2canvas from 'html2canvas';
 
 const CommunityJoin = () => {
     useStoreSubscription(['volunteerGigs', 'guestlists', 'giveaways', 'campaigns', 'forms']);
@@ -206,6 +205,7 @@ const CommunityJoin = () => {
 
             if (cardElement) {
                 try {
+                    const { default: html2canvas } = await import('html2canvas');
                     const canvas = await html2canvas(cardElement, {
                         useCORS: true,
                         scale: 2,

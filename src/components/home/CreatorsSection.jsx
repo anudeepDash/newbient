@@ -3,10 +3,11 @@ import { motion } from 'framer-motion';
 import { Sparkles, Target, ArrowRight, Users, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { normalizePhoneNumber } from '../../lib/utils';
 
 const CreatorsSection = () => {
-    const { user, creators } = useStore();
+    const { user, creators } = useStore(useShallow(s => ({ user: s.user, creators: s.creators })));
     const userPhoneNorm = user?.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
     const userEmailNorm = user?.email ? user.email.toLowerCase() : null;
     const isCreator = Boolean(creators?.some(c => 

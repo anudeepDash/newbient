@@ -2,7 +2,6 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getMessaging, isSupported } from "firebase/messaging";
 
 // Validated Config from Environment
 const firebaseConfig = {
@@ -29,30 +28,13 @@ const auth = app ? getAuth(app) : null;
 
 const googleProvider = new GoogleAuthProvider();
 
-// Safely obtain messaging instance without crashing on Safari/WebKit/Private Browsing
+// Messaging is loaded on demand (only when notifications are used), keeping it off first load.
 let messaging = null;
-
-if (typeof window !== 'undefined' && app) {
-    try {
-        isSupported().then(supported => {
-            if (supported && app) {
-                try {
-                    messaging = getMessaging(app);
-                } catch (e) {
-                    console.warn("[Firebase] Messaging get error:", e);
-                }
-            }
-        }).catch(err => {
-            console.warn("[Firebase] Messaging not supported on this browser:", err);
-        });
-    } catch (e) {
-        console.warn("[Firebase] Messaging initialization error:", e);
-    }
-}
 
 export const getMessagingSafe = async () => {
     if (typeof window === 'undefined' || !app) return null;
     try {
+        const { getMessaging, isSupported } = await import('firebase/messaging');
         const supported = await isSupported().catch(() => false);
         if (!supported) return null;
         if (!messaging) {
@@ -65,5 +47,5 @@ export const getMessagingSafe = async () => {
     }
 };
 
-export { app, db, storage, auth, googleProvider, messaging };
+export { app, db, storage, auth, googleProvider };
 

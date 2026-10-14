@@ -1,19 +1,28 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { useStore } from '../../lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { Calendar, MapPin, ArrowRight, Share2, Ticket, ChevronLeft, ChevronRight, Plus, Gift } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import html2canvas from 'html2canvas';
-import EventTicketingModal from '../tickets/EventTicketingModal';
-import EventHubModal from '../community/EventHubModal';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import EventCard from '../community/EventCard';
 
+// Modals are only needed on interaction; EventHubModal pulls in EventTicketingModal itself.
+const EventHubModal = lazy(() => import('../community/EventHubModal'));
+
 const UpcomingEvents = () => {
-    const { upcomingEvents, siteSettings, maintenanceState, giveaways, user, setAuthModal } = useStore();
+    const { upcomingEvents, siteSettings, maintenanceState, giveaways } = useStore(useShallow(s => ({
+        upcomingEvents: s.upcomingEvents,
+        siteSettings: s.siteSettings,
+        maintenanceState: s.maintenanceState,
+        giveaways: s.giveaways
+    })));
     const carouselRef = useRef();
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    // Lazy-mount the hub modal on first open, then keep it mounted (preserves its close animation/state).
+    const [hubModalMounted, setHubModalMounted] = useState(false);
+    if (isModalOpen && !hubModalMounted) setHubModalMounted(true);
 
     const scroll = (direction) => {
         if (carouselRef.current) {
@@ -28,6 +37,7 @@ const UpcomingEvents = () => {
         if (isPaused || upcomingEvents.length <= 1) return;
 
         const interval = setInterval(() => {
+            if (document.hidden) return;
             if (carouselRef.current) {
                 const el = carouselRef.current;
                 const cardWidth = el.querySelector('[id^="event-card-"]')?.offsetWidth || 380;
@@ -46,14 +56,20 @@ const UpcomingEvents = () => {
         return () => clearInterval(interval);
     }, [isPaused, upcomingEvents]);
 
+    const location = useLocation();
+    const navigate = useNavigate();
+    // ?event=<id> deep links (announcements, notifications, shares) open once per id,
+    // including when the link is clicked while already on the home page.
+    const openedDeepLinkRef = useRef(null);
+
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(location.search);
         const eventId = params.get('event');
-        const shouldBuy = params.get('buy') === 'true';
 
         if (eventId && upcomingEvents.length > 0) {
             const event = upcomingEvents.find(e => e.id === eventId);
-            if (event) {
+            if (event && openedDeepLinkRef.current !== eventId) {
+                openedDeepLinkRef.current = eventId;
                 // Scroll to card
                 const element = document.getElementById(`event-card-${eventId}`);
                 if (element) {
@@ -79,7 +95,7 @@ const UpcomingEvents = () => {
                 }
             }
         }
-    }, [upcomingEvents, maintenanceState]);
+    }, [upcomingEvents, maintenanceState, location.search]);
 
     const handleShare = async (e, event) => {
         e.preventDefault();
@@ -99,6 +115,7 @@ const UpcomingEvents = () => {
                 titleEl.style.display = 'block';
             }
 
+            const { default: html2canvas } = await import('html2canvas');
             const canvas = await html2canvas(cardElement, {
                 useCORS: true,
                 scale: 3,
@@ -287,14 +304,27 @@ const UpcomingEvents = () => {
                 </div>
             </div>
 
-            <EventHubModal
-                event={selectedEvent}
-                isOpen={isModalOpen}
-                onClose={() => {
-                    setIsModalOpen(false);
-                    setTimeout(() => setSelectedEvent(null), 300);
-                }}
-            />
+            {hubModalMounted && (
+                <Suspense fallback={null}>
+                    <EventHubModal
+                        event={selectedEvent}
+                        isOpen={isModalOpen}
+                        onClose={() => {
+                            setIsModalOpen(false);
+                            setTimeout(() => setSelectedEvent(null), 300);
+                            // Drop the deep-link params so the modal doesn't reopen on the next update.
+                            const params = new URLSearchParams(location.search);
+                            if (params.has('event') || params.has('buy')) {
+                                params.delete('event');
+                                params.delete('buy');
+                                openedDeepLinkRef.current = null;
+                                const search = params.toString();
+                                navigate({ pathname: location.pathname, search: search ? `?${search}` : '', hash: location.hash }, { replace: true });
+                            }
+                        }}
+                    />
+                </Suspense>
+            )}
         </section>
     );
 };

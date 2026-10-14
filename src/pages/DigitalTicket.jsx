@@ -13,8 +13,8 @@ import XCircle from 'lucide-react/dist/esm/icons/x-circle';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, collectionGroup, doc, getDoc } from 'firebase/firestore';
-import html2canvas from 'html2canvas';
 import GlobalLoader from '../components/ui/GlobalLoader';
+import { useStore } from '../lib/store';
 
 const DigitalTicket = () => {
     const { id } = useParams();
@@ -143,6 +143,7 @@ const DigitalTicket = () => {
         if (!ticketElement) return;
 
         try {
+            const { default: html2canvas } = await import('html2canvas');
             const canvas = await html2canvas(ticketElement, {
                 scale: 3,
                 useCORS: true,

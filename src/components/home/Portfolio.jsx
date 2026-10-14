@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../../lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { ArrowRight, Zap, ChevronLeft, ChevronRight, Play, Clock, LayoutGrid, Music2 } from 'lucide-react';
 
 /* ─── Portfolio Section ──────────────────────────────────────────────────── */
 const Portfolio = () => {
-    const { portfolio, portfolioCategories } = useStore();
+    const { portfolio, portfolioCategories } = useStore(useShallow(s => ({ portfolio: s.portfolio, portfolioCategories: s.portfolioCategories })));
     const carouselRef = useRef(null);
 
     const categories = portfolioCategories.length > 0 ? portfolioCategories : [];
@@ -18,6 +19,7 @@ const Portfolio = () => {
         if (isPaused || filteredItems.length <= 1) return;
 
         const interval = setInterval(() => {
+            if (document.hidden) return;
             if (carouselRef.current) {
                 const el = carouselRef.current;
                 const cardEl = el.querySelector('.flex-shrink-0');

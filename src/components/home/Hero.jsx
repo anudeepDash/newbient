@@ -1,10 +1,21 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { ArrowRight, Zap, Star } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import logoLight from '../../assets/logo_light.png';
+import logo520 from '../../assets/logo-520.webp';
+import logo860 from '../../assets/logo-860.webp';
+import logoLight520 from '../../assets/logo_light-520.webp';
+import logoLight860 from '../../assets/logo_light-860.webp';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { useTheme } from '../../hooks/useTheme';
+
+const LOGO_SIZES = '(min-width: 768px) 429px, 257px';
 
 const Hero = () => {
+    const { isMobile } = useIsMobile();
+    const { isDark } = useTheme();
     return (
         <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-32 md:pt-40 pb-16 md:pb-24 bg-gray-50 dark:bg-dark transition-colors duration-300">
             {/* Immersive Background Effects */}
@@ -16,6 +27,8 @@ const Hero = () => {
                 <div className="absolute inset-0 opacity-[0.05] dark:opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
 
                 {/* Abstract Glass Elements with Icons (Hidden on Mobile) */}
+                {!isMobile && (
+                <>
                 <motion.div
                     animate={{ 
                         y: [0, -20, 0],
@@ -41,26 +54,35 @@ const Hero = () => {
                         <Star className="text-black/40 dark:text-white/20 w-14 h-14 " />
                     </div>
                 </motion.div>
+                </>
+                )}
             </div>
 
             {/* Content Container */}
             <div className="relative z-10 w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 text-center pt-12 md:pt-4 pb-16 md:pb-20">
                 {/* Brand Logo with Premium Glow */}
                 <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ y: -20 }}
+                    animate={{ y: 0 }}
                     transition={{ duration: 1, ease: "easeOut" }}
                     className="mb-8 md:mb-12 relative flex justify-center"
                 >
-                    <img src={logo} alt="NewBi Entertainment" className="h-24 md:h-40 w-auto relative z-10 filter drop-shadow-[0_10px_20px_rgba(255,255,255,0.05)] hidden dark:block" />
-                    <img src={logoLight} alt="NewBi Entertainment" className="h-24 md:h-40 w-auto relative z-10 filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.05)] block dark:hidden" />
+                    {/* Only the active theme's logo is fetched eagerly; the CSS-hidden one is lazy (not fetched while display:none). */}
+                    <picture className="contents">
+                        <source type="image/webp" srcSet={`${logo520} 520w, ${logo860} 860w`} sizes={LOGO_SIZES} />
+                        <img src={logo} width="1024" height="382" alt="NewBi Entertainment" className="h-24 md:h-40 w-auto relative z-10 filter drop-shadow-[0_10px_20px_rgba(255,255,255,0.05)] hidden dark:block" {...(isDark ? { fetchPriority: 'high' } : { loading: 'lazy', decoding: 'async' })} />
+                    </picture>
+                    <picture className="contents">
+                        <source type="image/webp" srcSet={`${logoLight520} 520w, ${logoLight860} 860w`} sizes={LOGO_SIZES} />
+                        <img src={logoLight} width="1024" height="386" alt="NewBi Entertainment" className="h-24 md:h-40 w-auto relative z-10 filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.05)] block dark:hidden" {...(isDark ? { loading: 'lazy', decoding: 'async' } : { fetchPriority: 'high' })} />
+                    </picture>
                 </motion.div>
 
                 {/* Sophisticated Display Title */}
                 <div className="space-y-4 mb-6 overflow-visible">
                     <motion.h1
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={{ y: 30 }}
+                        animate={{ y: 0 }}
                         transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
                         className="font-heading text-[clamp(2.5rem,10vw,6rem)] sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tight leading-none text-black dark:text-white md:whitespace-nowrap overflow-visible select-none py-2 transition-colors duration-300"
                     >
@@ -85,20 +107,20 @@ const Hero = () => {
                     transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
                     className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10 px-6 sm:px-0 w-full"
                 >
-                    <a
-                        href="/contact"
+                    <Link
+                        to="/contact"
                         className="group relative w-full sm:w-auto h-[56px] md:h-16 px-10 flex items-center justify-center bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-100 font-bold uppercase tracking-[0.2em] text-sm md:text-base rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-95 shadow-xl"
                     >
                         CONTACT US
                         <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </a>
+                    </Link>
 
-                    <a
-                        href="/community"
+                    <Link
+                        to="/community"
                         className="group relative w-full sm:w-auto h-[56px] md:h-16 px-10 flex items-center justify-center bg-white text-black border border-gray-300 hover:bg-gray-100 dark:bg-slate-900/40 dark:border-white/10 dark:text-white dark:hover:bg-slate-900/60 font-bold uppercase tracking-[0.2em] text-[10px] md:text-xs rounded-xl transition-all duration-300 active:scale-95 shadow-sm"
                     >
                         JOIN OUR COMMUNITY
-                    </a>
+                    </Link>
                 </motion.div>
             </div>
 

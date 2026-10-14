@@ -4,10 +4,10 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import BlogCard from '../blog/BlogCard';
-import { TEST_POSTS } from '../../pages/ConcertZoneBlog';
+import { TEST_POSTS } from '../../data/testPosts';
 
 const FeaturedBlog = () => {
-    const { posts } = useStore();
+    const posts = useStore(s => s.posts);
     const [isPaused, setIsPaused] = useState(false);
     const carouselRef = useRef(null);
 
@@ -35,7 +35,7 @@ const FeaturedBlog = () => {
         if (isPaused || featuredPosts.length <= 1) return;
 
         const interval = setInterval(() => {
-            if (window.innerWidth >= 768) return;
+            if (document.hidden || window.innerWidth >= 768) return;
 
             if (carouselRef.current) {
                 const el = carouselRef.current;

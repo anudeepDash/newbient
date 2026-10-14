@@ -61,6 +61,7 @@ const Services = () => {
         if (isPaused || services.length <= 1) return;
 
         const interval = setInterval(() => {
+            if (document.hidden) return;
             if (window.innerWidth >= 768) return; // Only auto-scroll on mobile grid collapse
 
             if (carouselRef.current) {

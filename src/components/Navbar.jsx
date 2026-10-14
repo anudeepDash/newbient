@@ -1,22 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Zap, Star, Megaphone, AlertTriangle, Users, LogOut, Settings, Home, Music, Image as ImageIcon, User as UserIcon, PlusCircle, LayoutGrid, Mic2, Search, ChevronRight, GraduationCap, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, normalizePhoneNumber } from '../lib/utils';
 import NotificationBell from './NotificationBell';
-import ProfilePanel from './ProfilePanel';
 import { useStore } from '../lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import logo from '../assets/logo.png';
 import logoLight from '../assets/logo_light.png';
 import newbiCreatorsLogoDark from '../assets/newbi-creators-logo.png';
 import newbiCreatorsLogoLight from '../assets/newbi-creators-logo-light.png';
+import logoWebp from '../assets/logo-200.webp';
+import logoLightWebp from '../assets/logo_light-200.webp';
+import newbiCreatorsLogoDarkWebp from '../assets/newbi-creators-logo-200.webp';
+import newbiCreatorsLogoLightWebp from '../assets/newbi-creators-logo-light-200.webp';
 import { useTheme } from '../hooks/useTheme';
 
+const ProfilePanel = lazy(() => import('./ProfilePanel'));
+
 const Navbar = () => {
-    const { maintenanceState, user, siteSettings, creators, artists, announcements, isProfilePanelOpen, dismissedAnnouncementId, dismissPinnedAnnouncement } = useStore();
+    const { maintenanceState, user, siteSettings, creators, artists, announcements, isProfilePanelOpen, dismissedAnnouncementId, dismissPinnedAnnouncement } = useStore(useShallow(s => ({
+        maintenanceState: s.maintenanceState,
+        user: s.user,
+        siteSettings: s.siteSettings,
+        creators: s.creators,
+        artists: s.artists,
+        announcements: s.announcements,
+        isProfilePanelOpen: s.isProfilePanelOpen,
+        dismissedAnnouncementId: s.dismissedAnnouncementId,
+        dismissPinnedAnnouncement: s.dismissPinnedAnnouncement
+    })));
     const pinnedAnnouncement = announcements?.find(a => a.isPinned && a.id !== dismissedAnnouncementId);
     const [isOpen, setIsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    // ProfilePanel is lazy-loaded on first open and stays mounted afterwards (keeps its exit animation/state).
+    const isProfilePanelVisible = Boolean(isProfileOpen || isProfilePanelOpen);
+    const [profilePanelMounted, setProfilePanelMounted] = useState(isProfilePanelVisible);
+    if (isProfilePanelVisible && !profilePanelMounted) setProfilePanelMounted(true);
     const location = useLocation();
     const { isDark, toggleTheme } = useTheme();
 
@@ -39,7 +59,7 @@ const Navbar = () => {
             name: 'CREATOR', 
             path: '/creator', 
             matchPaths: ['/creator', '/creator/join', '/creator-dashboard'], 
-            featureId: 'influencer', 
+            featureId: 'influencer_public', 
             icon: Zap 
         },
         { name: 'CONCERT ZONE', path: '/concertzone', featureId: 'concerts', icon: Music },
@@ -55,7 +75,7 @@ const Navbar = () => {
             name: 'Creator', 
             path: '/creator', 
             matchPaths: ['/creator', '/creator/join', '/creator-dashboard'], 
-            featureId: 'influencer', 
+            featureId: 'influencer_public', 
             icon: Zap 
         },
         { name: 'More', isMenu: true, action: () => setIsOpen(prev => !prev), icon: Menu },
@@ -152,13 +172,25 @@ const Navbar = () => {
                         <Link to={isCreatorRoute ? "/creator" : "/"} className="flex items-center gap-3 group">
                             {isCreatorRoute ? (
                                 <>
-                                    <img src={newbiCreatorsLogoDark} alt="Newbi Creators" className="h-6 w-auto hidden dark:block object-contain" />
-                                    <img src={newbiCreatorsLogoLight} alt="Newbi Creators" className="h-6 w-auto block dark:hidden object-contain" />
+                                    <picture className="contents">
+                                        <source type="image/webp" srcSet={newbiCreatorsLogoDarkWebp} />
+                                        <img src={newbiCreatorsLogoDark} width="748" height="323" alt="Newbi Creators" className="h-6 w-auto hidden dark:block object-contain" {...(isDark ? {} : { loading: 'lazy', decoding: 'async' })} />
+                                    </picture>
+                                    <picture className="contents">
+                                        <source type="image/webp" srcSet={newbiCreatorsLogoLightWebp} />
+                                        <img src={newbiCreatorsLogoLight} width="748" height="323" alt="Newbi Creators" className="h-6 w-auto block dark:hidden object-contain" {...(isDark ? { loading: 'lazy', decoding: 'async' } : {})} />
+                                    </picture>
                                 </>
                             ) : (
                                 <>
-                                    <img src={logo} alt="Newbi Entertainments" className="h-6 w-auto hidden dark:block" />
-                                    <img src={logoLight} alt="Newbi Entertainments" className="h-6 w-auto block dark:hidden" />
+                                    <picture className="contents">
+                                        <source type="image/webp" srcSet={logoWebp} />
+                                        <img src={logo} width="1024" height="382" alt="Newbi Entertainments" className="h-6 w-auto hidden dark:block" {...(isDark ? {} : { loading: 'lazy', decoding: 'async' })} />
+                                    </picture>
+                                    <picture className="contents">
+                                        <source type="image/webp" srcSet={logoLightWebp} />
+                                        <img src={logoLight} width="1024" height="386" alt="Newbi Entertainments" className="h-6 w-auto block dark:hidden" {...(isDark ? { loading: 'lazy', decoding: 'async' } : {})} />
+                                    </picture>
                                 </>
                             )}
                         </Link>
@@ -647,13 +679,17 @@ const Navbar = () => {
                     </>
                 )}
             </AnimatePresence>
-            <ProfilePanel 
-                isOpen={Boolean(isProfileOpen || isProfilePanelOpen)} 
-                onClose={() => {
-                    setIsProfileOpen(false);
-                    useStore.getState().closeProfilePanel();
-                }} 
-            />
+            {profilePanelMounted && (
+                <Suspense fallback={null}>
+                    <ProfilePanel 
+                        isOpen={isProfilePanelVisible} 
+                        onClose={() => {
+                            setIsProfileOpen(false);
+                            useStore.getState().closeProfilePanel();
+                        }} 
+                    />
+                </Suspense>
+            )}
         </>
     );
 };

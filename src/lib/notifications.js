@@ -1,5 +1,4 @@
 import { getMessagingSafe } from './firebase';
-import { getToken, onMessage } from 'firebase/messaging';
 import { useStore } from './store';
 
 // Public VAPID key for Firebase Cloud Messaging
@@ -24,6 +23,7 @@ export const requestNotificationPermission = async () => {
         }
 
         if (permission === 'granted') {
+            const { getToken } = await import('firebase/messaging');
             const token = await getToken(msg, { vapidKey: VAPID_KEY }).catch((err) => {
                 console.warn('[Notifications] Token retrieval warning:', err);
                 return null;
@@ -46,6 +46,7 @@ export const initForegroundMessaging = async () => {
         const msg = await getMessagingSafe();
         if (!msg) return;
 
+        const { onMessage } = await import('firebase/messaging');
         onMessage(msg, (payload) => {
             try {
                 // 1. Show Native Browser Notification if supported and permitted

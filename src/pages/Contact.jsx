@@ -13,8 +13,6 @@ import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { notifyAdmins } from '../lib/notificationTriggers';
-import { sendContactAutoReply } from '../lib/email';
 import { cn } from '../lib/utils';
 import { useStore } from '../lib/store';
 import useDynamicMeta from '../hooks/useDynamicMeta';
@@ -26,7 +24,7 @@ const Contact = () => {
         url: window.location.href
     });
 
-    const { siteDetails } = useStore();
+    const siteDetails = useStore(s => s.siteDetails);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -44,7 +42,8 @@ const Contact = () => {
                 status: 'new'
             });
 
-            // Notify Admins
+            // Notify Admins (loaded on demand to keep it out of the page chunk)
+            const { notifyAdmins } = await import('../lib/notificationTriggers');
             await notifyAdmins(
                 'New contact message',
                 `${formData.name} sent a message through the contact form.` ,
@@ -61,6 +60,14 @@ const Contact = () => {
             setSending(false);
         }
     };
+
+    // Site settings may be empty or hold placeholders; never render dead contact links.
+    const whatsappDigits = (siteDetails?.phone || '').replace(/[^0-9]/g, '');
+    const contactEmail = siteDetails?.email && siteDetails.email.includes('@') ? siteDetails.email : 'partnership@newbi.live';
+    const rawInstagram = (siteDetails?.instagram || '').trim();
+    const instagramUrl = /^https?:\/\//.test(rawInstagram)
+        ? rawInstagram
+        : `https://www.instagram.com/${rawInstagram && rawInstagram !== '#' ? rawInstagram.replace(/^@/, '') : 'newbi.live'}`;
 
     return (
         <div className="relative min-h-screen bg-gray-50 dark:bg-dark text-gray-900 dark:text-white pt-32 pb-32 md:pb-20 px-4 overflow-hidden w-full max-w-[100vw] transition-colors duration-300">
@@ -126,14 +133,14 @@ const Contact = () => {
                                     label="Quick Chat" 
                                     val="WHATSAPP LIVE" 
                                     revealVal={siteDetails.phone}
-                                    href={`https://wa.me/${(siteDetails.phone || '').replace(/[^0-9]/g, '')}`} 
+                                    href={whatsappDigits ? `https://wa.me/${whatsappDigits}` : undefined} 
                                     accent="neon-green"
                                 />
                                 <ContactMethod 
                                     icon={Mail} 
                                     label="Send Email" 
-                                    val={siteDetails.email} 
-                                    href={`mailto:${siteDetails.email}`} 
+                                    val={contactEmail} 
+                                    href={`mailto:${contactEmail}`} 
                                     accent="neon-blue"
                                 />
                                 <ContactMethod 
@@ -141,6 +148,7 @@ const Contact = () => {
                                     label="Social" 
                                     val="@newbi.live" 
                                     revealVal={siteDetails.instagram} 
+                                    href={instagramUrl}
                                     accent="neon-pink"
                                 />
                                 <ContactMethod 

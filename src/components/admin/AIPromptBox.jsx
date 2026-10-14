@@ -116,7 +116,7 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
         }
     };
 
-    const useSuggestion = (suggestion) => {
+    const applySuggestion = (suggestion) => {
         setPrompt(suggestion);
         setShowSuggestions(false);
         if (textareaRef.current) {
@@ -324,7 +324,7 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                                     {suggestions.filter((_, i) => (i % 3) === suggestionCategory).map((s, i) => (
                                         <button
                                             key={i}
-                                            onClick={() => useSuggestion(s)}
+                                            onClick={() => applySuggestion(s)}
                                             className="w-full flex items-start text-left px-4 py-2.5 rounded-xl text-[12px] font-medium text-zinc-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/[0.04] transition-all leading-relaxed group/s gap-3"
                                         >
                                             <span className={cn("opacity-0 group-hover/s:opacity-100 transition-opacity shrink-0", accent.text)}>→</span>

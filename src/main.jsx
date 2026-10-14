@@ -29,8 +29,10 @@ createRoot(document.getElementById('root')).render(
 )
 
 
-// Register Service Worker for Push Notifications (only on browsers supporting PushManager)
-if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
+// Register Service Worker for Push Notifications (only on browsers supporting PushManager).
+// Only when notification permission is already granted, so it doesn't compete with first load;
+// otherwise Firebase's getToken() registers the worker itself once permission is granted.
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && window.Notification.permission === 'granted') {
   window.addEventListener('load', () => {
     try {
       navigator.serviceWorker.register('/firebase-messaging-sw.js')
