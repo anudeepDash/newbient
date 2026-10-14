@@ -29,6 +29,7 @@ import BlogCard from '../components/blog/BlogCard';
 import AdSenseSlot from '../components/blog/AdSenseSlot';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { TEST_POSTS } from './ConcertZoneBlog';
+import { sanitizeHtml } from '../lib/sanitize';
 
 const CATEGORY_COLORS = {
     'Live Events': '#00ffff', // neon-blue
@@ -373,7 +374,7 @@ const BlogPostDetail = () => {
                 {/* The Narrative Hub */}
                 <div ref={contentRef} className="lg:col-span-8 xl:col-span-9">
                     <div className="article-content article-content-force-white">
-                        <div dangerouslySetInnerHTML={{ __html: post.content }} />
+                        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }} />
                     </div>
 
                     {/* Commercial Integrity: Ticketing Integration */}

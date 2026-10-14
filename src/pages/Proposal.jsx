@@ -49,6 +49,19 @@ import { getV2PaginatedPages, normalizeProposalData } from '../lib/proposalTempl
 import ProposalDocumentRenderer from '../components/ui/ProposalDocumentRenderer';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
+import { sanitizeHtml } from '../lib/sanitize';
+
+function htmlToPlainText(html) {
+    if (!html) return '';
+    if (!html.includes('<') || !html.includes('>')) return html;
+    let text = html;
+    text = text.replace(/<\/(p|div|li|h1|h2|h3|h4|h5|h6|ul|ol)>/gi, '\n');
+    text = text.replace(/<br\s*\/?>/gi, '\n');
+    text = text.replace(/<[^>]+>/g, '');
+    text = text.replace(/&nbsp;|\u00a0/g, ' ');
+    text = text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    return text;
+}
 
 const isHtmlEmpty = (html) => {
     if (!html) return true;
@@ -346,6 +359,8 @@ const Proposal = () => {
 
     const loading = localLoading;
     const proposalRef = useRef(null);
+    // Access is logged once per document per visit; the write itself re-fires the live listener.
+    const loggedAccessIdRef = useRef(null);
     const [scale, setScale] = useState(1);
     const [isExporting, setIsExporting] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
@@ -380,7 +395,7 @@ const Proposal = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const isAdmin = (safeLocalStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
+    const isAdmin = user?.role === 'super_admin' || user?.role === 'developer';
 
     const displayProposal = proposal || {
         id: "DEMO-PROP-001",
@@ -435,6 +450,8 @@ const Proposal = () => {
 
     useEffect(() => {
         if (isAdmin || !proposal) return;
+        if (loggedAccessIdRef.current === id) return;
+        loggedAccessIdRef.current = id;
 
         const fetchIpAndLog = async () => {
             let detectedIp = 'Hidden/Protected';
@@ -491,6 +508,18 @@ const Proposal = () => {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#020202] text-gray-900 dark:text-white">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-green"></div>
+            </div>
+        );
+    }
+
+    if (!proposal) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-6 text-gray-900 dark:text-white">
+                <div className="text-center space-y-4 max-w-md">
+                    <h1 className="text-2xl font-black">Proposal not found</h1>
+                    <p className="text-sm text-gray-500">This link may be wrong, or the proposal may have been removed. Please check with the person who sent it.</p>
+                    <a href="/" className="inline-block text-xs font-bold underline">Return Home</a>
+                </div>
             </div>
         );
     }
@@ -675,18 +704,6 @@ const Proposal = () => {
 
     const isHidden = (f) => (displayProposal.hiddenFields || []).includes(f);
 
-    const htmlToPlainText = (html) => {
-        if (!html) return '';
-        if (!html.includes('<') || !html.includes('>')) return html;
-        let text = html;
-        text = text.replace(/<\/(p|div|li|h1|h2|h3|h4|h5|h6|ul|ol)>/gi, '\n');
-        text = text.replace(/<br\s*\/?>/gi, '\n');
-        text = text.replace(/<[^>]+>/g, '');
-        text = text.replace(/&nbsp;|\u00a0/g, ' ');
-        text = text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-        return text;
-    };
-
     const getHtmlBlocks = (html) => {
         if (!html) return [];
         try {
@@ -804,7 +821,7 @@ const Proposal = () => {
                     : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
                 const headingTag = level === 1 ? 'h2' : level === 2 ? 'h3' : 'h4';
                 const Tag = headingTag;
-                elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: inlineFmt(headingText) }} />);
+                elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(headingText)) }} />);
             // Bullet
             } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
                 const items = [];
@@ -817,7 +834,7 @@ const Proposal = () => {
                         {items.map((item, j) => (
                             <div key={j} className="flex items-start gap-3">
                                 <span className="text-neon-green mt-[7px] text-[8px] select-none shrink-0">●</span>
-                                <span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />
+                                <span className={baseClass} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(item)) }} />
                             </div>
                         ))}
                     </div>
@@ -841,7 +858,7 @@ const Proposal = () => {
                         {items.map((item, j) => (
                             <div key={j} className="flex items-start gap-3">
                                 <span className="text-[11px] font-black text-gray-600 dark:text-gray-400 mt-0.5 w-6 shrink-0">{item.num}.</span>
-                                <span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item.text) }} />
+                                <span className={baseClass} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(item.text)) }} />
                             </div>
                         ))}
                     </div>
@@ -849,7 +866,7 @@ const Proposal = () => {
                 continue;
             // Regular paragraph
             } else if (line) {
-                elements.push(<p key={i} className={cn(baseClass, 'text-justify')} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
+                elements.push(<p key={i} className={cn(baseClass, 'text-justify')} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(line)) }} />);
             }
             i++;
         }
@@ -865,7 +882,7 @@ const Proposal = () => {
             return (
                 <div 
                     className={cn("article-content", baseClass)} 
-                    dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} 
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(processHtmlHeadings(content)) }} 
                 />
             );
         }

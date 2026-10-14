@@ -15,6 +15,11 @@ import {
     Activity
 } from 'lucide-react';
 
+
+// URL params may already be decoded; a stray '%' must not crash the page.
+const safeDecode = (value) => {
+    try { return decodeURIComponent(value); } catch { return value; }
+};
 const VerifyPayout = () => {
     const [searchParams] = useSearchParams();
 
@@ -40,7 +45,7 @@ const VerifyPayout = () => {
     }, [amt]);
 
     const verifiedDate = useMemo(() => {
-        if (dateParam) return decodeURIComponent(dateParam);
+        if (dateParam) return safeDecode(dateParam);
         return new Date().toLocaleString('en-IN', {
             dateStyle: 'medium',
             timeStyle: 'short',
@@ -183,13 +188,13 @@ const VerifyPayout = () => {
                                 <span className="text-gray-500 font-extrabold text-[8px] tracking-wider flex items-center gap-1.5">
                                     <User size={10} className="text-gray-600" /> PAYEE
                                 </span>
-                                <span className="text-[#39ff14] font-black tracking-wide truncate max-w-[170px]" title={decodeURIComponent(payee)}>{decodeURIComponent(payee)}</span>
+                                <span className="text-[#39ff14] font-black tracking-wide truncate max-w-[170px]" title={safeDecode(payee)}>{safeDecode(payee)}</span>
                             </div>
                             <div className="flex justify-between items-end pb-1 border-b border-gray-200 dark:border-white/5">
                                 <span className="text-gray-500 font-extrabold text-[8px] tracking-wider flex items-center gap-1.5">
                                     <CreditCard size={10} className="text-gray-600" /> METHOD
                                 </span>
-                                <span className="text-gray-900 dark:text-white font-bold tracking-wide truncate max-w-[170px]" title={decodeURIComponent(modeParam)}>{decodeURIComponent(modeParam)}</span>
+                                <span className="text-gray-900 dark:text-white font-bold tracking-wide truncate max-w-[170px]" title={safeDecode(modeParam)}>{safeDecode(modeParam)}</span>
                             </div>
                             <div className="flex justify-between items-end pb-1 border-b border-gray-200 dark:border-white/5">
                                 <span className="text-gray-500 font-extrabold text-[8px] tracking-wider flex items-center gap-1.5">
@@ -245,8 +250,8 @@ const VerifyPayout = () => {
                         <div className="py-4 space-y-3.5">
                             {[
                                 { title: "Secure Record Located", desc: `Matched Transaction ID ${ref}` },
-                                { title: "Beneficiary Credentials Confirmed", desc: `Payee matched to authorized account: ${decodeURIComponent(payee)}` },
-                                { title: "Settlement Confirmed", desc: `Verified payment clearance via ${decodeURIComponent(modeParam)}` },
+                                { title: "Beneficiary Credentials Confirmed", desc: `Payee matched to authorized account: ${safeDecode(payee)}` },
+                                { title: "Settlement Confirmed", desc: `Verified payment clearance via ${safeDecode(modeParam)}` },
                                 { title: "ledger fingerprint signed", desc: "Hash matched against Newbi registry nodes" }
                             ].map((step, idx) => (
                                 <motion.div 
@@ -279,7 +284,7 @@ const VerifyPayout = () => {
                             {isImageProof ? (
                                 <div className="rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 bg-white dark:bg-black/50 relative group cursor-pointer aspect-[16/9]">
                                     <img
-                                        src={decodeURIComponent(proof)}
+                                        src={safeDecode(proof)}
                                         alt="Payment proof"
                                         className="w-full h-full object-cover object-top opacity-60 group-hover:opacity-85 transition-all duration-500 group-hover:scale-105"
                                         onError={(e) => { e.target.style.display = 'none'; }}
@@ -303,7 +308,7 @@ const VerifyPayout = () => {
                             )}
 
                             <a
-                                href={decodeURIComponent(proof)}
+                                href={safeDecode(proof)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="group flex items-center justify-center gap-3 w-full h-14 rounded-2xl bg-[#00F0FF]/10 border border-[#00F0FF]/20 text-[#00F0FF] hover:bg-[#00F0FF] hover:text-black hover:shadow-[0_10px_25px_rgba(0,240,255,0.2)] transition-all font-black text-[10px] uppercase tracking-widest"

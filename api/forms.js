@@ -82,8 +82,10 @@ export default async function handler(req, res) {
         return res.status(405).json({ success: false, error: 'Method not allowed' });
     }
 
-    const { id, slug, formId } = req.query;
-    const targetId = (id || slug || formId || '').trim();
+    const { id, slug, formId } = req.query || {};
+    // Repeated query params (?id=a&id=b) arrive as arrays — take the first value as a string
+    const rawTargetId = id || slug || formId || '';
+    const targetId = String(Array.isArray(rawTargetId) ? rawTargetId[0] ?? '' : rawTargetId).trim();
 
     try {
         if (!adminDb) {
@@ -270,6 +272,6 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, message: 'Form not found' });
     } catch (err) {
         console.error('[API/FORMS] Error:', err);
-        return res.status(500).json({ success: false, error: err.message });
+        return res.status(500).json({ success: false, error: 'Internal server error' });
     }
 }

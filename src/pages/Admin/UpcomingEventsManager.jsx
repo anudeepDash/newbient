@@ -355,11 +355,11 @@ const UpcomingEventsManager = () => {
             if (editingId) {
                 await updateUpcomingEvent(editingId, eventData);
             } else {
-                await addUpcomingEvent(eventData, newEvent.alsoPostToAnnouncements);
+                const newEventId = await addUpcomingEvent(eventData, newEvent.alsoPostToAnnouncements);
                 await notifyAllUsers(
                     `New event: ${eventData.title}`,
                     `Join us on ${eventData.date} at ${eventData.location}.`,
-                    '/events',
+                    newEventId ? `/?event=${newEventId}` : '/',
                     eventData.image,
                     true // sendEmail
                 );
@@ -1607,7 +1607,7 @@ const UpcomingEventsManager = () => {
                                                     onClick={async (e) => {
                                                         e.stopPropagation();
                                                         if (window.confirm(`Resend notification for "${item.title}"?`)) {
-                                                            await notifyAllUsers(`New event: ${item.title}`, `Join us on ${item.date} at ${item.location}.`, '/events', item.image, true);
+                                                            await notifyAllUsers(`New event: ${item.title}`, `Join us on ${item.date} at ${item.location}.`, `/?event=${item.id}`, item.image, true);
                                                             useStore.getState().addToast("Notification sent.", 'success');
                                                         }
                                                     }}

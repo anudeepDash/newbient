@@ -9,6 +9,7 @@ import { notifyAllUsers } from '../../lib/notificationTriggers';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import { cn } from '../../lib/utils';
 import { extractDominantColor } from '../../lib/colorUtils';
+import { sanitizeHtml } from '../../lib/sanitize';
 
 const BlogPostEditor = () => {
     useStoreSubscription(['posts']);
@@ -802,7 +803,7 @@ const BlogPostEditor = () => {
                             <div className="p-20 pt-24 bg-[#060606]">
                                 <div 
                                     className="article-content article-content-force-white"
-                                    dangerouslySetInnerHTML={{ __html: formData.content }}
+                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.content) }}
                                 />
                             </div>
                         </div>
@@ -833,7 +834,7 @@ const BlogPostEditor = () => {
                                     </div>
                                 </div>
                                 {formData.coverImage && <img src={formData.coverImage} className="w-full rounded-3xl border border-black/10 dark:border-white/10" alt="Cover" />}
-                                <div className="prose prose-invert text-gray-600 dark:text-gray-400" dangerouslySetInnerHTML={{ __html: formData.content }} />
+                                <div className="prose prose-invert text-gray-600 dark:text-gray-400" dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.content) }} />
                             </div>
                         </motion.div>
                     )}

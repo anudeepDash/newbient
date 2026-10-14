@@ -48,6 +48,7 @@ import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import DocumentSeal from '../../components/ui/DocumentSeal';
+import { sanitizeHtml } from '../../lib/sanitize';
 
 // Markdown-like formatting toolbar for textareas
 
@@ -185,7 +186,7 @@ const InvoiceGenerator = () => {
                     : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
                 const headingTag = level === 1 ? 'h2' : level === 2 ? 'h3' : 'h4';
                 const Tag = headingTag;
-                elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: inlineFmt(headingText) }} />);
+                elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(headingText)) }} />);
             } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
                 const items = [];
                 while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) { 
@@ -197,14 +198,14 @@ const InvoiceGenerator = () => {
                         {items.map((item, j) => (
                             <div key={j} className="flex items-start gap-3">
                                 <span className="text-black mt-[8px] text-[6px] select-none shrink-0">■</span>
-                                <span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />
+                                <span className={baseClass} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(item)) }} />
                             </div>
                         ))}
                     </div>
                 );
                 continue;
             } else {
-                elements.push(<p key={i} className={cn("whitespace-pre-line leading-relaxed", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
+                elements.push(<p key={i} className={cn("whitespace-pre-line leading-relaxed", baseClass)} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(line)) }} />);
             }
             i++;
         }
@@ -219,7 +220,7 @@ const InvoiceGenerator = () => {
             return (
                 <div 
                     className={cn("article-content", baseClass)} 
-                    dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} 
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(processHtmlHeadings(content)) }} 
                 />
             );
         }
@@ -1410,13 +1411,13 @@ const InvoiceGenerator = () => {
                                         {formData.showPaymentDetails && (
                                             <div className="p-5 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
                                                 <p className="text-xs font-black text-black mb-2 border-b-2 pb-1 inline-block" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
-                                                <div className="article-content" dangerouslySetInnerHTML={{ __html: formData.paymentDetails }} />
+                                                <div className="article-content" dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.paymentDetails) }} />
                                             </div>
                                         )}
                                         {formData.showNotes && (
                                             <div className="bg-white/40 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                                                 <div className="p-3.5">
-                                                    <div className="article-content text-[10px] text-gray-700 font-bold leading-relaxed italic" dangerouslySetInnerHTML={{ __html: formData.note || 'No additional notes.' }} />
+                                                    <div className="article-content text-[10px] text-gray-700 font-bold leading-relaxed italic" dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.note || 'No additional notes.') }} />
                                                 </div>
                                             </div>
                                         )}

@@ -878,6 +878,71 @@ const sendWelcomeEmail = async (toEmail, creatorName, verificationUrl, creatorDa
 };
 
 
+import crypto from 'crypto';
+
+const ALLOWED_ORIGINS = new Set([
+    'https://newbi.live',
+    'https://www.newbi.live',
+    'https://artistant.in',
+    'https://www.artistant.in',
+]);
+
+const isAllowedOrigin = (origin = '') =>
+    ALLOWED_ORIGINS.has(origin) ||
+    /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+    /^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(origin);
+
+// Fields that only admins may set on a creator. Anything else a creator sends
+// about themselves is profile data they own.
+const PRIVILEGED_CREATOR_FIELDS = [
+    'uid', 'id', 'creatorId', 'role', 'profileStatus', 'isVerified', 'verifiedAt', 'verifiedBy',
+    'verificationToken', 'isBlocked', 'isSuspended', 'rejectionReason', 'adminNotes',
+    'approvedAt', 'approvedBy', 'requiresManualVerification', 'manualFollowerEntry',
+];
+
+const stripPrivileged = (obj = {}) => {
+    const clean = { ...obj };
+    PRIVILEGED_CREATOR_FIELDS.forEach(k => { delete clean[k]; });
+    return clean;
+};
+
+const publicCreator = (data = {}, id) => {
+    const { verificationToken, ...rest } = data;
+    return { ...rest, id };
+};
+
+// Mirrors the client's checkUserRole: an admin is anyone listed in `admins` by email.
+const isAdminCaller = async (decodedToken) => {
+    if (!decodedToken?.email || !adminDb) return false;
+    const email = decodedToken.email;
+    const candidates = Array.from(new Set([email, email.toLowerCase().trim()]));
+    for (const e of candidates) {
+        const snap = await adminDb.collection('admins').where('email', '==', e).limit(1).get();
+        if (!snap.empty) {
+            const role = snap.docs[0].data()?.role;
+            return Boolean(role) && role !== 'unauthorized';
+        }
+    }
+    return false;
+};
+
+const ownsCreatorDoc = (decodedToken, snap) => {
+    if (!decodedToken?.uid || !snap?.exists) return false;
+    return snap.id === decodedToken.uid || snap.data()?.uid === decodedToken.uid;
+};
+
+const safeEqual = (a = '', b = '') => {
+    const ba = Buffer.from(String(a));
+    const bb = Buffer.from(String(b));
+    return ba.length === bb.length && crypto.timingSafeEqual(ba, bb);
+};
+
+const ADMIN_ONLY_ACTIONS = new Set([
+    'creator-group-add', 'creator-group-update', 'creator-group-delete', 'creator-delete',
+    'creator-groups-sync', 'creator-group-bulk-add', 'creator-group-invite-sent',
+    'creator-group-bulk-invite-sent', 'whatsapp-verify',
+]);
+
 export default async function handler(req, res) {
     if (!res.status) res.status = (c) => { res.statusCode = c; return res; };
     if (!res.json) res.json = (d) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(d)); return res; };
@@ -901,12 +966,14 @@ export default async function handler(req, res) {
         }
     }
 
-    const origin = req.headers?.origin || '*';
+    const origin = req.headers?.origin || '';
     if (typeof res.setHeader === 'function') {
-        res.setHeader('Access-Control-Allow-Origin', origin);
+        if (isAllowedOrigin(origin)) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+            res.setHeader('Vary', 'Origin');
+        }
         res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
     }
 
     if (req.method === 'OPTIONS') {
@@ -931,6 +998,19 @@ export default async function handler(req, res) {
     }
 
     const action = req.query?.action || req.body?.action || 'join';
+
+    let callerIsAdmin = false;
+    if (decodedToken) {
+        try {
+            callerIsAdmin = await isAdminCaller(decodedToken);
+        } catch (e) {
+            console.warn('[API/CREATOR-JOIN] Admin lookup notice:', e.message);
+        }
+    }
+
+    if (ADMIN_ONLY_ACTIONS.has(action) && !callerIsAdmin) {
+        return res.status(decodedToken ? 403 : 401).json({ success: false, error: 'Admin access required.' });
+    }
 
     // ── ACTION: VERIFY INSTAGRAM PROFILE & FOLLOWERS ──────────────────────────
     if (action === 'verify-instagram') {
@@ -1089,11 +1169,11 @@ export default async function handler(req, res) {
 
             // If already verified
             if (data.isPhoneVerified && !data.verificationToken) {
-                return res.status(200).json({ success: true, alreadyVerified: true, creator: { ...data, id: snap.id } });
+                return res.status(200).json({ success: true, alreadyVerified: true, creator: publicCreator(data, snap.id) });
             }
 
-            // Verify token match
-            if (data.verificationToken && data.verificationToken !== verificationToken) {
+            // Verify token match. A profile with no stored token can't be verified by link.
+            if (!data.verificationToken || !safeEqual(data.verificationToken, verificationToken)) {
                 return res.status(400).json({ success: false, error: 'This verification link is invalid or expired.' });
             }
 
@@ -1106,7 +1186,10 @@ export default async function handler(req, res) {
                 isEmailVerified: true,
                 emailVerifiedAt: now,
                 verificationToken: null,
-                profileStatus: data.profileStatus === 'pending' ? 'approved' : (data.profileStatus || 'approved'),
+                // Verifying contact details never skips a pending manual follower review.
+                profileStatus: data.profileStatus === 'pending'
+                    ? (data.requiresManualVerification ? 'pending' : 'approved')
+                    : (data.profileStatus || 'approved'),
                 updatedAt: now
             };
 
@@ -1114,7 +1197,7 @@ export default async function handler(req, res) {
 
             return res.status(200).json({
                 success: true,
-                creator: { ...data, ...updates, id: snap.id }
+                creator: publicCreator({ ...data, ...updates }, snap.id)
             });
         } catch (err) {
             console.error('[API/CREATOR-JOIN] Verify error:', err);
@@ -1275,11 +1358,17 @@ export default async function handler(req, res) {
                 return res.status(404).json({ success: false, error: 'Creator profile not found.' });
             }
 
+            if (!callerIsAdmin && !ownsCreatorDoc(decodedToken, snap)) {
+                return res.status(decodedToken ? 403 : 401).json({ success: false, error: 'You can only update your own creator profile.' });
+            }
+
             const data = snap.data();
             const prevStatus = data.profileStatus;
             const now = new Date().toISOString();
+            const safeUpdates = callerIsAdmin ? { ...(updates || {}) } : stripPrivileged(updates || {});
+            delete safeUpdates.id;
             const finalUpdates = {
-                ...updates,
+                ...safeUpdates,
                 updatedAt: now
             };
 
@@ -1341,9 +1430,18 @@ export default async function handler(req, res) {
             return res.status(405).json({ success: false, error: 'Method not allowed' });
         }
         try {
-            const { campaignId, taskId, creatorUid, contentLink = '', proofUrl = '', updatedTasks } = req.body || {};
+            const { campaignId, taskId, creatorUid, contentLink = '', proofUrl = '' } = req.body || {};
             if (!campaignId || !taskId || !creatorUid) {
                 return res.status(400).json({ success: false, error: 'campaignId, taskId, and creatorUid are required' });
+            }
+            if (!decodedToken) {
+                return res.status(401).json({ success: false, error: 'Please sign in to submit tasks.' });
+            }
+            if (!callerIsAdmin && decodedToken.uid !== creatorUid) {
+                const creatorSnap = await adminDb.collection('creators').doc(String(creatorUid)).get();
+                if (!ownsCreatorDoc(decodedToken, creatorSnap)) {
+                    return res.status(403).json({ success: false, error: 'You can only submit tasks for your own profile.' });
+                }
             }
 
             const campRef = adminDb.collection('campaigns').doc(campaignId);
@@ -1353,26 +1451,26 @@ export default async function handler(req, res) {
             }
 
             const campData = campSnap.data();
-            let newTasks = updatedTasks;
-
-            if (!Array.isArray(newTasks)) {
-                newTasks = (campData.tasks || []).map(t => {
-                    if (t.id === taskId || String(t.id) === String(taskId)) {
-                        const submissions = { ...(t.submissions || {}) };
-                        submissions[creatorUid] = {
-                            status: 'submitted',
-                            contentLink: contentLink || '',
-                            proofUrl: proofUrl || '',
-                            submittedAt: new Date().toISOString(),
-                            reviewedAt: null,
-                            rejectionReason: ''
-                        };
-                        const completedBy = Array.from(new Set([...(t.completedBy || []), creatorUid]));
-                        return { ...t, submissions, completedBy };
-                    }
-                    return t;
-                });
-            }
+            // Always rebuild from the stored tasks so a submission can only touch
+            // the caller's own entry on a single task.
+            const submitterIds = Array.from(new Set([creatorUid, decodedToken.uid].filter(Boolean)));
+            const newTasks = (campData.tasks || []).map(t => {
+                if (t.id === taskId || String(t.id) === String(taskId)) {
+                    const submissions = { ...(t.submissions || {}) };
+                    const submission = {
+                        status: 'submitted',
+                        contentLink: String(contentLink || ''),
+                        proofUrl: String(proofUrl || ''),
+                        submittedAt: new Date().toISOString(),
+                        reviewedAt: null,
+                        rejectionReason: ''
+                    };
+                    submitterIds.forEach(sid => { submissions[sid] = submission; });
+                    const completedBy = Array.from(new Set([...(t.completedBy || []), ...submitterIds]));
+                    return { ...t, submissions, completedBy };
+                }
+                return t;
+            });
 
             await campRef.update({ tasks: newTasks });
             return res.status(200).json({ success: true, tasks: newTasks });
@@ -1388,11 +1486,13 @@ export default async function handler(req, res) {
             return res.status(405).json({ success: false, error: 'Method not allowed' });
         }
         try {
-            const params = req.method === 'POST' ? req.body : req.query;
-            const { uid, email, phone } = params || {};
-            const searchUid = (uid || decodedToken?.uid || '').trim();
-            const searchEmail = (email || decodedToken?.email || '').trim().toLowerCase();
-            const searchPhone = normalizePhoneNumber(phone || decodedToken?.phone_number || '');
+            if (!decodedToken) {
+                return res.status(401).json({ success: false, error: 'Please sign in to load your creator profile.' });
+            }
+            // Identity comes only from the verified token, never from params.
+            const searchUid = (decodedToken.uid || '').trim();
+            const searchEmail = decodedToken.email_verified ? (decodedToken.email || '').trim().toLowerCase() : '';
+            const searchPhone = normalizePhoneNumber(decodedToken.phone_number || '');
 
             if (!searchUid && !searchEmail && !searchPhone) {
                 return res.status(400).json({ success: false, error: 'Must provide uid, email, or phone to resolve profile.' });
@@ -1411,26 +1511,21 @@ export default async function handler(req, res) {
                 }
             }
 
-            // 2. Try by email
-            if (!foundDoc && searchEmail) {
-                const creatorsSnap = await adminDb.collection('creators').get();
-                creatorsSnap.forEach(doc => {
-                    const data = doc.data();
-                    if (!foundDoc && data.email && data.email.trim().toLowerCase() === searchEmail) {
-                        foundDoc = doc;
-                    }
-                });
-            }
-
-            // 3. Try by phone
-            if (!foundDoc && searchPhone) {
-                const creatorsSnap = await adminDb.collection('creators').get();
-                creatorsSnap.forEach(doc => {
-                    const data = doc.data();
-                    if (!foundDoc && normalizePhoneNumber(data.phone) === searchPhone) {
-                        foundDoc = doc;
-                    }
-                });
+            // 2/3. Try by verified email, then verified phone. Scan once, only if needed.
+            if (!foundDoc && (searchEmail || searchPhone)) {
+                if (searchEmail) {
+                    const emailSnap = await adminDb.collection('creators').where('email', '==', searchEmail).limit(1).get();
+                    if (!emailSnap.empty) foundDoc = emailSnap.docs[0];
+                }
+                if (!foundDoc) {
+                    const creatorsSnap = await adminDb.collection('creators').get();
+                    creatorsSnap.forEach(doc => {
+                        if (foundDoc) return;
+                        const data = doc.data();
+                        if (searchEmail && data.email && data.email.trim().toLowerCase() === searchEmail) foundDoc = doc;
+                        else if (searchPhone && normalizePhoneNumber(data.phone) === searchPhone) foundDoc = doc;
+                    });
+                }
             }
 
             if (!foundDoc) {
@@ -1450,7 +1545,7 @@ export default async function handler(req, res) {
 
             return res.status(200).json({ 
                 success: true, 
-                creator: { ...data, id: foundDoc.id } 
+                creator: publicCreator(data, foundDoc.id) 
             });
         } catch (err) {
             console.error('[API/CREATOR-JOIN] Resolve creator error:', err);
@@ -1640,7 +1735,14 @@ export default async function handler(req, res) {
         }
 
         const callerUid = decodedToken?.uid || null;
-        const targetUid = creatorData.uid || callerUid || adminDb.collection('creators').doc().id;
+        if (!callerIsAdmin && creatorData.uid && creatorData.uid !== callerUid) {
+            return res.status(403).json({ success: false, error: 'Please sign in with the account you are registering.' });
+        }
+        const targetUid = callerIsAdmin
+            ? (creatorData.uid || callerUid || adminDb.collection('creators').doc().id)
+            : (callerUid || adminDb.collection('creators').doc().id);
+        const existingSnap = await adminDb.collection('creators').doc(targetUid).get();
+        const existingData = existingSnap.exists ? existingSnap.data() : null;
 
         // 1. Phone number deduplication via targeted query
         if (normPhone) {
@@ -1741,14 +1843,14 @@ export default async function handler(req, res) {
             }
         }
 
-        const verificationToken = creatorData.verificationToken || `vt_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-        const creatorId = (creatorData.creatorId || targetUid.slice(0, 8)).toUpperCase();
+        const verificationToken = `vt_${crypto.randomBytes(24).toString('hex')}`;
+        const creatorId = ((callerIsAdmin && creatorData.creatorId) || existingData?.creatorId || targetUid.slice(0, 8)).toUpperCase();
         const now = new Date().toISOString();
 
         // Check if verified via phone auth or token email match
         const reqHost = req.headers?.host || '';
         const isLocal = reqHost.includes('localhost') || reqHost.includes('127.0.0.1');
-        const isEmailVerified = creatorData.isEmailVerified || (decodedToken?.email_verified && decodedToken?.email?.toLowerCase() === normEmail) || isLocal || false;
+        const isEmailVerified = (callerIsAdmin && creatorData.isEmailVerified) || existingData?.isEmailVerified || (decodedToken?.email_verified && decodedToken?.email?.toLowerCase() === normEmail) || isLocal || false;
         const isPhoneVerified = Boolean(creatorData.isPhoneVerified) || (Boolean(decodedToken?.phone_number) && normalizePhoneNumber(decodedToken?.phone_number) === normPhone) || isLocal;
 
         // Phone verification check removed to allow bypassing when SMS fails on Safari
@@ -1756,15 +1858,19 @@ export default async function handler(req, res) {
         // Determine auto-verification:
         // Only creators who manually entered their followers require manual verification.
         const shouldAutoVerify = !isManualFollowers;
-        const profileStatus = creatorData.profileStatus 
-            ? creatorData.profileStatus 
-            : (shouldAutoVerify ? 'approved' : 'pending');
-        const isVerified = creatorData.isVerified !== undefined 
-            ? creatorData.isVerified 
-            : shouldAutoVerify;
+        let profileStatus = shouldAutoVerify ? 'approved' : 'pending';
+        let isVerified = shouldAutoVerify;
+        if (callerIsAdmin) {
+            if (creatorData.profileStatus) profileStatus = creatorData.profileStatus;
+            if (creatorData.isVerified !== undefined) isVerified = creatorData.isVerified;
+        } else if (existingData?.profileStatus) {
+            // Re-submitting your own application never changes a decision an admin already made.
+            profileStatus = existingData.profileStatus;
+            isVerified = existingData.isVerified ?? isVerified;
+        }
 
         const finalCreator = {
-            ...creatorData,
+            ...(callerIsAdmin ? creatorData : stripPrivileged(creatorData)),
             uid: targetUid,
             creatorId,
             verificationToken,
@@ -1826,9 +1932,9 @@ export default async function handler(req, res) {
         }
 
         // Generate verification link
-        const host = req.headers.host || 'newbi.live';
-        const protocol = host.includes('localhost') ? 'http' : 'https';
-        const verificationUrl = `${protocol}://${host}/verify-creator?id=${targetUid}&token=${verificationToken}`;
+        const host = req.headers.host || '';
+        const siteOrigin = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host) ? `http://${host}` : 'https://www.newbi.live';
+        const verificationUrl = `${siteOrigin}/verify-creator?id=${encodeURIComponent(targetUid)}&token=${verificationToken}`;
 
         // Trigger WhatsApp and Email async in background
         if (finalCreator.phone) {
@@ -1845,8 +1951,8 @@ export default async function handler(req, res) {
             success: true,
             id: targetUid,
             creatorId,
-            verificationToken,
-            creator: finalCreator
+            ...(callerIsAdmin ? { verificationToken } : {}),
+            creator: publicCreator(finalCreator, targetUid)
         });
 
     } catch (err) {

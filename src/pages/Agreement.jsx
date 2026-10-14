@@ -27,6 +27,7 @@ import SharedDocumentViewer from '../components/ui/SharedDocumentViewer';
 import SignatureModal from '../components/ui/SignatureModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
+import { sanitizeHtml } from '../lib/sanitize';
 
 const inlineFmt = (t) => t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
 
@@ -73,7 +74,7 @@ const renderFormatted = (text, baseClass = 'text-[12px] font-medium text-black l
           : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
       const headingTag = level === 1 ? 'h2' : level === 2 ? 'h3' : 'h4';
       const Tag = headingTag;
-      elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: inlineFmt(headingText) }} />);
+      elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(headingText)) }} />);
     } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
       const items = [];
       while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) { items.push(lines[i].replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, '').trim()); i++; }
@@ -82,14 +83,14 @@ const renderFormatted = (text, baseClass = 'text-[12px] font-medium text-black l
           {items.map((item, j) => (
             <div key={j} className="flex items-start gap-3">
               <span className="text-black mt-[8px] text-[6px] select-none shrink-0">■</span>
-              <span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />
+              <span className={baseClass} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(item)) }} />
             </div>
           ))}
         </div>
       );
       continue;
     } else {
-      elements.push(<p key={i} className={cn(baseClass, "indent-8")} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
+      elements.push(<p key={i} className={cn(baseClass, "indent-8")} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(line)) }} />);
     }
     i++;
   }
@@ -103,7 +104,7 @@ const renderContent = (content, baseClass = 'text-[12px] font-medium text-black 
     return (
       <div 
         className={cn("article-content", baseClass)} 
-        dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} 
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(processHtmlHeadings(content)) }} 
       />
     );
   }
@@ -125,6 +126,8 @@ const Agreement = () => {
     const [scale, setScale] = useState(1);
     const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const agreementRef = useRef(null);
+    // Access is logged once per document per visit; the write itself re-fires the live listener.
+    const loggedAccessIdRef = useRef(null);
 
     useEffect(() => {
         const handleResize = () => {
@@ -163,10 +166,12 @@ const Agreement = () => {
     }, [id, agreements, user, storeLoading]);
 
     const location = useLocation();
-    const isAdmin = (safeLocalStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
+    const isAdmin = user?.role === 'super_admin' || user?.role === 'developer';
 
     useEffect(() => {
         if (isAdmin || !displayAgreement) return;
+        if (loggedAccessIdRef.current === id) return;
+        loggedAccessIdRef.current = id;
 
         const fetchIpAndLog = async () => {
             let detectedIp = 'Hidden/Protected';
@@ -215,12 +220,6 @@ const Agreement = () => {
         url: typeof window !== 'undefined' ? window.location.href : undefined
     });
 
-    if (!displayAgreement) return (
-        <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
-            <RefreshCw className="animate-spin text-[#A855F7]" size={40} />
-        </div>
-    );
-
     const [pdfBlobUrl, setPdfBlobUrl] = useState('');
 
     useEffect(() => {
@@ -260,6 +259,13 @@ const Agreement = () => {
             }
         }
     }, [displayAgreement]);
+
+    if (!displayAgreement) return (
+        <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
+            <RefreshCw className="animate-spin text-[#A855F7]" size={40} />
+        </div>
+    );
+
 
     const handleDownloadPDF = async (blobUrl) => {
         if (displayAgreement.isUploaded && displayAgreement.fileUrl) {

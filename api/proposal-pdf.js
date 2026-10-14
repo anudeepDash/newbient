@@ -12,7 +12,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { url, filename = 'Proposal.pdf', download } = req.query;
+    const { url, filename = 'Proposal.pdf', download } = req.query || {};
 
     if (!url) {
         return res.status(400).json({ error: 'Missing document url parameter' });
@@ -20,15 +20,17 @@ export default async function handler(req, res) {
 
     try {
         // Validate URL domain to prevent SSRF
-        const parsedUrl = new URL(url);
+        const parsedUrl = new URL(String(url));
         const allowedHosts = ['res.cloudinary.com', 'firebasestorage.googleapis.com', 'storage.googleapis.com'];
-        const isAllowed = allowedHosts.some(h => parsedUrl.hostname.endsWith(h));
+        // Exact host or true subdomain only (plain endsWith also matched e.g. "evilres.cloudinary.com")
+        const isAllowed = parsedUrl.protocol === 'https:' &&
+            allowedHosts.some(h => parsedUrl.hostname === h || parsedUrl.hostname.endsWith(`.${h}`));
         
         if (!isAllowed) {
             return res.status(403).json({ error: 'Untrusted document source host' });
         }
 
-        const upstreamResponse = await fetch(url);
+        const upstreamResponse = await fetch(parsedUrl.href);
         if (!upstreamResponse.ok) {
             return res.status(upstreamResponse.status).json({ 
                 error: `Upstream storage returned ${upstreamResponse.status}` 
@@ -38,7 +40,7 @@ export default async function handler(req, res) {
         const arrayBuffer = await upstreamResponse.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const safeFilename = String(filename).replace(/[^a-zA-Z0-9._-]/g, '_');
         const dispositionType = download === '1' || download === 'true' ? 'attachment' : 'inline';
 
         res.setHeader('Content-Type', 'application/pdf');

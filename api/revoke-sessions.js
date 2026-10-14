@@ -56,8 +56,9 @@ export default async function handler(req, res) {
         return res.status(429).json({ error: 'Too many requests. Please try again later.' });
     }
 
-    const { targetUid, targetEmail } = req.body;
+    const { targetUid, targetEmail } = req.body || {};
     const callerUid = decodedToken.uid;
+    const callerEmail = decodedToken.email ? decodedToken.email.toLowerCase().trim() : null;
     let uidToRevoke = targetUid;
 
     try {
@@ -67,6 +68,26 @@ export default async function handler(req, res) {
 
         const db = getFirestore();
 
+        // 0. If the request targets anyone other than the caller, verify admin clearance FIRST,
+        //    so non-admins can't use the email→uid lookup below to enumerate registered accounts.
+        //    (Matches the client: admin = token email in `admins`. Firebase custom claims would be stronger.)
+        let callerRole = null;
+        const targetsSomeoneElse =
+            (targetUid && targetUid !== callerUid) ||
+            (targetEmail && String(targetEmail).toLowerCase().trim() !== callerEmail);
+        if (targetsSomeoneElse) {
+            const callerAdminSnap = callerEmail
+                ? await db.collection('admins').where('email', '==', decodedToken.email).get()
+                : null;
+            if (!callerAdminSnap || callerAdminSnap.empty) {
+                return res.status(403).json({ error: 'Forbidden: Admin clearance required.' });
+            }
+            callerRole = callerAdminSnap.docs[0].data().role;
+            if (!callerRole || callerRole === 'pending' || callerRole === 'unauthorized') {
+                return res.status(403).json({ error: 'Forbidden: Pending or unauthorized admin.' });
+            }
+        }
+
         // 1. Resolve UID if targetEmail is passed and targetUid is missing/invalid
         if (targetEmail && (!uidToRevoke || uidToRevoke.length < 20 || uidToRevoke === targetEmail)) {
             try {
@@ -74,7 +95,7 @@ export default async function handler(req, res) {
                 uidToRevoke = userRecord.uid;
             } catch (err) {
                 console.error(`[REVOKE] User with email [REDACTED] not found in Auth:`, err);
-                return res.status(404).json({ error: `User with email ${targetEmail} not found` });
+                return res.status(404).json({ error: 'User not found' });
             }
         }
 
@@ -93,14 +114,9 @@ export default async function handler(req, res) {
 
         // 2. Perform permission checks if revoking someone else's sessions
         if (uidToRevoke !== callerUid) {
-            // Find caller's role in admins collection
-            const callerAdminSnap = await db.collection('admins').where('email', '==', decodedToken.email).get();
-            if (callerAdminSnap.empty) {
+            // Caller's admin role was verified up front (step 0)
+            if (!callerRole) {
                 return res.status(403).json({ error: 'Forbidden: Admin clearance required.' });
-            }
-            const callerRole = callerAdminSnap.docs[0].data().role;
-            if (!callerRole || callerRole === 'pending' || callerRole === 'unauthorized') {
-                return res.status(403).json({ error: 'Forbidden: Pending or unauthorized admin.' });
             }
 
             // Find target email to check if target is an admin
@@ -165,13 +181,15 @@ export default async function handler(req, res) {
                             user: smtpUser,
                             pass: smtpPass,
                         },
+                        disableFileAccess: true,
+                        disableUrlAccess: true,
                         connectionTimeout: 10000,
                         socketTimeout: 15000
                     });
 
                     const primaryGreen = '#39FF14';
                     const logoUrl = 'https://newbi.live/logo_full.png';
-                    const requestOrigin = req.headers.origin || `https://${req.headers.host}` || 'https://newbi.live';
+                    const requestOrigin = 'https://www.newbi.live';
 
                     const html = `
                         <!DOCTYPE html>

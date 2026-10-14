@@ -11,14 +11,13 @@ import Building from 'lucide-react/dist/esm/icons/building';
 import Info from 'lucide-react/dist/esm/icons/info';
 
 import { useStore } from '../lib/store';
-import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 
 const PayeeRegistration = () => {
-    useStoreSubscription(['financePayees']);
-    const { addFinancePayee, updateFinancePayee, financePayees } = useStore();
+    // Public page: never load the payee registry (bank/UPI details) into the browser.
+    const { addFinancePayee } = useStore();
     const [searchParams] = useSearchParams();
 
     // Query parameters
@@ -80,10 +79,6 @@ const PayeeRegistration = () => {
         try {
             const emailLower = email.trim().toLowerCase();
             const phoneTrimmed = phone.trim();
-            const existingPayee = financePayees.find(p => 
-                (p.email && p.email.toLowerCase() === emailLower) || 
-                (p.phone && p.phone.trim() === phoneTrimmed)
-            );
 
             const payeeData = {
                 name: name.trim(),
@@ -95,23 +90,18 @@ const PayeeRegistration = () => {
                 bankDetails: paymentMode === 'Bank Transfer' ? { bankName: bankName.trim(), accountNumber: accountNumber.trim(), ifscCode: ifscCode.trim() } : null,
                 destinationDetails,
                 notes: notes.trim(),
-                linkedGig: paramEvent ? paramEvent.trim() : (existingPayee?.linkedGig || ''),
-                status: 'Approved',
+                linkedGig: paramEvent ? paramEvent.trim() : '',
+                // Anyone can open this page, so submissions never overwrite an existing
+                // payee's payout details; the finance team reviews each one.
+                status: 'Pending Review',
+                source: 'public_registration',
             };
 
-            if (existingPayee) {
-                await updateFinancePayee(existingPayee.id, {
-                    ...payeeData,
-                    updatedAt: new Date().toISOString()
-                });
-                useStore.getState().addToast('Your payment details have been updated.', 'success');
-            } else {
-                await addFinancePayee({
-                    ...payeeData,
-                    createdAt: new Date().toISOString()
-                });
-                useStore.getState().addToast('Your payment details have been saved.', 'success');
-            }
+            await addFinancePayee({
+                ...payeeData,
+                createdAt: new Date().toISOString()
+            });
+            useStore.getState().addToast('Your payment details have been saved.', 'success');
             setIsSubmitted(true);
         } catch (err) {
             console.error(err);

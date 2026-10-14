@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { getFirestore } from 'firebase-admin/firestore';
 import { verifyToken } from './_lib/auth.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -10,11 +11,38 @@ const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API
 const OPENROUTER_API_KEY = process.env.VITE_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY;
 const PERPLEXITY_API_KEY = process.env.VITE_PERPLEXITY_API_KEY || process.env.PERPLEXITY_API_KEY;
 
-if (!GEMINI_API_KEY && !OPENROUTER_API_KEY) {
-    throw new Error('CRITICAL: Missing AI API keys. App refuses to start.');
+const MAX_PROMPT_CHARS = 100000; // systemPrompt + userPrompt
+const ADMIN_ROLES = ['super_admin', 'developer', 'founder', 'content_admin'];
+
+let ai = null;
+try {
+    ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
+} catch (e) {
+    console.error('[AI PROXY] Failed to initialise Gemini client:', e.message);
 }
 
-const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
+// AI is only used from admin pages. Same check as sync-users.js: token email in `admins`
+// or users/{uid}.role in an admin role (Firebase custom claims would be stronger).
+async function isCallerAdmin(decodedToken) {
+    try {
+        const db = getFirestore();
+        const callerEmail = decodedToken.email ? decodedToken.email.toLowerCase().trim() : null;
+        if (callerEmail) {
+            const adminSnap = await db.collection('admins').where('email', '==', callerEmail).get();
+            if (!adminSnap.empty) {
+                const role = adminSnap.docs[0].data()?.role;
+                if (role && role !== 'pending' && role !== 'unauthorized') return true;
+            }
+        }
+        if (decodedToken.uid) {
+            const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+            if (userDoc.exists && ADMIN_ROLES.includes(userDoc.data()?.role)) return true;
+        }
+    } catch (e) {
+        console.error('[AI PROXY] Admin check failed:', e.message);
+    }
+    return false;
+}
 
 // ── Dynamic Model Discovery ────────────────────────────────────────────
 // Instead of hardcoding model names that get deprecated, we query Google's
@@ -147,6 +175,11 @@ export default async function handler(req, res) {
     // ── Health Check (GET) ──────────────────────────────────────────────
     if (req.method === 'GET') {
         try {
+            // Only admins get provider/model details; everyone else gets a bare liveness response
+            const healthToken = await verifyToken(req);
+            if (!healthToken || !(await isCallerAdmin(healthToken))) {
+                return res.status(200).json({ status: 'ok' });
+            }
             const models = await discoverModels();
             return res.status(200).json({
                 status: 'ok',
@@ -173,10 +206,24 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const { systemPrompt, userPrompt, type } = req.body;
+    if (!(await isCallerAdmin(decodedToken))) {
+        return res.status(403).json({ error: 'Forbidden: Admin clearance required.' });
+    }
 
-    if (!userPrompt) {
+    if (!GEMINI_API_KEY && !OPENROUTER_API_KEY) {
+        console.error('[AI PROXY] CRITICAL: Missing AI API keys (GEMINI_API_KEY / OPENROUTER_API_KEY).');
+        return res.status(500).json({ error: 'AI service is not configured' });
+    }
+
+    const { userPrompt } = req.body || {};
+    const systemPrompt = typeof req.body?.systemPrompt === 'string' ? req.body.systemPrompt : '';
+
+    if (!userPrompt || typeof userPrompt !== 'string') {
         return res.status(400).json({ error: 'User prompt is required' });
+    }
+
+    if (systemPrompt.length + userPrompt.length > MAX_PROMPT_CHARS) {
+        return res.status(413).json({ error: 'Prompt too large' });
     }
 
     try {
@@ -298,63 +345,8 @@ export default async function handler(req, res) {
             }
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // 3. TRY AIRFORCE (FREE PROXY)
-        // ═══════════════════════════════════════════════════════════════
-        try {
-            const afRes = await fetch('https://api.airforce/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: 'gpt-4o-mini',
-                    messages: [
-                        { role: 'system', content: systemPrompt + '\n\nReturn ONLY JSON.' },
-                        { role: 'user', content: userPrompt }
-                    ]
-                })
-            });
-            if (afRes.ok) {
-                const data = await afRes.json();
-                if (data.choices?.[0]?.message?.content) {
-                    return res.status(200).json({ 
-                        content: data.choices[0].message.content, 
-                        provider: `airforce` 
-                    });
-                }
-            }
-        } catch (e) {
-            console.error('[AI PROXY] Airforce path failed:', e.message);
-        }
-
-        // ═══════════════════════════════════════════════════════════════
-        // 4. TRY POLLINATIONS (FREE KEYLESS PROXY)
-        // ═══════════════════════════════════════════════════════════════
-        try {
-            const pollRes = await fetch('https://gen.pollinations.ai/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    messages: [
-                        { role: 'system', content: systemPrompt + '\n\nIMPORTANT: Return ONLY valid JSON matching the schema.' },
-                        { role: 'user', content: userPrompt }
-                    ],
-                    model: 'openai',
-                    jsonMode: true
-                })
-            });
-            if (pollRes.ok) {
-                const pollData = await pollRes.json();
-                const content = pollData.choices?.[0]?.message?.content;
-                if (content && content.length > 20) {
-                    return res.status(200).json({ 
-                        content: content, 
-                        provider: 'pollinations' 
-                    });
-                }
-            }
-        } catch (e) {
-            console.error('[AI PROXY] Pollinations path failed:', e.message);
-        }
+        // NOTE: unauthenticated third-party fallbacks (api.airforce, pollinations) were removed —
+        // they forwarded prompt data (client/proposal details) to unknown services.
 
         // If all paths fail
         res.status(503).json({ error: 'All neural paths failed. Please try again later.' });

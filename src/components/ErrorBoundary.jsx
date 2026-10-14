@@ -11,6 +11,14 @@ class ErrorBoundary extends React.Component {
         return { hasError: true };
     }
 
+    // When used around a route, a new resetKey (the pathname) clears the error so
+    // navigating away from a broken page works without a full reload.
+    componentDidUpdate(prevProps) {
+        if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+            this.setState({ hasError: false, error: null, errorInfo: null });
+        }
+    }
+
     componentDidCatch(error, errorInfo) {
         this.setState({ error, errorInfo });
         console.error("Uncaught error:", error, errorInfo);
@@ -42,19 +50,27 @@ class ErrorBoundary extends React.Component {
     render() {
         if (this.state.hasError) {
             return (
-                <div style={{ padding: '2rem', color: 'white', background: '#111', minHeight: '100vh', fontFamily: 'monospace' }}>
-                    <h1 style={{ color: '#ff0055', fontSize: '2rem', marginBottom: '1rem' }}>Something went wrong.</h1>
-                    <details style={{ whiteSpace: 'pre-wrap' }}>
-                        <summary>Click for error details</summary>
-                        <p style={{ color: '#ffaaaa', marginTop: '1rem' }}>{this.state.error && this.state.error.toString()}</p>
-                        <p style={{ color: '#888' }}>{this.state.errorInfo && this.state.errorInfo.componentStack}</p>
-                    </details>
-                    <button
-                        onClick={() => window.location.reload()}
-                        style={{ marginTop: '2rem', padding: '0.5rem 1rem', background: '#333', color: 'white', border: 'none', cursor: 'pointer' }}
-                    >
-                        Reload Page
-                    </button>
+                <div className="min-h-[60vh] flex items-center justify-center p-6 text-gray-900 dark:text-white">
+                    <div className="text-center space-y-4 max-w-md">
+                        <h1 className="text-2xl font-black">Something went wrong on this page.</h1>
+                        <p className="text-sm text-gray-500">Please reload. If it keeps happening, let us know at support@newbi.live.</p>
+                        <div className="flex items-center justify-center gap-3">
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="px-6 py-3 bg-neon-green text-black font-black uppercase tracking-widest text-xs rounded-2xl"
+                            >
+                                Reload Page
+                            </button>
+                            <a href="/" className="px-6 py-3 text-xs font-bold underline">Return Home</a>
+                        </div>
+                        {import.meta.env.DEV && (
+                            <details className="text-left text-xs whitespace-pre-wrap">
+                                <summary>Error details</summary>
+                                <p className="text-red-400 mt-2">{this.state.error && this.state.error.toString()}</p>
+                                <p className="text-gray-500">{this.state.errorInfo && this.state.errorInfo.componentStack}</p>
+                            </details>
+                        )}
+                    </div>
                 </div>
             );
         }

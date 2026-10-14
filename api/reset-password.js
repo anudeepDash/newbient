@@ -46,9 +46,9 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { email } = req.body;
+    const { email } = req.body || {};
 
-    if (!email) {
+    if (!email || typeof email !== 'string') {
         return res.status(400).json({ error: 'Missing email' });
     }
 
@@ -63,12 +63,25 @@ export default async function handler(req, res) {
         }
 
         // 1. Generate the Firebase Password Reset Link
-        const requestOrigin = req.headers.origin || `https://${req.headers.host}` || 'https://newbi.live';
+        // Never derive the link origin from Origin/Host headers — an attacker could point the
+        // real reset email (with its oobCode) at their own domain. Only allow localhost in dev.
+        const requestHost = String(req.headers.host || '');
+        const isLocalDev = /^localhost(:\d+)?$/.test(requestHost) || /^127\.0\.0\.1(:\d+)?$/.test(requestHost);
+        const requestOrigin = isLocalDev ? `http://${requestHost}` : 'https://www.newbi.live';
         const actionCodeSettings = {
             url: `${requestOrigin}/login`,
         };
         
-        const firebaseLink = await auth.generatePasswordResetLink(email, actionCodeSettings);
+        let firebaseLink;
+        try {
+            firebaseLink = await auth.generatePasswordResetLink(email, actionCodeSettings);
+        } catch (linkError) {
+            // Respond identically whether or not the account exists (no user enumeration)
+            if (linkError?.code === 'auth/user-not-found' || linkError?.code === 'auth/email-not-found') {
+                return res.status(200).json({ success: true });
+            }
+            throw linkError;
+        }
         
         // Convert the Firebase link into a custom link pointing to our custom ActionHandler page
         const urlObj = new URL(firebaseLink);
@@ -107,6 +120,8 @@ export default async function handler(req, res) {
                 user: smtpUser,
                 pass: smtpPass,
             },
+            disableFileAccess: true,
+            disableUrlAccess: true,
             connectionTimeout: 10000,
             greetingTimeout: 5000,
             socketTimeout: 15000
@@ -198,7 +213,8 @@ export default async function handler(req, res) {
             html: html,
         });
 
-        return res.status(200).json({ success: true, messageId: info.messageId });
+        console.log(`[RESET] Reset email sent: ${info.messageId}`);
+        return res.status(200).json({ success: true });
     } catch (error) {
         const correlationId = Math.random().toString(36).substring(2, 15);
         console.error(`[RESET] Error [Correlation ID: ${correlationId}]:`, error);

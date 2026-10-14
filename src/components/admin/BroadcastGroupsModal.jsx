@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../../lib/store';
@@ -335,6 +335,7 @@ const BroadcastGroupsModal = ({ onClose, preselectedCity = 'All' }) => {
                                     <iframe
                                         title="Email Preview"
                                         srcDoc={previewHtml}
+                                        sandbox=""
                                         className="w-full h-[360px] border-none"
                                     />
                                 </div>

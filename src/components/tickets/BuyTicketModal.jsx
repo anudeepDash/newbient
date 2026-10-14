@@ -111,7 +111,7 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
             await notifyAdmins(
                 'New ticket purchase to verify',
                 `${formData.name} bought tickets for "${event.title}". Please verify the payment.`,
-                '/admin/tickets',
+                '/admin/ticketing',
                 'ticket'
             );
             setStep(4);

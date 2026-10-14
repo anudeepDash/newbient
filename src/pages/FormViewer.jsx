@@ -15,6 +15,11 @@ import { Button } from '../components/ui/Button';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 
 // Minimalist Clean Floating Form Icon Loader
+
+// URL params may already be decoded; a stray '%' must not crash the page.
+const safeDecode = (value) => {
+    try { return decodeURIComponent(value); } catch { return value; }
+};
 const FormLoadingAnimation = () => (
     <div className="flex flex-col items-center justify-center p-8 text-center select-none">
         <motion.div
@@ -78,7 +83,7 @@ const FormViewer = ({ formIdOverride }) => {
     const pathSegments = (window.location.pathname || '').split('/');
     const formsIndex = pathSegments.indexOf('forms') !== -1 ? pathSegments.indexOf('forms') : pathSegments.indexOf('form');
     const pathFormId = formsIndex !== -1 ? pathSegments[formsIndex + 1] : '';
-    const cleanTargetId = decodeURIComponent((rawTargetId || pathFormId || '').trim()).replace(/\/+$/, '');
+    const cleanTargetId = safeDecode((rawTargetId || pathFormId || '').trim()).replace(/\/+$/, '');
 
     // Initial SSR cache check
     const initialWindowData = typeof window !== 'undefined' && window.__INITIAL_FORM_DATA__ ? window.__INITIAL_FORM_DATA__ : null;
@@ -212,6 +217,8 @@ const FormViewer = ({ formIdOverride }) => {
     }, [cleanTargetId, forms, upcomingEvents, volunteerGigs, guestlists, campaigns]);
 
     // 2. Direct Multi-Tier Firestore & Backend API Query Fallback
+    // Look each form id up once; setting directForm re-runs this effect, which must not refetch.
+    const fetchedTargetRef = useRef(null);
     useEffect(() => {
         let isMounted = true;
 
@@ -220,6 +227,8 @@ const FormViewer = ({ formIdOverride }) => {
                 if (isMounted) setIsFetchingDirect(false);
                 return;
             }
+            if (fetchedTargetRef.current === cleanTargetId) return;
+            fetchedTargetRef.current = cleanTargetId;
 
             try {
                 // Tier 1: Direct Firestore Document Query on 'forms'

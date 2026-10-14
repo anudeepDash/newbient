@@ -13,6 +13,7 @@ import CompanyProfileManager from '../../components/admin/CompanyProfileManager'
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { cn } from '../../lib/utils';
+import { sanitizeHtml } from '../../lib/sanitize';
 
 const logoOptions = [
     { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
@@ -218,60 +219,6 @@ const DocumentPDFGenerator = () => {
             <div className="text-right"><p className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.2em]">Page {pageNum} of {totalPages}</p></div>
         </div>
     );
-
-    const DocumentPages = () => {
-        return paginatedPages.map((pageHtml, index) => {
-            const isFirstPage = index === 0;
-            const isLastPage = index === paginatedPages.length - 1;
-
-            return (
-                <div key={index} className="doc-page-render bg-white relative overflow-hidden shrink-0 mx-auto w-[794px] h-[1123px] flex flex-col p-[40px] md:p-[60px] shadow-2xl">
-                    {/* Background Noise */}
-                    <div className="absolute inset-0 opacity-[0.015] pointer-events-none mix-blend-multiply" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
-                    
-                    {renderHeader(isFirstPage)}
-
-                    <div className="flex-1 overflow-hidden relative flex flex-col">
-                        <div className="flex-1 flex flex-col justify-start space-y-12 py-4">
-                            {isFirstPage && formData.documentTitle && (
-                                <div className="text-center">
-                                    <h2 className="text-xl font-black uppercase tracking-widest border-b border-black pb-2 inline-block leading-none text-black">
-                                        {formData.documentTitle}
-                                    </h2>
-                                </div>
-                            )}
-
-                            <div 
-                                className="text-[13px] leading-[1.8] text-gray-800 space-y-4 text-justify px-1"
-                                dangerouslySetInnerHTML={{ __html: pageHtml }}
-                            />
-
-                            {isLastPage && (
-                                <div className="mt-16 pt-8 border-t border-gray-100 flex justify-between items-end pb-8">
-                                    <div className="space-y-2">
-                                        <div className="h-16 flex items-end">
-                                            <p className="text-lg font-signature text-black italic opacity-35">Authorized Signatory</p>
-                                        </div>
-                                        <div className="space-y-0.5">
-                                            <p className="text-[11px] font-black uppercase text-black">{formData.senderName}</p>
-                                            <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">{formData.senderDesignation}</p>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="w-20 h-20 border-2 border-dashed border-gray-200 rounded-full flex items-center justify-center text-[7px] font-black uppercase text-gray-700 dark:text-gray-300 tracking-wider select-none">
-                                            Corporate Seal
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {renderFooter(index + 1, paginatedPages.length)}
-                    </div>
-                </div>
-            );
-        });
-    };
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#0B0F17] text-gray-900 dark:text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-x-hidden flex flex-col">

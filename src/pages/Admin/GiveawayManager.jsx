@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
@@ -374,7 +375,7 @@ const GiveawayManager = () => {
                                                 await notifyAllUsers(
                                                     `New giveaway: ${giveaway.name}`,
                                                     giveaway.description,
-                                                    `/giveaways/${giveaway.slug}`,
+                                                    `/giveaway/${giveaway.slug}`,
                                                     giveaway.posterUrl
                                                 );
                                                 useStore.getState().addToast("Notification sent.", 'success');

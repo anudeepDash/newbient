@@ -1,6 +1,7 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
 import DocumentSeal from './DocumentSeal';
+import { sanitizeHtml } from '../../lib/sanitize';
 
 export default function ProposalDocumentRenderer({ 
     page, 
@@ -32,7 +33,7 @@ export default function ProposalDocumentRenderer({
                 return (
                     <div 
                         className={cn("leading-relaxed [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-bold [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4", className)}
-                        dangerouslySetInnerHTML={{ __html: doc.body.innerHTML }} 
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(doc.body.innerHTML) }} 
                     />
                 );
             } catch (e) {

@@ -393,11 +393,13 @@ export default async function handler(req, res) {
                 meta.url = `${baseUrl}/campaign/${effectiveCampaignId}`;
             }
         } else if (effectiveDocId) {
-            const snap = await adminDb.collection('gen_documents').doc(effectiveDocId).get();
-            if (snap.exists) {
+            // /doc/:id pages are served from the `documents` collection (DocumentViewer).
+            // Private documents get the generic preview so their titles don't leak.
+            const snap = await adminDb.collection('documents').doc(effectiveDocId).get();
+            if (snap.exists && snap.data()?.isPublic) {
                 const data = snap.data();
                 meta.title = `${stripHtml(data.title) || 'Official Document'} | Newbi Ent.`;
-                meta.description = `${stripHtml(data.documentType) || 'Official Document'} #${data.docNumber || effectiveDocId}. Issued by Newbi Entertainment & Marketing.`;
+                meta.description = `${stripHtml(data.description || data.category) || 'Official Document'}. Shared by Newbi Entertainment & Marketing.`;
                 meta.image = defaultOgImage;
                 meta.url = `${baseUrl}/doc/${effectiveDocId}`;
             } else {
@@ -617,7 +619,12 @@ export default async function handler(req, res) {
     // Inject dynamic Meta Tags & Initial Data into Head
     let initialScript = '';
     if (initialData) {
-        initialScript = `<script>window.__INITIAL_FORM_DATA__ = ${JSON.stringify(initialData)};</script>`;
+        // Escape '<' and line/paragraph separators so stored data containing </script> can't break out
+        const safeJson = JSON.stringify(initialData)
+            .replace(/</g, '\\u003c')
+            .replace(/\u2028/g, '\\u2028')
+            .replace(/\u2029/g, '\\u2029');
+        initialScript = `<script>window.__INITIAL_FORM_DATA__ = ${safeJson};</script>`;
     }
 
     const safeTitle = escapeHtml(meta.title);
@@ -654,9 +661,11 @@ export default async function handler(req, res) {
     html = html.replace(/<meta name="description".*?>/gi, '');
     html = html.replace(/<link rel="(icon|shortcut icon)"[^>]*>/gi, '');
     
-    html = html.replace('</head>', `${metaTags}\n</head>`);
+    // Function replacer: a string replacement would expand `$&`/`$'`/`` $` `` patterns found in stored data
+    html = html.replace('</head>', () => `${metaTags}\n</head>`);
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+    // Only link-preview crawlers reach this function (see vercel.json); deploys purge the CDN.
+    res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=86400');
     res.status(200).send(html);
 }

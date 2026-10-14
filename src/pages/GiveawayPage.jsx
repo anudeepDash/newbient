@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useStore } from '../lib/store';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
@@ -37,6 +38,7 @@ const GiveawayPage = () => {
     
     const { giveaways, giveawayEntries, enterGiveaway, updateGiveawayEntry, subscribeToGiveawayEntries, user, setAuthModal } = useStore();
     const giveaway = giveaways.find(g => g.slug === slug);
+    const giveawaysLoaded = useStore(state => Boolean(state.subscriptionsLoaded?.giveaways));
     const userEntry = giveawayEntries.find(e => e.campaignId === giveaway?.id && e.userId === user?.uid);
     const winner = giveawayEntries.find(e => e.campaignId === giveaway?.id && e.isWinner);
 
@@ -133,7 +135,7 @@ const GiveawayPage = () => {
                 if (task.type === 'instagram') updates.instagramUsername = instaUsername;
                 await updateGiveawayEntry(userEntry.id, updates);
                 setVerifyingTasks(prev => ({ ...prev, [task.id]: false }));
-                if (typeof confetti !== 'undefined') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#A855F7', '#3B82F6', '#22C55E'] });
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#A855F7', '#3B82F6', '#22C55E'] });
             }, 2000);
         }
     };
@@ -175,7 +177,12 @@ const GiveawayPage = () => {
 
     if (!giveaway) return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#020202] flex items-center justify-center font-black uppercase tracking-widest text-gray-500">
-            Loading...
+            {giveawaysLoaded ? (
+                <div className="text-center space-y-4 px-6">
+                    <p>This giveaway isn't available.</p>
+                    <Link to="/" className="inline-block text-xs text-neon-green underline">Return Home</Link>
+                </div>
+            ) : 'Loading...'}
         </div>
     );
 

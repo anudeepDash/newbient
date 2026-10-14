@@ -1,10 +1,6 @@
 import nodemailer from 'nodemailer';
 import { verifyToken } from './_lib/auth.js';
 
-if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    throw new Error('CRITICAL: Missing default SMTP credentials. App refuses to start.');
-}
-
 const rateLimitCache = new Map();
 const RATE_LIMIT_MAX_REQUESTS = 10;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
@@ -25,6 +21,32 @@ function checkRateLimit(ip) {
     
     rateLimitCache.set(ip, userRecord);
     return userRecord.count <= RATE_LIMIT_MAX_REQUESTS;
+}
+
+const MAX_RECIPIENTS = 50;
+const ALLOWED_ATTACHMENT_KEYS = ['filename', 'content', 'contentType', 'encoding', 'cid'];
+
+// Count addresses across string ("a@x, b@y") or array recipient fields
+function countRecipients(field) {
+    if (!field) return 0;
+    if (Array.isArray(field)) return field.reduce((n, f) => n + countRecipients(f), 0);
+    if (typeof field === 'string') return field.split(/[,;]/).filter(s => s.trim()).length;
+    return 1;
+}
+
+// Only allow inline content attachments — never `path`/`href` (local file read / SSRF)
+function sanitizeAttachments(attachments) {
+    if (!Array.isArray(attachments)) return [];
+    return attachments
+        .filter(a => a && typeof a === 'object')
+        .map(a => {
+            const clean = {};
+            ALLOWED_ATTACHMENT_KEYS.forEach(k => {
+                if (a[k] !== undefined) clean[k] = a[k];
+            });
+            return clean;
+        })
+        .filter(a => typeof a.content === 'string');
 }
 
 // Helper to resolve name and email from "Name <email>" or "email" formats
@@ -119,10 +141,35 @@ export default async function handler(req, res) {
         return res.status(429).json({ error: 'Too many requests. Please try again later.' });
     }
 
-    const { to, cc, bcc, subject, text, html, attachments, accountType = 'official', fromName, fromEmail } = req.body;
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.error('[MAIL] CRITICAL: Missing default SMTP credentials (SMTP_USER / SMTP_PASS).');
+        return res.status(500).json({ error: 'Mail service is not configured' });
+    }
+
+    if (!req.body || typeof req.body !== 'object') {
+        return res.status(400).json({ error: 'Invalid request body' });
+    }
+
+    const { to, cc, bcc, subject, text, html, attachments, accountType = 'official', fromName } = req.body;
+    let { fromEmail } = req.body;
 
     if (!to || !subject || (!text && !html)) {
         return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if ((text && typeof text !== 'string') || (html && typeof html !== 'string')) {
+        return res.status(400).json({ error: 'Invalid message body' });
+    }
+
+    if (countRecipients(to) + countRecipients(cc) + countRecipients(bcc) > MAX_RECIPIENTS) {
+        return res.status(400).json({ error: `Too many recipients (max ${MAX_RECIPIENTS} per request)` });
+    }
+
+    // Only allow sending as a newbi.live address; ignore anything else and fall back to the default alias
+    if (typeof fromEmail !== 'string' || !/^[a-z0-9._+-]+@newbi\.live$/i.test(fromEmail.trim())) {
+        fromEmail = null;
+    } else {
+        fromEmail = fromEmail.trim();
     }
 
     // Resolve serviceKey based on accountType or fromEmail
@@ -182,7 +229,7 @@ export default async function handler(req, res) {
             defaultEmail = 'noreply@newbi.live';
         } else {
             // Use the username prefix of custom emails as service keys for custom overrides
-            const customKeyMatch = emailLower.split('@')[0];
+            const customKeyMatch = emailLower.split('@')[0].replace(/[^a-z0-9_]/g, '_');
             serviceKey = customKeyMatch.toUpperCase();
         }
     }
@@ -193,28 +240,31 @@ export default async function handler(req, res) {
     const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
     
     if (!smtpUser || !smtpPass) {
-        throw new Error(`CRITICAL: Missing credentials for service: ${serviceKey}`);
+        console.error(`[MAIL] CRITICAL: Missing credentials for service: ${serviceKey}`);
+        return res.status(500).json({ error: 'Mail service is not configured' });
     }
 
-    const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-            user: smtpUser,
-            pass: smtpPass,
-        },
-    });
-
     try {
-        const fromAddress = `"${fromDisplayName}" <${fromEmailAddress}>`;
+        const transporter = nodemailer.createTransport({
+            host: smtpHost,
+            port: smtpPort,
+            secure: process.env.SMTP_SECURE === 'true',
+            auth: {
+                user: smtpUser,
+                pass: smtpPass,
+            },
+            // Never let message content make the server read local files or fetch URLs
+            disableFileAccess: true,
+            disableUrlAccess: true,
+        });
+
         const mailOptions = {
-            from: fromAddress,
+            from: { name: String(fromDisplayName || ''), address: fromEmailAddress },
             to,
             subject,
             text,
             html,
-            attachments: attachments || [],
+            attachments: sanitizeAttachments(attachments),
         };
 
         if (cc) {

@@ -41,7 +41,8 @@ export const getPdfPreviewImageUrl = (fileUrl, options = {}) => {
     return null;
 };
 
-export const getDocumentShareMeta = (documentData = {}, type = 'proposal') => {
+export const getDocumentShareMeta = (rawDocumentData, type = 'proposal') => {
+    const documentData = rawDocumentData || {};
     const docNumber = documentData.proposalNumber || documentData.invoiceNumber || documentData.agreementNumber || documentData.id || 'NB-DOC';
     const clientName = documentData.clientName || documentData.parties?.secondParty?.name || 'Valued Partner';
     const campaignName = documentData.campaignName || documentData.proposalName || documentData.title || '';

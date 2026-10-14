@@ -326,12 +326,12 @@ const GuestlistManager = () => {
             if (editingId) {
                 await updateGuestlist(editingId, glData);
             } else {
-                await addGuestlist(glData);
+                const newGuestlistId = await addGuestlist(glData);
                 if (window.confirm('Send notification to all users about this new guestlist?')) {
                     await notifyAllUsers(
                         `Guestlist open: ${glData.title}`,
                         `Grab your spot for ${glData.title} at ${glData.location}. Spots are limited.`,
-                        '/guestlists',
+                        newGuestlistId ? `/community?gl=${newGuestlistId}` : '/community',
                         glData.image,
                         true // sendEmail
                     );

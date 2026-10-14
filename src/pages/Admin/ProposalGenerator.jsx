@@ -81,6 +81,7 @@ import {
     V2ClosingEditor,
     ToggleSwitch
 } from '../../components/admin/V2ProposalEditorSections';
+import { sanitizeHtml } from '../../lib/sanitize';
 
 // Markdown-like formatting toolbar for textareas — defined outside to prevent remount on parent re-render
 
@@ -406,7 +407,7 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
                 const level = headingMatch[1].length;
                 const headingText = headingMatch[2];
                 const sizeClass = level === 1 ? "text-[13px] font-bold" : level === 2 ? "text-[12px] font-bold" : "text-[11px] font-semibold text-zinc-400";
-                elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-gray-900 dark:text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
+                elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-gray-900 dark:text-white")} dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatInline(headingText)) }} />);
             } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
                 const items = [];
                 while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
@@ -416,7 +417,7 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
                 elements.push(
                     <ul key={`ul-${i}`} className="list-disc ml-4 my-1.5 space-y-1 text-zinc-300">
                         {items.map((item, j) => (
-                            <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
+                            <li key={j} dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatInline(item)) }} />
                         ))}
                     </ul>
                 );
@@ -430,13 +431,13 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
                 elements.push(
                     <ol key={`ol-${i}`} className="list-decimal ml-4 my-1.5 space-y-1 text-zinc-300">
                         {items.map((item, j) => (
-                            <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
+                            <li key={j} dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatInline(item)) }} />
                         ))}
                     </ol>
                 );
                 continue;
             } else {
-                elements.push(<p key={i} className="mb-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatInline(line) }} />);
+                elements.push(<p key={i} className="mb-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatInline(line)) }} />);
             }
             i++;
         }
@@ -484,7 +485,7 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
                     : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
                 const headingTag = level === 1 ? 'h2' : level === 2 ? 'h3' : 'h4';
                 const Tag = headingTag;
-                elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: inlineFmt(headingText) }} />);
+                elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(headingText)) }} />);
             } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
                 const items = [];
                 while (i < lines.length && lines[i].trim().match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
@@ -496,7 +497,7 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
                         {items.map((item, j) => (
                             <div key={j} className="flex items-start gap-3">
                                 <span className="text-neon-green mt-[7px] text-[8px] select-none shrink-0">●</span>
-                                <span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />
+                                <span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(item)) }} />
                             </div>
                         ))}
                     </div>
@@ -519,14 +520,14 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
                         {items.map((item, j) => (
                             <div key={j} className="flex items-start gap-3">
                                 <span className="text-[11px] font-black text-gray-600 dark:text-gray-400 mt-0.5 w-6 shrink-0">{item.num}.</span>
-                                <span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item.text) }} />
+                                <span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(item.text)) }} />
                             </div>
                         ))}
                     </div>
                 );
                 continue;
             } else if (line) {
-                elements.push(<p key={i} className={cn("text-[13px] font-medium text-black leading-[1.9] text-justify", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
+                elements.push(<p key={i} className={cn("text-[13px] font-medium text-black leading-[1.9] text-justify", baseClass)} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(line)) }} />);
             }
             i++;
         }
@@ -541,7 +542,7 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
             return (
                 <div 
                     className={cn("article-content", baseClass)} 
-                    dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} 
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(processHtmlHeadings(content)) }} 
                 />
             );
         }

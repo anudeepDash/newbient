@@ -26,6 +26,7 @@ import MarkAsPaidModal from '../components/invoice/MarkAsPaidModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
 import { notifyAdmins } from '../lib/notificationTriggers';
+import { sanitizeHtml } from '../lib/sanitize';
 
 
 const Invoice = () => {
@@ -62,9 +63,11 @@ const Invoice = () => {
     }, [id, invoices, storeLoading]);
 
     const loading = localLoading;
-    const isAdmin = (safeLocalStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
+    const isAdmin = user?.role === 'super_admin' || user?.role === 'developer';
     const location = useLocation();
     const invoiceRef = useRef(null);
+    // Access is logged once per document per visit; the write itself re-fires the live listener.
+    const loggedAccessIdRef = useRef(null);
     const printFrameRef = useRef(null);
     const [scale, setScale] = React.useState(1);
     const [isExporting, setIsExporting] = React.useState(false);
@@ -130,6 +133,8 @@ const Invoice = () => {
 
     React.useEffect(() => {
         if (!invoice || isAdmin) return;
+        if (loggedAccessIdRef.current === id) return;
+        loggedAccessIdRef.current = id;
 
         const fetchIpAndLog = async () => {
             let detectedIp = 'Hidden/Protected';
@@ -183,32 +188,33 @@ const Invoice = () => {
     }, [id, isAdmin, invoice, user, location.search, logDocumentAccess]);
 
     React.useEffect(() => {
-        // Automatic Payment Verification Logic
+        // Payment gateway return. Anyone can type ?status=success into the URL, so this
+        // only flags the invoice for the finance team to verify; it never marks it Paid.
         const searchParams = new URLSearchParams(location.search);
         const paymentStatus = searchParams.get('status');
         const txid = searchParams.get('txid');
 
-        if (paymentStatus === 'success' && invoice && invoice.status !== 'Paid') {
-            const verifyAndMarkPaid = async () => {
+        if (paymentStatus === 'success' && invoice && !['Paid', 'Verification Pending'].includes(invoice.status)) {
+            const flagForVerification = async () => {
                 try {
-                    await updateInvoiceStatus(id, 'Paid');
-                    // Add a payment log
                     const logs = invoice.paymentLogs || [];
                     await useStore.getState().updateInvoice(id, {
+                        status: 'Verification Pending',
                         paymentLogs: [...logs, {
-                            type: 'PayU',
-                            transactionId: txid || 'AUTO-VERIFIED',
+                            type: 'Gateway return',
+                            transactionId: (txid || '').slice(0, 100) || 'NOT PROVIDED',
                             timestamp: new Date().toISOString(),
-                            amount: invoice.total || invoice.amount
+                            amount: invoice.total || invoice.amount,
+                            verified: false
                         }]
                     });
                 } catch (err) {
-                    console.error("Verification update failed:", err);
+                    console.error("Payment verification flag failed:", err);
                 }
             };
-            verifyAndMarkPaid();
+            flagForVerification();
         }
-    }, [id, invoice, location.search, updateInvoiceStatus]);
+    }, [id, invoice, location.search]);
 
     const isQuickUpload = invoice?.pdfUrl && (!invoice.items || invoice.items.length === 0);
 
@@ -236,6 +242,18 @@ const Invoice = () => {
         return (
             <div className="min-h-screen flex items-center justify-center text-gray-900 dark:text-white">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-blue"></div>
+            </div>
+        );
+    }
+
+    if (!invoice) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-6 text-gray-900 dark:text-white">
+                <div className="text-center space-y-4 max-w-md">
+                    <h1 className="text-2xl font-black">Invoice not found</h1>
+                    <p className="text-sm text-gray-500">This link may be wrong, or the invoice may have been removed. Please check with the person who sent it.</p>
+                    <a href="/" className="inline-block text-xs font-bold underline">Return Home</a>
+                </div>
             </div>
         );
     }
@@ -513,7 +531,7 @@ const Invoice = () => {
                     : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
                 const headingTag = level === 1 ? 'h2' : level === 2 ? 'h3' : 'h4';
                 const Tag = headingTag;
-                elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: inlineFmt(headingText) }} />);
+                elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(headingText)) }} />);
             } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
                 const items = [];
                 while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) { 
@@ -525,14 +543,14 @@ const Invoice = () => {
                         {items.map((item, j) => (
                             <div key={j} className="flex items-start gap-3">
                                 <span className="text-black mt-[8px] text-[6px] select-none shrink-0">■</span>
-                                <span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />
+                                <span className={baseClass} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(item)) }} />
                             </div>
                         ))}
                     </div>
                 );
                 continue;
             } else {
-                elements.push(<p key={i} className={cn("whitespace-pre-line leading-relaxed", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
+                elements.push(<p key={i} className={cn("whitespace-pre-line leading-relaxed", baseClass)} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(line)) }} />);
             }
             i++;
         }
@@ -547,7 +565,7 @@ const Invoice = () => {
             return (
                 <div 
                     className={cn("article-content", baseClass)} 
-                    dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} 
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(processHtmlHeadings(content)) }} 
                 />
             );
         }

@@ -2,7 +2,13 @@ import { create } from 'zustand';
 import { db, storage } from './firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail, sendCreatorApprovedEmail, sendWhatsAppVerification } from './email';
+// Email templates are large; load them only when an email is actually sent.
+const lazyEmail = (name) => async (...args) => (await import('./email'))[name](...args);
+const sendBookingConfirmation = lazyEmail('sendBookingConfirmation');
+const sendCreatorWelcomeEmail = lazyEmail('sendCreatorWelcomeEmail');
+const sendNewCampaignNotificationEmail = lazyEmail('sendNewCampaignNotificationEmail');
+const sendCreatorApprovedEmail = lazyEmail('sendCreatorApprovedEmail');
+const sendWhatsAppVerification = lazyEmail('sendWhatsAppVerification');
 import { normalizePhoneNumber } from './utils';
 import { getPublicSiteUrl } from './siteUrl';
 import { extractSocialUsername, hasDisallowedLink } from './socialUtils';
@@ -213,6 +219,19 @@ const notifyMatchingCreatorsOfCampaign = async (campaignData, creatorsList) => {
 const initialUser = getCachedSession();
 
 const activeListeners = {};
+
+// JSON headers plus the signed-in user's ID token, for API routes that check who is calling.
+const authJsonHeaders = async () => {
+    const headers = { 'Content-Type': 'application/json' };
+    try {
+        const { auth } = await import('./firebase');
+        const token = await auth?.currentUser?.getIdToken();
+        if (token) headers.Authorization = `Bearer ${token}`;
+    } catch (e) {
+        console.warn('[store] Could not attach auth token:', e?.message);
+    }
+    return headers;
+};
 
 export const useStore = create((set, get) => ({
     // ... existing state ...
@@ -700,7 +719,8 @@ export const useStore = create((set, get) => ({
     // Real-time Subscription Init
     // Reference-counted subscription helper
     subscribeToKey: (stateKey, colName, sortFn = null) => {
-        if (!activeListeners[stateKey]) {
+        // A listener that errored (e.g. permission denied before sign-in) is dead; reopen it.
+        if (!activeListeners[stateKey] || activeListeners[stateKey].failed) {
             console.log(`[Store] Opening Firestore listener for: ${stateKey} (${colName})`);
             const q = query(collection(db, colName));
             const unsub = onSnapshot(q, (snapshot) => {
@@ -714,6 +734,7 @@ export const useStore = create((set, get) => ({
                 }));
             }, async (error) => {
                 console.error(`Error fetching ${stateKey} (${colName}):`, error);
+                if (activeListeners[stateKey]) activeListeners[stateKey].failed = true;
                 set((state) => ({
                     subscriptionsLoaded: { ...(state.subscriptionsLoaded || {}), [stateKey]: true }
                 }));
@@ -748,7 +769,9 @@ export const useStore = create((set, get) => ({
                     }
                 }
             });
-            activeListeners[stateKey] = { unsub, count: 1, timeoutId: null };
+            const previous = activeListeners[stateKey];
+            if (previous?.timeoutId) clearTimeout(previous.timeoutId);
+            activeListeners[stateKey] = { unsub, count: (previous?.count || 0) + 1, timeoutId: null };
         } else {
             if (activeListeners[stateKey].timeoutId) {
                 console.log(`[Store] Cancelling pending teardown timer for: ${stateKey}`);
@@ -995,14 +1018,22 @@ export const useStore = create((set, get) => ({
         // Announcements
         const unsubAnnouncements = get().subscribeToAnnouncements();
 
-        // Check loaded state when announcements list updates
-        const unsubAnnouncementsCheck = onSnapshot(query(collection(db, 'announcements')), () => {
+        // Mark announcements loaded off the listener above instead of opening a second one
+        const markAnnouncementsLoaded = () => {
             loadedKeys.add('announcements');
             if (criticalKeys.every(key => loadedKeys.has(key))) set({ loading: false });
-        }, () => {
-            loadedKeys.add('announcements');
-            if (criticalKeys.every(key => loadedKeys.has(key))) set({ loading: false });
-        });
+        };
+        let unsubAnnouncementsCheck = () => {};
+        if (get().subscriptionsLoaded?.announcements) {
+            markAnnouncementsLoaded();
+        } else {
+            unsubAnnouncementsCheck = useStore.subscribe((state) => {
+                if (state.subscriptionsLoaded?.announcements) {
+                    unsubAnnouncementsCheck();
+                    markAnnouncementsLoaded();
+                }
+            });
+        }
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
@@ -1034,13 +1065,6 @@ export const useStore = create((set, get) => ({
             }
         }, (error) => console.error("Error fetching payment details:", error));
         
-        // AI Config Subscription
-        const unsubAI = onSnapshot(doc(db, 'site_settings', 'ai_config'), (docSnap) => {
-            if (docSnap.exists()) {
-                set({ aiConfig: docSnap.data() });
-            }
-        }, (error) => console.error("Error fetching AI config:", error));
-
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const maintenanceDocId = isLocal ? 'maintenance_local' : 'maintenance';
 
@@ -1069,15 +1093,15 @@ export const useStore = create((set, get) => ({
             }
         }, (error) => console.error(`Error fetching maintenance state (${maintenanceDocId}):`, error));
 
-        // Dashboard Widget Config Subscription
-        const unsubDashConfig = onSnapshot(doc(db, 'app_state', 'dashboard_config'), (docSnap) => {
+        // Dashboard Widget Config Subscription (admin dashboard only)
+        const unsubDashConfig = isAdmin ? onSnapshot(doc(db, 'app_state', 'dashboard_config'), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 if (Array.isArray(data.widgets) && data.widgets.length === 4) {
                     set({ dashboardWidgets: data.widgets });
                 }
             }
-        }, (error) => console.error('Error fetching dashboard config:', error));
+        }, (error) => console.error('Error fetching dashboard config:', error)) : () => {};
 
         return () => {
             clearTimeout(loadingTimeout);
@@ -1087,7 +1111,6 @@ export const useStore = create((set, get) => ({
             unsub10();
             unsub11();
             unsub12();
-            unsubAI();
             unsubDashConfig();
         };
     },
@@ -1179,21 +1202,36 @@ export const useStore = create((set, get) => ({
 
     // Notifications Subscription
     subscribeToNotifications: (uid) => {
-        const q = query(
-            collection(db, 'notifications'), 
-            orderBy('createdAt', 'desc'),
-            limit(50)
-        );
-
-        return onSnapshot(q, (snapshot) => {
+        const apply = (snapshot) => {
             const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-            
             // Filter: Target UID, or global (userId: null)
             const filtered = data.filter(n => !n.userId || n.userId === uid);
             const unreadCount = filtered.filter(n => !n.isRead).length;
-            
             set({ notifications: filtered, unreadNotificationsCount: unreadCount });
-        }, (error) => console.error("Error fetching notifications:", error));
+        };
+
+        // Only fetch this user's notifications plus broadcasts. That query needs a composite
+        // index (notifications: userId ASC, createdAt DESC); until it exists, fall back to the
+        // broad query so the bell keeps working.
+        const precise = query(
+            collection(db, 'notifications'),
+            where('userId', 'in', uid ? [uid, null] : [null]),
+            orderBy('createdAt', 'desc'),
+            limit(50)
+        );
+        let unsub = onSnapshot(precise, apply, (error) => {
+            if (error?.code !== 'failed-precondition') {
+                console.error("Error fetching notifications:", error);
+                return;
+            }
+            console.warn('[store] notifications index missing; using fallback query');
+            unsub = onSnapshot(
+                query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), limit(50)),
+                apply,
+                (err) => console.error("Error fetching notifications:", err)
+            );
+        });
+        return () => unsub();
     },
 
     // --- Actions (Write to DB) ---
@@ -1591,7 +1629,7 @@ export const useStore = create((set, get) => ({
         try {
             await fetch('/api/creator-join?action=creator-group-add', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await authJsonHeaders(),
                 body: JSON.stringify(newGroup)
             });
         } catch (apiErr) {
@@ -1630,7 +1668,7 @@ export const useStore = create((set, get) => ({
         try {
             await fetch('/api/creator-join?action=creator-group-update', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await authJsonHeaders(),
                 body: JSON.stringify({ id, updates })
             });
         } catch (e) {}
@@ -1662,7 +1700,7 @@ export const useStore = create((set, get) => ({
         try {
             await fetch('/api/creator-join?action=creator-group-delete', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await authJsonHeaders(),
                 body: JSON.stringify({ id })
             });
         } catch (e) {}
@@ -1671,7 +1709,7 @@ export const useStore = create((set, get) => ({
         try {
             const res = await fetch('/api/creator-join?action=creator-groups-sync', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await authJsonHeaders(),
                 body: JSON.stringify({ groups: DEFAULT_CREATOR_GROUPS })
             });
             if (!res.ok) {
@@ -1761,7 +1799,7 @@ export const useStore = create((set, get) => ({
         try {
             const res = await fetch('/api/creator-join?action=creator-group-bulk-invite-sent', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await authJsonHeaders(),
                 body: JSON.stringify({ creatorIds, channel })
             });
             if (res.ok) {
@@ -1823,7 +1861,7 @@ export const useStore = create((set, get) => ({
         try {
             const res = await fetch('/api/creator-join?action=creator-group-bulk-add', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await authJsonHeaders(),
                 body: JSON.stringify({ city, creatorIds })
             });
             if (res.ok) {
@@ -2149,17 +2187,6 @@ export const useStore = create((set, get) => ({
 
         await setDoc(docRef, processed);
         return proposalId;
-    },
-    logDocumentAccess: async (type, id, metadata) => {
-        const col = type === 'proposal' ? 'proposals' : 'agreements';
-        const docRef = doc(db, col, id);
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-            const logs = snap.data().accessLogs || [];
-            // Keep only last 50 logs to prevent doc bloat
-            const updatedLogs = [{ ...metadata, timestamp: new Date().toISOString() }, ...logs].slice(0, 50);
-            await updateDoc(docRef, { accessLogs: updatedLogs });
-        }
     },
     updateProposal: async (id, updates) => {
         const deepClean = (obj) => {
@@ -3108,7 +3135,7 @@ export const useStore = create((set, get) => ({
                 if (searchEmail) params.append('email', searchEmail);
                 if (searchPhone) params.append('phone', searchPhone);
 
-                const res = await fetch(`/api/creator-join?${params.toString()}`);
+                const res = await fetch(`/api/creator-join?${params.toString()}`, { headers: await authJsonHeaders() });
                 const data = await res.json();
                 if (data.success && data.creator) {
                     foundProfile = data.creator;
@@ -3225,7 +3252,7 @@ export const useStore = create((set, get) => ({
             try {
                 const res = await fetch('/api/creator-join?action=creator-update', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await authJsonHeaders(),
                     body: JSON.stringify({ id: docId, uid, updates: sanitizedUpdates })
                 });
                 if (res.ok) {
@@ -3284,7 +3311,7 @@ export const useStore = create((set, get) => ({
             try {
                 const res = await fetch('/api/creator-join?action=creator-delete', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await authJsonHeaders(),
                     body: JSON.stringify({ id: docId, uid })
                 });
                 if (!res.ok) {
@@ -3542,14 +3569,13 @@ export const useStore = create((set, get) => ({
             try {
                 const res = await fetch('/api/creator-join?action=campaign-task-submit', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await authJsonHeaders(),
                     body: JSON.stringify({
                         campaignId,
                         taskId,
                         creatorUid,
                         contentLink,
-                        proofUrl,
-                        updatedTasks
+                        proofUrl
                     })
                 });
                 if (res.ok) {
@@ -3786,7 +3812,7 @@ export const useStore = create((set, get) => ({
                 console.warn('[store] Direct bulkUpdateCreatorStatus failed, falling back to server API:', fsErr.message);
                 await fetch('/api/creator-join?action=creator-update', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await authJsonHeaders(),
                     body: JSON.stringify({ id: docId, uid, updates: { profileStatus: status } })
                 }).catch(err => console.error('[store] Server fallback for bulkUpdateCreatorStatus error:', err));
             }
@@ -3819,7 +3845,7 @@ export const useStore = create((set, get) => ({
                         console.warn('[store] Direct bulkShortlistCreators failed, falling back to server API:', fsErr?.message);
                         await fetch('/api/creator-join?action=creator-update', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: await authJsonHeaders(),
                             body: JSON.stringify({ id: docId, uid: creator.uid || uid, updates: { shortlistedCampaigns: [...shortlisted, campaignId] } })
                         }).catch(err => console.error('[store] API fallback error:', err));
                     }
@@ -3834,7 +3860,7 @@ export const useStore = create((set, get) => ({
                         console.warn('[store] Direct bulkShortlistCreators failed, falling back to server API:', fsErr?.message);
                         await fetch('/api/creator-join?action=creator-update', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: await authJsonHeaders(),
                             body: JSON.stringify({ id: docId, uid: creator.uid || uid, updates: { shortlistedCampaigns: shortlisted.filter(id => id !== campaignId) } })
                         }).catch(err => console.error('[store] API fallback error:', err));
                     }
@@ -3878,7 +3904,7 @@ export const useStore = create((set, get) => ({
             console.warn('[store] Direct toggleShortlistStatus failed, falling back to server API:', fsErr?.message);
             await fetch('/api/creator-join?action=creator-update', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await authJsonHeaders(),
                 body: JSON.stringify({ id: docId, uid: creator.uid || creatorUid, updates: { shortlistedCampaigns: nextShortlisted } })
             }).catch(err => console.error('[store] API fallback error:', err));
         }

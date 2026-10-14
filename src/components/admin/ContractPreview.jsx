@@ -1,6 +1,7 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
 import DocumentSeal from '../ui/DocumentSeal';
+import { sanitizeHtml } from '../../lib/sanitize';
 
 const inlineFmt = (t) => t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
 
@@ -21,7 +22,7 @@ const processHtmlHeadings = (html) => {
 const renderFormatted = (text, baseClass = 'text-[12px] font-serif text-black leading-relaxed text-justify') => {
   if (!text) return null;
   if (text.includes('<') && (text.includes('>') || text.includes('</'))) {
-    return <div className={cn("article-content", baseClass)} dangerouslySetInnerHTML={{ __html: processHtmlHeadings(text) }} />;
+    return <div className={cn("article-content", baseClass)} dangerouslySetInnerHTML={{ __html: sanitizeHtml(processHtmlHeadings(text)) }} />;
   }
   
   const lines = text.split('\n');
@@ -51,7 +52,7 @@ const renderFormatted = (text, baseClass = 'text-[12px] font-serif text-black le
           : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
       const headingTag = level === 1 ? 'h2' : level === 2 ? 'h3' : 'h4';
       const Tag = headingTag;
-      elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: inlineFmt(headingText) }} />);
+      elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(headingText)) }} />);
     } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
       const items = [];
       while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) { items.push(lines[i].replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, '').trim()); i++; }
@@ -60,14 +61,14 @@ const renderFormatted = (text, baseClass = 'text-[12px] font-serif text-black le
           {items.map((item, j) => (
             <div key={j} className="flex items-start gap-3">
               <span className="text-black mt-[8px] text-[6px] select-none shrink-0">■</span>
-              <span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />
+              <span className={baseClass} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(item)) }} />
             </div>
           ))}
         </div>
       );
       continue;
     } else {
-      elements.push(<p key={i} className={cn(baseClass, "mb-2")} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
+      elements.push(<p key={i} className={cn(baseClass, "mb-2")} dangerouslySetInnerHTML={{ __html: sanitizeHtml(inlineFmt(line)) }} />);
     }
     i++;
   }

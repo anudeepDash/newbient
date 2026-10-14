@@ -21,6 +21,7 @@ import TaskActionLinks from './TaskActionLinks';
 import { linkifyContent, extractTaskActionLinks, cleanTaskDescription, getTaskGoogleFormUrl } from '../../lib/taskLinks';
 import { buildCampaignUrl } from '../../lib/campaignLinks';
 import { copyToClipboard } from '../../lib/clipboard';
+import { sanitizeHtml } from '../../lib/sanitize';
 
 const POPULAR_NICHES = [
     'Fashion & Style',
@@ -71,7 +72,7 @@ const FormattedTaskDescription = ({ description, actionLinks = [] }) => {
     return (
         <div
             className="campaign-briefing-content text-xs sm:text-[13px] text-gray-700 dark:text-zinc-300 leading-relaxed break-words font-normal mb-1.5"
-            dangerouslySetInnerHTML={{ __html: linkified }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(linkified) }}
         />
     );
 };
@@ -951,7 +952,7 @@ const CampaignDetailModal = ({
                                 </div>
                                 <div
                                     className="campaign-briefing-content text-[13px] sm:text-[14px] leading-relaxed text-gray-700 dark:text-zinc-300 font-normal"
-                                    dangerouslySetInnerHTML={{ __html: linkifyContent(campaign.description || 'No briefing provided.') }}
+                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(linkifyContent(campaign.description || 'No briefing provided.')) }}
                                 />
                             </div>
                         </section>

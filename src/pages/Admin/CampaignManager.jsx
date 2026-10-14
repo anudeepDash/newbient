@@ -85,6 +85,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import CampaignList from '../../components/admin/creatorPortal/CampaignList';
 import { buildCampaignUrl, creatorCampaignPath, findCampaignById } from '../../lib/campaignLinks';
 import { copyToClipboard } from '../../lib/clipboard';
+import { sanitizeHtml } from '../../lib/sanitize';
 
 const TASK_TYPES = [
     { value: 'content_post', label: 'Content Post', icon: Camera },
@@ -1596,7 +1597,7 @@ const CampaignDetailView = ({
                         <div className={cn(
                             "text-gray-700 dark:text-gray-300 text-sm font-medium leading-relaxed prose prose-invert max-w-none transition-all duration-300",
                             !isDescriptionExpanded && "line-clamp-3"
-                        )} dangerouslySetInnerHTML={{ __html: campaign.description }} />
+                        )} dangerouslySetInnerHTML={{ __html: sanitizeHtml(campaign.description) }} />
                         <button 
                             type="button"
                             onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
@@ -2112,7 +2113,7 @@ const CampaignDetailView = ({
                                             {task.description && (
                                                 <div 
                                                     className="text-gray-700 dark:text-gray-300 text-sm font-medium leading-relaxed prose prose-invert max-w-none bg-black/[0.02] dark:bg-black/30 p-5 rounded-2xl border border-black/[0.06] dark:border-white/[0.06]" 
-                                                    dangerouslySetInnerHTML={{ __html: task.description }} 
+                                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(task.description) }} 
                                                 />
                                             )}
 

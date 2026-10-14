@@ -541,7 +541,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                                             
                                                             <div className="grid grid-cols-2 gap-2">
                                                                 <Button 
-                                                                    onClick={() => { window.location.href = '/account'; }} 
+                                                                    onClick={() => { onClose?.(); useStore.getState().openProfilePanel('overview'); }} 
                                                                     variant="outline"
                                                                     className="h-12 border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-black uppercase tracking-[0.2em] text-[8px] rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2"
                                                                 >

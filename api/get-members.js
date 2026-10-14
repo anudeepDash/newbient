@@ -7,6 +7,33 @@ const CORS_HEADERS = {
     'Access-Control-Allow-Credentials': 'true',
 };
 
+const ADMIN_ROLES = ['super_admin', 'developer', 'founder', 'content_admin'];
+const MAX_PAGE_SIZE = 500;
+
+// Same admin check as sync-users.js: admins collection by caller email, or users/{uid}.role.
+// (Firebase custom claims would be a stronger signal than an email match.)
+async function isCallerAdmin(db, decodedToken) {
+    const callerEmail = decodedToken.email ? decodedToken.email.toLowerCase().trim() : null;
+    if (callerEmail) {
+        const adminSnap = await db.collection('admins').where('email', '==', callerEmail).get();
+        if (!adminSnap.empty) {
+            const role = adminSnap.docs[0].data()?.role;
+            if (role && role !== 'pending' && role !== 'unauthorized') return true;
+        }
+    }
+    if (decodedToken.uid) {
+        const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+        if (userDoc.exists && ADMIN_ROLES.includes(userDoc.data()?.role)) return true;
+    }
+    return false;
+}
+
+function clampPageSize(value) {
+    const n = parseInt(value, 10);
+    if (!Number.isFinite(n) || n < 1) return 24;
+    return Math.min(n, MAX_PAGE_SIZE);
+}
+
 const allowedOrigins = [
     'https://www.newbi.live',
     'https://newbi.live',
@@ -47,7 +74,18 @@ export default async function handler(req, res) {
 
     try {
         const db = getFirestore();
-        const { pageSize = 24, startAfterDocId = null, countOnly = false } = body || {};
+        if (!(await isCallerAdmin(db, decodedToken))) {
+            return res.status(403).json({ error: 'Forbidden: Admin clearance required.' });
+        }
+    } catch (authzError) {
+        console.error('[get-members] Admin check failed:', authzError);
+        return res.status(500).json({ error: 'Failed to fetch members' });
+    }
+
+    try {
+        const db = getFirestore();
+        const { startAfterDocId = null, countOnly = false } = body || {};
+        const pageSize = clampPageSize(body?.pageSize);
 
         // Count-only mode — return total authenticated users
         if (countOnly) {
@@ -88,7 +126,8 @@ export default async function handler(req, res) {
         // Fallback: if orderBy createdAt fails (missing index or field), retry without ordering
         try {
             const db = getFirestore();
-            const { pageSize = 24, startAfterDocId = null, countOnly = false } = body || {};
+            const { startAfterDocId = null, countOnly = false } = body || {};
+            const pageSize = clampPageSize(body?.pageSize);
 
             if (countOnly) {
                 const snap = await db.collection('users').get();
@@ -105,7 +144,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, data, hasMore: snapshot.docs.length === pageSize, lastDocId: snapshot.docs[snapshot.docs.length - 1]?.id || null });
         } catch (fallbackError) {
             console.error('[get-members] Fallback also failed:', fallbackError);
-            return res.status(500).json({ error: 'Failed to fetch members', details: error.message });
+            return res.status(500).json({ error: 'Failed to fetch members' });
         }
     }
 }

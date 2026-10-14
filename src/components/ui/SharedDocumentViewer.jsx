@@ -20,6 +20,7 @@ import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import X from 'lucide-react/dist/esm/icons/x';
 import PdfDocumentViewer from './PdfDocumentViewer';
 import DocumentShareModal from './DocumentShareModal';
+import { sanitizeHtml } from '../../lib/sanitize';
 
 // Safely render content that might be HTML (e.g. from rich text editor) or plain text
 const renderSafeContent = (rawText) => {
@@ -38,7 +39,7 @@ const renderSafeContent = (rawText) => {
             return (
                 <div 
                     className="leading-relaxed [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-bold [&_strong]:text-gray-900 dark:[&_strong]:text-white [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_a]:underline"
-                    dangerouslySetInnerHTML={{ __html: cleanHtml }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(cleanHtml) }}
                 />
             );
         } catch (e) {

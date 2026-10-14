@@ -49,7 +49,7 @@ export default async function handler(req, res) {
 
         const db = getFirestore();
 
-        // Check if caller has admin permissions
+        // Check if caller has admin permissions (token email in `admins`, mirroring the client; custom claims would be stronger)
         let isAuthorized = false;
         const callerEmail = decodedToken.email ? decodedToken.email.toLowerCase().trim() : null;
         if (callerEmail) {
@@ -143,7 +143,7 @@ export default async function handler(req, res) {
     } catch (error) {
         console.error('[SYNC-USERS] Synchronization error:', error);
         return res.status(500).json({
-            error: error.message || 'Internal server error during user synchronization.'
+            error: 'Internal server error during user synchronization.'
         });
     }
 }

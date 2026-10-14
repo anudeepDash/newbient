@@ -540,7 +540,7 @@ const AnnouncementsManager = () => {
                                                                         body: item.content,
                                                                         heroImage: item.image || '',
                                                                         ctaText: item.buttonText || 'READ MORE',
-                                                                        ctaUrl: item.link || `${window.location.origin}/announcements`
+                                                                        ctaUrl: item.link || `${window.location.origin}/`
                                                                     });
                                                                     window.location.href = `/admin/mailing?${params.toString()}`;
                                                                 }}
@@ -552,7 +552,7 @@ const AnnouncementsManager = () => {
                                                             <button
                                                                 onClick={async () => {
                                                                     if (window.confirm(`Resend notification for "${item.title}"?`)) {
-                                                                        await notifyAllUsers(item.title, item.content, item.link || `/announcements`, item.image);
+                                                                        await notifyAllUsers(item.title, item.content, item.link || '/', item.image);
                                                                         useStore.getState().addToast("Notification sent to all users.", 'success');
                                                                     }
                                                                 }}

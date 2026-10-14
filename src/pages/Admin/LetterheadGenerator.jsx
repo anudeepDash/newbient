@@ -16,6 +16,7 @@ import {
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import { useStore } from '../../lib/store';
 import { cn } from '../../lib/utils';
+import { sanitizeHtml } from '../../lib/sanitize';
 
 const templates = [
     {
@@ -314,7 +315,7 @@ const LetterheadGenerator = () => {
                             {/* Main Document Body */}
                             <div 
                                 className="text-[13px] leading-[1.8] text-gray-800 space-y-4 text-justify px-1"
-                                dangerouslySetInnerHTML={{ __html: content }}
+                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
                             />
 
                             {/* Signatory Seal and Sign block */}

@@ -1,61 +1,118 @@
 {
     "functions": {
         "api/og.js": {
-            "includeFiles": "dist/**"
-        },
-        "api/forms.js": {
-            "includeFiles": "dist/**"
+            "includeFiles": "dist/index.html"
         }
     },
     "redirects": [
         {
             "source": "/artistant",
-            "has": [{ "type": "host", "value": "newbi.live" }],
+            "has": [
+                {
+                    "type": "host",
+                    "value": "newbi.live"
+                }
+            ],
             "destination": "https://artistant.in",
             "permanent": false
         },
         {
             "source": "/artistant",
-            "has": [{ "type": "host", "value": "www.newbi.live" }],
+            "has": [
+                {
+                    "type": "host",
+                    "value": "www.newbi.live"
+                }
+            ],
             "destination": "https://artistant.in",
             "permanent": false
         },
         {
             "source": "/admin",
-            "has": [{ "type": "host", "value": "artistant.in" }],
+            "has": [
+                {
+                    "type": "host",
+                    "value": "artistant.in"
+                }
+            ],
             "destination": "/",
             "permanent": false
         },
         {
             "source": "/admin",
-            "has": [{ "type": "host", "value": "www.artistant.in" }],
+            "has": [
+                {
+                    "type": "host",
+                    "value": "www.artistant.in"
+                }
+            ],
             "destination": "/",
             "permanent": false
         },
         {
             "source": "/admin/:path*",
-            "has": [{ "type": "host", "value": "artistant.in" }],
+            "has": [
+                {
+                    "type": "host",
+                    "value": "artistant.in"
+                }
+            ],
             "destination": "/",
             "permanent": false
         },
         {
             "source": "/admin/:path*",
-            "has": [{ "type": "host", "value": "www.artistant.in" }],
+            "has": [
+                {
+                    "type": "host",
+                    "value": "www.artistant.in"
+                }
+            ],
             "destination": "/",
             "permanent": false
         }
     ],
     "headers": [
         {
+            "source": "/assets/(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                }
+            ]
+        },
+        {
             "source": "/(.*)",
             "headers": [
-                { "key": "X-Content-Type-Options", "value": "nosniff" },
-                { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-                { "key": "X-XSS-Protection", "value": "1; mode=block" },
-                { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-                { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
-                { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains; preload" },
-                { "key": "Content-Security-Policy", "value": "default-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googletagmanager.com https://*.google.com https://*.gstatic.com https://*.googleapis.com https://*.firebaseapp.com https://pagead2.googlesyndication.com; worker-src 'self' blob: https://*.gstatic.com; child-src 'self' blob: https://*.firebaseapp.com https://*.google.com https://*.recaptcha.net; connect-src 'self' data: blob: https: wss: https://*.firebaseio.com https://*.firebasestorage.app https://firestore.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; frame-src 'self' https://*.firebaseapp.com https://*.google.com https://*.recaptcha.net" }
+                {
+                    "key": "X-Content-Type-Options",
+                    "value": "nosniff"
+                },
+                {
+                    "key": "X-Frame-Options",
+                    "value": "SAMEORIGIN"
+                },
+                {
+                    "key": "X-XSS-Protection",
+                    "value": "1; mode=block"
+                },
+                {
+                    "key": "Referrer-Policy",
+                    "value": "strict-origin-when-cross-origin"
+                },
+                {
+                    "key": "Permissions-Policy",
+                    "value": "camera=(), microphone=(), geolocation=()"
+                },
+                {
+                    "key": "Strict-Transport-Security",
+                    "value": "max-age=31536000; includeSubDomains; preload"
+                },
+                {
+                    "key": "Content-Security-Policy",
+                    "value": "default-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googletagmanager.com https://*.google.com https://*.gstatic.com https://*.googleapis.com https://*.firebaseapp.com https://pagead2.googlesyndication.com; worker-src 'self' blob: https://*.gstatic.com; child-src 'self' blob: https://*.firebaseapp.com https://*.google.com https://*.recaptcha.net; connect-src 'self' data: blob: https: wss: https://*.firebaseio.com https://*.firebasestorage.app https://firestore.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; frame-src 'self' https://*.firebaseapp.com https://*.google.com https://*.recaptcha.net https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com https://www.instagram.com https://firebasestorage.googleapis.com https://res.cloudinary.com https://forms.gle https://docs.google.com https://drive.google.com https://tally.so https://*.typeform.com"
+                }
             ]
         }
     ],
@@ -82,70 +139,189 @@
         },
         {
             "source": "/",
-            "has": [{ "type": "host", "value": "artistant.in" }],
+            "has": [
+                {
+                    "type": "host",
+                    "value": "artistant.in"
+                }
+            ],
             "destination": "/artistant"
         },
         {
             "source": "/",
-            "has": [{ "type": "host", "value": "www.artistant.in" }],
+            "has": [
+                {
+                    "type": "host",
+                    "value": "www.artistant.in"
+                }
+            ],
             "destination": "/artistant"
         },
         {
             "source": "/giveaway/:slug",
-            "destination": "/api/og?giveaway=:slug"
+            "destination": "/api/og?giveaway=:slug",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/forms/:id",
-            "destination": "/api/og?formId=:id"
+            "destination": "/api/og?formId=:id",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/form/:id",
-            "destination": "/api/og?formId=:id"
+            "destination": "/api/og?formId=:id",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/proposal/:id",
-            "destination": "/api/og?proposalId=:id"
+            "destination": "/api/og?proposalId=:id",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/invoice/:id",
-            "destination": "/api/og?invoiceId=:id"
+            "destination": "/api/og?invoiceId=:id",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/agreement/:id",
-            "destination": "/api/og?agreementId=:id"
+            "destination": "/api/og?agreementId=:id",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/concertzone/:category/:slug",
-            "destination": "/api/og?blogSlug=:slug"
+            "destination": "/api/og?blogSlug=:slug",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/community",
-            "has": [{ "type": "query", "key": "gig" }],
+            "has": [
+                {
+                    "type": "query",
+                    "key": "gig"
+                },
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ],
             "destination": "/api/og"
         },
         {
             "source": "/community",
-            "has": [{ "type": "query", "key": "gl" }],
+            "has": [
+                {
+                    "type": "query",
+                    "key": "gl"
+                },
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ],
             "destination": "/api/og"
         },
         {
             "source": "/community",
-            "has": [{ "type": "query", "key": "form" }],
+            "has": [
+                {
+                    "type": "query",
+                    "key": "form"
+                },
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ],
             "destination": "/api/og"
         },
         {
             "source": "/community-join",
-            "has": [{ "type": "query", "key": "gig" }],
+            "has": [
+                {
+                    "type": "query",
+                    "key": "gig"
+                },
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ],
             "destination": "/api/og"
         },
         {
             "source": "/community-join",
-            "has": [{ "type": "query", "key": "gl" }],
+            "has": [
+                {
+                    "type": "query",
+                    "key": "gl"
+                },
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ],
             "destination": "/api/og"
         },
         {
             "source": "/community-join",
-            "has": [{ "type": "query", "key": "form" }],
+            "has": [
+                {
+                    "type": "query",
+                    "key": "form"
+                },
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ],
             "destination": "/api/og"
         },
         {
@@ -154,96 +330,248 @@
                 {
                     "type": "query",
                     "key": "event"
+                },
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
                 }
             ],
             "destination": "/api/og"
         },
         {
             "source": "/creator",
-            "destination": "/api/og?page=creator"
+            "destination": "/api/og?page=creator",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/creator/join",
-            "destination": "/api/og?page=creator-join"
+            "destination": "/api/og?page=creator-join",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/creator-dashboard",
-            "destination": "/api/og?page=creator-dashboard"
+            "destination": "/api/og?page=creator-dashboard",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/creator-dashboard/:path*",
-            "destination": "/api/og?page=creator-dashboard"
+            "destination": "/api/og?page=creator-dashboard",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/verify-creator",
-            "destination": "/api/og?page=verify-creator"
+            "destination": "/api/og?page=verify-creator",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/campaigns",
-            "destination": "/api/og?page=campaigns"
+            "destination": "/api/og?page=campaigns",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/campaign/:id",
-            "destination": "/api/og?campaignId=:id"
+            "destination": "/api/og?campaignId=:id",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/concertzone",
-            "destination": "/api/og?page=concertzone"
+            "destination": "/api/og?page=concertzone",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/concertzone/:category",
-            "destination": "/api/og?category=:category"
+            "destination": "/api/og?category=:category",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/community",
-            "destination": "/api/og?page=community"
+            "destination": "/api/og?page=community",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/community-join",
-            "destination": "/api/og?page=community"
+            "destination": "/api/og?page=community",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/forms",
-            "destination": "/api/og?page=forms"
+            "destination": "/api/og?page=forms",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/form",
-            "destination": "/api/og?page=forms"
+            "destination": "/api/og?page=forms",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/doc/:id",
-            "destination": "/api/og?docId=:id"
+            "destination": "/api/og?docId=:id",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/ticket/:id",
-            "destination": "/api/og?ticketId=:id"
+            "destination": "/api/og?ticketId=:id",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/artistant",
-            "destination": "/api/og?page=artistant"
+            "destination": "/api/og?page=artistant",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/contact",
-            "destination": "/api/og?page=contact"
+            "destination": "/api/og?page=contact",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/terms",
-            "destination": "/api/og?page=terms"
+            "destination": "/api/og?page=terms",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/privacy",
-            "destination": "/api/og?page=privacy"
+            "destination": "/api/og?page=privacy",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/verify-payout",
-            "destination": "/api/og?page=verify-payout"
+            "destination": "/api/og?page=verify-payout",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
             "source": "/register-payment",
-            "destination": "/api/og?page=register-payment"
+            "destination": "/api/og?page=register-payment",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": ".*(bot|Bot|BOT|crawl|Crawl|spider|Spider|slurp|facebookexternalhit|facebookcatalog|WhatsApp|Twitterbot|Slackbot|LinkedInBot|Discordbot|TelegramBot|Pinterest|redditbot|Applebot|Embedly|embedly|Quora Link Preview|SkypeUriPreview|Google-InspectionTool|vkShare|W3C_Validator).*"
+                }
+            ]
         },
         {
-            "source": "/(.*)",
+            "source": "/((?!assets/).*)",
             "destination": "/index.html"
         }
     ]

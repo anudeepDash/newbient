@@ -119,18 +119,27 @@ export default async function handler(req, res) {
 
         try {
             const destUrl = new URL(destination, 'https://newbi.live');
-            if (destUrl.hostname.includes('newbi.live') || destUrl.hostname.includes('newbient.com') || destination.startsWith('/')) {
-                if (email) {
-                    destUrl.searchParams.set('email', email);
-                    destUrl.searchParams.set('via', 'email');
+            if (destUrl.protocol !== 'http:' && destUrl.protocol !== 'https:') {
+                destination = 'https://newbi.live';
+            } else {
+                // Exact host / subdomain match only (hostname.includes() also matched newbi.live.evil.com)
+                const host = destUrl.hostname.toLowerCase();
+                const isOwnHost = ['newbi.live', 'newbient.com'].some(d => host === d || host.endsWith(`.${d}`));
+                const isRelative = destination.startsWith('/');
+                if (isOwnHost || isRelative) {
+                    if (email) {
+                        destUrl.searchParams.set('email', email);
+                        destUrl.searchParams.set('via', 'email');
+                    }
+                    if (cid) destUrl.searchParams.set('cid', cid);
+                    if (tid) destUrl.searchParams.set('tid', tid);
                 }
-                if (cid) destUrl.searchParams.set('cid', cid);
-                if (tid) destUrl.searchParams.set('tid', tid);
-                
-                destination = destination.startsWith('/') ? `${destUrl.pathname}${destUrl.search}${destUrl.hash}` : destUrl.href;
+                // Use the parser's serialised form so stray control chars can't reach the Location header
+                destination = isRelative ? `${destUrl.pathname}${destUrl.search}${destUrl.hash}` : destUrl.href;
             }
         } catch (e) {
             console.warn('[TRACK API] URL parse error:', e.message);
+            destination = 'https://newbi.live';
         }
 
         // Asynchronously log the click event to Firestore

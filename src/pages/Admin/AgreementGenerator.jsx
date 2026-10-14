@@ -68,6 +68,7 @@ import useContractGenerator from '../../components/admin/useContractGenerator';
 import ClauseMarketplace from '../../components/admin/ClauseMarketplace';
 import ContractPreview from '../../components/admin/ContractPreview';
 import { generateFullDocument, reviseDocument, refineFieldContent } from '../../lib/ai';
+import { sanitizeHtml } from '../../lib/sanitize';
 
 const renderChatMessage = (text) => {
     if (!text) return null;
@@ -95,7 +96,7 @@ const renderChatMessage = (text) => {
             const level = headingMatch[1].length;
             const headingText = headingMatch[2];
             const sizeClass = level === 1 ? "text-[13px] font-bold" : level === 2 ? "text-[12px] font-bold" : "text-[11px] font-semibold text-zinc-400";
-            elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-gray-900 dark:text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
+            elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-gray-900 dark:text-white")} dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatInline(headingText)) }} />);
         } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
             const items = [];
             while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
@@ -105,7 +106,7 @@ const renderChatMessage = (text) => {
             elements.push(
                 <ul key={`ul-${i}`} className="list-disc ml-4 my-1.5 space-y-1 text-zinc-300">
                     {items.map((item, j) => (
-                        <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
+                        <li key={j} dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatInline(item)) }} />
                     ))}
                 </ul>
             );
@@ -119,13 +120,13 @@ const renderChatMessage = (text) => {
             elements.push(
                 <ol key={`ol-${i}`} className="list-decimal ml-4 my-1.5 space-y-1 text-zinc-300">
                     {items.map((item, j) => (
-                        <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
+                        <li key={j} dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatInline(item)) }} />
                     ))}
                 </ol>
             );
             continue;
         } else {
-            elements.push(<p key={i} className="mb-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatInline(line) }} />);
+            elements.push(<p key={i} className="mb-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatInline(line)) }} />);
         }
         i++;
     }

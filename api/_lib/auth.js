@@ -55,11 +55,18 @@ try {
         app = getApps()[0];
     }
 } catch (error) {
+    // Don't rethrow: a module-load crash takes down every endpoint importing this file
+    // (FUNCTION_INVOCATION_FAILED, no CORS). Leave auth null so verifyToken returns null → clean 401.
     console.error('[AUTH INIT] CRITICAL INITIALIZATION ERROR:', error.message);
-    throw error; // Rethrow to refuse startup
+    app = null;
 }
 
-const auth = app ? getAuth(app) : null;
+let auth = null;
+try {
+    auth = app ? getAuth(app) : null;
+} catch (error) {
+    console.error('[AUTH INIT] getAuth failed:', error.message);
+}
 
 export { auth };
 

@@ -24,6 +24,7 @@ import TaskActionLinks from '../creator/TaskActionLinks';
 import { linkifyContent, extractTaskActionLinks, cleanTaskDescription, getTaskGoogleFormUrl } from '../../lib/taskLinks';
 import { buildCampaignUrl } from '../../lib/campaignLinks';
 import { copyToClipboard } from '../../lib/clipboard';
+import { sanitizeHtml } from '../../lib/sanitize';
 
 const getSubmissionStatus = (task, uid) => {
     const sub = task.submissions?.[uid];
@@ -42,7 +43,7 @@ const FormattedTaskDescription = ({ description, actionLinks = [] }) => {
     return (
         <div
             className="article-content text-xs sm:text-[13px] text-gray-700 dark:text-zinc-300 leading-relaxed break-words font-normal"
-            dangerouslySetInnerHTML={{ __html: linkified }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(linkified) }}
         />
     );
 };
@@ -224,7 +225,7 @@ const TaskSubmissionModal = ({
                                     </button>
                                 </div>
                                 <div className="p-4 sm:p-6 bg-white/[0.03] border border-black/10 dark:border-white/5 rounded-xl sm:rounded-2xl relative group">
-                                    <div className="article-content text-xs text-gray-600 dark:text-gray-300 font-normal leading-relaxed whitespace-pre-wrap font-mono" dangerouslySetInnerHTML={{ __html: task.captionScript }} />
+                                    <div className="article-content text-xs text-gray-600 dark:text-gray-300 font-normal leading-relaxed whitespace-pre-wrap font-mono" dangerouslySetInnerHTML={{ __html: sanitizeHtml(task.captionScript) }} />
                                 </div>
                             </div>
                         )}

@@ -58,24 +58,6 @@ const SystemControlCenter = () => {
 
     const isAdmin = user && ['developer', 'super_admin', 'founder'].includes(user.role);
 
-    if (!isAdmin) {
-        return (
-            <div className="min-h-screen bg-gray-50 dark:bg-[#020202] flex items-center justify-center text-gray-900 dark:text-white p-4">
-                <Card className="max-w-md w-full p-8 border-red-500/30 bg-red-500/5 text-center shadow-2xl backdrop-blur-xl">
-                    <Shield size={64} className="mx-auto mb-6 text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse" />
-                    <h1 className="text-3xl font-black font-heading tracking-tighter uppercase italic mb-3">ACCESS DENIED</h1>
-                    <p className="text-gray-600 dark:text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em] leading-relaxed mb-8">
-                        System handshake failed.<br/>Required clearance missing.
-                    </p>
-                    <Link to="/admin">
-                        <Button variant="outline" className="w-full h-12 border-red-500/30 text-red-500 text-[10px] hover:bg-red-500 hover:text-white transition-all font-black tracking-widest uppercase rounded-xl">
-                            RETURN TO DASHBOARD
-                        </Button>
-                    </Link>
-                </Card>
-            </div>
-        );
-    }
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -147,6 +129,25 @@ const SystemControlCenter = () => {
             ]
         }
     ], []);
+
+    if (!isAdmin) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-[#020202] flex items-center justify-center text-gray-900 dark:text-white p-4">
+                <Card className="max-w-md w-full p-8 border-red-500/30 bg-red-500/5 text-center shadow-2xl backdrop-blur-xl">
+                    <Shield size={64} className="mx-auto mb-6 text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse" />
+                    <h1 className="text-3xl font-black font-heading tracking-tighter uppercase italic mb-3">ACCESS DENIED</h1>
+                    <p className="text-gray-600 dark:text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em] leading-relaxed mb-8">
+                        System handshake failed.<br/>Required clearance missing.
+                    </p>
+                    <Link to="/admin">
+                        <Button variant="outline" className="w-full h-12 border-red-500/30 text-red-500 text-[10px] hover:bg-red-500 hover:text-white transition-all font-black tracking-widest uppercase rounded-xl">
+                            RETURN TO DASHBOARD
+                        </Button>
+                    </Link>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <AdminCommunityHubLayout
