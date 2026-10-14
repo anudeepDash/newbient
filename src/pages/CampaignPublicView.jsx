@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../lib/store';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
@@ -6,28 +6,37 @@ import CampaignDetailModal from '../components/creator/CampaignDetailModal';
 import GlobalLoader from '../components/ui/GlobalLoader';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { ArrowLeft, Compass } from 'lucide-react';
+import { findCampaignById, fetchCampaignById } from '../lib/campaignLinks';
 
 const CampaignPublicView = () => {
     useStoreSubscription(['campaigns']);
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const { campaigns, subscriptionsLoaded } = useStore();
+    const campaigns = useStore(state => state.campaigns);
 
-    const [campaign, setCampaign] = useState(null);
-    const [notFound, setNotFound] = useState(false);
+    const [fetchedCampaign, setFetchedCampaign] = useState(null);
+    const [lookupState, setLookupState] = useState('idle'); // idle | loading | done
 
+    // Prefer the live listener copy so edits show up instantly.
+    const liveCampaign = useMemo(() => findCampaignById(campaigns, id), [campaigns, id]);
+    const campaign = liveCampaign || fetchedCampaign;
+
+    // If the listener has not produced this campaign, read it directly. This covers
+    // signed-out visitors, slow listeners and links opened before the list loads.
     useEffect(() => {
-        if (!campaigns || campaigns.length === 0) return;
-        const targetId = (id || '').toLowerCase();
-        const found = campaigns.find(c => c.id === id || (c.id && c.id.toLowerCase() === targetId));
-        if (found) {
-            setCampaign(found);
-            setNotFound(false);
-        } else if (subscriptionsLoaded) {
-            setNotFound(true);
-        }
-    }, [id, campaigns, subscriptionsLoaded]);
+        if (liveCampaign) return;
+        let cancelled = false;
+        setLookupState('loading');
+        fetchCampaignById(id).then(found => {
+            if (cancelled) return;
+            setFetchedCampaign(found);
+            setLookupState('done');
+        });
+        return () => { cancelled = true; };
+    }, [id, liveCampaign]);
+
+    const notFound = !campaign && lookupState === 'done';
 
     useDynamicMeta({
         title: campaign ? `${campaign.title} | Creator Brief` : "Creator Campaign",
@@ -37,10 +46,11 @@ const CampaignPublicView = () => {
     });
 
     const handleClose = () => {
-        if (window.history.length > 1) {
+        // Opened from a shared link (no in-app history): send to the creator hub.
+        if (location.key && location.key !== 'default') {
             navigate(-1);
         } else {
-            navigate('/creator-dashboard');
+            navigate('/creator-dashboard', { replace: true });
         }
     };
 
