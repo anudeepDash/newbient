@@ -28,6 +28,7 @@ import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import Check from 'lucide-react/dist/esm/icons/check';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
+import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import BroadcastGroupsModal from '../../components/admin/BroadcastGroupsModal';
 import AddCityCreatorsModal from '../../components/admin/AddCityCreatorsModal';
@@ -35,7 +36,7 @@ import AddCreatorModal from '../../components/admin/AddCreatorModal';
 import CreatorDetailModal from '../../components/admin/CreatorDetailModal';
 import {
     Card, Button, Badge, CreatorStatusBadge, SearchInput, Select, SegmentedTabs,
-    EmptyState, Pagination, Avatar, Menu, MenuItem,
+    EmptyState, Pagination, Avatar, Menu, MenuItem, StatTile,
 } from '../../components/admin/creatorPortal/ui';
 import {
     creatorKey, creatorPhoto, creatorReach, creatorNiche, isPendingCreator,
@@ -488,7 +489,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
     return (
         <div className="space-y-4">
             {detailNotFound && (
-                <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                <div className="flex items-start gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/[0.08] p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
                     <AlertTriangle size={18} className="mt-0.5 shrink-0" />
                     <div className="flex-1">
                         <p className="font-medium">Creator not found</p>
@@ -525,7 +526,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                 Rename Bangalore to Bengaluru
                             </MenuItem>
                         )}
-                        <div className="my-1 border-t border-gray-100 dark:border-zinc-800" />
+                        <div className="my-1 border-t border-black/[0.05] dark:border-white/[0.08]" />
                         <MenuItem icon={Send} onClick={() => setCityInvite({ city: city !== 'all' ? city : 'Bengaluru', uids: null })} hint="Send city WhatsApp group links">
                             Send group invites
                         </MenuItem>
@@ -544,7 +545,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
 
             <Card className="overflow-hidden">
                 {/* Filters */}
-                <div className="flex flex-col gap-2 border-b border-gray-200 p-3 dark:border-zinc-800">
+                <div className="flex flex-col gap-2 border-b border-black/[0.08] p-3 dark:border-white/[0.08]">
                     <div className="flex min-w-0 gap-2 lg:max-w-2xl">
                         <Select
                             label="Search in"
@@ -579,7 +580,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                 </div>
 
                 {/* Result summary */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 bg-gray-50/60 px-4 py-2 text-sm text-gray-600 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-400">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/[0.08] bg-black/[0.02] px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-gray-500 dark:border-white/[0.08] dark:bg-white/[0.02]">
                     <span>
                         {creatorsLoaded || creators.length ? (
                             <>{filtered.length.toLocaleString()} {filtered.length === 1 ? 'creator' : 'creators'}{hasFilters ? ` (of ${creators.length.toLocaleString()})` : ''}</>
@@ -592,7 +593,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                     type="checkbox"
                                     checked={manualOnly}
                                     onChange={(e) => updateParams({ manual: e.target.checked ? '1' : '' })}
-                                    className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
+                                    className="h-4 w-4 cursor-pointer rounded border-black/20 bg-white text-neon-green focus:ring-0 dark:border-white/20 dark:bg-black/60"
                                 />
                                 Only manual follower counts ({counts.manualPending})
                             </label>
@@ -625,7 +626,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                     <>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-sm">
-                                <thead className="hidden border-b border-gray-200 text-xs font-medium text-gray-500 dark:border-zinc-800 dark:text-zinc-400 md:table-header-group">
+                                <thead className="hidden border-b border-black/[0.08] text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 dark:border-white/[0.08] dark:text-zinc-400 md:table-header-group">
                                     <tr>
                                         <th className="w-10 py-2.5 pl-4 pr-2">
                                             <input
@@ -633,20 +634,20 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                                 aria-label="Select all on this page"
                                                 checked={allPageSelected}
                                                 onChange={togglePage}
-                                                className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
+                                                className="h-4 w-4 cursor-pointer rounded border-black/20 bg-white text-neon-green focus:ring-0 dark:border-white/20 dark:bg-black/60"
                                             />
                                         </th>
-                                        <th className="px-2 py-2.5 font-medium">Creator</th>
-                                        <th className="px-2 py-2.5 font-medium">City</th>
-                                        <th className="hidden px-2 py-2.5 font-medium lg:table-cell">Niche / college</th>
-                                        <th className="px-2 py-2.5 text-right font-medium">Followers</th>
-                                        <th className="hidden px-2 py-2.5 font-medium xl:table-cell">Phone</th>
-                                        <th className="px-2 py-2.5 font-medium">Status</th>
-                                        <th className="hidden px-2 py-2.5 font-medium lg:table-cell">Joined</th>
+                                        <th className="px-2 py-2.5">Creator</th>
+                                        <th className="px-2 py-2.5">City</th>
+                                        <th className="hidden px-2 py-2.5 lg:table-cell">Niche / college</th>
+                                        <th className="px-2 py-2.5 text-right">Followers</th>
+                                        <th className="hidden px-2 py-2.5 xl:table-cell">Phone</th>
+                                        <th className="px-2 py-2.5">Status</th>
+                                        <th className="hidden px-2 py-2.5 lg:table-cell">Joined</th>
                                         <th className="w-8 py-2.5 pr-4" />
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
+                                <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
                                     {pageRows.map(c => (
                                         <CreatorRow
                                             key={creatorKey(c)}
@@ -672,10 +673,10 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
 
             {/* Bulk action bar */}
             {selected.size > 0 && createPortal(
-                <div className="fixed inset-x-0 bottom-4 z-[100] flex justify-center px-4 font-sans">
-                    <div className="flex w-full max-w-3xl flex-col gap-2 rounded-xl border border-gray-200 bg-white p-3 shadow-xl dark:border-zinc-700 dark:bg-zinc-900 sm:flex-row sm:items-center sm:justify-between">
+                <div className="fixed inset-x-0 bottom-4 z-[100] flex justify-center px-4">
+                    <div className="flex w-full max-w-3xl flex-col gap-2 rounded-3xl border border-black/[0.08] bg-white/95 px-4 py-3 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-[#0c0e14] sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-700 dark:text-zinc-300">
-                            <span className="font-medium text-gray-900 dark:text-white">{selected.size} selected</span>
+                            <span className="font-bold text-gray-900 dark:text-white">{selected.size} selected</span>
                             {selected.size < filtered.length && (
                                 <button type="button" onClick={selectAllFiltered} className="underline-offset-2 hover:underline">
                                     Select all {filtered.length}
@@ -741,8 +742,8 @@ const CreatorRow = ({ creator: c, selected, onToggle, onOpen }) => {
         <tr
             onClick={onOpen}
             className={cn(
-                'group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800/50',
-                selected && 'bg-sky-50/60 dark:bg-sky-500/5'
+                'group cursor-pointer transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.02]',
+                selected && 'bg-neon-green/[0.03]'
             )}
         >
             <td className="w-10 py-3 pl-4 pr-2 align-middle" onClick={stop}>
@@ -751,14 +752,14 @@ const CreatorRow = ({ creator: c, selected, onToggle, onOpen }) => {
                     aria-label={`Select ${c.name || 'creator'}`}
                     checked={selected}
                     onChange={onToggle}
-                    className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
+                    className="h-4 w-4 cursor-pointer rounded border-black/20 bg-white text-neon-green focus:ring-0 dark:border-white/20 dark:bg-black/60"
                 />
             </td>
             <td className="px-2 py-3">
                 <div className="flex min-w-0 items-center gap-3">
                     <Avatar src={creatorPhoto(c)} name={c.name} />
                     <div className="min-w-0">
-                        <p className="truncate font-medium text-gray-900 dark:text-white">{c.name || 'Unnamed creator'}</p>
+                        <p className="truncate font-bold text-gray-900 dark:text-white">{c.name || 'Unnamed creator'}</p>
                         <p className="truncate text-xs text-gray-500 dark:text-zinc-400">
                             {handle ? (
                                 <a
@@ -865,23 +866,13 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
     return (
         <div className="space-y-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <Card className="p-4">
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">Referred sign-ups</p>
-                    <p className="mt-1 text-2xl font-semibold tabular-nums">{totalReferred.toLocaleString()}</p>
-                </Card>
-                <Card className="p-4">
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">Creators who referred someone</p>
-                    <p className="mt-1 text-2xl font-semibold tabular-nums">{leaderboard.length.toLocaleString()}</p>
-                </Card>
-                <Card className="p-4">
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">Top referrer</p>
-                    <p className="mt-1 truncate text-2xl font-semibold">{top ? top.creator.name : '—'}</p>
-                    {top && <p className="text-xs text-gray-500 dark:text-zinc-400">{top.referrals.length} referrals</p>}
-                </Card>
+                <StatTile label="Referred sign-ups" value={totalReferred.toLocaleString()} hint="Joined with an invite link" icon={UserPlus} />
+                <StatTile label="Active referrers" value={leaderboard.length.toLocaleString()} hint="Creators who referred someone" icon={Users} tone="blue" />
+                <StatTile label="Top referrer" value={top ? top.referrals.length : 0} hint={top ? top.creator.name : 'No referrals yet'} icon={Trophy} tone="green" />
             </div>
 
             <Card className="overflow-hidden">
-                <div className="border-b border-gray-200 p-3 dark:border-zinc-800">
+                <div className="border-b border-black/[0.08] p-3 dark:border-white/[0.08]">
                     <SearchInput value={search} onChange={setSearch} placeholder="Search referrers" className="max-w-md" />
                 </div>
                 {rows.length === 0 ? (
@@ -893,23 +884,23 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
-                            <thead className="border-b border-gray-200 text-xs text-gray-500 dark:border-zinc-800 dark:text-zinc-400">
+                            <thead className="border-b border-black/[0.08] text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 dark:border-white/[0.08] dark:text-zinc-400">
                                 <tr>
-                                    <th className="w-14 py-2.5 pl-4 font-medium">Rank</th>
-                                    <th className="px-2 py-2.5 font-medium">Creator</th>
-                                    <th className="px-2 py-2.5 text-right font-medium">Referrals</th>
-                                    <th className="hidden px-2 py-2.5 text-right font-medium sm:table-cell">Verified</th>
-                                    <th className="hidden px-2 py-2.5 text-right font-medium md:table-cell">Referred reach</th>
+                                    <th className="w-14 py-2.5 pl-4">Rank</th>
+                                    <th className="px-2 py-2.5">Creator</th>
+                                    <th className="px-2 py-2.5 text-right">Referrals</th>
+                                    <th className="hidden px-2 py-2.5 text-right sm:table-cell">Verified</th>
+                                    <th className="hidden px-2 py-2.5 text-right md:table-cell">Referred reach</th>
                                     <th className="w-24 py-2.5 pr-4" />
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
+                            <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
                                 {rows.map(r => {
                                     const key = creatorKey(r.creator);
                                     const isOpen = expanded === key;
                                     return (
                                         <React.Fragment key={key}>
-                                            <tr className="hover:bg-gray-50 dark:hover:bg-zinc-800/50">
+                                            <tr className="hover:bg-black/[0.03] dark:hover:bg-white/[0.02]">
                                                 <td className="py-3 pl-4 font-medium tabular-nums text-gray-500 dark:text-zinc-400">#{r.rank}</td>
                                                 <td className="px-2 py-3">
                                                     <button type="button" onClick={() => onSelectCreator(r.creator)} className="flex min-w-0 items-center gap-3 text-left">
@@ -930,16 +921,16 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                                                 </td>
                                             </tr>
                                             {isOpen && (
-                                                <tr className="bg-gray-50/70 dark:bg-zinc-900/70">
+                                                <tr className="bg-black/[0.02] dark:bg-white/[0.02]">
                                                     <td />
                                                     <td colSpan={5} className="px-2 py-3 pr-4">
-                                                        <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+                                                        <ul className="divide-y divide-black/[0.05] rounded-lg border border-black/[0.08] bg-white dark:divide-white/[0.05] dark:border-white/[0.08] dark:bg-[#0c0e14]">
                                                             {r.referrals.map(rc => (
                                                                 <li key={creatorKey(rc)}>
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => onSelectCreator(rc)}
-                                                                        className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-zinc-800"
+                                                                        className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-black/[0.03] dark:hover:bg-white/5"
                                                                     >
                                                                         <Avatar src={creatorPhoto(rc)} name={rc.name} size={28} />
                                                                         <span className="min-w-0 flex-1 truncate">{rc.name}</span>
@@ -1001,12 +992,12 @@ const BulkEmailModal = ({ recipients, onClose }) => {
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 font-sans">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40" onClick={() => !isSending && onClose(false)} />
-            <div className="relative max-h-[90dvh] w-full max-w-xl overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
-                <div className="flex items-start justify-between gap-4 border-b border-gray-200 p-5 dark:border-zinc-800">
+            <div className="relative max-h-[90dvh] w-full max-w-xl overflow-y-auto rounded-3xl border border-black/[0.08] bg-white shadow-2xl dark:border-white/10 dark:bg-[#0c0e14]">
+                <div className="flex items-start justify-between gap-4 border-b border-black/[0.08] p-5 dark:border-white/[0.08]">
                     <div>
-                        <h3 className="text-base font-semibold text-gray-900 dark:text-white">Email {withEmail.length} creator{withEmail.length === 1 ? '' : 's'}</h3>
+                        <h3 className="text-lg font-black font-heading uppercase tracking-tight text-gray-900 dark:text-white">Email {withEmail.length} creator{withEmail.length === 1 ? '' : 's'}</h3>
                         {withoutEmail > 0 && (
                             <p className="mt-0.5 text-sm text-amber-700 dark:text-amber-400">{withoutEmail} selected creator{withoutEmail === 1 ? ' has' : 's have'} no email and will be skipped.</p>
                         )}
@@ -1020,15 +1011,15 @@ const BulkEmailModal = ({ recipients, onClose }) => {
                     <div className="space-y-3 p-8 text-center">
                         <LoadingSpinner size="md" color="#71717a" />
                         <p className="text-sm text-gray-700 dark:text-zinc-300">Sending {progress.current} of {progress.total}…</p>
-                        <div className="mx-auto h-1.5 max-w-sm overflow-hidden rounded-full bg-gray-100 dark:bg-zinc-800">
-                            <div className="h-full bg-gray-900 transition-all dark:bg-white" style={{ width: `${progress.total ? (progress.current / progress.total) * 100 : 0}%` }} />
+                        <div className="mx-auto h-1.5 max-w-sm overflow-hidden rounded-full bg-black/5 dark:bg-white/5">
+                            <div className="h-full bg-neon-pink transition-all" style={{ width: `${progress.total ? (progress.current / progress.total) * 100 : 0}%` }} />
                         </div>
                     </div>
                 ) : (
                     <form onSubmit={handleSend} className="space-y-4 p-5">
                         <div>
                             <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-zinc-300">Recipients</p>
-                            <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-zinc-800 dark:bg-zinc-950">
+                            <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto rounded-lg border border-black/[0.08] bg-black/[0.02] p-2 dark:border-white/[0.08] dark:bg-black/40">
                                 {withEmail.map(c => <Badge key={creatorKey(c)}>{c.name || c.email}</Badge>)}
                             </div>
                         </div>
@@ -1038,7 +1029,7 @@ const BulkEmailModal = ({ recipients, onClose }) => {
                                 required
                                 value={subject}
                                 onChange={(e) => setSubject(e.target.value)}
-                                className="h-9 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+                                className="h-9 w-full rounded-lg border border-black/10 bg-white px-3 text-sm text-gray-900 outline-none focus:border-neon-green/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
                             />
                         </label>
                         <label className="block">
@@ -1049,7 +1040,7 @@ const BulkEmailModal = ({ recipients, onClose }) => {
                                 onChange={(e) => setBody(e.target.value)}
                                 rows={8}
                                 placeholder="Write your message…"
-                                className="w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+                                className="w-full rounded-lg border border-black/10 bg-white p-3 text-sm text-gray-900 outline-none focus:border-neon-green/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
                             />
                         </label>
                         <div className="flex justify-end gap-2">

@@ -579,35 +579,28 @@ const CampaignManager = () => {
                                 exit={{ opacity: 0, y: -30 }}
                                 className="max-w-6xl mx-auto"
                             >
-                                <div className="mb-6 flex flex-col gap-4 font-sans md:flex-row md:items-end md:justify-between">
-                                    <div>
-                                        <nav className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-zinc-400">
-                                            <button type="button" onClick={resetForm} className="hover:text-gray-900 hover:underline dark:hover:text-white">Campaigns</button>
-                                            <span>/</span>
-                                            <span className="text-gray-900 dark:text-white">{editingId ? 'Edit' : 'New'}</span>
-                                        </nav>
-                                        <h2 className="mt-1 text-xl font-semibold tracking-tight text-gray-900 dark:text-white">
-                                            {editingId ? (formData.title || 'Edit campaign') : 'New campaign'}
+                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-gray-500">
+                                            <button onClick={resetForm} className="hover:text-neon-green transition-colors">CAMPAIGNS</button>
+                                            <span className="text-gray-300 dark:text-gray-700">/</span>
+                                            <span className="text-gray-900 dark:text-white">{editingId ? 'EDIT' : 'CREATE'}</span>
+                                        </div>
+                                        <h2 className="text-3xl md:text-4xl font-heading font-black tracking-tight text-gray-900 dark:text-white">
+                                            {editingId ? 'Edit Campaign' : 'New Campaign'}
                                         </h2>
                                     </div>
-                                    <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-end gap-2 border-t border-gray-200 bg-white/95 p-3 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95 md:static md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+                                    <div className="fixed md:relative bottom-0 left-0 right-0 z-50 flex items-center justify-center md:justify-end gap-4 bg-white/95 dark:bg-[#0c0e14]/95 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none border-t border-black/[0.08] dark:border-white/[0.08] md:border-none p-4 md:p-0 shadow-sm md:shadow-none">
                                         {editingId && !isEditFormReady && (
-                                            <span className="mr-auto text-sm text-gray-500 dark:text-zinc-400 md:mr-2">Loading campaign…</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Loading campaign…</span>
                                         )}
-                                        <button
-                                            type="button"
-                                            onClick={resetForm}
-                                            className="inline-flex h-9 items-center rounded-lg border border-gray-300 bg-white px-3.5 text-sm font-medium text-gray-800 hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={handleSubmit}
+                                        <button onClick={resetForm} className="px-4 py-2 text-[11px] font-black text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors">Discard</button>
+                                        <button 
+                                            onClick={handleSubmit} 
                                             disabled={isDeploying || isUploading || !isEditFormReady}
-                                            className="inline-flex h-9 min-w-[140px] items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 dark:bg-white dark:text-gray-900 dark:hover:bg-zinc-200"
+                                            className="h-14 px-8 rounded-2xl bg-neon-green text-black font-black uppercase tracking-widest text-sm hover:bg-emerald-400 active:scale-95 transition-all shadow-[0_0_20px_rgba(57,255,20,0.3)] flex items-center justify-center gap-3 min-w-[160px] flex-1 md:flex-none disabled:opacity-40 disabled:pointer-events-none"
                                         >
-                                            {isDeploying ? <LoadingSpinner size="sm" color="currentColor" /> : (editingId ? 'Save changes' : 'Create campaign')}
+                                            {isDeploying ? <LoadingSpinner size="sm" color="black" /> : (editingId ? 'SAVE CHANGES' : 'CREATE CAMPAIGN')}
                                         </button>
                                     </div>
                                 </div>
@@ -998,26 +991,18 @@ const CampaignManager = () => {
                 <AnimatePresence>
                     {rejectionModal && (
                         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/40" onClick={() => setRejectionModal(null)} />
-                            <motion.div initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.97, opacity: 0 }} className="relative z-10 w-full max-w-lg rounded-xl border border-gray-200 bg-white p-5 font-sans shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
-                                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Reject submission</h3>
-                                <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">The creator sees this note and can resubmit.</p>
-                                <textarea
-                                    value={rejectionReason}
-                                    onChange={(e) => setRejectionReason(e.target.value)}
-                                    placeholder="What needs to change?"
-                                    rows={5}
-                                    className="mt-4 w-full resize-none rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
-                                />
-                                <div className="mt-4 flex justify-end gap-2">
-                                    <button type="button" onClick={() => setRejectionModal(null)} className="inline-flex h-9 items-center rounded-lg border border-gray-300 bg-white px-3.5 text-sm font-medium text-gray-800 hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800">Cancel</button>
-                                    <button
-                                        type="button"
-                                        onClick={confirmRejection}
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md" onClick={() => setRejectionModal(null)} />
+                            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white dark:bg-[#0A0A0A] border border-black/10 dark:border-white/10 rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl z-10">
+                                <h3 className="text-xl font-black uppercase tracking-tight text-gray-900 dark:text-white mb-6">REJECTION FEEDBACK</h3>
+                                <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Provide specific reasons for rejection..." className="w-full h-40 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-2xl p-6 text-sm text-gray-900 dark:text-white focus:border-red-500/50 outline-none transition-all resize-none mb-6 placeholder:text-gray-400 dark:placeholder:text-gray-600" />
+                                <div className="flex gap-4">
+                                    <button onClick={() => setRejectionModal(null)} className="flex-1 h-14 rounded-xl border border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/5 transition-all">Cancel</button>
+                                    <button 
+                                        onClick={confirmRejection} 
                                         disabled={isReviewing}
-                                        className="inline-flex h-9 min-w-[110px] items-center justify-center rounded-lg bg-red-600 px-3.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                                        className="flex-1 h-14 rounded-xl bg-red-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all flex items-center justify-center gap-3 shadow-lg"
                                     >
-                                        {isReviewing ? <LoadingSpinner size="xs" color="white" /> : 'Reject'}
+                                        {isReviewing ? <LoadingSpinner size="xs" color="white" /> : 'Confirm Rejection'}
                                     </button>
                                 </div>
                             </motion.div>
@@ -1281,15 +1266,15 @@ const CampaignDetailView = ({
     // a campaign that was deleted. Don't render the dashboard against nothing.
     if (!campaign) {
         return (
-            <div className="rounded-xl border border-gray-200 bg-white p-10 text-center font-sans dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="rounded-3xl border border-black/[0.08] bg-white p-10 text-center dark:border-white/[0.08] dark:bg-[#0c0e14]">
                 {campaignsLoaded ? (
                     <>
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white">Campaign not found</p>
-                        <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">It may have been deleted, or the link is wrong.</p>
+                        <p className="text-sm font-black uppercase tracking-wider text-gray-900 dark:text-white">Campaign not found</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-zinc-400">It may have been deleted, or the link is wrong.</p>
                         <button
                             type="button"
                             onClick={onClose}
-                            className="mt-4 inline-flex h-9 items-center rounded-lg border border-gray-300 px-3.5 text-sm font-medium text-gray-800 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                            className="mt-4 inline-flex h-9 items-center rounded-lg border border-black/10 px-3.5 text-sm font-medium text-gray-800 hover:bg-black/[0.03] dark:border-white/10 dark:text-zinc-100 dark:hover:bg-white/5"
                         >
                             Back to campaigns
                         </button>
@@ -1306,74 +1291,109 @@ const CampaignDetailView = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="w-full space-y-6 pb-24 pt-0 relative"
+            className="w-full space-y-8 pb-24 pt-0 relative"
         >
-            {/* Header: breadcrumb + actions */}
-            <div className="flex flex-col gap-4 font-sans lg:flex-row lg:items-end lg:justify-between">
-                <div className="min-w-0">
-                    <nav className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-zinc-400">
-                        <button type="button" onClick={onClose} className="inline-flex items-center gap-1 hover:text-gray-900 hover:underline dark:hover:text-white">
-                            <ArrowLeft size={14} /> Campaigns
-                        </button>
-                    </nav>
-                    <h2 className="mt-1 truncate text-xl font-semibold tracking-tight text-gray-900 dark:text-white">{campaign.title}</h2>
-                </div>
+            {/* Ambient Background Glow Effect from Campaign Artwork */}
+            {campaign.thumbnail ? (
+                <div 
+                    className="absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-cover bg-center filter blur-[150px] opacity-20 dark:opacity-45 pointer-events-none rounded-full transform-gpu -z-10"
+                    style={{ backgroundImage: `url(${campaign.thumbnail})` }}
+                />
+            ) : (
+                <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-neon-green/10 dark:bg-neon-green/5 rounded-full blur-[160px] pointer-events-none -z-10" />
+            )}
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" title="Automatically shortlist new applicants who meet the follower and city criteria">
-                        <input
-                            type="checkbox"
-                            checked={Boolean(campaign.autoShortlistEligible)}
-                            onChange={async () => {
-                                if (onToggleAutoShortlist) {
-                                    await onToggleAutoShortlist(campaign.id);
-                                } else {
-                                    await updateCampaign(campaign.id, { autoShortlistEligible: !campaign.autoShortlistEligible });
-                                }
-                            }}
-                            className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
-                        />
-                        Auto-shortlist
-                    </label>
-                    <button
-                        type="button"
-                        onClick={() => updateCampaign(campaign.id, { status: (!campaign.status || String(campaign.status).toLowerCase() === 'open') ? 'Closed' : 'Open' })}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-800 hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+            {/* Top Glass Navigation Bar */}
+            <div className="relative z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-3xl bg-white/70 dark:bg-[#0c0e14]/70 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-sm">
+                <button 
+                    onClick={onClose} 
+                    className="group flex items-center gap-2.5 px-5 py-3 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all text-xs font-black uppercase tracking-[0.18em] text-gray-700 dark:text-gray-300 w-fit active:scale-95"
+                >
+                    <ArrowLeft size={15} className="group-hover:-translate-x-1 transition-transform" />
+                    BACK TO CAMPAIGNS
+                </button>
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                    {/* Active/Closed Status Toggle */}
+                    <button 
+                        onClick={() => {
+                            const newStatus = campaign.status === 'Open' ? 'Closed' : 'Open';
+                            // Only write the status; sending the whole campaign could overwrite newer submissions.
+                            updateCampaign(campaign.id, { status: newStatus });
+                        }}
+                        className={cn(
+                            "h-11 px-5 border rounded-full text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm active:scale-95",
+                            campaign.status === 'Open' 
+                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-neon-green hover:bg-emerald-500 hover:text-black" 
+                                : "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white"
+                        )}
+                        title="Toggle Campaign Open / Closed"
                     >
-                        {(!campaign.status || String(campaign.status).toLowerCase() === 'open') ? <><Lock size={14} /> Close applications</> : <><Unlock size={14} /> Reopen applications</>}
+                        <span className={cn("w-2 h-2 rounded-full", campaign.status === 'Open' ? "bg-emerald-500 dark:bg-neon-green animate-pulse" : "bg-red-500")} />
+                        {campaign.status === 'Open' ? <Unlock size={13} /> : <Lock size={13} />}
+                        <span>{campaign.status === 'Open' ? 'ACTIVE (CLICK TO CLOSE)' : 'CLOSED (CLICK TO OPEN)'}</span>
                     </button>
+
+                    {/* Auto-Shortlist on Apply Setting Toggle */}
+                    <button
+                        onClick={async () => {
+                            if (onToggleAutoShortlist) {
+                                await onToggleAutoShortlist(campaign.id);
+                            } else {
+                                const nextVal = !campaign.autoShortlistEligible;
+                                await updateCampaign(campaign.id, { autoShortlistEligible: nextVal });
+                            }
+                        }}
+                        className={cn(
+                            "h-11 px-4 border rounded-full text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-2 active:scale-95",
+                            campaign.autoShortlistEligible 
+                                ? "bg-neon-green/15 border-neon-green/30 text-emerald-800 dark:text-neon-green hover:bg-neon-green/25" 
+                                : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:bg-black/10 dark:hover:bg-white/10"
+                        )}
+                        title="Toggle Auto-Shortlist for new applicants who meet follower criteria"
+                    >
+                        <Zap size={13} className={campaign.autoShortlistEligible ? "text-emerald-600 dark:text-neon-green fill-current" : "text-gray-400"} />
+                        <span>AUTO-SHORTLIST: {campaign.autoShortlistEligible ? 'ON' : 'OFF'}</span>
+                    </button>
+
+                    {/* View Public Live Campaign */}
                     <a
                         href={`/campaign/${encodeURIComponent(campaign.id)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-800 hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                        className="h-11 px-4 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-700 dark:text-gray-300 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider hover:bg-white hover:text-black dark:hover:bg-white/20 transition-all active:scale-95"
+                        title="View Public Campaign View"
                     >
-                        <Eye size={14} /> Public page
+                        <Eye size={13} />
+                        <span className="hidden sm:inline">VIEW LIVE</span>
                     </a>
-                    <button
-                        type="button"
-                        onClick={onCopyLink}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-800 hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+
+                    {/* Share Link */}
+                    <button 
+                        onClick={onCopyLink} 
+                        className="w-11 h-11 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-700 dark:text-gray-300 flex items-center justify-center hover:bg-white hover:text-black dark:hover:bg-white/20 transition-all shadow-sm active:scale-95"
+                        title="Copy Campaign Link"
                     >
-                        <Share2 size={14} /> Copy link
+                        <Share2 size={15} />
                     </button>
-                    <button
-                        type="button"
-                        onClick={() => onEdit(campaign)}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-gray-900 px-3 text-sm font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-zinc-200"
+
+                    {/* Edit Campaign */}
+                    <button 
+                        onClick={() => onEdit(campaign)} 
+                        className="h-11 px-4 bg-black/10 dark:bg-white/10 border border-black/20 dark:border-white/20 text-gray-900 dark:text-white font-black uppercase tracking-wider rounded-full hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all text-[11px] flex items-center gap-1.5 active:scale-95"
                     >
-                        <Edit size={14} /> Edit
+                        <Edit size={13} /> EDIT BRIEF
                     </button>
-                    <button
-                        type="button"
+
+                    {/* Delete Campaign */}
+                    <button 
                         onClick={() => {
-                            if (window.confirm(`Delete “${campaign.title}”? Applicants and task submissions for this campaign will be lost. This cannot be undone.`)) {
+                            if (window.confirm(`Delete "${campaign.title}"? Applicants and task submissions for this campaign will be lost. This cannot be undone.`)) {
                                 onDelete(campaign.id);
                             }
-                        }}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-red-600 hover:bg-red-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-500/10"
-                        title="Delete campaign"
-                        aria-label="Delete campaign"
+                        }} 
+                        className="w-11 h-11 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
+                        title="Delete Campaign"
                     >
                         <Trash2 size={15} />
                     </button>
@@ -1381,7 +1401,7 @@ const CampaignDetailView = ({
             </div>
 
             {/* Ultra-Aesthetic Campaign Showcase Hero Card */}
-            <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="relative bg-white/80 dark:bg-[#0c0e14]/90 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.08] rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.06)] dark:shadow-[0_25px_70px_rgba(0,0,0,0.7)] overflow-hidden">
                 <div className="relative z-10 flex flex-col lg:flex-row gap-8 items-start justify-between">
                     <div className="flex flex-col sm:flex-row items-start gap-6 w-full lg:w-auto flex-1">
                         {/* High-Impact Thumbnail - Uncropped Widescreen */}

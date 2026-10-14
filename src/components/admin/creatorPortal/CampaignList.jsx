@@ -118,7 +118,7 @@ const CampaignList = ({
             </div>
 
             <Card className="overflow-hidden">
-                <div className="border-b border-gray-200 p-3 dark:border-zinc-800">
+                <div className="border-b border-black/[0.08] p-3 dark:border-white/[0.08]">
                     <SearchInput value={q} onChange={(v) => setParam('q', v)} placeholder="Search by title, brand or city" className="max-w-md" />
                 </div>
 
@@ -137,30 +137,30 @@ const CampaignList = ({
                     <>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-sm">
-                                <thead className="hidden border-b border-gray-200 text-xs text-gray-500 dark:border-zinc-800 dark:text-zinc-400 md:table-header-group">
+                                <thead className="hidden border-b border-black/[0.08] text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 dark:border-white/[0.08] dark:text-zinc-400 md:table-header-group">
                                     <tr>
-                                        <th className="py-2.5 pl-4 pr-2 font-medium">Campaign</th>
-                                        <th className="px-2 py-2.5 font-medium">City</th>
-                                        <th className="px-2 py-2.5 text-right font-medium">Applicants</th>
-                                        <th className="hidden px-2 py-2.5 text-right font-medium lg:table-cell">Tasks</th>
-                                        <th className="px-2 py-2.5 text-right font-medium">To review</th>
-                                        <th className="px-2 py-2.5 font-medium">Status</th>
-                                        <th className="hidden px-2 py-2.5 font-medium lg:table-cell">Created</th>
+                                        <th className="py-2.5 pl-4 pr-2">Campaign</th>
+                                        <th className="px-2 py-2.5">City</th>
+                                        <th className="px-2 py-2.5 text-right">Applicants</th>
+                                        <th className="hidden px-2 py-2.5 text-right lg:table-cell">Tasks</th>
+                                        <th className="px-2 py-2.5 text-right">To review</th>
+                                        <th className="px-2 py-2.5">Status</th>
+                                        <th className="hidden px-2 py-2.5 lg:table-cell">Created</th>
                                         <th className="w-24 py-2.5 pr-4" />
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
+                                <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
                                     {pageRows.map(({ campaign: c, open, toReview, applicants }) => {
                                         const spots = getCampaignSpotsInfo(c, creators);
                                         return (
-                                            <tr key={c.id} onClick={() => onOpen(c)} className="group cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/50">
+                                            <tr key={c.id} onClick={() => onOpen(c)} className="group cursor-pointer hover:bg-black/[0.03] dark:hover:bg-white/[0.02]">
                                                 <td className="py-3 pl-4 pr-2">
                                                     <div className="flex min-w-0 items-center gap-3">
-                                                        <div className="h-10 w-14 shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-zinc-800">
+                                                        <div className="h-10 w-14 shrink-0 overflow-hidden rounded-md bg-black/5 dark:bg-white/5">
                                                             {c.thumbnail && <img src={c.thumbnail} alt="" className="h-full w-full object-cover" loading="lazy" />}
                                                         </div>
                                                         <div className="min-w-0">
-                                                            <p className="flex items-center gap-1.5 truncate font-medium text-gray-900 dark:text-white">
+                                                            <p className="flex items-center gap-1.5 truncate font-bold text-gray-900 dark:text-white">
                                                                 {c.isPinned && <Pin size={12} className="shrink-0 text-gray-400" aria-label="Pinned" />}
                                                                 <span className="truncate">{c.title || 'Untitled campaign'}</span>
                                                             </p>
@@ -215,7 +215,7 @@ const CampaignList = ({
                                                             <MenuItem icon={open ? Lock : Unlock} disabled={isUpdating} onClick={() => onUpdate(c.id, { status: open ? 'Closed' : 'Open' })}>
                                                                 {open ? 'Close applications' : 'Reopen applications'}
                                                             </MenuItem>
-                                                            <div className="my-1 border-t border-gray-100 dark:border-zinc-800" />
+                                                            <div className="my-1 border-t border-black/[0.05] dark:border-white/[0.08]" />
                                                             <MenuItem icon={Trash2} danger disabled={isUpdating} onClick={() => confirmDelete(c)}>Delete campaign</MenuItem>
                                                         </Menu>
                                                         <ChevronRight size={16} className="hidden text-gray-300 group-hover:text-gray-500 dark:text-zinc-600 sm:block" />
