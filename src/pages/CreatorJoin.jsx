@@ -4,7 +4,7 @@ import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { auth } from '../lib/firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import confetti from 'canvas-confetti';
-import { PREDEFINED_CITIES } from '../lib/constants';
+import { PREDEFINED_CITIES, isCollegeNiche } from '../lib/constants';
 import { requestAutoLocation } from '../lib/location';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
@@ -909,6 +909,11 @@ const CreatorJoin = () => {
                 useStore.getState().addToast("Please specify your content niche.", 'warning');
                 return;
             }
+            if (isCollegeNiche(formData.categories) && !formData.collegeName.trim()) {
+                useStore.getState().addToast("Please enter your college or university name.", 'warning');
+                document.getElementById('creator-college-name')?.focus();
+                return;
+            }
             if (!formData.instagram.trim() && !formData.linkedin.trim()) {
                 useStore.getState().addToast("Please provide at least your Instagram or LinkedIn username.", 'warning');
                 return;
@@ -985,6 +990,10 @@ const CreatorJoin = () => {
             useStore.getState().addToast("Please complete all required fields.", 'error');
             return;
         }
+        if (isCollegeNiche(formData.categories) && !formData.collegeName.trim()) {
+            useStore.getState().addToast("Please enter your college or university name.", 'error');
+            return;
+        }
 
         const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
         if (isLocal && !isPhoneVerified) {
@@ -1038,6 +1047,7 @@ const CreatorJoin = () => {
                 twitter: cleanTwitter,
                 website: '',
                 cityPageFocus: formData.cityPageFocus ? formData.cityPageFocus.trim() : '',
+                collegeName: isCollegeNiche(finalNiche) ? formData.collegeName.trim() : '',
                 city: finalCity,
                 categories: finalNiche,
                 specializations: [finalNiche],
@@ -1916,16 +1926,25 @@ const CreatorJoin = () => {
                                         </motion.div>
                                     )}
 
-                                    {(formData.categories === 'Student/Campus Creator' || formData.categories === 'College Pages') && (
-                                        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="pt-2">
+                                    {isCollegeNiche(formData.categories) && (
+                                        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="space-y-1.5 pt-2">
+                                            <label htmlFor="creator-college-name" className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider flex items-center gap-1.5">
+                                                <GraduationCap size={13} />
+                                                {formData.categories === 'College Pages' ? 'College this page represents *' : 'Your college / university *'}
+                                            </label>
                                             <input
+                                                id="creator-college-name"
                                                 type="text"
                                                 name="collegeName"
                                                 value={formData.collegeName}
                                                 onChange={handleChange}
-                                                placeholder="College / University Name (e.g. Christ University, IIT Bombay)"
+                                                autoComplete="organization"
+                                                placeholder="e.g. Christ University, IIT Bombay, St. Xavier's College"
                                                 className="w-full h-11 sm:h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-3.5 sm:px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
+                                            <p className="text-[10px] text-gray-500 dark:text-zinc-400">
+                                                Used to match you with campus campaigns and college fest briefs.
+                                            </p>
                                         </motion.div>
                                     )}
                                 </div>
