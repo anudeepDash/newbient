@@ -244,15 +244,16 @@ function AppContent() {
               <Route path="admin/creators/:id" element={<CreatorManager isEmbedded />} />
               <Route path="admin/creators/settings" element={<CreatorSettingsPage isEmbedded />} />
               <Route path="admin/campaigns" element={<CampaignManager isEmbedded />} />
+              <Route path="admin/campaigns/create" element={<CampaignManager isEmbedded />} />
+              <Route path="admin/campaigns/edit/:id" element={<CampaignManager isEmbedded />} />
+              <Route path="admin/campaigns/manage/:id" element={<CampaignManager isEmbedded />} />
+              <Route path="admin/campaigns/:id" element={<RedirectKeepQuery to="/admin/campaigns/manage/:id" />} />
             </Route>
             <Route path="admin/city-groups" element={<Navigate to="/admin/creators/settings?tab=groups" replace />} />
             <Route path="admin/creators/groups" element={<Navigate to="/admin/creators/settings?tab=groups" replace />} />
             <Route path="admin/creator-hub" element={<Navigate to="/admin/creators" replace />} />
             <Route path="admin/content" element={<AdminGuard><SiteContentManager /></AdminGuard>} />
             <Route path="admin/site-content" element={<Navigate to="/admin/content" replace />} />
-            <Route path="admin/campaigns/create" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CampaignManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/campaigns/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CampaignManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/campaigns/manage/:id" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CampaignManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/giveaways" element={<AdminGuard><MaintenanceGuard featureId="giveaways"><GiveawayManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/giveaways/:giveawayId/participants" element={<AdminGuard><MaintenanceGuard featureId="giveaways"><GiveawayParticipants /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/blog" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><ConcertZoneStudio /></MaintenanceGuard></AdminGuard>} />
