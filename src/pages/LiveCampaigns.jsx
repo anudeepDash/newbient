@@ -61,7 +61,7 @@ const LiveCampaigns = () => {
             setAuthModal(true);
             return;
         }
-        if (!profile) {
+        if (!profile || campaign.websiteApplyEnabled === false) {
             setSelectedCampaignForModal(campaign);
             return;
         }
@@ -349,7 +349,7 @@ const LiveCampaigns = () => {
                                                     const isJoined = profile && (profile.joinedCampaigns || []).includes(camp.id);
                                                     const minFollowers = Number(camp.minInstagramFollowers || 0);
                                                     const followersCount = Number(profile?.instagramFollowers || 0);
-                                                    const isEligible = Boolean(profile) && (
+                                                    const isEligible = Boolean(profile) && camp.websiteApplyEnabled !== false && (
                                                         minFollowers <= 0 ||
                                                         followersCount >= minFollowers
                                                     );
