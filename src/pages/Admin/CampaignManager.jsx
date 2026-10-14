@@ -84,7 +84,9 @@ import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioSelect from '../../components/ui/StudioSelect';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { buildCampaignUrl, creatorCampaignPath } from '../../lib/campaignLinks';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import { copyToClipboard } from '../../lib/clipboard';
 
 const TASK_TYPES = [
     { value: 'content_post', label: 'Content Post', icon: Camera },
@@ -804,11 +806,11 @@ const CampaignManager = ({ isEmbedded = false }) => {
             if (editingId) {
                 await updateCampaign(editingId, formData);
             } else {
-                await addCampaign(formData);
+                const newCampaignId = await addCampaign(formData);
                 await notifyAllUsers(
                     `NEW CAMPAIGN ACTIVE: ${formData.title.toUpperCase()}`,
                     `REWARD: ${formData.reward}. LOCATION: ${formData.targetCity}. VIEW DETAILS NOW.`,
-                    '/creator-dashboard',
+                    newCampaignId ? `/campaign/${newCampaignId}` : '/creator-dashboard',
                     ''
                 );
             }
@@ -826,14 +828,14 @@ const CampaignManager = ({ isEmbedded = false }) => {
     };
 
     const handleCopyLink = (id) => {
-        const url = `${window.location.origin}/campaign/${id}`;
-        navigator.clipboard.writeText(url);
+        const url = buildCampaignUrl(id);
+        copyToClipboard(url);
         useStore.getState().addToast("Campaign link copied to clipboard!", 'success');
     };
 
     const handleCopyTaskLink = (campaignId, taskId) => {
-        const url = `${window.location.origin}/campaign/${campaignId}?taskId=${taskId}`;
-        navigator.clipboard.writeText(url);
+        const url = buildCampaignUrl(campaignId, taskId);
+        copyToClipboard(url);
         useStore.getState().addToast("Task link copied to clipboard!", 'success');
     };
 
@@ -850,7 +852,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                     creatorUid,
                     'CAMPAIGN SELECTION',
                     `CONGRATULATIONS! YOU HAVE BEEN SELECTED FOR "${campaign.title.toUpperCase()}". VIEW YOUR TASKS IN YOUR CREATOR STUDIO.`,
-                    '/creator-dashboard',
+                    creatorCampaignPath(campaignId),
                     'campaign'
                 );
             }
@@ -875,7 +877,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                         uid,
                         'CAMPAIGN SELECTION',
                         `CONGRATULATIONS! YOU HAVE BEEN SELECTED FOR "${(campaign?.title || 'CAMPAIGN').toUpperCase()}". VIEW YOUR TASKS IN YOUR CREATOR STUDIO.`,
-                        '/creator-dashboard',
+                        creatorCampaignPath(campaignId),
                         'campaign'
                     )
                 )
@@ -1002,7 +1004,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                 creatorUid,
                 'TASK APPROVED',
                 `YOUR SUBMISSION FOR "${task?.title?.toUpperCase()}" HAS BEEN VERIFIED. GREAT WORK!`,
-                '/creator-dashboard',
+                creatorCampaignPath(campaignId),
                 'campaign'
             );
         } catch (error) {
@@ -1031,7 +1033,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                 rejectionModal.creatorUid,
                 'TASK FEEDBACK',
                 `YOUR SUBMISSION FOR "${task?.title?.toUpperCase()}" REQUIRES ATTENTION: ${rejectionReason.toUpperCase()}`,
-                '/creator-dashboard',
+                creatorCampaignPath(rejectionModal.campaignId),
                 'campaign'
             );
 
@@ -1994,7 +1996,7 @@ const CampaignDetailView = ({
             useStore.getState().addToast("No Instagram handles found to copy.", 'error');
             return;
         }
-        navigator.clipboard.writeText(handles);
+        copyToClipboard(handles);
         useStore.getState().addToast(`Copied ${targetList.length} handles to clipboard!`, 'success');
     };
 
@@ -2009,7 +2011,7 @@ const CampaignDetailView = ({
             useStore.getState().addToast("No phone numbers found to copy.", 'error');
             return;
         }
-        navigator.clipboard.writeText(phones);
+        copyToClipboard(phones);
         useStore.getState().addToast(`Copied ${targetList.length} phone numbers!`, 'success');
     };
 

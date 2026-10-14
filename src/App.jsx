@@ -1,5 +1,5 @@
 import React, { useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import ScrollToTop from './components/ScrollToTop';
 import { useStore } from './lib/store'; 
@@ -93,6 +93,15 @@ import NewbiToast from './components/ui/NewbiToast';
 
 import { safeLocalStorage } from './lib/storage';
 
+// Redirect that keeps the query string (?ref=, ?campaignId=, ?taskId=) and fills
+// in :params, so old or hand-typed creator links still land in the right place.
+function RedirectKeepQuery({ to }) {
+  const location = useLocation();
+  const params = useParams();
+  const target = to.replace(/:([A-Za-z]+)/g, (_, key) => encodeURIComponent(params[key] || ''));
+  return <Navigate to={`${target}${location.search}${location.hash}`} replace />;
+}
+
 function AppContent() {
   const { user, subscribeToData, subscribeToNotifications, checkUserRole, loading, authInitialized } = useStore();
   const location = useLocation();
@@ -155,9 +164,28 @@ function AppContent() {
 
             <Route path="creator" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorLanding /></MaintenanceGuard>} />
             <Route path="creator/join" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorJoin /></MaintenanceGuard>} />
-            <Route path="campaigns" element={<Navigate to="/creator-dashboard" replace />} />
             <Route path="creator-dashboard" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorDashboard /></MaintenanceGuard>} />
             <Route path="creator-dashboard/settings" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorDashboard /></MaintenanceGuard>} />
+
+            {/* Creator link aliases: legacy URLs, typos and old share links */}
+            <Route path="campaigns" element={<RedirectKeepQuery to="/creator-dashboard" />} />
+            <Route path="campaigns/:id" element={<RedirectKeepQuery to="/campaign/:id" />} />
+            <Route path="creator/campaign/:id" element={<RedirectKeepQuery to="/campaign/:id" />} />
+            <Route path="creator/campaigns/:id" element={<RedirectKeepQuery to="/campaign/:id" />} />
+            <Route path="creator-dashboard/campaign/:id" element={<RedirectKeepQuery to="/campaign/:id" />} />
+            <Route path="creator-dashboard/*" element={<RedirectKeepQuery to="/creator-dashboard" />} />
+            <Route path="creator/dashboard" element={<RedirectKeepQuery to="/creator-dashboard" />} />
+            <Route path="creator/hub" element={<RedirectKeepQuery to="/creator-dashboard" />} />
+            <Route path="creator/studio" element={<RedirectKeepQuery to="/creator-dashboard" />} />
+            <Route path="creator/campaigns" element={<RedirectKeepQuery to="/creator-dashboard" />} />
+            <Route path="creators" element={<RedirectKeepQuery to="/creator" />} />
+            <Route path="creator-hub" element={<RedirectKeepQuery to="/creator-dashboard" />} />
+            <Route path="creator-studio" element={<RedirectKeepQuery to="/creator-dashboard" />} />
+            <Route path="creator-join" element={<RedirectKeepQuery to="/creator/join" />} />
+            <Route path="creator/apply" element={<RedirectKeepQuery to="/creator/join" />} />
+            <Route path="creator/register" element={<RedirectKeepQuery to="/creator/join" />} />
+            <Route path="creator/signup" element={<RedirectKeepQuery to="/creator/join" />} />
+            <Route path="creator/landing" element={<RedirectKeepQuery to="/creator" />} />
             <Route path="forms" element={<MaintenanceGuard isPage featureId="forms_public"><FormViewer /></MaintenanceGuard>} />
             <Route path="forms/:id" element={<MaintenanceGuard isPage featureId="forms_public"><FormViewer /></MaintenanceGuard>} />
             <Route path="form/:id" element={<MaintenanceGuard isPage featureId="forms_public"><FormViewer /></MaintenanceGuard>} />

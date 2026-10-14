@@ -14,6 +14,7 @@ import { resolveCityWhatsAppGroup, generateOfficialHTML } from '../../lib/email'
 import EmailPreviewIframe from '../ui/EmailPreviewIframe';
 import EditCreatorModal from '../creator/EditCreatorModal';
 import { SharedLayoutModal } from '../../design-system/overlays/SharedLayoutModal';
+import { copyToClipboard } from '../../lib/clipboard';
 
 // ─── Constants & Badges ─────────────────────────────────────────────────────
 const AVAILABLE_BADGES = [
@@ -288,7 +289,7 @@ const CreatorDetailModal = ({
         catch { setAdminBadges(adminBadges); useStore.getState().addToast('Failed', 'error'); }
     };
 
-    const handleCopy = (text, label) => { if (!text) return; navigator.clipboard.writeText(text); useStore.getState().addToast(`Copied ${label}`, 'success'); };
+    const handleCopy = (text, label) => { if (!text) return; copyToClipboard(text); useStore.getState().addToast(`Copied ${label}`, 'success'); };
 
     const handleSendEmail = async (e) => {
         e.preventDefault();

@@ -34,7 +34,7 @@ const Home = () => {
         } else if (glId) {
             navigate(`/community?gl=${glId}`, { replace: true });
         } else if (campaignId) {
-            navigate(`/community?campaign=${campaignId}`, { replace: true });
+            navigate(`/campaign/${encodeURIComponent(campaignId)}`, { replace: true });
         }
     }, [navigate]);
 

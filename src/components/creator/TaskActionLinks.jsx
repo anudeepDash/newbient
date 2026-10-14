@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { extractTaskActionLinks } from '../../lib/taskLinks';
 import { cn } from '../../lib/utils';
+import { copyToClipboard } from '../../lib/clipboard';
 
 export const TaskActionLinks = ({ 
     task, 
@@ -28,11 +29,11 @@ export const TaskActionLinks = ({
     const handleCopy = (e, url, idx) => {
         e.stopPropagation();
         e.preventDefault();
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(url);
+        copyToClipboard(url).then(ok => {
+            if (!ok) return;
             setCopiedIndex(idx);
             setTimeout(() => setCopiedIndex(null), 2200);
-        }
+        });
     };
 
     return (

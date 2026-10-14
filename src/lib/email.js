@@ -1,15 +1,12 @@
 import { auth, db } from './firebase';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { DEFAULT_CREATOR_GROUPS } from './constants';
+import { getPublicSiteUrl } from './siteUrl';
 
 export const NEWBI_GREEN = '#39FF14';
 export const CONCERT_ZONE_CYAN = '#00f2ff';
 
-const getBaseUrl = () => {
-    return typeof window !== 'undefined' && window.location?.origin 
-        ? window.location.origin 
-        : 'https://newbi.live';
-};
+const getBaseUrl = () => getPublicSiteUrl();
 
 /**
  * Injects 1x1 open tracking pixel and rewrites outbound hyperlinks to route through link click tracking.
