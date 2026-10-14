@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate, useParams, useLocation, useSearchParams, Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { PREDEFINED_CITIES, CREATOR_NICHES } from '../../lib/constants';
+import { PREDEFINED_CITIES, CREATOR_NICHES, nicheKey, creatorHasCollegeNiche } from '../../lib/constants';
 import { extractSocialUsername, buildSocialUrl } from '../../lib/socialUtils';
 import { cn } from '../../lib/utils';
 import { sendCreatorDirectEmail } from '../../lib/email';
@@ -178,6 +178,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
     const status = STATUS_TABS.includes(searchParams.get('status')) ? searchParams.get('status') : 'all';
     const city = searchParams.get('city') || 'all';
     const niche = searchParams.get('niche') || 'all';
+    const college = searchParams.get('college') || 'all';
     const platform = searchParams.get('platform') || 'all';
     const minFollowers = searchParams.get('min') || '';
     const manualOnly = searchParams.get('manual') === '1';
@@ -238,6 +239,26 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
         return [{ value: 'all', label: 'All cities' }, ...[...set].filter(Boolean).sort().map(c => ({ value: c, label: c }))];
     }, [creators]);
 
+    // Colleges grouped case-insensitively, most creators first.
+    const collegeOptions = useMemo(() => {
+        const byKey = new Map();
+        let missing = 0;
+        creators.forEach(c => {
+            const name = String(c.collegeName || '').trim();
+            if (!name) { if (creatorHasCollegeNiche(c)) missing++; return; }
+            const key = name.toLowerCase();
+            const entry = byKey.get(key) || { label: name, count: 0 };
+            entry.count++;
+            byKey.set(key, entry);
+        });
+        const list = [...byKey.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+        return [
+            { value: 'all', label: 'All colleges' },
+            ...(missing ? [{ value: 'missing', label: `College missing (${missing})` }] : []),
+            ...list.map(e => ({ value: e.label, label: `${e.label} (${e.count})` })),
+        ];
+    }, [creators]);
+
     const nicheOptions = useMemo(() => [{ value: 'all', label: 'All niches' }, ...CREATOR_NICHES.map(n => ({ value: n, label: n }))], []);
 
     const bangaloreCount = useMemo(
@@ -255,9 +276,12 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
             if (city !== 'all' && c.city !== city && !(city === 'Bengaluru' && isBangaloreVariant(c.city))) return false;
             if (niche !== 'all') {
                 const specs = Array.isArray(c.specializations) ? c.specializations : (Array.isArray(c.niches) ? c.niches : []);
-                const ok = specs.some(n => (n === 'Student Creator/ Campus Creator' ? 'Student/ Campus Creator' : n) === niche);
-                if (!ok) return false;
+                const target = nicheKey(niche);
+                if (![...specs, c.categories].some(n => nicheKey(n) === target)) return false;
             }
+            if (college === 'missing') {
+                if (!creatorHasCollegeNiche(c) || String(c.collegeName || '').trim()) return false;
+            } else if (college !== 'all' && String(c.collegeName || '').trim().toLowerCase() !== college.toLowerCase()) return false;
             if (platform !== 'all' && !String(c[platform] || '').trim()) return false;
             if (min && creatorReach(c) < min) return false;
             return true;
@@ -270,13 +294,13 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
             name: (a, b) => String(a.name || '').localeCompare(String(b.name || '')),
         };
         return list.sort(sorters[sort] || sorters.newest);
-    }, [creators, q, field, status, manualOnly, city, niche, platform, minFollowers, sort]);
+    }, [creators, q, field, status, manualOnly, city, niche, college, platform, minFollowers, sort]);
 
     const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const currentPage = Math.min(page, pageCount);
     const pageRows = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-    const hasFilters = Boolean(q || status !== 'all' || city !== 'all' || niche !== 'all' || platform !== 'all' || minFollowers || manualOnly);
+    const hasFilters = Boolean(q || status !== 'all' || city !== 'all' || niche !== 'all' || college !== 'all' || platform !== 'all' || minFollowers || manualOnly);
 
     // Detail modal follows the URL (/admin/creators/:id) and always shows live data.
     const selectedCreator = useMemo(() => {
@@ -534,6 +558,9 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                     <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                         <Select label="City" value={city} onChange={(v) => updateParams({ city: v })} options={cityOptions} className="sm:w-40" />
                         <Select label="Niche" value={niche} onChange={(v) => updateParams({ niche: v })} options={nicheOptions} className="sm:w-44" />
+                        {collegeOptions.length > 1 && (
+                            <Select label="College" value={college} onChange={(v) => updateParams({ college: v })} options={collegeOptions} className="sm:w-48" />
+                        )}
                         <Select
                             label="Platform"
                             value={platform}
@@ -611,7 +638,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                         </th>
                                         <th className="px-2 py-2.5 font-medium">Creator</th>
                                         <th className="px-2 py-2.5 font-medium">City</th>
-                                        <th className="hidden px-2 py-2.5 font-medium lg:table-cell">Niche</th>
+                                        <th className="hidden px-2 py-2.5 font-medium lg:table-cell">Niche / college</th>
                                         <th className="px-2 py-2.5 text-right font-medium">Followers</th>
                                         <th className="hidden px-2 py-2.5 font-medium xl:table-cell">Phone</th>
                                         <th className="px-2 py-2.5 font-medium">Status</th>
@@ -706,6 +733,8 @@ const CreatorRow = ({ creator: c, selected, onToggle, onOpen }) => {
     const handle = c.instagram ? `@${extractSocialUsername(c.instagram, 'instagram')}` : '';
     const reach = creatorReach(c);
     const manual = isManualFollowerEntry(c) && c.profileStatus !== 'approved';
+    const collegeName = String(c.collegeName || '').trim();
+    const needsCollege = !collegeName && creatorHasCollegeNiche(c);
     const stop = (e) => e.stopPropagation();
 
     return (
@@ -748,13 +777,21 @@ const CreatorRow = ({ creator: c, selected, onToggle, onOpen }) => {
                             <span>{c.city || 'No city'}</span>
                             <span>·</span>
                             <span>{formatCount(reach)} followers</span>
+                            {collegeName && <><span>·</span><span className="truncate">{collegeName}</span></>}
                             <span className="ml-auto"><CreatorStatusBadge status={c.profileStatus} /></span>
                         </p>
                     </div>
                 </div>
             </td>
             <td className="hidden px-2 py-3 text-gray-700 dark:text-zinc-300 md:table-cell">{c.city || '—'}</td>
-            <td className="hidden max-w-[180px] truncate px-2 py-3 text-gray-700 dark:text-zinc-300 lg:table-cell">{creatorNiche(c) || '—'}</td>
+            <td className="hidden max-w-[200px] px-2 py-3 text-gray-700 dark:text-zinc-300 lg:table-cell">
+                <span className="block truncate">{creatorNiche(c) || '—'}</span>
+                {collegeName ? (
+                    <span className="block truncate text-xs text-gray-500 dark:text-zinc-400" title={collegeName}>{collegeName}</span>
+                ) : needsCollege ? (
+                    <span className="block text-xs text-amber-700 dark:text-amber-400">College missing</span>
+                ) : null}
+            </td>
             <td className="hidden px-2 py-3 text-right tabular-nums text-gray-900 dark:text-white md:table-cell">
                 {formatCount(reach)}
                 {manual && <span className="ml-1.5 align-middle"><Badge tone="amber">Manual</Badge></span>}
