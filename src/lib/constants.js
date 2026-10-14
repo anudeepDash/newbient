@@ -66,6 +66,25 @@ export const CREATOR_NICHES = [
     'Others'
 ];
 
+// Niche names have been saved with several spellings over time
+// ("Student/Campus Creator", "Student/ Campus Creator", "Student Creator/ Campus Creator").
+// Compare niches through this key instead of raw strings.
+export const nicheKey = (niche) => {
+    const key = String(niche || '').toLowerCase().replace(/[^a-z]/g, '');
+    return key === 'studentcreatorcampuscreator' ? 'studentcampuscreator' : key;
+};
+
+// Niches where the creator is tied to a college: student/campus creators and
+// college pages. These require a college / university name.
+const COLLEGE_NICHE_KEYS = new Set(['studentcampuscreator', 'collegepages']);
+export const isCollegeNiche = (niche) => COLLEGE_NICHE_KEYS.has(nicheKey(niche));
+
+export const creatorHasCollegeNiche = (creator) => {
+    if (!creator) return false;
+    const specs = Array.isArray(creator.specializations) ? creator.specializations : (Array.isArray(creator.niches) ? creator.niches : []);
+    return [...specs, creator.categories, creator.category, creator.niche].some(isCollegeNiche);
+};
+
 export const CREATOR_NICHE_OPTIONS = [
     { id: 'City Pages', label: 'City Pages / Local Hubs' },
     { id: 'College Pages', label: 'College Pages / Hubs' },

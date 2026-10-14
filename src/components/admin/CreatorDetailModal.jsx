@@ -14,6 +14,9 @@ import { resolveCityWhatsAppGroup, generateOfficialHTML } from '../../lib/email'
 import EmailPreviewIframe from '../ui/EmailPreviewIframe';
 import EditCreatorModal from '../creator/EditCreatorModal';
 import { SharedLayoutModal } from '../../design-system/overlays/SharedLayoutModal';
+import { copyToClipboard } from '../../lib/clipboard';
+import GraduationCap from 'lucide-react/dist/esm/icons/graduation-cap';
+import { creatorHasCollegeNiche } from '../../lib/constants';
 
 // ─── Constants & Badges ─────────────────────────────────────────────────────
 const AVAILABLE_BADGES = [
@@ -288,7 +291,7 @@ const CreatorDetailModal = ({
         catch { setAdminBadges(adminBadges); useStore.getState().addToast("Couldn't remove the badge. Please try again.", 'error'); }
     };
 
-    const handleCopy = (text, label) => { if (!text) return; navigator.clipboard.writeText(text); useStore.getState().addToast(`${label} copied.`, 'success'); };
+    const handleCopy = (text, label) => { if (!text) return; copyToClipboard(text); useStore.getState().addToast(`${label} copied.`, 'success'); };
 
     const handleSendEmail = async (e) => {
         e.preventDefault();
@@ -889,6 +892,24 @@ const CreatorDetailModal = ({
                                                         <div className="flex-1 min-w-0">
                                                             <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500 dark:text-white/50 mb-0.5">City</p>
                                                             <p className="text-[12px] font-semibold text-gray-900 dark:text-white/90">{creatorData.city}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {(creatorData.collegeName || creatorHasCollegeNiche(creatorData)) && (
+                                                    <div className="flex items-center gap-3 py-2.5 -mx-2 px-2">
+                                                        <div className="w-9 h-9 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0 shadow-sm">
+                                                            <GraduationCap size={14} className="text-teal-500" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500 dark:text-white/50 mb-0.5">College</p>
+                                                            {creatorData.collegeName ? (
+                                                                <p className="text-[12px] font-semibold text-gray-900 dark:text-white/90 truncate">{creatorData.collegeName}</p>
+                                                            ) : (
+                                                                <button type="button" onClick={() => { setEditSection('niche'); setIsEditOpen(true); }}
+                                                                    className="text-[12px] font-semibold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer">
+                                                                    Not added yet — add college
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 )}

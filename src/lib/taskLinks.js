@@ -3,9 +3,78 @@
  * and linkifying descriptions for mobile-optimized creator experience.
  */
 
+const TRAILING_PUNCTUATION = /[.,;:!?'"\]}>]+$/;
+
+/**
+ * Turns whatever an admin pasted into a usable absolute URL, or null.
+ * Handles missing protocols ("forms.gle/abc", "www.bookmyshow.com/..."),
+ * protocol-relative links, stray quotes/angle brackets and trailing punctuation
+ * picked up from sentences ("...forms.gle/abc.").
+ */
+export const normalizeLinkUrl = (raw) => {
+    if (!raw || typeof raw !== 'string') return null;
+    let url = raw.trim().replace(/^[<("'\s]+/, '').replace(/[>"'\s]+$/, '');
+    url = url.replace(TRAILING_PUNCTUATION, '');
+    // Drop a trailing ")" only when it isn't closing a "(" inside the URL.
+    while (url.endsWith(')') && (url.match(/\(/g) || []).length < (url.match(/\)/g) || []).length) {
+        url = url.slice(0, -1);
+    }
+    if (!url || /\s/.test(url)) return null;
+
+    if (url.startsWith('//')) url = `https:${url}`;
+    else if (!/^[a-z][a-z0-9+.-]*:/i.test(url)) {
+        if (!/^(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)+(:\d+)?([/?#].*)?$/i.test(url)) return null;
+        url = `https://${url}`;
+    }
+
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+        return parsed.href;
+    } catch {
+        return null;
+    }
+};
+
+// Splits a matched URL into the link itself and any trailing punctuation that
+// belongs to the surrounding sentence.
+const splitTrailing = (match) => {
+    const clean = normalizeLinkUrl(match);
+    if (!clean) return { url: null, trailing: '' };
+    const trailingMatch = match.match(/[.,;:!?'"\]}>)]+$/);
+    let trailing = trailingMatch ? trailingMatch[0] : '';
+    // Keep balanced closing parens as part of the URL.
+    if (trailing && clean.endsWith(')')) trailing = trailing.replace(/^\)+/, '');
+    return { url: clean, trailing };
+};
+
+// Anchors typed in the rich editor often have hrefs like "forms.gle/x", which the
+// browser resolves relative to newbi.live and 404s. Repair the href and open
+// external links in a new tab.
+const fixExistingAnchor = (anchorHtml) => {
+    return anchorHtml.replace(/^<a\b([^>]*)>/i, (openTag, attrs) => {
+        let nextAttrs = attrs.replace(/\bhref\s*=\s*(["'])(.*?)\1/i, (full, quote, href) => {
+            if (/^(mailto:|tel:|#|\/)/i.test(href.trim())) return full;
+            const fixed = normalizeLinkUrl(href.replace(/&amp;/g, '&'));
+            return fixed ? `href="${fixed.replace(/&/g, '&amp;').replace(/"/g, '%22')}"` : full;
+        });
+        if (!/\btarget\s*=/i.test(nextAttrs)) nextAttrs += ' target="_blank" rel="noopener noreferrer"';
+        return `<a${nextAttrs}>`;
+    });
+};
+
+const renderAnchor = (url) => {
+    let domain = url;
+    try {
+        domain = new URL(url).hostname.replace(/^www\./, '');
+    } catch (e) {}
+    const safeHref = url.replace(/"/g, '%22');
+    return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-neon-green hover:underline underline-offset-2 break-all" onclick="event.stopPropagation()">${domain} ↗</a>`;
+};
+
 export const classifyUrl = (url, customLabel = '') => {
     if (!url) return null;
-    const cleanUrl = url.trim();
+    const cleanUrl = normalizeLinkUrl(url);
     if (!cleanUrl) return null;
 
     let domain = '';
@@ -124,9 +193,8 @@ export const extractTaskActionLinks = (task) => {
     const linkMap = new Map();
 
     const addLink = (url, label, explicitType) => {
-        if (!url || typeof url !== 'string') return;
-        const trimmed = url.trim();
-        if (!/^https?:\/\//i.test(trimmed)) return;
+        const trimmed = normalizeLinkUrl(url);
+        if (!trimmed) return;
         if (!linkMap.has(trimmed)) {
             const classified = classifyUrl(trimmed, label);
             if (classified) {
@@ -178,7 +246,8 @@ export const extractTaskActionLinks = (task) => {
         const matches = task.description.match(urlRegex) || [];
 
         matches.forEach(match => {
-            const clean = match.replace(/[.,;!]+$/, '');
+            const clean = normalizeLinkUrl(match);
+            if (!clean) return;
             let derivedLabel = '';
             const lowerDesc = task.description.toLowerCase();
             const idx = lowerDesc.indexOf(clean.toLowerCase());
@@ -201,12 +270,8 @@ export const extractTaskActionLinks = (task) => {
  */
 export const getTaskGoogleFormUrl = (task) => {
     if (!task) return null;
-    if (task.googleFormLink && typeof task.googleFormLink === 'string' && /^https?:\/\//i.test(task.googleFormLink.trim())) {
-        return task.googleFormLink.trim();
-    }
-    if (task.formLink && typeof task.formLink === 'string' && /^https?:\/\//i.test(task.formLink.trim())) {
-        return task.formLink.trim();
-    }
+    const explicitForm = normalizeLinkUrl(task.googleFormLink) || normalizeLinkUrl(task.formLink);
+    if (explicitForm) return explicitForm;
     const links = extractTaskActionLinks(task);
     const formLink = links.find(l => l.type === 'google_form' || l.url.includes('forms.gle') || l.url.includes('docs.google.com/forms'));
     return formLink ? formLink.url : null;
@@ -291,29 +356,26 @@ export const linkifyContent = (htmlOrText) => {
     const hasHtmlTags = /<[a-z][\s\S]*>/i.test(htmlOrText);
 
     if (hasHtmlTags) {
-        return htmlOrText.replace(
-            /(?<!href=["']|src=["']|">)(https?:\/\/[^\s<>"'`)]+)/gi,
-            (url) => {
-                let domain = url;
-                try {
-                    domain = new URL(url).hostname.replace(/^www\./, '');
-                } catch (e) {}
-                return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-neon-green hover:underline underline-offset-2 break-all" onclick="event.stopPropagation()">${domain} ↗</a>`;
-            }
-        );
+        // Only linkify text outside existing <a>…</a> elements and outside tags.
+        const parts = htmlOrText.split(/(<a\b[\s\S]*?<\/a>|<[^>]+>)/gi);
+        return parts.map(part => {
+            if (part && /^<a\b/i.test(part)) return fixExistingAnchor(part);
+            if (!part || part.startsWith('<')) return part;
+            return part.replace(/https?:\/\/[^\s<>"'`]+/gi, (match) => {
+                const { url, trailing } = splitTrailing(match);
+                return url ? `${renderAnchor(url)}${trailing}` : match;
+            });
+        }).join('');
     }
 
-    const urlRegex = /(https?:\/\/[^\s<>"'`)]+)/gi;
+    const urlRegex = /https?:\/\/[^\s<>"'`]+/gi;
     return htmlOrText
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(urlRegex, (url) => {
-            let domain = url;
-            try {
-                domain = new URL(url).hostname.replace(/^www\./, '');
-            } catch (e) {}
-            return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-neon-green hover:underline underline-offset-2 break-all" onclick="event.stopPropagation()">${domain} ↗</a>`;
+        .replace(urlRegex, (match) => {
+            const { url, trailing } = splitTrailing(match.replace(/&amp;/g, '&'));
+            return url ? `${renderAnchor(url.replace(/&/g, '&amp;'))}${trailing}` : match;
         })
         .replace(/\n/g, '<br/>');
 };

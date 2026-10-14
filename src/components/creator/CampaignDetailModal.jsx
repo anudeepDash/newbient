@@ -19,6 +19,8 @@ import { Input } from '../ui/Input';
 import EditCreatorModal from './EditCreatorModal';
 import TaskActionLinks from './TaskActionLinks';
 import { linkifyContent, extractTaskActionLinks, cleanTaskDescription, getTaskGoogleFormUrl } from '../../lib/taskLinks';
+import { buildCampaignUrl } from '../../lib/campaignLinks';
+import { copyToClipboard } from '../../lib/clipboard';
 
 const POPULAR_NICHES = [
     'Fashion & Style',
@@ -291,7 +293,7 @@ const CampaignDetailModal = ({
             e.stopPropagation();
             e.preventDefault();
         }
-        const directUrl = `${window.location.origin}/campaign/${campaign.id}?taskId=${task.id}`;
+        const directUrl = buildCampaignUrl(campaign.id, task.id);
         if (navigator.share) {
             try {
                 await navigator.share({
@@ -304,8 +306,7 @@ const CampaignDetailModal = ({
                 if (err.name === 'AbortError') return;
             }
         }
-        if (navigator.clipboard) {
-            await navigator.clipboard.writeText(directUrl);
+        if (await copyToClipboard(directUrl)) {
             setCopiedTaskId(task.id);
             useStore.getState().addToast("Task link copied.", 'success');
             setTimeout(() => setCopiedTaskId(null), 2200);

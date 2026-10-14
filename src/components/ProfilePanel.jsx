@@ -11,7 +11,7 @@ import {
 import { useStore } from '../lib/store';
 import { cn, normalizePhoneNumber } from '../lib/utils';
 import { extractSocialUsername, hasDisallowedLink, buildSocialUrl } from '../lib/socialUtils';
-import { PREDEFINED_CITIES, CREATOR_NICHES, CREATOR_NICHE_OPTIONS } from '../lib/constants';
+import { PREDEFINED_CITIES, CREATOR_NICHES, CREATOR_NICHE_OPTIONS, isCollegeNiche } from '../lib/constants';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../lib/firebase';
 import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
@@ -1925,6 +1925,10 @@ const CreatorProfileManager = ({
             if (addToast) addToast("Type in your niche.", "error");
             return;
         }
+        if (isCollegeNiche(form.categories) && !form.collegeName?.trim()) {
+            if (addToast) addToast("Please enter your college or university name", "error");
+            return;
+        }
 
         for (const field of ['instagram', 'linkedin', 'youtube', 'twitter']) {
             if (form[field] && hasDisallowedLink(form[field])) {
@@ -1953,7 +1957,7 @@ const CreatorProfileManager = ({
                 categories: finalNiche,
                 specializations: [finalNiche],
                 cityPageFocus: form.categories === 'City Pages' ? (form.cityPageFocus?.trim() || '') : '',
-                collegeName: (form.categories === 'Student/Campus Creator' || form.categories === 'College Pages') ? (form.collegeName?.trim() || '') : '',
+                collegeName: isCollegeNiche(form.categories) ? (form.collegeName?.trim() || '') : '',
                 instagram: extractSocialUsername(form.instagram, 'instagram'),
                 instagramFollowers: form.instagramFollowers || '',
                 linkedin: extractSocialUsername(form.linkedin, 'linkedin'),
@@ -2197,9 +2201,9 @@ const CreatorProfileManager = ({
                         </div>
                     )}
 
-                    {(form.categories === 'Student/Campus Creator' || form.categories === 'College Pages') && (
+                    {isCollegeNiche(form.categories) && (
                         <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">College / University Name</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">{form.categories === 'College Pages' ? 'College this page represents *' : 'College / University Name *'}</label>
                             <input 
                                 type="text"
                                 name="collegeName"

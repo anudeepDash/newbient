@@ -126,6 +126,13 @@ const CommunityJoin = () => {
         ...(activeFormsList || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'form' }))
     ];
 
+    // Campaigns live on their own page; community has no campaign cards to scroll to.
+    useEffect(() => {
+        if (directType === 'campaign' && directId) {
+            navigate(`/campaign/${encodeURIComponent(directId)}`, { replace: true });
+        }
+    }, [directType, directId, navigate]);
+
     useEffect(() => {
         const type = directType;
         const id = directId;

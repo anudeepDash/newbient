@@ -4,6 +4,7 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, order
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail, sendCreatorApprovedEmail, sendWhatsAppVerification } from './email';
 import { normalizePhoneNumber } from './utils';
+import { getPublicSiteUrl } from './siteUrl';
 import { extractSocialUsername, hasDisallowedLink } from './socialUtils';
 import { safeLocalStorage } from './storage';
 import { DEFAULT_CREATOR_GROUPS, isCampaignCityMatch } from './constants';
@@ -3009,9 +3010,7 @@ export const useStore = create((set, get) => ({
             }
         }
 
-        const verificationUrl = typeof window !== 'undefined' 
-            ? `${window.location.origin}/verify-creator?id=${targetUid}&token=${verificationToken}`
-            : `https://newbi.live/verify-creator?id=${targetUid}&token=${verificationToken}`;
+        const verificationUrl = `${getPublicSiteUrl()}/verify-creator?id=${targetUid}&token=${verificationToken}`;
 
         if (creator.phone) {
             sendWhatsAppVerification(creator.phone, creator.displayName || creator.name || 'Creator', verificationUrl)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useStore } from '../lib/store';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,6 +9,8 @@ import GlobalLoader from '../components/ui/GlobalLoader';
 import CampaignCard from '../components/ui/CampaignCard';
 import { HorizontalCarousel } from '../components/ui/HorizontalCarousel';
 import useDynamicMeta from '../hooks/useDynamicMeta';
+import { findCampaignById, fetchCampaignById } from '../lib/campaignLinks';
+import { getPublicSiteUrl } from '../lib/siteUrl';
 import CreatorCityGroupCard from '../components/creator/CreatorCityGroupCard';
 import CampaignDetailModal from '../components/creator/CampaignDetailModal';
 import EditCreatorModal from '../components/creator/EditCreatorModal';
@@ -61,6 +63,7 @@ import Compass from 'lucide-react/dist/esm/icons/compass';
 import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
 import Pencil from 'lucide-react/dist/esm/icons/pencil';
+import { copyToClipboard } from '../lib/clipboard';
 
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -93,10 +96,10 @@ const renderRankBadge = (rank) => {
 const CreatorReferralsView = ({ profile }) => {
     const { creators } = useStore();
     const [copied, setCopied] = useState(false);
-    const referralLink = `${window.location.origin}/creator/join?ref=${profile.creatorId || String(profile.uid || '').slice(0, 8).toUpperCase()}`;
+    const referralLink = `${getPublicSiteUrl()}/creator/join?ref=${profile.creatorId || String(profile.uid || '').slice(0, 8).toUpperCase()}`;
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(referralLink);
+        copyToClipboard(referralLink);
         setCopied(true);
         useStore.getState().addToast('Referral link copied.', 'success');
         setTimeout(() => setCopied(false), 2000);
@@ -668,22 +671,60 @@ const CreatorDashboard = () => {
         url: window.location.href
     });
 
-    // Deep link & Settings tab support
+    // Deep link & Settings tab support.
+    // Each distinct URL is handled once, so closing a modal doesn't get undone when
+    // the campaigns listener pushes a fresh snapshot.
+    const handledDeepLinkRef = useRef('');
     useEffect(() => {
         const searchParams = new URLSearchParams(location.search);
-        const campaignId = searchParams.get('campaignId');
-        if (campaignId && campaigns && campaigns.length > 0) {
-            const found = campaigns.find(c => c.id === campaignId);
-            if (found) setSelectedCampaignForModal(found);
+        const campaignId = searchParams.get('campaignId') || searchParams.get('campaign');
+        const linkKey = `${location.pathname}?${location.search}`;
+
+        if (campaignId && handledDeepLinkRef.current !== `campaign:${linkKey}`) {
+            const found = findCampaignById(campaigns, campaignId);
+            if (found) {
+                handledDeepLinkRef.current = `campaign:${linkKey}`;
+                setSelectedCampaignForModal(found);
+            } else if (subscriptionsLoaded?.campaigns) {
+                handledDeepLinkRef.current = `campaign:${linkKey}`;
+                fetchCampaignById(campaignId).then(remote => {
+                    if (remote) setSelectedCampaignForModal(remote);
+                    else useStore.getState().addToast?.('That campaign is no longer available.', 'error');
+                });
+            }
         }
 
-        if (location.pathname.includes('/settings') || searchParams.get('tab') === 'settings' || searchParams.get('action') === 'edit' || searchParams.get('edit') === 'true') {
+        const wantsSettings = location.pathname.includes('/settings') || searchParams.get('tab') === 'settings' || searchParams.get('action') === 'edit' || searchParams.get('edit') === 'true';
+        if (wantsSettings && handledDeepLinkRef.current !== `settings:${linkKey}` && !campaignId) {
+            handledDeepLinkRef.current = `settings:${linkKey}`;
             setIsEditModalOpen(true);
             if (location.pathname.includes('/settings')) {
                 setActiveTab('profile_settings');
             }
         }
-    }, [location.pathname, location.search, campaigns]);
+    }, [location.pathname, location.search, campaigns, subscriptionsLoaded?.campaigns]);
+
+    // Drop one-shot deep-link params once the modal they opened is closed, so a
+    // refresh or listener update doesn't pop it open again.
+    const clearDeepLinkParams = (keys) => {
+        const params = new URLSearchParams(location.search);
+        let changed = false;
+        keys.forEach(k => { if (params.has(k)) { params.delete(k); changed = true; } });
+        if (changed) {
+            const qs = params.toString();
+            navigate(`${location.pathname}${qs ? `?${qs}` : ''}`, { replace: true });
+        }
+    };
+
+    const closeCampaignModal = () => {
+        setSelectedCampaignForModal(null);
+        clearDeepLinkParams(['campaignId', 'campaign', 'taskId']);
+    };
+
+    const closeEditModal = () => {
+        setIsEditModalOpen(false);
+        clearDeepLinkParams(['tab', 'action', 'edit']);
+    };
 
     useEffect(() => {
         if (!authInitialized) return;
@@ -806,7 +847,7 @@ const CreatorDashboard = () => {
     const handleCopyCreatorId = () => {
         const id = profile?.creatorId || String(profile?.uid || '').slice(0, 8).toUpperCase();
         if (!id) return;
-        navigator.clipboard.writeText(id);
+        copyToClipboard(id);
         setCopiedId(true);
         useStore.getState().addToast('Creator ID copied.', 'success');
         setTimeout(() => setCopiedId(false), 2000);
@@ -1051,8 +1092,8 @@ const CreatorDashboard = () => {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    const link = `${window.location.origin}/creator/join?ref=${creatorId}`;
-                                    navigator.clipboard.writeText(link);
+                                    const link = `${getPublicSiteUrl()}/creator/join?ref=${creatorId}`;
+                                    copyToClipboard(link);
                                     useStore.getState().addToast('Referral invite link copied.', 'success');
                                 }}
                                 className="h-10 px-4 rounded-xl bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-xs font-bold text-gray-700 dark:text-zinc-200 transition-colors flex items-center gap-1.5 active:scale-95"
@@ -1589,7 +1630,7 @@ const CreatorDashboard = () => {
                 {selectedCampaignForModal && (
                     <CampaignDetailModal
                         campaign={selectedCampaignForModal}
-                        onClose={() => setSelectedCampaignForModal(null)}
+                        onClose={closeCampaignModal}
                         initialTaskId={new URLSearchParams(location.search).get('taskId')}
                     />
                 )}
@@ -1600,7 +1641,7 @@ const CreatorDashboard = () => {
                 {isEditModalOpen && profile && (
                     <EditCreatorModal
                         isOpen={isEditModalOpen}
-                        onClose={() => setIsEditModalOpen(false)}
+                        onClose={closeEditModal}
                         profile={profile}
                         initialSection={editInitialSection}
                         onUpdated={(updated) => {
