@@ -256,6 +256,7 @@ const CampaignDetailModal = ({
     const isJoined = profile && (profile.joinedCampaigns || []).includes(campaign?.id);
     const isShortlisted = profile && (profile.shortlistedCampaigns || []).includes(campaign?.id);
     const spotsInfo = getCampaignSpotsInfo(campaign, creators);
+    const isWebsiteApplyDisabled = campaign?.websiteApplyEnabled === false;
     const campaignTasks = campaign?.tasks || [];
     const requiredTasks = campaignTasks.filter(t => t.priority !== 'optional');
 
@@ -478,6 +479,8 @@ const CampaignDetailModal = ({
     // Join Campaign Submission
     const handleJoin = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
+
+        if (isWebsiteApplyDisabled) return;
 
         if (spotsInfo.hasSpots && spotsInfo.isFull) {
             return useStore.getState().addToast("Sorry, this campaign is full. There are no spots left.", 'warning');
@@ -728,7 +731,7 @@ const CampaignDetailModal = ({
             >
                 {/* Floating Glassmorphic Action & Close Buttons */}
                 <div className="absolute top-3.5 right-3.5 sm:top-6 sm:right-6 flex items-center gap-2 z-30">
-                    {!isJoined && !isApplyInView && (
+                    {!isJoined && !isWebsiteApplyDisabled && !isApplyInView && (
                         <button 
                             type="button"
                             onClick={scrollToApply}
@@ -916,7 +919,7 @@ const CampaignDetailModal = ({
                             )}
 
                             {/* Subtle Apply Now Action Pill */}
-                            {!isJoined ? (
+                            {!isJoined ? (!isWebsiteApplyDisabled && (
                                 <button
                                     type="button"
                                     onClick={scrollToApply}
@@ -925,7 +928,7 @@ const CampaignDetailModal = ({
                                     <Zap size={12} className="fill-current text-emerald-600 dark:text-neon-green" />
                                     <span>Apply Now</span>
                                 </button>
-                            ) : (
+                            )) : (
                                 <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-neon-green text-xs font-bold font-mono sm:ml-auto">
                                     <CheckCircle2 size={13} />
                                     <span>Applied</span>
@@ -1346,7 +1349,7 @@ const CampaignDetailModal = ({
                                         </a>
                                     )}
                                 </div>
-                            ) : (
+                            ) : isWebsiteApplyDisabled ? null : (
                                 /* ── Application flow ── */
                                 <div className="space-y-6">
                                     {/* Application Section Header */}
