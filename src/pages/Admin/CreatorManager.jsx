@@ -29,6 +29,14 @@ import Check from 'lucide-react/dist/esm/icons/check';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import List from 'lucide-react/dist/esm/icons/list';
+import Youtube from 'lucide-react/dist/esm/icons/youtube';
+import Linkedin from 'lucide-react/dist/esm/icons/linkedin';
+import GraduationCap from 'lucide-react/dist/esm/icons/graduation-cap';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import { getEarnedBadges, MILESTONE_BADGES } from '../../lib/badges';
+import { safeLocalStorage } from '../../lib/storage';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import BroadcastGroupsModal from '../../components/admin/BroadcastGroupsModal';
 import AddCityCreatorsModal from '../../components/admin/AddCityCreatorsModal';
@@ -143,7 +151,11 @@ const parseCSV = (text) => {
 const csvCell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
 
 const STATUS_TABS = ['all', 'pending', 'approved', 'rejected', 'blocked'];
-const PAGE_SIZE = 25;
+const PAGE_SIZES = { table: 25, grid: 24 };
+const VIEW_STORAGE_KEY = 'admin.creators.view';
+const readSavedView = () => {
+    try { return safeLocalStorage.getItem(VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'table'; } catch { return 'table'; }
+};
 const FOLLOWER_PRESETS = [
     { value: '', label: 'Any followers' },
     { value: '1000', label: '1K+ followers' },
@@ -165,6 +177,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
     useStoreSubscription(['creators', 'campaigns']);
     const creators = useStore(state => state.creators) || EMPTY;
     const creatorsLoaded = useStore(state => Boolean(state.subscriptionsLoaded?.creators));
+    const campaigns = useStore(state => state.campaigns) || EMPTY;
     const { updateCreator, deleteCreator, mergeBangaloreCreatorsToBengaluru } = useStore();
     const navigate = useNavigate();
     const location = useLocation();
@@ -184,6 +197,15 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
     const minFollowers = searchParams.get('min') || '';
     const manualOnly = searchParams.get('manual') === '1';
     const sort = searchParams.get('sort') || 'newest';
+    // ?view= wins (shareable links); otherwise use this browser's last choice.
+    const [savedView, setSavedView] = useState(readSavedView);
+    const view = ['grid', 'table'].includes(searchParams.get('view')) ? searchParams.get('view') : savedView;
+    const setView = (next) => {
+        setSavedView(next);
+        try { safeLocalStorage.setItem(VIEW_STORAGE_KEY, next); } catch { /* storage unavailable */ }
+        updateParams({ view: next === 'table' ? '' : next }, { keepPage: false });
+    };
+    const PAGE_SIZE = PAGE_SIZES[view];
     const page = Math.max(1, Number(searchParams.get('page')) || 1);
 
     const updateParams = (patch, { keepPage = false } = {}) => {
@@ -510,6 +532,26 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                     className="max-w-full overflow-x-auto"
                 />
                 <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex h-10 items-center rounded-xl border border-black/10 bg-black/[0.04] p-0.5 dark:border-white/10 dark:bg-white/[0.04]" role="group" aria-label="View">
+                        {[{ id: 'grid', icon: LayoutGrid, label: 'Card view' }, { id: 'table', icon: List, label: 'Table view' }].map(opt => (
+                            <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => setView(opt.id)}
+                                title={opt.label}
+                                aria-label={opt.label}
+                                aria-pressed={view === opt.id}
+                                className={cn(
+                                    'flex h-9 w-9 items-center justify-center rounded-lg transition-all',
+                                    view === opt.id
+                                        ? 'bg-white text-gray-900 shadow-sm dark:bg-white/10 dark:text-white'
+                                        : 'text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                )}
+                            >
+                                <opt.icon size={15} />
+                            </button>
+                        ))}
+                    </div>
                     <Menu
                         trigger={({ toggle }) => (
                             <Button variant="secondary" onClick={toggle}>
@@ -624,6 +666,31 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                     />
                 ) : (
                     <>
+                        {view === 'grid' ? (
+                            <div className="p-3 sm:p-4">
+                                <label className="mb-3 inline-flex cursor-pointer items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                    <input
+                                        type="checkbox"
+                                        checked={allPageSelected}
+                                        onChange={togglePage}
+                                        className="h-4 w-4 cursor-pointer rounded border-black/20 bg-white text-neon-green focus:ring-0 dark:border-white/20 dark:bg-black/60"
+                                    />
+                                    Select page
+                                </label>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                                    {pageRows.map(c => (
+                                        <CreatorCard
+                                            key={creatorKey(c)}
+                                            creator={c}
+                                            badges={getEarnedBadges(c, creators, campaigns)}
+                                            selected={selected.has(creatorKey(c))}
+                                            onToggle={() => toggleSelect(creatorKey(c))}
+                                            onOpen={() => openCreator(c)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-sm">
                                 <thead className="hidden border-b border-black/[0.08] text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 dark:border-white/[0.08] dark:text-zinc-400 md:table-header-group">
@@ -660,6 +727,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                 </tbody>
                             </table>
                         </div>
+                        )}
                         <Pagination
                             page={currentPage}
                             pageCount={pageCount}
@@ -726,6 +794,147 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                     onClose={() => setCityInvite(null)}
                 />
             )}
+        </div>
+    );
+};
+
+const SocialLink = ({ href, label, children }) => (
+    <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        title={label}
+        aria-label={label}
+        className="flex items-center justify-center rounded-lg border border-black/[0.06] bg-black/5 px-2 py-1 text-gray-700 transition-all hover:bg-black/10 dark:border-white/[0.06] dark:bg-white/5 dark:text-zinc-400 dark:hover:bg-white/10"
+    >
+        {children}
+    </a>
+);
+
+// Card view, in the same style as the other admin card grids.
+const CreatorCard = ({ creator: c, badges, selected, onToggle, onOpen }) => {
+    const photo = creatorPhoto(c);
+    const reach = creatorReach(c);
+    const manual = isManualFollowerEntry(c) && c.profileStatus !== 'approved';
+    const collegeName = String(c.collegeName || '').trim();
+    const needsCollege = !collegeName && creatorHasCollegeNiche(c);
+    const customBadges = Array.isArray(c.adminBadges) ? c.adminBadges : [];
+    // The verified state already shows on the photo, so skip the official badge here.
+    const shownBadges = badges.filter(b => b !== MILESTONE_BADGES.official).slice(0, 2);
+
+    return (
+        <div
+            role="button"
+            tabIndex={0}
+            onClick={onOpen}
+            onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }}
+            className={cn(
+                'group relative flex cursor-pointer flex-col overflow-hidden rounded-3xl border bg-white/70 shadow-[0_8px_32px_rgba(0,0,0,0.02)] backdrop-blur-2xl transition-all duration-300 hover:shadow-[0_16px_60px_rgba(0,0,0,0.06)] dark:bg-[#0c0e14]/80 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] dark:hover:shadow-[0_16px_60px_rgba(0,0,0,0.6)]',
+                selected ? 'border-neon-green/40 bg-neon-green/[0.03]' : 'border-black/[0.06] hover:border-black/20 dark:border-white/[0.08] dark:hover:border-white/[0.15]'
+            )}
+        >
+            {/* Photo */}
+            <div className="relative aspect-[4/3] overflow-hidden bg-black/5 dark:bg-white/5">
+                <div className="absolute left-3 top-3 z-20" onClick={(e) => e.stopPropagation()}>
+                    <input
+                        type="checkbox"
+                        aria-label={`Select ${c.name || 'creator'}`}
+                        checked={selected}
+                        onChange={onToggle}
+                        className="h-4 w-4 cursor-pointer rounded border-black/20 bg-white text-neon-green focus:ring-0 dark:border-white/20 dark:bg-black/60"
+                    />
+                </div>
+                {photo ? (
+                    <img src={photo} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                ) : (
+                    <div className="flex h-full w-full select-none items-center justify-center text-5xl font-black uppercase italic text-black/10 dark:text-white/10">
+                        {String(c.name || '?').charAt(0)}
+                    </div>
+                )}
+                <div className="absolute right-3 top-3 z-10 flex flex-col items-end gap-1">
+                    <CreatorStatusBadge status={c.profileStatus} />
+                    {manual && <Badge tone="amber" className="bg-amber-500 text-black dark:text-black">Manual</Badge>}
+                </div>
+                {c.profileStatus === 'approved' && (
+                    <div className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-xl bg-neon-green text-black shadow-sm">
+                        <Check size={14} strokeWidth={3} />
+                    </div>
+                )}
+            </div>
+
+            {/* Body */}
+            <div className="flex flex-1 flex-col gap-3 p-4">
+                <div className="min-w-0">
+                    <p className="mb-1 truncate text-[9px] font-bold uppercase tracking-widest text-gray-500">{creatorNiche(c) || 'Creator'}</p>
+                    <h3 className="line-clamp-1 font-heading text-lg font-black uppercase leading-tight tracking-tight text-gray-900 dark:text-white">
+                        {c.name || 'Unnamed creator'}
+                    </h3>
+                    {collegeName ? (
+                        <p className="mt-1 flex items-center gap-1 truncate text-[11px] font-semibold text-teal-700 dark:text-teal-400" title={collegeName}>
+                            <GraduationCap size={12} className="shrink-0" /> <span className="truncate">{collegeName}</span>
+                        </p>
+                    ) : needsCollege ? (
+                        <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+                            <GraduationCap size={12} /> College missing
+                        </p>
+                    ) : null}
+                </div>
+
+                {(shownBadges.length > 0 || customBadges.length > 0) && (
+                    <div className="flex max-h-[26px] flex-wrap gap-1 overflow-hidden">
+                        {shownBadges.map(b => (
+                            <span key={b.id} title={b.desc} className={cn('inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider', b.bg)}>
+                                <span>{b.icon}</span><span>{String(b.label).split(' ')[0]}</span>
+                            </span>
+                        ))}
+                        {customBadges.slice(0, 1).map((b, i) => (
+                            <span key={`custom-${i}`} className="inline-flex max-w-[110px] items-center gap-0.5 truncate rounded-full border border-black/[0.06] bg-black/5 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-gray-600 dark:border-white/[0.06] dark:bg-white/5 dark:text-zinc-400">
+                                🏅 {b}
+                            </span>
+                        ))}
+                    </div>
+                )}
+
+                <div className="flex flex-wrap gap-1.5">
+                    <span className="flex items-center gap-1 rounded-full border border-black/[0.06] bg-black/5 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-gray-600 dark:border-white/[0.06] dark:bg-white/5 dark:text-zinc-400">
+                        <MapPin size={10} className="text-gray-400" />{c.city || 'No city'}
+                    </span>
+                    <span className="flex items-center gap-1 rounded-full border border-black/[0.06] bg-black/5 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-gray-600 dark:border-white/[0.06] dark:bg-white/5 dark:text-zinc-400">
+                        <TrendingUp size={10} className="text-gray-400" />{formatCount(reach)} followers
+                    </span>
+                </div>
+
+                <div className="space-y-1 text-[10px] font-semibold text-gray-600 dark:text-zinc-400">
+                    <div className="flex items-center gap-2 truncate">
+                        <Mail size={11} className="shrink-0 text-gray-400" /><span className="truncate">{c.email || '—'}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                            <Phone size={11} className="shrink-0 text-gray-400" /><span className="truncate tabular-nums">{c.phone || '—'}</span>
+                        </div>
+                        {c.phone && (c.isPhoneVerified
+                            ? <Badge tone="green"><Check size={9} strokeWidth={3} /> OK</Badge>
+                            : <Badge tone="amber">Unverified</Badge>)}
+                    </div>
+                </div>
+
+                <div className="mt-auto flex items-center justify-between border-t border-black/[0.05] pt-3 dark:border-white/[0.05]">
+                    <div className="flex gap-1.5">
+                        {c.instagram && (
+                            <SocialLink href={buildSocialUrl(c.instagram, 'instagram')} label={`@${extractSocialUsername(c.instagram, 'instagram')} on Instagram`}><Instagram size={11} /></SocialLink>
+                        )}
+                        {c.linkedin && <SocialLink href={buildSocialUrl(c.linkedin, 'linkedin')} label="LinkedIn"><Linkedin size={11} /></SocialLink>}
+                        {c.youtube && <SocialLink href={buildSocialUrl(c.youtube, 'youtube')} label="YouTube"><Youtube size={11} /></SocialLink>}
+                        {!c.instagram && !c.linkedin && !c.youtube && (
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400">No socials</span>
+                        )}
+                    </div>
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-300 transition-colors group-hover:text-gray-700 dark:text-white/20 dark:group-hover:text-white/60">
+                        <ChevronRight size={14} />
+                    </span>
+                </div>
+            </div>
         </div>
     );
 };
