@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import FilterSearchBar from '../../design-system/controls/FilterSearchBar';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
@@ -10,7 +9,6 @@ import { PREDEFINED_CITIES, isCampaignCityMatch } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Search from 'lucide-react/dist/esm/icons/search';
@@ -84,8 +82,8 @@ import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioSelect from '../../components/ui/StudioSelect';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { buildCampaignUrl, creatorCampaignPath } from '../../lib/campaignLinks';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import CampaignList from '../../components/admin/creatorPortal/CampaignList';
+import { buildCampaignUrl, creatorCampaignPath, findCampaignById } from '../../lib/campaignLinks';
 import { copyToClipboard } from '../../lib/clipboard';
 
 const TASK_TYPES = [
@@ -115,387 +113,6 @@ const getPlatformIcon = (platform) => {
 
 /* --- Redesigned Sub-components --- */
 
-const StatCard = ({ icon, label, value, color, description, compact = false }) => {
-    const colorMap = {
-        blue: { text: 'text-neon-blue' },
-        green: { text: 'text-neon-green' },
-        yellow: { text: 'text-yellow-500' },
-        purple: { text: 'text-purple-500' }
-    };
-    
-    const theme = colorMap[color] || colorMap.blue;
-    
-    return (
-        <motion.div 
-            whileHover={{ y: -2 }}
-            className={cn(
-                "relative group overflow-hidden bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] transition-all duration-300 flex-1 shadow-sm dark:shadow-none",
-                compact ? "p-4 md:p-5 rounded-2xl min-w-[200px]" : "p-6 md:p-8 rounded-3xl min-w-[280px]"
-            )}
-        >
-            <div className={cn("relative z-10 flex h-full", compact ? "flex-row items-center gap-4" : "flex-col justify-between gap-6")}>
-                <div className="flex items-start justify-between">
-                    <div className={cn(
-                        "rounded-xl flex items-center justify-center bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 shrink-0", 
-                        compact ? "w-10 h-10 md:w-12 md:h-12" : "w-14 h-14",
-                        theme.text
-                    )}>
-                        {React.cloneElement(icon, { size: compact ? 18 : 24 })}
-                    </div>
-                    {!compact && (
-                        <div className="text-right">
-                            <TrendingUp size={16} className={cn("inline-block mr-2", theme.text)} />
-                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">+15%</span>
-                        </div>
-                    )}
-                </div>
-                <div className={cn("space-y-1", compact ? "flex-1" : "")}>
-                    <p className={cn("font-black uppercase tracking-widest text-gray-500", compact ? "text-[9px]" : "text-[10px]")}>{label}</p>
-                    <h3 className={cn("font-black font-heading tracking-tight tabular-nums text-gray-900 dark:text-white leading-none", compact ? "text-2xl sm:text-3xl" : "text-4xl sm:text-5xl")}>{value}</h3>
-                    {!compact && description && (
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-2">{description}</p>
-                    )}
-                </div>
-            </div>
-        </motion.div>
-    );
-};
-
-const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaign, onCopyLink, isUpdating, creators = [] }) => {
-    const spotsInfo = getCampaignSpotsInfo(campaign, creators);
-    return (
-    <motion.div 
-        layoutId={`campaign-card-${campaign.id}`}
-        onClick={onSelect}
-        className="group relative bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/[0.15] rounded-3xl p-4 md:p-5 cursor-pointer overflow-hidden transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_16px_60px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_16px_60px_rgba(0,0,0,0.6)] flex flex-col h-auto min-h-[460px]"
-    >
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-neon-green/[0.06] to-transparent rounded-full blur-3xl pointer-events-none -mr-20 -mt-20 group-hover:scale-110 transition-transform duration-700" />
-        <div className="relative mb-4 group-hover:scale-[1.02] transition-transform duration-500 z-10">
-            <div className="aspect-video rounded-2xl overflow-hidden bg-gray-50 dark:bg-black/20 border border-black/[0.08] dark:border-white/[0.08] relative flex items-center justify-center">
-                {campaign.thumbnail ? (
-                    <img src={campaign.thumbnail} alt={campaign.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-white/5">
-                        <div className="text-xl font-heading font-black text-gray-300 dark:text-white/10 uppercase tracking-wider">
-                            No Image
-                        </div>
-                    </div>
-                )}
-                <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                    {spotsInfo.hasSpots && campaign.status === 'Open' && (
-                        <span className={cn(
-                            "px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border backdrop-blur-md flex items-center gap-1 font-mono shadow-md",
-                            spotsInfo.isFull 
-                                ? "bg-red-500/20 text-red-500 border-red-500/30" 
-                                : "bg-amber-500/20 text-amber-500 dark:text-amber-400 border-amber-500/30"
-                        )}>
-                            <Flame size={9} className="fill-current" />
-                            {spotsInfo.isFull ? '0 Left' : `${spotsInfo.spotsLeft} Left`}
-                        </span>
-                    )}
-                    <StatusPill status={campaign.status} />
-                </div>
-            </div>
-        </div>
-
-        <div className="flex-1 flex flex-col px-1 relative z-10">
-            <div className="mb-3.5">
-                <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <div className="flex items-center gap-2">
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Campaign</p>
-                        {campaign.createdAt && (
-                            <span className="text-[9px] font-mono text-gray-400 dark:text-zinc-500 flex items-center gap-1">
-                                <Clock size={9} />
-                                {new Date(campaign.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                            </span>
-                        )}
-                    </div>
-                    {(campaign.brand || campaign.brandLogo) && (
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 max-w-[180px]">
-                            {campaign.brandLogo && (
-                                <img src={campaign.brandLogo} alt={campaign.brand || 'Brand'} className="w-3.5 h-3.5 rounded object-contain shrink-0" />
-                            )}
-                            {campaign.brand && (
-                                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-neon-green truncate">
-                                    {campaign.brand}
-                                </span>
-                            )}
-                        </div>
-                    )}
-                </div>
-                <h3 className="text-xl font-heading font-black text-gray-900 dark:text-white tracking-tight leading-tight group-hover:text-neon-green transition-colors duration-300 line-clamp-2">
-                    {campaign.title}
-                </h3>
-            </div>
-
-            <div className="flex flex-wrap gap-2 mb-4">
-                <div className="flex items-center gap-2 text-gray-600 dark:text-zinc-400 text-[10px] font-black uppercase tracking-widest bg-black/5 dark:bg-white/5 px-3 py-1.5 rounded-full border border-black/[0.08] dark:border-white/[0.08] w-fit">
-                    <MapPin size={12} className="text-neon-pink" />
-                    <span>{campaign.targetCity || 'GLOBAL'}</span>
-                </div>
-                {campaign.targetCollege && campaign.targetCollege !== 'Any' && (
-                    <div className="flex items-center gap-2 text-neon-blue text-[10px] font-black uppercase tracking-widest bg-neon-blue/10 px-3 py-1.5 rounded-full border border-neon-blue/20 w-fit">
-                        <Layers size={12} />
-                        <span>{campaign.targetCollege}</span>
-                    </div>
-                )}
-                {spotsInfo.hasSpots && campaign.status === 'Open' && (
-                    <div className={cn(
-                        "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border w-fit",
-                        spotsInfo.isFull 
-                            ? "text-red-500 bg-red-500/10 border-red-500/20" 
-                            : "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20"
-                    )}>
-                        <Users size={12} />
-                        <span>{spotsInfo.isFull ? '0 SPOTS LEFT (FULL)' : `${spotsInfo.spotsLeft} / ${spotsInfo.totalSpots || '∞'} SPOTS LEFT`}</span>
-                    </div>
-                )}
-                <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500 text-[10px] font-black uppercase tracking-widest bg-yellow-500/10 px-3 py-1.5 rounded-full border border-yellow-500/20 w-fit">
-                    <Zap size={12} />
-                    <span>{campaign.tasks?.length || 0} TASKS</span>
-                </div>
-            </div>
-
-            <div className="mt-auto pt-4 border-t border-black/[0.08] dark:border-white/[0.08] flex flex-col gap-3">
-                <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-0.5">REWARDS</p>
-                        <p className="text-lg font-heading font-black text-neon-green tracking-tight truncate">{campaign.reward}</p>
-                    </div>
-                    <button 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onSelect();
-                        }}
-                        className="h-9 px-4 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-emerald-400 active:scale-95 transition-all flex items-center gap-1 shrink-0"
-                        title="View Campaign Page"
-                    >
-                        <span>Manage</span>
-                        <ChevronRight size={14} />
-                    </button>
-                </div>
-
-                <div className="flex items-center justify-between gap-2 pt-3 border-t border-black/[0.08] dark:border-white/[0.08] -mx-2 px-2">
-                    <div className="flex items-center gap-2">
-                        <button 
-                            disabled={isUpdating}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (isUpdating) return;
-                                if (window.confirm('Are you sure you want to delete this campaign? This cannot be undone.')) {
-                                    onDelete(campaign.id);
-                                }
-                            }}
-                            className="w-9 h-9 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-red-500 hover:border-red-500/30 hover:bg-red-500/10 transition-all flex items-center justify-center disabled:opacity-50"
-                            title="Delete Campaign"
-                        >
-                            <Trash2 size={15} />
-                        </button>
-                        <button 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onCopyLink();
-                            }}
-                            className="w-9 h-9 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-800 dark:text-zinc-200 hover:border-black/20 dark:hover:border-white/20 transition-all flex items-center justify-center"
-                            title="Share Campaign"
-                        >
-                            <Share2 size={15} />
-                        </button>
-                        <button 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onEdit(campaign);
-                            }}
-                            className="w-9 h-9 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-800 dark:text-zinc-200 hover:border-black/20 dark:hover:border-white/20 transition-all flex items-center justify-center"
-                            title="Edit Campaign"
-                        >
-                            <Edit size={15} />
-                        </button>
-                    </div>
-                    <button 
-                        disabled={isUpdating}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (isUpdating) return;
-                            const newStatus = campaign.status === 'Open' ? 'Closed' : 'Open';
-                            updateCampaign(campaign.id, { ...campaign, status: newStatus });
-                        }}
-                        className={cn(
-                            "h-9 px-3 rounded-xl border transition-all flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest disabled:opacity-50",
-                            campaign.status === 'Open' 
-                                ? "bg-red-500/10 hover:bg-red-500/20 border-red-500/20 text-red-500" 
-                                : "bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 text-emerald-600 dark:text-neon-green"
-                        )}
-                        title={campaign.status === 'Open' ? "Close Campaign" : "Reopen Campaign"}
-                    >
-                        {campaign.status === 'Open' ? <Lock size={12} /> : <Unlock size={12} />}
-                        <span>{campaign.status === 'Open' ? 'Close' : 'Reopen'}</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </motion.div>
-    );
-};
-
-
-const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCampaign, onCopyLink, isUpdating, creators = [] }) => {
-    const spotsInfo = getCampaignSpotsInfo(campaign, creators);
-    return (
-    <motion.div
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: idx * 0.03 }}
-        onClick={onSelect}
-        className="group flex flex-col sm:flex-row items-start sm:items-center p-4 sm:px-6 sm:py-4 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.04] dark:border-white/[0.06] shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:border-black/20 dark:hover:border-white/[0.15] hover:shadow-[0_16px_40px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.6)] rounded-[1.5rem] cursor-pointer transition-all duration-300 gap-4 sm:gap-6 relative overflow-hidden"
-    >
-        <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-neon-green/[0.05] to-transparent rounded-full blur-2xl pointer-events-none -mr-10 -mt-10 group-hover:scale-110 transition-transform duration-700 z-0" />
-        <div className="w-14 relative z-10">
-            <div className="w-12 h-12 bg-gray-50 dark:bg-black/20 border border-black/[0.08] dark:border-white/[0.08] rounded-xl flex items-center justify-center text-gray-400 group-hover:border-black/20 dark:group-hover:border-white/20 overflow-hidden transition-all group-hover:scale-105">
-                {campaign.thumbnail ? (
-                    <img src={campaign.thumbnail} alt={campaign.title} className="w-full h-full object-cover" />
-                ) : (
-                    <Target size={18} />
-                )}
-            </div>
-        </div>
-        
-        <div className="flex-1 w-full sm:w-auto">
-            <div className="flex items-center gap-2 mb-1">
-                {(campaign.brand || campaign.brandLogo) && (
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 shrink-0 max-w-[140px]">
-                        {campaign.brandLogo && (
-                            <img src={campaign.brandLogo} alt="" className="w-3.5 h-3.5 rounded object-contain shrink-0" />
-                        )}
-                        {campaign.brand && (
-                            <span className="text-[8px] font-black uppercase text-emerald-600 dark:text-neon-green truncate">
-                                {campaign.brand}
-                            </span>
-                        )}
-                    </div>
-                )}
-                <h4 className="text-base font-heading font-black text-gray-900 dark:text-white tracking-tight group-hover:text-neon-green transition-colors truncate">{campaign.title}</h4>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-                <p className="text-[9px] text-gray-500 font-black tracking-widest flex items-center gap-1.5 uppercase">
-                    <MapPin size={10} className="text-neon-pink" /> {campaign.targetCity}
-                </p>
-                {campaign.targetCollege && campaign.targetCollege !== 'Any' && (
-                    <>
-                        <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
-                        <p className="text-[9px] text-neon-blue font-black tracking-widest flex items-center gap-1.5 uppercase">
-                            <Layers size={10} /> {campaign.targetCollege}
-                        </p>
-                    </>
-                )}
-                <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
-                <p className="text-[9px] text-emerald-600 dark:text-emerald-400 font-black uppercase tracking-widest">{campaign.reward}</p>
-                {campaign.createdAt && (
-                    <>
-                        <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
-                        <p className="text-[9px] text-gray-400 dark:text-zinc-500 font-mono flex items-center gap-1">
-                            <Clock size={9} /> {new Date(campaign.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                        </p>
-                    </>
-                )}
-            </div>
-        </div>
-
-        <div className="w-44 hidden md:block">
-            {spotsInfo.hasSpots && campaign.status === 'Open' ? (
-                <span className={cn(
-                    "text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border inline-flex items-center gap-1.5",
-                    spotsInfo.isFull 
-                        ? "text-red-500 bg-red-500/10 border-red-500/20" 
-                        : "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20"
-                )}>
-                    <Users size={10} />
-                    {spotsInfo.isFull ? '0 Spots Left (Full)' : `${spotsInfo.spotsLeft} Spots Left`}
-                </span>
-            ) : (
-                <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-black/5 dark:bg-white/5 border border-black/[0.08] dark:border-white/[0.08] px-3 py-1.5 rounded-full group-hover:bg-black/10 dark:group-hover:bg-white/10 transition-colors">
-                    {campaign.status === 'Closed' ? 'Closed' : 'Campaign'}
-                </span>
-            )}
-        </div>
-
-        <div className="w-32 hidden lg:block text-right pr-8">
-            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Tasks</p>
-            <p className="text-base font-heading font-black text-gray-900 dark:text-white tabular-nums">{campaign.tasks?.length || 0}</p>
-        </div>
-
-        <div className="hidden sm:flex w-48 items-center justify-end gap-3">
-            <div className="flex gap-1.5">
-                <button 
-                    disabled={isUpdating}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        if (isUpdating) return;
-                        if (window.confirm('Are you sure you want to delete this campaign? This cannot be undone.')) {
-                            onDelete(campaign.id);
-                        }
-                    }}
-                    className="w-9 h-9 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-red-500 hover:bg-red-500/10 hover:border-red-500/30 transition-all flex items-center justify-center disabled:opacity-50"
-                    title="Delete Campaign"
-                >
-                    <Trash2 size={14} />
-                </button>
-                <button 
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onCopyLink();
-                    }}
-                    className="w-9 h-9 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-black/20 dark:hover:border-white/20 transition-all flex items-center justify-center"
-                    title="Share Campaign"
-                >
-                    <Share2 size={14} />
-                </button>
-                <button 
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit(campaign);
-                    }}
-                    className="w-9 h-9 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-black/20 dark:hover:border-white/20 transition-all flex items-center justify-center"
-                    title="Edit Campaign"
-                >
-                    <Edit size={14} />
-                </button>
-                <button 
-                    disabled={isUpdating}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        if (isUpdating) return;
-                        const newStatus = campaign.status === 'Open' ? 'Closed' : 'Open';
-                        updateCampaign(campaign.id, { ...campaign, status: newStatus });
-                    }}
-                    className={cn(
-                        "w-9 h-9 rounded-xl border transition-all flex items-center justify-center disabled:opacity-50",
-                        campaign.status === 'Open' 
-                            ? "bg-red-500/10 hover:bg-red-500/20 border-red-500/20 text-red-500" 
-                            : "bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 text-emerald-600 dark:text-neon-green"
-                    )}
-                    title={campaign.status === 'Open' ? "Close Campaign" : "Reopen Campaign"}
-                >
-                    {campaign.status === 'Open' ? <Lock size={13} /> : <Unlock size={13} />}
-                </button>
-            </div>
-            <StatusPill status={campaign.status} />
-        </div>
-
-        <button 
-            onClick={(e) => {
-                e.stopPropagation();
-                onSelect();
-            }}
-            className="hidden sm:flex w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 items-center justify-center hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all group-hover:scale-105"
-            title="View Campaign Page"
-        >
-            <ChevronRight size={16} />
-        </button>
-    </motion.div>
-    );
-};
-
 const StatusPill = ({ status }) => {
     const config = {
         Open: "bg-black/75 dark:bg-black/80 text-emerald-400 dark:text-neon-green border-emerald-500/40 dark:border-neon-green/40 shadow-sm",
@@ -510,50 +127,13 @@ const StatusPill = ({ status }) => {
     );
 };
 
-const getPageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-    const delta = 2;
-    
-    if (totalPages <= 7) {
-        for (let i = 1; i <= totalPages; i++) {
-            pages.push(i);
-        }
-    } else {
-        const left = currentPage - delta;
-        const right = currentPage + delta;
-        const range = [];
-        let l;
-
-        for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= left && i <= right)) {
-                range.push(i);
-            }
-        }
-
-        for (let i of range) {
-            if (l) {
-                if (i - l === 2) {
-                    pages.push(l + 1);
-                } else if (i - l > 2) {
-                    pages.push('...');
-                }
-            }
-            pages.push(i);
-            l = i;
-        }
-    }
-    return pages;
-};
-
-/* --- Main Campaign Manager Component --- */
-
-const CampaignManager = ({ isEmbedded = false }) => {
+const CampaignManager = () => {
     useStoreSubscription(['campaigns', 'creators']);
     const { campaigns, creators, addCampaign, updateCampaign, deleteCampaign, user, uploadToCloudinary } = useStore();
+    const campaignsLoaded = useStore(state => Boolean(state.subscriptionsLoaded?.campaigns));
     const navigate = useNavigate();
     const location = useLocation();
     const params = useParams();
-    const [searchTerm, setSearchTerm] = useState('');
     const isCreating = location.pathname.endsWith('/create') || location.pathname.includes('/edit/');
     const editingId = location.pathname.includes('/edit/') ? params.id : null;
     const expandedCampaignId = location.pathname.includes('/manage/') ? params.id : null;
@@ -564,20 +144,10 @@ const CampaignManager = ({ isEmbedded = false }) => {
     const [modalTab, setModalTab] = useState('applicants'); 
     const [rejectionModal, setRejectionModal] = useState(null); 
     const [rejectionReason, setRejectionReason] = useState('');
-    const [viewMode, setViewMode] = useState('grid');
-    const [statusFilter, setStatusFilter] = useState('All');
     const [isDeploying, setIsDeploying] = useState(false);
     const [isProcessingTask, setIsProcessingTask] = useState(false);
     const [isReviewing, setIsReviewing] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 12;
 
-    const personnelTabs = [
-        { name: 'Creators', path: '/admin/creators', icon: Star },
-        { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
-        { name: 'Leaderboard', path: '/admin/creators/leaderboard', icon: Trophy },
-        { name: 'Settings', path: '/admin/creators/settings', icon: Settings },
-    ];
 
     const [formData, setFormData] = useState({
         title: '',
@@ -601,80 +171,13 @@ const CampaignManager = ({ isEmbedded = false }) => {
 
 
 
-    const filteredCampaigns = useMemo(() => {
-        const getTs = (c) => {
-            if (!c) return 0;
-            const raw = c.createdAt || c.dateAdded || c.updatedAt;
-            if (!raw) return 0;
-            if (typeof raw === 'number') return raw;
-            if (typeof raw === 'string') {
-                const p = Date.parse(raw);
-                return isNaN(p) ? 0 : p;
-            }
-            if (typeof raw === 'object') {
-                if (typeof raw.toDate === 'function') return raw.toDate().getTime();
-                if (typeof raw.seconds === 'number') return raw.seconds * 1000;
-            }
-            return 0;
-        };
-
-        return campaigns
-            .filter(c => {
-                const matchesSearch =
-                    (c.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    (c.brand || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    (c.targetCity || '').toLowerCase().includes(searchTerm.toLowerCase());
-                const matchesStatus = statusFilter === 'All' ? true : c.status === statusFilter;
-                return matchesSearch && matchesStatus;
-            })
-            .sort((a, b) => {
-                // 1. Pinned campaigns first
-                if (Boolean(a.isPinned) !== Boolean(b.isPinned)) {
-                    return a.isPinned ? -1 : 1;
-                }
-                // 2. Open campaigns before Closed campaigns
-                const aIsOpen = a.status === 'Open';
-                const bIsOpen = b.status === 'Open';
-                if (aIsOpen !== bIsOpen) {
-                    return aIsOpen ? -1 : 1;
-                }
-                // 3. Date added / createdAt descending (newest first)
-                return getTs(b) - getTs(a);
-            });
-    }, [campaigns, searchTerm, statusFilter]);
-
-    const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage);
-    const paginatedCampaigns = useMemo(() => {
-        const start = (currentPage - 1) * itemsPerPage;
-        return filteredCampaigns.slice(start, start + itemsPerPage);
-    }, [filteredCampaigns, currentPage]);
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, statusFilter]);
-
-    const stats = useMemo(() => {
-        const activeCount = campaigns.filter(c => c.status === 'Open').length;
-        const totalTasksCreated = campaigns.reduce((acc, c) => acc + (c.tasks?.length || 0), 0);
-        const totalPendingReviews = campaigns.reduce((acc, c) => {
-            return acc + (c.tasks || []).reduce((tAcc, t) => {
-                return tAcc + Object.values(t.submissions || {}).filter(sub => sub.status === 'submitted').length;
-            }, 0);
-        }, 0);
-
-        return {
-            total: campaigns.length,
-            active: activeCount,
-            tasks: totalTasksCreated,
-            pending: totalPendingReviews
-        };
-    }, [campaigns]);
-
     useEffect(() => {
         if (editingId && campaigns.length > 0) {
-            const campaign = campaigns.find(c => c.id === editingId);
+            const campaign = findCampaignById(campaigns, editingId);
             if (campaign) {
-                setFormData({ 
+                // Load once per campaign. Later listener snapshots (e.g. a creator
+                // submitting a task) must not wipe edits the admin is making.
+                setFormData(prev => prev.id === campaign.id ? prev : { 
                     ...campaign, 
                     brand: campaign.brand || '',
                     brandLogo: campaign.brandLogo || '',
@@ -799,12 +302,28 @@ const CampaignManager = ({ isEmbedded = false }) => {
         }
     };
 
+    // When editing, the form is only safe to save once it holds the campaign's data.
+    // Saving earlier would overwrite the campaign with an empty form.
+    const isEditFormReady = !editingId || Boolean(formData.id && findCampaignById([formData], editingId));
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!isEditFormReady) return;
         setIsDeploying(true);
         try {
             if (editingId) {
-                await updateCampaign(editingId, formData);
+                // Keep submissions that arrived while the form was open; the form
+                // only holds the snapshot from when editing started.
+                const live = findCampaignById(campaigns, editingId);
+                const liveTasks = new Map((live?.tasks || []).map(t => [t.id, t]));
+                const payload = {
+                    ...formData,
+                    tasks: (formData.tasks || []).map(t => {
+                        const liveTask = liveTasks.get(t.id);
+                        return liveTask?.submissions ? { ...t, submissions: { ...(t.submissions || {}), ...liveTask.submissions } } : t;
+                    }),
+                };
+                await updateCampaign(editingId, payload);
             } else {
                 const newCampaignId = await addCampaign(formData);
                 await notifyAllUsers(
@@ -1047,88 +566,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
     };
 
     const renderContent = () => (
-        <div className={cn("relative z-10 max-w-[1700px] mx-auto pb-20", (isCreating || expandedCampaignId) ? "pt-6 md:pt-8 px-4 md:px-12" : "")}>
-            <div className={cn("pt-0", !(isCreating || expandedCampaignId) ? (isEmbedded ? "" : "px-4 md:px-12") : "")}>
-                {/* Control Panel */}
-                {!isCreating && !expandedCampaignId && (
-                    <div className="relative z-20 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-3 md:p-4 mb-6 md:mb-8 shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col xl:flex-row xl:items-center gap-4">
-                        
-                        <div className="relative flex-1 min-w-[280px]">
-                            <FilterSearchBar 
-                                searchQuery={searchTerm}
-                                onSearchChange={setSearchTerm}
-                                placeholder="SEARCH CAMPAIGNS..."
-                                className="w-full"
-                            />
-                        </div>
-
-                        {/* Status Filter Tabs */}
-                        <div className="flex items-center gap-1.5 shrink-0 bg-black/5 dark:bg-white/5 p-1 rounded-2xl border border-black/5 dark:border-white/5 overflow-x-auto hide-scrollbar">
-                            {[
-                                { id: 'All', label: 'All', count: campaigns.length },
-                                { id: 'Open', label: 'Open', count: stats.active },
-                                { id: 'Closed', label: 'Closed', count: campaigns.length - stats.active },
-                            ].map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setStatusFilter(tab.id)}
-                                    className={cn(
-                                        "px-3.5 h-10 rounded-xl flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest transition-all shrink-0",
-                                        statusFilter === tab.id
-                                            ? "bg-white text-black dark:bg-[#1a1c23] dark:text-white shadow-sm font-black border border-black/10 dark:border-white/10"
-                                            : "text-gray-600 dark:text-zinc-400 font-bold hover:text-black dark:hover:text-white"
-                                    )}
-                                >
-                                    <span className={cn(
-                                        "w-1.5 h-1.5 rounded-full",
-                                        tab.id === 'All' ? "bg-neon-blue" : tab.id === 'Open' ? "bg-neon-green shadow-[0_0_8px_rgba(57,255,20,0.5)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"
-                                    )} />
-                                    <span>{tab.label}</span>
-                                    <span className="text-[9px] font-mono opacity-70 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10">
-                                        {tab.count}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* View Switcher */}
-                        <div className="hidden md:flex items-center gap-1.5 shrink-0 bg-black/5 dark:bg-white/5 p-1 rounded-2xl border border-black/5 dark:border-white/5">
-                            <button 
-                                onClick={() => setViewMode('grid')} 
-                                className={cn(
-                                    "px-4 h-10 rounded-xl flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest transition-all", 
-                                    viewMode === 'grid' 
-                                        ? "bg-white text-black dark:bg-[#1a1c23] dark:text-white shadow-sm font-black border border-black/10 dark:border-white/10" 
-                                        : "text-gray-600 dark:text-zinc-400 font-bold hover:text-black dark:hover:text-white"
-                                )}
-                            >
-                                <LayoutGrid size={14} />
-                                <span>Grid</span>
-                            </button>
-                            <button 
-                                onClick={() => setViewMode('list')} 
-                                className={cn(
-                                    "px-4 h-10 rounded-xl flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest transition-all", 
-                                    viewMode === 'list' 
-                                        ? "bg-white text-black dark:bg-[#1a1c23] dark:text-white shadow-sm font-black border border-black/10 dark:border-white/10" 
-                                        : "text-gray-600 dark:text-zinc-400 font-bold hover:text-black dark:hover:text-white"
-                                )}
-                            >
-                                <FileSpreadsheet size={14} />
-                                <span>List</span>
-                            </button>
-                        </div>
-
-                        <button 
-                            onClick={() => navigate('/admin/campaigns/create')}
-                            className="h-12 px-8 rounded-2xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-emerald-400 active:scale-95 transition-all shadow-[0_0_20px_rgba(57,255,20,0.25)] flex items-center justify-center gap-2 w-full xl:w-auto shrink-0"
-                        >
-                            <Plus size={16} />
-                            NEW CAMPAIGN
-                        </button>
-                    </div>
-                )}
-
+        <div className="relative z-10 pb-20">
+            <div>
                 {/* Main Content Area */}
                 <div className="relative min-h-[500px]">
                     <AnimatePresence mode="wait">
@@ -1140,25 +579,35 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                 exit={{ opacity: 0, y: -30 }}
                                 className="max-w-6xl mx-auto"
                             >
-                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
-                                    <div className="flex flex-col gap-2">
-                                        <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-gray-500">
-                                            <button onClick={resetForm} className="hover:text-neon-green transition-colors">CAMPAIGNS</button>
-                                            <span className="text-gray-300 dark:text-gray-700">/</span>
-                                            <span className="text-gray-900 dark:text-white">{editingId ? 'EDIT' : 'CREATE'}</span>
-                                        </div>
-                                        <h2 className="text-3xl md:text-4xl font-heading font-black tracking-tight text-gray-900 dark:text-white">
-                                            {editingId ? 'Edit Campaign' : 'New Campaign'}
+                                <div className="mb-6 flex flex-col gap-4 font-sans md:flex-row md:items-end md:justify-between">
+                                    <div>
+                                        <nav className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-zinc-400">
+                                            <button type="button" onClick={resetForm} className="hover:text-gray-900 hover:underline dark:hover:text-white">Campaigns</button>
+                                            <span>/</span>
+                                            <span className="text-gray-900 dark:text-white">{editingId ? 'Edit' : 'New'}</span>
+                                        </nav>
+                                        <h2 className="mt-1 text-xl font-semibold tracking-tight text-gray-900 dark:text-white">
+                                            {editingId ? (formData.title || 'Edit campaign') : 'New campaign'}
                                         </h2>
                                     </div>
-                                    <div className="fixed md:relative bottom-0 left-0 right-0 z-50 flex items-center justify-center md:justify-end gap-4 bg-white/95 dark:bg-[#0c0e14]/95 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none border-t border-black/[0.08] dark:border-white/[0.08] md:border-none p-4 md:p-0 shadow-sm md:shadow-none">
-                                        <button onClick={resetForm} className="px-4 py-2 text-[11px] font-black text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors">Discard</button>
-                                        <button 
-                                            onClick={handleSubmit} 
-                                            disabled={isDeploying || isUploading}
-                                            className="h-14 px-8 rounded-2xl bg-neon-green text-black font-black uppercase tracking-widest text-sm hover:bg-emerald-400 active:scale-95 transition-all shadow-[0_0_20px_rgba(57,255,20,0.3)] flex items-center justify-center gap-3 min-w-[160px] flex-1 md:flex-none"
+                                    <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-end gap-2 border-t border-gray-200 bg-white/95 p-3 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95 md:static md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+                                        {editingId && !isEditFormReady && (
+                                            <span className="mr-auto text-sm text-gray-500 dark:text-zinc-400 md:mr-2">Loading campaign…</span>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={resetForm}
+                                            className="inline-flex h-9 items-center rounded-lg border border-gray-300 bg-white px-3.5 text-sm font-medium text-gray-800 hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                                         >
-                                            {isDeploying ? <LoadingSpinner size="sm" color="black" /> : (editingId ? 'SAVE CHANGES' : 'CREATE CAMPAIGN')}
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleSubmit}
+                                            disabled={isDeploying || isUploading || !isEditFormReady}
+                                            className="inline-flex h-9 min-w-[140px] items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 dark:bg-white dark:text-gray-900 dark:hover:bg-zinc-200"
+                                        >
+                                            {isDeploying ? <LoadingSpinner size="sm" color="currentColor" /> : (editingId ? 'Save changes' : 'Create campaign')}
                                         </button>
                                     </div>
                                 </div>
@@ -1518,141 +967,20 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                     onCopyTaskLink={(taskId) => handleCopyTaskLink(expandedCampaignId, taskId)}
                                 />
                             </motion.div>
-                        ) : campaigns.length === 0 ? (
-                            <motion.div 
-                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                className="py-40 text-center bg-[#050505]/40 rounded-[4rem] border border-black/10 dark:border-white/5 flex flex-col items-center gap-8 shadow-inner"
-                            >
-                                <div className="w-32 h-32 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center border border-black/10 dark:border-white/10 animate-pulse">
-                                    <Target size={48} className="text-gray-700" />
-                                </div>
-                                <div className="space-y-2">
-                                    <h3 className="text-3xl font-black uppercase tracking-tighter text-gray-500 italic">No Campaigns Found</h3>
-                                    <p className="text-gray-700 text-sm font-black uppercase tracking-widest">Create a campaign to begin operations</p>
-                                </div>
-                            </motion.div>
                         ) : (
-                            <motion.div
-                                key={viewMode}
-                                initial={{ opacity: 0, y: 30 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -30 }}
-                                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                            >
-                                {viewMode === 'grid' ? (
-                                    paginatedCampaigns.length === 0 ? (
-                                        <div className="py-24 text-center bg-white/40 dark:bg-[#0c0e14]/40 backdrop-blur-xl rounded-[2.5rem] border border-black/[0.06] dark:border-white/[0.06] flex flex-col items-center justify-center gap-4">
-                                            <div className="w-16 h-16 rounded-2xl bg-black/5 dark:bg-white/5 flex items-center justify-center border border-black/5 dark:border-white/5">
-                                                <Target size={28} className="text-gray-400 dark:text-zinc-500" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <h4 className="text-base font-black uppercase tracking-wider text-gray-900 dark:text-white">
-                                                    No {statusFilter !== 'All' ? statusFilter.toLowerCase() : ''} campaigns found
-                                                </h4>
-                                                <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium">
-                                                    {searchTerm ? `No results matching "${searchTerm}"` : 'Try switching the filter or create a new campaign'}
-                                                </p>
-                                            </div>
-                                            {(searchTerm || statusFilter !== 'All') && (
-                                                <button
-                                                    onClick={() => { setSearchTerm(''); setStatusFilter('All'); }}
-                                                    className="mt-2 h-9 px-4 rounded-xl bg-neon-green text-black text-[10px] font-black uppercase tracking-wider hover:bg-emerald-400 transition-all active:scale-95 shadow-sm"
-                                                >
-                                                    Clear Filters
-                                                </button>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start pb-8">
-                                            {paginatedCampaigns.map((campaign, idx) => (
-                                                <motion.div
-                                                    key={campaign.id}
-                                                    initial={{ opacity: 0, y: 20 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: idx * 0.05 }}
-                                                    className="w-full"
-                                                >
-                                                    <CampaignBadgeCard 
-                                                        campaign={campaign} 
-                                                        creators={creators}
-                                                        onSelect={() => navigate('/admin/campaigns/manage/' + campaign.id)}
-                                                        onEdit={() => handleEdit(campaign)}
-                                                        onDelete={handleDeleteCampaign}
-                                                        updateCampaign={handleUpdateCampaignStatus}
-                                                        onCopyLink={() => handleCopyLink(campaign.id)}
-                                                        isUpdating={isUpdating}
-                                                    />
-                                                </motion.div>
-                                            ))}
-                                        </div>
-                                    )
-                                ) : (
-                                    <div className="flex flex-col gap-3">
-                                        <div className="flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-black/10 dark:border-white/5">
-                                            <div className="w-16 shrink-0">Asset</div>
-                                            <div className="flex-1 pl-1">Campaign Brief</div>
-                                            <div className="w-48 hidden md:block">Status</div>
-                                            <div className="w-40 hidden lg:block text-right pr-10">Tasks</div>
-                                            <div className="w-12 shrink-0"></div>
-                                        </div>
-                                        {paginatedCampaigns.map((campaign, idx) => (
-                                            <CampaignListItem 
-                                                key={campaign.id}
-                                                campaign={campaign}
-                                                creators={creators}
-                                                idx={idx}
-                                                onSelect={() => navigate('/admin/campaigns/manage/' + campaign.id)}
-                                                onEdit={() => handleEdit(campaign)}
-                                                onDelete={handleDeleteCampaign}
-                                                updateCampaign={handleUpdateCampaignStatus}
-                                                onCopyLink={() => handleCopyLink(campaign.id)}
-                                                isUpdating={isUpdating}
-                                            />
-
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Pagination */}
-                                {totalPages > 1 && (
-                                    <div className="flex items-center justify-center gap-2 mt-12 pb-12">
-                                        <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="w-10 h-10 rounded-xl bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-30 hover:border-black/20 dark:hover:border-white/20 transition-all">
-                                            <ChevronLeft size={16} />
-                                        </button>
-                                        <div className="flex items-center gap-1.5">
-                                            {getPageNumbers(currentPage, totalPages).map((page, i) => {
-                                                if (page === '...') {
-                                                    return (
-                                                        <span 
-                                                            key={`dots-${i}`} 
-                                                            className="w-10 h-10 flex items-center justify-center text-gray-500 font-bold text-xs select-none"
-                                                        >
-                                                            ...
-                                                        </span>
-                                                    );
-                                                }
-                                                return (
-                                                    <button
-                                                        key={page}
-                                                        onClick={() => setCurrentPage(page)}
-                                                        className={cn(
-                                                            "w-10 h-10 rounded-xl font-bold text-[10px] transition-all border flex items-center justify-center",
-                                                            currentPage === page 
-                                                                ? "bg-black text-white dark:bg-white dark:text-black shadow-sm border-transparent" 
-                                                                : "bg-white dark:bg-[#0c0e14] border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-gray-400 hover:border-black/20 dark:hover:border-white/20"
-                                                        )}
-                                                    >
-                                                        {page}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className="w-10 h-10 rounded-xl bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-30 hover:border-black/20 dark:hover:border-white/20 transition-all">
-                                            <ChevronRight size={16} />
-                                        </button>
-                                    </div>
-                                )}
-                            </motion.div>
+                            <CampaignList
+                                key="list"
+                                campaigns={campaigns}
+                                creators={creators}
+                                loaded={campaignsLoaded}
+                                onOpen={(c) => navigate(`/admin/campaigns/manage/${encodeURIComponent(c.id)}`)}
+                                onEdit={(c) => handleEdit(c)}
+                                onCreate={() => navigate('/admin/campaigns/create')}
+                                onDelete={handleDeleteCampaign}
+                                onUpdate={handleUpdateCampaignStatus}
+                                onCopyLink={handleCopyLink}
+                                isUpdating={isUpdating}
+                            />
                         )}
                     </AnimatePresence>
                 </div>
@@ -1660,103 +988,36 @@ const CampaignManager = ({ isEmbedded = false }) => {
         </div>
     );
 
-    const content = (isCreating || expandedCampaignId || isEmbedded) ? (
-        <div className="relative z-10">
-            {isEmbedded && (
-                <div className="flex justify-end mb-6">
-                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-stretch">
-                        <div className="w-full md:w-64 shrink-0 flex flex-col items-stretch">
-                            <StatCard 
-                                compact={true} 
-                                icon={<Zap size={20} />} 
-                                label="ACTIVE CAMPAIGNS" 
-                                value={stats.active} 
-                                color="green" 
-                                description={`${stats.total} Total Units`} 
-                            />
-                        </div>
-                        <div className="w-full md:w-64 shrink-0 flex flex-col items-stretch">
-                            <StatCard 
-                                compact={true} 
-                                icon={<Clock size={20} />} 
-                                label="PENDING REVIEW" 
-                                value={stats.pending} 
-                                color="yellow" 
-                                description="Awaiting Verification" 
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
-            {renderContent()}
-        </div>
-    ) : (
-        <AdminCommunityHubLayout
-            studioHeader={{
-                title: 'CREATOR',
-                subtitle: 'PORTAL',
-                icon: Users,
-                accentClass: 'text-neon-pink'
-            }}
-            accentColor="neon-pink"
-            tabs={personnelTabs}
-            action={
-                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-stretch">
-                    <div className="w-full md:w-64 shrink-0 flex flex-col items-stretch">
-                        <StatCard 
-                            compact={true} 
-                            icon={<Zap size={20} />} 
-                            label="ACTIVE CAMPAIGNS" 
-                            value={stats.active} 
-                            color="green" 
-                            description={`${stats.total} Total Units`} 
-                        />
-                    </div>
-                    <div className="w-full md:w-64 shrink-0 flex flex-col items-stretch">
-                        <StatCard 
-                            compact={true} 
-                            icon={<Clock size={20} />} 
-                            label="PENDING REVIEW" 
-                            value={stats.pending} 
-                            color="yellow" 
-                            description="Awaiting Verification" 
-                        />
-                    </div>
-                </div>
-            }
-        >
-            {renderContent()}
-        </AdminCommunityHubLayout>
-    );
+    const content = renderContent();
 
     return (
         <>
-            {(isCreating || expandedCampaignId) && (
-                <div className="fixed inset-0 z-0 pointer-events-none">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(46,191,255,0.08),transparent_50%)]" />
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_40%,#000_30%,transparent_100%)]" />
-                    <div className="absolute top-[10%] left-[-10%] w-[60%] h-[60%] bg-neon-blue/5 rounded-full blur-[180px] animate-pulse" />
-                    <div className="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-pink/5 rounded-full blur-[180px] animate-pulse" style={{ animationDelay: '1s' }} />
-                </div>
-            )}
             {content}
             
             {createPortal(
                 <AnimatePresence>
                     {rejectionModal && (
                         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md" onClick={() => setRejectionModal(null)} />
-                            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white dark:bg-[#0A0A0A] border border-black/10 dark:border-white/10 rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl z-10">
-                                <h3 className="text-xl font-black uppercase tracking-tight text-gray-900 dark:text-white mb-6">REJECTION FEEDBACK</h3>
-                                <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Provide specific reasons for rejection..." className="w-full h-40 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-2xl p-6 text-sm text-gray-900 dark:text-white focus:border-red-500/50 outline-none transition-all resize-none mb-6 placeholder:text-gray-400 dark:placeholder:text-gray-600" />
-                                <div className="flex gap-4">
-                                    <button onClick={() => setRejectionModal(null)} className="flex-1 h-14 rounded-xl border border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/5 transition-all">Cancel</button>
-                                    <button 
-                                        onClick={confirmRejection} 
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/40" onClick={() => setRejectionModal(null)} />
+                            <motion.div initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.97, opacity: 0 }} className="relative z-10 w-full max-w-lg rounded-xl border border-gray-200 bg-white p-5 font-sans shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+                                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Reject submission</h3>
+                                <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">The creator sees this note and can resubmit.</p>
+                                <textarea
+                                    value={rejectionReason}
+                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                    placeholder="What needs to change?"
+                                    rows={5}
+                                    className="mt-4 w-full resize-none rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+                                />
+                                <div className="mt-4 flex justify-end gap-2">
+                                    <button type="button" onClick={() => setRejectionModal(null)} className="inline-flex h-9 items-center rounded-lg border border-gray-300 bg-white px-3.5 text-sm font-medium text-gray-800 hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800">Cancel</button>
+                                    <button
+                                        type="button"
+                                        onClick={confirmRejection}
                                         disabled={isReviewing}
-                                        className="flex-1 h-14 rounded-xl bg-red-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all flex items-center justify-center gap-3 shadow-lg"
+                                        className="inline-flex h-9 min-w-[110px] items-center justify-center rounded-lg bg-red-600 px-3.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
                                     >
-                                        {isReviewing ? <LoadingSpinner size="xs" color="white" /> : 'Confirm Rejection'}
+                                        {isReviewing ? <LoadingSpinner size="xs" color="white" /> : 'Reject'}
                                     </button>
                                 </div>
                             </motion.div>
@@ -1841,7 +1102,8 @@ const CampaignDetailView = ({
     onCopyTaskLink 
 }) => {
     const { campaigns, creators } = useStore();
-    const campaign = campaigns.find(c => c.id === campaignId);
+    const campaignsLoaded = useStore(state => Boolean(state.subscriptionsLoaded?.campaigns));
+    const campaign = findCampaignById(campaigns, campaignId);
     const [activeTab, setActiveTab] = useState('applicants'); // applicants | tasks
     
     // Applications view controls
@@ -2015,113 +1277,103 @@ const CampaignDetailView = ({
         useStore.getState().addToast(`Copied ${targetList.length} phone numbers!`, 'success');
     };
 
+    // Direct links can arrive before the campaigns listener has data, or point at
+    // a campaign that was deleted. Don't render the dashboard against nothing.
+    if (!campaign) {
+        return (
+            <div className="rounded-xl border border-gray-200 bg-white p-10 text-center font-sans dark:border-zinc-800 dark:bg-zinc-900">
+                {campaignsLoaded ? (
+                    <>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">Campaign not found</p>
+                        <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">It may have been deleted, or the link is wrong.</p>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="mt-4 inline-flex h-9 items-center rounded-lg border border-gray-300 px-3.5 text-sm font-medium text-gray-800 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                        >
+                            Back to campaigns
+                        </button>
+                    </>
+                ) : (
+                    <div className="flex justify-center"><LoadingSpinner size="md" color="#71717a" /></div>
+                )}
+            </div>
+        );
+    }
+
     return (
         <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="w-full space-y-8 pb-24 pt-0 relative"
+            className="w-full space-y-6 pb-24 pt-0 relative"
         >
-            {/* Ambient Background Glow Effect from Campaign Artwork */}
-            {campaign.thumbnail ? (
-                <div 
-                    className="absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-cover bg-center filter blur-[150px] opacity-20 dark:opacity-45 pointer-events-none rounded-full transform-gpu -z-10"
-                    style={{ backgroundImage: `url(${campaign.thumbnail})` }}
-                />
-            ) : (
-                <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-neon-green/10 dark:bg-neon-green/5 rounded-full blur-[160px] pointer-events-none -z-10" />
-            )}
+            {/* Header: breadcrumb + actions */}
+            <div className="flex flex-col gap-4 font-sans lg:flex-row lg:items-end lg:justify-between">
+                <div className="min-w-0">
+                    <nav className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-zinc-400">
+                        <button type="button" onClick={onClose} className="inline-flex items-center gap-1 hover:text-gray-900 hover:underline dark:hover:text-white">
+                            <ArrowLeft size={14} /> Campaigns
+                        </button>
+                    </nav>
+                    <h2 className="mt-1 truncate text-xl font-semibold tracking-tight text-gray-900 dark:text-white">{campaign.title}</h2>
+                </div>
 
-            {/* Top Glass Navigation Bar */}
-            <div className="relative z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-3xl bg-white/70 dark:bg-[#0c0e14]/70 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-sm">
-                <button 
-                    onClick={onClose} 
-                    className="group flex items-center gap-2.5 px-5 py-3 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all text-xs font-black uppercase tracking-[0.18em] text-gray-700 dark:text-gray-300 w-fit active:scale-95"
-                >
-                    <ArrowLeft size={15} className="group-hover:-translate-x-1 transition-transform" />
-                    BACK TO CAMPAIGNS
-                </button>
-
-                <div className="flex flex-wrap items-center gap-2.5">
-                    {/* Active/Closed Status Toggle */}
-                    <button 
-                        onClick={() => {
-                            const newStatus = campaign.status === 'Open' ? 'Closed' : 'Open';
-                            updateCampaign(campaign.id, { ...campaign, status: newStatus });
-                        }}
-                        className={cn(
-                            "h-11 px-5 border rounded-full text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm active:scale-95",
-                            campaign.status === 'Open' 
-                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-neon-green hover:bg-emerald-500 hover:text-black" 
-                                : "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white"
-                        )}
-                        title="Toggle Campaign Open / Closed"
-                    >
-                        <span className={cn("w-2 h-2 rounded-full", campaign.status === 'Open' ? "bg-emerald-500 dark:bg-neon-green animate-pulse" : "bg-red-500")} />
-                        {campaign.status === 'Open' ? <Unlock size={13} /> : <Lock size={13} />}
-                        <span>{campaign.status === 'Open' ? 'ACTIVE (CLICK TO CLOSE)' : 'CLOSED (CLICK TO OPEN)'}</span>
-                    </button>
-
-                    {/* Auto-Shortlist on Apply Setting Toggle */}
+                <div className="flex flex-wrap items-center gap-2">
+                    <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" title="Automatically shortlist new applicants who meet the follower and city criteria">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(campaign.autoShortlistEligible)}
+                            onChange={async () => {
+                                if (onToggleAutoShortlist) {
+                                    await onToggleAutoShortlist(campaign.id);
+                                } else {
+                                    await updateCampaign(campaign.id, { autoShortlistEligible: !campaign.autoShortlistEligible });
+                                }
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
+                        />
+                        Auto-shortlist
+                    </label>
                     <button
-                        onClick={async () => {
-                            if (onToggleAutoShortlist) {
-                                await onToggleAutoShortlist(campaign.id);
-                            } else {
-                                const nextVal = !campaign.autoShortlistEligible;
-                                await updateCampaign(campaign.id, { autoShortlistEligible: nextVal });
-                            }
-                        }}
-                        className={cn(
-                            "h-11 px-4 border rounded-full text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-2 active:scale-95",
-                            campaign.autoShortlistEligible 
-                                ? "bg-neon-green/15 border-neon-green/30 text-emerald-800 dark:text-neon-green hover:bg-neon-green/25" 
-                                : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:bg-black/10 dark:hover:bg-white/10"
-                        )}
-                        title="Toggle Auto-Shortlist for new applicants who meet follower criteria"
+                        type="button"
+                        onClick={() => updateCampaign(campaign.id, { status: (!campaign.status || String(campaign.status).toLowerCase() === 'open') ? 'Closed' : 'Open' })}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-800 hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                     >
-                        <Zap size={13} className={campaign.autoShortlistEligible ? "text-emerald-600 dark:text-neon-green fill-current" : "text-gray-400"} />
-                        <span>AUTO-SHORTLIST: {campaign.autoShortlistEligible ? 'ON' : 'OFF'}</span>
+                        {(!campaign.status || String(campaign.status).toLowerCase() === 'open') ? <><Lock size={14} /> Close applications</> : <><Unlock size={14} /> Reopen applications</>}
                     </button>
-
-                    {/* View Public Live Campaign */}
                     <a
-                        href={`/campaign/${campaign.id}`}
+                        href={`/campaign/${encodeURIComponent(campaign.id)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="h-11 px-4 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-700 dark:text-gray-300 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider hover:bg-white hover:text-black dark:hover:bg-white/20 transition-all active:scale-95"
-                        title="View Public Campaign View"
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-800 hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                     >
-                        <Eye size={13} />
-                        <span className="hidden sm:inline">VIEW LIVE</span>
+                        <Eye size={14} /> Public page
                     </a>
-
-                    {/* Share Link */}
-                    <button 
-                        onClick={onCopyLink} 
-                        className="w-11 h-11 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-700 dark:text-gray-300 flex items-center justify-center hover:bg-white hover:text-black dark:hover:bg-white/20 transition-all shadow-sm active:scale-95"
-                        title="Copy Campaign Link"
+                    <button
+                        type="button"
+                        onClick={onCopyLink}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-800 hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                     >
-                        <Share2 size={15} />
+                        <Share2 size={14} /> Copy link
                     </button>
-
-                    {/* Edit Campaign */}
-                    <button 
-                        onClick={() => onEdit(campaign)} 
-                        className="h-11 px-4 bg-black/10 dark:bg-white/10 border border-black/20 dark:border-white/20 text-gray-900 dark:text-white font-black uppercase tracking-wider rounded-full hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all text-[11px] flex items-center gap-1.5 active:scale-95"
+                    <button
+                        type="button"
+                        onClick={() => onEdit(campaign)}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-gray-900 px-3 text-sm font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-zinc-200"
                     >
-                        <Edit size={13} /> EDIT BRIEF
+                        <Edit size={14} /> Edit
                     </button>
-
-                    {/* Delete Campaign */}
-                    <button 
+                    <button
+                        type="button"
                         onClick={() => {
-                            if (window.confirm(`Are you sure you want to delete "${campaign.title}"?`)) {
+                            if (window.confirm(`Delete “${campaign.title}”? Applicants and task submissions for this campaign will be lost. This cannot be undone.`)) {
                                 onDelete(campaign.id);
                             }
-                        }} 
-                        className="w-11 h-11 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
-                        title="Delete Campaign"
+                        }}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-red-600 hover:bg-red-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-500/10"
+                        title="Delete campaign"
+                        aria-label="Delete campaign"
                     >
                         <Trash2 size={15} />
                     </button>
@@ -2129,7 +1381,7 @@ const CampaignDetailView = ({
             </div>
 
             {/* Ultra-Aesthetic Campaign Showcase Hero Card */}
-            <div className="relative bg-white/80 dark:bg-[#0c0e14]/90 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.08] rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.06)] dark:shadow-[0_25px_70px_rgba(0,0,0,0.7)] overflow-hidden">
+            <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="relative z-10 flex flex-col lg:flex-row gap-8 items-start justify-between">
                     <div className="flex flex-col sm:flex-row items-start gap-6 w-full lg:w-auto flex-1">
                         {/* High-Impact Thumbnail - Uncropped Widescreen */}

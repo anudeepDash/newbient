@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import CityGroupManager from '../../components/admin/CityGroupManager';
@@ -32,77 +32,53 @@ export const CreatorSettingsContent = () => {
     const subTabs = [
         {
             id: 'groups',
-            label: 'City Groups',
+            label: 'City groups',
             icon: MapPin,
             count: creatorGroups?.length || 0,
-            color: 'text-sky-600 dark:text-neon-blue',
-            activeBg: 'bg-sky-500/10 dark:bg-neon-blue/15 text-sky-600 dark:text-neon-blue border-sky-500/30 dark:border-neon-blue/30',
-            hoverBg: 'hover:bg-sky-500/5 dark:hover:bg-neon-blue/10 hover:text-sky-600 dark:hover:text-neon-blue'
         },
         {
             id: 'testimonials',
             label: 'Testimonials',
             icon: MessageSquareQuote,
             count: creatorTestimonials?.length || 0,
-            color: 'text-rose-600 dark:text-neon-pink',
-            activeBg: 'bg-rose-500/10 dark:bg-neon-pink/15 text-rose-600 dark:text-neon-pink border-rose-500/30 dark:border-neon-pink/30',
-            hoverBg: 'hover:bg-rose-500/5 dark:hover:bg-neon-pink/10 hover:text-rose-600 dark:hover:text-neon-pink'
         },
         {
             id: 'brands',
-            label: 'Brand Partners',
+            label: 'Brand partners',
             icon: Building2,
             count: pastClients?.length || 0,
-            color: 'text-emerald-600 dark:text-neon-green',
-            activeBg: 'bg-emerald-500/10 dark:bg-neon-green/15 text-emerald-600 dark:text-neon-green border-emerald-500/30 dark:border-neon-green/30',
-            hoverBg: 'hover:bg-emerald-500/5 dark:hover:bg-neon-green/10 hover:text-emerald-600 dark:hover:text-neon-green'
         },
         {
             id: 'program',
-            label: 'Program & Rules',
+            label: 'Program & rules',
             icon: Sliders,
-            color: 'text-amber-600 dark:text-amber-400',
-            activeBg: 'bg-amber-500/10 dark:bg-amber-400/15 text-amber-600 dark:text-amber-400 border-amber-500/30 dark:border-amber-400/30',
-            hoverBg: 'hover:bg-amber-500/5 dark:hover:bg-amber-400/10 hover:text-amber-600 dark:hover:text-amber-400'
         }
     ];
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 py-4">
-            {/* Executive Sub-navigation Switcher */}
-            <div className="bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] p-1.5 sm:p-2 rounded-2xl sm:rounded-3xl shadow-sm">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
-                    {subTabs.map(t => {
-                        const Icon = t.icon;
-                        const isActive = activeTab === t.id;
-                        return (
-                            <button
-                                key={t.id}
-                                type="button"
-                                onClick={() => setTab(t.id)}
-                                className={cn(
-                                    "flex items-center justify-center gap-2.5 px-3 py-3 rounded-xl sm:rounded-2xl font-black text-xs uppercase tracking-wider transition-all border",
-                                    isActive
-                                        ? cn("shadow-sm font-black", t.activeBg)
-                                        : cn("border-transparent text-gray-600 dark:text-zinc-400 bg-transparent", t.hoverBg)
-                                )}
-                            >
-                                <Icon size={16} className={isActive ? t.color : 'text-gray-400 dark:text-zinc-500'} />
-                                <span>{t.label}</span>
-                                {t.count !== undefined && (
-                                    <span className={cn(
-                                        "text-[10px] font-mono px-2 py-0.5 rounded-full font-bold",
-                                        isActive
-                                            ? "bg-black/10 dark:bg-white/10 text-inherit"
-                                            : "bg-black/[0.04] dark:bg-white/[0.04] text-gray-500 dark:text-zinc-500"
-                                    )}>
-                                        {t.count}
-                                    </span>
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
+        <div className="space-y-6">
+            <div className="flex gap-1 overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-0.5 font-sans dark:border-zinc-800 dark:bg-zinc-900 sm:inline-flex">
+                {subTabs.map(t => {
+                    const Icon = t.icon;
+                    const isActive = activeTab === t.id;
+                    return (
+                        <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => setTab(t.id)}
+                            className={cn(
+                                'inline-flex h-8 shrink-0 items-center gap-2 rounded-md px-3 text-sm transition-colors',
+                                isActive
+                                    ? 'bg-white font-medium text-gray-900 shadow-sm dark:bg-zinc-800 dark:text-white'
+                                    : 'text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white'
+                            )}
+                        >
+                            <Icon size={15} />
+                            {t.label}
+                            {t.count !== undefined && <span className="text-xs tabular-nums text-gray-500 dark:text-zinc-500">{t.count}</span>}
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Sub-Tab Content View */}
@@ -125,26 +101,7 @@ const CreatorSettingsPage = ({ isEmbedded = false }) => {
     ];
 
     if (isEmbedded) {
-        return (
-            <div className="space-y-6">
-                <div className="flex justify-end mb-6">
-                    <div className="flex items-center gap-3">
-                        <a
-                            href="/creator"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-white dark:bg-black/40 backdrop-blur-3xl border border-black/10 dark:border-white/10 px-4 py-2.5 rounded-2xl flex items-center gap-2 text-xs font-bold text-gray-800 dark:text-zinc-200 hover:border-neon-pink/50 hover:text-neon-pink transition-all shadow-sm group"
-                        >
-                            <span>View Live Creator Page</span>
-                            <ExternalLink size={13} className="text-gray-400 group-hover:text-neon-pink transition-colors" />
-                        </a>
-                    </div>
-                </div>
-                <div className="max-w-7xl mx-auto py-2">
-                    <CreatorSettingsContent />
-                </div>
-            </div>
-        );
+        return <CreatorSettingsContent />;
     }
 
     return (

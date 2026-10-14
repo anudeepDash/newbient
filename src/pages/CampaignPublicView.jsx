@@ -15,28 +15,26 @@ const CampaignPublicView = () => {
     const location = useLocation();
     const campaigns = useStore(state => state.campaigns);
 
-    const [fetchedCampaign, setFetchedCampaign] = useState(null);
-    const [lookupState, setLookupState] = useState('idle'); // idle | loading | done
+    // Result of the direct Firestore lookup, tagged with the id it was made for.
+    const [lookup, setLookup] = useState({ id: null, campaign: null });
 
     // Prefer the live listener copy so edits show up instantly.
     const liveCampaign = useMemo(() => findCampaignById(campaigns, id), [campaigns, id]);
-    const campaign = liveCampaign || fetchedCampaign;
+    const lookupIsCurrent = lookup.id === id;
+    const campaign = liveCampaign || (lookupIsCurrent ? lookup.campaign : null);
 
     // If the listener has not produced this campaign, read it directly. This covers
     // signed-out visitors, slow listeners and links opened before the list loads.
     useEffect(() => {
         if (liveCampaign) return;
         let cancelled = false;
-        setLookupState('loading');
         fetchCampaignById(id).then(found => {
-            if (cancelled) return;
-            setFetchedCampaign(found);
-            setLookupState('done');
+            if (!cancelled) setLookup({ id, campaign: found });
         });
         return () => { cancelled = true; };
     }, [id, liveCampaign]);
 
-    const notFound = !campaign && lookupState === 'done';
+    const notFound = !campaign && lookupIsCurrent;
 
     useDynamicMeta({
         title: campaign ? `${campaign.title} | Creator Brief` : "Creator Campaign",
