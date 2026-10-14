@@ -470,7 +470,7 @@ const Dashboard = () => {
         },
         creators_pending: {
             label: 'Pending Creators', value: pendingCreatorsCount.toLocaleString(), icon: Clock, color: 'yellow-400',
-            detail: `${pendingCreatorsCount} applications to review`, link: '/admin/creators', category: 'Creators'
+            detail: `${pendingCreatorsCount} applications to review`, link: '/admin/creators?status=pending', category: 'Creators'
         },
         creator_groups: {
             label: 'Creator Hubs', value: (creatorGroups?.length || 0).toLocaleString(), icon: Layers, color: 'neon-purple',

@@ -1,2524 +1,1269 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import SharedLayoutModal from '../../design-system/overlays/SharedLayoutModal';
+import { useNavigate, useParams, useLocation, useSearchParams, Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { PREDEFINED_CITIES, CREATOR_NICHES } from '../../lib/constants';
-import { extractSocialUsername, hasDisallowedLink, buildSocialUrl } from '../../lib/socialUtils';
+import { PREDEFINED_CITIES, CREATOR_NICHES, nicheKey, creatorHasCollegeNiche } from '../../lib/constants';
+import { extractSocialUsername, buildSocialUrl } from '../../lib/socialUtils';
+import { cn } from '../../lib/utils';
+import { sendCreatorDirectEmail } from '../../lib/email';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Search from 'lucide-react/dist/esm/icons/search';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
 import Mail from 'lucide-react/dist/esm/icons/mail';
 import Phone from 'lucide-react/dist/esm/icons/phone';
-import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
-import XCircle from 'lucide-react/dist/esm/icons/x-circle';
-import Activity from 'lucide-react/dist/esm/icons/activity';
-import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Ban from 'lucide-react/dist/esm/icons/ban';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Filter from 'lucide-react/dist/esm/icons/filter';
-import Globe from 'lucide-react/dist/esm/icons/globe';
-import Youtube from 'lucide-react/dist/esm/icons/youtube';
-import Linkedin from 'lucide-react/dist/esm/icons/linkedin';
-import Twitter from 'lucide-react/dist/esm/icons/twitter';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import X from 'lucide-react/dist/esm/icons/x';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
-import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
-import Download from 'lucide-react/dist/esm/icons/download';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
-import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
-import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
-import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
-import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
-import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
-import Star from 'lucide-react/dist/esm/icons/star';
+import Target from 'lucide-react/dist/esm/icons/target';
 import Mic2 from 'lucide-react/dist/esm/icons/mic-2';
 import Layers from 'lucide-react/dist/esm/icons/layers';
-import Target from 'lucide-react/dist/esm/icons/target';
-import Check from 'lucide-react/dist/esm/icons/check';
-import Calendar from 'lucide-react/dist/esm/icons/calendar';
-import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
-import Pencil from 'lucide-react/dist/esm/icons/pencil';
-import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn, normalizePhoneNumber } from '../../lib/utils';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
-import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
-
-import StudioSelect from '../../components/ui/StudioSelect';
-import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
+import X from 'lucide-react/dist/esm/icons/x';
 import Plus from 'lucide-react/dist/esm/icons/plus';
+import Download from 'lucide-react/dist/esm/icons/download';
 import Upload from 'lucide-react/dist/esm/icons/upload';
-import Trophy from 'lucide-react/dist/esm/icons/trophy';
-import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Send from 'lucide-react/dist/esm/icons/send';
-import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import Settings from 'lucide-react/dist/esm/icons/settings';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import Check from 'lucide-react/dist/esm/icons/check';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import List from 'lucide-react/dist/esm/icons/list';
+import Youtube from 'lucide-react/dist/esm/icons/youtube';
+import Linkedin from 'lucide-react/dist/esm/icons/linkedin';
+import GraduationCap from 'lucide-react/dist/esm/icons/graduation-cap';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import { getEarnedBadges, MILESTONE_BADGES } from '../../lib/badges';
+import { safeLocalStorage } from '../../lib/storage';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import BroadcastGroupsModal from '../../components/admin/BroadcastGroupsModal';
 import AddCityCreatorsModal from '../../components/admin/AddCityCreatorsModal';
-import { getEarnedBadges, getVerifiedTasksCount, getReferralsForCreator } from '../../lib/badges';
-import { sendCreatorDirectEmail, generateCreatorWelcomeHTML, generateCreatorApprovedHTML, sendCreatorApprovedEmail, resolveCityWhatsAppGroup } from '../../lib/email';
-import EmailPreviewIframe from '../../components/ui/EmailPreviewIframe';
-import EditCreatorModal from '../../components/creator/EditCreatorModal';
 import AddCreatorModal from '../../components/admin/AddCreatorModal';
 import CreatorDetailModal from '../../components/admin/CreatorDetailModal';
+import {
+    Card, Button, Badge, CreatorStatusBadge, SearchInput, Select, SegmentedTabs,
+    EmptyState, Pagination, Avatar, Menu, MenuItem, StatTile,
+} from '../../components/admin/creatorPortal/ui';
+import {
+    creatorKey, creatorPhoto, creatorReach, creatorNiche, isPendingCreator,
+    isManualFollowerEntry, isBangaloreVariant, toMillis, formatDate, formatCount,
+} from '../../components/admin/creatorPortal/creatorUtils';
 
-const getPageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-    const delta = 2;
-    
-    if (totalPages <= 7) {
-        for (let i = 1; i <= totalPages; i++) {
-            pages.push(i);
-        }
-    } else {
-        const left = currentPage - delta;
-        const right = currentPage + delta;
-        const range = [];
-        let l;
-
-        for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= left && i <= right)) {
-                range.push(i);
-            }
-        }
-
-        for (let i of range) {
-            if (l) {
-                if (i - l === 2) {
-                    pages.push(l + 1);
-                } else if (i - l > 2) {
-                    pages.push('...');
-                }
-            }
-            pages.push(i);
-            l = i;
-        }
-    }
-    return pages;
-};
-
-export const SEARCH_FIELDS = [
-    { id: 'all', label: 'All Fields', icon: Search, placeholder: 'Search by mobile, name, email, @instagram, UID, college, city, niche...' },
-    { id: 'phone', label: 'Mobile / WhatsApp', icon: Phone, placeholder: 'Enter mobile number (e.g. 98765 43210, +91...)' },
-    { id: 'name', label: 'Creator Name', icon: Users, placeholder: 'Search by creator name...' },
-    { id: 'instagram', label: 'Instagram Handle', icon: Instagram, placeholder: 'Search by @instagram handle...' },
-    { id: 'email', label: 'Email Address', icon: Mail, placeholder: 'Search by email address...' },
-    { id: 'id', label: 'Creator UID / ID', icon: Target, placeholder: 'Search by Creator UID, ID or Pass Number...' },
-    { id: 'college', label: 'College / Campus', icon: Mic2, placeholder: 'Search by college, university or campus...' },
-    { id: 'city', label: 'City Hub', icon: MapPin, placeholder: 'Search by city name...' },
-    { id: 'niche', label: 'Niche / Category', icon: Layers, placeholder: 'Search by niche or specialization...' },
+const SEARCH_FIELDS = [
+    { id: 'all', label: 'All fields', icon: Search, placeholder: 'Search name, phone, email, @instagram, city, college…' },
+    { id: 'phone', label: 'Phone', icon: Phone, placeholder: 'Search by phone number' },
+    { id: 'name', label: 'Name', icon: Users, placeholder: 'Search by name' },
+    { id: 'instagram', label: 'Instagram', icon: Instagram, placeholder: 'Search by @handle' },
+    { id: 'email', label: 'Email', icon: Mail, placeholder: 'Search by email' },
+    { id: 'id', label: 'Creator ID', icon: Target, placeholder: 'Search by creator ID or UID' },
+    { id: 'college', label: 'College', icon: Mic2, placeholder: 'Search by college' },
+    { id: 'city', label: 'City', icon: MapPin, placeholder: 'Search by city' },
+    { id: 'niche', label: 'Niche', icon: Layers, placeholder: 'Search by niche' },
 ];
 
-const NICHES = CREATOR_NICHES;
-
-export const matchesCreatorSearch = (c, term, field = 'all') => {
+const matchesCreatorSearch = (c, term, field = 'all') => {
     if (!term || !term.trim()) return true;
     const cleanTerm = term.trim().toLowerCase();
     const termDigits = cleanTerm.replace(/\D/g, '');
 
-    // Extract all phone fields
     const rawPhones = [c.phone, c.mobile, c.whatsapp, c.contact, c.phoneNumber].filter(Boolean).map(String);
     const phoneDigitsList = rawPhones.map(p => p.replace(/\D/g, ''));
 
     const matchesPhone = () => {
         if (rawPhones.some(p => p.toLowerCase().includes(cleanTerm))) return true;
         if (termDigits.length >= 3) {
-            return phoneDigitsList.some(pDigits => pDigits.includes(termDigits) || termDigits.includes(pDigits));
+            return phoneDigitsList.some(pDigits => pDigits && (pDigits.includes(termDigits) || termDigits.includes(pDigits)));
         }
         return false;
     };
-
-    const matchesName = () => {
-        const names = [c.name, c.displayName, c.fullName, c.artistName].filter(Boolean).map(s => String(s).toLowerCase());
-        return names.some(n => n.includes(cleanTerm));
-    };
-
-    const matchesEmail = () => {
-        return c.email && String(c.email).toLowerCase().includes(cleanTerm);
-    };
-
+    const matchesName = () => [c.name, c.displayName, c.fullName, c.artistName].filter(Boolean)
+        .some(n => String(n).toLowerCase().includes(cleanTerm));
+    const matchesEmail = () => Boolean(c.email && String(c.email).toLowerCase().includes(cleanTerm));
     const matchesInstagram = () => {
-        const igs = [c.instagram, c.handle, c.instagramHandle].filter(Boolean).map(s => String(s).toLowerCase().replace(/^@/, ''));
         const strippedTerm = cleanTerm.replace(/^@/, '');
-        return igs.some(ig => ig.includes(strippedTerm));
+        return [c.instagram, c.handle, c.instagramHandle].filter(Boolean)
+            .some(ig => String(ig).toLowerCase().replace(/^@/, '').includes(strippedTerm));
     };
-
-    const matchesCity = () => {
-        return c.city && String(c.city).toLowerCase().includes(cleanTerm);
-    };
-
-    const matchesId = () => {
-        const ids = [c.uid, c.id, c.creatorId, c.passId, c.passNumber].filter(Boolean).map(s => String(s).toLowerCase());
-        return ids.some(id => id.includes(cleanTerm));
-    };
-
-    const matchesCollege = () => {
-        const colleges = [c.college, c.collegeName, c.university, c.campus, c.school].filter(Boolean).map(s => String(s).toLowerCase());
-        return colleges.some(col => col.includes(cleanTerm));
-    };
-
+    const matchesCity = () => Boolean(c.city && String(c.city).toLowerCase().includes(cleanTerm));
+    const matchesId = () => [c.uid, c.id, c.creatorId, c.passId, c.passNumber].filter(Boolean)
+        .some(id => String(id).toLowerCase().includes(cleanTerm));
+    const matchesCollege = () => [c.college, c.collegeName, c.university, c.campus, c.school].filter(Boolean)
+        .some(col => String(col).toLowerCase().includes(cleanTerm));
     const matchesNiche = () => {
         const specs = Array.isArray(c.specializations) ? c.specializations : (Array.isArray(c.niches) ? c.niches : []);
-        const cats = [c.category, c.niche].filter(Boolean);
-        return [...specs, ...cats].some(n => typeof n === 'string' && n.toLowerCase().includes(cleanTerm));
+        return [...specs, c.category, c.niche].some(n => typeof n === 'string' && n.toLowerCase().includes(cleanTerm));
     };
-
-    const matchesSocials = () => {
-        const socials = [c.youtube, c.youtubeChannel, c.youtubeHandle, c.linkedin, c.linkedinProfile, c.twitter, c.xHandle, c.portfolio, c.website].filter(Boolean).map(s => String(s).toLowerCase());
-        return socials.some(soc => soc.includes(cleanTerm));
-    };
-
-    const matchesFinance = () => {
-        const fin = [c.pan, c.panNumber, c.upiId, c.bankAccount, c.accountNumber, c.ifsc, c.gstNumber].filter(Boolean).map(s => String(s).toLowerCase());
-        return fin.some(f => f.includes(cleanTerm));
-    };
-
-    const matchesBio = () => {
-        const texts = [c.bio, c.about, c.description, c.notes, c.adminNotes].filter(Boolean).map(s => String(s).toLowerCase());
-        return texts.some(t => t.includes(cleanTerm));
-    };
+    const matchesSocials = () => [c.youtube, c.youtubeChannel, c.youtubeHandle, c.linkedin, c.linkedinProfile, c.twitter, c.xHandle, c.portfolio, c.website]
+        .filter(Boolean).some(soc => String(soc).toLowerCase().includes(cleanTerm));
+    const matchesFinance = () => [c.pan, c.panNumber, c.upiId, c.bankAccount, c.accountNumber, c.ifsc, c.gstNumber]
+        .filter(Boolean).some(f => String(f).toLowerCase().includes(cleanTerm));
+    const matchesBio = () => [c.bio, c.about, c.description, c.notes, c.adminNotes]
+        .filter(Boolean).some(t => String(t).toLowerCase().includes(cleanTerm));
 
     switch (field) {
-        case 'phone':
-            return matchesPhone();
-        case 'name':
-            return matchesName();
-        case 'email':
-            return matchesEmail();
-        case 'instagram':
-            return matchesInstagram();
-        case 'id':
-            return matchesId();
-        case 'college':
-            return matchesCollege();
-        case 'city':
-            return matchesCity();
-        case 'niche':
-            return matchesNiche();
-        case 'socials':
-            return matchesSocials() || matchesInstagram();
-        case 'finance':
-            return matchesFinance();
+        case 'phone': return matchesPhone();
+        case 'name': return matchesName();
+        case 'email': return matchesEmail();
+        case 'instagram': return matchesInstagram();
+        case 'id': return matchesId();
+        case 'college': return matchesCollege();
+        case 'city': return matchesCity();
+        case 'niche': return matchesNiche();
+        case 'socials': return matchesSocials() || matchesInstagram();
+        case 'finance': return matchesFinance();
         case 'all':
         default:
-            return (
-                matchesPhone() ||
-                matchesName() ||
-                matchesEmail() ||
-                matchesInstagram() ||
-                matchesId() ||
-                matchesCity() ||
-                matchesNiche() ||
-                matchesCollege() ||
-                matchesSocials() ||
-                matchesFinance() ||
-                matchesBio()
-            );
+            return matchesPhone() || matchesName() || matchesEmail() || matchesInstagram() || matchesId() ||
+                matchesCity() || matchesNiche() || matchesCollege() || matchesSocials() || matchesFinance() || matchesBio();
     }
 };
 
-const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => {
+// RFC 4180-ish CSV parser: quoted fields, escaped quotes, commas/newlines in quotes, CRLF.
+const parseCSV = (text) => {
+    const rows = [];
+    let row = [];
+    let field = '';
+    let inQuotes = false;
+    const input = String(text || '').replace(/^\uFEFF/, '');
+    for (let i = 0; i < input.length; i++) {
+        const ch = input[i];
+        if (inQuotes) {
+            if (ch === '"') {
+                if (input[i + 1] === '"') { field += '"'; i++; }
+                else inQuotes = false;
+            } else field += ch;
+        } else if (ch === '"') inQuotes = true;
+        else if (ch === ',') { row.push(field); field = ''; }
+        else if (ch === '\n' || ch === '\r') {
+            if (ch === '\r' && input[i + 1] === '\n') i++;
+            row.push(field); field = '';
+            if (row.some(v => v.trim() !== '')) rows.push(row);
+            row = [];
+        } else field += ch;
+    }
+    row.push(field);
+    if (row.some(v => v.trim() !== '')) rows.push(row);
+    return rows;
+};
+
+const csvCell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+const STATUS_TABS = ['all', 'pending', 'approved', 'rejected', 'blocked'];
+const PAGE_SIZES = { table: 25, grid: 24 };
+const VIEW_STORAGE_KEY = 'admin.creators.view';
+const readSavedView = () => {
+    try { return safeLocalStorage.getItem(VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'table'; } catch { return 'table'; }
+};
+const FOLLOWER_PRESETS = [
+    { value: '', label: 'Any followers' },
+    { value: '1000', label: '1K+ followers' },
+    { value: '5000', label: '5K+ followers' },
+    { value: '10000', label: '10K+ followers' },
+    { value: '50000', label: '50K+ followers' },
+    { value: '100000', label: '100K+ followers' },
+];
+const SORTS = [
+    { value: 'newest', label: 'Newest first' },
+    { value: 'oldest', label: 'Oldest first' },
+    { value: 'followers', label: 'Most followers' },
+    { value: 'name', label: 'Name A–Z' },
+];
+
+const EMPTY = [];
+
+const CreatorManager = ({ showLeaderboardOnly = false }) => {
     useStoreSubscription(['creators', 'campaigns']);
-    const { creators, campaigns, updateCreator, deleteCreator, mergeBangaloreCreatorsToBengaluru } = useStore();
+    const creators = useStore(state => state.creators) || EMPTY;
+    const creatorsLoaded = useStore(state => Boolean(state.subscriptionsLoaded?.creators));
+    const campaigns = useStore(state => state.campaigns) || EMPTY;
+    const { updateCreator, deleteCreator, mergeBangaloreCreatorsToBengaluru } = useStore();
     const navigate = useNavigate();
     const location = useLocation();
     const params = useParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const isLeaderboardRoute = location.pathname.includes('/leaderboard') || showLeaderboardOnly;
-    const [searchTerm, setSearchTerm] = useState('');
-    const [searchField, setSearchField] = useState('all');
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 12;
 
-    const [filterCity, setFilterCity] = useState('All');
-    const [filterStatus, setFilterStatus] = useState('All');
-    const [filterNiche, setFilterNiche] = useState('All');
-    const [filterPlatform, setFilterPlatform] = useState('All');
-    const [minFollowers, setMinFollowers] = useState('');
-    const [maxFollowers, setMaxFollowers] = useState('');
-    const [isFollowersOpen, setIsFollowersOpen] = useState(false);
-    const followersRef = useRef(null);
+    // Filters live in the URL so views can be bookmarked, shared and survive the
+    // detail modal opening/closing.
+    const q = searchParams.get('q') || '';
+    const field = searchParams.get('field') || 'all';
+    const status = STATUS_TABS.includes(searchParams.get('status')) ? searchParams.get('status') : 'all';
+    const city = searchParams.get('city') || 'all';
+    const niche = searchParams.get('niche') || 'all';
+    const college = searchParams.get('college') || 'all';
+    const platform = searchParams.get('platform') || 'all';
+    const minFollowers = searchParams.get('min') || '';
+    const manualOnly = searchParams.get('manual') === '1';
+    const sort = searchParams.get('sort') || 'newest';
+    // ?view= wins (shareable links); otherwise use this browser's last choice.
+    const [savedView, setSavedView] = useState(readSavedView);
+    const view = ['grid', 'table'].includes(searchParams.get('view')) ? searchParams.get('view') : savedView;
+    const setView = (next) => {
+        setSavedView(next);
+        try { safeLocalStorage.setItem(VIEW_STORAGE_KEY, next); } catch { /* storage unavailable */ }
+        updateParams({ view: next === 'table' ? '' : next }, { keepPage: false });
+    };
+    const PAGE_SIZE = PAGE_SIZES[view];
+    const page = Math.max(1, Number(searchParams.get('page')) || 1);
 
-    const [selectedCreator, setSelectedCreator] = useState(null);
+    const updateParams = (patch, { keepPage = false } = {}) => {
+        const next = new URLSearchParams(searchParams);
+        Object.entries(patch).forEach(([k, v]) => {
+            if (v === '' || v === null || v === undefined || v === 'all' || v === false || (k === 'sort' && v === 'newest') || (k === 'field' && v === 'all')) next.delete(k);
+            else next.set(k, String(v));
+        });
+        if (!keepPage) next.delete('page');
+        setSearchParams(next, { replace: true });
+    };
+
+    // Search box is local for snappy typing, synced to the URL shortly after.
+    // When the URL changes from elsewhere (clear filters, back button) adopt it.
+    const [searchDraft, setSearchDraft] = useState(q);
+    const [syncedQ, setSyncedQ] = useState(q);
+    if (q !== syncedQ) {
+        setSyncedQ(q);
+        setSearchDraft(q);
+    }
+    useEffect(() => {
+        if (searchDraft === q) return;
+        const t = setTimeout(() => updateParams({ q: searchDraft.trim() ? searchDraft : '' }), 200);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchDraft]);
+
+    const [rawSelected, setSelected] = useState(() => new Set());
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [viewMode, setViewMode] = useState('grid'); 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [selectedUids, setSelectedUids] = useState([]);
-    const [isBulkEmailModalOpen, setIsBulkEmailModalOpen] = useState(false);
-    const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
-    const [isAddCityCreatorsOpen, setIsAddCityCreatorsOpen] = useState(false);
-    const [cityForAddModal, setCityForAddModal] = useState('Bengaluru');
-    const [selectedUidsForAddModal, setSelectedUidsForAddModal] = useState(null);
+    const [isBulkEmailOpen, setIsBulkEmailOpen] = useState(false);
+    const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
+    const [cityInvite, setCityInvite] = useState(null); // { city, uids }
     const [isMergingBangalore, setIsMergingBangalore] = useState(false);
-    const [isWhatsAppMenuOpen, setIsWhatsAppMenuOpen] = useState(false);
-    const whatsAppMenuRef = useRef(null);
-    const [isDataMenuOpen, setIsDataMenuOpen] = useState(false);
-    const dataMenuRef = useRef(null);
-    const [isScopeMenuOpen, setIsScopeMenuOpen] = useState(false);
-    const scopeMenuRef = useRef(null);
+    const [isBulkApproving, setIsBulkApproving] = useState(false);
+    const importInputRef = useRef(null);
 
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (followersRef.current && !followersRef.current.contains(event.target)) {
-                setIsFollowersOpen(false);
-            }
-            if (whatsAppMenuRef.current && !whatsAppMenuRef.current.contains(event.target)) {
-                setIsWhatsAppMenuOpen(false);
-            }
-            if (dataMenuRef.current && !dataMenuRef.current.contains(event.target)) {
-                setIsDataMenuOpen(false);
-            }
-            if (scopeMenuRef.current && !scopeMenuRef.current.contains(event.target)) {
-                setIsScopeMenuOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const bangaloreCreatorsCount = useMemo(() => {
-        return (creators || []).filter(c => {
-            const city = (c.city || '').trim().toLowerCase();
-            return city === 'bangalore' || city === 'banglore' || city.includes('bangalore') || city.includes('banglore');
-        }).length;
+    // ── Derived data ────────────────────────────────────────────────────────
+    const counts = useMemo(() => {
+        const out = { all: creators.length, pending: 0, approved: 0, rejected: 0, blocked: 0, manualPending: 0 };
+        creators.forEach(c => {
+            if (isPendingCreator(c)) {
+                out.pending++;
+                if (isManualFollowerEntry(c)) out.manualPending++;
+            } else if (out[c.profileStatus] !== undefined) out[c.profileStatus]++;
+        });
+        return out;
     }, [creators]);
+
+    const cityOptions = useMemo(() => {
+        const set = new Set(PREDEFINED_CITIES);
+        creators.forEach(c => { if (c.city && !isBangaloreVariant(c.city)) set.add(String(c.city).trim()); });
+        return [{ value: 'all', label: 'All cities' }, ...[...set].filter(Boolean).sort().map(c => ({ value: c, label: c }))];
+    }, [creators]);
+
+    // Colleges grouped case-insensitively, most creators first.
+    const collegeOptions = useMemo(() => {
+        const byKey = new Map();
+        let missing = 0;
+        creators.forEach(c => {
+            const name = String(c.collegeName || '').trim();
+            if (!name) { if (creatorHasCollegeNiche(c)) missing++; return; }
+            const key = name.toLowerCase();
+            const entry = byKey.get(key) || { label: name, count: 0 };
+            entry.count++;
+            byKey.set(key, entry);
+        });
+        const list = [...byKey.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+        return [
+            { value: 'all', label: 'All colleges' },
+            ...(missing ? [{ value: 'missing', label: `College missing (${missing})` }] : []),
+            ...list.map(e => ({ value: e.label, label: `${e.label} (${e.count})` })),
+        ];
+    }, [creators]);
+
+    const nicheOptions = useMemo(() => [{ value: 'all', label: 'All niches' }, ...CREATOR_NICHES.map(n => ({ value: n, label: n }))], []);
+
+    const bangaloreCount = useMemo(
+        () => creators.filter(c => /bangalore|banglore/i.test(String(c.city || ''))).length,
+        [creators]
+    );
+
+    const filtered = useMemo(() => {
+        const min = Number(minFollowers) || 0;
+        const list = creators.filter(c => {
+            if (!matchesCreatorSearch(c, q, field)) return false;
+            if (status === 'pending' && !isPendingCreator(c)) return false;
+            if (status !== 'all' && status !== 'pending' && c.profileStatus !== status) return false;
+            if (manualOnly && !isManualFollowerEntry(c)) return false;
+            if (city !== 'all' && c.city !== city && !(city === 'Bengaluru' && isBangaloreVariant(c.city))) return false;
+            if (niche !== 'all') {
+                const specs = Array.isArray(c.specializations) ? c.specializations : (Array.isArray(c.niches) ? c.niches : []);
+                const target = nicheKey(niche);
+                if (![...specs, c.categories].some(n => nicheKey(n) === target)) return false;
+            }
+            if (college === 'missing') {
+                if (!creatorHasCollegeNiche(c) || String(c.collegeName || '').trim()) return false;
+            } else if (college !== 'all' && String(c.collegeName || '').trim().toLowerCase() !== college.toLowerCase()) return false;
+            if (platform !== 'all' && !String(c[platform] || '').trim()) return false;
+            if (min && creatorReach(c) < min) return false;
+            return true;
+        });
+        const createdAt = (c) => toMillis(c.createdAt || c.joinedAt || c.registeredAt || c.updatedAt);
+        const sorters = {
+            newest: (a, b) => createdAt(b) - createdAt(a),
+            oldest: (a, b) => createdAt(a) - createdAt(b),
+            followers: (a, b) => creatorReach(b) - creatorReach(a),
+            name: (a, b) => String(a.name || '').localeCompare(String(b.name || '')),
+        };
+        return list.sort(sorters[sort] || sorters.newest);
+    }, [creators, q, field, status, manualOnly, city, niche, college, platform, minFollowers, sort]);
+
+    const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const currentPage = Math.min(page, pageCount);
+    const pageRows = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    const hasFilters = Boolean(q || status !== 'all' || city !== 'all' || niche !== 'all' || college !== 'all' || platform !== 'all' || minFollowers || manualOnly);
+
+    // Detail modal follows the URL (/admin/creators/:id) and always shows live data.
+    const selectedCreator = useMemo(() => {
+        if (!params.id || isLeaderboardRoute) return null;
+        const target = String(params.id);
+        return creators.find(c =>
+            c.id === target || c.uid === target ||
+            (c.creatorId && String(c.creatorId).toUpperCase() === target.toUpperCase())
+        ) || null;
+    }, [params.id, creators, isLeaderboardRoute]);
+    const detailNotFound = Boolean(params.id && !isLeaderboardRoute && creatorsLoaded && !selectedCreator);
+
+    const listSearch = location.search;
+    const openCreator = (c) => navigate(`/admin/creators/${encodeURIComponent(creatorKey(c))}${listSearch}`);
+    const closeCreator = () => navigate(`/admin/creators${listSearch}`);
+
+    // Ignore selections for creators that have since been deleted.
+    const selected = useMemo(() => {
+        if (rawSelected.size === 0) return rawSelected;
+        const keys = new Set(creators.map(creatorKey));
+        return new Set([...rawSelected].filter(k => keys.has(k)));
+    }, [rawSelected, creators]);
+
+    // ── Actions ─────────────────────────────────────────────────────────────
+    const toast = (msg, type = 'success') => useStore.getState().addToast(msg, type);
+
+    const toggleSelect = (key) => setSelected(prev => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key); else next.add(key);
+        return next;
+    });
+    const pageKeys = pageRows.map(creatorKey);
+    const allPageSelected = pageKeys.length > 0 && pageKeys.every(k => selected.has(k));
+    const togglePage = () => setSelected(prev => {
+        const next = new Set(prev);
+        if (allPageSelected) pageKeys.forEach(k => next.delete(k));
+        else pageKeys.forEach(k => next.add(k));
+        return next;
+    });
+    const selectAllFiltered = () => setSelected(new Set(filtered.map(creatorKey)));
+
+    const handleUpdateStatus = async (id, newStatus) => {
+        setIsUpdating(true);
+        try {
+            await updateCreator(id, { profileStatus: newStatus });
+            toast(newStatus === 'approved' ? 'Creator verified.' : `Creator marked as ${newStatus}.`);
+        } catch (error) {
+            console.error('Error updating creator status:', error);
+            toast(error?.message || "Couldn't update the status. Please try again.", 'error');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleDeleteCreator = async (id) => {
+        if (!window.confirm('Permanently delete this creator profile? This cannot be undone.')) return;
+        setIsDeleting(true);
+        try {
+            await deleteCreator(id);
+            closeCreator();
+            toast('Creator profile deleted.');
+        } catch (error) {
+            console.error('Error deleting creator:', error);
+            toast(error?.message || "Couldn't delete the creator. Please try again.", 'error');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleBulkApprove = async () => {
+        const targets = creators.filter(c => selected.has(creatorKey(c)) && c.profileStatus !== 'approved');
+        if (targets.length === 0) { toast('Everyone selected is already verified.', 'info'); return; }
+        if (!window.confirm(`Verify ${targets.length} creator${targets.length === 1 ? '' : 's'}? Each one gets an approval email.`)) return;
+        setIsBulkApproving(true);
+        const results = await Promise.allSettled(targets.map(c => updateCreator(creatorKey(c), { profileStatus: 'approved' })));
+        const failed = results.filter(r => r.status === 'rejected').length;
+        setIsBulkApproving(false);
+        toast(failed ? `Verified ${targets.length - failed}, ${failed} failed.` : `Verified ${targets.length} creator${targets.length === 1 ? '' : 's'}.`, failed ? 'warning' : 'success');
+        setSelected(new Set());
+    };
 
     const handleMergeBangalore = async () => {
         if (!mergeBangaloreCreatorsToBengaluru) return;
         setIsMergingBangalore(true);
         try {
             const res = await mergeBangaloreCreatorsToBengaluru();
-            useStore.getState().addToast(`Moved ${res?.updatedCount || 0} creators to Bengaluru.`, 'success');
+            toast(`Moved ${res?.updatedCount || 0} creators to Bengaluru.`);
         } catch (err) {
             console.error('Error merging Bangalore creators:', err);
-            useStore.getState().addToast("Couldn't move Bangalore creators to Bengaluru. Please try again.", 'error');
+            toast("Couldn't move Bangalore creators to Bengaluru. Please try again.", 'error');
         } finally {
             setIsMergingBangalore(false);
         }
     };
 
-    const handleToggleSelect = (uid) => {
-        setSelectedUids(prev => 
-            prev.includes(uid) 
-                ? prev.filter(id => id !== uid) 
-                : [...prev, uid]
-        );
+    const exportToCSV = () => {
+        const headers = ['Name', 'Email', 'Phone', 'Phone verified', 'City', 'College', 'Instagram', 'Instagram followers', 'LinkedIn', 'LinkedIn followers', 'YouTube', 'YouTube subscribers', 'Niches', 'Status', 'Creator ID', 'Joined'];
+        const rows = filtered.map(c => [
+            c.name, c.email, c.phone, c.isPhoneVerified ? 'Yes' : 'No', c.city, c.collegeName,
+            c.instagram ? buildSocialUrl(c.instagram, 'instagram') : '', c.instagramFollowers || 0,
+            c.linkedin ? buildSocialUrl(c.linkedin, 'linkedin') : '', c.linkedinFollowers || 0,
+            c.youtube ? buildSocialUrl(c.youtube, 'youtube') : '', c.youtubeSubscribers || 0,
+            (c.specializations || c.niches || []).join(', '), c.profileStatus || 'pending', c.creatorId || '', formatDate(c.createdAt),
+        ].map(csvCell).join(','));
+        const blob = new Blob([[headers.map(csvCell).join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `newbi-creators-${status}-${city === 'all' ? 'all-cities' : city.toLowerCase()}-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
-    const handleDeselectAll = () => setSelectedUids([]);
 
     const handleImportCSV = (e) => {
-        const file = e.target.files[0];
+        const file = e.target.files?.[0];
+        e.target.value = '';
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = async (event) => {
-            const csvText = event.target.result;
-            const lines = csvText.split('\n').filter(line => line.trim() !== '');
-            if (lines.length < 2) {
-                useStore.getState().addToast("This CSV file is empty or couldn't be read. Please check it and try again.", 'error');
-                return;
-            }
-
-            // Parse headers
-            const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
-            
-            const creatorsToImport = [];
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i];
-                // Regex to split by comma but respect quotes
-                const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-                const values = matches.map(val => val.replace(/(^"|"$)/g, '').trim());
-                
+            const rows = parseCSV(event.target.result);
+            if (rows.length < 2) { toast('CSV file is empty or has no data rows.', 'error'); return; }
+            const headers = rows[0].map(h => h.trim().toLowerCase());
+            const toImport = [];
+            let skipped = 0;
+            rows.slice(1).forEach(values => {
                 const row = {};
-                headers.forEach((header, idx) => {
-                    row[header] = values[idx] || '';
-                });
-
+                headers.forEach((h, idx) => { row[h] = (values[idx] || '').trim(); });
                 const name = row['name'] || row['full name'] || '';
                 const email = row['email'] || row['email id'] || '';
                 const phone = row['phone'] || row['mobile'] || row['contact'] || '';
                 const rawCity = row['city'] || row['location'] || '';
-                const city = /^bang[al]*o?re$/i.test(rawCity.trim()) ? 'Bengaluru' : rawCity.trim();
-                const instagram = row['instagram'] || row['handle'] || '';
-                const instagramFollowers = row['followers'] || row['instagram followers'] || '0';
-                const niche = row['niche'] || row['specialization'] || row['category'] || '';
-                const collegeName = row['college'] || row['college name'] || '';
-                const bio = row['bio'] || row['description'] || '';
-                
-                if (!name || !email || !phone || !niche || !city) {
-                    continue; // Skip invalid rows
-                }
+                const rowCity = isBangaloreVariant(rawCity) ? 'Bengaluru' : rawCity;
+                const rowNiche = row['niche'] || row['specialization'] || row['category'] || '';
+                if (!name || !email || !phone || !rowNiche || !rowCity) { skipped++; return; }
 
-                let cleanInstagram = instagram.trim();
-                if (cleanInstagram.includes('/')) {
-                    const parts = cleanInstagram.split('/');
-                    cleanInstagram = parts[parts.length - 1] || parts[parts.length - 2] || '';
-                    cleanInstagram = cleanInstagram.split('?')[0];
+                let ig = row['instagram'] || row['handle'] || '';
+                if (ig.includes('/')) {
+                    const parts = ig.split('/').filter(Boolean);
+                    ig = (parts[parts.length - 1] || '').split('?')[0];
                 }
-                cleanInstagram = cleanInstagram.replace(/^@/, '');
-
-                creatorsToImport.push({
+                toImport.push({
                     uid: `imported_${Math.random().toString(36).substring(2, 15)}`,
-                    name,
-                    email,
-                    phone,
-                    city,
-                    categories: niche,
-                    specializations: [niche],
-                    instagram: cleanInstagram,
-                    instagramFollowers,
-                    collegeName,
-                    bio,
+                    name, email, phone, city: rowCity,
+                    categories: rowNiche,
+                    specializations: [rowNiche],
+                    instagram: ig.replace(/^@/, ''),
+                    instagramFollowers: row['followers'] || row['instagram followers'] || '0',
+                    collegeName: row['college'] || row['college name'] || '',
+                    bio: row['bio'] || row['description'] || '',
                     profileStatus: 'approved',
-                    isPhoneVerified: true
+                    isPhoneVerified: true,
                 });
-            }
-
-            if (creatorsToImport.length === 0) {
-                useStore.getState().addToast("We couldn't find any creators to import in this file.", 'error');
-                return;
-            }
-
+            });
+            if (toImport.length === 0) { toast('No valid rows found. Name, email, phone, city and niche are required.', 'error'); return; }
             try {
                 const { addCreator } = useStore.getState();
-                await Promise.all(creatorsToImport.map(c => addCreator(c, false)));
-                useStore.getState().addToast(`${creatorsToImport.length} creators imported.`, 'success');
+                const results = await Promise.allSettled(toImport.map(c => addCreator(c, false)));
+                const failed = results.filter(r => r.status === 'rejected').length;
+                toast(`Imported ${toImport.length - failed} creator${toImport.length - failed === 1 ? '' : 's'}${skipped ? `, skipped ${skipped} incomplete row${skipped === 1 ? '' : 's'}` : ''}${failed ? `, ${failed} failed` : ''}.`, failed ? 'warning' : 'success');
             } catch (err) {
-                console.error("CSV Import error:", err);
-                useStore.getState().addToast("Couldn't import the creators. Please try again.", 'error');
+                console.error('CSV import error:', err);
+                toast("Couldn't import the creators. Please try again.", 'error');
             }
         };
         reader.readAsText(file);
-        e.target.value = null; // reset input
     };
 
-    const cities = ['All', ...new Set([...PREDEFINED_CITIES, ...creators.map(c => c.city)])];
+    // ── Render ──────────────────────────────────────────────────────────────
+    if (isLeaderboardRoute) {
+        return <ReferralLeaderboard creators={creators} onSelectCreator={(c) => navigate(`/admin/creators/${encodeURIComponent(creatorKey(c))}`)} />;
+    }
 
-    useEffect(() => {
-        if (params.id && creators.length > 0) {
-            const found = creators.find(c => 
-                c.uid === params.id || 
-                c.id === params.id || 
-                (c.creatorId && c.creatorId.toUpperCase() === params.id.toUpperCase())
-            );
-            if (found) {
-                setSelectedCreator(found);
-            }
-        } else if (!params.id) {
-            setSelectedCreator(null);
-        }
-    }, [params.id, creators]);
+    const statusTabs = [
+        { value: 'all', label: 'All', count: counts.all },
+        { value: 'pending', label: 'Pending', count: counts.pending, highlight: counts.pending > 0 },
+        { value: 'approved', label: 'Verified', count: counts.approved },
+        { value: 'rejected', label: 'Rejected', count: counts.rejected },
+        { value: 'blocked', label: 'Blocked', count: counts.blocked },
+    ];
 
-    const filteredCreators = useMemo(() => {
-        return creators.filter(c => {
-            const matchesSearch = matchesCreatorSearch(c, searchTerm, searchField);
-            const matchesCity = filterCity === 'All' || c.city === filterCity || (filterCity === 'Bengaluru' && /^bang[al]*o?re$/i.test(c.city || ''));
-            const matchesStatus = filterStatus === 'All' || 
-                (filterStatus === 'pending' && (!c.profileStatus || c.profileStatus === 'pending')) ||
-                c.profileStatus === filterStatus;
-            
-            const specs = Array.isArray(c.specializations) ? c.specializations : (Array.isArray(c.niches) ? c.niches : []);
-            const matchesNiche = filterNiche === 'All' || specs.some(n => {
-                const normalizedNiche = n === 'Student Creator/ Campus Creator' ? 'Student/ Campus Creator' : n;
-                return normalizedNiche === filterNiche;
-            });
-                
-            const followers = Math.max(Number(c.instagramFollowers || 0), Number(c.youtubeSubscribers || 0), Number(c.linkedinFollowers || 0));
-            const matchesMin = !minFollowers || followers >= Number(minFollowers);
-            const matchesMax = !maxFollowers || followers <= Number(maxFollowers);
-            const matchesFollowers = matchesMin && matchesMax;
+    const fieldMeta = SEARCH_FIELDS.find(f => f.id === field) || SEARCH_FIELDS[0];
 
-            const matchesPlatform = filterPlatform === 'All' ||
-                (filterPlatform === 'instagram' && c.instagram && c.instagram.trim() !== '') ||
-                (filterPlatform === 'linkedin' && c.linkedin && c.linkedin.trim() !== '') ||
-                (filterPlatform === 'youtube' && c.youtube && c.youtube.trim() !== '');
-
-            return matchesSearch && matchesCity && matchesStatus && matchesNiche && matchesFollowers && matchesPlatform;
-        });
-    }, [creators, searchTerm, searchField, filterCity, filterStatus, filterNiche, minFollowers, maxFollowers, filterPlatform]);
-
-    const getFollowersLabel = () => {
-        if (!minFollowers && !maxFollowers) return 'Followers';
-        
-        const formatNum = (num) => {
-            const n = Number(num);
-            if (n >= 1000000) return `${(n / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
-            if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K`;
-            return n.toLocaleString();
-        };
-
-        if (minFollowers && !maxFollowers) return `${formatNum(minFollowers)}+`;
-        if (!minFollowers && maxFollowers) return `< ${formatNum(maxFollowers)}`;
-        return `${formatNum(minFollowers)} - ${formatNum(maxFollowers)}`;
-    };
-
-    const totalPages = Math.ceil(filteredCreators.length / itemsPerPage);
-    const paginatedCreators = useMemo(() => {
-        const start = (currentPage - 1) * itemsPerPage;
-        return filteredCreators.slice(start, start + itemsPerPage);
-    }, [filteredCreators, currentPage]);
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, searchField, filterCity, filterStatus, filterNiche, minFollowers, maxFollowers, filterPlatform]);
-
-    const stats = useMemo(() => {
-        const approvedCount = creators.filter(c => c.profileStatus === 'approved').length;
-        const pendingCount = creators.filter(c => !c.profileStatus || c.profileStatus === 'pending').length;
-        const manualPendingCount = creators.filter(c => 
-            (!c.profileStatus || c.profileStatus === 'pending') && 
-            Boolean(c.manualFollowerEntry || c.isManualFollowerEntry || c.requiresManualVerification)
-        ).length;
-        const totalFollowers = creators.reduce((sum, c) => sum + Math.max(Number(c.instagramFollowers || 0), Number(c.youtubeSubscribers || 0), Number(c.linkedinFollowers || 0)), 0);
-        
-        return {
-            total: creators.length,
-            approved: approvedCount,
-            pending: pendingCount,
-            manualPending: manualPendingCount,
-            followers: totalFollowers
-        };
-    }, [creators]);
-
-    const personnelTabs = useMemo(() => [
-        { name: 'Creators', path: '/admin/creators', icon: Star, badge: stats.pending > 0 ? stats.pending : null },
-        { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
-        { name: 'Leaderboard', path: '/admin/creators/leaderboard', icon: Trophy },
-        { name: 'Settings', path: '/admin/creators/settings', icon: Settings },
-    ], [stats.pending]);
-
-    const handleUpdateStatus = async (uid, newStatus) => {
-        setIsUpdating(true);
-        try {
-            await updateCreator(uid, { profileStatus: newStatus });
-            if (selectedCreator && (selectedCreator.uid === uid || selectedCreator.id === uid)) {
-                setSelectedCreator({ ...selectedCreator, profileStatus: newStatus });
-            }
-            useStore.getState().addToast(`Creator marked as ${newStatus === 'approved' ? 'verified' : newStatus}.`, 'success');
-        } catch (error) {
-            console.error("Error updating creator status:", error);
-            useStore.getState().addToast("Couldn't update the creator's status. Please try again.", 'error');
-        } finally {
-            setIsUpdating(false);
-        }
-    };
-
-    const handleDeleteCreator = async (uid) => {
-        if (window.confirm("Permanently delete this creator profile?")) {
-            setIsDeleting(true);
-            try {
-                await deleteCreator(uid);
-                navigate('/admin/creators');
-                useStore.getState().addToast("Creator profile deleted.", 'success');
-            } catch (error) {
-                console.error("Error deleting creator:", error);
-                useStore.getState().addToast("Couldn't delete the creator. Please try again.", 'error');
-            } finally {
-                setIsDeleting(false);
-            }
-        }
-    };
-    
-    const exportToCSV = () => {
-        const headers = ['Name', 'Email', 'Phone', 'Phone Verified', 'Phone Verification Pending', 'City', 'Instagram', 'Instagram Followers', 'LinkedIn', 'LinkedIn Connections', 'YouTube', 'YouTube Subs', 'Specializations', 'Status'];
-        const csvRows = [
-            headers.join(','),
-            ...filteredCreators.map(c => [
-                `"${(c.name || '').replace(/"/g, '""')}"`,
-                `"${(c.email || '').replace(/"/g, '""')}"`,
-                `"${(c.phone || '').replace(/"/g, '""')}"`,
-                `"${c.isPhoneVerified ? 'YES' : 'NO'}"`,
-                `"${c.phoneVerificationPending || !c.isPhoneVerified ? 'YES' : 'NO'}"`,
-                `"${(c.city || '').replace(/"/g, '""')}"`,
-                `"${buildSocialUrl(c.instagram, 'instagram')}"`,
-                `"${c.instagramFollowers || 0}"`,
-                `"${buildSocialUrl(c.linkedin, 'linkedin')}"`,
-                `"${c.linkedinFollowers || 0}"`,
-                `"${buildSocialUrl(c.youtube, 'youtube')}"`,
-                `"${c.youtubeSubscribers || 0}"`,
-                `"${(c.specializations || c.niches || []).join(', ').replace(/"/g, '""')}"`,
-                `"${c.profileStatus || 'pending'}"`
-            ].join(','))
-        ];
-        
-        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `NEWBI_CREATORS_EXPORT_${filterCity.toUpperCase()}_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    const resetAllFilters = () => {
-        setSearchTerm('');
-        setSearchField('all');
-        setFilterCity('All');
-        setFilterStatus('All');
-        setFilterNiche('All');
-        setFilterPlatform('All');
-        setMinFollowers('');
-        setMaxFollowers('');
-    };
-
-    const hasActiveFilters = Boolean(
-        searchTerm ||
-        searchField !== 'all' ||
-        filterCity !== 'All' ||
-        filterStatus !== 'All' ||
-        filterNiche !== 'All' ||
-        filterPlatform !== 'All' ||
-        minFollowers ||
-        maxFollowers
-    );
-
-    const scrollContainer = (id, direction) => {
-        const el = document.getElementById(id);
-        if (el) {
-            const amount = direction === 'left' ? -350 : 350;
-            el.scrollBy({ left: amount, behavior: 'smooth' });
-        }
-    };
-
-    const renderContent = () => {
-        if (isLeaderboardRoute) {
-            return (
-                <ReferralLeaderboard 
-                    creators={creators} 
-                    onSelectCreator={(c) => navigate(`/admin/creators/${c.id || c.uid}`)} 
-                />
-            );
-        }
-        return (
-            <div className="relative z-10 max-w-[1700px] mx-auto pb-20">
-                {isEmbedded && !isLeaderboardRoute && (
-                    <div className="flex justify-end mb-6">
-                        <div className="flex items-center gap-3 shrink-0">
-                            <div 
-                                onClick={() => setFilterStatus(filterStatus === 'pending' ? 'All' : 'pending')}
-                                className={cn(
-                                    "cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]",
-                                    filterStatus === 'pending' ? "ring-2 ring-amber-400 rounded-2xl" : ""
-                                )}
-                                title="Click to filter Pending Verification"
-                            >
-                                <StatCard 
-                                    compact={true} 
-                                    icon={<Clock size={20} className={stats.pending > 0 ? "text-amber-500 animate-pulse" : "text-gray-400"} />} 
-                                    label="PENDING VERIFICATION" 
-                                    value={stats.pending} 
-                                    color={stats.pending > 0 ? "yellow" : "gray"} 
-                                    description={stats.manualPending > 0 ? `${stats.manualPending} manual follower entries` : `${stats.pending} awaiting review`} 
-                                />
-                            </div>
-                            <div className="hidden lg:block w-72">
-                                <StatCard 
-                                    compact={true} 
-                                    icon={<Users size={20} />} 
-                                    label="CREATOR ROSTER" 
-                                    value={stats.total} 
-                                    color="pink" 
-                                    description={`TOTAL CREATORS | ${stats.approved} VERIFIED`} 
-                                />
-                            </div>
-                        </div>
+    return (
+        <div className="space-y-4">
+            {detailNotFound && (
+                <div className="flex items-start gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/[0.08] p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                    <AlertTriangle size={18} className="mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                        <p className="font-medium">Creator not found</p>
+                        <p className="mt-0.5 text-amber-800/80 dark:text-amber-200/80">
+                            No creator matches “{params.id}”. They may have been deleted, or the link is wrong.
+                        </p>
                     </div>
-                )}
-                <div>
-                {/* Pending Verification Priority Callout */}
-                {stats.pending > 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mb-4 sm:mb-6 p-3.5 sm:p-4 rounded-2xl bg-amber-500/[0.08] dark:bg-amber-500/[0.06] border border-amber-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs"
+                    <Button size="sm" variant="secondary" onClick={closeCreator}>Back to list</Button>
+                </div>
+            )}
+
+            {/* Toolbar */}
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <SegmentedTabs
+                    value={status}
+                    onChange={(v) => updateParams({ status: v, manual: v === 'pending' && manualOnly ? '1' : '' })}
+                    items={statusTabs}
+                    className="max-w-full overflow-x-auto"
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex h-10 items-center rounded-xl border border-black/10 bg-black/[0.04] p-0.5 dark:border-white/10 dark:bg-white/[0.04]" role="group" aria-label="View">
+                        {[{ id: 'grid', icon: LayoutGrid, label: 'Card view' }, { id: 'table', icon: List, label: 'Table view' }].map(opt => (
+                            <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => setView(opt.id)}
+                                title={opt.label}
+                                aria-label={opt.label}
+                                aria-pressed={view === opt.id}
+                                className={cn(
+                                    'flex h-9 w-9 items-center justify-center rounded-lg transition-all',
+                                    view === opt.id
+                                        ? 'bg-white text-gray-900 shadow-sm dark:bg-white/10 dark:text-white'
+                                        : 'text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                )}
+                            >
+                                <opt.icon size={15} />
+                            </button>
+                        ))}
+                    </div>
+                    <Menu
+                        trigger={({ toggle }) => (
+                            <Button variant="secondary" onClick={toggle}>
+                                <MoreHorizontal size={16} /> More
+                            </Button>
+                        )}
                     >
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                                <Clock size={20} className="animate-pulse" />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-gray-900 dark:text-white">
-                                        {stats.pending} Creator{stats.pending === 1 ? '' : 's'} Pending Verification
-                                    </span>
-                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-black bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                                        {stats.manualPending > 0 ? `${stats.manualPending} Manual Follower Entry` : 'Action Required'}
-                                    </span>
-                                </div>
-                                <p className="text-[11px] text-gray-600 dark:text-zinc-400 mt-0.5">
-                                    {stats.manualPending > 0 
-                                        ? `${stats.manualPending} creator${stats.manualPending === 1 ? ' has' : 's have'} manually entered follower counts and require manual verification.`
-                                        : "Review creator profiles and verify or reject applications."}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                        <MenuItem icon={Download} onClick={exportToCSV} hint={`${filtered.length} creators in the current view`}>Export to CSV</MenuItem>
+                        <MenuItem icon={Upload} onClick={() => importInputRef.current?.click()} hint="Columns: name, email, phone, city, niche">
+                            Import from CSV
+                        </MenuItem>
+                        {bangaloreCount > 0 && (
+                            <MenuItem icon={MapPin} onClick={handleMergeBangalore} disabled={isMergingBangalore} hint={`${bangaloreCount} creators use “Bangalore”`}>
+                                Rename Bangalore to Bengaluru
+                            </MenuItem>
+                        )}
+                        <div className="my-1 border-t border-black/[0.05] dark:border-white/[0.08]" />
+                        <MenuItem icon={Send} onClick={() => setCityInvite({ city: city !== 'all' ? city : 'Bengaluru', uids: null })} hint="Send city WhatsApp group links">
+                            Send group invites
+                        </MenuItem>
+                        <MenuItem icon={Mail} onClick={() => setIsBroadcastOpen(true)} hint="Email an announcement to city groups">
+                            Broadcast to groups
+                        </MenuItem>
+                        <MenuItem as={Link} to="/admin/creators/settings?tab=groups" icon={Settings}>City group settings</MenuItem>
+                    </Menu>
+                    <Button variant="primary" onClick={() => setIsAddModalOpen(true)}>
+                        <Plus size={16} /> Add creator
+                    </Button>
+                    {/* Lives outside the menu so it stays mounted while the file picker is open. */}
+                    <input ref={importInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleImportCSV} />
+                </div>
+            </div>
+
+            <Card className="overflow-hidden">
+                {/* Filters */}
+                <div className="flex flex-col gap-2 border-b border-black/[0.08] p-3 dark:border-white/[0.08]">
+                    <div className="flex min-w-0 gap-2 lg:max-w-2xl">
+                        <Select
+                            label="Search in"
+                            value={field}
+                            onChange={(v) => updateParams({ field: v })}
+                            options={SEARCH_FIELDS.map(f => ({ value: f.id, label: f.label }))}
+                            className="w-32 shrink-0"
+                        />
+                        <SearchInput value={searchDraft} onChange={setSearchDraft} placeholder={fieldMeta.placeholder} className="flex-1" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                        <Select label="City" value={city} onChange={(v) => updateParams({ city: v })} options={cityOptions} className="sm:w-40" />
+                        <Select label="Niche" value={niche} onChange={(v) => updateParams({ niche: v })} options={nicheOptions} className="sm:w-44" />
+                        {collegeOptions.length > 1 && (
+                            <Select label="College" value={college} onChange={(v) => updateParams({ college: v })} options={collegeOptions} className="sm:w-48" />
+                        )}
+                        <Select
+                            label="Platform"
+                            value={platform}
+                            onChange={(v) => updateParams({ platform: v })}
+                            options={[
+                                { value: 'all', label: 'Any platform' },
+                                { value: 'instagram', label: 'Has Instagram' },
+                                { value: 'youtube', label: 'Has YouTube' },
+                                { value: 'linkedin', label: 'Has LinkedIn' },
+                            ]}
+                            className="sm:w-36"
+                        />
+                        <Select label="Followers" value={minFollowers} onChange={(v) => updateParams({ min: v })} options={FOLLOWER_PRESETS} className="sm:w-36" />
+                        <Select label="Sort" value={sort} onChange={(v) => updateParams({ sort: v }, { keepPage: false })} options={SORTS} className="col-span-2 sm:w-36" />
+                    </div>
+                </div>
+
+                {/* Result summary */}
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/[0.08] bg-black/[0.02] px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-gray-500 dark:border-white/[0.08] dark:bg-white/[0.02]">
+                    <span>
+                        {creatorsLoaded || creators.length ? (
+                            <>{filtered.length.toLocaleString()} {filtered.length === 1 ? 'creator' : 'creators'}{hasFilters ? ` (of ${creators.length.toLocaleString()})` : ''}</>
+                        ) : 'Loading creators…'}
+                    </span>
+                    <div className="flex flex-wrap items-center gap-3">
+                        {status === 'pending' && counts.manualPending > 0 && (
+                            <label className="inline-flex cursor-pointer items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={manualOnly}
+                                    onChange={(e) => updateParams({ manual: e.target.checked ? '1' : '' })}
+                                    className="h-4 w-4 cursor-pointer rounded border-black/20 bg-white text-neon-green focus:ring-0 dark:border-white/20 dark:bg-black/60"
+                                />
+                                Only manual follower counts ({counts.manualPending})
+                            </label>
+                        )}
+                        {hasFilters && (
                             <button
                                 type="button"
-                                onClick={() => setFilterStatus(filterStatus === 'pending' ? 'All' : 'pending')}
-                                className={cn(
-                                    "h-9 px-3.5 sm:px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer",
-                                    filterStatus === 'pending'
-                                        ? "bg-amber-500 text-black shadow-md shadow-amber-500/20"
-                                        : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30"
-                                )}
+                                onClick={() => setSearchParams({}, { replace: true })}
+                                className="font-medium text-gray-900 underline-offset-2 hover:underline dark:text-white"
                             >
-                                <Filter size={12} />
-                                <span>{filterStatus === 'pending' ? "Viewing Pending" : `Review Pending (${stats.pending})`}</span>
+                                Clear filters
                             </button>
-                            {filterStatus === 'pending' && (
-                                <button
-                                    type="button"
-                                    onClick={() => setFilterStatus('All')}
-                                    className="h-9 px-3 rounded-xl text-[9px] font-bold uppercase tracking-wider bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-zinc-400 transition-all cursor-pointer"
-                                >
-                                    Show All
-                                </button>
-                            )}
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Control Panel */}
-                <div className="relative z-50 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-3 sm:p-4 mb-6 md:mb-8 space-y-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-                    
-                    {/* Tier 1: Search Engine & Action Bar */}
-                    <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3">
-                        {/* Unified Search Input with Integrated Scope Selector */}
-                        <div className="relative flex-1 flex items-center min-w-0 bg-white dark:bg-white/[0.03] border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 focus-within:!border-neon-green/50 dark:focus-within:!border-neon-green/40 focus-within:bg-white dark:focus-within:bg-zinc-900/90 rounded-2xl h-11 px-2 transition-all shadow-xs">
-                            {/* Scope Selector Button */}
-                            <div className="relative shrink-0" ref={scopeMenuRef}>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsScopeMenuOpen(prev => !prev)}
-                                    className={cn(
-                                        "h-7 px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all select-none",
-                                        searchField === 'all'
-                                            ? "bg-black/5 dark:bg-white/5 text-gray-700 dark:text-zinc-300 hover:bg-black/10 dark:hover:bg-white/10"
-                                            : "bg-neon-blue/15 text-neon-blue border border-neon-blue/30 font-bold"
-                                    )}
-                                    title="Search scope filter"
-                                >
-                                    {(() => {
-                                        const currentField = SEARCH_FIELDS.find(f => f.id === searchField) || SEARCH_FIELDS[0];
-                                        const FieldIcon = currentField.icon;
-                                        return (
-                                            <>
-                                                <FieldIcon size={12} className={searchField === 'all' ? "text-gray-400 dark:text-zinc-400" : "text-neon-blue"} />
-                                                <span className="truncate max-w-[100px] sm:max-w-none">
-                                                    {currentField.label}
-                                                </span>
-                                            </>
-                                        );
-                                    })()}
-                                    <ChevronDown size={11} className={cn("transition-transform duration-200 opacity-60", isScopeMenuOpen && "rotate-180")} />
-                                </button>
-
-                                <AnimatePresence>
-                                    {isScopeMenuOpen && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 4, scale: 0.98 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: 4, scale: 0.98 }}
-                                            transition={{ duration: 0.15, ease: "easeOut" }}
-                                            className="absolute left-0 top-full mt-2 w-56 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl p-1.5 z-50 divide-y divide-black/5 dark:divide-white/5 backdrop-blur-xl"
-                                        >
-                                            <div className="px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-400">
-                                                Search Scope
-                                            </div>
-                                            <div className="py-1 space-y-0.5 max-h-64 overflow-y-auto">
-                                                {SEARCH_FIELDS.map(f => {
-                                                    const FieldIcon = f.icon;
-                                                    const isSelected = searchField === f.id;
-                                                    return (
-                                                        <button
-                                                            key={f.id}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setSearchField(f.id);
-                                                                setIsScopeMenuOpen(false);
-                                                            }}
-                                                            className={cn(
-                                                                "w-full px-2.5 py-2 rounded-xl text-left flex items-center gap-2.5 text-xs font-semibold transition-colors",
-                                                                isSelected
-                                                                    ? "bg-neon-blue/15 text-neon-blue font-bold"
-                                                                    : "hover:bg-black/5 dark:hover:bg-white/5 text-gray-700 dark:text-zinc-300"
-                                                            )}
-                                                        >
-                                                            <FieldIcon size={13} className={isSelected ? "text-neon-blue" : "text-gray-400"} />
-                                                            <span className="flex-1 truncate">{f.label}</span>
-                                                            {isSelected && <Check size={12} className="text-neon-blue ml-auto shrink-0" />}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-
-                            {/* Scope / Input Divider */}
-                            <div className="h-4 w-px bg-black/10 dark:bg-white/10 mx-1.5 shrink-0" />
-
-                            {/* Search Icon */}
-                            <Search size={14} className="text-gray-400 dark:text-zinc-500 shrink-0 ml-0.5" />
-
-                            {/* Search Input Box */}
-                            <input
-                                type="text"
-                                placeholder={SEARCH_FIELDS.find(f => f.id === searchField)?.placeholder || "Search creators..."}
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="flex-1 bg-transparent px-2 text-xs sm:text-sm font-medium outline-none text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-500 min-w-0"
-                            />
-
-                            {/* Clear Search Button */}
-                            {searchTerm && (
-                                <button
-                                    onClick={() => setSearchTerm('')}
-                                    className="w-5 h-5 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0 mr-1"
-                                    title="Clear search"
-                                >
-                                    <X size={11} />
-                                </button>
-                            )}
-
-                            {/* Match Count Pill */}
-                            {searchTerm && (
-                                <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-neon-blue/10 text-neon-blue text-[10px] font-mono font-bold shrink-0">
-                                    {filteredCreators.length} match{filteredCreators.length === 1 ? '' : 'es'}
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Action Controls Cluster */}
-                        <div className="flex items-center justify-between md:justify-end gap-2 shrink-0">
-                            {/* View Switcher */}
-                            <div className="flex bg-black/[0.04] dark:bg-white/[0.04] p-0.5 rounded-xl border border-black/10 dark:border-white/10 shrink-0 h-10 items-center">
-                                <button 
-                                    onClick={() => setViewMode('grid')} 
-                                    title="Grid View"
-                                    className={cn(
-                                        "w-8 sm:w-9 h-9 rounded-lg flex items-center justify-center transition-all", 
-                                        viewMode === 'grid' 
-                                            ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-xs font-bold" 
-                                            : "text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                    )}
-                                >
-                                    <LayoutGrid size={14} />
-                                </button>
-                                <button 
-                                    onClick={() => setViewMode('list')} 
-                                    title="List View"
-                                    className={cn(
-                                        "w-8 sm:w-9 h-9 rounded-lg flex items-center justify-center transition-all", 
-                                        viewMode === 'list' 
-                                            ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-xs font-bold" 
-                                            : "text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                    )}
-                                >
-                                    <FileSpreadsheet size={14} />
-                                </button>
-                            </div>
-
-                            {/* Data Tools (Export / Import / Merge) */}
-                            <div className="relative shrink-0" ref={dataMenuRef}>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsDataMenuOpen(prev => !prev)}
-                                    className={cn(
-                                        "h-10 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 border select-none",
-                                        isDataMenuOpen
-                                            ? "bg-black/10 dark:bg-white/15 text-gray-900 dark:text-white border-black/20 dark:border-white/20"
-                                            : "bg-white dark:bg-white/5 border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-gray-800 dark:text-zinc-200"
-                                    )}
-                                    title="Export, Import and Data Tools"
-                                >
-                                    <Download size={13} />
-                                    <span className="hidden sm:inline">Export / Import</span>
-                                    <span className="sm:hidden">Data</span>
-                                    <ChevronDown size={11} className={cn("transition-transform duration-200 opacity-60", isDataMenuOpen && "rotate-180")} />
-                                </button>
-
-                                <AnimatePresence>
-                                    {isDataMenuOpen && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 6, scale: 0.96 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: 6, scale: 0.96 }}
-                                            transition={{ duration: 0.15, ease: "easeOut" }}
-                                            className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl p-1.5 z-50 backdrop-blur-xl divide-y divide-black/5 dark:divide-white/5"
-                                        >
-                                            <div className="px-3 py-2">
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-neon-blue">
-                                                    Data Hub
-                                                </p>
-                                                <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">
-                                                    Spreadsheets & operations
-                                                </p>
-                                            </div>
-
-                                            <div className="py-1 flex flex-col gap-0.5">
-                                                {/* Export to CSV */}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        exportToCSV();
-                                                        setIsDataMenuOpen(false);
-                                                    }}
-                                                    className="w-full px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 text-left flex items-start gap-3 transition-colors group"
-                                                >
-                                                    <div className="p-2 rounded-lg bg-neon-blue/10 text-neon-blue group-hover:bg-neon-blue group-hover:text-black transition-all shrink-0 mt-0.5">
-                                                        <Download size={14} />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <span className="text-[11px] font-bold text-gray-900 dark:text-white block">
-                                                            Export Creators to CSV
-                                                        </span>
-                                                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
-                                                            Download {filteredCreators.length} filtered records
-                                                        </p>
-                                                    </div>
-                                                </button>
-
-                                                {/* Import from CSV */}
-                                                <label
-                                                    className="w-full px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 text-left flex items-start gap-3 transition-colors group cursor-pointer"
-                                                >
-                                                    <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-all shrink-0 mt-0.5">
-                                                        <Upload size={14} />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <span className="text-[11px] font-bold text-gray-900 dark:text-white block">
-                                                            Import Creators from CSV
-                                                        </span>
-                                                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
-                                                            Bulk upload creator spreadsheet
-                                                        </p>
-                                                    </div>
-                                                    <input
-                                                        type="file"
-                                                        accept=".csv"
-                                                        onChange={(e) => {
-                                                            handleImportCSV(e);
-                                                            setIsDataMenuOpen(false);
-                                                        }}
-                                                        className="hidden"
-                                                    />
-                                                </label>
-
-                                                {/* Merge Bangalore to Bengaluru */}
-                                                {bangaloreCreatorsCount > 0 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            handleMergeBangalore();
-                                                            setIsDataMenuOpen(false);
-                                                        }}
-                                                        disabled={isMergingBangalore}
-                                                        className="w-full px-3 py-2.5 rounded-xl hover:bg-amber-500/10 text-left flex items-start gap-3 transition-colors group"
-                                                    >
-                                                        <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-black transition-all shrink-0 mt-0.5">
-                                                            <MapPin size={14} />
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-[11px] font-bold text-gray-900 dark:text-white">
-                                                                    Merge Bangalore
-                                                                </span>
-                                                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-500 font-bold">
-                                                                    {bangaloreCreatorsCount}
-                                                                </span>
-                                                            </div>
-                                                            <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
-                                                                Standardize to Bengaluru
-                                                            </p>
-                                                        </div>
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-
-                            {/* WhatsApp Actions Dropdown */}
-                            <div className="relative shrink-0" ref={whatsAppMenuRef}>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsWhatsAppMenuOpen(prev => !prev)}
-                                    className={cn(
-                                        "h-10 px-3 sm:px-3.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 shrink-0 border select-none",
-                                        isWhatsAppMenuOpen 
-                                            ? "bg-[#25D366] text-black border-[#25D366] shadow-[0_0_20px_rgba(37,211,102,0.35)]" 
-                                            : "bg-[#25D366]/10 border-[#25D366]/30 hover:bg-[#25D366]/20 text-[#25D366]"
-                                    )}
-                                    title="WhatsApp Groups & Broadcast Hub"
-                                >
-                                    <MessageSquare size={13} className="shrink-0" />
-                                    <span className="hidden sm:inline">WhatsApp</span>
-                                    <ChevronDown 
-                                        size={11} 
-                                        className={cn("transition-transform duration-200 shrink-0 opacity-60", isWhatsAppMenuOpen && "rotate-180")} 
-                                    />
-                                </button>
-
-                                <AnimatePresence>
-                                    {isWhatsAppMenuOpen && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 6, scale: 0.96 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: 6, scale: 0.96 }}
-                                            transition={{ duration: 0.15, ease: "easeOut" }}
-                                            className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl p-1.5 z-50 backdrop-blur-xl divide-y divide-black/5 dark:divide-white/5"
-                                        >
-                                            <div className="px-3 py-2">
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-[#25D366]">
-                                                    WhatsApp Hub
-                                                </p>
-                                                <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">
-                                                    Manage city groups & member sync
-                                                </p>
-                                            </div>
-
-                                            <div className="py-1 flex flex-col gap-0.5">
-                                                {/* Option 1: Send City Joining Links via WhatsApp / Email */}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setCityForAddModal(filterCity !== 'All' ? filterCity : 'Bengaluru');
-                                                        setSelectedUidsForAddModal(null);
-                                                        setIsAddCityCreatorsOpen(true);
-                                                        setIsWhatsAppMenuOpen(false);
-                                                    }}
-                                                    className="w-full px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 text-left flex items-start gap-3 transition-colors group"
-                                                >
-                                                    <div className="p-2 rounded-lg bg-[#25D366]/10 text-[#25D366] group-hover:bg-[#25D366] group-hover:text-black transition-all shrink-0 mt-0.5">
-                                                        <Send size={14} />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center justify-between gap-1">
-                                                            <span className="text-[11px] font-bold text-gray-900 dark:text-white">
-                                                                Send Group Invites
-                                                            </span>
-                                                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/20">
-                                                                {filterCity !== 'All' ? filterCity : 'City'}
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
-                                                            {filterCity !== 'All' ? `Send ${filterCity} group joining links safely` : 'Send WhatsApp group joining links safely'}
-                                                        </p>
-                                                    </div>
-                                                </button>
-
-                                                {/* Option 2: Broadcast Announcement */}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setIsBroadcastModalOpen(true);
-                                                        setIsWhatsAppMenuOpen(false);
-                                                    }}
-                                                    className="w-full px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 text-left flex items-start gap-3 transition-colors group"
-                                                >
-                                                    <div className="p-2 rounded-lg bg-neon-blue/10 text-neon-blue group-hover:bg-neon-blue group-hover:text-black transition-all shrink-0 mt-0.5">
-                                                        <Send size={14} />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <span className="text-[11px] font-bold text-gray-900 dark:text-white block">
-                                                            Broadcast Groups
-                                                        </span>
-                                                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
-                                                            Send email announcement with links
-                                                        </p>
-                                                    </div>
-                                                </button>
-
-                                                {/* Option 3: City Groups Settings */}
-                                                <Link
-                                                    to="/admin/creators/settings?tab=groups"
-                                                    onClick={() => setIsWhatsAppMenuOpen(false)}
-                                                    className="w-full px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 text-left flex items-start gap-3 transition-colors group"
-                                                >
-                                                    <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-all shrink-0 mt-0.5">
-                                                        <Settings size={14} />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <span className="text-[11px] font-bold text-gray-900 dark:text-white block">
-                                                            City Groups Settings
-                                                        </span>
-                                                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
-                                                            Configure WhatsApp links & hubs
-                                                        </p>
-                                                    </div>
-                                                </Link>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-
-                            {/* Add Creator Primary CTA */}
-                            <button 
-                                onClick={() => setIsAddModalOpen(true)}
-                                className="h-10 px-4 sm:px-5 rounded-xl bg-neon-green text-black font-extrabold text-xs hover:bg-emerald-400 active:scale-95 transition-all shadow-[0_0_20px_rgba(57,255,20,0.25)] flex items-center justify-center gap-1.5 shrink-0 select-none"
-                            >
-                                <Plus size={15} strokeWidth={2.5} />
-                                <span className="whitespace-nowrap">Add Creator</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Tier 2: Status Navigation & Refined Filters */}
-                    <div className="pt-3 border-t border-black/[0.06] dark:border-white/[0.06] flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-                        {/* Left Group: Status Segmented Control + Filter Dropdowns */}
-                        <div className="flex items-center flex-wrap gap-2.5 min-w-0">
-                            {/* Status Segmented Tabs */}
-                            <div className="flex items-center p-1 bg-black/[0.04] dark:bg-white/[0.04] rounded-xl border border-black/[0.06] dark:border-white/[0.06] shrink-0">
-                                {[
-                                    { id: 'All', label: 'All', count: stats.total },
-                                    { id: 'approved', label: 'Verified', count: stats.approved },
-                                    { id: 'pending', label: 'Pending', count: stats.pending, isAmber: stats.pending > 0 },
-                                    { id: 'rejected', label: 'Rejected' },
-                                ].map(tab => {
-                                    const isActive = filterStatus === tab.id;
-                                    return (
-                                        <button
-                                            key={tab.id}
-                                            type="button"
-                                            onClick={() => setFilterStatus(tab.id)}
-                                            className={cn(
-                                                "relative px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 select-none",
-                                                isActive
-                                                    ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-xs font-black"
-                                                    : "text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white"
-                                            )}
-                                        >
-                                            <span>{tab.label}</span>
-                                            {tab.count !== undefined && (
-                                                <span className={cn(
-                                                    "px-1.5 py-0.2 rounded-md text-[10px] font-mono",
-                                                    tab.isAmber && !isActive
-                                                        ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold"
-                                                        : isActive
-                                                            ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white"
-                                                            : "bg-black/5 dark:bg-white/5 text-gray-500 dark:text-zinc-400"
-                                                )}>
-                                                    {tab.count}
-                                                </span>
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Vertical Separator */}
-                            <div className="hidden sm:block h-5 w-px bg-black/[0.08] dark:bg-white/[0.08] shrink-0" />
-
-                            {/* Secondary Filter Dropdowns */}
-                            <div className="flex items-center flex-wrap gap-2">
-                                {/* Location Filter */}
-                                <div className="w-32 sm:w-36 shrink-0">
-                                    <StudioSelect
-                                        value={filterCity}
-                                        options={cities.map(c => ({ value: c, label: c === 'All' ? 'Location: All' : c }))}
-                                        onChange={setFilterCity}
-                                        placeholder="Location"
-                                        icon={MapPin}
-                                        size="sm"
-                                        accentColor="neon-blue"
-                                        searchable={true}
-                                        className="h-8"
-                                    />
-                                </div>
-
-                                {/* Niche Filter */}
-                                <div className="w-32 sm:w-36 shrink-0">
-                                    <StudioSelect
-                                        value={filterNiche}
-                                        options={['All', ...NICHES].map(n => ({ value: n, label: n === 'All' ? 'Niche: All' : n }))}
-                                        onChange={setFilterNiche}
-                                        placeholder="Niche"
-                                        icon={Layers}
-                                        size="sm"
-                                        accentColor="neon-pink"
-                                        searchable={true}
-                                        className="h-8"
-                                    />
-                                </div>
-
-                                {/* Followers Filter Popover */}
-                                <div className="relative shrink-0" ref={followersRef}>
-                                    <div
-                                        onClick={() => setIsFollowersOpen(!isFollowersOpen)}
-                                        className={cn(
-                                            "flex items-center justify-between h-8 rounded-xl px-2.5 cursor-pointer transition-all select-none border text-[10px] font-medium gap-1.5",
-                                            (minFollowers || maxFollowers)
-                                                ? "bg-neon-pink/10 border-neon-pink/30 text-neon-pink font-bold"
-                                                : "bg-white dark:bg-white/5 border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-gray-700 dark:text-zinc-300"
-                                        )}
-                                    >
-                                        <Users size={12} className={cn((minFollowers || maxFollowers) ? "text-neon-pink" : "text-gray-400 dark:text-zinc-500")} />
-                                        <span className="truncate max-w-[85px]">{getFollowersLabel()}</span>
-                                        <ChevronDown size={11} className={cn("transition-transform duration-200 opacity-60", isFollowersOpen && "rotate-180")} />
-                                        {(minFollowers || maxFollowers) && (
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setMinFollowers('');
-                                                    setMaxFollowers('');
-                                                }}
-                                                className="hover:opacity-80 p-0.5 ml-0.5"
-                                                title="Clear followers filter"
-                                            >
-                                                <X size={10} />
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    <AnimatePresence>
-                                        {isFollowersOpen && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                className="absolute z-[100] left-0 mt-2 w-[calc(100vw-2.5rem)] sm:w-[260px] max-w-[280px] bg-white dark:bg-[#0c0e14] border border-black/10 dark:border-white/10 rounded-2xl shadow-xl p-4 sm:p-5 space-y-3"
-                                            >
-                                                <div className="space-y-1">
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Follower Range</p>
-                                                </div>
-                                                <div className="flex gap-2 items-center">
-                                                    <div className="space-y-1 flex-1">
-                                                        <label className="text-[8px] font-black uppercase tracking-wider text-gray-400 pl-0.5">Min</label>
-                                                        <input 
-                                                            type="number" 
-                                                            value={minFollowers} 
-                                                            onChange={(e) => setMinFollowers(e.target.value)}
-                                                            placeholder="0" 
-                                                            className="w-full h-9 bg-gray-50 dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] rounded-lg px-2 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green/80 outline-none transition-all"
-                                                        />
-                                                    </div>
-                                                    <span className="text-gray-400 text-xs font-bold pt-4">-</span>
-                                                    <div className="space-y-1 flex-1">
-                                                        <label className="text-[8px] font-black uppercase tracking-wider text-gray-400 pl-0.5">Max</label>
-                                                        <input 
-                                                            type="number" 
-                                                            value={maxFollowers} 
-                                                            onChange={(e) => setMaxFollowers(e.target.value)}
-                                                            placeholder="Any" 
-                                                            className="w-full h-9 bg-gray-50 dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] rounded-lg px-2 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green/80 outline-none transition-all"
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="h-px bg-black/5 dark:bg-white/5" />
-
-                                                {/* Preset quick ranges */}
-                                                <div className="space-y-1.5">
-                                                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider pl-0.5">Presets</p>
-                                                    <div className="grid grid-cols-2 gap-1.5">
-                                                        {[
-                                                            { label: '0 - 10K', min: '0', max: '10000' },
-                                                            { label: '10K - 50K', min: '10000', max: '50000' },
-                                                            { label: '50K - 100K', min: '50000', max: '100000' },
-                                                            { label: '100K - 500K', min: '100000', max: '500000' },
-                                                            { label: '500K - 1M', min: '500000', max: '1000000' },
-                                                            { label: '1M+', min: '1000000', max: '' },
-                                                        ].map((p, idx) => (
-                                                            <button
-                                                                key={idx}
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setMinFollowers(p.min);
-                                                                    setMaxFollowers(p.max);
-                                                                }}
-                                                                className="px-2 py-1.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 hover:border-neon-pink/20 hover:bg-neon-pink/5 hover:text-neon-pink rounded-lg text-[9px] font-bold uppercase tracking-wider text-gray-600 dark:text-zinc-400 transition-all text-center"
-                                                            >
-                                                                {p.label}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex gap-2 pt-1 select-none">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setMinFollowers('');
-                                                            setMaxFollowers('');
-                                                            setIsFollowersOpen(false);
-                                                        }}
-                                                        className="flex-1 py-1.5 rounded-lg border border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-bold uppercase tracking-wider text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all text-center"
-                                                    >
-                                                        Reset
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsFollowersOpen(false)}
-                                                        className="flex-1 py-1.5 rounded-lg bg-neon-pink text-black text-[9px] font-black uppercase tracking-wider transition-all text-center hover:brightness-110 active:scale-95"
-                                                    >
-                                                        Apply
-                                                    </button>
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-
-                                {/* Platform Filter */}
-                                <div className="w-28 sm:w-32 shrink-0">
-                                    <StudioSelect
-                                        value={filterPlatform}
-                                        options={[
-                                            { value: 'All', label: 'All Platforms' },
-                                            { value: 'instagram', label: 'Instagram' },
-                                            { value: 'linkedin', label: 'LinkedIn' },
-                                            { value: 'youtube', label: 'YouTube' }
-                                        ]}
-                                        onChange={setFilterPlatform}
-                                        placeholder="Platform"
-                                        icon={Globe}
-                                        size="sm"
-                                        accentColor="neon-blue"
-                                        searchable={false}
-                                        className="h-8"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right Group: Reset Filters & Total Count Badge */}
-                        <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 xl:pt-0 border-t xl:border-t-0 border-black/[0.04] dark:border-white/[0.04]">
-                            {hasActiveFilters && (
-                                <button
-                                    type="button"
-                                    onClick={resetAllFilters}
-                                    className="h-8 px-2.5 rounded-lg text-xs font-semibold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 flex items-center gap-1 transition-all select-none"
-                                    title="Reset all filters"
-                                >
-                                    <X size={12} />
-                                    <span>Reset filters</span>
-                                </button>
-                            )}
-
-                            <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-zinc-400 select-none">
-                                <span className={cn(
-                                    "w-1.5 h-1.5 rounded-full shrink-0",
-                                    hasActiveFilters ? "bg-amber-400 animate-pulse" : "bg-emerald-400"
-                                )} />
-                                <span>
-                                    {hasActiveFilters ? (
-                                        <>Showing <strong className="text-gray-900 dark:text-white font-bold">{filteredCreators.length}</strong> of {creators.length} creators</>
-                                    ) : (
-                                        <><strong className="text-gray-900 dark:text-white font-bold">{creators.length}</strong> creators</>
-                                    )}
-                                </span>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Main Content Area */}
-                <div className="relative min-h-[500px]">
-                    <AnimatePresence mode="wait">
-                        {creators.length === 0 ? (
-                            <motion.div 
-                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                className="py-40 text-center bg-[#050505]/40 rounded-[4rem] border border-black/10 dark:border-white/5 flex flex-col items-center gap-8 shadow-inner"
-                            >
-                                <div className="w-32 h-32 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center border border-black/10 dark:border-white/10 animate-pulse">
-                                    <Users size={48} className="text-gray-700" />
+                {/* Table */}
+                {!creatorsLoaded && creators.length === 0 ? (
+                    <div className="flex items-center justify-center py-20"><LoadingSpinner size="md" color="#71717a" /></div>
+                ) : filtered.length === 0 ? (
+                    <EmptyState
+                        icon={creators.length ? Search : Users}
+                        title={creators.length ? 'No creators match these filters' : 'No creators yet'}
+                        description={creators.length ? 'Try a different search or clear the filters.' : 'Creators appear here once they apply at /creator/join, or you can add one manually.'}
+                        action={creators.length
+                            ? <Button onClick={() => setSearchParams({}, { replace: true })}>Clear filters</Button>
+                            : <Button variant="primary" onClick={() => setIsAddModalOpen(true)}><Plus size={16} /> Add creator</Button>}
+                    />
+                ) : (
+                    <>
+                        {view === 'grid' ? (
+                            <div className="p-3 sm:p-4">
+                                <label className="mb-3 inline-flex cursor-pointer items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                    <input
+                                        type="checkbox"
+                                        checked={allPageSelected}
+                                        onChange={togglePage}
+                                        className="h-4 w-4 cursor-pointer rounded border-black/20 bg-white text-neon-green focus:ring-0 dark:border-white/20 dark:bg-black/60"
+                                    />
+                                    Select page
+                                </label>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                                    {pageRows.map(c => (
+                                        <CreatorCard
+                                            key={creatorKey(c)}
+                                            creator={c}
+                                            badges={getEarnedBadges(c, creators, campaigns)}
+                                            selected={selected.has(creatorKey(c))}
+                                            onToggle={() => toggleSelect(creatorKey(c))}
+                                            onOpen={() => openCreator(c)}
+                                        />
+                                    ))}
                                 </div>
-                                <div className="space-y-2">
-                                    <h3 className="text-3xl font-black uppercase tracking-tighter text-gray-500 italic">No Creator Data Found</h3>
-                                    <p className="text-gray-700 text-sm font-black uppercase tracking-widest">Initialize the database to begin</p>
-                                </div>
-                            </motion.div>
-                        ) : filteredCreators.length === 0 ? (
-                            <motion.div 
-                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                className="py-24 text-center flex flex-col items-center gap-5"
-                            >
-                                <div className="w-16 h-16 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-400">
-                                    <Search size={28} />
-                                </div>
-                                <div className="space-y-1.5 max-w-md mx-auto">
-                                    <h3 className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">
-                                        No Creators Found
-                                    </h3>
-                                    <p className="text-xs text-gray-500 dark:text-zinc-400">
-                                        {searchTerm ? (
-                                            <>
-                                                No results found for <span className="font-bold text-gray-900 dark:text-white">"{searchTerm}"</span>
-                                                {searchField !== 'all' && (
-                                                    <span> in <strong className="text-neon-blue">{SEARCH_FIELDS.find(f => f.id === searchField)?.label}</strong></span>
-                                                )}
-                                            </>
-                                        ) : (
-                                            "No creators match the current filter criteria."
-                                        )}
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-2 pt-1 flex-wrap justify-center">
-                                    {searchTerm && searchField !== 'all' && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setSearchField('all')}
-                                            className="h-9 px-4 rounded-xl bg-neon-blue/10 border border-neon-blue/30 text-neon-blue text-[10px] font-black uppercase tracking-wider hover:bg-neon-blue/20 transition-all"
-                                        >
-                                            Search Across All Fields
-                                        </button>
-                                    )}
-                                    {hasActiveFilters && (
-                                        <button
-                                            type="button"
-                                            onClick={resetAllFilters}
-                                            className="h-9 px-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-700 dark:text-zinc-300 text-[10px] font-bold uppercase tracking-wider hover:bg-black/10 dark:hover:bg-white/10 transition-all"
-                                        >
-                                            Reset All Filters
-                                        </button>
-                                    )}
-                                </div>
-                            </motion.div>
+                            </div>
                         ) : (
-                            <motion.div
-                                key={viewMode}
-                                initial={{ opacity: 0, y: 30 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -30 }}
-                                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                            >
-                                {viewMode === 'grid' ? (
-                                    <div className="relative group/carousel">
-                                        {/* Scroll Indicators - Only visible on desktop hover or mobile always */}
-                                        <div className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
-                                            <button onClick={() => { const el = document.getElementById('creator-grid'); if (el) el.scrollBy({ left: -300, behavior: 'smooth' }); }} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
-                                                <ChevronRight className="rotate-180" size={24} />
-                                            </button>
-                                        </div>
-                                        <div className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
-                                            <button onClick={() => { const el = document.getElementById('creator-grid'); if (el) el.scrollBy({ left: 300, behavior: 'smooth' }); }} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
-                                                <ChevronRight size={24} />
-                                            </button>
-                                        </div>
-
-                                        <div 
-                                            id="creator-grid" 
-                                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8 items-start pb-8 md:pb-0"
-                                        >
-                                            {paginatedCreators.map((creator, idx) => (
-                                                <motion.div
-                                                    key={creator.id || creator.uid}
-                                                    initial={{ opacity: 0, y: 20 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: idx * 0.05 }}
-                                                    className="w-full"
-                                                >
-                                                    <CreatorBadgeCard 
-                                                        creator={creator} 
-                                                        onSelect={() => navigate(`/admin/creators/${creator.id || creator.uid}`)} 
-                                                        isSelected={selectedUids.includes(creator.id || creator.uid)}
-                                                        onToggleSelect={handleToggleSelect}
-                                                    />
-                                                </motion.div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col gap-3">
-                                        <div className="hidden md:flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-black/10 dark:border-white/5">
-                                            <div className="w-6 shrink-0" />
-                                            <div className="w-16 shrink-0">Identity</div>
-                                            <div className="flex-1 pl-1">Profile Details</div>
-                                            <div className="w-48 hidden md:block">Specialization</div>
-                                            <div className="w-40 hidden lg:block text-right pr-10">Followers</div>
-                                            <div className="w-32 hidden sm:block text-right pr-4">Status</div>
-                                            <div className="w-12 shrink-0"></div>
-                                        </div>
-
-                                        {paginatedCreators.map((creator, idx) => (
-                                            <motion.div
-                                                key={creator.id || creator.uid}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: idx * 0.03 }}
-                                            >
-                                                <CreatorListItem 
-                                                    creator={creator} 
-                                                    onSelect={() => navigate(`/admin/creators/${creator.id || creator.uid}`)} 
-                                                    isSelected={selectedUids.includes(creator.id || creator.uid)}
-                                                    onToggleSelect={handleToggleSelect}
-                                                />
-                                            </motion.div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Pagination Controls */}
-                                {totalPages > 1 && (
-                                    <div className="flex items-center justify-center gap-2 mt-10 pb-12">
-                                        <button 
-                                            disabled={currentPage === 1}
-                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                            className="w-10 h-10 rounded-xl bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:border-black/20 dark:hover:border-white/20 transition-all"
-                                        >
-                                            <ChevronLeft size={18} />
-                                        </button>
-                                        <div className="flex items-center gap-1">
-                                            {getPageNumbers(currentPage, totalPages).map((page, i) => {
-                                                if (page === '...') {
-                                                    return (
-                                                        <span 
-                                                            key={`dots-${i}`} 
-                                                            className="w-10 h-10 flex items-center justify-center text-gray-500 font-black text-xs select-none"
-                                                        >
-                                                            ...
-                                                        </span>
-                                                    );
-                                                }
-                                                return (
-                                                    <button
-                                                        key={page}
-                                                        onClick={() => setCurrentPage(page)}
-                                                        className={cn(
-                                                            "w-10 h-10 rounded-xl font-black text-xs transition-all border flex items-center justify-center",
-                                                            currentPage === page 
-                                                                ? "bg-black text-white dark:bg-white dark:text-black border-transparent shadow-sm" 
-                                                                : "bg-white dark:bg-[#0c0e14] text-gray-600 dark:text-gray-400 border-black/[0.08] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20"
-                                                        )}
-                                                    >
-                                                        {page}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                        <button 
-                                            disabled={currentPage === totalPages}
-                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                            className="w-10 h-10 rounded-xl bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:border-black/20 dark:hover:border-white/20 transition-all"
-                                        >
-                                            <ChevronRight size={18} />
-                                        </button>
-                                    </div>
-                                )}
-
-                            </motion.div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead className="hidden border-b border-black/[0.08] text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 dark:border-white/[0.08] dark:text-zinc-400 md:table-header-group">
+                                    <tr>
+                                        <th className="w-10 py-2.5 pl-4 pr-2">
+                                            <input
+                                                type="checkbox"
+                                                aria-label="Select all on this page"
+                                                checked={allPageSelected}
+                                                onChange={togglePage}
+                                                className="h-4 w-4 cursor-pointer rounded border-black/20 bg-white text-neon-green focus:ring-0 dark:border-white/20 dark:bg-black/60"
+                                            />
+                                        </th>
+                                        <th className="px-2 py-2.5">Creator</th>
+                                        <th className="px-2 py-2.5">City</th>
+                                        <th className="hidden px-2 py-2.5 lg:table-cell">Niche / college</th>
+                                        <th className="px-2 py-2.5 text-right">Followers</th>
+                                        <th className="hidden px-2 py-2.5 xl:table-cell">Phone</th>
+                                        <th className="px-2 py-2.5">Status</th>
+                                        <th className="hidden px-2 py-2.5 lg:table-cell">Joined</th>
+                                        <th className="w-8 py-2.5 pr-4" />
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                                    {pageRows.map(c => (
+                                        <CreatorRow
+                                            key={creatorKey(c)}
+                                            creator={c}
+                                            selected={selected.has(creatorKey(c))}
+                                            onToggle={() => toggleSelect(creatorKey(c))}
+                                            onOpen={() => openCreator(c)}
+                                        />
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                         )}
-                    </AnimatePresence>
-                </div>
-            </div>
-        </div>
-        );
-    };
-
-    const content = isEmbedded ? (
-        renderContent()
-    ) : (
-        <AdminCommunityHubLayout
-            studioHeader={{
-                title: 'CREATOR',
-                subtitle: 'PORTAL',
-                icon: Users,
-                accentClass: 'text-neon-pink'
-            }}
-            accentColor="neon-pink"
-            tabs={personnelTabs}
-            hideMobileMenu={selectedUids.length > 0}
-            action={
-                <div className="flex items-center gap-3 shrink-0">
-                    <div 
-                        onClick={() => setFilterStatus(filterStatus === 'pending' ? 'All' : 'pending')}
-                        className={cn(
-                            "cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]",
-                            filterStatus === 'pending' ? "ring-2 ring-amber-400 rounded-2xl" : ""
-                        )}
-                        title="Click to filter Pending Verification"
-                    >
-                        <StatCard 
-                            compact={true} 
-                            icon={<Clock size={20} className={stats.pending > 0 ? "text-amber-500 animate-pulse" : "text-gray-400"} />} 
-                            label="PENDING VERIFICATION" 
-                            value={stats.pending} 
-                            color={stats.pending > 0 ? "yellow" : "gray"} 
-                            description={stats.manualPending > 0 ? `${stats.manualPending} manual follower entries` : `${stats.pending} awaiting review`} 
+                        <Pagination
+                            page={currentPage}
+                            pageCount={pageCount}
+                            total={filtered.length}
+                            pageSize={PAGE_SIZE}
+                            onChange={(p) => { updateParams({ page: p > 1 ? p : '' }, { keepPage: true }); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                         />
-                    </div>
-                    <div className="hidden lg:block w-72">
-                        <StatCard 
-                            compact={true} 
-                            icon={<Users size={20} />} 
-                            label="CREATOR ROSTER" 
-                            value={stats.total} 
-                            color="pink" 
-                            description={`TOTAL CREATORS | ${stats.approved} VERIFIED`} 
-                        />
-                    </div>
-                </div>
-            }
-        >
-            {renderContent()}
-        </AdminCommunityHubLayout>
-    );
+                    </>
+                )}
+            </Card>
 
-    return (
-        <>
-            {content}
-            <AnimatePresence>
-                {selectedCreator && (
-                    <CreatorDetailModal 
-                        creator={selectedCreator} 
-                        onClose={() => navigate('/admin/creators')} 
-                        onUpdateStatus={handleUpdateStatus}
-                        onDelete={handleDeleteCreator}
-                        isUpdating={isUpdating}
-                        isDeleting={isDeleting}
-                    />
-                )}
-                {isAddModalOpen && (
-                    <AddCreatorModal onClose={() => setIsAddModalOpen(false)} />
-                )}
-                {isBulkEmailModalOpen && (
-                    <BulkEmailModal
-                        selectedUids={selectedUids}
-                        creators={creators}
-                        onClose={() => {
-                            setIsBulkEmailModalOpen(false);
-                            setSelectedUids([]);
-                        }}
-                    />
-                )}
-                {isBroadcastModalOpen && (
-                    <BroadcastGroupsModal onClose={() => setIsBroadcastModalOpen(false)} />
-                )}
-                {isAddCityCreatorsOpen && (
-                    <AddCityCreatorsModal
-                        isOpen={isAddCityCreatorsOpen}
-                        initialCity={cityForAddModal}
-                        preselectedUids={selectedUidsForAddModal}
-                        onClose={() => {
-                            setIsAddCityCreatorsOpen(false);
-                            setSelectedUidsForAddModal(null);
-                        }}
-                    />
-                )}
-            </AnimatePresence>
-            {createPortal(
-                <AnimatePresence>
-                    {selectedUids.length > 0 && !isLeaderboardRoute && (
-                        <motion.div
-                            initial={{ y: 100, x: '-50%', opacity: 0 }}
-                            animate={{ y: 0, x: '-50%', opacity: 1 }}
-                            exit={{ y: 100, x: '-50%', opacity: 0 }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                            className="fixed bottom-6 md:bottom-8 left-1/2 z-[100] w-[94%] sm:w-[90%] max-w-2xl bg-white/95 dark:bg-[#0c0e14]/95 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.08] rounded-3xl px-4 sm:px-6 py-3 sm:py-4 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 shadow-xl"
-                        >
-                            <div className="flex items-center gap-2.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-neon-pink animate-pulse" />
-                                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white">
-                                    {selectedUids.length} Creator{selectedUids.length > 1 ? 's' : ''} Selected
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2 w-full md:w-auto">
-                                <button
-                                    onClick={() => {
-                                        const pageUids = paginatedCreators.map(c => c.uid);
-                                        setSelectedUids(prev => {
-                                            const newUids = [...prev];
-                                            pageUids.forEach(uid => {
-                                                if (!newUids.includes(uid)) newUids.push(uid);
-                                            });
-                                            return newUids;
-                                        });
-                                    }}
-                                    className="flex-1 md:flex-none h-9 sm:h-10 px-3 sm:px-4 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-gray-900 dark:text-white font-black text-[8px] sm:text-[9px] uppercase tracking-widest rounded-xl transition-all"
-                                >
-                                    Select Page
+            {/* Bulk action bar */}
+            {selected.size > 0 && createPortal(
+                <div className="fixed inset-x-0 bottom-4 z-[100] flex justify-center px-4">
+                    <div className="flex w-full max-w-3xl flex-col gap-2 rounded-3xl border border-black/[0.08] bg-white/95 px-4 py-3 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-[#0c0e14] sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-700 dark:text-zinc-300">
+                            <span className="font-bold text-gray-900 dark:text-white">{selected.size} selected</span>
+                            {selected.size < filtered.length && (
+                                <button type="button" onClick={selectAllFiltered} className="underline-offset-2 hover:underline">
+                                    Select all {filtered.length}
                                 </button>
-                                <button
-                                    onClick={handleDeselectAll}
-                                    className="flex-1 md:flex-none h-9 sm:h-10 px-3 sm:px-4 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-gray-900 dark:text-white font-black text-[8px] sm:text-[9px] uppercase tracking-widest rounded-xl transition-all"
-                                >
-                                    Deselect All
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setCityForAddModal(filterCity !== 'All' ? filterCity : 'Bengaluru');
-                                        setSelectedUidsForAddModal(selectedUids);
-                                        setIsAddCityCreatorsOpen(true);
-                                    }}
-                                    className="flex-1 md:flex-none h-9 sm:h-10 px-3.5 sm:px-5 bg-[#25D366] text-black hover:brightness-110 font-black text-[8px] sm:text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(37,211,102,0.3)]"
-                                    title="Send WhatsApp Group joining links to selected creators safely"
-                                >
-                                    <Send size={12} /> Send WA Invites
-                                </button>
-                                <button
-                                    onClick={() => setIsBulkEmailModalOpen(true)}
-                                    className="flex-1 md:flex-none h-9 sm:h-10 px-4 sm:px-6 bg-neon-pink text-black hover:bg-neon-pink/90 font-black text-[8px] sm:text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(255,0,127,0.3)]"
-                                >
-                                    <Mail size={12} /> Email
-                                </button>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>,
+                            )}
+                            <button type="button" onClick={() => setSelected(new Set())} className="underline-offset-2 hover:underline">Clear</button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <Button size="sm" variant="secondary" onClick={handleBulkApprove} disabled={isBulkApproving}>
+                                <Check size={14} /> {isBulkApproving ? 'Verifying…' : 'Verify'}
+                            </Button>
+                            <Button size="sm" variant="secondary" onClick={() => setCityInvite({ city: city !== 'all' ? city : 'Bengaluru', uids: [...selected] })}>
+                                <Send size={14} /> WhatsApp invites
+                            </Button>
+                            <Button size="sm" variant="primary" onClick={() => setIsBulkEmailOpen(true)}>
+                                <Mail size={14} /> Email
+                            </Button>
+                        </div>
+                    </div>
+                </div>,
                 document.body
             )}
-        </>
+
+            {selectedCreator && (
+                <CreatorDetailModal
+                    creator={selectedCreator}
+                    onClose={closeCreator}
+                    onUpdateStatus={handleUpdateStatus}
+                    onDelete={handleDeleteCreator}
+                    isUpdating={isUpdating}
+                    isDeleting={isDeleting}
+                />
+            )}
+            {isAddModalOpen && <AddCreatorModal onClose={() => setIsAddModalOpen(false)} />}
+            {isBulkEmailOpen && (
+                <BulkEmailModal
+                    recipients={creators.filter(c => selected.has(creatorKey(c)))}
+                    onClose={(sent) => { setIsBulkEmailOpen(false); if (sent) setSelected(new Set()); }}
+                />
+            )}
+            {isBroadcastOpen && <BroadcastGroupsModal onClose={() => setIsBroadcastOpen(false)} />}
+            {cityInvite && (
+                <AddCityCreatorsModal
+                    isOpen
+                    initialCity={cityInvite.city}
+                    preselectedUids={cityInvite.uids}
+                    onClose={() => setCityInvite(null)}
+                />
+            )}
+        </div>
     );
 };
 
-/* --- Redesigned Sub-components --- */
+const SocialLink = ({ href, label, children }) => (
+    <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        title={label}
+        aria-label={label}
+        className="flex items-center justify-center rounded-lg border border-black/[0.06] bg-black/5 px-2 py-1 text-gray-700 transition-all hover:bg-black/10 dark:border-white/[0.06] dark:bg-white/5 dark:text-zinc-400 dark:hover:bg-white/10"
+    >
+        {children}
+    </a>
+);
 
-const StatCard = ({ icon, label, value, color, description, compact = false }) => {
-    return (
-        <motion.div 
-            whileHover={{ y: -2 }}
-            className={cn(
-                "relative group overflow-hidden bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex-1 transition-all",
-                compact ? "p-4 rounded-2xl min-w-[200px]" : "p-4 sm:p-6 rounded-3xl min-w-[280px]"
-            )}
-        >
-            <div className={cn("relative z-10 flex h-full", compact ? "flex-row items-center gap-4" : "flex-col justify-between gap-6")}>
-                <div className="flex items-start justify-between">
-                    <div className={cn(
-                        "rounded-xl flex items-center justify-center shrink-0 bg-black/5 dark:bg-white/5 text-gray-700 dark:text-zinc-300", 
-                        compact ? "w-10 h-10" : "w-12 h-12"
-                    )}>
-                        {React.cloneElement(icon, { size: compact ? 18 : 20 })}
-                    </div>
-                </div>
-                <div className={cn("space-y-1", compact ? "flex-1" : "")}>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">{label}</p>
-                    <h3 className={cn("font-black font-heading tracking-tight tabular-nums leading-none text-gray-900 dark:text-white", compact ? "text-2xl" : "text-2xl sm:text-4xl")}>{value}</h3>
-                    {description && (
-                        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1 line-clamp-1">{description}</p>
-                    )}
-                </div>
-            </div>
-            {!compact && (
-                <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-neon-green/0 group-hover:bg-neon-green/100 transition-colors shadow-[0_0_8px_#39FF14] opacity-0 group-hover:opacity-100" />
-            )}
-        </motion.div>
-    );
-};
-
-const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => {
-    const { creators, campaigns } = useStore();
-    const instagramUrl = buildSocialUrl(creator.instagram, 'instagram');
-
-    const earnedBadges = getEarnedBadges(creator, creators, campaigns);
-    const customBadges = creator.adminBadges || [];
-
-    const maxFollowers = Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0), Number(creator.linkedinFollowers || 0));
+// Card view, in the same style as the other admin card grids.
+const CreatorCard = ({ creator: c, badges, selected, onToggle, onOpen }) => {
+    const photo = creatorPhoto(c);
+    const reach = creatorReach(c);
+    const manual = isManualFollowerEntry(c) && c.profileStatus !== 'approved';
+    const collegeName = String(c.collegeName || '').trim();
+    const needsCollege = !collegeName && creatorHasCollegeNiche(c);
+    const customBadges = Array.isArray(c.adminBadges) ? c.adminBadges : [];
+    // The verified state already shows on the photo, so skip the official badge here.
+    const shownBadges = badges.filter(b => b !== MILESTONE_BADGES.official).slice(0, 2);
 
     return (
-        <motion.div 
-            layoutId={`creator-card-${creator.id || creator.uid}`}
-            onClick={onSelect}
+        <div
+            role="button"
+            tabIndex={0}
+            onClick={onOpen}
+            onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }}
             className={cn(
-                "group relative bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border rounded-3xl cursor-pointer overflow-hidden transition-all duration-300 flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_16px_60px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_16px_60px_rgba(0,0,0,0.6)]",
-                isSelected ? "border-neon-green/40 bg-neon-green/[0.03]" : "border-black/[0.06] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/[0.15]"
+                'group relative flex cursor-pointer flex-col overflow-hidden rounded-3xl border bg-white/70 shadow-[0_8px_32px_rgba(0,0,0,0.02)] backdrop-blur-2xl transition-all duration-300 hover:shadow-[0_16px_60px_rgba(0,0,0,0.06)] dark:bg-[#0c0e14]/80 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] dark:hover:shadow-[0_16px_60px_rgba(0,0,0,0.6)]',
+                selected ? 'border-neon-green/40 bg-neon-green/[0.03]' : 'border-black/[0.06] hover:border-black/20 dark:border-white/[0.08] dark:hover:border-white/[0.15]'
             )}
         >
-            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-neon-green/[0.08] to-transparent rounded-full blur-2xl pointer-events-none -mr-10 -mt-10 group-hover:scale-110 transition-transform duration-700 z-0" />
-            {/* Image */}
-            <div className="relative aspect-[4/3] overflow-hidden bg-black/5 dark:bg-white/5 z-10 rounded-t-[1.3rem]">
-                {/* Checkbox */}
-                <div className="absolute top-3 left-3 z-30" onClick={(e) => e.stopPropagation()}>
+            {/* Photo */}
+            <div className="relative aspect-[4/3] overflow-hidden bg-black/5 dark:bg-white/5">
+                <div className="absolute left-3 top-3 z-20" onClick={(e) => e.stopPropagation()}>
                     <input
                         type="checkbox"
-                        checked={isSelected || false}
-                        onChange={() => onToggleSelect(creator.id || creator.uid)}
-                        className="w-4 h-4 rounded border-black/20 dark:border-white/20 bg-white dark:bg-black/60 text-neon-green focus:ring-0 cursor-pointer"
+                        aria-label={`Select ${c.name || 'creator'}`}
+                        checked={selected}
+                        onChange={onToggle}
+                        className="h-4 w-4 cursor-pointer rounded border-black/20 bg-white text-neon-green focus:ring-0 dark:border-white/20 dark:bg-black/60"
                     />
                 </div>
-                {(creator.profilePicture || creator.instagramProfilePic || creator.profilePic || creator.photoURL) ? (
-                    <img src={(creator.profilePicture || creator.instagramProfilePic || creator.profilePic || creator.photoURL)} alt={creator.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                {photo ? (
+                    <img src={photo} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-5xl font-black text-black/5 dark:text-white/5 uppercase italic select-none">
-                        {creator.name?.charAt(0) || '?'}
+                    <div className="flex h-full w-full select-none items-center justify-center text-5xl font-black uppercase italic text-black/10 dark:text-white/10">
+                        {String(c.name || '?').charAt(0)}
                     </div>
                 )}
-                <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
-                    <StatusPill status={creator.profileStatus} />
-                    {Boolean(creator.manualFollowerEntry || creator.requiresManualVerification) && creator.profileStatus !== 'approved' && (
-                        <span className="px-1.5 py-0.5 rounded-md text-[7px] font-black uppercase tracking-wider bg-amber-500 text-black shadow-xs flex items-center gap-1 font-mono">
-                            <Pencil size={8} /> Manual
-                        </span>
-                    )}
+                <div className="absolute right-3 top-3 z-10 flex flex-col items-end gap-1">
+                    <CreatorStatusBadge status={c.profileStatus} />
+                    {manual && <Badge tone="amber" className="bg-amber-500 text-black dark:text-black">Manual</Badge>}
                 </div>
-                {creator.profileStatus === 'approved' && (
-                    <div className="absolute bottom-3 right-3 w-8 h-8 bg-neon-green text-black rounded-xl flex items-center justify-center shadow-sm">
+                {c.profileStatus === 'approved' && (
+                    <div className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-xl bg-neon-green text-black shadow-sm">
                         <Check size={14} strokeWidth={3} />
                     </div>
                 )}
             </div>
 
-            {/* Content */}
-            <div className="flex-1 flex flex-col p-4 gap-3 relative z-10">
-                {/* Name & Niche */}
-                <div>
-                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">{(creator.niches || creator.specializations || [])[0] || 'Creator'}</p>
-                    <h3 className="text-xl font-heading font-black text-gray-900 dark:text-white tracking-tight uppercase leading-tight line-clamp-1">
-                        {creator.name}
+            {/* Body */}
+            <div className="flex flex-1 flex-col gap-3 p-4">
+                <div className="min-w-0">
+                    <p className="mb-1 truncate text-[9px] font-bold uppercase tracking-widest text-gray-500">{creatorNiche(c) || 'Creator'}</p>
+                    <h3 className="line-clamp-1 font-heading text-lg font-black uppercase leading-tight tracking-tight text-gray-900 dark:text-white">
+                        {c.name || 'Unnamed creator'}
                     </h3>
+                    {collegeName ? (
+                        <p className="mt-1 flex items-center gap-1 truncate text-[11px] font-semibold text-teal-700 dark:text-teal-400" title={collegeName}>
+                            <GraduationCap size={12} className="shrink-0" /> <span className="truncate">{collegeName}</span>
+                        </p>
+                    ) : needsCollege ? (
+                        <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+                            <GraduationCap size={12} /> College missing
+                        </p>
+                    ) : null}
                 </div>
-                
-                {/* Badges — max 3 */}
-                {(earnedBadges.length > 0 || customBadges.length > 0) && (
-                    <div className="flex flex-wrap gap-1 max-h-[28px] overflow-hidden">
-                        {earnedBadges.slice(0, 2).map(badge => (
-                            <span 
-                                key={badge.id} 
-                                title={badge.desc}
-                                className={cn("inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[7px] font-bold uppercase tracking-wider border", badge.bg)}
-                            >
-                                <span>{badge.icon}</span>
-                                <span>{badge.label.split(' ')[0]}</span>
+
+                {(shownBadges.length > 0 || customBadges.length > 0) && (
+                    <div className="flex max-h-[26px] flex-wrap gap-1 overflow-hidden">
+                        {shownBadges.map(b => (
+                            <span key={b.id} title={b.desc} className={cn('inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider', b.bg)}>
+                                <span>{b.icon}</span><span>{String(b.label).split(' ')[0]}</span>
                             </span>
                         ))}
-                        {customBadges.slice(0, 1).map((badge, idx) => (
-                            <span 
-                                key={`custom-${idx}`} 
-                                className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] text-gray-600 dark:text-zinc-400 rounded-full text-[7px] font-bold uppercase tracking-wider"
-                            >
-                                🏅 <span className="truncate max-w-[40px]">{badge}</span>
+                        {customBadges.slice(0, 1).map((b, i) => (
+                            <span key={`custom-${i}`} className="inline-flex max-w-[110px] items-center gap-0.5 truncate rounded-full border border-black/[0.06] bg-black/5 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-gray-600 dark:border-white/[0.06] dark:bg-white/5 dark:text-zinc-400">
+                                🏅 {b}
                             </span>
                         ))}
                     </div>
                 )}
 
-                {/* Meta pills */}
                 <div className="flex flex-wrap gap-1.5">
-                    <span className="flex items-center gap-1 text-[9px] font-bold text-gray-600 dark:text-zinc-400 uppercase tracking-wider bg-black/5 dark:bg-white/5 px-2.5 py-1 rounded-full border border-black/[0.06] dark:border-white/[0.06]">
-                        <MapPin size={10} className="text-gray-400" />{creator.city || 'Global'}
+                    <span className="flex items-center gap-1 rounded-full border border-black/[0.06] bg-black/5 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-gray-600 dark:border-white/[0.06] dark:bg-white/5 dark:text-zinc-400">
+                        <MapPin size={10} className="text-gray-400" />{c.city || 'No city'}
                     </span>
-                    <span className="flex items-center gap-1 text-[9px] font-bold text-gray-600 dark:text-zinc-400 uppercase tracking-wider bg-black/5 dark:bg-white/5 px-2.5 py-1 rounded-full border border-black/[0.06] dark:border-white/[0.06]">
-                        <TrendingUp size={10} className="text-gray-400" />{maxFollowers.toLocaleString()} flw
+                    <span className="flex items-center gap-1 rounded-full border border-black/[0.06] bg-black/5 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-gray-600 dark:border-white/[0.06] dark:bg-white/5 dark:text-zinc-400">
+                        <TrendingUp size={10} className="text-gray-400" />{formatCount(reach)} followers
                     </span>
                 </div>
 
-                {/* Contact */}
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-[8px] font-bold text-gray-900 dark:text-white/25 uppercase tracking-wider truncate">
-                        <Mail size={10} className="shrink-0 text-gray-900 dark:text-white/15" /><span className="truncate">{creator.email || 'N/A'}</span>
+                <div className="space-y-1 text-[10px] font-semibold text-gray-600 dark:text-zinc-400">
+                    <div className="flex items-center gap-2 truncate">
+                        <Mail size={11} className="shrink-0 text-gray-400" /><span className="truncate">{c.email || '—'}</span>
                     </div>
-                    <div className="flex items-center justify-between text-[8px] font-bold text-gray-900 dark:text-white/25 uppercase tracking-wider">
-                        <div className="flex items-center gap-2 min-w-0">
-                            <Phone size={10} className="shrink-0 text-gray-900 dark:text-white/15" /><span className="truncate">{creator.phone || 'N/A'}</span>
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                            <Phone size={11} className="shrink-0 text-gray-400" /><span className="truncate tabular-nums">{c.phone || '—'}</span>
                         </div>
-                        {creator.isPhoneVerified ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 dark:bg-neon-green/15 text-emerald-700 dark:text-neon-green text-[9px] font-black uppercase font-mono">
-                                <Check size={8} strokeWidth={3} /> OK
-                            </span>
-                        ) : (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase font-mono" title="Phone verification pending">
-                                Pending OTP
-                            </span>
-                        )}
+                        {c.phone && (c.isPhoneVerified
+                            ? <Badge tone="green"><Check size={9} strokeWidth={3} /> OK</Badge>
+                            : <Badge tone="amber">Unverified</Badge>)}
                     </div>
                 </div>
 
-                {/* Footer */}
-                <div className="mt-auto pt-3 border-t border-white/[0.04] flex items-center justify-between">
+                <div className="mt-auto flex items-center justify-between border-t border-black/[0.05] pt-3 dark:border-white/[0.05]">
                     <div className="flex gap-1.5">
-                        {creator.instagram && (
-                            <a 
-                                href={instagramUrl} target="_blank" rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-gray-700 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all"
-                            ><Instagram size={11} /></a>
+                        {c.instagram && (
+                            <SocialLink href={buildSocialUrl(c.instagram, 'instagram')} label={`@${extractSocialUsername(c.instagram, 'instagram')} on Instagram`}><Instagram size={11} /></SocialLink>
                         )}
-                        {creator.linkedin && (
-                            <a 
-                                href={buildSocialUrl(creator.linkedin, 'linkedin')} target="_blank" rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-gray-700 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all"
-                            ><Linkedin size={11} /></a>
-                        )}
-                        {creator.youtube && (
-                            <a 
-                                href={buildSocialUrl(creator.youtube, 'youtube')} target="_blank" rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-gray-700 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all"
-                            ><Youtube size={11} /></a>
-                        )}
-                        {!creator.instagram && !creator.linkedin && !creator.youtube && (
-                            <span className="text-[8px] font-bold text-gray-900 dark:text-white/15">No socials</span>
+                        {c.linkedin && <SocialLink href={buildSocialUrl(c.linkedin, 'linkedin')} label="LinkedIn"><Linkedin size={11} /></SocialLink>}
+                        {c.youtube && <SocialLink href={buildSocialUrl(c.youtube, 'youtube')} label="YouTube"><Youtube size={11} /></SocialLink>}
+                        {!c.instagram && !c.linkedin && !c.youtube && (
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400">No socials</span>
                         )}
                     </div>
-                    <div className="w-7 h-7 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-gray-900 dark:text-white/20 group-hover:text-gray-900 dark:group-hover:text-white/40 transition-colors">
-                        <ChevronRight size={13} />
-                    </div>
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-300 transition-colors group-hover:text-gray-700 dark:text-white/20 dark:group-hover:text-white/60">
+                        <ChevronRight size={14} />
+                    </span>
                 </div>
             </div>
-        </motion.div>
+        </div>
     );
 };
 
-const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
-    const instagramUrl = buildSocialUrl(creator.instagram, 'instagram');
-    const instagramHandle = creator.instagram 
-        ? `@${extractSocialUsername(creator.instagram, 'instagram')}`
-        : '';
+const CreatorRow = ({ creator: c, selected, onToggle, onOpen }) => {
+    const handle = c.instagram ? `@${extractSocialUsername(c.instagram, 'instagram')}` : '';
+    const reach = creatorReach(c);
+    const manual = isManualFollowerEntry(c) && c.profileStatus !== 'approved';
+    const collegeName = String(c.collegeName || '').trim();
+    const needsCollege = !collegeName && creatorHasCollegeNiche(c);
+    const stop = (e) => e.stopPropagation();
 
     return (
-        <div 
-            onClick={onSelect}
+        <tr
+            onClick={onOpen}
             className={cn(
-                "group flex flex-col lg:flex-row items-start lg:items-center p-4 bg-white dark:bg-[#0c0e14] border hover:border-black/20 dark:hover:border-white/20 rounded-2xl cursor-pointer transition-all duration-200 gap-4 sm:gap-6",
-                isSelected ? "border-neon-green/40 bg-neon-green/[0.03]" : "border-black/[0.08] dark:border-white/[0.08]"
+                'group cursor-pointer transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.02]',
+                selected && 'bg-neon-green/[0.03]'
             )}
         >
-            <div className="flex items-center gap-3 sm:gap-4 w-full lg:w-auto min-w-0">
-                <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center justify-center">
-                    <input
-                        type="checkbox"
-                        checked={isSelected || false}
-                        onChange={() => onToggleSelect(creator.id || creator.uid)}
-                        className="w-4 h-4 rounded border-black/20 dark:border-white/20 bg-white dark:bg-black/60 text-neon-green focus:ring-0 cursor-pointer"
-                    />
-                </div>
-                <div className="w-12 h-12 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center font-black text-gray-900 dark:text-white overflow-hidden shrink-0">
-                    {(creator.profilePicture || creator.instagramProfilePic || creator.profilePic || creator.photoURL) ? (
-                        <img src={(creator.profilePicture || creator.instagramProfilePic || creator.profilePic || creator.photoURL)} alt={creator.name} className="w-full h-full object-cover" />
-                    ) : (
-                        <span className="italic text-gray-900 dark:text-white/30">{creator.name?.charAt(0) || '?'}</span>
-                    )}
-                </div>
-                <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight truncate">{creator.name}</h4>
-                        {creator.isPhoneVerified ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 dark:bg-neon-green/15 text-emerald-700 dark:text-neon-green text-[9px] font-black uppercase font-mono">
-                                <Check size={8} strokeWidth={3} /> OK
-                            </span>
-                        ) : (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase font-mono" title="Phone verification pending">
-                                Pending OTP
-                            </span>
-                        )}
+            <td className="w-10 py-3 pl-4 pr-2 align-middle" onClick={stop}>
+                <input
+                    type="checkbox"
+                    aria-label={`Select ${c.name || 'creator'}`}
+                    checked={selected}
+                    onChange={onToggle}
+                    className="h-4 w-4 cursor-pointer rounded border-black/20 bg-white text-neon-green focus:ring-0 dark:border-white/20 dark:bg-black/60"
+                />
+            </td>
+            <td className="px-2 py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                    <Avatar src={creatorPhoto(c)} name={c.name} />
+                    <div className="min-w-0">
+                        <p className="truncate font-bold text-gray-900 dark:text-white">{c.name || 'Unnamed creator'}</p>
+                        <p className="truncate text-xs text-gray-500 dark:text-zinc-400">
+                            {handle ? (
+                                <a
+                                    href={buildSocialUrl(c.instagram, 'instagram')}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={stop}
+                                    className="hover:text-gray-900 hover:underline dark:hover:text-white"
+                                >
+                                    {handle}
+                                </a>
+                            ) : (c.email || 'No contact')}
+                        </p>
+                        {/* Compact details on small screens */}
+                        <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-gray-500 dark:text-zinc-400 md:hidden">
+                            <span>{c.city || 'No city'}</span>
+                            <span>·</span>
+                            <span>{formatCount(reach)} followers</span>
+                            {collegeName && <><span>·</span><span className="truncate">{collegeName}</span></>}
+                            <span className="ml-auto"><CreatorStatusBadge status={c.profileStatus} /></span>
+                        </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-y-1 gap-x-2 mt-0.5 text-[9px] text-gray-500 font-bold tracking-wider uppercase">
-                        <span className="truncate max-w-[150px]">{creator.email}</span>
-                        <span className="text-gray-300 dark:text-gray-700">•</span>
-                        <span className="flex items-center gap-1"><Phone size={9} className="text-gray-400" /> {creator.phone || 'N/A'}</span>
-                    </div>
                 </div>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5 w-full lg:w-56 shrink-0">
-                <span className="text-[8px] font-bold uppercase tracking-wider text-gray-600 dark:text-zinc-400 bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] px-2.5 py-1 rounded-lg">
-                    {(creator.niches || creator.specializations || [])[0] || 'Creator'}
-                </span>
-                {creator.collegeName && (
-                    <span className="text-[8px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400/80 bg-purple-500/10 dark:bg-purple-500/5 border border-purple-500/20 dark:border-purple-500/10 px-2.5 py-1 rounded-lg truncate max-w-[140px]">
-                        {creator.collegeName}
-                    </span>
-                )}
-            </div>
-
-            <div className="w-full lg:w-44 shrink-0 flex gap-1.5 flex-wrap">
-                {creator.instagram && (
-                    <a
-                        href={instagramUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-gray-700 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all"
-                        title={instagramHandle}
-                    >
-                        <Instagram size={11} />
-                    </a>
-                )}
-                {creator.linkedin && (
-                    <a
-                        href={buildSocialUrl(creator.linkedin, 'linkedin')}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-gray-700 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all"
-                        title="LinkedIn Profile"
-                    >
-                        <Linkedin size={11} />
-                    </a>
-                )}
-                {creator.youtube && (
-                    <a
-                        href={buildSocialUrl(creator.youtube, 'youtube')}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-gray-700 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all"
-                        title="YouTube Channel"
-                    >
-                        <Youtube size={11} />
-                    </a>
-                )}
-            </div>
-
-            <div className="hidden lg:block w-32 text-right pr-2">
-                <p className="text-[7px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider mb-0.5">FOLLOWERS</p>
-                <p className="text-sm font-bold text-gray-900 dark:text-white tabular-nums">{Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0), Number(creator.linkedinFollowers || 0)).toLocaleString()}</p>
-            </div>
-
-            <div className="flex items-center justify-between lg:justify-end gap-2.5 w-full lg:w-56 shrink-0">
-                {Boolean(creator.manualFollowerEntry || creator.requiresManualVerification) && creator.profileStatus !== 'approved' && (
-                    <span className="px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 shrink-0 font-mono">
-                        <Pencil size={9} /> Manual
-                    </span>
-                )}
-                <StatusPill status={creator.profileStatus} />
-                <div className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-gray-900 dark:text-white/20 group-hover:text-gray-900 dark:group-hover:text-white/50 transition-all shrink-0">
-                    <ChevronRight size={14} />
+            </td>
+            <td className="hidden px-2 py-3 text-gray-700 dark:text-zinc-300 md:table-cell">{c.city || '—'}</td>
+            <td className="hidden max-w-[200px] px-2 py-3 text-gray-700 dark:text-zinc-300 lg:table-cell">
+                <span className="block truncate">{creatorNiche(c) || '—'}</span>
+                {collegeName ? (
+                    <span className="block truncate text-xs text-gray-500 dark:text-zinc-400" title={collegeName}>{collegeName}</span>
+                ) : needsCollege ? (
+                    <span className="block text-xs text-amber-700 dark:text-amber-400">College missing</span>
+                ) : null}
+            </td>
+            <td className="hidden px-2 py-3 text-right tabular-nums text-gray-900 dark:text-white md:table-cell">
+                {formatCount(reach)}
+                {manual && <span className="ml-1.5 align-middle"><Badge tone="amber">Manual</Badge></span>}
+            </td>
+            <td className="hidden px-2 py-3 xl:table-cell">
+                <div className="flex items-center gap-2 text-gray-700 dark:text-zinc-300">
+                    <span className="tabular-nums">{c.phone || '—'}</span>
+                    {c.phone && (c.isPhoneVerified
+                        ? <Check size={14} className="text-emerald-600 dark:text-emerald-400" aria-label="Phone verified" />
+                        : <span className="text-xs text-amber-700 dark:text-amber-400">unverified</span>)}
                 </div>
-            </div>
-        </div>
+            </td>
+            <td className="hidden px-2 py-3 md:table-cell"><CreatorStatusBadge status={c.profileStatus} /></td>
+            <td className="hidden whitespace-nowrap px-2 py-3 text-gray-500 dark:text-zinc-400 lg:table-cell">{formatDate(c.createdAt) || '—'}</td>
+            <td className="w-8 py-3 pr-4 text-gray-300 group-hover:text-gray-500 dark:text-zinc-600">
+                <ChevronRight size={16} />
+            </td>
+        </tr>
     );
 };
 
-const StatusPill = ({ status }) => {
-    const config = {
-        approved: "bg-neon-green/10 text-neon-green border-neon-green/20",
-        rejected: "bg-red-500/10 text-red-400 border-red-500/20",
-        blocked: "bg-red-500/10 text-red-400 border-red-500/20",
-        pending: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
-    };
-    const style = config[status] || config.pending;
-    return (
-        <span className={cn("px-2.5 py-1 rounded-lg text-[8px] font-bold uppercase tracking-wider border", style)}>
-            {status || 'PENDING'}
-        </span>
-    );
-};
+/* ── Referral leaderboard ─────────────────────────────────────────────────── */
 
-
-
-
-/**
- * Referral Leaderboard Sub-component
- */
 const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [expandedUid, setExpandedUid] = useState(null);
+    const [search, setSearch] = useState('');
+    const [expanded, setExpanded] = useState(null);
 
-    // Calculate leaderboard
     const leaderboard = useMemo(() => {
-        const counts = {};
-        const referredList = {};
-        
-        const uidMap = new Map();
-        const creatorIdMap = new Map();
-        const instagramMap = new Map();
-        const linkedinMap = new Map();
-
+        const byUid = new Map();
+        const byCreatorId = new Map();
+        const byInstagram = new Map();
+        const byLinkedin = new Map();
         creators.forEach(rc => {
-            if (rc.uid) uidMap.set(rc.uid, rc);
-            if (rc.creatorId) creatorIdMap.set(String(rc.creatorId).toUpperCase(), rc);
-            if (rc.instagram) instagramMap.set(String(rc.instagram).toLowerCase(), rc);
-            if (rc.linkedin) linkedinMap.set(String(rc.linkedin).toLowerCase(), rc);
+            if (rc.uid) byUid.set(rc.uid, rc);
+            if (rc.id) byUid.set(rc.id, rc);
+            if (rc.creatorId) byCreatorId.set(String(rc.creatorId).toUpperCase(), rc);
+            if (rc.instagram) byInstagram.set(String(rc.instagram).toLowerCase(), rc);
+            if (rc.linkedin) byLinkedin.set(String(rc.linkedin).toLowerCase(), rc);
         });
 
+        const referred = new Map();
         creators.forEach(c => {
-            if (c.referredBy) {
-                const refStr = String(c.referredBy);
-                const refUpper = refStr.toUpperCase();
-                const refLower = refStr.toLowerCase();
-                
-                const referrer = uidMap.get(refStr) || 
-                                 creatorIdMap.get(refUpper) || 
-                                 instagramMap.get(refLower) || 
-                                 linkedinMap.get(refLower);
-                                 
-                if (referrer && referrer.uid) {
-                    counts[referrer.uid] = (counts[referrer.uid] || 0) + 1;
-                    if (!referredList[referrer.uid]) referredList[referrer.uid] = [];
-                    referredList[referrer.uid].push(c);
-                }
-            }
+            if (!c.referredBy) return;
+            const ref = String(c.referredBy).trim();
+            const referrer = byUid.get(ref) || byCreatorId.get(ref.toUpperCase()) ||
+                byInstagram.get(ref.toLowerCase().replace(/^@/, '')) || byLinkedin.get(ref.toLowerCase());
+            if (!referrer || creatorKey(referrer) === creatorKey(c)) return;
+            const key = creatorKey(referrer);
+            if (!referred.has(key)) referred.set(key, { referrer, list: [] });
+            referred.get(key).list.push(c);
         });
 
-        return creators
-            .filter(c => counts[c.uid] > 0)
-            .map(c => ({
-                ...c,
-                referralCount: counts[c.uid],
-                referredCreators: referredList[c.uid]
+        return [...referred.values()]
+            .map(({ referrer, list }) => ({
+                creator: referrer,
+                referrals: list,
+                verified: list.filter(r => r.profileStatus === 'approved').length,
+                reach: list.reduce((sum, r) => sum + creatorReach(r), 0),
             }))
-            .sort((a, b) => b.referralCount - a.referralCount);
+            .sort((a, b) => b.referrals.length - a.referrals.length || b.verified - a.verified);
     }, [creators]);
 
-    const filteredLeaderboard = useMemo(() => {
-        return leaderboard.filter(c => matchesCreatorSearch(c, searchTerm, 'all'));
-    }, [leaderboard, searchTerm]);
+    const rows = useMemo(
+        () => leaderboard.map((r, i) => ({ ...r, rank: i + 1 })).filter(r => matchesCreatorSearch(r.creator, search, 'all')),
+        [leaderboard, search]
+    );
 
-    const stats = useMemo(() => {
-        const totalReferred = creators.filter(c => c.referredBy).length;
-        const topReferrer = leaderboard[0];
-        const totalNetworkFollowers = leaderboard.reduce((acc, c) => {
-            const referredFollowers = c.referredCreators.reduce((sum, rc) => {
-                return sum + Math.max(Number(rc.instagramFollowers || 0), Number(rc.youtubeSubscribers || 0), Number(rc.linkedinFollowers || 0));
-            }, 0);
-            return acc + referredFollowers;
-        }, 0);
-
-        return {
-            totalReferred,
-            topReferrerName: topReferrer ? topReferrer.name : 'N/A',
-            topReferrerCount: topReferrer ? topReferrer.referralCount : 0,
-            networkFollowers: totalNetworkFollowers
-        };
-    }, [creators, leaderboard]);
-
-    const toggleExpand = (uid) => {
-        setExpandedUid(expandedUid === uid ? null : uid);
-    };
+    const totalReferred = creators.filter(c => c.referredBy).length;
+    const top = leaderboard[0];
 
     return (
-        <div className="space-y-6 relative z-10 w-full max-w-7xl xl:max-w-[1536px] 2xl:max-w-[1720px] mx-auto pb-20">
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                <div className="bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] p-5 sm:p-6 rounded-3xl shadow-sm flex items-center gap-4 transition-all">
-                    <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-600 dark:text-neon-pink shrink-0">
-                        <Users size={20} />
-                    </div>
-                    <div>
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">TOTAL REFERRED</p>
-                        <h3 className="text-2xl sm:text-3xl font-black font-heading tracking-tight text-gray-900 dark:text-white tabular-nums">{stats.totalReferred}</h3>
-                    </div>
-                </div>
-                
-                <div className="bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] p-5 sm:p-6 rounded-3xl shadow-sm flex items-center gap-4 transition-all">
-                    <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-600 dark:text-neon-blue shrink-0">
-                        <Trophy size={20} />
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">TOP REFERRER</p>
-                        <h3 className="text-lg sm:text-xl font-black font-heading tracking-tight text-gray-900 dark:text-white truncate">
-                            {stats.topReferrerName} <span className="text-xs font-mono font-bold text-gray-500">({stats.topReferrerCount})</span>
-                        </h3>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] p-5 sm:p-6 rounded-3xl shadow-sm flex items-center gap-4 transition-all">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-neon-green shrink-0">
-                        <TrendingUp size={20} />
-                    </div>
-                    <div>
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">NETWORK REACH</p>
-                        <h3 className="text-2xl sm:text-3xl font-black font-heading tracking-tight text-gray-900 dark:text-white tabular-nums">
-                            {stats.networkFollowers.toLocaleString()} <span className="text-xs font-mono font-bold text-gray-500">FLW</span>
-                        </h3>
-                    </div>
-                </div>
+        <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <StatTile label="Referred sign-ups" value={totalReferred.toLocaleString()} hint="Joined with an invite link" icon={UserPlus} />
+                <StatTile label="Active referrers" value={leaderboard.length.toLocaleString()} hint="Creators who referred someone" icon={Users} tone="blue" />
+                <StatTile label="Top referrer" value={top ? top.referrals.length : 0} hint={top ? top.creator.name : 'No referrals yet'} icon={Trophy} tone="green" />
             </div>
 
-            {/* Filter Search */}
-            <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 pointer-events-none" size={16} />
-                <input
-                    type="text"
-                    placeholder="Search referrers by name, handle, or ID..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full h-12 !pl-11 !pr-9 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl text-sm font-medium outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 text-gray-900 dark:text-white shadow-sm"
-                />
-                {searchTerm && (
-                    <button
-                        onClick={() => setSearchTerm('')}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                        aria-label="Clear search"
-                    >
-                        <X size={14} />
-                    </button>
-                )}
-            </div>
-
-            {/* Leaderboard Section */}
-            <div className="bg-white dark:bg-[#0c0e14] rounded-3xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden shadow-sm">
-                
-                {/* Desktop Table View */}
-                <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full border-collapse text-left">
-                        <thead>
-                            <tr className="bg-gray-50/80 dark:bg-white/[0.02] border-b border-black/[0.08] dark:border-white/[0.08] text-[9px] font-black text-gray-500 uppercase tracking-widest">
-                                <th className="py-4 px-6 w-16 text-center">Rank</th>
-                                <th className="py-4 px-6">Creator</th>
-                                <th className="py-4 px-6 text-center">Invites</th>
-                                <th className="py-4 px-6 text-right">Network Reach</th>
-                                <th className="py-4 px-6 text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredLeaderboard.map((referrer, index) => {
-                                const isExpanded = expandedUid === referrer.uid;
-                                const totalReach = referrer.referredCreators.reduce((sum, rc) => {
-                                    return sum + Math.max(Number(rc.instagramFollowers || 0), Number(rc.youtubeSubscribers || 0), Number(rc.linkedinFollowers || 0));
-                                }, 0);
-
-                                let medal = `${index + 1}`;
-                                if (index === 0) medal = '🥇';
-                                else if (index === 1) medal = '🥈';
-                                else if (index === 2) medal = '🥉';
-
-                                return (
-                                    <React.Fragment key={referrer.uid}>
-                                        <tr 
-                                            className={cn(
-                                                "border-b border-black/[0.06] dark:border-white/[0.04] transition-colors hover:bg-gray-50/60 dark:hover:bg-white/[0.02]",
-                                                isExpanded && "bg-gray-50/40 dark:bg-white/[0.01]"
-                                            )}
-                                        >
-                                            <td className="py-4 px-6 text-center font-black text-base">{medal}</td>
-                                            <td className="py-4 px-6">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden flex items-center justify-center shrink-0">
-                                                        {referrer.profilePicture || referrer.instagramProfilePic || referrer.profilePic || referrer.photoURL ? (
-                                                            <img src={referrer.profilePicture || referrer.instagramProfilePic || referrer.profilePic || referrer.photoURL} alt="" className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <span className="text-[12px] font-black text-gray-900 dark:text-white">{referrer.name?.charAt(0)}</span>
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight leading-tight">{referrer.name}</h4>
-                                                        <p className="text-[9px] text-gray-500 font-mono mt-0.5">@{referrer.instagram || 'N/A'}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-6 text-center">
-                                                <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-rose-500/10 dark:bg-neon-pink/15 border border-rose-500/20 dark:border-neon-pink/20 text-rose-700 dark:text-neon-pink text-xs font-black font-mono tabular-nums">
-                                                    {referrer.referralCount}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 px-6 text-right font-black text-sm text-gray-800 dark:text-gray-200 tabular-nums">
-                                                {totalReach.toLocaleString()} <span className="text-[10px] font-mono text-gray-500">FLW</span>
-                                            </td>
-                                            <td className="py-4 px-6 text-center">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <button 
-                                                        onClick={() => toggleExpand(referrer.uid)}
-                                                        className="h-9 px-3.5 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300 hover:border-black/20 dark:hover:border-white/20 transition-all flex items-center gap-1.5"
-                                                    >
-                                                        <span>Invites ({referrer.referredCreators.length})</span>
-                                                        {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            <Card className="overflow-hidden">
+                <div className="border-b border-black/[0.08] p-3 dark:border-white/[0.08]">
+                    <SearchInput value={search} onChange={setSearch} placeholder="Search referrers" className="max-w-md" />
+                </div>
+                {rows.length === 0 ? (
+                    <EmptyState
+                        icon={Trophy}
+                        title={leaderboard.length ? 'No referrers match your search' : 'No referrals yet'}
+                        description={leaderboard.length ? undefined : 'When creators share their invite link (/creator/join?ref=…), sign-ups show up here.'}
+                    />
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                            <thead className="border-b border-black/[0.08] text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 dark:border-white/[0.08] dark:text-zinc-400">
+                                <tr>
+                                    <th className="w-14 py-2.5 pl-4">Rank</th>
+                                    <th className="px-2 py-2.5">Creator</th>
+                                    <th className="px-2 py-2.5 text-right">Referrals</th>
+                                    <th className="hidden px-2 py-2.5 text-right sm:table-cell">Verified</th>
+                                    <th className="hidden px-2 py-2.5 text-right md:table-cell">Referred reach</th>
+                                    <th className="w-24 py-2.5 pr-4" />
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                                {rows.map(r => {
+                                    const key = creatorKey(r.creator);
+                                    const isOpen = expanded === key;
+                                    return (
+                                        <React.Fragment key={key}>
+                                            <tr className="hover:bg-black/[0.03] dark:hover:bg-white/[0.02]">
+                                                <td className="py-3 pl-4 font-medium tabular-nums text-gray-500 dark:text-zinc-400">#{r.rank}</td>
+                                                <td className="px-2 py-3">
+                                                    <button type="button" onClick={() => onSelectCreator(r.creator)} className="flex min-w-0 items-center gap-3 text-left">
+                                                        <Avatar src={creatorPhoto(r.creator)} name={r.creator.name} size={32} />
+                                                        <span className="min-w-0">
+                                                            <span className="block truncate font-medium text-gray-900 hover:underline dark:text-white">{r.creator.name}</span>
+                                                            <span className="block truncate text-xs text-gray-500 dark:text-zinc-400">{r.creator.city || '—'} · ID {r.creator.creatorId || '—'}</span>
+                                                        </span>
                                                     </button>
-                                                    <button 
-                                                        onClick={() => onSelectCreator(referrer)}
-                                                        className="w-9 h-9 rounded-xl bg-black dark:bg-white text-white dark:text-black hover:bg-neon-green dark:hover:bg-neon-green hover:text-black transition-all flex items-center justify-center shadow-sm"
-                                                        title="View Profile"
-                                                    >
-                                                        <ChevronRight size={15} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-
-                                        {/* Expandable referrals row */}
-                                        {isExpanded && (
-                                            <tr>
-                                                <td colSpan={5} className="bg-gray-50/60 dark:bg-black/30 p-6 sm:p-8 border-b border-black/[0.08] dark:border-white/[0.08]">
-                                                    <div className="space-y-4">
-                                                        <div className="flex items-center justify-between border-b border-black/[0.08] dark:border-white/[0.08] pb-2">
-                                                            <h5 className="text-[9px] font-black text-gray-600 dark:text-neon-pink uppercase tracking-widest">INVITED CREATORS BY {referrer.name.toUpperCase()}</h5>
-                                                        </div>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                                                            {referrer.referredCreators.map(rc => {
-                                                                const isApproved = rc.profileStatus === 'approved';
-                                                                return (
-                                                                    <div 
-                                                                        key={rc.uid}
-                                                                        onClick={() => onSelectCreator(rc)}
-                                                                        className="p-3.5 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20 rounded-2xl flex items-center justify-between cursor-pointer transition-all shadow-sm group"
-                                                                    >
-                                                                        <div className="flex items-center gap-3 min-w-0">
-                                                                            <div className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden flex items-center justify-center shrink-0">
-                                                                                {rc.profilePicture || rc.instagramProfilePic || rc.profilePic || rc.photoURL ? (
-                                                                                    <img src={rc.profilePicture || rc.instagramProfilePic || rc.profilePic || rc.photoURL} alt="" className="w-full h-full object-cover" />
-                                                                                ) : (
-                                                                                    <span className="text-[10px] font-black text-gray-900 dark:text-white">{rc.name?.charAt(0)}</span>
-                                                                                )}
-                                                                            </div>
-                                                                            <div className="min-w-0">
-                                                                                <h6 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-tight truncate leading-tight group-hover:text-neon-green transition-colors">{rc.name}</h6>
-                                                                                <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5 truncate">@{rc.instagram || 'N/A'}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className={cn(
-                                                                            "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border shrink-0",
-                                                                            isApproved ? "bg-emerald-500/10 text-emerald-700 dark:text-neon-green border-emerald-500/20 dark:border-neon-green/20" : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
-                                                                        )}>
-                                                                            {isApproved ? "Verified" : "Pending"}
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
+                                                </td>
+                                                <td className="px-2 py-3 text-right font-medium tabular-nums">{r.referrals.length}</td>
+                                                <td className="hidden px-2 py-3 text-right tabular-nums text-gray-600 dark:text-zinc-400 sm:table-cell">{r.verified}</td>
+                                                <td className="hidden px-2 py-3 text-right tabular-nums text-gray-600 dark:text-zinc-400 md:table-cell">{formatCount(r.reach)}</td>
+                                                <td className="py-3 pr-4 text-right">
+                                                    <Button size="sm" variant="ghost" onClick={() => setExpanded(isOpen ? null : key)} aria-expanded={isOpen}>
+                                                        {isOpen ? 'Hide' : 'View'} <ChevronDown size={14} className={cn('transition-transform', isOpen && 'rotate-180')} />
+                                                    </Button>
                                                 </td>
                                             </tr>
-                                        )}
-                                    </React.Fragment>
-                                );
-                            })}
-                            {filteredLeaderboard.length === 0 && (
-                                <tr>
-                                    <td colSpan={5} className="py-16 text-center">
-                                        <Trophy size={40} className="text-gray-400 dark:text-zinc-600 mx-auto mb-3" />
-                                        <h4 className="text-sm font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest">No Leaderboard Data</h4>
-                                        <p className="text-[10px] text-gray-400 dark:text-zinc-500 uppercase tracking-wider mt-1">No referrals have been made by creators yet.</p>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Mobile Cards View */}
-                <div className="md:hidden flex flex-col gap-3 p-3">
-                    {filteredLeaderboard.map((referrer, index) => {
-                        const isExpanded = expandedUid === referrer.uid;
-                        const totalReach = referrer.referredCreators.reduce((sum, rc) => {
-                            return sum + Math.max(Number(rc.instagramFollowers || 0), Number(rc.youtubeSubscribers || 0), Number(rc.linkedinFollowers || 0));
-                        }, 0);
-
-                        let medal = `${index + 1}`;
-                        if (index === 0) medal = '🥇';
-                        else if (index === 1) medal = '🥈';
-                        else if (index === 2) medal = '🥉';
-
-                        return (
-                            <div key={referrer.uid} className="bg-white dark:bg-[#0c0e14] rounded-2xl border border-black/[0.08] dark:border-white/[0.08] p-4 shadow-sm flex flex-col gap-3">
-                                <div className="flex items-center justify-between border-b border-black/[0.08] dark:border-white/[0.08] pb-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden flex items-center justify-center shrink-0">
-                                            {referrer.profilePicture || referrer.instagramProfilePic || referrer.profilePic || referrer.photoURL ? (
-                                                <img src={referrer.profilePicture || referrer.instagramProfilePic || referrer.profilePic || referrer.photoURL} alt="" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span className="text-[12px] font-black text-gray-900 dark:text-white">{referrer.name?.charAt(0)}</span>
+                                            {isOpen && (
+                                                <tr className="bg-black/[0.02] dark:bg-white/[0.02]">
+                                                    <td />
+                                                    <td colSpan={5} className="px-2 py-3 pr-4">
+                                                        <ul className="divide-y divide-black/[0.05] rounded-lg border border-black/[0.08] bg-white dark:divide-white/[0.05] dark:border-white/[0.08] dark:bg-[#0c0e14]">
+                                                            {r.referrals.map(rc => (
+                                                                <li key={creatorKey(rc)}>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => onSelectCreator(rc)}
+                                                                        className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-black/[0.03] dark:hover:bg-white/5"
+                                                                    >
+                                                                        <Avatar src={creatorPhoto(rc)} name={rc.name} size={28} />
+                                                                        <span className="min-w-0 flex-1 truncate">{rc.name}</span>
+                                                                        <span className="hidden text-xs text-gray-500 dark:text-zinc-400 sm:inline">{rc.city || '—'}</span>
+                                                                        <span className="hidden text-xs tabular-nums text-gray-500 dark:text-zinc-400 sm:inline">{formatCount(creatorReach(rc))}</span>
+                                                                        <CreatorStatusBadge status={rc.profileStatus} />
+                                                                    </button>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </td>
+                                                </tr>
                                             )}
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight leading-tight flex items-center gap-2">
-                                                {referrer.name} <span className="text-base">{medal}</span>
-                                            </h4>
-                                            <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5">@{referrer.instagram || 'N/A'}</p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        onClick={() => onSelectCreator(referrer)}
-                                        className="w-9 h-9 rounded-xl bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center shrink-0"
-                                        title="View Profile"
-                                    >
-                                        <ChevronRight size={15} />
-                                    </button>
-                                </div>
-                                
-                                <div className="flex items-center justify-between pt-1">
-                                    <div>
-                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">INVITES</p>
-                                        <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-rose-500/10 dark:bg-neon-pink/15 border border-rose-500/20 dark:border-neon-pink/20 text-rose-700 dark:text-neon-pink text-xs font-black font-mono tabular-nums">
-                                            {referrer.referralCount}
-                                        </span>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">NETWORK REACH</p>
-                                        <p className="font-black text-sm text-gray-800 dark:text-gray-200 tabular-nums">
-                                            {totalReach.toLocaleString()} <span className="text-[9px] font-mono text-gray-500">FLW</span>
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <button 
-                                    onClick={() => toggleExpand(referrer.uid)}
-                                    className="w-full h-10 mt-1 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300 hover:border-black/20 dark:hover:border-white/20 transition-all flex items-center justify-center gap-2"
-                                >
-                                    <span>Invites ({referrer.referredCreators.length})</span>
-                                    {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                                </button>
-
-                                {/* Expandable referrals */}
-                                <AnimatePresence>
-                                    {isExpanded && (
-                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mt-1 pt-3 border-t border-black/[0.08] dark:border-white/[0.08]">
-                                            <div className="flex flex-col gap-2.5">
-                                                {referrer.referredCreators.map(rc => {
-                                                    const isApproved = rc.profileStatus === 'approved';
-                                                    return (
-                                                        <div 
-                                                            key={rc.uid}
-                                                            onClick={() => onSelectCreator(rc)}
-                                                            className="p-3 bg-gray-50 dark:bg-[#080a0f] border border-black/[0.08] dark:border-white/[0.08] rounded-xl flex items-center justify-between cursor-pointer transition-all"
-                                                        >
-                                                            <div className="flex items-center gap-2.5 min-w-0">
-                                                                <div className="w-7 h-7 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden flex items-center justify-center shrink-0">
-                                                                    {rc.profilePicture || rc.instagramProfilePic || rc.profilePic || rc.photoURL ? (
-                                                                        <img src={rc.profilePicture || rc.instagramProfilePic || rc.profilePic || rc.photoURL} alt="" className="w-full h-full object-cover" />
-                                                                    ) : (
-                                                                        <span className="text-[10px] font-black text-gray-900 dark:text-white">{rc.name?.charAt(0)}</span>
-                                                                    )}
-                                                                </div>
-                                                                <div className="min-w-0">
-                                                                    <h6 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-tight truncate leading-tight">{rc.name}</h6>
-                                                                    <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5 truncate">@{rc.instagram || 'N/A'}</p>
-                                                                </div>
-                                                            </div>
-                                                            <div className={cn(
-                                                                "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border shrink-0",
-                                                                isApproved ? "bg-emerald-500/10 text-emerald-700 dark:text-neon-green border-emerald-500/20 dark:border-neon-green/20" : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
-                                                            )}>
-                                                                {isApproved ? "Verified" : "Pending"}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        );
-                    })}
-                    {filteredLeaderboard.length === 0 && (
-                        <div className="py-16 text-center">
-                            <Trophy size={40} className="text-gray-400 dark:text-zinc-600 mx-auto mb-3" />
-                            <h4 className="text-sm font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest">No Leaderboard Data</h4>
-                            <p className="text-[10px] text-gray-400 dark:text-zinc-500 uppercase tracking-wider mt-1">No referrals have been made by creators yet.</p>
-                        </div>
-                    )}
-                </div>
-            </div>
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </Card>
         </div>
     );
 };
 
-const BulkEmailModal = ({ selectedUids, creators, onClose }) => {
-    const [emailSubject, setEmailSubject] = useState('Partnership Update - Newbi Entertainment');
-    const [emailBody, setEmailBody] = useState('');
+/* ── Bulk email ───────────────────────────────────────────────────────────── */
+
+const BulkEmailModal = ({ recipients, onClose }) => {
+    const [subject, setSubject] = useState('Partnership update from Newbi Entertainment');
+    const [body, setBody] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [progress, setProgress] = useState({ current: 0, total: 0 });
-    const selectedCreators = useMemo(() => creators.filter(c => selectedUids.includes(c.uid)), [creators, selectedUids]);
+    const withEmail = recipients.filter(c => c.email);
+    const withoutEmail = recipients.length - withEmail.length;
 
-    const handleSendBulkEmail = async (e) => {
+    const handleSend = async (e) => {
         e.preventDefault();
-        if (!emailSubject.trim() || !emailBody.trim()) {
-            useStore.getState().addToast("Add a subject and a message before sending.", 'warning');
+        if (!subject.trim() || !body.trim()) {
+            useStore.getState().addToast('Add a subject and a message.', 'warning');
             return;
         }
-
         setIsSending(true);
-        setProgress({ current: 0, total: selectedCreators.length });
-
-        let successCount = 0;
-        let failCount = 0;
-
-        for (let i = 0; i < selectedCreators.length; i++) {
-            const creator = selectedCreators[i];
-            setProgress({ current: i + 1, total: selectedCreators.length });
+        setProgress({ current: 0, total: withEmail.length });
+        let sent = 0;
+        let failed = 0;
+        for (let i = 0; i < withEmail.length; i++) {
+            const c = withEmail[i];
+            setProgress({ current: i + 1, total: withEmail.length });
             try {
-                const res = await sendCreatorDirectEmail(creator.email, emailSubject, emailBody, creator.name);
-                if (res.success) {
-                    successCount++;
-                } else {
-                    failCount++;
-                }
-            } catch (err) {
-                failCount++;
+                const res = await sendCreatorDirectEmail(c.email, subject, body, c.name);
+                if (res?.success) sent++; else failed++;
+            } catch {
+                failed++;
             }
         }
-
         setIsSending(false);
-        useStore.getState().addToast(failCount > 0 ? `${successCount} emails sent, ${failCount} couldn't be delivered.` : `All ${successCount} emails sent.`, failCount > 0 ? 'warning' : 'success');
-        onClose();
+        useStore.getState().addToast(`Emails sent: ${sent}${failed ? `, failed: ${failed}` : ''}.`, failed ? 'warning' : 'success');
+        onClose(true);
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 md:p-10 bg-white dark:bg-black/50 backdrop-blur-md overflow-y-auto">
-            <div className="fixed inset-0 bg-white dark:bg-black/80" onClick={onClose} />
-            <motion.div 
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="relative bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl w-full max-w-2xl max-h-[92dvh] overflow-y-auto p-5 sm:p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
-            >
-                <div className="flex items-center justify-between border-b border-black/10 dark:border-white/5 pb-4 mb-5 sm:mb-6">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40" onClick={() => !isSending && onClose(false)} />
+            <div className="relative max-h-[90dvh] w-full max-w-xl overflow-y-auto rounded-3xl border border-black/[0.08] bg-white shadow-2xl dark:border-white/10 dark:bg-[#0c0e14]">
+                <div className="flex items-start justify-between gap-4 border-b border-black/[0.08] p-5 dark:border-white/[0.08]">
                     <div>
-                        <h3 className="text-xl sm:text-2xl font-black font-heading uppercase italic tracking-tighter">BULK PARTNERSHIP EMAIL</h3>
-                        <p className="text-[8px] sm:text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1">Sending to {selectedCreators.length} recipients</p>
+                        <h3 className="text-lg font-black font-heading uppercase tracking-tight text-gray-900 dark:text-white">Email {withEmail.length} creator{withEmail.length === 1 ? '' : 's'}</h3>
+                        {withoutEmail > 0 && (
+                            <p className="mt-0.5 text-sm text-amber-700 dark:text-amber-400">{withoutEmail} selected creator{withoutEmail === 1 ? ' has' : 's have'} no email and will be skipped.</p>
+                        )}
                     </div>
-                    <button onClick={onClose} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center justify-center">
-                        <X size={16} />
+                    <button type="button" onClick={() => !isSending && onClose(false)} className="rounded p-1 text-gray-400 hover:text-gray-700 dark:hover:text-zinc-200" aria-label="Close">
+                        <X size={18} />
                     </button>
                 </div>
 
                 {isSending ? (
-                    <div className="py-12 flex flex-col items-center justify-center space-y-6 text-center">
-                        <LoadingSpinner size="md" color="#FF007F" />
-                        <div className="space-y-1">
-                            <h4 className="text-lg font-black uppercase tracking-wider text-gray-900 dark:text-white">Dispatched {progress.current} of {progress.total}</h4>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Generating and transmitting official branded emails...</p>
-                        </div>
-                        <div className="w-full bg-black/5 dark:bg-white/5 h-2 rounded-full overflow-hidden max-w-md">
-                            <div 
-                                className="bg-neon-pink h-full transition-all duration-300"
-                                style={{ width: `${(progress.current / progress.total) * 100}%` }}
-                            />
+                    <div className="space-y-3 p-8 text-center">
+                        <LoadingSpinner size="md" color="#71717a" />
+                        <p className="text-sm text-gray-700 dark:text-zinc-300">Sending {progress.current} of {progress.total}…</p>
+                        <div className="mx-auto h-1.5 max-w-sm overflow-hidden rounded-full bg-black/5 dark:bg-white/5">
+                            <div className="h-full bg-neon-pink transition-all" style={{ width: `${progress.total ? (progress.current / progress.total) * 100 : 0}%` }} />
                         </div>
                     </div>
                 ) : (
-                    <form onSubmit={handleSendBulkEmail} className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Recipients Preview</label>
-                            <div className="bg-gray-50 dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] p-3.5 rounded-2xl max-h-[120px] overflow-y-auto custom-scrollbar flex flex-wrap gap-2">
-                                {selectedCreators.map(c => (
-                                    <span key={c.uid} className="px-2.5 py-1 bg-white dark:bg-white/5 rounded-lg text-[9px] font-bold text-gray-700 dark:text-gray-300 border border-black/[0.08] dark:border-white/[0.08]">
-                                        {c.name} ({c.email || 'No email'})
-                                    </span>
-                                ))}
+                    <form onSubmit={handleSend} className="space-y-4 p-5">
+                        <div>
+                            <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-zinc-300">Recipients</p>
+                            <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto rounded-lg border border-black/[0.08] bg-black/[0.02] p-2 dark:border-white/[0.08] dark:bg-black/40">
+                                {withEmail.map(c => <Badge key={creatorKey(c)}>{c.name || c.email}</Badge>)}
                             </div>
                         </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Subject</label>
-                            <input 
+                        <label className="block">
+                            <span className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-zinc-300">Subject</span>
+                            <input
                                 required
-                                type="text" 
-                                value={emailSubject}
-                                onChange={(e) => setEmailSubject(e.target.value)}
-                                className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-pink outline-none transition-all"
+                                value={subject}
+                                onChange={(e) => setSubject(e.target.value)}
+                                className="h-9 w-full rounded-lg border border-black/10 bg-white px-3 text-sm text-gray-900 outline-none focus:border-neon-green/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
                             />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Body</label>
-                            <textarea 
+                        </label>
+                        <label className="block">
+                            <span className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-zinc-300">Message</span>
+                            <textarea
                                 required
-                                value={emailBody}
-                                onChange={(e) => setEmailBody(e.target.value)}
-                                placeholder="WRITE YOUR BULK CORRESPONDENCE MESSAGE HERE..."
-                                className="w-full h-64 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl p-4 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-pink outline-none transition-all resize-none placeholder:text-gray-700"
+                                value={body}
+                                onChange={(e) => setBody(e.target.value)}
+                                rows={8}
+                                placeholder="Write your message…"
+                                className="w-full rounded-lg border border-black/10 bg-white p-3 text-sm text-gray-900 outline-none focus:border-neon-green/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
                             />
+                        </label>
+                        <div className="flex justify-end gap-2">
+                            <Button onClick={() => onClose(false)}>Cancel</Button>
+                            <Button type="submit" variant="primary" disabled={withEmail.length === 0}>
+                                <Mail size={15} /> Send email
+                            </Button>
                         </div>
-
-                        <button 
-                            type="submit"
-                            className="w-full h-16 bg-neon-pink text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-neon-pink/90 transition-all flex items-center justify-center gap-2 shadow-[0_15px_40px_rgba(255,0,127,0.3)]"
-                        >
-                            <Mail size={16} /> SEND BULK CAMPAIGN
-                        </button>
                     </form>
                 )}
-            </motion.div>
+            </div>
         </div>,
         document.body
     );
 };
 
 export default CreatorManager;
-

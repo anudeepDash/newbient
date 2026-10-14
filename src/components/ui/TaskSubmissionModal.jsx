@@ -22,6 +22,8 @@ import { cn } from '../../lib/utils';
 import { useStore } from '../../lib/store';
 import TaskActionLinks from '../creator/TaskActionLinks';
 import { linkifyContent, extractTaskActionLinks, cleanTaskDescription, getTaskGoogleFormUrl } from '../../lib/taskLinks';
+import { buildCampaignUrl } from '../../lib/campaignLinks';
+import { copyToClipboard } from '../../lib/clipboard';
 
 const getSubmissionStatus = (task, uid) => {
     const sub = task.submissions?.[uid];
@@ -87,7 +89,7 @@ const TaskSubmissionModal = ({
             e.stopPropagation();
             e.preventDefault();
         }
-        const directUrl = `${window.location.origin}/campaign/${campaignId}?taskId=${task.id}`;
+        const directUrl = buildCampaignUrl(campaignId, task.id);
         if (navigator.share) {
             try {
                 await navigator.share({
@@ -100,8 +102,7 @@ const TaskSubmissionModal = ({
                 if (err.name === 'AbortError') return;
             }
         }
-        if (navigator.clipboard) {
-            await navigator.clipboard.writeText(directUrl);
+        if (await copyToClipboard(directUrl)) {
             setCopiedShare(true);
             useStore.getState().addToast("Task link copied.", 'success');
             setTimeout(() => setCopiedShare(false), 2200);
@@ -114,7 +115,7 @@ const TaskSubmissionModal = ({
         const temp = document.createElement('div');
         temp.innerHTML = task.captionScript;
         const text = temp.textContent || temp.innerText || "";
-        navigator.clipboard.writeText(text);
+        copyToClipboard(text);
         setCopiedCaption(true);
         setTimeout(() => setCopiedCaption(false), 2000);
     };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import CityGroupManager from '../../components/admin/CityGroupManager';

@@ -13,7 +13,7 @@ import {
 import { useStore } from '../../lib/store';
 import { cn, normalizePhoneNumber } from '../../lib/utils';
 import { extractSocialUsername, hasDisallowedLink } from '../../lib/socialUtils';
-import { PREDEFINED_CITIES } from '../../lib/constants';
+import { PREDEFINED_CITIES, isCollegeNiche } from '../../lib/constants';
 import { requestAutoLocation } from '../../lib/location';
 
 // 21 Rich Niche Definitions with matching icons from Creator Registration
@@ -393,9 +393,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
             return;
         }
 
-        const showCollege = form.categories === 'Student/Campus Creator' || 
-                           form.categories === 'Student Creator/ Campus Creator' || 
-                           form.categories === 'College Pages';
+        const showCollege = isCollegeNiche(form.categories);
         if (showCollege && !form.collegeName?.trim()) {
             setActiveTab('niche');
             addToast("Please enter the college or university name.", "error");
@@ -493,7 +491,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
                 city: finalCity,
                 categories: finalNiche,
                 specializations: [finalNiche],
-                collegeName: form.collegeName?.trim() || '',
+                collegeName: isCollegeNiche(finalNiche) ? (form.collegeName?.trim() || '') : '',
                 cityPageFocus: form.cityPageFocus?.trim() || '',
                 bio: form.bio?.trim() || '',
                 instagram: cleanInstagram,
@@ -896,12 +894,13 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
                                 </div>
                             )}
 
-                            {(form.categories === 'Student/Campus Creator' || form.categories === 'College Pages') && (
+                            {isCollegeNiche(form.categories) && (
                                 <div className="space-y-1.5 p-4 rounded-2xl bg-teal-500/[0.04] border border-teal-500/20">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-teal-600 dark:text-teal-400 flex items-center gap-1.5">
-                                        <GraduationCap size={13} /> College / University Name *
+                                    <label htmlFor="admin-creator-college" className="text-[10px] font-black uppercase tracking-widest text-teal-600 dark:text-teal-400 flex items-center gap-1.5">
+                                        <GraduationCap size={13} /> {form.categories === 'College Pages' ? 'College this page represents *' : 'College / University Name *'}
                                     </label>
                                     <input 
+                                        id="admin-creator-college"
                                         type="text"
                                         name="collegeName"
                                         value={form.collegeName}

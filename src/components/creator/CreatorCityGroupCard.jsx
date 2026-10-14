@@ -13,6 +13,7 @@ import Check from 'lucide-react/dist/esm/icons/check';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import Copy from 'lucide-react/dist/esm/icons/copy';
 import Search from 'lucide-react/dist/esm/icons/search';
+import { copyToClipboard } from '../../lib/clipboard';
 
 // Standard SVG for WhatsApp
 const WhatsAppIcon = ({ className = "w-5 h-5", size = 20 }) => (
@@ -151,7 +152,7 @@ const CreatorCityGroupCard = ({
 
     const handleCopyInvite = () => {
         if (!currentGroup?.groupUrl) return;
-        navigator.clipboard.writeText(currentGroup.groupUrl);
+        copyToClipboard(currentGroup.groupUrl);
         setCopied(true);
         addToast('WhatsApp invite link copied.', 'success');
         setTimeout(() => setCopied(false), 2000);
