@@ -1,5 +1,5 @@
 import SectionHeading from '../components/SectionHeading';
-import Timeline from '../components/Timeline';
+import StackCards from '../components/StackCards';
 
 const STEPS = [
     { t: 'Brief', d: 'Tell us the goal, the audience, the city and the budget. A form or a call, whichever is faster.' },
@@ -8,12 +8,12 @@ const STEPS = [
     { t: 'Report', d: 'Photos, content links and the numbers that matter for your goal, in one short report.' },
 ];
 
-// How a night comes together: the green line draws itself as you scroll, and
-// each step lights up as it passes the middle of the screen.
+// How a project comes together: the four steps pile up as cards while the
+// heading stays put.
 export default function Process() {
     return (
-        <section aria-labelledby="process-title" className="py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
-            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 grid gap-14 lg:grid-cols-[0.9fr_1.1fr]">
+        <section aria-labelledby="process-title" className="py-24 md:py-36 lg:pb-24 border-t border-gray-950/10 dark:border-white/10">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 grid gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-24">
                 <SectionHeading
                     id="process-title"
                     index="02"
@@ -23,7 +23,7 @@ export default function Process() {
                     text="Four steps, one point of contact. You never chase three vendors for one answer."
                     className="lg:sticky lg:top-28 self-start"
                 />
-                <Timeline steps={STEPS} />
+                <StackCards items={STEPS} />
             </div>
         </section>
     );
