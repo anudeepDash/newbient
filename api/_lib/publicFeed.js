@@ -143,19 +143,14 @@ function caseStudies(list, categories) {
             sector: str(p.sector, 60),
             category: catName.get(p.category) || '',
             highlightUrl: url(p.highlightUrl),
+            date: eventDay(p.date),
+            // How the admin framed the photo in the 4:5 portfolio card (PortfolioSheets).
+            imageTransform: {
+                scale: num(p.imageTransform?.scale) || 1,
+                x: num(p.imageTransform?.x) || 0,
+                y: num(p.imageTransform?.y) || 0,
+            },
         }));
-}
-
-// Photos for the hero stage and the scrolling film strip: real event images only.
-function heroImages(list) {
-    return list
-        .filter((p) => !isHidden(p) && isHttpUrl(p.image))
-        .sort((a, b) => {
-            if (Boolean(a.isPinned) !== Boolean(b.isPinned)) return a.isPinned ? -1 : 1;
-            return (a.order || 0) - (b.order || 0);
-        })
-        .slice(0, 12)
-        .map((p) => ({ id: p.id, src: url(p.image), title: str(p.title, 80) }));
 }
 
 function testimonials(list) {
@@ -230,7 +225,6 @@ export async function getPublicFeed(db, { maintenanceDoc = 'maintenance' } = {})
         events: settings.showUpcomingEvents ? upcomingEvents(events) : [],
         clients: settings.showPastClients ? pastClients(clients) : [],
         caseStudies: caseStudies(portfolio, categories),
-        heroImages: heroImages(portfolio),
         testimonials: settings.showCreatorTestimonials ? testimonials(quotes) : [],
         campaigns: openCampaigns(campaigns),
     };
