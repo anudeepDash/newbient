@@ -25,6 +25,7 @@ const ProposalEmailModal = ({ isOpen, onClose, proposal, onSend }) => {
             clientName: proposal?.clientName || '',
             projectName: proposal?.campaignName || '',
             proposalUrl: `${window.location.origin}/proposal/${proposal?.id}?${query}`,
+            company: proposal?.selectedLogo || 'entertainment',
         };
     }, [proposal]);
 

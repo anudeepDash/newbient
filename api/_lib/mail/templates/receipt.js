@@ -1,7 +1,10 @@
-/** Payout receipt. data: { subject, headerText, messageBody, reference, receiverName, amount, date, paymentMode, verifyUrl } */
+/** Payout receipt. data: { company (entertainment|media|marketing), subject, headerText, messageBody, reference, receiverName, amount, date, paymentMode, verifyUrl } */
 export default (data = {}) => ({
     sender: 'finance',
     kind: 'transactional',
+    // The logo with the company name the document is issued under.
+    brand: 'company',
+    company: data.company,
     subject: data.subject || `Payment receipt${data.reference ? ` ${data.reference}` : ''}`,
     preheader: [data.amount && `₹${data.amount}`, data.paymentMode, data.date].filter(Boolean).join(' · ') || 'Your payment receipt.',
     eyebrow: 'Receipt',

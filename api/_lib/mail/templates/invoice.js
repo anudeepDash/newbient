@@ -5,6 +5,9 @@
 export default (data = {}) => ({
     sender: 'finance',
     kind: 'transactional',
+    // The logo with the company name the document is issued under.
+    brand: 'company',
+    company: data.company,
     subject: data.subject || `Invoice ${data.invoiceNumber || ''} from Newbi`.replace(/\s+/g, ' ').trim(),
     preheader: [data.invoiceNumber && `Invoice ${data.invoiceNumber}`, data.amount && `₹${data.amount}`, data.dueDate && `due ${data.dueDate}`].filter(Boolean).join(' · '),
     eyebrow: 'Invoice',
