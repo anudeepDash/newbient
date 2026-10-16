@@ -30,6 +30,7 @@ const CommunityPage = lazy(() => import('./pages/CommunityPage'));
 const CreatorHome = lazy(() => import('./creator/home/CreatorHome'));
 const CreatorApplyPage = lazy(() => import('./creator/apply/CreatorApplyPage'));
 const CampaignPage = lazy(() => import('./creator/campaign/CampaignPage'));
+const TicketsPage = lazy(() => import('./tickets/TicketsPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const GuestlistPage = lazy(() => import('./community/GuestlistPage'));
 const GiveawayPage = lazy(() => import('./community/GiveawayPage'));
@@ -58,6 +59,7 @@ export const APP_MODULES = [
             { path: 'g/:id', Component: GuestlistPage },
             { path: 'giveaways/:slug', Component: GiveawayPage },
         ],
+        aliases: ['/tickets'],
         onboarding: ['name'],
     },
     {
@@ -128,6 +130,7 @@ export function moduleForPath(pathname = '/') {
  * the signed ticket link from WhatsApp/email, and a single form.
  */
 export const STANDALONE_ROUTES = [
+    { path: 'tickets', Component: TicketsPage },
     { path: 'p/:ref', Component: PassPage },
     { path: 't/:token', Component: TicketLinkPage },
     { path: 'forms/:id', Component: FormPage },

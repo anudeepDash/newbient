@@ -111,7 +111,9 @@ const OTPVerificationSuccess = () => {
     );
 };
 
-const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => {
+// chrome={false}: used inside the app's own Sheet (app/tickets), which already has the
+// title and close button, so this drops its header and the large backdrop blur.
+const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrome = true }) => {
     const user = useStore(state => state.user);
     const setAuthModal = useStore(state => state.setAuthModal);
 
@@ -855,13 +857,14 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                 animate={window.innerWidth < 768 ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
                 exit={isEmbedded ? {} : (window.innerWidth < 768 ? { y: "100%" } : { opacity: 0, scale: 0.95, y: 20 })}
                 className={cn(
-                    "relative w-full bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row",
+                    "relative w-full border border-black/10 dark:border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row",
+                    chrome ? "bg-gray-100 dark:bg-zinc-950" : "bg-transparent",
                     isEmbedded ? "h-full w-full border-0 shadow-none rounded-0" : "max-w-5xl h-[95vh] md:h-[800px] rounded-t-[2.5rem] md:rounded-[4rem]"
                 )}
             >
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col relative overflow-hidden bg-gray-100 dark:bg-zinc-950/50 backdrop-blur-xl h-full">
-                {isEmbedded ? (
+            <div className={cn("flex-1 flex flex-col relative overflow-hidden h-full", chrome ? "bg-gray-100 dark:bg-zinc-950/50 backdrop-blur-xl" : "bg-transparent")}>
+                {!chrome ? null : isEmbedded ? (
                     <div className="w-full h-16 shrink-0 border-b border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-950/40 px-6 md:px-12 flex items-center justify-between z-30 select-none">
                         <button 
                             type="button"
