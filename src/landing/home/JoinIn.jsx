@@ -7,7 +7,7 @@ function Column({ label, title, intro, points, cta, more, dark }) {
     const Arrow = ArrowUpRight;
     const btn = `mt-10 inline-flex h-14 px-8 items-center gap-2 rounded-full font-heading font-bold text-base transition hover:scale-[1.03] active:scale-[0.98] ${dark ? 'bg-neon-green text-black' : 'bg-gray-950 text-white dark:bg-white dark:text-black'}`;
     return (
-        <div className={`nb-reveal relative overflow-hidden flex flex-col p-7 sm:p-10 lg:p-14 rounded-[2rem] ${dark ? '[--nb-stroke:#fff] bg-gray-950 text-white dark:bg-[#0a0a0a] dark:border dark:border-white/10' : 'bg-white/60 dark:bg-white/[0.03] border border-gray-950/10 dark:border-white/10 text-gray-950 dark:text-white'}`}>
+        <div className={`nb-reveal relative overflow-hidden flex flex-col p-7 sm:p-10 lg:p-14 rounded-[2rem] ${dark ? '[--nb-ghost:rgba(255,255,255,0.42)] bg-gray-950 text-white dark:bg-[#0a0a0a] dark:border dark:border-white/10' : 'bg-white/60 dark:bg-white/[0.03] border border-gray-950/10 dark:border-white/10 text-gray-950 dark:text-white'}`}>
             {dark && <div aria-hidden="true" className="absolute -top-40 -right-40 w-[34rem] h-[34rem] rounded-full" style={{ background: 'radial-gradient(closest-side, rgba(57,255,20,0.22), transparent)' }} />}
             <p className={`relative font-mono text-[11px] font-bold uppercase tracking-[0.28em] ${dark ? 'text-neon-green' : 'text-gray-500 dark:text-zinc-500'}`}>{label}</p>
             <h3 className="relative mt-5 font-heading font-extrabold tracking-[-0.035em] leading-[0.95] text-4xl md:text-5xl lg:text-6xl">{title}</h3>

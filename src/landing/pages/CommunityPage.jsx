@@ -66,7 +66,7 @@ export default function CommunityPage() {
                     </p>
                     <h1 className="mt-6 font-heading font-extrabold tracking-[-0.045em] leading-[0.9] text-gray-950 dark:text-white text-[14vw] sm:text-[11vw] lg:text-[8.5vw] xl:text-[7.5vw]">
                         <span className="nb-exit-l block">Be on the list</span>{' '}
-                        <span className="nb-exit-r block"><span className="nb-outline">for every show</span> <span className="text-emerald-600 dark:text-neon-green">near you.</span></span>
+                        <span className="nb-exit-r block"><span className="nb-ghost">for every show</span> <span className="text-emerald-600 dark:text-neon-green">near you.</span></span>
                     </h1>
                     <div className="nb-exit-fade mt-8 md:mt-10 max-w-xl">
                         <p className="text-lg md:text-2xl leading-snug text-gray-700 dark:text-zinc-300">

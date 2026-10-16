@@ -68,7 +68,7 @@ export default function CreatorPage() {
                     </p>
                     <h1 className="mt-6 font-heading font-extrabold tracking-[-0.045em] leading-[0.9] text-gray-950 dark:text-white text-[14vw] sm:text-[11vw] lg:text-[8.5vw] xl:text-[7.5vw]">
                         <span className="nb-exit-l block">Create with brands.</span>{' '}
-                        <span className="nb-exit-r block"><span className="nb-outline">Get into</span> <span className="text-emerald-600 dark:text-neon-green">the shows.</span></span>
+                        <span className="nb-exit-r block"><span className="nb-ghost">Get into</span> <span className="text-emerald-600 dark:text-neon-green">the shows.</span></span>
                     </h1>
                     <div className="nb-exit-fade mt-8 md:mt-10 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
                         <div className="max-w-xl">
