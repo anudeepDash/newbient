@@ -23,8 +23,8 @@ import {
 } from '../../../constants/adminNavigation';
 import CommandPalette from './CommandPalette';
 import { AccentContext, accent } from '../theme';
-import logoDark from '../../../assets/logo.png';
-import logoLight from '../../../assets/logo_light.png';
+import newbiLogo from '../../../assets/logo/newbi-logo.svg';
+import newbiIcon from '../../../assets/logo/newbi-icon.svg';
 
 const COLLAPSE_KEY = 'nb_admin_sidebar_collapsed';
 
@@ -34,11 +34,9 @@ const MOBILE_TAB_PRIORITY = ['proposals', 'invoices', 'upcoming', 'ticketing', '
 
 const roleLabel = (role) => String(role || '').replace(/_/g, ' ');
 
+// White letters with a black outline, so one file reads on light and dark.
 const Logo = ({ className }) => (
-    <>
-        <img src={logoDark} alt="Newbi" className={cn('hidden w-auto dark:block', className)} />
-        <img src={logoLight} alt="Newbi" className={cn('block w-auto dark:hidden', className)} />
-    </>
+    <img src={newbiLogo} alt="Newbi" className={cn('w-auto', className)} />
 );
 
 const Badge = ({ count, compact }) => {
@@ -166,10 +164,14 @@ const AdminShell = () => {
                     collapsed ? 'w-[76px]' : 'w-[260px]'
                 )}
             >
-                <div className={cn('flex h-16 shrink-0 items-center', collapsed ? 'justify-center px-2' : 'justify-between px-5')}>
-                    {!collapsed && (
+                <div className={cn('flex shrink-0 items-center', collapsed ? 'flex-col justify-center gap-1 px-2 py-3' : 'h-16 justify-between px-5')}>
+                    {collapsed ? (
+                        <Link to="/admin" aria-label="Newbi admin home" className="flex h-9 w-9 items-center justify-center">
+                            <img src={newbiIcon} alt="" className="h-6 w-auto" />
+                        </Link>
+                    ) : (
                         <Link to="/admin" className="flex items-center gap-2.5">
-                            <Logo className="h-5" />
+                            <Logo className="h-9" />
                             <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-neon-green/10 dark:text-neon-green">Admin</span>
                         </Link>
                     )}
@@ -378,7 +380,7 @@ const AdminShell = () => {
                                 onPointerDown={(e) => sheetDrag.start(e)}
                             >
                                 <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-black/15 dark:bg-white/15" />
-                                <Logo className="mt-3 h-5" />
+                                <Logo className="mt-3 h-8" />
                                 <button
                                     type="button"
                                     onClick={() => setSheetOpen(false)}

@@ -30,7 +30,7 @@ import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
 import { paginateContract } from '../components/admin/useContractGenerator';
 import { parseContractDate, partyIds, termSentence, deliverablesOf, milestoneRows, gstNote, formatMoney } from '../components/admin/contracts/contractRules';
 
-const LOGOS = { entertainment: '/logo_document.png', media: '/logo_media.png', marketing: '/logo_marketing.png' };
+const LOGOS = { entertainment: '/brand/newbi-logo-entertainment-800w.png', media: '/brand/newbi-logo-media-800w.png', marketing: '/brand/newbi-logo-marketing-800w.png' };
 
 const inlineFmt = (t) => t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
 
@@ -545,7 +545,7 @@ const Agreement = () => {
                             
                             {/* Header */}
                             <div className={cn("flex justify-between items-end mb-8 pb-3 relative z-10", idx > 0 && "opacity-40")}>
-                                <img src={LOGOS[displayAgreement.selectedLogo] || LOGOS.entertainment} alt="Logo" className="h-8 w-auto object-contain grayscale opacity-80" crossOrigin="anonymous" />
+                                <img src={LOGOS[displayAgreement.selectedLogo] || LOGOS.entertainment} alt="Logo" className="h-12 w-auto object-contain grayscale opacity-80" crossOrigin="anonymous" />
                                 <div className="flex items-center gap-6 text-right">
                                     <div className="space-y-0.5">
                                         <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest block">Agreement ID</span>

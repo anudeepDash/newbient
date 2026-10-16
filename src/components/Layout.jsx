@@ -29,6 +29,13 @@ const Layout = () => {
         if (link && link.getAttribute('href') !== href) link.setAttribute('href', href);
         const title = document.querySelector('meta[name="apple-mobile-web-app-title"]');
         if (title) title.setAttribute('content', isAdminArea ? 'Newbi Admin' : 'Newbi');
+        // Safari takes the home-screen icon from apple-touch-icon, not the manifest.
+        // Remember the site's own icon so leaving the admin puts it back.
+        const touchIcon = document.querySelector('link[rel="apple-touch-icon"]');
+        if (touchIcon) {
+            if (!touchIcon.dataset.siteHref) touchIcon.dataset.siteHref = touchIcon.getAttribute('href') || '';
+            touchIcon.setAttribute('href', isAdminArea ? '/brand/newbi-icon-app-180.png' : touchIcon.dataset.siteHref);
+        }
     }, [isAdminArea]);
 
     // Identify document editors and viewers to hide global navigation

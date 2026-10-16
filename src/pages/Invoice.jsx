@@ -482,9 +482,9 @@ const Invoice = () => {
     const toBePaid = Math.max(0, Math.round((totalAmount - (displayInvoice.showAdvance ? advancePaid : 0) - paymentsReceived) * 100) / 100);
 
     const logoOptions = [
-        { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
-        { id: 'media', label: 'Newbi Media', path: '/logo_media.png', color: '#00D1FF' },
-        { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
+        { id: 'entertainment', label: 'Newbi Entertainment', path: '/brand/newbi-logo-entertainment-800w.png', color: '#39FF14' },
+        { id: 'media', label: 'Newbi Media', path: '/brand/newbi-logo-media-800w.png', color: '#00D1FF' },
+        { id: 'marketing', label: 'Newbi Marketing', path: '/brand/newbi-logo-marketing-800w.png', color: '#FF0055' }
     ];
     const currentBrand = logoOptions.find(l => l.id === displayInvoice.selectedLogo) || logoOptions[0];
     const brandColor = currentBrand.color;
@@ -721,7 +721,7 @@ const Invoice = () => {
                                                     </div>
                                                 ) : (
                                                     <div className="flex justify-between items-center mb-6 border-b border-gray-300 pb-4">
-                                                        <img src="/logo_document.png" alt="Newbi Logo" className="w-[100px] object-contain opacity-50" crossOrigin="anonymous" />
+                                                        <img src="/brand/newbi-logo-entertainment-800w.png" alt="Newbi Logo" className="w-[100px] object-contain opacity-50" crossOrigin="anonymous" />
                                                         <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Invoice #{displayInvoice.invoiceNumber} — Page {pageIdx + 1}</p>
                                                     </div>
                                                 )}

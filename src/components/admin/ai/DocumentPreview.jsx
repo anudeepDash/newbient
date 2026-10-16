@@ -16,9 +16,9 @@ const PAGE_W = 794;
 const PAGE_H = 1123;
 
 export const LOGOS = [
-    { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png' },
-    { id: 'media', label: 'Newbi Media', path: '/logo_media.png' },
-    { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png' },
+    { id: 'entertainment', label: 'Newbi Entertainment', path: '/brand/newbi-logo-entertainment-800w.png' },
+    { id: 'media', label: 'Newbi Media', path: '/brand/newbi-logo-media-800w.png' },
+    { id: 'marketing', label: 'Newbi Marketing', path: '/brand/newbi-logo-marketing-800w.png' },
 ];
 
 const logoFor = (id) => LOGOS.find(l => l.id === id) || LOGOS[0];

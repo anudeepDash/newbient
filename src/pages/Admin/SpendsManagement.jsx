@@ -515,9 +515,9 @@ const SpendsManagement = () => {
                 {/* Top Header Card */}
                 <div className="bg-gradient-to-br from-[#06120a] via-[#0b2416] to-[#070b09] p-4 text-center text-white rounded-t-none relative overflow-hidden border-b border-[#39ff14]/25">
                     <img 
-                        src="/logo_full.png" 
+                        src="/brand/newbi-logo-800w.png" 
                         alt="Newbi Logo" 
-                        className="h-5 object-contain mx-auto mb-1.5 filter brightness-0 invert"
+                        className="h-8 object-contain mx-auto mb-1.5"
                     />
                     <p className="text-[7px] font-black uppercase tracking-[0.3em] text-[#39ff14]">Disbursement Voucher</p>
                     <h4 className="text-xl font-black tracking-tight text-white mt-1.5 mb-0.5 drop-shadow-[0_2px_8px_rgba(57,255,20,0.35)]">

@@ -24,7 +24,7 @@ const LegacyProposalPage = ({ page, idx, totalPages, formData, currentLogo, tota
         <div className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] shadow-2xl rounded-[2px] overflow-hidden">
         <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", idx > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
             <div className="flex flex-col gap-6 items-start">
-                <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", idx > 0 && "h-8")} crossOrigin="anonymous" />
+                <img src={currentLogo.path} alt="Logo" className={cn("h-20 w-auto object-contain", idx > 0 && "h-10")} crossOrigin="anonymous" />
             </div>
             <div className="text-right space-y-3">
                 <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", idx > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", idx > 0 && "text-sm")}>{formData.proposalNumber}</p></div>
