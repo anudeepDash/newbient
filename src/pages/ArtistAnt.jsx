@@ -51,7 +51,7 @@ import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { useNavigate, Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import useDynamicMeta from '../hooks/useDynamicMeta';
 import { PREDEFINED_CITIES } from '../lib/constants';
 import GlobalLoader from '../components/ui/GlobalLoader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -133,6 +133,7 @@ const ArtistAnt = () => {
     } = useStore();
     const navigate = useNavigate();
     const isArtistantDomain = typeof window !== 'undefined' && window.location.hostname.includes('artistant');
+    useDynamicMeta({ page: 'artistant' });
 
     const [view, setView] = useState('gateway');
     const [step, setStep] = useState(1);
@@ -281,18 +282,6 @@ const ArtistAnt = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-dark text-gray-900 dark:text-white relative font-outfit scroll-smooth">
-            <Helmet>
-                <title>Artistant — the ultimate creative link-up.</title>
-                <meta name="description" content="Artistant is India's premier artist booking platform. Connect verified live performers — singers, DJs, bands, comedians — with event organizers. Book talent instantly." />
-                <link rel="canonical" href="https://artistant.in" />
-                <meta property="og:title" content="Artistant — the ultimate creative link-up." />
-                <meta property="og:description" content="India's premier live performance booking platform. Artists and organizers, united." />
-                <meta property="og:url" content="https://artistant.in" />
-                <meta property="og:type" content="website" />
-                <meta name="twitter:card" content="summary_large_image" />
-                <meta name="twitter:title" content="Artistant — the ultimate creative link-up." />
-                <meta name="twitter:description" content="India's premier live performance booking platform." />
-            </Helmet>
             {/* Minimal Header */}
             <div className="fixed top-4 left-4 right-4 md:top-8 md:left-8 md:right-8 z-[100] flex justify-between items-center">
                 {isFormView ? (

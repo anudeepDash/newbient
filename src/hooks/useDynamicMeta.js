@@ -1,118 +1,117 @@
 import { useEffect } from 'react';
+import {
+    PAGES,
+    BRANDS,
+    DEFAULT_TITLE,
+    DEFAULT_DESCRIPTION,
+    brandOf,
+    defaultOgImage,
+    formatTitle,
+    originFor,
+    pageUrl,
+    toDescription,
+    toOgImage,
+} from '../app/seo';
 
-const toAbsoluteUrl = (path) => {
-    if (!path) return 'https://www.newbi.live/og-image.png';
-    // Reject SVG files for OpenGraph images because WhatsApp, Instagram, and Twitter don't render SVGs in link previews
-    if (path.endsWith('.svg') || path.includes('.svg?')) {
-        return 'https://www.newbi.live/og-image.png';
+// Callers used to pass these files as their fallback; they're now one default image.
+const LEGACY_DEFAULT_IMAGE = /\/(og-image|og-brand)\.(png|jpe?g)(\?.*)?$/i;
+
+const setTag = (attr, key, content) => {
+    let el = document.head.querySelector(`meta[${attr}="${key}"]`);
+    if (content === undefined || content === null || content === '') {
+        el?.remove();
+        return;
     }
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-        return path;
+    if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
     }
-    const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://www.newbi.live';
-    const cleanPath = path.startsWith('/') ? path : `/${path}`;
-    return `${origin}${cleanPath}`;
+    el.setAttribute('content', String(content));
 };
 
-const stripHtml = (input) => {
-    if (!input) return '';
-    return String(input)
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-        .replace(/<!--[\s\S]*?-->/g, '')
-        .replace(/<\/(p|div|h[1-6]|li|tr|section|article)>/gi, ' ')
-        .replace(/<(br|hr)\s*\/?>/gi, ' ')
-        .replace(/<[^>]+>/g, '')
-        .replace(/&nbsp;/gi, ' ')
-        .replace(/&amp;/gi, '&')
-        .replace(/&quot;/gi, '"')
-        .replace(/&#39;|&apos;/gi, "'")
-        .replace(/&lt;/gi, '<')
-        .replace(/&gt;/gi, '>')
-        .replace(/&ndash;/gi, '–')
-        .replace(/&mdash;/gi, '—')
-        .replace(/&hellip;/gi, '...')
-        .replace(/&bull;/gi, '•')
-        .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
-        .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-        .replace(/\s+/g, ' ')
-        .trim();
+const setCanonical = (href) => {
+    let el = document.head.querySelector('link[rel="canonical"]');
+    if (!href) {
+        el?.remove();
+        return;
+    }
+    if (!el) {
+        el = document.createElement('link');
+        el.setAttribute('rel', 'canonical');
+        document.head.appendChild(el);
+    }
+    el.setAttribute('href', href);
 };
 
-const useDynamicMeta = ({ title, description, image, url }) => {
+const applyMeta = ({ title, description, url, image, type, noindex, brand }) => {
+    document.title = title;
+    setTag('name', 'description', description);
+    setCanonical(url);
+    setTag('name', 'robots', noindex ? 'noindex' : '');
+
+    setTag('property', 'og:site_name', brand.siteName);
+    setTag('property', 'og:type', type);
+    setTag('property', 'og:title', title);
+    setTag('property', 'og:description', description);
+    setTag('property', 'og:url', url);
+    setTag('property', 'og:image', image.url);
+    setTag('property', 'og:image:secure_url', image.url.startsWith('https:') ? image.url : '');
+    setTag('property', 'og:image:type', image.type);
+    setTag('property', 'og:image:width', image.width);
+    setTag('property', 'og:image:height', image.height);
+    setTag('property', 'og:image:alt', image.alt);
+
+    setTag('name', 'twitter:card', 'summary_large_image');
+    setTag('name', 'twitter:site', brand.twitterSite);
+    setTag('name', 'twitter:url', url);
+    setTag('name', 'twitter:title', title);
+    setTag('name', 'twitter:description', description);
+    setTag('name', 'twitter:image', image.url);
+    setTag('name', 'twitter:image:alt', image.alt);
+};
+
+/**
+ * Sets the page's title, description and share tags while the page is mounted.
+ * `page` is a key of PAGES in src/app/seo.js; title/description/url fall back to
+ * that entry, and the entry's brand (Newbi or Concert Zone) picks the site name,
+ * title suffix and default image. Server-side previews come from api/og.js,
+ * which uses the same table.
+ */
+const useDynamicMeta = ({ page, title, description, image, imageAlt, url, type, noindex } = {}) => {
     useEffect(() => {
-        const defaultTitle = "Newbi Entertainment & Marketing";
-        const defaultDesc = "Newbi Entertainment connects brands, colleges, and creators through talent management, live events, influencer marketing, and experiential campaigns.";
-        const defaultImage = "https://www.newbi.live/og-image.png";
-        const defaultUrl = typeof window !== 'undefined' ? window.location.href : "https://www.newbi.live/";
+        const host = window.location.host;
+        const entry = PAGES[page];
+        const brand = brandOf(page);
+        const pageTitle = title ? formatTitle(title, brand) : formatTitle(entry?.title || DEFAULT_TITLE, brand);
+        const pageDesc = toDescription(description) || entry?.description || DEFAULT_DESCRIPTION;
+        // Pages with an id in their path (/c/:id…) use the address they're on.
+        const pageLink = url || (entry && !entry.path.includes(':') ? pageUrl(page, {}, host) : window.location.href);
+        const fallbackImage = defaultOgImage(originFor('landing', host), brand.image);
+        const resolved = (!LEGACY_DEFAULT_IMAGE.test(image || '') && toOgImage(image, window.location.origin)) || fallbackImage;
 
-        const resolvedImage = toAbsoluteUrl(image);
-        const resolvedUrl = url ? (url.startsWith('http') ? url : toAbsoluteUrl(url)) : defaultUrl;
-
-        const setMeta = (name, property, content) => {
-            if (!content) return;
-            let el;
-            if (property) {
-                el = document.querySelector(`meta[property="${property}"]`);
-                if (!el) {
-                    el = document.createElement('meta');
-                    el.setAttribute('property', property);
-                    document.head.appendChild(el);
-                }
-            } else if (name) {
-                el = document.querySelector(`meta[name="${name}"]`);
-                if (!el) {
-                    el = document.createElement('meta');
-                    el.setAttribute('name', name);
-                    document.head.appendChild(el);
-                }
-            }
-            if (el) el.setAttribute('content', content);
-        };
-
-        const pageTitle = stripHtml(title ? (title.includes('Newbi') ? title : `${title} | Newbi Ent.`) : defaultTitle);
-        const pageDesc = stripHtml(description) || defaultDesc;
-
-        document.title = pageTitle;
-
-        // Standard Meta
-        setMeta('description', null, pageDesc);
-
-        // Open Graph / Facebook / WhatsApp / Instagram
-        setMeta(null, 'og:site_name', 'Newbi Entertainment & Marketing');
-        setMeta(null, 'og:type', 'website');
-        setMeta(null, 'og:title', title || defaultTitle);
-        setMeta(null, 'og:description', pageDesc);
-        setMeta(null, 'og:url', resolvedUrl);
-        setMeta(null, 'og:image', resolvedImage);
-        setMeta(null, 'og:image:secure_url', resolvedImage);
-        setMeta(null, 'og:image:width', '1200');
-        setMeta(null, 'og:image:height', '630');
-        setMeta(null, 'og:image:type', resolvedImage.endsWith('.jpg') || resolvedImage.endsWith('.jpeg') ? 'image/jpeg' : 'image/png');
-
-        // Twitter / X
-        setMeta('twitter:card', null, 'summary_large_image');
-        setMeta('twitter:site', null, '@newbi_live');
-        setMeta('twitter:title', title || defaultTitle);
-        setMeta('twitter:description', pageDesc);
-        setMeta('twitter:url', resolvedUrl);
-        setMeta('twitter:image', resolvedImage);
+        applyMeta({
+            title: pageTitle,
+            description: pageDesc,
+            url: pageLink.split('#')[0],
+            image: { ...resolved, alt: imageAlt || resolved.alt || pageTitle },
+            type: type || entry?.type || 'website',
+            noindex: noindex ?? entry?.noindex,
+            brand,
+        });
 
         return () => {
-            // Cleanup: Revert to default
-            document.title = defaultTitle;
-            setMeta('description', null, defaultDesc);
-            setMeta(null, 'og:title', defaultTitle);
-            setMeta(null, 'og:description', defaultDesc);
-            setMeta(null, 'og:image', defaultImage);
-            setMeta(null, 'og:image:secure_url', defaultImage);
-            setMeta(null, 'og:url', "https://www.newbi.live/");
-            setMeta('twitter:title', null, defaultTitle);
-            setMeta('twitter:description', null, defaultDesc);
-            setMeta('twitter:image', null, defaultImage);
-            setMeta('twitter:url', null, "https://www.newbi.live/");
+            applyMeta({
+                title: DEFAULT_TITLE,
+                description: DEFAULT_DESCRIPTION,
+                url: '',
+                image: defaultOgImage(originFor('landing', host)),
+                type: 'website',
+                noindex: false,
+                brand: BRANDS.newbi,
+            });
         };
-    }, [title, description, image, url]);
+    }, [page, title, description, image, imageAlt, url, type, noindex]);
 };
 
 export default useDynamicMeta;

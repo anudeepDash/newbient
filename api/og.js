@@ -1,665 +1,568 @@
+// Link previews. vercel.json rewrites every shareable page here; this serves the
+// built index.html with that page's title, description and share image in <head>,
+// so WhatsApp, Instagram, Facebook, X and search engines see a proper card.
+// Humans get the same HTML and the SPA takes over.
+//
+// Page copy and image rules live in src/app/seo.js (shared with useDynamicMeta).
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import {
+    PAGES,
+    LANDING_ORIGIN,
+    brandOf,
+    defaultOgImage,
+    originFor,
+    pageUrl,
+    productionSiteOf,
+    isAppHostname,
+    stripHtml,
+    toDescription,
+    toOgImage,
+} from '../src/app/seo.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// ---------------------------------------------------------------------------
+// Firestore (read-only)
 
 let adminDb = null;
 
-try {
-    if (!getApps().length) {
-        const projectId = (process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || "newbi-ent-v2")?.trim();
-        const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
-        let privateKey = process.env.FIREBASE_PRIVATE_KEY?.trim();
+const formatPrivateKey = (value) => {
+    let key = String(value || '').trim();
+    if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) key = key.slice(1, -1).trim();
+    const header = '-----BEGIN PRIVATE KEY-----';
+    const footer = '-----END PRIVATE KEY-----';
+    const body = key.replace(header, '').replace(footer, '').replace(/\\n/g, '').replace(/\s+/g, '');
+    return `${header}\n${body.match(/.{1,64}/g).join('\n')}\n${footer}`;
+};
 
-        if (projectId && clientEmail && privateKey) {
-            let formattedKey = privateKey.trim();
-            if ((formattedKey.startsWith('"') && formattedKey.endsWith('"')) || 
-                (formattedKey.startsWith("'") && formattedKey.endsWith("'"))) {
-                formattedKey = formattedKey.slice(1, -1).trim();
-            }
-            const header = '-----BEGIN PRIVATE KEY-----';
-            const footer = '-----END PRIVATE KEY-----';
-            let rawBase64 = formattedKey;
-            if (rawBase64.includes(header)) rawBase64 = rawBase64.replace(header, '');
-            if (rawBase64.includes(footer)) rawBase64 = rawBase64.replace(footer, '');
-            rawBase64 = rawBase64.replace(/\\n/g, '').replace(/\s+/g, '');
-            const pemLines = [];
-            for (let i = 0; i < rawBase64.length; i += 64) {
-                pemLines.push(rawBase64.substring(i, i + 64));
-            }
-            formattedKey = `${header}\n${pemLines.join('\n')}\n${footer}`;
-
-            const app = initializeApp({
-                credential: cert({
-                    projectId,
-                    clientEmail,
-                    privateKey: formattedKey,
-                }),
-            });
-            adminDb = getFirestore(app);
-        } else if (projectId) {
-            const app = initializeApp({ projectId });
-            adminDb = getFirestore(app);
-        }
-    } else {
+/** Throws when the Admin credentials are missing, so a broken setup shows up in the logs. */
+const getDb = () => {
+    if (adminDb) return adminDb;
+    if (getApps().length) {
         adminDb = getFirestore(getApps()[0]);
+        return adminDb;
     }
-} catch (e) {
-    console.warn('[OG] Firebase Admin init warning:', e.message);
-}
+    const projectId = (process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || 'newbi-ent-v2').trim();
+    if (process.env.FIRESTORE_EMULATOR_HOST) {
+        adminDb = getFirestore(initializeApp({ projectId }));
+        return adminDb;
+    }
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.trim();
+    if (!clientEmail || !privateKey) {
+        throw new Error('FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY are not set: dynamic link previews fall back to the default card');
+    }
+    adminDb = getFirestore(initializeApp({ credential: cert({ projectId, clientEmail, privateKey: formatPrivateKey(privateKey) }) }));
+    return adminDb;
+};
+
+/** For local checks only: run the handler against a stub database. */
+export const __setPreviewDb = (db) => { adminDb = db; };
+
+// ---------------------------------------------------------------------------
+// Helpers
+
+const escapeHtml = (str) => String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+/** JSON that is safe inside an inline <script> (no "</script>", no line separators). */
+const toInlineJson = (value) => JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 
 const normalizeString = (str) => String(str || '').trim().toLowerCase();
 const createSlug = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-const stripHtml = (input) => {
-    if (!input) return '';
-    return String(input)
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-        .replace(/<!--[\s\S]*?-->/g, '')
-        .replace(/<\/(p|div|h[1-6]|li|tr|section|article)>/gi, ' ')
-        .replace(/<(br|hr)\s*\/?>/gi, ' ')
-        .replace(/<[^>]+>/g, '')
-        .replace(/&nbsp;/gi, ' ')
-        .replace(/&amp;/gi, '&')
-        .replace(/&quot;/gi, '"')
-        .replace(/&#39;|&apos;/gi, "'")
-        .replace(/&lt;/gi, '<')
-        .replace(/&gt;/gi, '>')
-        .replace(/&ndash;/gi, '–')
-        .replace(/&mdash;/gi, '—')
-        .replace(/&hellip;/gi, '...')
-        .replace(/&bull;/gi, '•')
-        .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
-        .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-        .replace(/\s+/g, ' ')
-        .trim();
+// Ids and slugs come from the URL; anything with a slash would address another collection.
+const cleanId = (value) => {
+    const id = String(value || '').trim();
+    return id && id.length <= 200 && !id.includes('/') && id !== '.' && id !== '..' ? id : '';
 };
 
-const escapeHtml = (str) => {
-    if (!str) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-};
+const isBot = (ua) => /bot|crawl|spider|slurp|facebookexternalhit|facebookcatalog|meta-externalagent|whatsapp|telegram|twitterbot|slackbot|linkedinbot|embedly|quora link preview|pinterest|redditbot|applebot|discordbot|skypeuripreview|vkshare|google-inspectiontool/i.test(ua || '');
 
-const escapeHtmlAttr = (str) => {
-    if (!str) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+const TIMED_OUT = Symbol('timed out');
+const withTimeout = (promise, ms) => {
+    let timer;
+    return Promise.race([
+        promise.finally(() => clearTimeout(timer)),
+        new Promise((resolve) => { timer = setTimeout(() => resolve(TIMED_OUT), ms); }),
+    ]);
 };
 
 let cachedBaseHtml = '';
 
-const isBot = (ua) => {
-    if (!ua) return false;
-    return /bot|crawl|spider|slurp|facebookexternalhit|whatsapp|telegrambot|twitterbot|slackbot|linkedinbot|embedly|quora link preview|pinterest|redditbot|applebot|discordbot/i.test(ua);
-};
+const isBuiltIndex = (html) => html && html.length > 50 && html.includes('<div id="root">') && !html.includes('/src/main.jsx');
 
-async function getBaseHtml(req) {
-    if (cachedBaseHtml) {
-        return { html: cachedBaseHtml, path: 'memory' };
-    }
-
-    const candidatePaths = [
+async function getBaseHtml() {
+    if (cachedBaseHtml) return cachedBaseHtml;
+    const candidates = [
         path.join(process.cwd(), 'dist', 'index.html'),
         path.join(__dirname, '..', 'dist', 'index.html'),
-        path.join(__dirname, 'dist', 'index.html'),
-        path.join('/var/task', 'dist', 'index.html')
+        path.join('/var/task', 'dist', 'index.html'),
     ];
-
-    for (const p of candidatePaths) {
+    for (const p of candidates) {
         try {
             if (fs.existsSync(p)) {
                 const content = fs.readFileSync(p, 'utf8');
-                if (content && content.length > 50 && content.includes('<div id="root">') && !content.includes('/src/main.jsx')) {
+                if (isBuiltIndex(content)) {
                     cachedBaseHtml = content;
-                    return { html: content, path: p };
+                    return content;
                 }
             }
-        } catch (e) {}
+        } catch { /* try the next one */ }
     }
-
+    console.error('[og] dist/index.html is missing from the function bundle; fetching the live copy');
     try {
-        const res = await fetch('https://www.newbi.live/index.html');
-        if (res.ok) {
-            const fetched = await res.text();
-            if (fetched && fetched.length > 50 && fetched.includes('<div id="root">') && !fetched.includes('/src/main.jsx')) {
-                cachedBaseHtml = fetched;
-                return { html: fetched, path: 'remote' };
-            }
+        const res = await fetch(`${LANDING_ORIGIN}/index.html`);
+        const fetched = res.ok ? await res.text() : '';
+        if (isBuiltIndex(fetched)) {
+            cachedBaseHtml = fetched;
+            return fetched;
         }
     } catch (e) {
-        console.warn('[OG] Remote index.html fetch failed:', e);
+        console.error('[og] fetching the live index.html failed:', e.message);
     }
-
-    return { html: '', path: '' };
+    return '';
 }
 
-export default async function handler(req, res) {
-    const allowedOrigins = ['https://www.newbi.live', 'https://newbi.live', 'https://newbi-ent.vercel.app', 'http://localhost:5173'];
-    const origin = req.headers.origin;
-    if (allowedOrigins.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-    } else {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-    }
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+// ---------------------------------------------------------------------------
+// Which page is this?
 
+// Paths the SPA serves, by host. Used when a request reaches this function
+// without an explicit ?route= (vercel.json always passes one).
+const APP_PATHS = [
+    [/^\/$/, 'app-home'],
+    [/^\/community$/, 'community'],
+    [/^\/community\/g\/([^/]+)$/, 'guestlist'],
+    [/^\/community\/giveaways\/([^/]+)$/, 'giveaway'],
+    [/^\/c\/([^/]+)$/, 'campaign'],
+    [/^\/p\/([^/]+)$/, 'pass'],
+    [/^\/creator$/, 'app-creator'],
+    [/^\/creator\/apply$/, 'creator-apply'],
+    [/^\/campus(\/.*)?$/, 'campus'],
+    [/^\/notifications$/, 'notifications'],
+    [/^\/profile$/, 'profile'],
+];
+
+const LANDING_PATHS = [
+    [/^\/$/, 'home'],
+    [/^\/(creator|creators|creator\/landing)$/, 'creator'],
+    [/^\/(creator\/join|creator-join|creator\/apply|creator\/register|creator\/signup)$/, 'creator-apply'],
+    [/^\/(creator-dashboard|creator-dashboard\/.*|creator\/dashboard|creator\/hub|creator\/studio|creator\/campaigns|creator-hub|creator-studio|campaigns)$/, 'app-creator'],
+    [/^\/(?:campaign|campaigns|creator\/campaign|creator\/campaigns|creator-dashboard\/campaign)\/([^/]+)$/, 'campaign'],
+    [/^\/(community|community-join)$/, 'community'],
+    [/^\/giveaway\/([^/]+)$/, 'giveaway'],
+    [/^\/ticket\/([^/]+)$/, 'pass'],
+    [/^\/forms?$/, 'forms'],
+    [/^\/forms?\/([^/]+)$/, 'form'],
+    [/^\/concertzone$/, 'concertzone'],
+    [/^\/concertzone\/([^/]+)$/, 'concertzone-category'],
+    [/^\/concertzone\/([^/]+)\/([^/]+)$/, 'post'],
+    [/^\/proposal\/([^/]+)$/, 'proposal'],
+    [/^\/invoice\/([^/]+)$/, 'invoice'],
+    [/^\/agreement\/([^/]+)$/, 'agreement'],
+    [/^\/doc\/([^/]+)$/, 'doc'],
+    [/^\/artistant$/, 'artistant'],
+    [/^\/(contact|terms|privacy|verify-creator|verify-payout|register-payment|campus)$/, null],
+];
+
+export const routeFromPath = (host, pathname) => {
+    const clean = (pathname || '/').replace(/\/+$/, '') || '/';
+    if (productionSiteOf(host) === 'artistant' && clean === '/') return { route: 'artistant' };
+    const table = isAppHostname(host) ? APP_PATHS : LANDING_PATHS;
+    for (const [pattern, route] of table) {
+        const m = clean.match(pattern);
+        if (!m) continue;
+        const key = route || clean.slice(1);
+        if (key === 'post') return { route: key, category: decodeURIComponent(m[1]), id: decodeURIComponent(m[2]) };
+        if (key === 'concertzone-category') return { route: key, category: decodeURIComponent(m[1]) };
+        return { route: key, id: m[1] && !m[1].startsWith('/') ? decodeURIComponent(m[1]) : undefined };
+    }
+    return { route: isAppHostname(host) ? 'app-home' : 'home' };
+};
+
+const resolveRoute = (req, host) => {
+    const q = req.query || {};
+    let resolved;
+    if (q.route && PAGES[q.route]) {
+        resolved = { route: q.route, id: q.id, category: q.category };
+    } else {
+        let pathname = '/';
+        try { pathname = new URL(req.url || '/', 'http://x').pathname; } catch { /* default */ }
+        resolved = routeFromPath(host, pathname);
+    }
+    // Community deep links carried in the query (?gl=, ?event=, ?gig=, ?form=).
+    if (resolved.route === 'community' || resolved.route === 'home' || resolved.route === 'app-home') {
+        if (q.gl || q.event) return { route: 'guestlist', id: q.gl || q.event };
+        if (q.gig) return { route: 'gig', id: q.gig };
+        if (q.form) return { route: 'community-form', id: q.form };
+    }
+    return resolved;
+};
+
+// ---------------------------------------------------------------------------
+// Dynamic pages. Each returns { title, description, image, url?, type?, extra? }
+// or null when the record doesn't exist.
+
+const firstImage = (...candidates) => candidates.find((c) => typeof c === 'string' && c.trim()) || '';
+
+const eventDescription = (data) => {
+    const bits = [];
+    const date = data.date ? new Date(data.date) : null;
+    if (date && !Number.isNaN(date.getTime())) {
+        bits.push(date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' }));
+    }
+    const place = [data.venue, data.city].map(stripHtml).filter(Boolean).join(', ');
+    if (place) bits.push(place);
+    const artists = Array.isArray(data.artists) ? data.artists.map(stripHtml).filter(Boolean) : [];
+    const lead = [bits.join(' · '), artists.length ? `Featuring ${artists.join(', ')}.` : ''].filter(Boolean).join('. ');
+    return [lead && !/[.!?]$/.test(lead) ? `${lead}.` : lead, stripHtml(data.description)].filter(Boolean).join(' ');
+};
+
+const loaders = {
+    async campaign(db, { id }) {
+        let snap = await db.collection('campaigns').doc(id).get();
+        if (!snap.exists) {
+            // Old links sometimes differ from the doc id only in case.
+            const recent = await db.collection('campaigns').limit(50).get();
+            snap = recent.docs.find((d) => d.id.toLowerCase() === id.toLowerCase()) || snap;
+        }
+        if (!snap.exists) return null;
+        const data = snap.data();
+        const brand = stripHtml(data.brandName);
+        const payout = stripHtml(data.payout || data.budget);
+        return {
+            title: `${stripHtml(data.title) || 'Brand Campaign'} | Newbi Creator Network`,
+            description: [brand && `Brand: ${brand}.`, payout && `Compensation: ${payout}.`, stripHtml(data.description) || PAGES.campaign.description].filter(Boolean).join(' '),
+            image: firstImage(data.thumbnail, data.image, data.coverImage),
+            alt: stripHtml(data.title),
+            params: { id: snap.id },
+        };
+    },
+
+    // One page for events and guestlists (old ?event= and ?gl= links both land here).
+    async guestlist(db, { id }) {
+        const eventSnap = await db.collection('upcoming_events').doc(id).get();
+        if (eventSnap.exists) {
+            const data = eventSnap.data();
+            const title = stripHtml(data.title) || 'Newbi event';
+            return {
+                title: `${title}${data.city ? ` | ${stripHtml(data.city)}` : ''} | Newbi`,
+                description: eventDescription(data) || PAGES.guestlist.description,
+                image: firstImage(data.image, data.posterUrl, data.coverImage),
+                alt: title,
+            };
+        }
+        const glSnap = await db.collection('guestlists').doc(id).get();
+        if (!glSnap.exists) return null;
+        const data = glSnap.data();
+        const title = stripHtml(data.title) || 'Newbi event';
+        return {
+            title: `${title} | Guestlist | Newbi`,
+            description: eventDescription(data) || `Get on the guestlist for ${title}.`,
+            image: firstImage(data.image, data.posterUrl),
+            alt: title,
+        };
+    },
+
+    async gig(db, { id }) {
+        const snap = await db.collection('volunteer_gigs').doc(id).get();
+        if (!snap.exists) return null;
+        const data = snap.data();
+        const title = stripHtml(data.title);
+        return {
+            title: `${title} | Volunteer Gig | Newbi`,
+            description: stripHtml(data.description) || `Volunteer with the Newbi crew for ${title}.`,
+            image: firstImage(data.image),
+            alt: title,
+        };
+    },
+
+    async giveaway(db, { id }) {
+        const snaps = await db.collection('giveaways').where('slug', '==', id).limit(1).get();
+        if (snaps.empty) return null;
+        const data = snaps.docs[0].data();
+        const name = stripHtml(data.name);
+        return {
+            title: `${name} | Newbi Giveaway`,
+            description: stripHtml(data.description) || `Enter the Newbi giveaway to win ${name}.`,
+            image: firstImage(data.posterUrl, data.image),
+            alt: name,
+        };
+    },
+
+    async form(db, { id }) {
+        const formResult = (data, docId) => ({
+            title: `${stripHtml(data.title)} | Newbi Forms`,
+            description: stripHtml(data.description) || `Fill in ${stripHtml(data.title)} on Newbi.`,
+            image: firstImage(data.image),
+            alt: stripHtml(data.title),
+            params: { id: docId },
+        });
+
+        const snap = await db.collection('forms').doc(id).get();
+        if (snap.exists) {
+            const data = snap.data();
+            return { ...formResult(data, snap.id), initialData: { id: snap.id, ...data } };
+        }
+
+        // Older links use a slug, a custom form id or the title.
+        const clean = normalizeString(id);
+        const cleanSlug = createSlug(id);
+        const all = await db.collection('forms').get();
+        const match = all.docs.find((d) => {
+            const f = d.data();
+            return normalizeString(d.id) === clean
+                || normalizeString(f.slug) === clean
+                || normalizeString(f.formId) === clean
+                || (f.title && createSlug(f.title) === cleanSlug)
+                || (f.link && normalizeString(f.link).endsWith(`/${clean}`));
+        });
+        if (match) {
+            const data = match.data();
+            return { ...formResult(data, match.id), initialData: { id: match.id, ...data } };
+        }
+
+        // Events and gigs can be opened as forms too.
+        const eventSnap = await db.collection('upcoming_events').doc(id).get();
+        if (eventSnap.exists) {
+            const data = eventSnap.data();
+            let initialData = null;
+            const refFormId = cleanId(data.formId || data.relatedArtistFormId);
+            if (refFormId) {
+                const refSnap = await db.collection('forms').doc(refFormId).get();
+                if (refSnap.exists) initialData = { id: refSnap.id, ...refSnap.data() };
+            }
+            return {
+                ...formResult(data, id),
+                initialData: initialData || {
+                    id: eventSnap.id,
+                    title: data.title,
+                    description: data.description,
+                    formUrl: data.formUrl || data.link,
+                    activeLabel: data.status || 'Live',
+                    image: data.image,
+                    highlightColor: data.highlightColor || '#2ebfff',
+                    bottomText: data.location || 'Event Form',
+                },
+            };
+        }
+        const gigSnap = await db.collection('volunteer_gigs').doc(id).get();
+        if (gigSnap.exists) {
+            const data = gigSnap.data();
+            return {
+                ...formResult(data, id),
+                title: `${stripHtml(data.title)} | Volunteer Form | Newbi`,
+                initialData: {
+                    id: gigSnap.id,
+                    title: data.title,
+                    description: data.description,
+                    formUrl: data.formUrl || data.applyLink || data.link,
+                    activeLabel: data.status || 'Live',
+                    image: data.image,
+                    highlightColor: data.highlightColor || '#39FF14',
+                    bottomText: data.location || 'Gig Form',
+                },
+            };
+        }
+        return null;
+    },
+
+    async post(db, { id }) {
+        const snaps = await db.collection('posts').where('slug', '==', id).get();
+        // Only published posts (or scheduled ones whose time has come) get a preview card.
+        const isLive = (d) => d.status === 'Published' || (d.status === 'Scheduled' && new Date(d.publishAt || d.publishDate || 0).getTime() <= Date.now());
+        const live = snaps.docs.find((d) => isLive(d.data()));
+        if (!live) return null;
+        const data = live.data();
+        const published = new Date(data.publishAt || data.publishDate || data.createdAt || 0);
+        return {
+            title: `${stripHtml(data.seoTitle || data.title)} | Concert Zone`,
+            description: stripHtml(data.seoDescription || data.shortDescription || data.excerpt) || stripHtml(data.content),
+            image: firstImage(data.coverImage, data.image),
+            alt: stripHtml(data.title),
+            params: { category: createSlug(data.category || 'news') || 'news', id },
+            extra: published.getTime() > 0 ? [['article:published_time', published.toISOString()]] : [],
+        };
+    },
+
+    async proposal(db, { id }) {
+        const snap = await db.collection('proposals').doc(id).get();
+        if (!snap.exists) return null;
+        const data = snap.data();
+        return {
+            title: `${stripHtml(data.proposalNumber) || 'Proposal'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi Ent.`,
+            description: `Proposal for ${stripHtml(data.campaignName) || 'your campaign'} from Newbi Entertainment & Marketing.`,
+        };
+    },
+
+    async invoice(db, { id }) {
+        const snap = await db.collection('invoices').doc(id).get();
+        if (!snap.exists) return null;
+        const data = snap.data();
+        return {
+            title: `${stripHtml(data.invoiceNumber) || 'Tax Invoice'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi Ent.`,
+            description: `Tax invoice for ${stripHtml(data.campaignName) || 'services'} from Newbi Entertainment & Marketing.`,
+        };
+    },
+
+    async agreement(db, { id }) {
+        const snap = await db.collection('agreements').doc(id).get();
+        if (!snap.exists) return null;
+        const data = snap.data();
+        return {
+            title: `${stripHtml(data.agreementNumber) || 'Agreement'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi Ent.`,
+            description: `Service agreement for ${stripHtml(data.campaignName) || 'services'} from Newbi Entertainment & Marketing.`,
+        };
+    },
+
+    async doc(db, { id }) {
+        const snap = await db.collection('gen_documents').doc(id).get();
+        if (!snap.exists) return null;
+        const data = snap.data();
+        return {
+            title: `${stripHtml(data.title) || 'Official Document'} | Newbi Ent.`,
+            description: `${stripHtml(data.documentType) || 'Official document'} #${stripHtml(data.docNumber) || id}, issued by Newbi Entertainment & Marketing.`,
+        };
+    },
+};
+
+// ---------------------------------------------------------------------------
+// The page's <head>
+
+/**
+ * Everything the preview needs for one request. `cacheable` is false when the
+ * Firestore lookup failed or timed out, so a degraded card isn't cached.
+ */
+export async function buildPreview({ host, query = {}, url = '/', userAgent = '' }) {
+    const resolved = resolveRoute({ query, url }, host);
+    const route = PAGES[resolved.route] ? resolved.route : 'home';
+    const page = PAGES[route];
+    const id = cleanId(resolved.id);
+    const params = { id, category: createSlug(resolved.category || '') || (route === 'post' ? 'news' : '') };
+
+    let result = null;
+    let cacheable = true;
+
+    const load = loaders[route] || (route === 'community-form' ? loaders.form : null);
+    if (load && id) {
+        try {
+            const outcome = await withTimeout(load(getDb(), { id }), isBot(userAgent) ? 2500 : 600);
+            if (outcome === TIMED_OUT) {
+                cacheable = false;
+                console.error(`[og] ${route} "${id}" timed out; served the default card`);
+            } else if (!outcome) {
+                console.error(`[og] ${route} "${id}" not found; served the default card`);
+            } else {
+                result = outcome;
+            }
+        } catch (e) {
+            cacheable = false;
+            console.error(`[og] ${route} "${id}" failed:`, e.message);
+        }
+    }
+
+    if (route === 'concertzone-category' && resolved.category) {
+        const label = stripHtml(resolved.category).replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        result = {
+            title: `${label} | Concert Zone`,
+            description: `The latest ${label.toLowerCase()} stories, concert updates and live music guides on Concert Zone.`,
+        };
+    }
+
+    const brand = brandOf(route);
+    const title = stripHtml(result?.title) || page.title;
+    const image = toOgImage(result?.image, originFor(page.site, host)) || defaultOgImage(originFor('landing', host), brand.image);
+
+    return {
+        route,
+        cacheable,
+        title,
+        description: toDescription(result?.description || page.description),
+        url: pageUrl(route, { ...params, ...(result?.params || {}) }, host),
+        type: page.type || 'website',
+        siteName: brand.siteName,
+        twitterSite: brand.twitterSite,
+        image: { ...image, alt: stripHtml(result?.alt) || image.alt || title },
+        noindex: Boolean(page.noindex),
+        extra: result?.extra || [],
+        initialData: result?.initialData || null,
+    };
+}
+
+export const renderHead = (meta) => {
+    const tag = (attr, key, value) => (value === undefined || value === null || value === '' ? '' : `<meta ${attr}="${key}" content="${escapeHtml(value)}" />`);
+    const lines = [
+        `<title>${escapeHtml(meta.title)}</title>`,
+        tag('name', 'description', meta.description),
+        `<link rel="canonical" href="${escapeHtml(meta.url)}" />`,
+        meta.noindex ? tag('name', 'robots', 'noindex') : '',
+        tag('property', 'og:site_name', meta.siteName),
+        tag('property', 'og:type', meta.type),
+        tag('property', 'og:url', meta.url),
+        tag('property', 'og:title', meta.title),
+        tag('property', 'og:description', meta.description),
+        tag('property', 'og:image', meta.image.url),
+        meta.image.url.startsWith('https:') ? tag('property', 'og:image:secure_url', meta.image.url) : '',
+        tag('property', 'og:image:type', meta.image.type),
+        tag('property', 'og:image:width', meta.image.width),
+        tag('property', 'og:image:height', meta.image.height),
+        tag('property', 'og:image:alt', meta.image.alt),
+        ...meta.extra.map(([key, value]) => tag('property', key, value)),
+        tag('name', 'twitter:card', 'summary_large_image'),
+        tag('name', 'twitter:site', meta.twitterSite),
+        tag('name', 'twitter:url', meta.url),
+        tag('name', 'twitter:title', meta.title),
+        tag('name', 'twitter:description', meta.description),
+        tag('name', 'twitter:image', meta.image.url),
+        tag('name', 'twitter:image:alt', meta.image.alt),
+        meta.initialData ? `<script>window.__INITIAL_FORM_DATA__ = ${toInlineJson(meta.initialData)};</script>` : '',
+    ];
+    return lines.filter(Boolean).join('\n    ');
+};
+
+export const injectHead = (html, meta) => {
+    const base = html || '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body><div id="root"></div></body></html>';
+    return base
+        // Drop the static defaults so crawlers see one set of tags.
+        .replace(/<title>[\s\S]*?<\/title>/gi, '')
+        .replace(/<meta\s+(?:property|name)="(?:og:|twitter:|article:)[^"]*"[^>]*>\s*/gi, '')
+        .replace(/<meta\s+name="(?:description|robots)"[^>]*>\s*/gi, '')
+        .replace(/<link\s+rel="canonical"[^>]*>\s*/gi, '')
+        .replace('</head>', `    ${renderHead(meta)}\n</head>`);
+};
+
+export default async function handler(req, res) {
     if (req.method === 'OPTIONS') {
-        res.status(200).end();
+        res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+        res.status(204).end();
         return;
     }
 
-    const { 
-        event: eventId, 
-        giveaway: giveawaySlug, 
-        formId, 
-        gig: gigId, 
-        gl: glId, 
-        form: queryFormId,
-        proposalId,
-        invoiceId,
-        agreementId,
-        blogSlug,
-        campaignId,
-        docId,
-        ticketId,
-        category,
-        page
-    } = req.query;
     const host = req.headers['x-forwarded-host'] || req.headers.host || 'www.newbi.live';
-    const baseUrl = host.includes('localhost') ? `http://${host}` : 'https://www.newbi.live';
-    const defaultOgImage = `${baseUrl}/og-brand.png?v=2`;
-
-    // Fallback path detection if query parameters weren't explicitly supplied
-    let detectedPath = '';
-    const rawPath = req.headers['x-matched-path'] || req.headers['x-forwarded-uri'] || req.url || '';
-    if (rawPath) {
-        try {
-            detectedPath = new URL(rawPath, baseUrl).pathname;
-        } catch (e) {
-            detectedPath = rawPath.split('?')[0];
-        }
-    }
-
-    let effectivePage = page;
-    let effectiveCampaignId = campaignId;
-    let effectiveDocId = docId;
-    let effectiveTicketId = ticketId;
-    let effectiveCategory = category;
-    let effectiveBlogSlug = blogSlug;
-    let effectiveFormId = formId || queryFormId;
-    let effectiveGiveawaySlug = giveawaySlug;
-    let effectiveGigId = gigId;
-    let effectiveGlId = glId;
-    let effectiveProposalId = proposalId;
-    let effectiveInvoiceId = invoiceId;
-    let effectiveAgreementId = agreementId;
-    let effectiveEventId = eventId;
-
-    if (detectedPath) {
-        const cleanPath = detectedPath.replace(/\/+$/, '');
-        if (!effectivePage && !effectiveCampaignId && !effectiveBlogSlug && !effectiveFormId && !effectiveDocId && !effectiveTicketId) {
-            if (cleanPath === '/creator' || cleanPath === '/creator/landing') effectivePage = 'creator';
-            else if (cleanPath === '/creator/join') effectivePage = 'creator-join';
-            else if (cleanPath.startsWith('/creator-dashboard')) effectivePage = 'creator-dashboard';
-            else if (cleanPath === '/verify-creator') effectivePage = 'verify-creator';
-            else if (cleanPath === '/campaigns') effectivePage = 'campaigns';
-            else if (cleanPath.startsWith('/campaign/')) effectiveCampaignId = cleanPath.split('/')[2];
-            else if (cleanPath === '/concertzone') effectivePage = 'concertzone';
-            else if (cleanPath.startsWith('/concertzone/')) {
-                const parts = cleanPath.split('/').filter(Boolean);
-                if (parts.length >= 3) {
-                    effectiveBlogSlug = parts[2];
-                    effectiveCategory = parts[1];
-                } else if (parts.length === 2) {
-                    effectiveCategory = parts[1];
-                }
-            }
-            else if (cleanPath === '/community' || cleanPath === '/community-join') effectivePage = 'community';
-            else if (cleanPath === '/forms' || cleanPath === '/form') effectivePage = 'forms';
-            else if (cleanPath.startsWith('/forms/') || cleanPath.startsWith('/form/')) effectiveFormId = cleanPath.split('/')[2];
-            else if (cleanPath.startsWith('/giveaway/')) effectiveGiveawaySlug = cleanPath.split('/')[2];
-            else if (cleanPath.startsWith('/proposal/')) effectiveProposalId = cleanPath.split('/')[2];
-            else if (cleanPath.startsWith('/invoice/')) effectiveInvoiceId = cleanPath.split('/')[2];
-            else if (cleanPath.startsWith('/agreement/')) effectiveAgreementId = cleanPath.split('/')[2];
-            else if (cleanPath.startsWith('/doc/')) effectiveDocId = cleanPath.split('/')[2];
-            else if (cleanPath.startsWith('/ticket/')) effectiveTicketId = cleanPath.split('/')[2];
-            else if (cleanPath === '/artistant') effectivePage = 'artistant';
-            else if (cleanPath === '/contact') effectivePage = 'contact';
-            else if (cleanPath === '/terms') effectivePage = 'terms';
-            else if (cleanPath === '/privacy') effectivePage = 'privacy';
-            else if (cleanPath === '/verify-payout') effectivePage = 'verify-payout';
-            else if (cleanPath === '/register-payment') effectivePage = 'register-payment';
-        }
-    }
-
-    let meta = {
-        title: "Newbi Entertainment & Marketing",
-        description: "Experience the pulse of entertainment with Newbi. Premier events, marketing, and the ultimate community tribe.",
-        image: defaultOgImage,
-        url: baseUrl,
-        type: 'website'
-    };
-
-    let initialData = null;
-
-    // Metadata fetch with 2500ms safety timeout to avoid blocking page loads
-    const fetchMetadata = async () => {
-        // Fast paths that do not require Firestore queries
-        if (effectivePage) {
-            if (effectivePage === 'creator' || effectivePage === 'creator-landing') {
-                meta.title = "Newbi Creator Network • Brand Campaigns & Live Gigs";
-                meta.description = "Discover verified brand collaborations, creator campaigns, and experiential gigs in Bengaluru, Mumbai, Delhi-NCR, and across India. 100% free to join.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/creator`;
-                return;
-            } else if (effectivePage === 'creator-join') {
-                meta.title = "Apply to Newbi Creator Network • 45-Second Onboarding";
-                meta.description = "Connect with top brands and live events in your city. Fast creator onboarding with zero agency fees.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/creator/join`;
-                return;
-            } else if (effectivePage === 'creator-dashboard') {
-                meta.title = "Creator Dashboard | Newbi Creator Network";
-                meta.description = "Manage your active brand campaigns, submit deliverables, track compensation, and access exclusive gig invites.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/creator-dashboard`;
-                return;
-            } else if (effectivePage === 'campaigns') {
-                meta.title = "Live Brand Campaigns & Creator Gigs | Newbi Creator Network";
-                meta.description = "Explore open creator campaigns, sponsorship briefs, and campus gigs. Apply directly to collaborate with top brands.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/campaigns`;
-                return;
-            } else if (effectivePage === 'community') {
-                meta.title = "Newbi Community Tribe • Exclusive Guestlists, Gigs & Events";
-                meta.description = "Join the ultimate entertainment tribe. Get VIP guestlist entries, backstage volunteer gigs, and exclusive live music community access.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/community`;
-                return;
-            } else if (effectivePage === 'forms') {
-                meta.title = "Newbi Forms & Community Registrations";
-                meta.description = "Submit applications and registrations for Newbi events, community initiatives, and creator opportunities.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/forms`;
-                return;
-            } else if (effectivePage === 'concertzone') {
-                meta.title = "Concert Zone • Music, Live Events & Tour Guides | Newbi Ent.";
-                meta.description = "Your backstage pass to concerts, live music festivals, artist spotlights, and gig guides across India.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/concertzone`;
-                return;
-            } else if (effectivePage === 'artistant') {
-                meta.title = "ArtistAnt • Premier Artist Bookings & Talent Agency";
-                meta.description = "Book top DJs, live bands, singers, and performing artists for college fests, corporate events, and live concerts.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/artistant`;
-                return;
-            } else if (effectivePage === 'contact') {
-                meta.title = "Contact Us | Newbi Entertainment & Marketing";
-                meta.description = "Get in touch with Newbi for brand partnerships, creator collaborations, event activations, and media inquiries.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/contact`;
-                return;
-            } else if (effectivePage === 'terms') {
-                meta.title = "Terms of Service | Newbi Entertainment";
-                meta.description = "Read the Terms of Service for Newbi Entertainment and its digital platforms.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/terms`;
-                return;
-            } else if (effectivePage === 'privacy') {
-                meta.title = "Privacy Policy | Newbi Entertainment";
-                meta.description = "Read the Privacy Policy for Newbi Entertainment.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/privacy`;
-                return;
-            } else if (effectivePage === 'verify-creator') {
-                meta.title = "Creator Verification | Newbi Creator Network";
-                meta.description = "Verify and activate your Newbi Creator profile to access brand deals and campaigns.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/verify-creator`;
-                return;
-            } else if (effectivePage === 'verify-payout') {
-                meta.title = "Verify Payout | Newbi Finance";
-                meta.description = "Securely verify and confirm payout disbursements from Newbi Entertainment.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/verify-payout`;
-                return;
-            } else if (effectivePage === 'register-payment') {
-                meta.title = "Payee Registration | Newbi Finance";
-                meta.description = "Register banking and payee details for seamless vendor and creator disbursements.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/register-payment`;
-                return;
-            }
-        }
-
-        if (effectiveTicketId) {
-            meta.title = "Digital Event Ticket | Newbi Live Pass";
-            meta.description = "View your verified digital entry pass, booking reference, and QR ticket on Newbi.";
-            meta.image = defaultOgImage;
-            meta.url = `${baseUrl}/ticket/${effectiveTicketId}`;
-            return;
-        }
-
-        if (effectiveCategory && !effectiveBlogSlug) {
-            const catFormatted = effectiveCategory.charAt(0).toUpperCase() + effectiveCategory.slice(1);
-            meta.title = `${catFormatted} Guides & Features • Concert Zone | Newbi Ent.`;
-            meta.description = `Explore the latest ${effectiveCategory.toLowerCase()} stories, concert updates, and live music guides on Newbi.`;
-            meta.image = defaultOgImage;
-            meta.url = `${baseUrl}/concertzone/${effectiveCategory}`;
-            return;
-        }
-
-        if (!adminDb) return;
-
-        if (effectiveCampaignId) {
-            let snap = await adminDb.collection('campaigns').doc(effectiveCampaignId).get();
-            if (!snap.exists) {
-                const allSnaps = await adminDb.collection('campaigns').limit(50).get();
-                allSnaps.forEach(d => {
-                    if (!snap.exists && d.id.toLowerCase() === effectiveCampaignId.toLowerCase()) {
-                        snap = d;
-                    }
-                });
-            }
-            if (snap.exists) {
-                const data = snap.data();
-                meta.title = `${stripHtml(data.title) || 'Brand Campaign'} | Newbi Creator Network`;
-                const brand = data.brandName ? `Brand: ${stripHtml(data.brandName)}. ` : '';
-                const payout = data.payout || data.budget ? `Compensation: ${stripHtml(data.payout || data.budget)}. ` : '';
-                const rawDesc = stripHtml(data.description) || 'Join this verified brand campaign on Newbi Creator Network.';
-                const combined = `${brand}${payout}${rawDesc}`.trim();
-                meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
-                const img = data.thumbnail || data.image || data.coverImage;
-                meta.image = img?.startsWith('http') ? img : (img ? `${baseUrl}${img}` : defaultOgImage);
-                meta.url = `${baseUrl}/campaign/${effectiveCampaignId}`;
-            } else {
-                meta.title = "Brand Campaign Brief | Newbi Creator Network";
-                meta.description = "Explore campaign requirements and apply to collaborate with verified brands on Newbi.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/campaign/${effectiveCampaignId}`;
-            }
-        } else if (effectiveDocId) {
-            const snap = await adminDb.collection('gen_documents').doc(effectiveDocId).get();
-            if (snap.exists) {
-                const data = snap.data();
-                meta.title = `${stripHtml(data.title) || 'Official Document'} | Newbi Ent.`;
-                meta.description = `${stripHtml(data.documentType) || 'Official Document'} #${data.docNumber || effectiveDocId}. Issued by Newbi Entertainment & Marketing.`;
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/doc/${effectiveDocId}`;
-            } else {
-                meta.title = "Official Document | Newbi Ent.";
-                meta.description = "View verified official document issued by Newbi Entertainment & Marketing.";
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/doc/${effectiveDocId}`;
-            }
-        } else if (effectiveEventId) {
-            const snap = await adminDb.collection('upcoming_events').doc(effectiveEventId).get();
-            if (snap.exists) {
-                const data = snap.data();
-                meta.title = `${stripHtml(data.title)}${data.city ? ` | ${data.city}` : ''}`;
-                const cleanDesc = stripHtml(data.description);
-                const combined = `Featuring ${Array.isArray(data.artists) ? data.artists.join(', ') : 'Exclusive Artists'}. ${cleanDesc || ''}`.trim();
-                meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
-                meta.image = data.image?.startsWith('http') ? data.image : (data.image ? `${baseUrl}${data.image}` : defaultOgImage);
-                meta.url = `${baseUrl}/?event=${effectiveEventId}`;
-            }
-        } else if (effectiveGiveawaySlug) {
-            const snaps = await adminDb.collection('giveaways').where('slug', '==', effectiveGiveawaySlug).get();
-            if (!snaps.empty) {
-                const data = snaps.docs[0].data();
-                meta.title = `${stripHtml(data.name)} | Newbi Giveaway`;
-                const cleanDesc = stripHtml(data.description);
-                const combined = cleanDesc || `Join the ultimate giveaway to win ${data.name}!`;
-                meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
-                meta.image = data.posterUrl?.startsWith('http') ? data.posterUrl : (data.posterUrl ? `${baseUrl}${data.posterUrl}` : defaultOgImage);
-                meta.url = `${baseUrl}/giveaway/${effectiveGiveawaySlug}`;
-            }
-        } else if (effectiveFormId) {
-            const id = effectiveFormId.trim();
-            const clean = normalizeString(id);
-            const cleanSlug = createSlug(id);
-
-            // Tier 1: Look in 'forms' collection by ID
-            const snap = await adminDb.collection('forms').doc(id).get();
-            if (snap.exists) {
-                const data = snap.data();
-                initialData = { id: snap.id, ...data };
-                meta.title = `${stripHtml(data.title)} | Newbi Forms`;
-                const cleanDesc = stripHtml(data.description);
-                const combined = cleanDesc || `Participate in ${data.title} on Newbi Hub.`;
-                meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
-                meta.image = data.image?.startsWith('http') ? data.image : (data.image ? `${baseUrl}${data.image}` : defaultOgImage);
-                meta.url = formId ? `${baseUrl}/forms/${id}` : `${baseUrl}/community?form=${id}`;
-            } else {
-                // Scan forms for slug or title
-                const allFormsSnap = await adminDb.collection('forms').get();
-                let foundDoc = null;
-                allFormsSnap.forEach(d => {
-                    if (foundDoc) return;
-                    const dData = d.data();
-                    if (
-                        normalizeString(d.id) === clean ||
-                        normalizeString(dData.slug) === clean ||
-                        normalizeString(dData.formId) === clean ||
-                        (dData.title && createSlug(dData.title) === cleanSlug) ||
-                        (dData.link && normalizeString(dData.link).endsWith(`/${clean}`))
-                    ) {
-                        foundDoc = { id: d.id, ...dData };
-                    }
-                });
-
-                if (foundDoc) {
-                    initialData = foundDoc;
-                    meta.title = `${stripHtml(foundDoc.title)} | Newbi Forms`;
-                    const cleanDesc = stripHtml(foundDoc.description);
-                    const combined = cleanDesc || `Participate in ${foundDoc.title} on Newbi Hub.`;
-                    meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
-                    meta.image = foundDoc.image?.startsWith('http') ? foundDoc.image : (foundDoc.image ? `${baseUrl}${foundDoc.image}` : defaultOgImage);
-                    meta.url = formId ? `${baseUrl}/forms/${foundDoc.id}` : `${baseUrl}/community?form=${foundDoc.id}`;
-                } else {
-                    // Check upcoming_events
-                    const eventSnap = await adminDb.collection('upcoming_events').doc(id).get();
-                    if (eventSnap.exists) {
-                        const data = eventSnap.data();
-                        const refFormId = data.formId || data.relatedArtistFormId;
-                        if (refFormId) {
-                            const refSnap = await adminDb.collection('forms').doc(refFormId).get();
-                            if (refSnap.exists) {
-                                initialData = { id: refSnap.id, ...refSnap.data() };
-                            }
-                        }
-                        if (!initialData) {
-                            initialData = {
-                                id: eventSnap.id,
-                                title: data.title,
-                                description: data.description,
-                                formUrl: data.formUrl || data.link,
-                                activeLabel: data.status || 'Live',
-                                image: data.image,
-                                highlightColor: data.highlightColor || '#2ebfff',
-                                bottomText: data.location || 'Event Form'
-                            };
-                        }
-                        meta.title = `${stripHtml(data.title)} | Newbi Form`;
-                        const cleanDesc = stripHtml(data.description);
-                        const combined = cleanDesc || `Participate in ${data.title} on Newbi Hub.`;
-                        meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
-                        meta.image = data.image?.startsWith('http') ? data.image : (data.image ? `${baseUrl}${data.image}` : defaultOgImage);
-                        meta.url = `${baseUrl}/forms/${id}`;
-                    } else {
-                        // Check volunteer_gigs
-                        const gigSnap = await adminDb.collection('volunteer_gigs').doc(id).get();
-                        if (gigSnap.exists) {
-                            const data = gigSnap.data();
-                            initialData = {
-                                id: gigSnap.id,
-                                title: data.title,
-                                description: data.description,
-                                formUrl: data.formUrl || data.applyLink || data.link,
-                                activeLabel: data.status || 'Live',
-                                image: data.image,
-                                highlightColor: data.highlightColor || '#39FF14',
-                                bottomText: data.location || 'Gig Form'
-                            };
-                            meta.title = `${stripHtml(data.title)} | Volunteer Form`;
-                            const cleanDesc = stripHtml(data.description);
-                            const combined = cleanDesc || `Participate in ${data.title} on Newbi Hub.`;
-                            meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
-                            meta.image = data.image?.startsWith('http') ? data.image : (data.image ? `${baseUrl}${data.image}` : defaultOgImage);
-                            meta.url = `${baseUrl}/forms/${id}`;
-                        }
-                    }
-                }
-            }
-        } else if (effectiveGigId) {
-            const snap = await adminDb.collection('volunteer_gigs').doc(effectiveGigId).get();
-            if (snap.exists) {
-                const data = snap.data();
-                meta.title = `${stripHtml(data.title)} | Volunteer Gig`;
-                const cleanDesc = stripHtml(data.description);
-                const combined = cleanDesc || `Join the Newbi Tribe as a volunteer for ${data.title}.`;
-                meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
-                meta.image = data.image?.startsWith('http') ? data.image : (data.image ? `${baseUrl}${data.image}` : defaultOgImage);
-                meta.url = `${baseUrl}/community?gig=${effectiveGigId}`;
-            }
-        } else if (effectiveGlId) {
-            const snap = await adminDb.collection('guestlists').doc(effectiveGlId).get();
-            if (snap.exists) {
-                const data = snap.data();
-                meta.title = `${stripHtml(data.title)} | VIP Guestlist`;
-                const cleanDesc = stripHtml(data.description);
-                const combined = cleanDesc || `Get on the exclusive guestlist for ${data.title}.`;
-                meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
-                meta.image = data.image?.startsWith('http') ? data.image : (data.image ? `${baseUrl}${data.image}` : defaultOgImage);
-                meta.url = `${baseUrl}/community?gl=${effectiveGlId}`;
-            }
-        } else if (effectiveProposalId) {
-            const snap = await adminDb.collection('proposals').doc(effectiveProposalId).get();
-            if (snap.exists) {
-                const data = snap.data();
-                meta.title = `${stripHtml(data.proposalNumber) || 'Strategic Quote'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi Ent.`;
-                meta.description = `Strategic Proposal for ${stripHtml(data.campaignName) || 'Campaign'}. Status: ${data.status || 'Draft'}.`;
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/proposal/${effectiveProposalId}`;
-            }
-        } else if (effectiveInvoiceId) {
-            const snap = await adminDb.collection('invoices').doc(effectiveInvoiceId).get();
-            if (snap.exists) {
-                const data = snap.data();
-                meta.title = `${stripHtml(data.invoiceNumber) || 'Tax Invoice'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi Ent.`;
-                meta.description = `Tax Invoice for ${stripHtml(data.campaignName) || 'Services'}. Status: ${data.status || 'Unpaid'}.`;
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/invoice/${effectiveInvoiceId}`;
-            }
-        } else if (effectiveAgreementId) {
-            const snap = await adminDb.collection('agreements').doc(effectiveAgreementId).get();
-            if (snap.exists) {
-                const data = snap.data();
-                meta.title = `${stripHtml(data.agreementNumber) || 'Agreement'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi Ent.`;
-                meta.description = `Service Agreement for ${stripHtml(data.campaignName) || 'Services'}. Status: ${data.status || 'Draft'}.`;
-                meta.image = defaultOgImage;
-                meta.url = `${baseUrl}/agreement/${effectiveAgreementId}`;
-            }
-        } else if (effectiveBlogSlug) {
-            const snaps = await adminDb.collection('posts').where('slug', '==', effectiveBlogSlug).get();
-            // Only published posts (or scheduled ones whose time has come) get a preview card.
-            const isLive = (d) => d.status === 'Published' || (d.status === 'Scheduled' && new Date(d.publishAt || d.publishDate || 0).getTime() <= Date.now());
-            const liveDoc = snaps.docs.find(d => isLive(d.data()));
-            if (liveDoc) {
-                const data = liveDoc.data();
-                meta.title = `${stripHtml(data.seoTitle || data.title)} | Concert Zone | Newbi Ent.`;
-                const cleanExcerpt = stripHtml(data.shortDescription || data.excerpt);
-                const cleanContent = stripHtml(data.content);
-                const desc = cleanExcerpt || cleanContent || '';
-                meta.description = desc.length > 160 ? desc.substring(0, 157).trim() + '...' : desc;
-                meta.image = data.coverImage?.startsWith('http') ? data.coverImage : (data.coverImage ? `${baseUrl}${data.coverImage}` : defaultOgImage);
-                meta.url = `${baseUrl}/concertzone/${(data.category || 'news').toLowerCase().replace(' ', '-')}/${effectiveBlogSlug}`;
-            }
-        }
-    };
-
-    const userAgent = req.headers['user-agent'] || '';
-    const isCrawler = isBot(userAgent);
-    const timeoutMs = isCrawler ? 2500 : 400;
-
-    try {
-        await Promise.race([
-            fetchMetadata(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('OG Fetch Timeout')), timeoutMs))
-        ]);
-    } catch (error) {
-        console.warn('[OG] Metadata fetch note:', error.message);
-    }
-
-    // Ensure all metadata is free of HTML tags and trimmed
-    meta.title = stripHtml(meta.title);
-    meta.description = stripHtml(meta.description);
-
-    // Load base HTML from distribution
-    const { html: loadedHtml } = await getBaseHtml(req);
-    let html = loadedHtml;
-
-    if (!html) {
-        html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(meta.title)}</title></head><body><div id="root"></div></body></html>`;
-    }
-
-    // Inject dynamic Meta Tags & Initial Data into Head
-    let initialScript = '';
-    if (initialData) {
-        initialScript = `<script>window.__INITIAL_FORM_DATA__ = ${JSON.stringify(initialData)};</script>`;
-    }
-
-    const safeTitle = escapeHtml(meta.title);
-    const safeDesc = escapeHtmlAttr(meta.description);
-    const safeUrl = escapeHtmlAttr(meta.url);
-    const safeImage = escapeHtmlAttr(meta.image);
-
-    const metaTags = `
-        <title>${safeTitle}</title>
-        <meta name="description" content="${safeDesc}" />
-        <meta property="og:site_name" content="Newbi Entertainment &amp; Marketing" />
-        <meta property="og:title" content="${safeTitle}" />
-        <meta property="og:description" content="${safeDesc}" />
-        <meta property="og:image" content="${safeImage}" />
-        <meta property="og:image:secure_url" content="${safeImage}" />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta property="og:url" content="${safeUrl}" />
-        <meta property="og:type" content="${escapeHtmlAttr(meta.type)}" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:site" content="@newbi_live" />
-        <meta name="twitter:title" content="${safeTitle}" />
-        <meta name="twitter:description" content="${safeDesc}" />
-        <meta name="twitter:image" content="${safeImage}" />
-        <link rel="icon" type="image/png" href="${baseUrl}/favicon.png" />
-        <link rel="shortcut icon" type="image/png" href="${baseUrl}/favicon.png" />
-        ${initialScript}
-    `;
-
-    // Strip static title and duplicate meta tags to avoid conflicting tags
-    html = html.replace(/<title>.*?<\/title>/gi, '');
-    html = html.replace(/<meta property="og:.*?".*?>/gi, '');
-    html = html.replace(/<meta name="twitter:.*?".*?>/gi, '');
-    html = html.replace(/<meta name="description".*?>/gi, '');
-    html = html.replace(/<link rel="(icon|shortcut icon)"[^>]*>/gi, '');
-    
-    html = html.replace('</head>', `${metaTags}\n</head>`);
+    const meta = await buildPreview({
+        host,
+        query: req.query || {},
+        url: req.url,
+        userAgent: req.headers['user-agent'] || '',
+    });
+    const html = injectHead(await getBaseHtml(), meta);
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', meta.cacheable
+        ? 'public, max-age=0, s-maxage=600, stale-while-revalidate=86400'
+        : 'public, max-age=0, must-revalidate');
     res.status(200).send(html);
 }
