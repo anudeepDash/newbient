@@ -9,6 +9,7 @@
   "background_color": "#07080b",
   "theme_color": "#07080b",
   "icons": [
+    { "src": "/brand/newbi-icon-app-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any maskable" },
     { "src": "/favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ]
 }

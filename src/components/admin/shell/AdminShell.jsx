@@ -169,7 +169,7 @@ const AdminShell = () => {
                 <div className={cn('flex h-16 shrink-0 items-center', collapsed ? 'justify-center px-2' : 'justify-between px-5')}>
                     {!collapsed && (
                         <Link to="/admin" className="flex items-center gap-2.5">
-                            <Logo className="h-5" />
+                            <Logo className="h-8" />
                             <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-neon-green/10 dark:text-neon-green">Admin</span>
                         </Link>
                     )}
@@ -378,7 +378,7 @@ const AdminShell = () => {
                                 onPointerDown={(e) => sheetDrag.start(e)}
                             >
                                 <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-black/15 dark:bg-white/15" />
-                                <Logo className="mt-3 h-5" />
+                                <Logo className="mt-3 h-8" />
                                 <button
                                     type="button"
                                     onClick={() => setSheetOpen(false)}

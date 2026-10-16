@@ -208,7 +208,7 @@ export default async function handler(req, res) {
                             <span class="preheader">Your Newbi Entertainment account has been signed out of all devices</span>
                             <div class="container">
                                 <div class="header">
-                                    <img src="${logoUrl}" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
+                                    <img src="${logoUrl}" alt="newbi.live" style="display: block; margin: 0; height: 44px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
                                 </div>
                                 <div class="content">
                                     <div class="category-badge">SECURITY PROTOCOL</div>
