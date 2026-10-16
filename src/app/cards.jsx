@@ -9,7 +9,7 @@ import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import { GlassChip } from '../components/app';
 import { getCampaignSpotsInfo } from '../lib/utils';
-import { landingUrl } from './host';
+import { appPath, landingUrl } from './host';
 
 /*
  * Card props for the app's data, so every list renders the same Card.
@@ -67,6 +67,7 @@ export function feedCard(item) {
         meta: [{ icon: CalendarDays, label: dateLabel(item.date) }],
         stats: [{ label: 'Venue', value: item.venue, icon: MapPin }],
         cta: { label: FEED_CTA[item.type] || 'Open' },
-        href: item.href,
+        // Gigs open their sheet on the Community page (?gig=ID).
+        to: item.to || (item.type === 'gig' ? `${appPath('/community')}?gig=${encodeURIComponent(item.id)}` : undefined),
     };
 }

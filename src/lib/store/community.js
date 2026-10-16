@@ -7,9 +7,9 @@ import { isPresent } from '../present';
  *
  * The feed (guestlists, gigs, giveaways, forms) is one read per collection
  * when the app needs it, cached for a few minutes, not a live listener per
- * collection. Guestlists are only readable when signed in, so they join the
- * feed after sign-in. Items link to the current pages until Phase 5 moves
- * them into the app.
+ * collection. Events with their guestlist switched on are public, so they
+ * show signed out; standalone guestlists join after sign-in. Every item links
+ * to its page inside the app (`link(path)` adds the app's base path).
  */
 
 const FEED_TTL_MS = 5 * 60 * 1000;
@@ -21,8 +21,19 @@ const firstImage = (...values) => values.find(v => typeof v === 'string' && /^(h
 export const itemDate = (item = {}) => {
     const raw = item.date ?? (Array.isArray(item.dates) ? item.dates[0]?.date ?? item.dates[0] : null) ?? item.eventDate ?? item.startDate ?? item.endsAt ?? null;
     if (!raw) return null;
+    if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw)) return new Date(`${raw}T00:00:00`);
     const value = typeof raw?.toDate === 'function' ? raw.toDate() : new Date(raw);
     return Number.isNaN(value.getTime()) ? null : value;
+};
+
+/* When an item stops being listed: a form's or giveaway's closing date, else the event day. */
+const closingDate = (item = {}) => {
+    const raw = item.endDate ?? item.closesAt ?? item.deadline ?? null;
+    if (raw) {
+        const d = typeof raw?.toDate === 'function' ? raw.toDate() : new Date(/^\d{4}-\d{2}-\d{2}$/.test(String(raw)) ? `${raw}T00:00:00` : raw);
+        if (!Number.isNaN(d.getTime())) return d;
+    }
+    return itemDate(item);
 };
 
 const isPast = (date) => {
@@ -34,7 +45,7 @@ const isPast = (date) => {
 
 const isOpen = (item) => !CLOSED.test(String(item.status || '').trim()) && !CLOSED.test(String(item.activeLabel || '').trim()) && item.isActive !== false && item.hidden !== true;
 
-const normalise = (type, item, href) => {
+const normalise = (type, item, to, extra = {}) => {
     const date = itemDate(item);
     return {
         key: `${type}:${item.id}`,
@@ -42,14 +53,15 @@ const normalise = (type, item, href) => {
         id: item.id,
         title: item.title || item.name || '',
         description: item.description || item.subtitle || '',
-        image: firstImage(item.hubImage, item.image, item.poster, item.thumbnail, item.coverImage),
+        image: firstImage(item.hubImage, item.image, item.posterUrl, item.poster, item.thumbnail, item.coverImage),
         date,
+        closesAt: closingDate(item),
         venue: item.venue || item.location || null,
         city: item.city || item.targetCity || null,
         label: isPresent(item.activeLabel) ? item.activeLabel : null,
         pinned: Boolean(item.isPinned),
-        href,
-        external: /^https?:\/\//.test(href || ''),
+        to,
+        ...extra,
     };
 };
 
@@ -70,34 +82,72 @@ const read = async (name) => {
     }
 };
 
+/*
+ * One card per guestlist: an event with its list on, a standalone list, or a
+ * gig that runs a list. A list that belongs to an event (same id, or eventId)
+ * borrows the event's date and poster and shows once.
+ */
+export const buildFeed = ({ events = [], guestlists = [], gigs = [], giveaways = [], forms = [] }, link = (p) => p) => {
+    const eventsById = new Map(events.map(e => [e.id, e]));
+    const gigsById = new Map(gigs.map(g => [g.id, g]));
+    const seenLists = new Set();
+    const items = [];
+
+    events.filter(e => e.isGuestlistEnabled && isOpen(e)).forEach(e => {
+        seenLists.add(e.id);
+        items.push(normalise('guestlist', e, link(`/community/g/${e.id}`)));
+    });
+    guestlists.filter(isOpen).forEach(gl => {
+        const ownerId = eventsById.has(gl.id) ? gl.id : eventsById.has(gl.eventId) ? gl.eventId : null;
+        if (ownerId && seenLists.has(ownerId)) return;
+        if (seenLists.has(gl.id)) return;
+        seenLists.add(gl.id);
+        const owner = (ownerId && eventsById.get(ownerId)) || gigsById.get(gl.id) || {};
+        const merged = { ...owner, ...gl, date: owner.date || gl.date, hubImage: owner.hubImage || gl.hubImage, image: gl.image || owner.image };
+        items.push(normalise('guestlist', merged, link(`/community/g/${gl.id}`)));
+    });
+    gigs.filter(isOpen).forEach(g => {
+        if (seenLists.has(g.id)) return; // the gig's guestlist card already stands for it
+        if (g.guestlistEnabled) {
+            seenLists.add(g.id);
+            items.push(normalise('guestlist', g, link(`/community/g/${g.id}`)));
+            return;
+        }
+        items.push(normalise('gig', g, null, {
+            applyType: g.formId ? 'form' : (g.applyType || 'link'),
+            applyLink: g.formId ? link(`/forms/${g.formId}`) : (g.applyLink || ''),
+            interestedCount: Number(g.interestedCount) || 0,
+            slots: Number(g.slots || g.totalSlots || g.maxVolunteers) || 0,
+        }));
+    });
+    giveaways.filter(isOpen).forEach(g => items.push(normalise('giveaway', g, link(`/community/giveaways/${g.slug || g.id}`))));
+    forms.filter(isOpen).forEach(f => items.push(normalise('form', f, link(`/forms/${f.id}`))));
+
+    return items.filter(item => isPresent(item.title) && !isPast(item.closesAt)).sort(sortFeed);
+};
+
 export const createCommunitySlice = (set, get) => ({
     communityFeed: [],
     communityFeedLoaded: false,
     _feedFor: null,
     _feedAt: 0,
 
-    /* Loads (or refreshes) the feed. `landing(path)` builds links to the current pages. */
-    loadCommunityFeed: async (landing = (p) => p, { force = false } = {}) => {
+    /* Loads (or refreshes) the feed. `link(path)` turns an app path into a link (adds /app in dev). */
+    loadCommunityFeed: async (link = (p) => p, { force = false } = {}) => {
         const uid = get().authUser?.uid || null;
         const fresh = Date.now() - get()._feedAt < FEED_TTL_MS && get()._feedFor === uid;
         if (!db || (!force && fresh && get().communityFeedLoaded)) return;
         set({ _feedFor: uid, _feedAt: Date.now() });
 
-        const [guestlists, gigs, giveaways, forms] = await Promise.all([
+        const [events, guestlists, gigs, giveaways, forms] = await Promise.all([
+            read('upcoming_events'),
             uid ? read('guestlists') : [],
             read('volunteer_gigs'),
             read('giveaways'),
             read('forms'),
         ]);
 
-        const items = [
-            ...guestlists.filter(isOpen).map(g => normalise('guestlist', g, landing(`/community?gl=${g.id}`))),
-            ...gigs.filter(isOpen).map(g => normalise('gig', g, landing(`/community?gig=${g.id}`))),
-            ...giveaways.filter(isOpen).map(g => normalise('giveaway', g, landing(`/giveaway/${g.slug || g.id}`))),
-            ...forms.filter(isOpen).map(f => normalise('form', f, landing(`/forms/${f.id}`))),
-        ].filter(item => isPresent(item.title) && !isPast(item.date)).sort(sortFeed);
-
-        set({ communityFeed: items, communityFeedLoaded: true });
+        set({ communityFeed: buildFeed({ events, guestlists, gigs, giveaways, forms }, link), communityFeedLoaded: true });
     },
 
     /* One tap: sets capabilities.member (and the legacy hasJoinedTribe flag). */

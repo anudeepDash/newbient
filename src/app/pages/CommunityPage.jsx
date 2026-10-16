@@ -1,23 +1,158 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import Users from 'lucide-react/dist/esm/icons/users';
+import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
+import HeartHandshake from 'lucide-react/dist/esm/icons/heart-handshake';
 import { cn } from '../../lib/utils';
 import { useAppStore } from '../../lib/store/appStore';
+import { useStore as useLegacyStore } from '../../lib/store.js';
 import { guestlistPasses } from '../../lib/store/passes';
-import { Card, Button, CARD_TYPES } from '../../components/app';
-import { useAuthGate } from '../auth/AuthGate';
+import { communityPost } from '../../lib/passesApi';
+import { isPresent } from '../../lib/present';
+import { Card, Button, CARD_TYPES, Field, Sheet } from '../../components/app';
+import { useAuthGate, useResumeIntent, INTENTS } from '../auth/AuthGate';
 import { useAppContent } from '../useAppContent';
-import { feedCard } from '../cards';
+import { feedCard, dateLabel } from '../cards';
+import { appPath } from '../host';
+import { plainText } from '../community/communityParts';
+import { isUpcomingPass, passCard } from '../passes/passCards';
 import PageHeader, { PageBody } from './PageHeader';
-import { CardGrid, CardSkeleton, EmptyState, SectionHeader } from './parts';
+import { CardGrid, CardSkeleton, EmptyState, SectionHeader, Rail } from './parts';
 
 /*
- * Community: one feed of cards (guestlists, gigs, giveaways, forms), filtered
- * by type, plus "My guestlists". Each card opens the current page for now;
- * Phase 5 brings guestlist pages and registration into the app.
+ * Community: your guestlist passes, a one-tap Join, and one feed of cards
+ * (guestlists, gigs, giveaways, forms) filtered by type and city. Past events
+ * and closed forms drop off by date. Each card opens its page in the app;
+ * gigs open a sheet with "I'm interested".
  */
 
 const FILTER_LABELS = { guestlist: 'Guestlists', gig: 'Gigs', giveaway: 'Giveaways', form: 'Forms' };
+
+/* "I'm interested" in a gig: saved in the app first, then a WhatsApp/link button. */
+const GigSheet = ({ gig, onClose }) => {
+    const gate = useAuthGate();
+    const [state, setState] = useState('idle'); // idle | saving | saved
+    const [error, setError] = useState('');
+    useEffect(() => { setState('idle'); setError(''); }, [gig?.id]);
+
+    const save = async () => {
+        setState('saving');
+        setError('');
+        const res = await communityPost('gig-interest', { gigId: gig.id });
+        if (res.ok) setState('saved');
+        else { setState('idle'); setError(res.error); }
+    };
+    useResumeIntent(INTENTS.gigInterest, (payload) => { if (payload?.id === gig?.id) save(); });
+    const interested = () => gate.run({ type: INTENTS.gigInterest, payload: { id: gig.id }, returnTo: `${appPath('/community')}?gig=${encodeURIComponent(gig.id)}` }, save);
+
+    if (!gig) return null;
+    const wa = gig.applyType === 'whatsapp' ? String(gig.applyLink || '').replace(/\D/g, '') : '';
+    const next = gig.applyType === 'whatsapp'
+        ? (wa ? { label: 'Message the team on WhatsApp', icon: MessageCircle, href: `https://wa.me/${wa}?text=${encodeURIComponent(`Hi! I'm interested in the gig: ${gig.title}`)}` } : null)
+        : gig.applyType === 'form' ? { label: 'Fill the form', to: gig.applyLink }
+            : /^https?:\/\//.test(gig.applyLink || '') ? { label: 'Apply', icon: ExternalLink, href: gig.applyLink } : null;
+    const description = plainText(gig.description);
+
+    return (
+        <Sheet
+            open
+            onClose={onClose}
+            title={gig.title}
+            subtitle="Volunteer gig"
+            footer={state === 'saved' ? (
+                next ? <Button className="w-full" size="lg" icon={next.icon} href={next.href} to={next.to} target={next.href ? '_blank' : undefined} rel={next.href ? 'noopener noreferrer' : undefined}>{next.label}</Button>
+                    : <Button className="w-full" size="lg" variant="secondary" onClick={onClose}>Done</Button>
+            ) : (
+                <Button className="w-full" size="lg" icon={HeartHandshake} loading={state === 'saving'} onClick={interested}>I’m interested</Button>
+            )}
+        >
+            <div className="space-y-4">
+                {isPresent(gig.image) && <img src={gig.image} alt="" className="aspect-video w-full rounded-2xl object-cover" />}
+                <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
+                    <Field icon={CalendarDays} label="When" value={dateLabel(gig.date)} />
+                    <Field icon={MapPin} label="Where" value={[gig.venue, gig.city].filter(Boolean).join(', ') || null} />
+                    <Field icon={Users} label="Spots" value={gig.slots || null} />
+                </div>
+                {description && <p className="whitespace-pre-line text-[15px] text-gray-700 dark:text-zinc-300">{description}</p>}
+                {state === 'saved' && (
+                    <p className="flex items-center gap-2 rounded-2xl bg-emerald-500/10 px-4 py-3 text-[15px] font-semibold text-emerald-800 dark:text-neon-green">
+                        <CircleCheck size={17} /> Saved. The team can see you’re interested.
+                    </p>
+                )}
+                {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
+            </div>
+        </Sheet>
+    );
+};
+
+/* One tap to join (sets capabilities.member). Replaces the old Google Form gate. */
+const JoinPanel = () => {
+    const authUser = useAppStore(s => s.authUser);
+    const profile = useAppStore(s => s.profile);
+    const joinCommunity = useAppStore(s => s.joinCommunity);
+    const whatsappCommunity = useLegacyStore(s => s.siteDetails?.whatsappCommunity);
+    const gate = useAuthGate();
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+    const member = Boolean(profile?.capabilities?.member);
+
+    const join = async () => {
+        setBusy(true);
+        setError('');
+        try { await joinCommunity(); } catch { setError('We couldn’t add you just now. Please try again.'); }
+        setBusy(false);
+    };
+    useResumeIntent(INTENTS.joinCommunity, join);
+
+    if (authUser && !profile) return null;
+    if (member) {
+        if (!isPresent(whatsappCommunity)) return null;
+        return (
+            <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.06] px-5 py-4">
+                <CircleCheck size={20} className="shrink-0 text-emerald-700 dark:text-neon-green" />
+                <p className="min-w-0 flex-1 text-[15px] font-semibold">You’re in the Newbi community.</p>
+                <Button size="sm" variant="secondary" icon={MessageCircle} href={whatsappCommunity} target="_blank" rel="noopener noreferrer">WhatsApp group</Button>
+            </div>
+        );
+    }
+    return (
+        <div className="flex flex-col gap-3 rounded-3xl border border-black/[0.06] bg-white px-5 py-5 dark:border-white/[0.08] dark:bg-[#0c0e14] sm:flex-row sm:items-center">
+            <div className="min-w-0 flex-1">
+                <p className="text-[17px] font-black">Join the Newbi community</p>
+                <p className="text-[14px] text-gray-600 dark:text-zinc-400">First word on guestlists, gigs and giveaways. One tap, no forms.</p>
+            </div>
+            <Button loading={busy} onClick={() => gate.run({ type: INTENTS.joinCommunity }, join)}>Join</Button>
+            {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
+        </div>
+    );
+};
+
+const Chips = ({ items, value, onChange }) => (
+    <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
+        {items.map(({ key, label, icon }) => (
+            <button
+                key={key}
+                type="button"
+                onClick={() => onChange(key)}
+                aria-pressed={value === key}
+                className={cn(
+                    'flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[14px] font-bold transition-colors',
+                    value === key
+                        ? 'bg-gray-900 text-white dark:bg-white dark:text-black'
+                        : 'border border-black/[0.08] bg-white text-gray-600 dark:border-white/[0.1] dark:bg-white/[0.04] dark:text-zinc-300'
+                )}
+            >
+                {icon && React.createElement(icon, { size: 15 })}
+                {label}
+            </button>
+        ))}
+    </div>
+);
 
 const CommunityPage = () => {
     useAppContent({ campaigns: false });
@@ -25,12 +160,23 @@ const CommunityPage = () => {
     const feed = useAppStore(s => s.communityFeed);
     const loaded = useAppStore(s => s.communityFeedLoaded);
     const passes = useAppStore(s => s.passes);
-    const myGuestlists = useMemo(() => guestlistPasses(passes), [passes]);
+    const myGuestlists = useMemo(() => guestlistPasses(passes).filter(isUpcomingPass), [passes]);
     const { requestSignIn } = useAuthGate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [filter, setFilter] = useState('all');
+    const [city, setCity] = useState('all');
 
     const types = useMemo(() => Object.keys(FILTER_LABELS).filter(t => feed.some(i => i.type === t)), [feed]);
-    const shown = useMemo(() => (filter === 'all' ? feed : feed.filter(i => i.type === filter)), [feed, filter]);
+    const cities = useMemo(() => {
+        const counts = new Map();
+        feed.forEach(i => { if (isPresent(i.city)) counts.set(i.city.trim(), (counts.get(i.city.trim()) || 0) + 1); });
+        return [...counts.keys()].sort();
+    }, [feed]);
+    const shown = useMemo(() => feed.filter(i => (filter === 'all' || i.type === filter) && (city === 'all' || !isPresent(i.city) || i.city.trim() === city)), [feed, filter, city]);
+
+    const gigId = searchParams.get('gig');
+    const openGig = gigId ? feed.find(i => i.type === 'gig' && i.id === gigId) : null;
+    const closeGig = () => { const next = new URLSearchParams(searchParams); next.delete('gig'); setSearchParams(next, { replace: true }); };
 
     return (
         <PageBody>
@@ -39,43 +185,21 @@ const CommunityPage = () => {
             {myGuestlists.length > 0 && (
                 <section className="space-y-3">
                     <SectionHeader title="My guestlists" />
-                    <CardGrid>
-                        {myGuestlists.map(pass => (
-                            <Card
-                                key={pass.ref}
-                                type="guestlist"
-                                title={pass.eventTitle || pass.title}
-                                chips={[{ icon: Ticket, label: pass.tier }]}
-                                stats={[
-                                    { label: 'Qty', value: pass.qty },
-                                    { label: 'Status', value: pass.status === 'checked_in' ? 'Checked in' : pass.status === 'issued' ? 'Ready' : null, tone: 'accent' },
-                                ]}
-                                cta={{ label: 'Open pass' }}
-                            />
-                        ))}
-                    </CardGrid>
+                    <Rail>{myGuestlists.map(pass => <Card key={pass.ref} {...passCard(pass)} />)}</Rail>
                 </section>
             )}
 
+            <JoinPanel />
+
             {types.length > 1 && (
-                <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
-                    {['all', ...types].map(t => (
-                        <button
-                            key={t}
-                            type="button"
-                            onClick={() => setFilter(t)}
-                            className={cn(
-                                'flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[14px] font-bold transition-colors',
-                                filter === t
-                                    ? 'bg-gray-900 text-white dark:bg-white dark:text-black'
-                                    : 'border border-black/[0.08] bg-white text-gray-600 dark:border-white/[0.1] dark:bg-white/[0.04] dark:text-zinc-300'
-                            )}
-                        >
-                            {t !== 'all' && React.createElement(CARD_TYPES[t].icon, { size: 15 })}
-                            {t === 'all' ? 'All' : FILTER_LABELS[t]}
-                        </button>
-                    ))}
-                </div>
+                <Chips
+                    value={filter}
+                    onChange={setFilter}
+                    items={[{ key: 'all', label: 'All' }, ...types.map(t => ({ key: t, label: FILTER_LABELS[t], icon: CARD_TYPES[t].icon }))]}
+                />
+            )}
+            {cities.length > 1 && (
+                <Chips value={city} onChange={setCity} items={[{ key: 'all', label: 'All cities', icon: MapPin }, ...cities.map(c => ({ key: c, label: c }))]} />
             )}
 
             {!loaded ? (
@@ -86,18 +210,21 @@ const CommunityPage = () => {
                 <EmptyState
                     icon={Users}
                     title="Nothing open right now"
-                    message={authUser
-                        ? 'New guestlists, gigs and giveaways show up here as soon as they open.'
-                        : 'Sign in to see guestlists. New gigs and giveaways show up here as soon as they open.'}
-                    action={!authUser && <Button className="mt-1" onClick={() => requestSignIn()}>Sign in</Button>}
+                    message="New guestlists, gigs and giveaways show up here as soon as they open."
                 />
             )}
 
-            {loaded && shown.length > 0 && !authUser && (
+            {loaded && !authUser && (
                 <p className="px-1 text-[14px] text-gray-500 dark:text-zinc-400">
-                    <button type="button" className="font-bold text-emerald-700 underline-offset-2 hover:underline dark:text-neon-green" onClick={() => requestSignIn()}>Sign in</button> to see guestlists too.
+                    <button type="button" className="font-bold text-emerald-700 underline-offset-2 hover:underline dark:text-neon-green" onClick={() => requestSignIn()}>Sign in</button> to see members-only guestlists and your passes.
                 </p>
             )}
+
+            {authUser && myGuestlists.length === 0 && guestlistPasses(passes).length === 0 && loaded && (
+                <p className="flex items-center gap-2 px-1 text-[14px] text-gray-500 dark:text-zinc-400"><Ticket size={15} /> Passes for guestlists you join show up here.</p>
+            )}
+
+            {openGig && <GigSheet gig={openGig} onClose={closeGig} />}
         </PageBody>
     );
 };

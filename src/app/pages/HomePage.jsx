@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import UserRoundPen from 'lucide-react/dist/esm/icons/user-round-pen';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 import { useAppStore, useCapability } from '../../lib/store/appStore';
@@ -9,12 +9,14 @@ import { missingFields, fieldLabel } from '../profile/requirements';
 import CompleteProfileSheet from '../profile/CompleteProfileSheet';
 import { useAppContent } from '../useAppContent';
 import { campaignCard, feedCard } from '../cards';
+import { bySoonest, isUpcomingPass, passCard } from '../passes/passCards';
 import { PageBody } from './PageHeader';
 import { SectionHeader, Rail, CardSkeleton, EmptyState, HeroPanel } from './parts';
 
 /*
  * Home: what's next for you. Open campaigns and what's on in the community,
- * plus a prompt to finish your profile. Upcoming passes join in Phase 5.
+ * plus a prompt to finish your profile and your upcoming passes (guestlist
+ * passes and campaign tickets), soonest first.
  */
 
 const ONBOARDING_FIELDS = ['name', 'phoneVerified', 'city'];
@@ -37,6 +39,8 @@ const HomePage = () => {
     const isCreator = useCapability('creator');
     const { requestSignIn } = useAuthGate();
     const [completeOpen, setCompleteOpen] = useState(false);
+    const passes = useAppStore(s => s.passes);
+    const upcoming = useMemo(() => passes.filter(isUpcomingPass).sort(bySoonest).slice(0, 6), [passes]);
 
     const firstName = (profile?.name || authUser?.displayName || '').trim().split(/\s+/)[0];
     const missing = authUser && profileLoaded ? missingFields(profile, ONBOARDING_FIELDS) : [];
@@ -75,6 +79,13 @@ const HomePage = () => {
                         </span>
                     </span>
                 </button>
+            )}
+
+            {upcoming.length > 0 && (
+                <section className="space-y-3">
+                    <SectionHeader title={upcoming.length === 1 ? 'Your pass' : 'Your passes'} />
+                    <Rail>{upcoming.map(pass => <Card key={pass.ref} {...passCard(pass)} />)}</Rail>
+                </section>
             )}
 
             <section className="space-y-3">
