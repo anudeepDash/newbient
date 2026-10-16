@@ -1,3 +1,5 @@
+import Sticker from '../components/Sticker';
+import SectionLabel from '../components/SectionLabel';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import WorkPoster from '../components/WorkPoster';
@@ -19,9 +21,9 @@ export default function CaseStudies({ items = [] }) {
                 <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-20 md:pt-24">
                     <div className="flex items-end justify-between gap-6">
                         <div>
-                            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-zinc-500"><span className="text-neon-green">04</span> — Selected work</p>
+                            <SectionLabel index="04" dark>Selected work</SectionLabel>
                             <h2 id="work-title" className="mt-4 font-heading font-extrabold tracking-[-0.04em] leading-[0.9] text-[2.6rem] sm:text-6xl lg:text-7xl">
-                                Nights we <span className="text-neon-green">built.</span>
+                                Nights we <Sticker subtle>built.</Sticker>
                             </h2>
                         </div>
                         <Link to="/work" className="hidden sm:inline-flex items-center gap-2 h-12 px-6 rounded-full border border-white/20 font-heading font-bold text-sm hover:bg-white hover:text-black transition-colors shrink-0">

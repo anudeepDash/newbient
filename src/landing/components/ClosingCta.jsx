@@ -1,3 +1,4 @@
+import Sticker from './Sticker';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 
@@ -10,7 +11,7 @@ export default function ClosingCta({ title, highlight, text, cta }) {
             <div aria-hidden="true" className="absolute inset-0" style={{ background: 'radial-gradient(60% 70% at 50% 120%, rgba(57,255,20,0.25), transparent 70%)' }} />
             <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
                 <h2 id="closing-title" className="nb-reveal font-heading font-extrabold tracking-[-0.04em] leading-[0.9] text-[2.8rem] sm:text-6xl lg:text-7xl xl:text-[6rem] max-w-5xl">
-                    {title} <span className="nb-ghost">{highlight}</span>
+                    {title} <Sticker subtle>{highlight}</Sticker>
                 </h2>
                 {text && <p className="nb-reveal mt-6 max-w-xl text-lg text-zinc-300">{text}</p>}
                 <div className="nb-reveal">

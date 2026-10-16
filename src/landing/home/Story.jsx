@@ -1,3 +1,5 @@
+import Sticker from '../components/Sticker';
+import SectionLabel from '../components/SectionLabel';
 import { ArrowRight } from 'lucide-react';
 
 // What Newbi runs, one panel per service. On desktop the section pins and the
@@ -50,9 +52,9 @@ export default function Story() {
                     {/* Intro slide: who we are */}
                     <div className="nb-story-panel flex items-center px-4 sm:px-6 lg:px-10">
                         <div className="w-full">
-                            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500"><span className="text-emerald-700 dark:text-neon-green">01</span> — About &amp; what we run</p>
+                            <SectionLabel index="01">About &amp; what we run</SectionLabel>
                             <h2 id="story-title" className="mt-5 font-heading font-extrabold tracking-[-0.04em] leading-[0.92] text-[11.5vw] sm:text-[8vw] lg:text-[5.6vw] text-gray-950 dark:text-white">
-                                Plans are easy.<br /><span className="nb-ghost">We're the crew</span><br /><span className="text-emerald-600 dark:text-neon-green">that runs them.</span>
+                                Plans are easy.<br />We're the crew<br /><Sticker subtle>that runs them.</Sticker>
                             </h2>
                             <p className="mt-6 max-w-lg text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400">
                                 Newbi is an event marketing and live entertainment company. You bring a goal, a date and a budget; we bring the artists, the venue, the build, the creators and the crew, run it, and report on it. One team, so nothing falls between vendors.
@@ -67,7 +69,7 @@ export default function Story() {
                                 <div>
                                     <span className="block font-heading font-extrabold text-[18vw] sm:text-[12vw] lg:text-[8vw] leading-[0.8] tracking-[-0.05em] nb-ghost">{p.n}</span>
                                     <h3 className="mt-2 font-heading font-extrabold tracking-[-0.04em] leading-[0.92] text-[10.5vw] sm:text-[8vw] lg:text-[5.2vw] text-gray-950 dark:text-white lg:whitespace-nowrap">
-                                        {p.title[0]}<br /><span className="text-emerald-600 dark:text-neon-green">{p.title[1]}</span>
+                                        {p.title[0]}<br /><Sticker subtle>{p.title[1]}</Sticker>
                                     </h3>
                                 </div>
                                 <div className="lg:pl-12 lg:border-l lg:border-gray-950/15 lg:dark:border-white/15">
