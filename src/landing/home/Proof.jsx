@@ -8,7 +8,7 @@ function ClientMark({ client, dupe }) {
         <li
             data-dupe={dupe || undefined}
             aria-hidden={dupe || undefined}
-            className="shrink-0 h-16 px-6 mx-1.5 my-1.5 rounded-2xl bg-white border border-black/[0.06] dark:border-white/10 flex items-center justify-center"
+            className="shrink-0 h-16 px-6 mx-1.5 my-1.5 rounded-full bg-white border border-gray-950/10 flex items-center justify-center"
         >
             {client.logoUrl ? (
                 <img
@@ -36,10 +36,10 @@ export default function Proof({ clients = [], stats = [] }) {
     const scroll = clients.length >= 6;
 
     return (
-        <section aria-labelledby="proof-title" className="py-12 md:py-16 border-y border-black/[0.06] dark:border-white/[0.06] bg-white/60 dark:bg-white/[0.015]">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <p className="nb-reveal flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.3em] text-gray-500 dark:text-zinc-400">
-                    <span className="w-6 h-px bg-neon-green" aria-hidden="true" />
+        <section aria-labelledby="proof-title" className="py-12 md:py-16 border-t border-gray-950/10 dark:border-white/10">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
+                <p className="nb-reveal flex items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">
+                    <span className="w-8 h-px bg-neon-green" aria-hidden="true" />
                     <span id="proof-title">{clients.length ? 'Trusted by brands, venues and colleges' : 'Newbi in numbers'}</span>
                 </p>
             </div>
@@ -54,12 +54,12 @@ export default function Proof({ clients = [], stats = [] }) {
             )}
 
             {stats.length > 0 && (
-                <dl className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 grid grid-cols-2 md:grid-cols-4 gap-6">
+                <dl className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 mt-10 grid grid-cols-2 md:grid-cols-4 gap-6">
                     {stats.map((s) => (
                         <div key={s.label}>
                             <dt className="sr-only">{s.label}</dt>
-                            <dd className="font-heading text-4xl md:text-5xl font-black text-gray-950 dark:text-white tabular-nums">{s.value}</dd>
-                            <dd className="mt-1 text-sm text-gray-600 dark:text-zinc-400">{s.label}</dd>
+                            <dd className="font-heading text-5xl md:text-7xl font-black tracking-[-0.04em] text-gray-950 dark:text-white tabular-nums">{s.value}</dd>
+                            <dd className="mt-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500">{s.label}</dd>
                         </div>
                     ))}
                 </dl>

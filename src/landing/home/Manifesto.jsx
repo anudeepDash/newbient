@@ -1,0 +1,27 @@
+// Why Newbi, read like lyrics: each line brightens as it passes the middle of the screen.
+const LINES = [
+    ['Campus-native.', 'We run inside the fests, not around them.'],
+    ['One crew.', 'Idea, artists, production, creators, report.'],
+    ['Our own network.', 'Creators matched by city and niche, not bought lists.'],
+    ['Our own tech.', 'Ticketing, QR entry, guestlists and a creator dashboard we built.'],
+    ['No hand-offs.', 'One number to call before, during and after the night.'],
+];
+
+export default function Manifesto() {
+    return (
+        <section aria-labelledby="why-title" className="[--nb-stroke:#fff] py-24 md:py-40 border-t border-gray-950/10 dark:border-white/10 bg-gray-950 text-white dark:bg-[#0a0a0a]">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
+                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-zinc-500"><span className="text-neon-green">03</span> — Why Newbi</p>
+                <h2 id="why-title" className="sr-only">Why Newbi</h2>
+                <ul className="mt-10 md:mt-16 space-y-6 md:space-y-10">
+                    {LINES.map(([lead, rest]) => (
+                        <li key={lead} className="nb-lyric font-heading font-black uppercase tracking-[-0.03em] leading-[0.95] text-[2.4rem] sm:text-6xl lg:text-7xl xl:text-[5.5rem]">
+                            <span className="text-neon-green">{lead}</span>{' '}
+                            <span className="nb-outline">{rest}</span>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        </section>
+    );
+}

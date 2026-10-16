@@ -6,7 +6,7 @@ import { APP_LINKS } from '../links';
 
 const col = 'flex flex-col';
 const item = 'inline-flex items-center min-h-[44px] text-sm text-gray-600 dark:text-zinc-400 hover:text-gray-950 dark:hover:text-white transition-colors';
-const heading = 'text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-500 mb-1';
+const heading = 'font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500 mb-1';
 
 export default function LandingFooter() {
     const feed = usePublicFeed();
@@ -14,7 +14,7 @@ export default function LandingFooter() {
     const email = contact.email || 'partnership@newbi.live';
 
     return (
-        <footer className="border-t border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-[#05070a]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+        <footer className="border-t border-gray-950/10 dark:border-white/10 bg-[#F4F2EC] dark:bg-[#050505]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
                 <div className="space-y-4">
                     <Logo height={34} />

@@ -7,8 +7,8 @@
 @tailwind utilities;
 
 @layer base {
-  :root { --bg-primary: #F8F9FA; --text-primary: #111827; }
-  .dark { --bg-primary: #000000; --text-primary: #FFFFFF; }
+  :root { --bg-primary: #F4F2EC; --text-primary: #0a0a0a; }
+  .dark { --bg-primary: #050505; --text-primary: #FFFFFF; }
   html { color-scheme: light; background-color: var(--bg-primary); -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; @apply antialiased; }
   html.dark { color-scheme: dark; }
   body { @apply font-sans antialiased; background-color: var(--bg-primary); color: var(--text-primary); }
@@ -57,118 +57,98 @@
   .nb-marquee [data-dupe] { display: none; }
 }
 
-/* ───────────────────────── Motion (landing only) ─────────────────────────
- * Decoration on top of a page that is complete without it: nothing starts
- * hidden on first paint, scroll effects are CSS scroll-driven animations (no
- * JavaScript; unsupported browsers show the still page), and all of it is off
- * for people who prefer reduced motion.
+/* ═══════════════════════ "Poster Night" design language ═══════════════════════
+ * One dark stage, one acid-green accent, huge uppercase type with outlined
+ * words, mono labels like a lineup poster, film grain, and motion that lives in
+ * the scroll. Everything below is decoration on top of a page that is complete
+ * without it: nothing starts hidden on first paint, the scroll effects are CSS
+ * scroll-driven animations (no JavaScript; unsupported browsers see the still
+ * page), and all motion is off for people who prefer reduced motion.
  */
 
-:root { --hero-edge: rgba(248, 249, 250, 0.95); }
-.dark { --hero-edge: rgba(0, 0, 0, 0.92); }
-.nb-hero-vignette { background: radial-gradient(ellipse at center, transparent 30%, var(--hero-edge) 100%); }
+::selection { background: #39FF14; color: #050505; }
 
-/* Gradient words in headings (the original site's signature). */
-.nb-gradient {
-  background-image: linear-gradient(90deg, #0b0f17, #1fae0a);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.dark .nb-gradient { background-image: linear-gradient(90deg, #ffffff, #39FF14); }
+/* Outlined display text. The stroke colour is a variable, since the fill is transparent. */
+:root { --nb-stroke: #0a0a0a; --nb-stroke-soft: rgba(10, 10, 10, 0.45); }
+.dark { --nb-stroke: #ffffff; --nb-stroke-soft: rgba(255, 255, 255, 0.4); }
+.nb-outline { -webkit-text-stroke: 1.5px var(--nb-stroke); color: transparent; }
+.nb-outline-soft { -webkit-text-stroke: 1.5px var(--nb-stroke-soft); color: transparent; }
+@media (min-width: 768px) { .nb-outline, .nb-outline-soft { -webkit-text-stroke-width: 2px; } }
 
-@keyframes nb-float-a { 0%, 100% { transform: translate3d(0, 0, 0) rotate(-12deg); } 50% { transform: translate3d(0, -20px, 0) rotate(-7deg); } }
-@keyframes nb-float-b { 0%, 100% { transform: translate3d(0, 0, 0) rotate(45deg); } 50% { transform: translate3d(0, 20px, 0) rotate(40deg); } }
-@keyframes nb-scroll-dot { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(28px); } }
-@keyframes nb-ping { 75%, 100% { transform: scale(2.2); opacity: 0; } }
-.nb-float-a { transform: rotate(-12deg); }
-.nb-float-b { transform: rotate(45deg); }
-
-@media (prefers-reduced-motion: no-preference) {
-  .nb-ping { animation: nb-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite; }
-  .nb-scroll-dot { animation: nb-scroll-dot 2s ease-in-out infinite; }
-}
-@media (prefers-reduced-motion: no-preference) and (min-width: 768px) {
-  .nb-float-a { animation: nb-float-a 8s ease-in-out infinite; }
-  .nb-float-b { animation: nb-float-b 10s ease-in-out infinite 1s; }
-}
-
-@supports (animation-timeline: scroll()) {
-  @media (prefers-reduced-motion: no-preference) {
-    /* Hero copy eases up and dims as you scroll past it. */
-    @keyframes nb-hero-exit { to { transform: translate3d(0, -40px, 0); opacity: 0.4; } }
-    .nb-hero-exit { animation: nb-hero-exit linear both; animation-timeline: scroll(root); animation-range: 0 70vh; }
-
-    /* Sections and cards rise in as they come on screen. */
-    @keyframes nb-rise { from { opacity: 0; transform: translate3d(0, 36px, 0); } to { opacity: 1; transform: none; } }
-    .nb-reveal { animation: nb-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 22%; }
+/* Film grain (desktop only: a fixed full-screen layer is costly on phones) */
+@media (min-width: 768px) {
+  .nb-grain::before {
+    content: ''; position: fixed; inset: 0; z-index: 40; pointer-events: none; opacity: 0.07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: multiply;
   }
+  .dark .nb-grain::before { opacity: 0.09; mix-blend-mode: screen; }
 }
 
-/* ───────────── Hero v3: stage lights, equalizer, word rotator, tickers ───────────── */
+/* Marquee strips (logos, the divider) */
+@keyframes nb-marquee { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
+.nb-marquee { display: flex; width: max-content; animation: nb-marquee 45s linear infinite; }
+.nb-marquee-fast { animation-duration: 28s; }
+.nb-marquee:hover { animation-play-state: paused; }
 
-/* Stage-light beams swinging from the top. */
-@keyframes nb-beam-l { from { transform: rotate(-16deg); } to { transform: rotate(10deg); } }
-@keyframes nb-beam-r { from { transform: rotate(14deg); } to { transform: rotate(-12deg); } }
-.nb-beam { transform-origin: 50% 0; clip-path: polygon(47% 0, 53% 0, 100% 100%, 0 100%); }
-.nb-beam-l { transform: rotate(-6deg); }
-.nb-beam-r { transform: rotate(6deg); }
-
-/* Audio-equalizer bars along the bottom of the hero ("the pulse"). */
-@keyframes nb-eq { 0%, 100% { transform: scaleY(0.22); } 50% { transform: scaleY(1); } }
-.nb-eq { transform-origin: 50% 100%; transform: scaleY(0.55); }
-
-/* Rotating word in the hero line. Five rows: four words plus the first again, for a seamless loop. */
-@keyframes nb-rotate { 0%, 17% { transform: translateY(0); } 25%, 42% { transform: translateY(-1.25em); } 50%, 67% { transform: translateY(-2.5em); } 75%, 92% { transform: translateY(-3.75em); } 100% { transform: translateY(-5em); } }
-.nb-rotator { height: 1.25em; overflow: hidden; vertical-align: bottom; }
-.nb-rotator-track { display: block; }
-.nb-rotator-track > span { display: block; height: 1.25em; line-height: 1.25em; white-space: nowrap; }
-.nb-rotator-static { display: none; }
-
-/* "Youth." shimmer */
-@keyframes nb-shimmer { from { background-position: 0% 50%; } to { background-position: 200% 50%; } }
-.nb-shimmer {
-  background-image: linear-gradient(90deg, #0b0f17, #1fae0a, #0b0f17);
-  background-size: 200% 100%;
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+/* Spinning badge, pulsing dot */
+@keyframes nb-spin { to { transform: rotate(360deg); } }
+@keyframes nb-ping { 75%, 100% { transform: scale(2.2); opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .nb-spin { animation: nb-spin 16s linear infinite; }
+  .nb-ping { animation: nb-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite; }
 }
-.dark .nb-shimmer { background-image: linear-gradient(90deg, #ffffff, #39FF14, #00F0FF, #ffffff); }
 
-/* Ticker bands */
-@keyframes nb-ticker { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
-.nb-ticker, .nb-ticker-rev { display: flex; width: max-content; }
-
-/* Formats bento: slow colour drift in the tiles */
-@keyframes nb-hue { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
-.nb-tile-bg { background-size: 200% 200%; }
-
-/* FAQ chevron */
-details[open] > summary .nb-chevron { transform: rotate(45deg); }
+/* Chevrons on <details> */
 details > summary { list-style: none; }
 details > summary::-webkit-details-marker { display: none; }
+details[open] > summary .nb-plus { transform: rotate(45deg); }
+.nb-plus { transition: transform 0.25s ease; }
 
-@media (prefers-reduced-motion: no-preference) {
-  .nb-beam-l { animation: nb-beam-l 9s ease-in-out infinite alternate; }
-  .nb-beam-r { animation: nb-beam-r 11s ease-in-out infinite alternate; }
-  .nb-eq { animation: nb-eq var(--eq-d, 1.2s) ease-in-out infinite; animation-delay: var(--eq-delay, 0s); }
-  .nb-rotator-track { animation: nb-rotate 10s cubic-bezier(0.7, 0, 0.3, 1) infinite; }
-  .nb-shimmer { animation: nb-shimmer 6s linear infinite; }
-  .nb-ticker { animation: nb-ticker 38s linear infinite; }
-  .nb-ticker-rev { animation: nb-ticker 44s linear infinite reverse; }
-  .nb-tile-bg { animation: nb-hue 14s ease-in-out infinite alternate; }
-  .nb-chevron { transition: transform 0.25s ease; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .nb-rotator { display: none; }
-  .nb-rotator-static { display: inline; }
-}
-
+/* ── Scroll-driven motion ───────────────────────────────────────────────── */
 @supports (animation-timeline: scroll()) {
   @media (prefers-reduced-motion: no-preference) {
-    /* The big closing line slides sideways as you scroll past it. */
-    @keyframes nb-slide { from { transform: translate3d(8%, 0, 0); } to { transform: translate3d(-38%, 0, 0); } }
-    .nb-slide { animation: nb-slide linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
-    /* Bento tiles rise one after another (staggered by their own position). */
-    .nb-pop { animation: nb-rise linear both; animation-timeline: view(); animation-range: entry 5% cover 30%; }
+    /* Hero lines slide apart and dim as you scroll away. */
+    @keyframes nb-exit-l { to { transform: translate3d(-14%, 0, 0); opacity: 0.15; } }
+    @keyframes nb-exit-r { to { transform: translate3d(14%, 0, 0); opacity: 0.15; } }
+    @keyframes nb-exit-fade { to { transform: translate3d(0, -30px, 0); opacity: 0; } }
+    .nb-exit-l, .nb-exit-r, .nb-exit-fade { animation-timing-function: linear; animation-fill-mode: both; animation-timeline: scroll(root); animation-range: 0 85vh; }
+    .nb-exit-l { animation-name: nb-exit-l; }
+    .nb-exit-r { animation-name: nb-exit-r; }
+    .nb-exit-fade { animation-name: nb-exit-fade; }
+
+    /* Blocks rise in as they enter the screen. */
+    @keyframes nb-rise { from { opacity: 0; transform: translate3d(0, 40px, 0); } to { opacity: 1; transform: none; } }
+    .nb-reveal { animation: nb-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+    .nb-reveal-late { animation: nb-rise linear both; animation-timeline: view(); animation-range: entry 20% cover 40%; }
+
+    /* Lyric lines: dim at the bottom, bright in the middle, dim again on the way out. */
+    @keyframes nb-lyric { 0% { opacity: 0.16; transform: translate3d(0, 12px, 0); } 35%, 60% { opacity: 1; transform: none; } 100% { opacity: 0.28; } }
+    .nb-lyric { animation: nb-lyric linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
+
+    /* The timeline draws its own line; each step lights up as it passes. */
+    @keyframes nb-grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+    .nb-line { transform-origin: top; animation: nb-grow-y linear both; animation-timeline: view(); animation-range: entry 40% exit 70%; }
+    @keyframes nb-light { from { background-color: transparent; box-shadow: none; } to { background-color: #39FF14; box-shadow: 0 0 24px rgba(57,255,20,0.6); } }
+    .nb-step-dot { animation: nb-light linear both; animation-timeline: view(); animation-range: cover 5% cover 40%; }
+
+    /* Photos drift a little slower than the page. */
+    @keyframes nb-parallax { from { transform: translate3d(0, -7%, 0); } to { transform: translate3d(0, 7%, 0); } }
+    .nb-parallax { animation: nb-parallax linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
+
+    /* The giant wordmark inks in as it arrives. */
+    @keyframes nb-ink { from { color: transparent; } to { color: #39FF14; } }
+    .nb-ink { animation: nb-ink linear both; animation-timeline: view(); animation-range: entry 25% entry 100%; }
+
+    /* Horizontal track (desktop): the section pins and the panels slide sideways with the scroll. */
+    @media (min-width: 1024px) {
+      .nb-story { height: 470vh; view-timeline-name: --nb-story; view-timeline-axis: block; }
+      .nb-story-pin { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+      .nb-story-track { display: flex; flex-direction: row; height: 100%; width: max-content; animation: nb-pan linear both; animation-timeline: --nb-story; animation-range: contain 0% contain 100%; }
+      .nb-story-panel { width: 100vw; height: 100%; flex: none; }
+      @keyframes nb-pan { to { transform: translate3d(calc(-100% + 100vw), 0, 0); } }
+      @keyframes nb-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+      .nb-story-bar { display: block; transform-origin: left; animation: nb-grow-x linear both; animation-timeline: --nb-story; animation-range: contain 0% contain 100%; }
+    }
   }
 }
