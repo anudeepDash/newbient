@@ -13,6 +13,7 @@ import { db } from '../lib/firebase';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Button } from '../components/ui/Button';
 import useDynamicMeta from '../hooks/useDynamicMeta';
+import FormRenderer from '../components/admin/forms/FormRenderer';
 
 // Minimalist Clean Floating Form Icon Loader
 const FormLoadingAnimation = () => (
@@ -522,7 +523,14 @@ const FormViewer = ({ formIdOverride }) => {
                     />
 
                     <div className="relative bg-white dark:bg-zinc-950 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden border border-black/10 dark:border-white/5 shadow-2xl">
-                        {!themedFormUrl ? (
+                        {Array.isArray(activeForm.fields) && activeForm.fields.length > 0 ? (
+                            <FormRenderer form={activeForm} />
+                        ) : String(activeForm.activeLabel || '').toLowerCase() === 'closed' ? (
+                            <div className="p-16 text-center">
+                                <p className="text-lg font-bold text-gray-900 dark:text-white">This form is closed.</p>
+                                <p className="mt-1 text-sm text-gray-500">Thanks for your interest. Keep an eye on the community page for the next one.</p>
+                            </div>
+                        ) : !themedFormUrl ? (
                             <div className="p-16 text-center">
                                 <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
                                     <FileText size={24} className="text-red-400" />

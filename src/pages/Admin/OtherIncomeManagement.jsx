@@ -1,6 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import React, { useState, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Edit from 'lucide-react/dist/esm/icons/edit';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Plus from 'lucide-react/dist/esm/icons/plus';
@@ -21,30 +20,167 @@ import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import User from 'lucide-react/dist/esm/icons/user';
 import Copy from 'lucide-react/dist/esm/icons/copy';
 import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
+import Award from 'lucide-react/dist/esm/icons/award';
+import Inbox from 'lucide-react/dist/esm/icons/inbox';
 
+import ExportMenu from '../../components/admin/ExportMenu';
+import { exportSubtitle, fileDate } from '../../lib/xlsx';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { cn } from '../../lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import Sheet from '../../components/admin/Sheet';
+import { Card, Button, Badge, StatTile, SearchInput, Select, SegmentedTabs, EmptyState, Menu, MenuItem, ViewToggle, useViewMode } from '../../components/admin/ui';
+import { inr } from '../../components/admin/ticketing/format';
+import { Field, Section, Choice, fieldCls, areaCls } from '../../components/admin/uploads/UploadKit';
+import ConfirmDialog from '../../components/admin/finance/ConfirmDialog';
+import { FINANCE_TABS, incomeDay, todayIST, monthLabel, formatDay, isIncomeReceived, isIncomePending } from '../../components/admin/finance/money';
+
+const INCOME_CATEGORIES = ['Sponsorship', 'Ticket Sales', 'Client Work', 'Booking Fee', 'Other'];
+const CATEGORY_TONE = { 'Sponsorship': 'violet', 'Ticket Sales': 'blue', 'Client Work': 'teal', 'Booking Fee': 'orange', 'Other': 'gray' };
+const PAGE = 30;
+const KPI_CLS = 'w-[78%] shrink-0 snap-start sm:w-auto';
+
+const formatINR = (value) => `₹${Number(value || 0).toLocaleString('en-IN')}`;
+
+// Pill buttons for short lists (category, payment method).
+const Chips = ({ value, onChange, options, label }) => (
+    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
+        {options.map(opt => (
+            <button
+                key={opt}
+                type="button"
+                role="radio"
+                aria-checked={value === opt}
+                onClick={() => onChange(opt)}
+                className={cn(
+                    'h-10 rounded-xl border px-3.5 text-[13px] font-semibold transition-colors',
+                    value === opt
+                        ? 'border-emerald-500/60 bg-neon-green/[0.08] text-gray-900 dark:border-neon-green/50 dark:text-white'
+                        : 'border-black/10 text-gray-600 hover:border-black/20 dark:border-white/10 dark:text-zinc-300 dark:hover:border-white/20'
+                )}
+            >
+                {opt}
+            </button>
+        ))}
+    </div>
+);
+
+const GroupLabel = ({ children, optional }) => (
+    <span className="mb-1.5 block text-[12px] font-bold text-gray-500">
+        {children}{optional && <span className="font-medium"> (optional)</span>}
+    </span>
+);
+
+const isImageUrl = (url = '') => /\.(png|jpe?g|webp|gif|avif)(\?|$)/i.test(url) || (/\/image\/upload\//.test(url) && !/\.pdf(\?|$)/i.test(url));
+
+// Pick a file and upload it straight away (same as before); shows what's attached.
+const AttachmentField = ({ url, uploading, onPick, onRemove, label = 'Attach proof', sub = 'Screenshot, photo or PDF' }) => {
+    const inputRef = useRef(null);
+    const input = (
+        <input
+            ref={inputRef}
+            type="file"
+            className="hidden"
+            onChange={(e) => { onPick(e); e.target.value = ''; }}
+        />
+    );
+
+    if (uploading) {
+        return (
+            <div className="flex h-16 items-center gap-3 rounded-2xl border border-black/[0.08] px-4 text-[13px] font-semibold text-gray-500 dark:border-white/[0.08]">
+                <Loader2 size={16} className="animate-spin" /> Uploading…
+            </div>
+        );
+    }
+
+    if (!url) {
+        return (
+            <div>
+                <button
+                    type="button"
+                    onClick={() => inputRef.current?.click()}
+                    className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-black/10 px-4 py-4 text-left transition-colors hover:border-black/25 dark:border-white/10 dark:hover:border-white/25"
+                >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black/5 text-gray-500 dark:bg-white/[0.06] dark:text-zinc-300"><Upload size={17} /></span>
+                    <span className="min-w-0">
+                        <span className="block text-[14px] font-bold">{label}</span>
+                        <span className="block text-[12px] text-gray-500">{sub}</span>
+                    </span>
+                </button>
+                {input}
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center gap-3 rounded-2xl border border-black/[0.08] p-3 dark:border-white/[0.08]">
+            <a href={url} target="_blank" rel="noopener noreferrer" className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-black/10 bg-gray-50 dark:border-white/10 dark:bg-white/[0.04]">
+                {isImageUrl(url) ? <img src={url} alt="Attachment" className="h-full w-full object-cover" /> : <FileText size={18} className="text-gray-400" />}
+            </a>
+            <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-bold">File attached</p>
+                <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[12px] font-semibold text-sky-600 dark:text-neon-blue">
+                    Open <ExternalLink size={11} />
+                </a>
+            </div>
+            <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-black/10 px-3 text-[12px] font-bold hover:border-black/25 dark:border-white/10 dark:hover:border-white/25">
+                <RefreshCw size={13} /> Replace
+            </button>
+            {onRemove && (
+                <button type="button" onClick={onRemove} aria-label="Remove attachment" className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-500 hover:bg-red-500/10 hover:text-red-600">
+                    <Trash2 size={15} />
+                </button>
+            )}
+            {input}
+        </div>
+    );
+};
 
 const OtherIncomeManagement = () => {
     useStoreSubscription(['otherIncomes']);
     const { otherIncomes, addOtherIncome, updateOtherIncome, deleteOtherIncome, uploadToCloudinary, user } = useStore();
-    const [searchTerm, setSearchTerm] = useState('');
-    const [monthFilter, setMonthFilter] = useState(
-        new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-    );
-    const [categoryFilter, setCategoryFilter] = useState('All');
-    const [statusFilter, setStatusFilter] = useState('All');
-    const [accountFilter, setAccountFilter] = useState('All');
-    const [viewMode, setViewMode] = useState('grid');
-    const [dateFilter, setDateFilter] = useState('');
+    // Filters live in the URL so a filtered view can be shared or reloaded.
+    // No month in the URL means this month, as before; "all" means all time.
+    const [params, setParams] = useSearchParams();
+    const currentMonth = todayIST().slice(0, 7);
+    const [searchTerm, setSearchTerm] = useState(() => params.get('q') || '');
+    // Months are "YYYY-MM" (IST) and follow the date the money came in, the same as the Finance board.
+    const monthFilter = params.get('month') === 'all' ? 'all' : (/^\d{4}-\d{2}$/.test(params.get('month') || '') ? params.get('month') : currentMonth);
+    const categoryFilter = INCOME_CATEGORIES.includes(params.get('category')) ? params.get('category') : 'All';
+    const statusFilter = ['Paid', 'Pending'].includes(params.get('status')) ? params.get('status') : 'All';
+    const accountFilter = ['newbi', 'personal'].includes(params.get('account')) ? params.get('account') : 'All';
+    const dateFilter = /^\d{4}-\d{2}-\d{2}$/.test(params.get('date') || '') ? params.get('date') : '';
+    const [view, setView] = useViewMode('other_income', 'cards');
+    const [limit, setLimit] = useState(PAGE);
+
+    const setFilter = (key, value) => {
+        const next = new URLSearchParams(params);
+        if (value) next.set(key, value); else next.delete(key);
+        setParams(next, { replace: true });
+        setLimit(PAGE);
+    };
+    const setMonth = (value) => setFilter('month', value === currentMonth ? null : value);
+    const setStatusFilter = (value) => setFilter('status', value === 'All' ? null : value);
+    const filtersActive = Boolean(searchTerm || params.get('month') || categoryFilter !== 'All' || statusFilter !== 'All' || accountFilter !== 'All' || dateFilter);
+    const clearFilters = () => {
+        setSearchTerm('');
+        const next = new URLSearchParams(params);
+        ['q', 'month', 'category', 'status', 'account', 'date'].forEach(k => next.delete(k));
+        setParams(next, { replace: true });
+        setLimit(PAGE);
+    };
 
     // Modals
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(null);
     const [uploadingAttachment, setUploadingAttachment] = useState(false);
+    const [savingIncome, setSavingIncome] = useState(false);
+    const [deletingIncome, setDeletingIncome] = useState(null);
 
     // Form states
     const [sourceName, setSourceName] = useState('');
@@ -59,52 +195,24 @@ const OtherIncomeManagement = () => {
     const [attachmentUrl, setAttachmentUrl] = useState('');
     const [transactionRef, setTransactionRef] = useState('');
 
-    const financeTabs = [
-        { name: 'Overview', path: '/admin/finance', icon: LayoutGrid, color: 'text-[#39FF14]' },
-        { name: 'Spends Ledger', path: '/admin/spends', icon: IndianRupee, color: 'text-neon-pink' },
-        { name: 'Other Income', path: '/admin/other-income', icon: FileSpreadsheet, color: 'text-[#39FF14]' },
-        { name: 'Payee Registry', path: '/admin/payees', icon: User, color: 'text-neon-blue' }
-    ];
-
-    const navPills = [
-        { name: 'Overview', path: '/admin/finance', icon: LayoutGrid, isActive: false },
-        { name: 'Expense Ledger', path: '/admin/spends', icon: IndianRupee, isActive: false },
-        { name: 'Other Revenue', path: '/admin/other-income', icon: FileSpreadsheet, isActive: true },
-        { name: 'Payee Database', path: '/admin/payees', icon: User, isActive: false }
-    ];
-
-    const incomeCategories = [
-        'Sponsorship',
-        'Ticket Sales',
-        'Client Work',
-        'Booking Fee',
-        'Other'
-    ];
+    const financeTabs = FINANCE_TABS;
+    const incomeCategories = INCOME_CATEGORIES;
 
     const paymentModes = ['UPI', 'Bank Transfer', 'Cash', 'Card', 'Other'];
 
-    // Helper to extract month label
-    const getMonthLabel = (dateStr) => {
-        if (!dateStr) return '';
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return '';
-        return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    };
-
-    // Calculate month selector list dynamically
+    // Months that have income, newest first ("YYYY-MM").
     const monthOptions = useMemo(() => {
-        const months = new Set();
-        months.add(new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
+        const months = new Set([currentMonth]);
+        if (monthFilter !== 'all') months.add(monthFilter);
         otherIncomes.forEach(inc => {
-            const label = getMonthLabel(inc.createdAt || inc.date);
-            if (label) months.add(label);
+            const key = incomeDay(inc).slice(0, 7);
+            if (key) months.add(key);
         });
-        const sorted = Array.from(months).sort((a, b) => new Date(b) - new Date(a));
-        return ['All Time', ...sorted];
-    }, [otherIncomes]);
+        return [...months].sort().reverse();
+    }, [otherIncomes, currentMonth, monthFilter]);
 
-    // Filtered Incomes
-    const filteredIncomes = useMemo(() => {
+    // Filtered incomes (status is applied last so the status tabs can show counts)
+    const incomesBeforeStatus = useMemo(() => {
         return otherIncomes
             .filter(inc => {
                 const matchesSearch = 
@@ -113,17 +221,38 @@ const OtherIncomeManagement = () => {
                     inc.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     inc.transactionRef?.toLowerCase().includes(searchTerm.toLowerCase());
 
-                const label = getMonthLabel(inc.createdAt || inc.date);
-                const matchesMonth = monthFilter === 'All Time' ? true : label === monthFilter;
+                const matchesMonth = monthFilter === 'all' ? true : incomeDay(inc).slice(0, 7) === monthFilter;
 
                 const matchesCategory = categoryFilter === 'All' ? true : inc.category === categoryFilter;
-                const matchesStatus = statusFilter === 'All' ? true : inc.status === statusFilter;
                 const matchesAccount = accountFilter === 'All' ? true : inc.accountType === accountFilter;
-                const matchesDate = !dateFilter ? true : inc.date === dateFilter;
+                const matchesDate = !dateFilter ? true : incomeDay(inc) === dateFilter;
 
-                return matchesSearch && matchesMonth && matchesCategory && matchesStatus && matchesAccount && matchesDate;
+                return matchesSearch && matchesMonth && matchesCategory && matchesAccount && matchesDate;
             });
-    }, [otherIncomes, searchTerm, monthFilter, categoryFilter, statusFilter, accountFilter, dateFilter]);
+    }, [otherIncomes, searchTerm, monthFilter, categoryFilter, accountFilter, dateFilter]);
+    const filteredIncomes = useMemo(
+        () => (statusFilter === 'All' ? incomesBeforeStatus : incomesBeforeStatus.filter(inc => (statusFilter === 'Paid' ? isIncomeReceived(inc) : isIncomePending(inc)))),
+        [incomesBeforeStatus, statusFilter]
+    );
+    const statusCounts = {
+        All: incomesBeforeStatus.length,
+        Paid: incomesBeforeStatus.filter(isIncomeReceived).length,
+        Pending: incomesBeforeStatus.filter(isIncomePending).length,
+    };
+
+    // Totals for what's shown.
+    const stats = useMemo(() => {
+        let received = 0, pending = 0, personal = 0, countReceived = 0, countPending = 0;
+        const byCat = {};
+        filteredIncomes.forEach(inc => {
+            const amt = Number(inc.amount || 0);
+            if (isIncomeReceived(inc)) { received += amt; countReceived += 1; } else { pending += amt; countPending += 1; }
+            if (inc.accountType === 'personal') personal += amt;
+            if (inc.category) byCat[inc.category] = (byCat[inc.category] || 0) + amt;
+        });
+        const [topCat, topVal] = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0] || [null, 0];
+        return { received, pending, personal, countReceived, countPending, topCat: topVal > 0 ? topCat : null, topVal };
+    }, [filteredIncomes]);
 
     const handleAttachmentUpload = async (e, setUrl) => {
         const file = e.target.files[0];
@@ -146,6 +275,8 @@ const OtherIncomeManagement = () => {
             useStore.getState().addToast('Fill in all the required fields before saving.', 'error');
             return;
         }
+        if (savingIncome) return;
+        setSavingIncome(true);
 
         try {
             await addOtherIncome({
@@ -168,6 +299,8 @@ const OtherIncomeManagement = () => {
             resetForm();
         } catch (err) {
             useStore.getState().addToast("Couldn't save the income entry. Please try again.", 'error');
+        } finally {
+            setSavingIncome(false);
         }
     };
 
@@ -177,6 +310,8 @@ const OtherIncomeManagement = () => {
             useStore.getState().addToast('Fill in all the required fields before saving.', 'error');
             return;
         }
+        if (savingIncome) return;
+        setSavingIncome(true);
 
         try {
             await updateOtherIncome(showEditModal.id, {
@@ -198,24 +333,28 @@ const OtherIncomeManagement = () => {
             resetForm();
         } catch (err) {
             useStore.getState().addToast("Couldn't update the income entry. Please try again.", 'error');
+        } finally {
+            setSavingIncome(false);
         }
     };
 
-    const handleDeleteIncome = (id) => {
+    const handleDeleteIncome = (income) => {
         if (user?.role === 'editor' || user?.role === 'content_admin') {
             useStore.getState().addToast("Only admins can delete income entries.", 'warning');
             return;
         }
+        setDeletingIncome(income);
+    };
 
-        if (window.confirm('Are you sure you want to delete this income record?')) {
-            deleteOtherIncome(id);
-            useStore.getState().addToast('Income entry deleted.', 'success');
-        }
+    // Runs from the confirm dialog, which stays open and shows the error if this throws.
+    const confirmDeleteIncome = async () => {
+        await deleteOtherIncome(deletingIncome.id);
+        useStore.getState().addToast('Income entry deleted.', 'success');
     };
 
     const handleToggleStatus = async (income) => {
         try {
-            const newStatus = income.status === 'Paid' ? 'Pending' : 'Paid';
+            const newStatus = isIncomeReceived(income) ? 'Pending' : 'Paid';
             await updateOtherIncome(income.id, { status: newStatus });
             useStore.getState().addToast(`Income marked as ${newStatus}.`, 'success');
         } catch (err) {
@@ -258,633 +397,355 @@ const OtherIncomeManagement = () => {
         useStore.getState().addToast('Payment details copied.', 'success');
     };
 
-    const handleExportCSV = () => {
-        if (filteredIncomes.length === 0) {
-            useStore.getState().addToast('There are no income entries to export.', 'warning');
-            return;
-        }
+    const incomeExportSpec = () => ({
+        filename: `newbi_other_income_${fileDate()}`,
+        sheetName: 'Other income',
+        title: 'Newbi other income',
+        subtitle: exportSubtitle(filteredIncomes.length, 'income entry'),
+        rows: filteredIncomes,
+        totals: { amount: true },
+        columns: [
+            { header: 'Date', type: 'date', value: inc => inc.date || null },
+            { header: 'Source', value: inc => inc.sourceName || '' },
+            { header: 'Amount', key: 'amount', type: 'money', value: inc => Number(inc.amount) || 0 },
+            { header: 'Category', value: inc => inc.category || '' },
+            { header: 'Account', value: inc => (inc.accountType === 'personal' ? 'Personal account' : 'Newbi official') },
+            { header: 'Received By', value: inc => inc.receiverName || '' },
+            { header: 'Payment Mode', value: inc => inc.paymentMode || '' },
+            { header: 'Status', value: inc => inc.status || '' },
+            { header: 'Transaction Ref', value: inc => inc.transactionRef || '' },
+            { header: 'Notes', value: inc => inc.notes || '', width: 40 },
+            { header: 'Attachment', value: inc => inc.attachmentUrl || '' },
+        ],
+    });
 
-        const headers = ['Source Name', 'Amount (INR)', 'Category', 'Date', 'Account Type', 'Receiver Name', 'Payment Mode', 'Status', 'Notes', 'Transaction Ref', 'Attachment URL'];
-        const rows = filteredIncomes.map(inc => [
-            `"${inc.sourceName?.replace(/"/g, '""') || ''}"`,
-            inc.amount || 0,
-            `"${inc.category || ''}"`,
-            inc.date || '',
-            inc.accountType === 'personal' ? 'Personal Account' : 'Newbi Official',
-            `"${inc.receiverName || ''}"`,
-            inc.paymentMode || '',
-            inc.status || '',
-            `"${inc.notes?.replace(/"/g, '""') || ''}"`,
-            `"${inc.transactionRef?.replace(/"/g, '""') || ''}"`,
-            inc.attachmentUrl || ''
-        ]);
+    // Add / edit income form (same fields and payload as before, grouped into sections).
+    const renderIncomeForm = (isEdit) => (
+        <form id={isEdit ? 'income-form-edit' : 'income-form-add'} onSubmit={isEdit ? handleUpdateIncome : handleCreateIncome} className="space-y-7">
+            <Section title="What came in">
+                <Field label="From">
+                    <input
+                        className={fieldCls}
+                        value={sourceName}
+                        onChange={(e) => setSourceName(e.target.value)}
+                        placeholder={isEdit ? 'e.g. Sprite sponsorship' : 'e.g. Sprite sponsorship, door cash'}
+                        required
+                    />
+                </Field>
+                <div>
+                    <GroupLabel>Category</GroupLabel>
+                    <Chips label="Category" value={category} onChange={setCategory} options={incomeCategories} />
+                </div>
+            </Section>
 
-        const csvContent = "data:text/csv;charset=utf-8," 
-            + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-        
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `newbi_other_income_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
+            <Section title="Amount and date">
+                <div className="grid grid-cols-2 gap-3">
+                    <Field label="Amount (₹)">
+                        <input className={fieldCls} type="number" inputMode="decimal" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" required />
+                    </Field>
+                    <Field label="Date">
+                        <input className={fieldCls} type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+                    </Field>
+                </div>
+            </Section>
+
+            <Section title="Who received it">
+                <Choice
+                    value={accountType}
+                    onChange={setAccountType}
+                    options={[
+                        { value: 'newbi', label: 'Newbi account', hint: 'Paid to the company' },
+                        { value: 'personal', label: 'Personal account', hint: 'A team member got it' },
+                    ]}
+                />
+                {accountType === 'personal' && (
+                    <Field label="Team member who received it">
+                        <input className={fieldCls} value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="e.g. Team member name" required />
+                    </Field>
+                )}
+            </Section>
+
+            <Section title="Payment details">
+                <div>
+                    <GroupLabel>Method</GroupLabel>
+                    <Chips label="Payment method" value={paymentMode} onChange={setPaymentMode} options={paymentModes} />
+                </div>
+                <div>
+                    <GroupLabel>Status</GroupLabel>
+                    <Choice
+                        value={status}
+                        onChange={setStatus}
+                        options={[
+                            { value: 'Paid', label: 'Received', hint: 'The money is in' },
+                            { value: 'Pending', label: 'Pending', hint: 'Still to come' },
+                        ]}
+                    />
+                </div>
+                <Field label="Reference" optional hint="UPI reference, IMPS ID or anything that helps find it later">
+                    <input className={cn(fieldCls, 'font-mono')} value={transactionRef} onChange={(e) => setTransactionRef(e.target.value)} placeholder="e.g. 412345678901" autoCapitalize="characters" />
+                </Field>
+            </Section>
+
+            <Section title="Proof" hint="Optional. A screenshot or PDF of the payment.">
+                <AttachmentField
+                    url={attachmentUrl}
+                    uploading={uploadingAttachment}
+                    onPick={(e) => handleAttachmentUpload(e, setAttachmentUrl)}
+                    onRemove={() => setAttachmentUrl('')}
+                />
+            </Section>
+
+            <Section title="Notes">
+                <textarea className={cn(areaCls, 'min-h-[96px] resize-y')} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Anything worth remembering about this payment" />
+            </Section>
+        </form>
+    );
+
+    const renderIncomeFooter = (isEdit) => (
+        <div className="flex gap-2">
+            <Button variant="ghost" className="h-12" onClick={() => (isEdit ? setShowEditModal(null) : setShowAddModal(false))}>Cancel</Button>
+            <Button variant="primary" type="submit" form={isEdit ? 'income-form-edit' : 'income-form-add'} disabled={uploadingAttachment || savingIncome} className="h-12 flex-1">
+                {savingIncome ? 'Saving…' : uploadingAttachment ? 'Uploading…' : isEdit ? 'Save changes' : 'Save income'}
+            </Button>
+        </div>
+    );
+
+    const canDelete = user?.role !== 'editor' && user?.role !== 'content_admin';
+    const shown = filteredIncomes.slice(0, limit);
+    const accountLabel = (inc) => (inc.accountType === 'personal' ? `Personal (${inc.receiverName || 'team member'})` : 'Newbi account');
+    const statusBadge = (inc) => <Badge tone={isIncomeReceived(inc) ? 'green' : 'amber'}>{isIncomeReceived(inc) ? 'Received' : 'Pending'}</Badge>;
+
+    const incomeMenu = (inc) => (
+        <Menu trigger={({ toggle }) => (
+            <Button size="sm" variant="ghost" onClick={toggle} aria-label="More actions" className="w-9 px-0"><MoreHorizontal size={15} /></Button>
+        )}>
+            <MenuItem icon={Edit} onClick={() => openEdit(inc)}>Edit</MenuItem>
+            <MenuItem icon={isIncomeReceived(inc) ? Clock : CheckCircle} onClick={() => handleToggleStatus(inc)}>
+                {isIncomeReceived(inc) ? 'Mark as pending' : 'Mark as received'}
+            </MenuItem>
+            {inc.attachmentUrl && <MenuItem as="a" href={inc.attachmentUrl} target="_blank" rel="noopener noreferrer" icon={Eye}>View proof</MenuItem>}
+            {inc.transactionRef && <MenuItem icon={Copy} onClick={() => copyToClipboard(inc.transactionRef)} hint={inc.transactionRef}>Copy reference</MenuItem>}
+            {canDelete && <MenuItem icon={Trash2} danger onClick={() => handleDeleteIncome(inc)}>Delete</MenuItem>}
+        </Menu>
+    );
 
     return (
         <>
             <AdminCommunityHubLayout
-                studioHeader={{
-                    title: 'OTHER',
-                    subtitle: 'REVENUE',
-                    accentClass: 'text-[#39FF14]',
-                    icon: FileSpreadsheet
-                }}
+                studioHeader={{ title: 'Other income', icon: FileSpreadsheet, description: 'Sponsorships, door sales and money outside invoices' }}
                 tabs={financeTabs}
-                accentColor="neon-green"
-                action={
-                    <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
-                        <button
-                            onClick={handleExportCSV}
-                            className="flex-1 md:flex-none h-11 md:h-12 px-4 md:px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[8px] md:text-[9px] rounded-xl border border-black/10 dark:border-white/5 transition-all flex items-center justify-center gap-2"
-                        >
-                            <Download size={14} /> Export CSV
-                        </button>
-                        <button
-                            onClick={() => { resetForm(); setShowAddModal(true); }}
-                            className="flex-1 md:flex-none h-11 md:h-12 px-4 md:px-8 bg-[#39FF14] text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl shadow-[0_4px_12px_rgba(57,255,20,0.2)] hover:shadow-[0_8px_24px_rgba(57,255,20,0.3)] hover:scale-[1.02] transition-all flex items-center justify-center gap-2 md:gap-3 active:scale-95 animate-pulse"
-                        >
-                            <Plus size={16} /> Log Income
-                        </button>
+                action={(
+                    <div className="flex w-full gap-2 sm:w-auto">
+                        <Button variant="primary" onClick={() => { resetForm(); setShowAddModal(true); }} className="flex-1 sm:flex-none"><Plus size={14} /> Log income</Button>
                     </div>
-                }
+                )}
             >
-                <div className="space-y-8 relative">
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex flex-wrap gap-3">
-                        {navPills.map((pill) => {
-                            const Icon = pill.icon;
-                            return (
-                                <Link key={pill.name} to={pill.path}
-                                    className={cn(
-                                        "flex items-center gap-2 px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all duration-300 group",
-                                        pill.isActive 
-                                            ? "bg-[#39FF14] text-black border-[#39FF14] shadow-[0_0_15px_rgba(57,255,20,0.3)]" 
-                                            : "bg-white/[0.03] text-zinc-400 border-black/10 dark:border-white/10 hover:border-white/30 hover:text-gray-900 dark:hover:text-white hover:bg-white/[0.05]"
-                                    )}
-                                >
-                                    <Icon size={14} className={cn("transition-transform group-hover:scale-110", pill.isActive ? "text-black" : "text-[#39FF14]")} />
-                                    {pill.name}
-                                </Link>
-                            )
-                        })}
-                    </motion.div>
+                <div className="space-y-5">
+                    <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-4 [&::-webkit-scrollbar]:hidden">
+                        <StatTile className={KPI_CLS} icon={CheckCircle} tone="green" label="Received" value={inr(stats.received)} hint={`${stats.countReceived} ${stats.countReceived === 1 ? 'entry' : 'entries'}`} active={statusFilter === 'Paid'} onClick={() => setStatusFilter(statusFilter === 'Paid' ? 'All' : 'Paid')} />
+                        <StatTile className={KPI_CLS} icon={Clock} tone={stats.countPending ? 'amber' : 'gray'} label="Still to come" value={inr(stats.pending)} hint={stats.countPending ? `${stats.countPending} pending` : 'Nothing pending'} active={statusFilter === 'Pending'} onClick={() => setStatusFilter(statusFilter === 'Pending' ? 'All' : 'Pending')} />
+                        <StatTile className={KPI_CLS} icon={Award} tone={CATEGORY_TONE[stats.topCat] || 'gray'} label="Biggest category" value={stats.topCat || '—'} hint={stats.topCat ? `${inr(stats.topVal)} in total` : 'No income yet'} active={!!stats.topCat && categoryFilter === stats.topCat} onClick={stats.topCat ? () => setFilter('category', categoryFilter === stats.topCat ? null : stats.topCat) : undefined} />
+                        <StatTile className={KPI_CLS} icon={User} tone={stats.personal ? 'orange' : 'gray'} label="In personal accounts" value={inr(stats.personal)} hint={stats.personal ? 'Received by team members' : 'All paid to Newbi'} active={accountFilter === 'personal'} onClick={() => setFilter('account', accountFilter === 'personal' ? null : 'personal')} />
+                    </div>
 
-                    {/* Advanced Command Filter Panel */}
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-2xl p-4 space-y-4">
-                        {/* First Row: Search & View modes */}
-                        <div className="flex flex-col xl:flex-row items-center gap-4">
-                            <div className="relative flex-1 w-full group">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39FF14] transition-colors" size={16} />
-                                <input 
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="Search by client, sponsor, receiver, reference or notes..."
-                                    className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 pl-10 pr-3 outline-none focus:border-[#39FF14] transition-all placeholder:text-zinc-600"
+                    <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center">
+                        <SearchInput value={searchTerm} onChange={(v) => { setSearchTerm(v); setLimit(PAGE); }} placeholder="Source, receiver, reference or notes" className="2xl:w-72" />
+                        <div className="grid flex-1 grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+                            <Select label="Month" value={monthFilter} onChange={setMonth} className="sm:w-36" options={[{ value: 'all', label: 'All time' }, ...monthOptions.map(m => ({ value: m, label: monthLabel(m) }))]} />
+                            <label className="relative">
+                                <span className="sr-only">Exact day</span>
+                                <input
+                                    type="date"
+                                    value={dateFilter}
+                                    onChange={(e) => setFilter('date', e.target.value || null)}
+                                    className={cn('h-11 w-full min-w-0 appearance-none rounded-xl border border-black/10 bg-white px-3.5 text-xs font-bold outline-none transition-all hover:border-black/20 focus:border-neon-green/50 dark:border-white/10 dark:bg-white/[0.03] dark:[color-scheme:dark] dark:hover:border-white/20 sm:w-40', dateFilter ? 'text-gray-800 dark:text-zinc-200' : 'text-gray-400')}
                                 />
-                            </div>
-
-                            {/* View Mode Toggle */}
-                            <div className="flex bg-gray-100 dark:bg-zinc-950/40 p-1 rounded-xl border border-black/10 dark:border-white/10 w-full xl:w-auto justify-center shrink-0">
-                                <button
-                                    onClick={() => setViewMode('grid')}
-                                    className={cn(
-                                        "flex-1 xl:flex-none px-6 py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest h-8",
-                                        viewMode === 'grid' ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" : "text-zinc-500 hover:text-gray-900 dark:hover:text-white"
-                                    )}
-                                >
-                                    <LayoutGrid size={14} /> Grid
-                                </button>
-                                <button
-                                    onClick={() => setViewMode('table')}
-                                    className={cn(
-                                        "flex-1 xl:flex-none px-6 py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest h-8",
-                                        viewMode === 'table' ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" : "text-zinc-500 hover:text-gray-900 dark:hover:text-white"
-                                    )}
-                                >
-                                    <FileText size={14} /> Table
-                                </button>
+                            </label>
+                            <Select label="Category" value={categoryFilter} onChange={(v) => setFilter('category', v === 'All' ? null : v)} className="sm:w-40" options={[{ value: 'All', label: 'All categories' }, ...incomeCategories.map(c => ({ value: c, label: c }))]} />
+                            <Select label="Received into" value={accountFilter} onChange={(v) => setFilter('account', v === 'All' ? null : v)} className="sm:w-44" options={[{ value: 'All', label: 'Any account' }, { value: 'newbi', label: 'Newbi account' }, { value: 'personal', label: 'Personal account' }]} />
+                            <div className="col-span-2 sm:col-span-1 sm:ml-auto">
+                                <ExportMenu getSpec={incomeExportSpec} className="w-full [&>button]:w-full" />
                             </div>
                         </div>
+                    </div>
 
-                        {/* Second Row: Detailed filtration toggles */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-                            {/* Month selection */}
-                            <select 
-                                value={monthFilter} 
-                                onChange={(e) => setMonthFilter(e.target.value)}
-                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-[#39FF14] transition-all cursor-pointer"
-                            >
-                                {monthOptions.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950">{m}</option>)}
-                            </select>
-
-                            {/* Date Filter Selector */}
-                            <input 
-                                type="date"
-                                value={dateFilter} 
-                                onChange={(e) => setDateFilter(e.target.value)}
-                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-[#39FF14] transition-all"
+                    <div className="flex items-center gap-2">
+                        <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                            <SegmentedTabs
+                                value={statusFilter}
+                                onChange={setStatusFilter}
+                                items={[
+                                    { value: 'All', label: 'All', count: statusCounts.All },
+                                    { value: 'Pending', label: 'Pending', count: statusCounts.Pending, highlight: statusCounts.Pending > 0 },
+                                    { value: 'Paid', label: 'Received', count: statusCounts.Paid },
+                                ]}
                             />
-
-                            {/* Category selection */}
-                            <select 
-                                value={categoryFilter} 
-                                onChange={(e) => setCategoryFilter(e.target.value)}
-                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-[#39FF14] transition-all cursor-pointer"
-                            >
-                                <option value="All" className="bg-gray-100 dark:bg-zinc-950">All Categories</option>
-                                {incomeCategories.map(c => <option key={c} value={c} className="bg-gray-100 dark:bg-zinc-950">{c}</option>)}
-                            </select>
-
-                            {/* Account type filter */}
-                            <select 
-                                value={accountFilter} 
-                                onChange={(e) => setAccountFilter(e.target.value)}
-                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-[#39FF14] transition-all cursor-pointer"
-                            >
-                                <option value="All" className="bg-gray-100 dark:bg-zinc-950">All Accounts</option>
-                                <option value="newbi" className="bg-gray-100 dark:bg-zinc-950">Newbi Official</option>
-                                <option value="personal" className="bg-gray-100 dark:bg-zinc-950">Personal Account</option>
-                            </select>
-
-                            {/* Status filter */}
-                            <select 
-                                value={statusFilter} 
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-[#39FF14] transition-all cursor-pointer"
-                            >
-                                <option value="All" className="bg-gray-100 dark:bg-zinc-950">All Status</option>
-                                <option value="Paid" className="bg-gray-100 dark:bg-zinc-950">Received / Cleared</option>
-                                <option value="Pending" className="bg-gray-100 dark:bg-zinc-950">Pending / Outstanding</option>
-                            </select>
-
-                            {/* Clear/Reset button */}
-                            <button
-                                onClick={() => {
-                                    setSearchTerm('');
-                                    setMonthFilter(new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
-                                    setCategoryFilter('All');
-                                    setStatusFilter('All');
-                                    setAccountFilter('All');
-                                    setDateFilter('');
-                                }}
-                                className="w-full h-10 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all border border-black/10 dark:border-white/10 flex items-center justify-center gap-2 text-[10px] font-extrabold tracking-widest uppercase hover:border-white/30"
-                            >
-                                <X size={12} /> Clear
-                            </button>
                         </div>
-                    </motion.div>
+                        {filtersActive && (
+                            <Button variant="ghost" size="sm" onClick={clearFilters} aria-label="Clear filters" className="px-2.5 sm:px-3"><X size={14} /><span className="hidden sm:inline">Clear filters</span></Button>
+                        )}
+                        <ViewToggle value={view} onChange={setView} />
+                    </div>
 
-                    {/* Income Display */}
-                    <AnimatePresence mode="wait">
-                        {filteredIncomes.length === 0 ? (
-                            <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center justify-center py-20">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">No records found</span>
-                            </motion.div>
-                        ) : viewMode === 'grid' ? (
-                            <motion.div key="grid" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ delay: 0.3 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredIncomes.map((inc, i) => (
-                                    <motion.div key={inc.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + (i * 0.05) }} className="h-full flex flex-col">
-                                        <div className="group relative p-6 bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl flex flex-col justify-between h-full overflow-hidden hover:border-black/20 dark:hover:border-white/20 hover:bg-white/[0.04] transition-all">
-                                            <div>
-                                                {/* Top badges */}
-                                                <div className="flex justify-between items-start mb-6">
-                                                    <div className="flex flex-col gap-2">
-                                                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">
-                                                            {inc.category}
-                                                        </span>
-                                                        <div className={cn("px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border w-fit", inc.status === 'Paid' ? 'text-[#39FF14] bg-[#39FF14]/10 border-[#39FF14]/20' : 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20')}>
-                                                            {inc.status}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 z-20">
-                                                        <button onClick={() => openEdit(inc)} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-zinc-400 rounded-xl transition-all border border-black/10 dark:border-white/5 hover:text-gray-900 dark:hover:text-white" title="Edit Income"><Edit size={14} /></button>
-                                                        {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                            <button onClick={() => handleDeleteIncome(inc.id)} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-zinc-400 rounded-xl transition-all border border-black/10 dark:border-white/5" title="Purge Record"><Trash2 size={14} /></button>
-                                                        )}
-                                                    </div>
-                                                </div>
+                    {shown.length === 0 ? (
+                        <Card className="rounded-2xl">
+                            <EmptyState
+                                icon={Inbox}
+                                title={otherIncomes.length ? 'No matching income' : 'No income logged yet'}
+                                description={otherIncomes.length ? `Nothing for ${dateFilter ? 'that day' : monthFilter === 'all' ? 'these filters' : monthLabel(monthFilter)}. Try another month or clear the filters.` : 'Log sponsorships, door sales and other money that came in outside invoices.'}
+                                action={otherIncomes.length
+                                    ? (filtersActive && <Button variant="secondary" onClick={clearFilters}><X size={14} /> Clear filters</Button>)
+                                    : <Button variant="primary" onClick={() => { resetForm(); setShowAddModal(true); }}><Plus size={14} /> Log income</Button>}
+                            />
+                        </Card>
+                    ) : view === 'cards' ? (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                            {shown.map(inc => (
+                                <Card key={inc.id} className="flex flex-col rounded-2xl p-4 transition-colors hover:border-black/15 dark:hover:border-white/15">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            {statusBadge(inc)}
+                                            {inc.category && <Badge tone={CATEGORY_TONE[inc.category] || 'gray'}>{inc.category}</Badge>}
+                                        </div>
+                                        <span className="shrink-0 text-[12px] text-gray-500">{formatDay(incomeDay(inc)) || '—'}</span>
+                                    </div>
 
-                                                {/* Details section */}
-                                                <h3 className="text-xl font-black uppercase text-gray-900 dark:text-white mb-2 leading-tight line-clamp-2">{inc.sourceName}</h3>
-                                                
-                                                <div className="space-y-1 mt-4">
-                                                    <div className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Amount</div>
-                                                    <div className="text-2xl font-mono font-black text-gray-900 dark:text-white flex items-center gap-1">
-                                                        ₹{inc.amount?.toLocaleString()}
-                                                    </div>
-                                                </div>
+                                    <button type="button" onClick={() => openEdit(inc)} className="mt-3 min-w-0 text-left">
+                                        <p className="line-clamp-2 text-[17px] font-extrabold leading-snug">{inc.sourceName || 'Untitled'}</p>
+                                        {inc.notes && <p className="mt-0.5 line-clamp-2 text-[13px] text-gray-500">{inc.notes}</p>}
+                                    </button>
 
-                                                <div className="space-y-2 mt-5 text-[9px] font-bold uppercase tracking-wider text-zinc-400">
-                                                    <div className="flex justify-between"><span>Date:</span> <span className="text-gray-900 dark:text-white">{new Date(inc.date).toLocaleDateString()}</span></div>
-                                                    <div className="flex justify-between"><span>Payment Mode:</span> <span className="text-gray-900 dark:text-white">{inc.paymentMode}</span></div>
-                                                    <div className="flex justify-between"><span>Account:</span> <span className="text-gray-900 dark:text-white">{inc.accountType === 'personal' ? `Personal (${inc.receiverName})` : 'Newbi Official'}</span></div>
-                                                </div>
+                                    <p className="mt-3 text-[24px] font-extrabold tracking-tight tabular-nums">{formatINR(inc.amount)}</p>
 
-                                                {/* Transaction Ref copy block */}
-                                                {inc.transactionRef && (
-                                                    <div className="mt-4 p-3 bg-white/[0.02] border border-black/10 dark:border-white/10 rounded-xl flex items-center justify-between gap-3 text-[8px] font-black uppercase tracking-widest z-20 relative">
-                                                        <div className="truncate flex-1">
-                                                            <span className="text-zinc-500 block text-[7px]">Transaction Ref</span>
-                                                            <span className="text-gray-900 dark:text-white font-mono select-all truncate block mt-0.5">{inc.transactionRef}</span>
-                                                        </div>
-                                                        <button 
-                                                            onClick={() => copyToClipboard(inc.transactionRef)}
-                                                            className="p-2 hover:bg-black/10 dark:hover:bg-white/10 text-zinc-400 hover:text-gray-900 dark:hover:text-white rounded-lg border border-black/10 dark:border-white/5 transition-all shrink-0"
-                                                            title="Copy Reference"
-                                                        >
-                                                            <Copy size={12} />
-                                                        </button>
-                                                    </div>
-                                                )}
+                                    <dl className="mt-2 space-y-1 text-[12px]">
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="shrink-0 text-gray-500">Received into</dt>
+                                            <dd className="min-w-0 truncate text-right font-semibold text-gray-800 dark:text-zinc-200">{accountLabel(inc)}</dd>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="shrink-0 text-gray-500">Method</dt>
+                                            <dd className="min-w-0 truncate text-right font-semibold text-gray-800 dark:text-zinc-200">{inc.paymentMode || '—'}</dd>
+                                        </div>
+                                    </dl>
+
+                                    {inc.transactionRef && (
+                                        <div className="mt-3 flex items-center gap-2 rounded-xl border border-black/[0.06] bg-black/[0.02] py-1.5 pl-3 pr-1 dark:border-white/[0.06] dark:bg-white/[0.02]">
+                                            <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-gray-700 dark:text-zinc-300">{inc.transactionRef}</span>
+                                            <button type="button" onClick={() => copyToClipboard(inc.transactionRef)} aria-label="Copy reference" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-black/5 hover:text-gray-900 dark:hover:bg-white/10 dark:hover:text-white">
+                                                <Copy size={14} />
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <div className="min-h-4 flex-1" />
+                                    <div className="flex items-center gap-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+                                        {inc.attachmentUrl ? (
+                                            <Button size="sm" as="a" href={inc.attachmentUrl} target="_blank" rel="noopener noreferrer" variant="secondary" className="flex-1"><Eye size={13} /> View proof</Button>
+                                        ) : (
+                                            <span className="inline-flex flex-1 items-center gap-1 text-[11px] text-gray-400"><AlertTriangle size={12} /> No proof</span>
+                                        )}
+                                        {!isIncomeReceived(inc) && (
+                                            <Button size="sm" variant="success" onClick={() => handleToggleStatus(inc)}><CheckCircle size={13} /> Mark received</Button>
+                                        )}
+                                        {incomeMenu(inc)}
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : (
+                        <Card className="overflow-hidden rounded-2xl">
+                            <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_auto] gap-4 border-b border-black/[0.06] px-5 py-2.5 text-[11px] font-bold text-gray-500 dark:border-white/[0.06] xl:grid">
+                                <span>Source</span><span>Received into</span><span>Reference</span><span className="text-right">Amount</span><span className="w-[148px]" />
+                            </div>
+                            <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                                {shown.map(inc => (
+                                    <li key={inc.id} className="transition-colors hover:bg-black/[0.015] dark:hover:bg-white/[0.02]">
+                                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-3.5 sm:px-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_auto] xl:gap-4">
+                                            <button type="button" onClick={() => openEdit(inc)} className="min-w-0 text-left">
+                                                <span className="flex flex-wrap items-center gap-2">
+                                                    <span className="truncate text-[15px] font-bold">{inc.sourceName || 'Untitled'}</span>
+                                                    {statusBadge(inc)}
+                                                </span>
+                                                <span className="mt-0.5 block truncate text-[12px] text-gray-500">
+                                                    {[inc.category, formatDay(incomeDay(inc)) || 'No date'].filter(Boolean).join(' · ')}
+                                                    <span className="xl:hidden"> · {accountLabel(inc)}</span>
+                                                </span>
+                                                {inc.notes && <span className="mt-0.5 hidden truncate text-[12px] text-gray-400 xl:block">{inc.notes}</span>}
+                                            </button>
+
+                                            <p className="text-right text-[15px] font-extrabold tabular-nums xl:hidden">{formatINR(inc.amount)}</p>
+
+                                            <div className="hidden min-w-0 text-[13px] xl:block">
+                                                <p className="truncate">{accountLabel(inc)}</p>
+                                                <p className="truncate text-[12px] text-gray-500">{inc.paymentMode || '—'}</p>
                                             </div>
+                                            <div className="hidden min-w-0 items-center gap-1 xl:flex">
+                                                {inc.transactionRef ? (
+                                                    <>
+                                                        <span className="min-w-0 truncate font-mono text-[12px]">{inc.transactionRef}</span>
+                                                        <button type="button" onClick={() => copyToClipboard(inc.transactionRef)} aria-label="Copy reference" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-black/5 hover:text-gray-900 dark:hover:bg-white/10 dark:hover:text-white">
+                                                            <Copy size={13} />
+                                                        </button>
+                                                    </>
+                                                ) : <span className="text-[12px] text-gray-400">—</span>}
+                                            </div>
+                                            <p className="hidden text-right text-[14px] font-extrabold tabular-nums xl:block">{formatINR(inc.amount)}</p>
 
-                                            {/* Bottom metrics and Action toggles */}
-                                            <div className="flex items-center justify-between pt-6 mt-6 border-t border-black/10 dark:border-white/10 shrink-0 relative z-10">
-                                                <div className="flex items-center gap-2 w-full">
-                                                    {inc.attachmentUrl ? (
-                                                        <a 
-                                                            href={inc.attachmentUrl} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer" 
-                                                            className="flex-1 h-10 px-3 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-gray-900 dark:hover:text-white rounded-xl border border-black/10 dark:border-white/10 flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-widest transition-all"
-                                                        >
-                                                            <Eye size={12} /> View Proof
-                                                        </a>
-                                                    ) : (
-                                                        <span className="flex-1 h-10 px-3 flex items-center justify-center text-[9px] text-zinc-600 font-black uppercase tracking-widest gap-1"><AlertTriangle size={12} /> No Proof</span>
-                                                    )}
-                                                    <button
-                                                        onClick={() => handleToggleStatus(inc)}
-                                                        className="flex-1 h-10 px-3 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-gray-900 dark:hover:text-white rounded-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-[9px] font-black uppercase tracking-widest transition-all"
-                                                    >
-                                                        Toggle Status
-                                                    </button>
-                                                </div>
+                                            <div className="col-span-2 flex items-center justify-end gap-2 pt-2 xl:col-span-1 xl:w-[148px] xl:pt-0">
+                                                {!isIncomeReceived(inc) && (
+                                                    <Button size="sm" variant="success" onClick={() => handleToggleStatus(inc)} className="flex-1 sm:flex-none"><CheckCircle size={13} /> Mark received</Button>
+                                                )}
+                                                {inc.attachmentUrl && (
+                                                    <Button size="sm" as="a" href={inc.attachmentUrl} target="_blank" rel="noopener noreferrer" variant="secondary" aria-label="View proof" className="w-9 px-0"><Eye size={14} /></Button>
+                                                )}
+                                                {incomeMenu(inc)}
                                             </div>
                                         </div>
-                                    </motion.div>
+                                    </li>
                                 ))}
-                            </motion.div>
-                        ) : (
-                            <motion.div key="table" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ delay: 0.3 }} className="overflow-x-auto custom-scrollbar">
-                                <div className="min-w-[1000px] bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl p-0 overflow-hidden">
-                                    <table className="w-full text-left">
-                                        <thead>
-                                            <tr className="border-b border-black/10 dark:border-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">
-                                                <th className="p-6">Income Source</th>
-                                                <th className="p-6">Amount</th>
-                                                <th className="p-6">Category</th>
-                                                <th className="p-6">Received Account</th>
-                                                <th className="p-6">Transaction Ref</th>
-                                                <th className="p-6">Date</th>
-                                                <th className="p-6">Status</th>
-                                                <th className="p-6 text-right">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-white/5 text-[11px] font-bold">
-                                            {filteredIncomes.map((inc) => (
-                                                <tr key={inc.id} className="hover:bg-white/[0.03] transition-colors group">
-                                                    <td className="p-6">
-                                                        <div className="text-xs font-black text-gray-900 dark:text-white uppercase">{inc.sourceName}</div>
-                                                        {inc.notes && <div className="text-[9px] text-zinc-500 tracking-wide mt-1 line-clamp-1">{inc.notes}</div>}
-                                                    </td>
-                                                    <td className="p-6 text-gray-900 dark:text-white font-black font-mono">
-                                                        ₹{inc.amount?.toLocaleString()}
-                                                    </td>
-                                                    <td className="p-6 text-zinc-400 uppercase text-[9px] font-black">{inc.category}</td>
-                                                    <td className="p-6 text-zinc-400 text-[10px] uppercase font-bold">
-                                                        {inc.accountType === 'personal' ? `Personal (${inc.receiverName})` : 'Newbi Official'}
-                                                        <div className="text-zinc-500 text-[8px] mt-0.5">{inc.paymentMode}</div>
-                                                    </td>
-                                                    <td className="p-6 text-zinc-400">
-                                                        {inc.transactionRef ? (
-                                                            <div className="flex items-center gap-2 max-w-[200px]">
-                                                                <span className="font-mono text-[10px] truncate text-gray-900 dark:text-white select-all">{inc.transactionRef}</span>
-                                                                <button 
-                                                                    onClick={() => copyToClipboard(inc.transactionRef)}
-                                                                    className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 text-zinc-500 rounded hover:text-gray-900 dark:hover:text-white transition-all shrink-0"
-                                                                    title="Copy Reference"
-                                                                >
-                                                                    <Copy size={12} />
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-[9px] text-zinc-600 font-black uppercase">N/A</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="p-6 text-zinc-400 font-mono text-[10px]">{new Date(inc.date).toLocaleDateString()}</td>
-                                                    <td className="p-6">
-                                                        <button 
-                                                            onClick={() => handleToggleStatus(inc)}
-                                                            className={cn(
-                                                                "px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border transition-all",
-                                                                inc.status === 'Paid' 
-                                                                    ? "bg-[#39FF14]/10 text-[#39FF14] border-[#39FF14]/20 hover:bg-[#39FF14]/20" 
-                                                                    : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/20"
-                                                            )}
-                                                        >
-                                                            {inc.status}
-                                                        </button>
-                                                    </td>
-                                                    <td className="p-6 text-right">
-                                                        <div className="flex justify-end gap-2">
-                                                            {inc.attachmentUrl && (
-                                                                <a href={inc.attachmentUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-zinc-500 hover:text-gray-900 dark:hover:text-white transition-colors bg-black/5 dark:bg-white/5 rounded-lg"><Eye size={14} /></a>
-                                                            )}
-                                                            <button onClick={() => openEdit(inc)} className="p-2 text-zinc-500 hover:text-gray-900 dark:hover:text-white transition-colors bg-black/5 dark:bg-white/5 rounded-lg"><Edit size={14} /></button>
-                                                            {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                                <button onClick={() => handleDeleteIncome(inc.id)} className="p-2 text-zinc-500 hover:text-red-500 transition-colors bg-black/5 dark:bg-white/5 rounded-lg"><Trash2 size={14} /></button>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                            </ul>
+                        </Card>
+                    )}
+                    {filteredIncomes.length > limit && (
+                        <div className="text-center">
+                            <Button variant="ghost" onClick={() => setLimit(l => l + PAGE)}>Show {Math.min(PAGE, filteredIncomes.length - limit)} more of {filteredIncomes.length - limit}</Button>
+                        </div>
+                    )}
                 </div>
             </AdminCommunityHubLayout>
 
-            {/* Add Income Drawer Modal */}
-            {createPortal(
-                <AnimatePresence>
-                    {showAddModal && (
-                        <>
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddModal(false)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
-                            <motion.div 
-                                initial={{ x: '100%' }} 
-                                animate={{ x: 0 }} 
-                                exit={{ x: '100%' }}
-                                transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                                className="fixed top-0 right-0 h-full w-full max-w-xl bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 shadow-2xl z-[101] flex flex-col text-gray-900 dark:text-white"
-                            >
-                                <div className="p-6 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-                                    <div>
-                                        <h2 className="text-xl font-black uppercase text-gray-900 dark:text-white">LOG INCOME</h2>
-                                    </div>
-                                    <button type="button" onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-all"><X size={14} /></button>
-                                </div>
-                                
-                                <form onSubmit={handleCreateIncome} className="flex-1 flex flex-col overflow-hidden">
-                                    <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar pb-24">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Source Name (Sponsor/Client) *</label>
-                                                <input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="e.g. Sprite Sponsor / Offline Ticket Cash" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Amount (INR) *</label>
-                                                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g. 50000" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
-                                            </div>
-                                        </div>
+            <ConfirmDialog
+                open={!!deletingIncome}
+                onClose={() => setDeletingIncome(null)}
+                title="Delete this income entry?"
+                body={deletingIncome ? `${deletingIncome.sourceName || 'This entry'} for ${formatINR(deletingIncome.amount)} will be removed from the ledger. This can't be undone.` : ''}
+                confirmLabel="Delete entry"
+                onConfirm={confirmDeleteIncome}
+            />
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Category *</label>
-                                                <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                    {incomeCategories.map(c => <option key={c} value={c} className="bg-gray-100 dark:bg-zinc-950">{c}</option>)}
-                                                </select>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Date *</label>
-                                                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
-                                            </div>
-                                        </div>
+            {/* Add income */}
+            <Sheet
+                open={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                size="lg"
+                title="Log income"
+                subtitle="Money that came in outside invoices, like sponsorships or door sales."
+                footer={renderIncomeFooter(false)}
+            >
+                {renderIncomeForm(false)}
+            </Sheet>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Destination Account *</label>
-                                                <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                    <option value="newbi" className="bg-gray-100 dark:bg-zinc-950">Official Newbi Account</option>
-                                                    <option value="personal" className="bg-gray-100 dark:bg-zinc-950">Personal Account</option>
-                                                </select>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">
-                                                    {accountType === 'personal' ? 'Receiver Name (Team Member) *' : 'Receiver Entity'}
-                                                </label>
-                                                <input 
-                                                    value={accountType === 'personal' ? receiverName : 'Newbi Core Account'} 
-                                                    onChange={(e) => setReceiverName(e.target.value)} 
-                                                    placeholder={accountType === 'personal' ? "e.g. Team member name" : "Newbi Core Account"} 
-                                                    className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    disabled={accountType === 'newbi'}
-                                                    required={accountType === 'personal'}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Payment Method</label>
-                                                <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                    {paymentModes.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950">{m}</option>)}
-                                                </select>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Status</label>
-                                                <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                    <option value="Paid" className="bg-gray-100 dark:bg-zinc-950">Received / Cleared</option>
-                                                    <option value="Pending" className="bg-gray-100 dark:bg-zinc-950">Pending / Outstanding</option>
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Transaction Ref / Details</label>
-                                                <input 
-                                                    value={transactionRef} 
-                                                    onChange={(e) => setTransactionRef(e.target.value)} 
-                                                    placeholder="e.g. UPI Ref / Bank IMPS ID" 
-                                                    className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" 
-                                                />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Proof Attachment (Image/PDF)</label>
-                                                <div className="relative group cursor-pointer h-12 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-3 bg-gray-100 dark:bg-zinc-900/50 hover:border-white/30 transition-all">
-                                                    <input type="file" onChange={(e) => handleAttachmentUpload(e, setAttachmentUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                    <Upload className="text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" size={16} />
-                                                    <span className="text-[10px] font-black text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest transition-colors">
-                                                        {uploadingAttachment ? 'UPLOADING...' : (attachmentUrl ? 'CHANGE ATTACHMENT' : 'CHOOSE FILE')}
-                                                    </span>
-                                                </div>
-                                                {attachmentUrl && (
-                                                    <div className="text-[9px] text-[#39FF14] font-bold uppercase tracking-wider mt-1.5 pl-1 truncate">
-                                                        File linked: <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View File</a>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Internal Notes</label>
-                                            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction details or verification reference..." className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl p-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] min-h-[100px] resize-y transition-all" />
-                                        </div>
-
-                                        <div className="pt-4 flex gap-3">
-                                            <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 h-12 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[10px] rounded-xl border border-black/10 dark:border-white/10 transition-all">
-                                                Cancel
-                                            </button>
-                                            <button type="submit" disabled={uploadingAttachment} className="flex-1 h-12 bg-white text-black hover:bg-zinc-200 font-black uppercase tracking-widest text-[10px] rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                                LOG INCOME RECORD
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </motion.div>
-                        </>
-                    )}
-                </AnimatePresence>,
-                document.body
-            )}
-
-            {/* Edit Income Drawer Modal */}
-            {createPortal(
-                <AnimatePresence>
-                    {showEditModal && (
-                        <>
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEditModal(null)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
-                            <motion.div 
-                                initial={{ x: '100%' }} 
-                                animate={{ x: 0 }} 
-                                exit={{ x: '100%' }}
-                                transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                                className="fixed top-0 right-0 h-full w-full max-w-xl bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 shadow-2xl z-[101] flex flex-col text-gray-900 dark:text-white"
-                            >
-                                <div className="p-6 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-                                    <div>
-                                        <h2 className="text-xl font-black uppercase text-gray-900 dark:text-white">EDIT INCOME</h2>
-                                    </div>
-                                    <button type="button" onClick={() => setShowEditModal(null)} className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-all"><X size={14} /></button>
-                                </div>
-                                
-                                <form onSubmit={handleUpdateIncome} className="flex-1 flex flex-col overflow-hidden">
-                                    <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar pb-24">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Source Name (Sponsor/Client) *</label>
-                                                <input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="e.g. Sprite Sponsor" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Amount (INR) *</label>
-                                                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g. 50000" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Category *</label>
-                                                <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                    {incomeCategories.map(c => <option key={c} value={c} className="bg-gray-100 dark:bg-zinc-950">{c}</option>)}
-                                                </select>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Date *</label>
-                                                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Destination Account *</label>
-                                                <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                    <option value="newbi" className="bg-gray-100 dark:bg-zinc-950">Official Newbi Account</option>
-                                                    <option value="personal" className="bg-gray-100 dark:bg-zinc-950">Personal Account</option>
-                                                </select>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">
-                                                    {accountType === 'personal' ? 'Receiver Name (Team Member) *' : 'Receiver Entity'}
-                                                </label>
-                                                <input 
-                                                    value={accountType === 'personal' ? receiverName : 'Newbi Core Account'} 
-                                                    onChange={(e) => setReceiverName(e.target.value)} 
-                                                    placeholder={accountType === 'personal' ? "e.g. Team member name" : "Newbi Core Account"} 
-                                                    className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    disabled={accountType === 'newbi'}
-                                                    required={accountType === 'personal'}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Payment Method</label>
-                                                <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                    {paymentModes.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950">{m}</option>)}
-                                                </select>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Status</label>
-                                                <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                    <option value="Paid" className="bg-gray-100 dark:bg-zinc-950">Received / Cleared</option>
-                                                    <option value="Pending" className="bg-gray-100 dark:bg-zinc-950">Pending / Outstanding</option>
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Transaction Ref / Details</label>
-                                                <input 
-                                                    value={transactionRef} 
-                                                    onChange={(e) => setTransactionRef(e.target.value)} 
-                                                    placeholder="e.g. UPI Ref / Bank IMPS ID" 
-                                                    className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" 
-                                                />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Proof Attachment (Image/PDF)</label>
-                                                <div className="relative group cursor-pointer h-12 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-3 bg-gray-100 dark:bg-zinc-900/50 hover:border-white/30 transition-all">
-                                                    <input type="file" onChange={(e) => handleAttachmentUpload(e, setAttachmentUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                    <Upload className="text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" size={16} />
-                                                    <span className="text-[10px] font-black text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest transition-colors">
-                                                        {uploadingAttachment ? 'UPLOADING...' : (attachmentUrl ? 'CHANGE ATTACHMENT' : 'CHOOSE FILE')}
-                                                    </span>
-                                                </div>
-                                                {attachmentUrl && (
-                                                    <div className="text-[9px] text-[#39FF14] font-bold uppercase tracking-wider mt-1.5 pl-1 truncate">
-                                                        File linked: <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View File</a>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Internal Notes</label>
-                                            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction details or verification reference..." className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl p-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] min-h-[100px] resize-y transition-all" />
-                                        </div>
-
-                                        <div className="pt-4 flex gap-3">
-                                            <button type="button" onClick={() => setShowEditModal(null)} className="flex-1 h-12 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[10px] rounded-xl border border-black/10 dark:border-white/10 transition-all">
-                                                Cancel
-                                            </button>
-                                            <button type="submit" disabled={uploadingAttachment} className="flex-1 h-12 bg-white text-black hover:bg-zinc-200 font-black uppercase tracking-widest text-[10px] rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                                UPDATE INCOME RECORD
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </motion.div>
-                        </>
-                    )}
-                </AnimatePresence>,
-                document.body
-            )}
+            {/* Edit income */}
+            <Sheet
+                open={!!showEditModal}
+                onClose={() => setShowEditModal(null)}
+                size="lg"
+                title="Edit income"
+                subtitle={showEditModal?.sourceName || 'Update this income entry.'}
+                footer={renderIncomeFooter(true)}
+            >
+                {renderIncomeForm(true)}
+            </Sheet>
         </>
     );
 };

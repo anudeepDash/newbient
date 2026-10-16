@@ -1,14 +1,30 @@
 import { create } from 'zustand';
 import { db, storage } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch, runTransaction } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail, sendCreatorApprovedEmail, sendWhatsAppVerification } from './email';
 import { normalizePhoneNumber } from './utils';
+import { couponProblem, normalizeCouponCode, isGuestAdmissible, orderItems, orderTicketCount } from './ticketing';
+import { invoiceBalance, INVOICE_STATUS, nextInvoiceNumber, todayKey } from './invoicing';
+import { CONTRACT_STATUS, CONTRACT_NON_COPYABLE_FIELDS } from './contracts';
+import { isProposalClosed, isProposalExpired, nextProposalNumber, proposalValue, PROPOSAL_NON_COPYABLE_FIELDS, PROPOSAL_STATUS } from './proposals';
 import { getPublicSiteUrl } from './siteUrl';
 import { extractSocialUsername, hasDisallowedLink } from './socialUtils';
 import { safeLocalStorage } from './storage';
 import { DEFAULT_CREATOR_GROUPS, isCampaignCityMatch } from './constants';
 import { TOAST_TYPES, toFriendlyMessage, getSupportHint, getToastDuration } from './toastCopy';
+
+// Sign-in token for our own API calls that change creator data, so the server
+// can check who is asking (staff, or the creator themselves).
+const authJsonHeaders = async () => {
+    try {
+        const { auth } = await import('./firebase');
+        const token = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+        return token ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } : { 'Content-Type': 'application/json' };
+    } catch {
+        return { 'Content-Type': 'application/json' };
+    }
+};
 
 const MAX_TOASTS = 4;
 let toastSeq = 0;
@@ -161,22 +177,26 @@ const notifyMatchingCreatorsOfCampaign = async (campaignData, creatorsList) => {
             allCreators = snapshot.docs.map(d => ({ ...d.data(), uid: d.id }));
         }
 
-        const targetCity = (campaignData.targetCity || 'Any').trim().toLowerCase();
+        // Same city rules as eligibility ("Bangalore" matches "Bengaluru"; "Any",
+        // "Pan-India"… mean everyone). An empty creator city only matches a
+        // campaign open to everyone, so this doubles as the "universal" check.
+        const isUniversal = isCampaignCityMatch(campaignData.targetCity, '');
         const matchingCreators = allCreators.filter(creator => {
             if (!creator.email && !creator.uid && !creator.id) return false;
-            if (targetCity === 'any' || targetCity === 'all' || targetCity === 'universal') return true;
-            return (creator.city || '').trim().toLowerCase() === targetCity;
+            return isUniversal || isCampaignCityMatch(campaignData.targetCity, creator.city);
         });
 
         if (matchingCreators.length > 0) {
             // 1. Send mass email notifications to matching creators
-            const emails = matchingCreators.map(c => c.email).filter(Boolean);
+            const emails = [...new Set(matchingCreators.map(c => c.email).filter(Boolean))];
             if (emails.length > 0) {
                 await sendNewCampaignNotificationEmail(emails, campaignData);
             }
 
-            // 2. Create in-app notification for each matching creator
-            const notificationPromises = matchingCreators.map(creator => {
+            // 2. Create in-app notification for each matching creator. A campaign
+            // open to everyone gets the single broadcast below instead, so
+            // creators don't see the same alert twice.
+            const notificationPromises = (isUniversal ? [] : matchingCreators).map(creator => {
                 const creatorUid = creator.uid || creator.userId || creator.id;
                 if (!creatorUid) return Promise.resolve();
                 return addDoc(collection(db, 'notifications'), {
@@ -194,7 +214,7 @@ const notifyMatchingCreatorsOfCampaign = async (campaignData, creatorsList) => {
         }
 
         // 3. Broadcast in-app notification if campaign is open to all cities
-        if (targetCity === 'any' || targetCity === 'all' || targetCity === 'universal') {
+        if (isUniversal) {
             await addDoc(collection(db, 'notifications'), {
                 title: `🔥 New Campaign Live: ${campaignData.title}`,
                 message: `${campaignData.reward ? `Reward: ${campaignData.reward}. ` : ''}New creator brief is now open for applications.`,
@@ -210,9 +230,81 @@ const notifyMatchingCreatorsOfCampaign = async (campaignData, creatorsList) => {
     }
 };
 
+// Firestore rejects `undefined` anywhere in a document; drop those keys.
+const stripUndefinedDeep = (value) => {
+    if (Array.isArray(value)) return value.map(stripUndefinedDeep);
+    if (value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
+        const out = {};
+        for (const [k, v] of Object.entries(value)) {
+            if (v !== undefined) out[k] = stripUndefinedDeep(v);
+        }
+        return out;
+    }
+    return value;
+};
+
+// The campaign editor holds a copy of the deliverables from when it opened.
+// Creators keep submitting (and admins keep reviewing) meanwhile, so progress
+// always comes from the stored campaign, never from the editor's copy.
+const TASK_PROGRESS_FIELDS = ['submissions', 'completedBy', 'verifiedBy'];
+const mergeLiveTaskProgress = (formTasks, liveTasks) => {
+    const live = new Map((liveTasks || []).map(t => [String(t.id), t]));
+    return (formTasks || []).map(t => {
+        const liveTask = live.get(String(t.id));
+        if (!liveTask) return t;
+        const merged = { ...t };
+        TASK_PROGRESS_FIELDS.forEach(f => {
+            if (liveTask[f] !== undefined) merged[f] = liveTask[f];
+        });
+        return merged;
+    });
+};
+
 const initialUser = getCachedSession();
 
 const activeListeners = {};
+
+// ── Giveaway helpers ─────────────────────────────────────────────────────
+// The end moment of a giveaway in local time: endDate (YYYY-MM-DD) plus
+// endTime (HH:mm), or the end of that day when no time is set.
+export const giveawayEndsAt = (g) => {
+    if (!g?.endDate) return null;
+    const day = String(g.endDate).slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+        const d = new Date(g.endDate);
+        return isNaN(d.getTime()) ? null : d;
+    }
+    const time = /^\d{2}:\d{2}/.test(g.endTime || '') ? g.endTime.slice(0, 5) : '23:59';
+    const d = new Date(`${day}T${time}:00`);
+    return isNaN(d.getTime()) ? null : d;
+};
+export const giveawayHasEnded = (g, now = new Date()) => {
+    if (!g) return true;
+    if (String(g.status || '').toLowerCase() === 'closed') return true;
+    const end = giveawayEndsAt(g);
+    return Boolean(end && end < now);
+};
+const giveawayMirrorEvent = (g) => ({
+    title: g.name || '',
+    date: g.endDate ? `${String(g.endDate).slice(0, 10)}${g.endTime ? `T${g.endTime}` : ''}` : '',
+    category: 'giveaway',
+    description: g.description || '',
+    location: g.location || 'Online',
+    buttonText: g.buttonText || 'PARTICIPATE NOW',
+    image: g.posterUrl || '',
+    link: `/giveaway/${g.slug || ''}`,
+    isTicketed: g.isTicketed || false,
+    ticketPrice: g.ticketCategories?.[0]?.price || 0,
+    ticketCategories: g.ticketCategories || [],
+    venueLayout: g.venueLayout || '',
+    giveawaySlug: g.slug || ''
+});
+const giveawayMirrorAnnouncement = (g) => ({
+    title: `NEW GIVEAWAY: ${g.name || ''}`,
+    content: g.description || '',
+    image: g.posterUrl || '',
+    link: `/giveaway/${g.slug || ''}`
+});
 
 export const useStore = create((set, get) => ({
     // ... existing state ...
@@ -819,7 +911,16 @@ export const useStore = create((set, get) => ({
         return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     })),
     subscribeToGiveaways: () => get().subscribeToKey('giveaways', 'giveaways'),
-    subscribeToPosts: () => get().subscribeToKey('posts', 'posts'),
+    // A scheduled post goes live by itself once its time has come: everyone
+    // reading the blog sees it as Published (no server job needed).
+    subscribeToPosts: () => get().subscribeToKey('posts', 'posts', (data) => {
+        const now = Date.now();
+        return data.map(p => {
+            if (p.status !== 'Scheduled') return p;
+            const at = new Date(p.publishAt || p.publishDate || 0).getTime();
+            return at && at <= now ? { ...p, status: 'Published' } : p;
+        });
+    }),
 
     // Admin On-Demand Subscriptions
     subscribeToInvoices: () => get().subscribeToKey('invoices', 'invoices', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
@@ -1316,10 +1417,8 @@ export const useStore = create((set, get) => ({
             return obj;
         };
 
-        const cleanedUpdates = deepClean({
-            ...updates,
-            category: updates.category || ''
-        });
+        // Partial updates (e.g. ticketing payment settings) must not blank the category.
+        const cleanedUpdates = deepClean('category' in updates ? { ...updates, category: updates.category || '' } : { ...updates });
 
         // Safely remove id if it exists in updates to avoid rewriting document id
         delete cleanedUpdates.id;
@@ -1365,7 +1464,8 @@ export const useStore = create((set, get) => ({
                 title: updates.title,
                 content: updates.description,
                 image: updates.image,
-                date: updates.date?.split('T')[0] || ''
+                // Partial updates (payment settings) carry no date; don't blank it.
+                date: updates.date === undefined ? undefined : (updates.date?.split('T')[0] || '')
             };
             const cleanedAnnouncements = Object.entries(announcementUpdates).reduce((acc, [k, v]) => {
                 if (v !== undefined) acc[k] = v;
@@ -1430,8 +1530,9 @@ export const useStore = create((set, get) => ({
         // --- Archive Community Features (Gigs, Guestlists, Forms) ---
 
         // 1. Volunteer Gigs
+        // Only gigs whose dates are over. "Closed" just means applications are
+        // closed (it can be reopened), so it must never delete the gig.
         const gigsToArchive = volunteerGigs.filter(gig => {
-            if (gig.status && gig.status.toLowerCase() === 'closed') return true;
             if (gig.date) {
                 const gigDate = new Date(gig.date);
                 if (gigDate < today) return true;
@@ -1479,11 +1580,9 @@ export const useStore = create((set, get) => ({
             console.log(`[Auto-Archive] Moved Guestlist "${gl.title}" to Past Events.`);
         }
 
-        // 3. Forms
-        const formsToArchive = forms.filter(form => {
-            if (form.status && form.status.toLowerCase() === 'closed') return true;
-            return false;
-        });
+        // 3. Forms are never archived: closing a form is reversible and its
+        // responses must stay reachable, so nothing is deleted here.
+        const formsToArchive = [];
 
         for (const form of formsToArchive) {
             await addPortfolioItem({
@@ -1523,7 +1622,7 @@ export const useStore = create((set, get) => ({
 
     // Past Clients CRUD
     addPastClient: async (client) => {
-        const currentItems = get().pastClients;
+        const currentItems = get().pastClients || [];
         const maxOrder = currentItems.reduce((max, i) => Math.max(max, i.order || 0), 0);
         await addDoc(collection(db, 'past_clients'), {
             ...client,
@@ -1536,6 +1635,11 @@ export const useStore = create((set, get) => ({
     },
     deletePastClient: async (id) => {
         await deleteDoc(doc(db, 'past_clients', id));
+    },
+    reorderPastClients: async (items) => {
+        const batch = writeBatch(db);
+        items.forEach((item, index) => batch.update(doc(db, 'past_clients', item.id), { order: index + 1 }));
+        await batch.commit();
     },
 
     // City-Wise Creator Groups CRUD
@@ -1883,39 +1987,22 @@ export const useStore = create((set, get) => ({
         const currentItems = get().announcements;
         const minOrder = currentItems.reduce((min, i) => Math.min(min, i.order || 0), 0);
 
-        await addDoc(collection(db, 'announcements'), {
+        return await addDoc(collection(db, 'announcements'), {
             ...announcement,
             order: minOrder - 1
         });
     },
     reorderAnnouncements: async (items) => {
-        const updates = items.map((item, index) =>
-            updateDoc(doc(db, 'announcements', item.id), { order: index })
-        );
-        await Promise.all(updates);
+        // One batch, so a failed write never leaves half the list re-ordered.
+        const batch = writeBatch(db);
+        items.forEach((item, index) => batch.update(doc(db, 'announcements', item.id), { order: index }));
+        await batch.commit();
     },
     cleanupExpiredAnnouncements: async () => {
-        // This is called from the component or a dedicated effect, not essentially here in the store definition
-        // But we can expose it as an action
-        const { announcements, deleteAnnouncement } = get();
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const expired = announcements.filter(a => {
-            if (!a.date) return false;
-            const itemDate = new Date(a.date);
-            // Check if date is strictly BEFORE today (yesterday or earlier)
-            // If date is today, we keep it until tomorrow
-            return itemDate < today;
-        });
-
-        if (expired.length > 0) {
-            console.log(`[Cleanup] Found ${expired.length} expired announcements.`);
-            for (const item of expired) {
-                await deleteAnnouncement(item.id);
-                console.log(`[Cleanup] Deleted expired announcement: ${item.title}`);
-            }
-        }
+        // No longer deletes anything. Announcements past their end date are
+        // hidden from the site and kept in the admin under "Ended" instead
+        // (this used to delete every announcement dated before today).
+        return [];
     },
     togglePinAnnouncement: async (id) => {
         const item = get().announcements.find(a => a.id === id);
@@ -1926,6 +2013,23 @@ export const useStore = create((set, get) => ({
     },
     updateAnnouncement: async (id, updates) => {
         await updateDoc(doc(db, 'announcements', id), updates);
+    },
+    /**
+     * Claim the right to send the notification for an announcement or blog
+     * post, once. Returns false when it was already sent (unless `force`), so
+     * a double tap or two admins at once never notify everyone twice.
+     */
+    claimContentNotification: async (col, id, { force = false } = {}) => {
+        if (!['announcements', 'posts'].includes(col) || !id) throw new Error('Unknown content');
+        const ref = doc(db, col, id);
+        return runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw new Error('Not found');
+            const data = snap.data();
+            if (data.notifiedAt && !force) return false;
+            tx.update(ref, { notifiedAt: new Date().toISOString(), notifyCount: (Number(data.notifyCount) || 0) + 1 });
+            return true;
+        });
     },
 
     // Concerts
@@ -1953,12 +2057,10 @@ export const useStore = create((set, get) => ({
         await deleteDoc(doc(db, 'portfolio', id));
     },
     updatePortfolioOrder: async (items) => {
-        // Batch update is ideal, but for simplicity/now just parallel updates
-        // In a clearer implementation, we'd use a WriteBatch
-        const updates = items.map((item, index) =>
-            updateDoc(doc(db, 'portfolio', item.id), { order: index })
-        );
-        await Promise.all(updates);
+        // One batch, so the saved order is all-or-nothing.
+        const batch = writeBatch(db);
+        items.forEach((item, index) => batch.update(doc(db, 'portfolio', item.id), { order: index }));
+        await batch.commit();
     },
 
     // Invoices
@@ -1994,10 +2096,124 @@ export const useStore = create((set, get) => ({
         await updateDoc(doc(db, 'invoices', id), cleaned);
     },
     updateInvoiceStatus: async (id, status) => {
-        await updateDoc(doc(db, 'invoices', id), { status });
+        await updateDoc(doc(db, 'invoices', id), status === 'Paid' ? { status, paidAt: new Date().toISOString() } : { status });
     },
     deleteInvoice: async (id) => {
         await deleteDoc(doc(db, 'invoices', id));
+    },
+
+    /**
+     * Record money received against an invoice (full or partial). Runs in a
+     * transaction so a client's claim or another admin can't be overwritten.
+     * Marks the invoice Paid once nothing is left to pay. Returns the new balance.
+     */
+    recordInvoicePayment: async (id, { amount, method = 'Bank transfer', reference = '', date = null, note = '' } = {}) => {
+        const value = Math.round((Number(amount) || 0) * 100) / 100;
+        if (!(value > 0)) throw new Error('Enter an amount above zero.');
+        const user = get().user;
+        const ref = doc(db, 'invoices', id);
+        return runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw new Error('This invoice no longer exists.');
+            const inv = snap.data();
+            const entry = {
+                kind: 'payment',
+                type: method,
+                amount: value,
+                transactionId: reference || null,
+                note: note || null,
+                timestamp: date ? new Date(`${date}T12:00:00`).toISOString() : new Date().toISOString(),
+                recordedAt: new Date().toISOString(),
+                verifiedBy: user?.displayName || user?.email || 'Admin',
+            };
+            const next = { ...inv, paymentLogs: [...(inv.paymentLogs || []), entry] };
+            const balance = invoiceBalance({ ...next, status: INVOICE_STATUS.PENDING });
+            const updates = { paymentLogs: next.paymentLogs, updatedAt: new Date().toISOString() };
+            if (balance <= 0) {
+                updates.status = INVOICE_STATUS.PAID;
+                updates.paidAt = new Date().toISOString();
+                if (inv.paymentClaim?.status === 'pending') updates.paymentClaim = { ...inv.paymentClaim, status: 'approved' };
+            } else if (inv.status === INVOICE_STATUS.PAID) {
+                updates.status = INVOICE_STATUS.PENDING;
+            }
+            tx.update(ref, updates);
+            return balance;
+        });
+    },
+
+    // Strike a payment entered by mistake (kept in the log, marked void).
+    voidInvoicePayment: async (id, index) => {
+        const user = get().user;
+        const ref = doc(db, 'invoices', id);
+        await runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) return;
+            const inv = snap.data();
+            const logs = [...(inv.paymentLogs || [])];
+            if (!logs[index]) return;
+            logs[index] = { ...logs[index], voided: true, voidedAt: new Date().toISOString(), voidedBy: user?.displayName || user?.email || 'Admin' };
+            const balance = invoiceBalance({ ...inv, paymentLogs: logs, status: INVOICE_STATUS.PENDING });
+            tx.update(ref, {
+                paymentLogs: logs,
+                status: balance <= 0 ? INVOICE_STATUS.PAID : (inv.status === INVOICE_STATUS.VERIFYING ? INVOICE_STATUS.VERIFYING : INVOICE_STATUS.PENDING),
+                updatedAt: new Date().toISOString(),
+            });
+        });
+    },
+
+    // A client said they paid: accept it as payment of the remaining balance.
+    // One transaction, so two admins approving at once can't log the balance twice.
+    approveInvoiceClaim: async (id) => {
+        const user = get().user;
+        const ref = doc(db, 'invoices', id);
+        await runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw new Error('This invoice no longer exists.');
+            const inv = snap.data();
+            if (inv.paymentClaim?.status === 'approved') throw new Error('This claim was already approved.');
+            const now = new Date().toISOString();
+            const reviewer = user?.displayName || user?.email || 'Admin';
+            const balance = invoiceBalance({ ...inv, status: INVOICE_STATUS.PENDING });
+            const updates = {
+                status: INVOICE_STATUS.PAID,
+                paidAt: inv.paidAt || now,
+                updatedAt: now,
+                paymentClaim: { ...(inv.paymentClaim || {}), status: 'approved', reviewedAt: now, reviewedBy: reviewer },
+            };
+            if (balance > 0) {
+                // Same entry shape as recordInvoicePayment.
+                updates.paymentLogs = [...(inv.paymentLogs || []), {
+                    kind: 'payment',
+                    type: 'Client claim (verified)',
+                    amount: balance,
+                    transactionId: inv.paymentClaim?.transactionId || null,
+                    note: inv.paymentClaim?.name ? `Claimed by ${inv.paymentClaim.name}` : null,
+                    timestamp: inv.paymentClaim?.claimedAt || now,
+                    recordedAt: now,
+                    verifiedBy: reviewer,
+                }];
+            }
+            tx.update(ref, updates);
+        });
+    },
+
+    // Declining only reopens an invoice that was waiting on this claim; an
+    // invoice paid some other way meanwhile stays paid.
+    declineInvoiceClaim: async (id) => {
+        const user = get().user;
+        const ref = doc(db, 'invoices', id);
+        await runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw new Error('This invoice no longer exists.');
+            const inv = snap.data();
+            if (inv.paymentClaim?.status === 'approved') throw new Error('This claim was already approved.');
+            const now = new Date().toISOString();
+            tx.update(ref, {
+                status: inv.status === INVOICE_STATUS.PAID ? INVOICE_STATUS.PAID : INVOICE_STATUS.PENDING,
+                updatedAt: now,
+                paymentClaim: { ...(inv.paymentClaim || {}), status: 'declined', reviewedAt: now, reviewedBy: user?.displayName || user?.email || 'Admin' },
+            });
+        });
     },
 
     // Spends
@@ -2021,6 +2237,38 @@ export const useStore = create((set, get) => ({
         });
         delete cleaned.id;
         return await addDoc(collection(db, 'spends'), cleaned);
+    },
+    // Several spends saved all-or-nothing (bulk volunteer payouts), so a failed
+    // save never leaves half the payouts behind for a retry to duplicate.
+    addSpendsBatch: async (spends = []) => {
+        if (!spends.length) return [];
+        if (spends.length > 450) throw new Error('Pay at most 450 people at once.');
+        const user = get().user;
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const batch = writeBatch(db);
+        const ids = spends.map(spend => {
+            const cleaned = deepClean({
+                ...spend,
+                createdBy: user?.uid || null,
+                createdByEmail: user?.email || null,
+                createdAt: spend.createdAt || new Date().toISOString()
+            });
+            delete cleaned.id;
+            const ref = doc(collection(db, 'spends'));
+            batch.set(ref, cleaned);
+            return ref.id;
+        });
+        await batch.commit();
+        return ids;
     },
     updateSpend: async (id, updates) => {
         const deepClean = (obj) => {
@@ -2150,17 +2398,6 @@ export const useStore = create((set, get) => ({
         await setDoc(docRef, processed);
         return proposalId;
     },
-    logDocumentAccess: async (type, id, metadata) => {
-        const col = type === 'proposal' ? 'proposals' : 'agreements';
-        const docRef = doc(db, col, id);
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-            const logs = snap.data().accessLogs || [];
-            // Keep only last 50 logs to prevent doc bloat
-            const updatedLogs = [{ ...metadata, timestamp: new Date().toISOString() }, ...logs].slice(0, 50);
-            await updateDoc(docRef, { accessLogs: updatedLogs });
-        }
-    },
     updateProposal: async (id, updates) => {
         const deepClean = (obj) => {
             if (Array.isArray(obj)) return obj.map(deepClean);
@@ -2177,10 +2414,12 @@ export const useStore = create((set, get) => ({
 
         const processed = await processAndUploadBase64Fields(cleaned, `signatures/proposals/${id}`);
 
-        // Heal/trim accessLogs to prevent Firestore size limit issues if the document or update is bloated
+        // Cap accessLogs so the document stays under Firestore's size limit.
+        // logDocumentAccess appends with arrayUnion, so the newest entries are at the end.
+        const MAX_ACCESS_LOGS = 50;
         if (processed.accessLogs && Array.isArray(processed.accessLogs)) {
-            if (processed.accessLogs.length > 10) {
-                processed.accessLogs = processed.accessLogs.slice(0, 10);
+            if (processed.accessLogs.length > MAX_ACCESS_LOGS) {
+                processed.accessLogs = processed.accessLogs.slice(-MAX_ACCESS_LOGS);
             }
         } else {
             try {
@@ -2188,8 +2427,8 @@ export const useStore = create((set, get) => ({
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    if (data.accessLogs && Array.isArray(data.accessLogs) && data.accessLogs.length > 10) {
-                        processed.accessLogs = data.accessLogs.slice(0, 10);
+                    if (data.accessLogs && Array.isArray(data.accessLogs) && data.accessLogs.length > MAX_ACCESS_LOGS) {
+                        processed.accessLogs = data.accessLogs.slice(-MAX_ACCESS_LOGS);
                     }
                 }
             } catch (err) {
@@ -2254,33 +2493,112 @@ export const useStore = create((set, get) => ({
     deleteGenDocument: async (id) => {
         await deleteDoc(doc(db, 'gen_documents', id));
     },
+    // Copy a proposal as a new draft with its own number. Client responses,
+    // view history and the client's signature are never copied.
     duplicateProposal: async (id) => {
         const { proposals, addProposal } = get();
-        const original = proposals.find(p => p.id === id);
+        const original = (proposals || []).find(p => p.id === id);
         if (!original) throw new Error("Proposal not found");
-
-        const { id: _, createdAt: __, accessLogs: ___, approvalMetadata: ____, rejectionMetadata: _____, createdBy: ______, createdByEmail: _______, ...duplicateData } = original;
-        const user = get().user;
-        const deepClean = (obj) => {
-            if (Array.isArray(obj)) return obj.map(deepClean);
-            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
-                return Object.entries(obj).reduce((acc, [k, v]) => {
-                    if (v !== undefined) acc[k] = deepClean(v);
-                    return acc;
-                }, {});
-            }
-            return obj;
-        };
-        const cleaned = deepClean({
-            ...duplicateData,
-            clientName: `${original.clientName} (REVISED)`,
-            status: 'Draft',
-            createdAt: new Date().toISOString(),
-            createdBy: user?.uid || null,
-            createdByEmail: user?.email || null
+        const copy = { ...original };
+        PROPOSAL_NON_COPYABLE_FIELDS.forEach(key => { delete copy[key]; });
+        return await addProposal({
+            ...JSON.parse(JSON.stringify(copy)),
+            proposalNumber: nextProposalNumber(proposals),
+            status: PROPOSAL_STATUS.DRAFT,
+            revisionOf: original.id,
         });
-        delete cleaned.id;
-        return await addProposal(cleaned);
+    },
+
+    // Record that a proposal went out. Only drafts become 'Sent'; an accepted or
+    // declined proposal keeps its status no matter how often it's shared.
+    markProposalShared: async (id, via) => {
+        const ref = doc(db, 'proposals', id);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) return;
+        const p = snap.data();
+        const now = new Date().toISOString();
+        const updates = { lastSharedAt: now, lastSharedVia: via || 'link' };
+        if (!isProposalClosed(p) && p.status !== PROPOSAL_STATUS.SENT) {
+            updates.status = PROPOSAL_STATUS.SENT;
+            updates.sentAt = now;
+        }
+        await updateDoc(ref, updates);
+    },
+
+    // Client accepts or declines on the public page. Checked inside a
+    // transaction so a proposal can't be answered twice or after it expired.
+    respondToProposal: async (id, response, details = {}) => {
+        if (![PROPOSAL_STATUS.ACCEPTED, PROPOSAL_STATUS.REJECTED].includes(response)) throw new Error('Invalid response');
+        // Signatures arrive as images; store them as files, not inside the document.
+        const processed = await processAndUploadBase64Fields(JSON.parse(JSON.stringify(details)), `signatures/proposals/${id}`);
+        const ref = doc(db, 'proposals', id);
+        await runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw Object.assign(new Error('This proposal no longer exists.'), { code: 'NOT_FOUND' });
+            const current = snap.data();
+            if (isProposalClosed(current)) throw Object.assign(new Error(`This proposal was already ${current.status === PROPOSAL_STATUS.ACCEPTED ? 'accepted' : 'declined'}.`), { code: 'CLOSED' });
+            if (isProposalExpired(current)) throw Object.assign(new Error('This proposal has expired. Please ask us for an updated one.'), { code: 'EXPIRED' });
+            tx.update(ref, { ...processed, status: response, respondedAt: new Date().toISOString() });
+        });
+    },
+
+    // Start an invoice from an accepted (or any) proposal, then link the two.
+    convertProposalToInvoice: async (id) => {
+        const { proposals, invoices } = get();
+        const p = (proposals || []).find(x => x.id === id);
+        if (!p) throw new Error('Proposal not found');
+        const firstNumber = (text) => Number((String(text || '').replace(/,/g, '').match(/\d+(\.\d+)?/) || [0])[0]) || 0;
+        const isV2 = p.templateVersion === 'v2' || Boolean(p.whatsInside || p.blueprintSteps || p.deliverablesTable);
+        const label = p.campaignName || `As per proposal ${p.proposalNumber || ''}`.trim();
+        const oneLine = (price) => [{ id: `${Date.now()}_0`, name: '', description: label, qty: 1, price, customValues: {} }];
+        // Classic proposals: the summed column holds line totals, so each line is
+        // carried as qty 1 at that amount (the invoice total then matches the proposal).
+        const src = p.totalSourceColumn || 'price';
+        const legacyItems = isV2 ? [] : (Array.isArray(p.items) ? p.items : [])
+            .filter(it => it && (it.description || Number(it[src])))
+            .filter(it => !(it.description === 'Project Phase 01: Initial Strategic Planning' && !Number(it[src])))
+            .map((it, i) => {
+                const q = Number(it.qty) || 1;
+                return { id: `${Date.now()}_${i}`, name: '', description: `${it.description || ''}${q > 1 && src === 'price' ? ` (qty ${q})` : ''}`, qty: 1, price: Number(it[src]) || 0, customValues: {} };
+            });
+        const tableItems = (Array.isArray(p.pricingTable) ? p.pricingTable : [])
+            .filter(row => row && (row.deliverable || row.description || row.package))
+            .map((row, i) => ({ id: `${Date.now()}_t${i}`, name: '', description: [row.deliverable || row.package, row.description || row.scope].filter(Boolean).join(' — '), qty: 1, price: firstNumber(row.qtyPrice || row.price), customValues: {} }));
+        const override = p.totalOverride !== null && p.totalOverride !== undefined && p.totalOverride !== '' ? Number(p.totalOverride) || 0 : null;
+        const dealValue = Number(String(p.dealValue ?? '').replace(/[^\d.]/g, '')) || 0;
+        let items;
+        if (!isV2 && override !== null) items = oneLine(override);
+        else if (isV2 && dealValue > 0) items = oneLine(dealValue);
+        else items = legacyItems.length ? legacyItems : tableItems;
+        if (!items.length) items = oneLine(proposalValue(p));
+        const today = todayKey();
+        const subtotal = items.reduce((a, it) => a + it.qty * it.price, 0);
+        // GST as the proposal had it: off means none; never set means the usual 18%.
+        const gst = p.showGst === false ? 0 : Number(p.gstRate ?? 18) || 0;
+        const total = Math.round((subtotal + (subtotal * gst) / 100) * 100) / 100;
+        const ref = await get().addInvoice({
+            clientName: p.clientName || '',
+            clientAddress: p.clientAddress || '',
+            clientEmail: p.clientEmail || '',
+            invoiceNumber: nextInvoiceNumber(invoices || []),
+            invoiceDate: today,
+            issueDate: today,
+            dueDate: '',
+            items,
+            customColumns: [],
+            showGst: gst > 0,
+            gstPercentage: gst || 18,
+            amount: total,
+            total,
+            advancePaid: 0,
+            status: INVOICE_STATUS.PENDING,
+            selectedLogo: p.selectedLogo || 'entertainment',
+            sourceProposalId: p.id,
+            note: p.proposalNumber ? `As per proposal ${p.proposalNumber}.` : '',
+            createdAt: new Date().toISOString(),
+        });
+        await updateDoc(doc(db, 'proposals', id), { convertedInvoiceId: ref.id, convertedAt: new Date().toISOString() });
+        return ref.id;
     },
 
     // Agreements
@@ -2315,7 +2633,10 @@ export const useStore = create((set, get) => ({
         await setDoc(docRef, processed);
         return agreementId;
     },
-    updateAgreement: async (id, updates) => {
+    // opts.unlessSigned: refuse (code 'LOCKED') if the contract was signed meanwhile,
+    // checked in a transaction so an open editor can never overwrite a signed contract.
+    // Returns what was written (signature images swapped for their uploaded URLs).
+    updateAgreement: async (id, updates, opts = {}) => {
         const deepClean = (obj) => {
             if (Array.isArray(obj)) return obj.map(deepClean);
             if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
@@ -2333,8 +2654,8 @@ export const useStore = create((set, get) => ({
 
         // Heal/trim accessLogs to prevent Firestore size limit issues if the document or update is bloated
         if (processed.accessLogs && Array.isArray(processed.accessLogs)) {
-            if (processed.accessLogs.length > 10) {
-                processed.accessLogs = processed.accessLogs.slice(0, 10);
+            if (processed.accessLogs.length > 50) {
+                processed.accessLogs = processed.accessLogs.slice(-50);
             }
         } else {
             try {
@@ -2342,8 +2663,9 @@ export const useStore = create((set, get) => ({
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    if (data.accessLogs && Array.isArray(data.accessLogs) && data.accessLogs.length > 10) {
-                        processed.accessLogs = data.accessLogs.slice(0, 10);
+                    // Newest entries are at the end (arrayUnion appends); keep the latest 50.
+                    if (data.accessLogs && Array.isArray(data.accessLogs) && data.accessLogs.length > 50) {
+                        processed.accessLogs = data.accessLogs.slice(-50);
                     }
                 }
             } catch (err) {
@@ -2351,7 +2673,18 @@ export const useStore = create((set, get) => ({
             }
         }
 
+        if (opts.unlessSigned) {
+            const ref = doc(db, 'agreements', id);
+            await runTransaction(db, async (tx) => {
+                const snap = await tx.get(ref);
+                if (!snap.exists()) throw Object.assign(new Error('This contract no longer exists.'), { code: 'NOT_FOUND' });
+                if (snap.data().status === CONTRACT_STATUS.EXECUTED) throw Object.assign(new Error('This contract has been signed and is locked.'), { code: 'LOCKED' });
+                tx.update(ref, processed);
+            });
+            return processed;
+        }
         await updateDoc(doc(db, 'agreements', id), processed);
+        return processed;
     },
     updateAgreementStatus: async (id, status) => {
         await updateDoc(doc(db, 'agreements', id), { status });
@@ -2359,34 +2692,47 @@ export const useStore = create((set, get) => ({
     deleteAgreement: async (id) => {
         await deleteDoc(doc(db, 'agreements', id));
     },
+    // Copy a contract as a new draft. The client's signature and view history are never copied.
     duplicateAgreement: async (id) => {
         const { agreements, addAgreement } = get();
-        const original = agreements.find(a => a.id === id);
+        const original = (agreements || []).find(a => a.id === id);
         if (!original) throw new Error("Agreement not found");
-
-        const { id: _, createdAt: __, accessLogs: ___, approvalMetadata: ____, createdBy: _____, createdByEmail: ______, ...duplicateData } = original;
-        const user = get().user;
-        const deepClean = (obj) => {
-            if (Array.isArray(obj)) return obj.map(deepClean);
-            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
-                return Object.entries(obj).reduce((acc, [k, v]) => {
-                    if (v !== undefined) acc[k] = deepClean(v);
-                    return acc;
-                }, {});
-            }
-            return obj;
-        };
-        const cleaned = deepClean({
-            ...duplicateData,
-            agreementNumber: `${original.agreementNumber}-REV`,
-            status: 'Draft',
+        const copy = JSON.parse(JSON.stringify(original));
+        CONTRACT_NON_COPYABLE_FIELDS.forEach(key => { delete copy[key]; });
+        const base = String(original.agreementNumber || 'NB-AGR').replace(/-REV\d*$/i, '');
+        const revisions = (agreements || []).filter(a => String(a.agreementNumber || '').startsWith(`${base}-REV`)).length;
+        return await addAgreement({
+            ...copy,
+            agreementNumber: `${base}-REV${revisions + 1}`,
+            status: CONTRACT_STATUS.DRAFT,
             parentAgreementId: id,
-            createdAt: new Date().toISOString(),
-            createdBy: user?.uid || null,
-            createdByEmail: user?.email || null
         });
-        delete cleaned.id;
-        return await addAgreement(cleaned);
+    },
+
+    // Client signs on the public page. A transaction makes sure a contract is
+    // only signed once; the signature image is stored as a file first.
+    signAgreement: async (id, approvalMetadata) => {
+        if (!String(approvalMetadata?.signedBy || '').trim()) throw Object.assign(new Error('Enter your full name to sign.'), { code: 'INVALID' });
+        const processed = await processAndUploadBase64Fields(JSON.parse(JSON.stringify({ approvalMetadata })), `signatures/agreements/${id}`);
+        const ref = doc(db, 'agreements', id);
+        await runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw Object.assign(new Error('This contract no longer exists.'), { code: 'NOT_FOUND' });
+            if (snap.data().status === CONTRACT_STATUS.EXECUTED) throw Object.assign(new Error('This contract has already been signed.'), { code: 'CLOSED' });
+            // The signing time is taken when the signature is recorded, not when the page opened.
+            processed.approvalMetadata = { ...processed.approvalMetadata, signedAt: new Date().toISOString() };
+            tx.update(ref, {
+                status: CONTRACT_STATUS.EXECUTED,
+                approvalMetadata: processed.approvalMetadata,
+                clientSignature: processed.approvalMetadata?.clientSignature || null,
+                executedAt: new Date().toISOString(),
+            });
+        });
+        return processed.approvalMetadata;
+    },
+
+    markAgreementShared: async (id, via) => {
+        await updateDoc(doc(db, 'agreements', id), { lastSharedAt: new Date().toISOString(), lastSharedVia: via || 'link' });
     },
 
     // Forms
@@ -2424,89 +2770,94 @@ export const useStore = create((set, get) => ({
         return docRef.id;
     },
     updateForm: async (id, updates) => {
-        const { alsoPostToUpcomingEvents, ...formData } = updates;
+        const { alsoPostToUpcomingEvents, id: _ignoredId, ...formData } = updates;
         await updateDoc(doc(db, 'forms', id), formData);
 
-        // Sync mirrored Upcoming Event if any
-        const eventQ = query(collection(db, 'upcoming_events'), where('formId', '==', id));
-        const eventSnap = await getDocs(eventQ);
-        if (!eventSnap.empty) {
-            eventSnap.forEach(async (d) => {
-                await updateDoc(doc(db, 'upcoming_events', d.id), {
-                    title: updates.title,
-                    description: updates.description || '',
-                    image: updates.image || '',
-                    buttonText: updates.buttonText || 'FILL FORM',
-                    highlightColor: updates.highlightColor || '#FF4F8B',
-                    status: updates.activeLabel || 'Live'
+        // Keep the home-page card in step. Partial updates (e.g. only the
+        // status) are merged with the saved form so nothing is blanked.
+        try {
+            const eventSnap = await getDocs(query(collection(db, 'upcoming_events'), where('formId', '==', id)));
+            if (!eventSnap.empty && alsoPostToUpcomingEvents === false) {
+                await Promise.all(eventSnap.docs.map(d => deleteDoc(doc(db, 'upcoming_events', d.id))));
+                return;
+            }
+            if (eventSnap.empty && !alsoPostToUpcomingEvents) return;
+            const saved = await getDoc(doc(db, 'forms', id));
+            const form = { ...(saved.exists() ? saved.data() : {}), ...formData };
+            const mirror = {
+                title: form.title || '',
+                description: form.description || '',
+                image: form.image || '',
+                buttonText: form.buttonText || 'FILL FORM',
+                highlightColor: form.highlightColor || '#FF4F8B',
+                status: form.activeLabel || 'Live',
+            };
+            if (!eventSnap.empty) {
+                await Promise.all(eventSnap.docs.map(d => updateDoc(doc(db, 'upcoming_events', d.id), mirror)));
+            } else {
+                const currentEvents = get().upcomingEvents || [];
+                const maxOrder = currentEvents.reduce((max, i) => Math.max(max, i.order || 0), 0);
+                await addDoc(collection(db, 'upcoming_events'), {
+                    ...mirror,
+                    link: `/forms/${id}`,
+                    category: 'form',
+                    formId: id,
+                    relatedArtistFormId: id,
+                    date: new Date().toISOString(),
+                    location: 'Online Form',
+                    isForm: true,
+                    order: maxOrder + 1
                 });
-            });
-        } else if (alsoPostToUpcomingEvents) {
-            const currentEvents = get().upcomingEvents;
-            const maxOrder = currentEvents.reduce((max, i) => Math.max(max, i.order || 0), 0);
-            await addDoc(collection(db, 'upcoming_events'), {
-                title: updates.title,
-                description: updates.description || '',
-                image: updates.image || '',
-                link: `/forms/${id}`,
-                buttonText: updates.buttonText || 'FILL FORM',
-                highlightColor: updates.highlightColor || '#FF4F8B',
-                category: 'form',
-                formId: id,
-                relatedArtistFormId: id,
-                date: new Date().toISOString(),
-                location: 'Online Form',
-                status: updates.activeLabel || 'Live',
-                isForm: true,
-                order: maxOrder + 1
-            });
+            }
+        } catch (err) {
+            console.warn('[updateForm] Home card sync failed:', err);
         }
     },
     deleteForm: async (id) => {
         await deleteDoc(doc(db, 'forms', id));
-        // Delete mirrored Upcoming Event if any
-        const eventQ = query(collection(db, 'upcoming_events'), where('formId', '==', id));
-        const eventSnap = await getDocs(eventQ);
-        eventSnap.forEach(async (d) => {
-            await deleteDoc(doc(db, 'upcoming_events', d.id));
-        });
+        // Delete mirrored Upcoming Event if any. Responses are kept.
+        const eventSnap = await getDocs(query(collection(db, 'upcoming_events'), where('formId', '==', id)));
+        await Promise.all(eventSnap.docs.map(d => deleteDoc(doc(db, 'upcoming_events', d.id))));
     },
 
 
 
     // Volunteer Gigs
     addVolunteerGig: async (gig) => {
-        const currentItems = get().volunteerGigs;
+        const currentItems = get().volunteerGigs || [];
         const maxOrder = currentItems.reduce((max, i) => Math.max(max, i.order || 0), 0);
-        await addDoc(collection(db, 'volunteer_gigs'), { ...gig, order: maxOrder + 1, createdAt: new Date().toISOString() });
+        return await addDoc(collection(db, 'volunteer_gigs'), { ...gig, order: maxOrder + 1, createdAt: new Date().toISOString() });
     },
     reorderVolunteerGigs: async (items) => {
-        const updates = items.map((item, index) =>
-            updateDoc(doc(db, 'volunteer_gigs', item.id), { order: index })
-        );
-        await Promise.all(updates);
+        const batch = writeBatch(db);
+        items.forEach((item, index) => batch.update(doc(db, 'volunteer_gigs', item.id), { order: index }));
+        await batch.commit();
     },
     updateVolunteerGig: async (id, updates) => {
-        await updateDoc(doc(db, 'volunteer_gigs', id), updates);
-        const eventQ = query(collection(db, 'upcoming_events'), where('gigId', '==', id));
-        const eventSnap = await getDocs(eventQ);
-        eventSnap.forEach(async (d) => {
-            await updateDoc(doc(db, 'upcoming_events', d.id), {
-                title: updates.title,
-                description: updates.description || '',
-                image: updates.image || '',
-                location: updates.location || 'GLOBAL',
-                highlightColor: updates.highlightColor || '#39FF14'
-            });
-        });
+        const { id: _ignoredId, ...data } = updates;
+        await updateDoc(doc(db, 'volunteer_gigs', id), data);
+        // Keep the home-page card in step, merged with the saved gig so a
+        // partial update (status, pin) never blanks the card.
+        try {
+            const eventSnap = await getDocs(query(collection(db, 'upcoming_events'), where('gigId', '==', id)));
+            if (eventSnap.empty) return;
+            const saved = await getDoc(doc(db, 'volunteer_gigs', id));
+            const gig = { ...(saved.exists() ? saved.data() : {}), ...data };
+            await Promise.all(eventSnap.docs.map(d => updateDoc(doc(db, 'upcoming_events', d.id), {
+                title: gig.title || '',
+                description: gig.description || '',
+                image: gig.image || '',
+                location: gig.location || 'GLOBAL',
+                highlightColor: gig.highlightColor || '#39FF14'
+            })));
+        } catch (err) {
+            console.warn('[updateVolunteerGig] Home card sync failed:', err);
+        }
     },
     deleteVolunteerGig: async (id) => {
         await deleteDoc(doc(db, 'volunteer_gigs', id));
-        const eventQ = query(collection(db, 'upcoming_events'), where('gigId', '==', id));
-        const eventSnap = await getDocs(eventQ);
-        eventSnap.forEach(async (d) => {
-            await deleteDoc(doc(db, 'upcoming_events', d.id));
-        });
+        const eventSnap = await getDocs(query(collection(db, 'upcoming_events'), where('gigId', '==', id)));
+        await Promise.all(eventSnap.docs.map(d => deleteDoc(doc(db, 'upcoming_events', d.id))));
     },
 
     // Guestlists
@@ -2585,16 +2936,30 @@ export const useStore = create((set, get) => ({
             }
         }
 
-        // 1. Add the entry to sub-collection
-        await addDoc(collection(db, 'guestlists', id, 'entries'), {
-            ...entry,
-            createdAt: new Date().toISOString()
+        // 1+2. Add the entry and bump currentSpots together, refusing the
+        // request when the list is closed, full, or asks for too many spots.
+        const entryRef = doc(collection(db, 'guestlists', id, 'entries'));
+        await runTransaction(db, async (tx) => {
+            const parent = await tx.get(docRef);
+            const gl = parent.exists() ? parent.data() : {};
+            const want = Math.max(1, Number(entry.guestsCount) || 1);
+            if (String(gl.status || '').toLowerCase() === 'closed') {
+                throw new Error('This guestlist is closed.');
+            }
+            const perUser = Number(gl.perUserLimit) || 0;
+            if (perUser > 0 && want > perUser) {
+                throw new Error(`You can request at most ${perUser} ${perUser === 1 ? 'spot' : 'spots'}.`);
+            }
+            const max = Number(gl.maxSpots) || 0;
+            const taken = Math.max(0, Number(gl.currentSpots) || 0);
+            if (max > 0 && taken + want > max) {
+                const left = Math.max(0, max - taken);
+                throw new Error(left ? `Only ${left} ${left === 1 ? 'spot is' : 'spots are'} left.` : 'This guestlist is full.');
+            }
+            tx.set(entryRef, { ...entry, createdAt: new Date().toISOString() });
+            tx.update(docRef, { currentSpots: increment(want) });
         });
-
-        // 2. Increment currentSpots on the parent document
-        await updateDoc(docRef, {
-            currentSpots: increment(entry.guestsCount || 1)
-        });
+        return entryRef.id;
     },
     markGuestlistAttendance: async (id, entryId, attended) => {
         await updateDoc(doc(db, 'guestlists', id, 'entries', entryId), {
@@ -2633,16 +2998,36 @@ export const useStore = create((set, get) => ({
             } catch (err) {
                 console.warn('Failed to send approval email notification:', err);
             }
-        } else if (status === 'rejected') {
-            // Decrement spots from parent guestlist doc if currently held
+        }
+
+        // Rejected entries don't hold spots. Only move the counter when the
+        // entry actually crosses that line, so repeat clicks can't drift it.
+        const wasRejected = currentData.status === 'rejected';
+        const isRejected = status === 'rejected';
+        if (entrySnap.exists() && wasRejected !== isRejected) {
             try {
-                const glRef = doc(db, 'guestlists', guestlistId);
-                await updateDoc(glRef, {
-                    currentSpots: increment(-(currentData.guestsCount || 1))
+                const spots = Number(currentData.guestsCount) || 1;
+                await updateDoc(doc(db, 'guestlists', guestlistId), {
+                    currentSpots: increment(isRejected ? -spots : spots)
                 });
             } catch (err) {
-                console.warn('Failed to decrement spots upon rejection:', err);
+                console.warn('Failed to update guestlist spots after a status change:', err);
             }
+        }
+    },
+    // Removes an entry and gives its spots back (rejected entries already did).
+    deleteGuestlistEntry: async (guestlistId, entryId) => {
+        const entryRef = doc(db, 'guestlists', guestlistId, 'entries', entryId);
+        const snap = await getDoc(entryRef);
+        if (!snap.exists()) return;
+        const data = snap.data();
+        await deleteDoc(entryRef);
+        if (data.status !== 'rejected') {
+            try {
+                await updateDoc(doc(db, 'guestlists', guestlistId), {
+                    currentSpots: increment(-(Number(data.guestsCount) || 1))
+                });
+            } catch { /* standalone entries may have no parent counter */ }
         }
     },
 
@@ -2653,135 +3038,200 @@ export const useStore = create((set, get) => ({
             createdAt: new Date().toISOString()
         });
     },
-    scanTicket: async (eventId, code) => {
-        console.log(`[Store] Scanning ticket ${code} for event ${eventId}`);
-        
-        let refId = code;
-        try {
-            const decodedUri = decodeURIComponent(code);
-            const obj = JSON.parse(decodedUri);
-            if (obj.ref) refId = obj.ref;
-        } catch (e) {
-            try {
-                const obj = JSON.parse(code);
-                if (obj.ref) refId = obj.ref;
-            } catch (e2) {
-                // Not a JSON, assume it's directly a code
+    // Door check-in for one scanned or typed code. Every outcome carries a
+    // `reason` the scanner shows: admitted | already | pending | rejected |
+    // unpaid | wrong_event | not_found. `guestlistIds` lists every guestlist
+    // document whose entries belong to this event (standalone lists and the
+    // event's own list can both hold sign-ups). Claims run in transactions so
+    // two phones (or a double scan) can never admit the same pass twice.
+    scanTicket: async (eventId, code, { guestlistIds = [] } = {}) => {
+        const readRef = (raw) => {
+            let text = String(raw || '').trim();
+            for (let i = 0; i < 2; i++) {
+                try { text = decodeURIComponent(text); } catch { break; }
             }
-        }
+            try {
+                const obj = JSON.parse(text);
+                if (obj && obj.ref) return String(obj.ref).trim().toUpperCase();
+            } catch { /* not JSON */ }
+            const match = text.toUpperCase().match(/\b(?:NB|GL)-[A-Z0-9]{3,12}\b/);
+            if (match) return match[0];
+            // Typed codes: "nb abc123" or "abc123" → NB-ABC123.
+            const bare = text.toUpperCase().replace(/\s+/g, '');
+            if (/^(NB|GL)[A-Z0-9]{3,12}$/.test(bare)) return `${bare.slice(0, 2)}-${bare.slice(2)}`;
+            return bare;
+        };
+        const refId = readRef(code);
+        if (!refId) return { valid: false, reason: 'not_found', message: 'That code is empty.' };
 
-        // 1. Check in ticket_orders
-        const qTicket = query(collection(db, 'ticket_orders'), where('bookingRef', '==', refId), where('eventId', '==', eventId));
-        const snapTicket = await getDocs(qTicket);
-        
+        // 1. Ticket orders for this event
+        const snapTicket = await getDocs(query(collection(db, 'ticket_orders'), where('bookingRef', '==', refId), where('eventId', '==', eventId)));
         if (!snapTicket.empty) {
-            const docSnap = snapTicket.docs[0];
-            const data = docSnap.data();
-            
-            // Validate payment status
-            if (data.status !== 'approved' && data.status !== 'dispatched') {
-                return { valid: false, message: 'PAYMENT NOT VERIFIED' };
-            }
-
-            if (data.isScanned) {
-                return { valid: true, scanned: true, data: { code: refId, name: data.customerName, type: 'Paid Ticket' } };
-            }
-
-            // Mark as scanned
-            await updateDoc(doc(db, 'ticket_orders', docSnap.id), {
-                isScanned: true,
-                scannedAt: new Date().toISOString()
-            });
-
-            return { valid: true, scanned: false, data: { code: refId, name: data.customerName, type: 'Paid Ticket', items: data.items } };
-        }
-
-        // 2. Check in guestlist entries
-        const qGuest = query(collection(db, 'guestlists', eventId, 'entries'), where('bookingRef', '==', refId));
-        const snapGuest = await getDocs(qGuest);
-
-        if (!snapGuest.empty) {
-            const docSnap = snapGuest.docs[0];
-            const data = docSnap.data();
-
-            // Validate task / approval status
-            if (data.status === 'pending') {
-                return { valid: false, message: 'APPLICATION PENDING APPROVAL' };
-            }
-            if (data.status === 'rejected') {
-                return { valid: false, message: 'APPLICATION REJECTED' };
-            }
-
-            if (data.attended) {
-                return { valid: true, scanned: true, data: { code: refId, name: data.customerName || data.name, type: 'Guestlist' } };
-            }
-
-            // Mark as attended
-            await updateDoc(docSnap.ref, {
-                attended: true,
-                attendedAt: new Date().toISOString()
-            });
-
-            return { valid: true, scanned: false, data: { code: refId, name: data.customerName || data.name, type: 'Guestlist', guestsCount: data.guestsCount } };
-        }
-
-        // 3. Fallback: Global check to see if it's the WRONG EVENT
-        const globalTicket = query(collection(db, 'ticket_orders'), where('bookingRef', '==', refId));
-        const globalTicketSnap = await getDocs(globalTicket);
-        if (!globalTicketSnap.empty) {
-            return { valid: false, message: `WRONG EVENT: Valid for "${globalTicketSnap.docs[0].data().eventTitle}"` };
-        }
-
-        const globalGuest = query(collectionGroup(db, 'entries'), where('bookingRef', '==', refId));
-        const globalGuestSnap = await getDocs(globalGuest);
-        if (!globalGuestSnap.empty) {
-            return { valid: false, message: `WRONG EVENT: Valid for "${globalGuestSnap.docs[0].data().title || 'Another Event'}"` };
-        }
-
-        return { valid: false, message: 'INVALID PASS: CODE NOT FOUND' };
-    },
-    updateTicketOrderStatus: async (orderId, status) => {
-        await updateDoc(doc(db, 'ticket_orders', orderId), { status });
-
-        if (status === 'dispatched') {
-            try {
-                const orderDoc = await getDoc(doc(db, 'ticket_orders', orderId));
-                if (orderDoc.exists()) {
-                    const orderData = orderDoc.data();
-                    let eventName = 'Event';
-                    if (orderData.eventId) {
-                        const eventDoc = await getDoc(doc(db, 'upcoming_events', orderData.eventId));
-                        if (eventDoc.exists()) {
-                            eventName = eventDoc.data().title || 'Event';
-                        }
-                    }
-                    
-                    const ticketsHtml = (orderData.items || []).map(item => `
-                        <div style="padding: 10px 0; border-bottom: 1px solid #eee;">
-                            <strong>${item.name}</strong> x ${item.count}
-                        </div>
-                    `).join('');
-                    
-                    await sendBookingConfirmation({
-                        to_name: orderData.customerName,
-                        to_email: orderData.customerEmail,
-                        event_name: eventName,
-                        booking_ref: orderData.bookingRef,
-                        tickets_html: ticketsHtml,
-                        total_amount: orderData.totalAmount || 0,
-                        payment_ref: orderData.paymentRef || 'FREE',
-                        items: orderData.items || []
-                    });
+            const ticketRef = doc(db, 'ticket_orders', snapTicket.docs[0].id);
+            return runTransaction(db, async (tx) => {
+                const fresh = await tx.get(ticketRef);
+                const data = fresh.data() || {};
+                const base = {
+                    code: refId,
+                    id: ticketRef.id,
+                    kind: 'ticket',
+                    name: data.customerName || data.name || 'Ticket holder',
+                    phone: data.customerPhone || data.phone || '',
+                    type: Number(data.totalAmount || 0) > 0 ? 'Paid ticket' : 'Free ticket',
+                    items: orderItems(data),
+                    people: orderTicketCount(data),
+                    amount: Number(data.totalAmount) || 0,
+                };
+                if (data.status === 'pending') {
+                    return { valid: false, reason: 'unpaid', message: "Payment hasn't been verified yet.", data: base };
                 }
-            } catch (err) {
-                console.error("Failed to send booking confirmation email on dispatch:", err);
+                if (data.status === 'rejected') {
+                    return { valid: false, reason: 'rejected', message: 'This order was cancelled.', data: base };
+                }
+                // Free tickets are 'confirmed'; paid ones are 'approved' or 'dispatched'.
+                if (!['approved', 'dispatched', 'confirmed', 'attended'].includes(data.status)) {
+                    return { valid: false, reason: 'unpaid', message: "This ticket isn't valid yet.", data: base };
+                }
+                // The check-in desk sets attended/status; the scanner sets isScanned. Honour both.
+                if (data.isScanned || data.attended || data.status === 'attended') {
+                    return { valid: true, scanned: true, reason: 'already', message: 'Already checked in.', data: { ...base, previousAt: data.scannedAt || data.attendedAt || null } };
+                }
+                const now = new Date().toISOString();
+                tx.update(ticketRef, { isScanned: true, scannedAt: now, attended: true, attendedAt: now });
+                return { valid: true, scanned: false, reason: 'admitted', message: 'Entry granted.', data: base };
+            });
+        }
+
+        // 2. Guestlist entries in any list that belongs to this event
+        const listIds = [...new Set([eventId, ...guestlistIds].filter(Boolean))];
+        for (const listId of listIds) {
+            const snapGuest = await getDocs(query(collection(db, 'guestlists', listId, 'entries'), where('bookingRef', '==', refId)));
+            if (snapGuest.empty) continue;
+            const entryRef = snapGuest.docs[0].ref;
+            return runTransaction(db, async (tx) => {
+                const fresh = await tx.get(entryRef);
+                const data = fresh.data() || {};
+                const people = Number(data.guestsCount) || 1;
+                const base = {
+                    code: refId,
+                    id: entryRef.id,
+                    guestlistId: listId,
+                    kind: 'guest',
+                    name: data.customerName || data.name || 'Guest',
+                    phone: data.customerPhone || data.phone || '',
+                    type: data.guestlistMode === 'rsvp' ? 'RSVP' : 'Guestlist',
+                    people,
+                    guestsCount: people,
+                    plusOneNames: Array.isArray(data.plusOneNames) ? data.plusOneNames.filter(Boolean) : [],
+                };
+                if (data.status === 'rejected') {
+                    return { valid: false, reason: 'rejected', message: 'This request was declined.', data: base };
+                }
+                if (!isGuestAdmissible(data)) {
+                    return { valid: false, reason: 'pending', message: "This request hasn't been approved yet.", data: base };
+                }
+                if (data.attended) {
+                    return { valid: true, scanned: true, reason: 'already', message: 'Already checked in.', data: { ...base, previousAt: data.attendedAt || null } };
+                }
+                tx.update(entryRef, { attended: true, attendedAt: new Date().toISOString() });
+                return { valid: true, scanned: false, reason: 'admitted', message: 'Entry granted.', data: base };
+            });
+        }
+
+        // 3. Valid somewhere else?
+        const globalTicketSnap = await getDocs(query(collection(db, 'ticket_orders'), where('bookingRef', '==', refId), limit(1)));
+        if (!globalTicketSnap.empty) {
+            const other = globalTicketSnap.docs[0].data();
+            let otherTitle = other.eventTitle || '';
+            if (!otherTitle && other.eventId) {
+                try {
+                    const ev = await getDoc(doc(db, 'upcoming_events', other.eventId));
+                    otherTitle = ev.exists() ? ev.data().title || '' : '';
+                } catch { /* title is a nicety */ }
             }
+            return { valid: false, reason: 'wrong_event', message: `This ticket is for ${otherTitle || 'another event'}.`, data: { code: refId, name: other.customerName || '' } };
+        }
+        try {
+            const globalGuestSnap = await getDocs(query(collectionGroup(db, 'entries'), where('bookingRef', '==', refId), limit(1)));
+            if (!globalGuestSnap.empty) {
+                const other = globalGuestSnap.docs[0].data();
+                return { valid: false, reason: 'wrong_event', message: `This pass is for ${other.title || 'another event'}.`, data: { code: refId, name: other.customerName || other.name || '' } };
+            }
+        } catch (err) {
+            console.warn('[Store] Cross-event pass lookup failed:', err);
+        }
+
+        return { valid: false, reason: 'not_found', message: "We couldn't find this code.", data: { code: refId } };
+    },
+    // Returns { emailed } for 'dispatched' so the screen can say when the
+    // status changed but the ticket email didn't go out.
+    updateTicketOrderStatus: async (orderId, status) => {
+        if (status === 'rejected') {
+            await get().rejectTicketOrder(orderId);
+            return { ok: true };
+        }
+        const orderRef = doc(db, 'ticket_orders', orderId);
+        const now = new Date().toISOString();
+        if (status === 'approved') {
+            // Verifying an order that was rejected by mistake takes its coupon use back.
+            await runTransaction(db, async (tx) => {
+                const snap = await tx.get(orderRef);
+                if (!snap.exists()) throw new Error('This order no longer exists.');
+                const order = snap.data();
+                const couponId = order.appliedCoupon?.id;
+                const reclaim = order.status === 'rejected' && order.couponReleased && couponId;
+                const couponRef = reclaim ? doc(db, 'coupons', couponId) : null;
+                const couponSnap = couponRef ? await tx.get(couponRef) : null;
+                tx.update(orderRef, { status, approvedAt: now, ...(reclaim ? { couponReleased: false } : {}) });
+                if (couponSnap?.exists()) tx.update(couponRef, { usedCount: increment(1) });
+            });
+            return { ok: true };
+        }
+        await updateDoc(orderRef, { status, [`${status}At`]: now });
+
+        if (status !== 'dispatched') return { ok: true };
+        try {
+            const orderDoc = await getDoc(orderRef);
+            if (!orderDoc.exists()) return { ok: true, emailed: false };
+            const orderData = orderDoc.data();
+            const email = String(orderData.customerEmail || orderData.email || '').trim();
+            if (!email) return { ok: true, emailed: false };
+            let eventName = orderData.eventTitle || 'Event';
+            if (orderData.eventId) {
+                const eventDoc = await getDoc(doc(db, 'upcoming_events', orderData.eventId));
+                if (eventDoc.exists()) eventName = eventDoc.data().title || eventName;
+            }
+            const items = orderItems(orderData);
+            const ticketsHtml = items.map(item => `
+                <div style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                    <strong>${item.name}</strong> x ${item.count}
+                </div>
+            `).join('');
+            const result = await sendBookingConfirmation({
+                to_name: orderData.customerName,
+                to_email: email,
+                event_name: eventName,
+                booking_ref: orderData.bookingRef,
+                tickets_html: ticketsHtml,
+                total_amount: orderData.totalAmount || 0,
+                payment_ref: orderData.paymentRef || 'FREE',
+                items
+            });
+            return { ok: true, emailed: result?.success !== false };
+        } catch (err) {
+            console.error("Failed to send booking confirmation email on dispatch:", err);
+            return { ok: true, emailed: false };
         }
     },
 
     // Messages
     markMessageRead: async (id, status = 'read') => {
         await updateDoc(doc(db, 'messages', id), { status });
+    },
+    // Inbox bookkeeping (replied / archived). `status` stays 'new' | 'read' |
+    // 'archived' so the shell's unread badge (status === 'new') keeps working.
+    updateMessage: async (id, updates) => {
+        await updateDoc(doc(db, 'messages', id), { ...updates, updatedAt: new Date().toISOString() });
     },
     deleteMessage: async (id) => {
         await deleteDoc(doc(db, 'messages', id));
@@ -3225,7 +3675,7 @@ export const useStore = create((set, get) => ({
             try {
                 const res = await fetch('/api/creator-join?action=creator-update', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await authJsonHeaders(),
                     body: JSON.stringify({ id: docId, uid, updates: sanitizedUpdates })
                 });
                 if (res.ok) {
@@ -3282,9 +3732,16 @@ export const useStore = create((set, get) => ({
 
         if (!deleteSuccess) {
             try {
+                // The server only deletes for signed-in admins.
+                const headers = { 'Content-Type': 'application/json' };
+                try {
+                    const { auth } = await import('./firebase');
+                    const idToken = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+                    if (idToken) headers.Authorization = `Bearer ${idToken}`;
+                } catch { /* no session: the server will refuse */ }
                 const res = await fetch('/api/creator-join?action=creator-delete', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers,
                     body: JSON.stringify({ id: docId, uid })
                 });
                 if (!res.ok) {
@@ -3313,10 +3770,11 @@ export const useStore = create((set, get) => ({
         const affected = (creators || []).filter(c => isBangaloreVariant(c.city));
         let updatedCount = 0;
         for (const creator of affected) {
-            const docId = creator.uid || creator.id;
+            // Doc id first (it is always the document key; uid can differ on old records).
+            const docId = creator.id || creator.uid;
             if (docId) {
                 try {
-                    await updateDoc(doc(db, 'creators', docId), { city: 'Bengaluru' });
+                    await get().updateCreator(docId, { city: 'Bengaluru' });
                     updatedCount++;
                 } catch (e) {
                     console.error(`Failed to merge creator ${docId} to Bengaluru:`, e);
@@ -3421,36 +3879,37 @@ export const useStore = create((set, get) => ({
     },
 
     // Campaigns / Gigs
-    addCampaign: async (campaign) => {
-        const cleanedData = {
-            ...campaign,
-            brand: campaign.brand || '',
-            brandLogo: campaign.brandLogo || '',
-            totalSpots: (campaign.totalSpots !== undefined && campaign.totalSpots !== '' && campaign.totalSpots !== null) ? Number(campaign.totalSpots) : null,
-            spotsLeft: (campaign.spotsLeft !== undefined && campaign.spotsLeft !== '' && campaign.spotsLeft !== null) ? Number(campaign.spotsLeft) : null,
-            minInstagramFollowers: campaign.minInstagramFollowers || 0,
-            thumbnail: campaign.thumbnail || '',
-            tasks: campaign.tasks || [], // Store tasks directly in campaign structure for now
-            createdAt: new Date().toISOString()
-        };
+    addCampaign: async (campaign, options = {}) => {
+        // eslint-disable-next-line no-unused-vars
+        const { id: _ignoredId, ...rest } = campaign || {};
+        const now = new Date().toISOString();
+        // A campaign is announced (email + in-app) once, when it goes live.
+        const willAnnounce = rest.status === 'Open' && options.notify !== false;
+        const cleanedData = stripUndefinedDeep({
+            ...rest,
+            brand: rest.brand || '',
+            brandLogo: rest.brandLogo || '',
+            totalSpots: (rest.totalSpots !== undefined && rest.totalSpots !== '' && rest.totalSpots !== null) ? Number(rest.totalSpots) : null,
+            spotsLeft: (rest.spotsLeft !== undefined && rest.spotsLeft !== '' && rest.spotsLeft !== null) ? Number(rest.spotsLeft) : null,
+            minInstagramFollowers: Number(rest.minInstagramFollowers) || 0,
+            thumbnail: rest.thumbnail || '',
+            tasks: rest.tasks || [], // Store tasks directly in campaign structure for now
+            createdAt: now,
+            ...(willAnnounce ? { announcedAt: now } : {}),
+        });
         const docRef = await addDoc(collection(db, 'campaigns'), cleanedData);
 
-        if (campaign.status === 'Open') {
+        if (willAnnounce) {
             notifyMatchingCreatorsOfCampaign({ ...cleanedData, id: docRef.id }, get().creators);
         }
         return docRef.id;
     },
-    updateCampaign: async (id, updates) => {
-        let prevStatus = null;
-        try {
-            const docSnap = await getDoc(doc(db, 'campaigns', id));
-            if (docSnap.exists()) {
-                prevStatus = docSnap.data().status;
-            }
-        } catch (err) {
-            console.error("Error fetching previous campaign status:", err);
-        }
-
+    /**
+     * options.notify: when this update opens the campaign, true announces it to
+     * matching creators again, false never does. Left out, only a campaign that
+     * was never announced (a draft being published) is announced.
+     */
+    updateCampaign: async (id, updates, options = {}) => {
         const cleanedUpdates = {};
         for (const [key, val] of Object.entries(updates || {})) {
             if (key !== 'id' && val !== undefined) {
@@ -3463,27 +3922,105 @@ export const useStore = create((set, get) => ({
         if (cleanedUpdates.spotsLeft !== undefined) {
             cleanedUpdates.spotsLeft = (cleanedUpdates.spotsLeft !== '' && cleanedUpdates.spotsLeft !== null) ? Number(cleanedUpdates.spotsLeft) : null;
         }
+        if (cleanedUpdates.minInstagramFollowers !== undefined) {
+            cleanedUpdates.minInstagramFollowers = Number(cleanedUpdates.minInstagramFollowers) || 0;
+        }
 
+        const before = (get().campaigns || []).find(c => c.id === id);
         // Optimistically update local Zustand store immediately
         set(state => ({
             campaigns: (state.campaigns || []).map(c => c.id === id ? { ...c, ...cleanedUpdates } : c)
         }));
 
-        await updateDoc(doc(db, 'campaigns', id), cleanedUpdates);
-
-        if (updates.status === 'Open' && prevStatus !== 'Open') {
-            try {
-                const campaignDoc = await getDoc(doc(db, 'campaigns', id));
-                if (campaignDoc.exists()) {
-                    notifyMatchingCreatorsOfCampaign({ ...campaignDoc.data(), id }, get().creators);
-                }
-            } catch (err) {
-                console.error("Error fetching campaign doc for notifications:", err);
+        const ref = doc(db, 'campaigns', id);
+        let result;
+        try {
+            // Read-then-write in one transaction so a save never wipes task
+            // submissions that arrived while the editor was open.
+            result = await runTransaction(db, async (tx) => {
+                const snap = await tx.get(ref);
+                if (!snap.exists()) throw new Error('This campaign no longer exists.');
+                const stored = snap.data();
+                const write = { ...cleanedUpdates };
+                if (Array.isArray(write.tasks)) write.tasks = mergeLiveTaskProgress(write.tasks, stored.tasks);
+                const opening = write.status === 'Open' && stored.status !== 'Open';
+                const announce = opening && (options.notify === true
+                    || (options.notify === undefined && !stored.announcedAt && stored.status === 'Draft'));
+                if (announce) write.announcedAt = new Date().toISOString();
+                const clean = stripUndefinedDeep(write);
+                tx.update(ref, clean);
+                return { stored, written: clean, announce };
+            });
+        } catch (err) {
+            if (before) {
+                set(state => ({ campaigns: (state.campaigns || []).map(c => c.id === id ? before : c) }));
             }
+            throw err;
+        }
+
+        set(state => ({
+            campaigns: (state.campaigns || []).map(c => c.id === id ? { ...c, ...result.written } : c)
+        }));
+
+        if (result.announce) {
+            notifyMatchingCreatorsOfCampaign({ ...result.stored, ...result.written, id }, get().creators);
         }
     },
+    // Tell matching creators about a live campaign again (email + in-app).
+    announceCampaign: async (id) => {
+        const snap = await getDoc(doc(db, 'campaigns', id));
+        if (!snap.exists()) throw new Error('This campaign no longer exists.');
+        await notifyMatchingCreatorsOfCampaign({ ...snap.data(), id }, get().creators);
+        const announcedAt = new Date().toISOString();
+        await updateDoc(doc(db, 'campaigns', id), { announcedAt });
+        set(state => ({ campaigns: (state.campaigns || []).map(c => c.id === id ? { ...c, announcedAt } : c) }));
+    },
+    // Deletes the campaign, then takes it off creators' applied / selected
+    // lists so their profiles and counts don't point at a campaign that's gone.
+    // Payout records stay on the creator as history.
     deleteCampaign: async (id) => {
         await deleteDoc(doc(db, 'campaigns', id));
+        set(state => ({ campaigns: (state.campaigns || []).filter(c => c.id !== id) }));
+
+        const linked = (get().creators || []).filter(c =>
+            (c.joinedCampaigns || []).includes(id) || (c.shortlistedCampaigns || []).includes(id));
+        if (!linked.length) return { cleaned: 0, failed: 0 };
+
+        const { arrayRemove } = await import('firebase/firestore');
+        const cleaned = [];
+        let failed = 0;
+        await Promise.all(linked.map(async (c) => {
+            const docId = c.id || c.uid;
+            const next = {
+                joinedCampaigns: (c.joinedCampaigns || []).filter(x => x !== id),
+                shortlistedCampaigns: (c.shortlistedCampaigns || []).filter(x => x !== id),
+            };
+            try {
+                await updateDoc(doc(db, 'creators', docId), { joinedCampaigns: arrayRemove(id), shortlistedCampaigns: arrayRemove(id) });
+                cleaned.push({ key: docId, next });
+            } catch (fsErr) {
+                try {
+                    const res = await fetch('/api/creator-join?action=creator-update', {
+                        method: 'POST',
+                        headers: await authJsonHeaders(),
+                        body: JSON.stringify({ id: docId, uid: c.uid || docId, updates: next })
+                    });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    cleaned.push({ key: docId, next });
+                } catch (apiErr) {
+                    failed += 1;
+                    console.warn('[store] Could not unlink creator from deleted campaign:', docId, apiErr?.message || fsErr?.message);
+                }
+            }
+        }));
+        const byKey = new Map(cleaned.map(x => [x.key, x.next]));
+        set(state => ({
+            creators: (state.creators || []).map(c => {
+                const next = byKey.get(c.id || c.uid);
+                return next ? { ...c, ...next } : c;
+            })
+        }));
+        return { cleaned: cleaned.length, failed };
     },
 
     // Task Submission & Review (Dynamic Task System)
@@ -3501,38 +4038,47 @@ export const useStore = create((set, get) => ({
         }
         if (!campaign) throw new Error("Campaign not found");
 
-        const updatedTasks = (campaign.tasks || []).map(t => {
+        const submissionData = {
+            status: 'submitted',
+            contentLink: contentLink || '',
+            proofUrl: proofUrl || '',
+            submittedAt: new Date().toISOString(),
+            reviewedAt: null,
+            rejectionReason: ''
+        };
+        const userUid = get().user?.uid;
+        const withSubmission = (tasks) => (tasks || []).map(t => {
             if (t.id === taskId || String(t.id) === String(taskId)) {
                 const submissions = { ...(t.submissions || {}) };
-                const submissionData = {
-                    status: 'submitted',
-                    contentLink: contentLink || '',
-                    proofUrl: proofUrl || '',
-                    submittedAt: new Date().toISOString(),
-                    reviewedAt: null,
-                    rejectionReason: ''
-                };
                 submissions[creatorUid] = submissionData;
-                if (get().user?.uid && get().user.uid !== creatorUid) {
-                    submissions[get().user.uid] = submissionData;
+                if (userUid && userUid !== creatorUid) {
+                    submissions[userUid] = submissionData;
                 }
-                const completedBy = Array.from(new Set([...(t.completedBy || []), creatorUid, get().user?.uid].filter(Boolean)));
+                const completedBy = Array.from(new Set([...(t.completedBy || []), creatorUid, userUid].filter(Boolean)));
                 return { ...t, submissions, completedBy };
             }
             return t;
         });
+        const previousTasks = campaign.tasks || [];
 
         // 1. Optimistically update local Zustand store so UI updates immediately
         set(state => ({
             campaigns: (state.campaigns || []).map(c => 
-                c.id === campaignId ? { ...c, tasks: updatedTasks } : c
+                c.id === campaignId ? { ...c, tasks: withSubmission(previousTasks) } : c
             )
         }));
 
-        // 2. Persist to Firestore with serverless fallback for security rule resilience
+        // 2. Persist to Firestore with serverless fallback for security rule resilience.
+        // Built from the stored campaign inside a transaction so two creators
+        // submitting at once (or an admin reviewing) never overwrite each other.
         let directSuccess = false;
         try {
-            await updateDoc(doc(db, 'campaigns', campaignId), { tasks: updatedTasks });
+            await runTransaction(db, async (tx) => {
+                const ref = doc(db, 'campaigns', campaignId);
+                const snap = await tx.get(ref);
+                if (!snap.exists()) throw new Error('Campaign not found');
+                tx.update(ref, { tasks: withSubmission(snap.data().tasks) });
+            });
             directSuccess = true;
         } catch (fsErr) {
             console.warn('[store] Direct updateDoc on campaigns failed, using serverless fallback:', fsErr.message);
@@ -3540,16 +4086,16 @@ export const useStore = create((set, get) => ({
 
         if (!directSuccess) {
             try {
+                // The server re-reads the campaign and adds this one submission.
                 const res = await fetch('/api/creator-join?action=campaign-task-submit', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await authJsonHeaders(),
                     body: JSON.stringify({
                         campaignId,
                         taskId,
                         creatorUid,
                         contentLink,
-                        proofUrl,
-                        updatedTasks
+                        proofUrl
                     })
                 });
                 if (res.ok) {
@@ -3563,6 +4109,11 @@ export const useStore = create((set, get) => ({
                 }
             } catch (apiErr) {
                 console.error('[store] Both direct and serverless task submission failed:', apiErr);
+                set(state => ({
+                    campaigns: (state.campaigns || []).map(c =>
+                        c.id === campaignId ? { ...c, tasks: previousTasks } : c
+                    )
+                }));
                 throw apiErr;
             }
         }
@@ -3582,47 +4133,66 @@ export const useStore = create((set, get) => ({
     },
 
     reviewTaskSubmission: async (campaignId, taskId, creatorUid, status, rejectionReason = '') => {
-        const { campaigns } = get();
-        let campaign = (campaigns || []).find(c => c.id === campaignId);
-        if (!campaign) {
-            const snap = await getDoc(doc(db, 'campaigns', campaignId));
-            if (snap.exists()) {
-                campaign = { id: snap.id, ...snap.data() };
-            }
-        }
-        if (!campaign) throw new Error("Campaign not found");
+        return get().reviewTaskSubmissions(campaignId, [{ taskId, creatorUid, status, rejectionReason }]);
+    },
 
-        const updatedTasks = (campaign.tasks || []).map(t => {
-            if (t.id === taskId) {
+    /**
+     * Approve / request changes on several submissions in one write.
+     * reviews: [{ taskId, creatorUid, keys?: [uid, docId], status, rejectionReason }]
+     * `keys` covers creators whose submissions are stored under both their auth
+     * uid and their profile id. Read and written in one transaction so a
+     * creator submitting at the same moment isn't lost.
+     */
+    reviewTaskSubmissions: async (campaignId, reviews = []) => {
+        if (!reviews.length) return 0;
+        const reviewedAt = new Date().toISOString();
+        let applied = 0;
+        const applyReviews = (tasks) => {
+            applied = 0;
+            return (tasks || []).map(t => {
+                const mine = reviews.filter(r => String(r.taskId) === String(t.id));
+                if (!mine.length) return t;
                 const submissions = { ...(t.submissions || {}) };
-                if (submissions[creatorUid]) {
-                    submissions[creatorUid] = {
-                        ...submissions[creatorUid],
-                        status,
-                        rejectionReason: status === 'rejected' ? rejectionReason : '',
-                        reviewedAt: new Date().toISOString()
-                    };
-                }
-                // Sync with legacy arrays
                 let verifiedBy = Array.from(t.verifiedBy || []);
-                if (status === 'approved' && !verifiedBy.includes(creatorUid)) {
-                    verifiedBy = [...verifiedBy, creatorUid];
-                } else if (status === 'rejected') {
-                    verifiedBy = verifiedBy.filter(uid => uid !== creatorUid);
-                }
+                mine.forEach(r => {
+                    const keys = Array.from(new Set([...(r.keys || []), r.creatorUid].filter(Boolean)));
+                    keys.forEach(key => {
+                        if (submissions[key]) {
+                            submissions[key] = {
+                                ...submissions[key],
+                                status: r.status,
+                                rejectionReason: r.status === 'rejected' ? (r.rejectionReason || '') : '',
+                                reviewedAt
+                            };
+                            applied += 1;
+                        }
+                        // Sync with legacy arrays
+                        if (r.status === 'approved' && !verifiedBy.includes(key)) {
+                            verifiedBy = [...verifiedBy, key];
+                        } else if (r.status === 'rejected') {
+                            verifiedBy = verifiedBy.filter(uid => uid !== key);
+                        }
+                    });
+                });
                 return { ...t, submissions, verifiedBy };
-            }
-            return t;
+            });
+        };
+
+        const ref = doc(db, 'campaigns', campaignId);
+        const tasks = await runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw new Error('Campaign not found');
+            const next = applyReviews(snap.data().tasks);
+            tx.update(ref, { tasks: next });
+            return next;
         });
 
-        // Optimistically update local Zustand store
         set(state => ({
             campaigns: (state.campaigns || []).map(c => 
-                c.id === campaignId ? { ...c, tasks: updatedTasks } : c
+                c.id === campaignId ? { ...c, tasks } : c
             )
         }));
-
-        await updateDoc(doc(db, 'campaigns', campaignId), { tasks: updatedTasks });
+        return applied;
     },
 
     // Giveaways
@@ -3637,133 +4207,147 @@ export const useStore = create((set, get) => ({
 
         // 1. Also Post to Upcoming Events (Home Card)
         if (giveaway.alsoPostToUpcomingEvents) {
-            const eventData = {
-                title: giveaway.name,
-                date: giveaway.endDate + (giveaway.endTime ? `T${giveaway.endTime}` : ''),
-                category: 'giveaway',
-                description: giveaway.description,
-                location: giveaway.location || 'Online',
-                buttonText: giveaway.buttonText || 'PARTICIPATE NOW',
-                image: giveaway.posterUrl || '',
-                link: `/giveaway/${giveaway.slug}`,
-                isTicketed: giveaway.isTicketed || false,
-                ticketPrice: giveaway.ticketCategories?.[0]?.price || 0,
-                ticketCategories: giveaway.ticketCategories || [],
-                venueLayout: giveaway.venueLayout || '',
+            await addDoc(collection(db, 'upcoming_events'), {
+                ...giveawayMirrorEvent(giveaway),
                 isGiveaway: true,
                 giveawayId: docRef.id,
-                giveawaySlug: giveaway.slug
-            };
-
-            const currentEvents = get().upcomingEvents;
-            const maxOrder = currentEvents.reduce((max, i) => Math.max(max, i.order || 0), 0);
-            
-            await addDoc(collection(db, 'upcoming_events'), {
-                ...eventData,
-                order: maxOrder + 1
+                order: (get().upcomingEvents || []).reduce((max, i) => Math.max(max, i.order || 0), 0) + 1
             });
         }
 
         // 2. Also Post to Announcements
         if (giveaway.alsoPostToAnnouncements) {
-            const currentAnnouncements = get().announcements;
-            const minOrder = currentAnnouncements.reduce((min, i) => Math.min(min, i.order || 0), 0);
-            
+            const minOrder = (get().announcements || []).reduce((min, i) => Math.min(min, i.order || 0), 0);
             await addDoc(collection(db, 'announcements'), {
-                title: `NEW GIVEAWAY: ${giveaway.name}`,
-                content: giveaway.description,
+                ...giveawayMirrorAnnouncement(giveaway),
                 date: new Date().toISOString().split('T')[0],
-                image: giveaway.posterUrl || '',
                 isPinned: false,
                 order: minOrder - 1,
-                linkedGiveawayId: docRef.id,
-                link: `/giveaway/${giveaway.slug}`
+                linkedGiveawayId: docRef.id
             });
         }
 
         return docRef;
     },
+    // Partial updates are fine: the home card and announcement are synced from
+    // the saved giveaway merged with the update, never with blanks.
     updateGiveaway: async (id, updates) => {
-        await updateDoc(doc(db, 'giveaways', id), updates);
+        const { id: _ignoredId, ...data } = updates;
+        const before = await getDoc(doc(db, 'giveaways', id)).catch(() => null);
+        const previous = before?.exists() ? before.data() : {};
+        await updateDoc(doc(db, 'giveaways', id), data);
+        const giveaway = { ...previous, ...data };
 
-        // Sync mirrored Upcoming Event
-        const eventQ = query(collection(db, 'upcoming_events'), where('giveawayId', '==', id));
-        const eventSnap = await getDocs(eventQ);
-        eventSnap.forEach(async (d) => {
-            await updateDoc(doc(db, 'upcoming_events', d.id), {
-                title: updates.name,
-                date: updates.endDate + (updates.endTime ? `T${updates.endTime}` : ''),
-                description: updates.description,
-                location: updates.location,
-                buttonText: updates.buttonText,
-                image: updates.posterUrl,
-                link: `/giveaway/${updates.slug}`,
-                isTicketed: updates.isTicketed,
-                ticketPrice: updates.ticketCategories?.[0]?.price || 0,
-                ticketCategories: updates.ticketCategories || [],
-                venueLayout: updates.venueLayout
-            });
-        });
+        try {
+            const eventSnap = await getDocs(query(collection(db, 'upcoming_events'), where('giveawayId', '==', id)));
+            if (!eventSnap.empty && data.alsoPostToUpcomingEvents === false) {
+                await Promise.all(eventSnap.docs.map(d => deleteDoc(doc(db, 'upcoming_events', d.id))));
+            } else if (!eventSnap.empty) {
+                const { order: _o, ...mirror } = giveawayMirrorEvent(giveaway);
+                await Promise.all(eventSnap.docs.map(d => updateDoc(doc(db, 'upcoming_events', d.id), mirror)));
+            } else if (data.alsoPostToUpcomingEvents) {
+                await addDoc(collection(db, 'upcoming_events'), {
+                    ...giveawayMirrorEvent(giveaway),
+                    isGiveaway: true,
+                    giveawayId: id,
+                    order: (get().upcomingEvents || []).reduce((max, i) => Math.max(max, i.order || 0), 0) + 1
+                });
+            }
 
-        // Sync mirrored Announcement
-        const announcementQ = query(collection(db, 'announcements'), where('linkedGiveawayId', '==', id));
-        const announcementSnap = await getDocs(announcementQ);
-        announcementSnap.forEach(async (d) => {
-            await updateDoc(doc(db, 'announcements', d.id), {
-                title: `NEW GIVEAWAY: ${updates.name}`,
-                content: updates.description,
-                image: updates.posterUrl,
-                link: `/giveaway/${updates.slug}`,
-                date: updates.endDate || ''
-            });
-        });
+            const announcementSnap = await getDocs(query(collection(db, 'announcements'), where('linkedGiveawayId', '==', id)));
+            if (!announcementSnap.empty) {
+                await Promise.all(announcementSnap.docs.map(d => updateDoc(doc(db, 'announcements', d.id), giveawayMirrorAnnouncement(giveaway))));
+            } else if (data.alsoPostToAnnouncements && !previous.alsoPostToAnnouncements) {
+                // Switched on while editing: post it now.
+                const minOrder = (get().announcements || []).reduce((min, i) => Math.min(min, i.order || 0), 0);
+                await addDoc(collection(db, 'announcements'), {
+                    ...giveawayMirrorAnnouncement(giveaway),
+                    date: new Date().toISOString().split('T')[0],
+                    isPinned: false,
+                    order: minOrder - 1,
+                    linkedGiveawayId: id
+                });
+            }
+        } catch (err) {
+            console.warn('[updateGiveaway] Home card / announcement sync failed:', err);
+        }
     },
+    // Entries are kept (they hold people's details and any winner record); the
+    // home card and announcement that point at the deleted page are removed.
     deleteGiveaway: async (id) => {
         await deleteDoc(doc(db, 'giveaways', id));
+        try {
+            const [eventSnap, announcementSnap] = await Promise.all([
+                getDocs(query(collection(db, 'upcoming_events'), where('giveawayId', '==', id))),
+                getDocs(query(collection(db, 'announcements'), where('linkedGiveawayId', '==', id))),
+            ]);
+            await Promise.all([
+                ...eventSnap.docs.map(d => deleteDoc(doc(db, 'upcoming_events', d.id))),
+                ...announcementSnap.docs.map(d => deleteDoc(doc(db, 'announcements', d.id))),
+            ]);
+        } catch (err) {
+            console.warn('[deleteGiveaway] Cleanup failed:', err);
+        }
     },
+    // One entry per person per giveaway. New entries use a fixed id
+    // (campaign_user) inside a transaction, so a double tap can't create two.
     enterGiveaway: async (campaignId, userData) => {
         const { user } = get();
         if (!user) throw new Error("Authentication required");
 
-        // Check if user already entered
-        const q = query(
-            collection(db, 'giveaway_entries'), 
+        const giveawaySnap = await getDoc(doc(db, 'giveaways', campaignId));
+        if (!giveawaySnap.exists()) throw new Error("This giveaway no longer exists");
+        const giveaway = giveawaySnap.data();
+        if (giveawayHasEnded(giveaway)) throw new Error("This giveaway has ended");
+
+        // Entries made before fixed ids were used.
+        const legacy = await getDocs(query(
+            collection(db, 'giveaway_entries'),
             where('campaignId', '==', campaignId),
             where('userId', '==', user.uid)
-        );
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) throw new Error("Already participated in this giveaway");
+        ));
+        if (!legacy.empty) throw new Error("Already participated in this giveaway");
 
-        await addDoc(collection(db, 'giveaway_entries'), {
-            campaignId,
-            userId: user.uid,
-            email: user.email,
-            ...userData,
-            entryScore: 1, // Initial entry
-            completedTasks: {}, 
-            hasFollowedInsta: false,
-            referralCount: 0,
-            hasSpunWheel: false,
-            referralCode: user.uid.substring(0, 8),
-            referredBy: userData.referredBy || null,
-            createdAt: new Date().toISOString()
+        const ownCode = user.uid.substring(0, 8);
+        const referredBy = userData.referredBy && userData.referredBy !== ownCode ? userData.referredBy : null;
+        const entryRef = doc(db, 'giveaway_entries', `${campaignId}_${user.uid}`);
+
+        await runTransaction(db, async (tx) => {
+            const existing = await tx.get(entryRef);
+            if (existing.exists()) throw new Error("Already participated in this giveaway");
+            tx.set(entryRef, {
+                campaignId,
+                userId: user.uid,
+                email: user.email,
+                ...userData,
+                entryScore: 1, // Initial entry
+                completedTasks: {},
+                hasFollowedInsta: false,
+                referralCount: 0,
+                hasSpunWheel: false,
+                referralCode: ownCode,
+                referredBy,
+                createdAt: new Date().toISOString()
+            });
         });
 
-        // If referred by someone, increment their score
-        if (userData.referredBy) {
-            const refQ = query(
-                collection(db, 'giveaway_entries'),
-                where('campaignId', '==', campaignId),
-                where('referralCode', '==', userData.referredBy)
-            );
-            const refSnapshot = await getDocs(refQ);
-            if (!refSnapshot.empty) {
-                const refDoc = refSnapshot.docs[0];
-                const currentData = refDoc.data();
-                await updateDoc(doc(db, 'giveaway_entries', refDoc.id), {
-                    referralCount: (currentData.referralCount || 0) + 1,
-                    entryScore: (currentData.entryScore || 0) + 3
-                });
+        // Credit the person who shared the link (atomic, so two sign-ups at
+        // once both count).
+        if (referredBy) {
+            try {
+                const refSnapshot = await getDocs(query(
+                    collection(db, 'giveaway_entries'),
+                    where('campaignId', '==', campaignId),
+                    where('referralCode', '==', referredBy)
+                ));
+                if (!refSnapshot.empty) {
+                    await updateDoc(doc(db, 'giveaway_entries', refSnapshot.docs[0].id), {
+                        referralCount: increment(1),
+                        entryScore: increment(3)
+                    });
+                }
+            } catch (err) {
+                console.warn('[enterGiveaway] Referral credit failed:', err);
             }
         }
     },
@@ -3772,6 +4356,91 @@ export const useStore = create((set, get) => ({
     },
     deleteGiveawayEntry: async (id) => {
         await deleteDoc(doc(db, 'giveaway_entries', id));
+    },
+    // Confirm drawn winners. A transaction re-checks every entry so nobody is
+    // crowned twice or after being disqualified, even if two admins draw at
+    // once. The draw (who, when, by whom, pool size, re-rolls) is logged on
+    // the giveaway.
+    confirmGiveawayWinners: async (giveawayId, winners, draw = {}, { close = false } = {}) => {
+        const { user } = get();
+        const at = new Date().toISOString();
+        const drawId = `draw_${Date.now().toString(36)}`;
+        const giveawayRef = doc(db, 'giveaways', giveawayId);
+        await runTransaction(db, async (tx) => {
+            const refs = winners.map(w => doc(db, 'giveaway_entries', w.entryId));
+            const snaps = await Promise.all(refs.map(r => tx.get(r)));
+            snaps.forEach((snap, i) => {
+                const data = snap.exists() ? snap.data() : null;
+                if (!data || data.campaignId !== giveawayId) throw new Error(`${winners[i].name || 'An entry'} is no longer in this giveaway.`);
+                if (data.isWinner) throw new Error(`${data.name || 'Someone'} has already been picked as a winner.`);
+                if (data.disqualified) throw new Error(`${data.name || 'Someone'} has been disqualified.`);
+            });
+            refs.forEach((r, i) => tx.update(r, {
+                isWinner: true,
+                prize: winners[i].prize || null,
+                winnerSelectedAt: at,
+                winnerSelectedBy: user?.email || user?.uid || null,
+                drawId,
+            }));
+            const giveawayUpdate = {
+                lastDrawAt: at,
+                drawHistory: arrayUnion({
+                    id: drawId,
+                    type: 'draw',
+                    at,
+                    by: user?.email || user?.uid || null,
+                    winners: winners.map(w => ({ entryId: w.entryId, name: w.name || '', prize: w.prize || null })),
+                    rerolled: draw.rerolled || [],
+                    poolSize: draw.poolSize || 0,
+                    mode: draw.mode || 'weighted',
+                    manual: Boolean(draw.manual),
+                }),
+            };
+            if (close) {
+                giveawayUpdate.status = 'Closed';
+                giveawayUpdate.closedAt = at;
+            }
+            tx.update(giveawayRef, giveawayUpdate);
+        });
+        return drawId;
+    },
+    revokeGiveawayWinner: async (giveawayId, entry, reason = '') => {
+        const { user } = get();
+        const at = new Date().toISOString();
+        const batch = writeBatch(db);
+        batch.update(doc(db, 'giveaway_entries', entry.id), {
+            isWinner: false,
+            prize: null,
+            winnerSelectedAt: null,
+            winnerRevokedAt: at,
+        });
+        batch.update(doc(db, 'giveaways', giveawayId), {
+            drawHistory: arrayUnion({ id: `revoke_${Date.now().toString(36)}`, type: 'revoke', at, by: user?.email || user?.uid || null, entryId: entry.id, name: entry.name || '', reason }),
+        });
+        await batch.commit();
+    },
+    setGiveawayEntriesDisqualified: async (ids, disqualified, reason = '') => {
+        const at = new Date().toISOString();
+        for (let i = 0; i < ids.length; i += 400) {
+            const batch = writeBatch(db);
+            ids.slice(i, i + 400).forEach(id => batch.update(doc(db, 'giveaway_entries', id), disqualified
+                ? { disqualified: true, disqualifiedReason: reason || null, disqualifiedAt: at }
+                : { disqualified: false, disqualifiedReason: null, disqualifiedAt: null }));
+            await batch.commit();
+        }
+    },
+    deleteGiveawayEntries: async (ids) => {
+        for (let i = 0; i < ids.length; i += 400) {
+            const batch = writeBatch(db);
+            ids.slice(i, i + 400).forEach(id => batch.delete(doc(db, 'giveaway_entries', id)));
+            await batch.commit();
+        }
+    },
+    closeGiveaways: async (ids) => {
+        const at = new Date().toISOString();
+        const batch = writeBatch(db);
+        ids.forEach(id => batch.update(doc(db, 'giveaways', id), { status: 'Closed', closedAt: at }));
+        await batch.commit();
     },
 
     // Bulk Shortlist Helpers
@@ -3786,7 +4455,7 @@ export const useStore = create((set, get) => ({
                 console.warn('[store] Direct bulkUpdateCreatorStatus failed, falling back to server API:', fsErr.message);
                 await fetch('/api/creator-join?action=creator-update', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await authJsonHeaders(),
                     body: JSON.stringify({ id: docId, uid, updates: { profileStatus: status } })
                 }).catch(err => console.error('[store] Server fallback for bulkUpdateCreatorStatus error:', err));
             }
@@ -3801,50 +4470,47 @@ export const useStore = create((set, get) => ({
         }));
     },
 
+    /**
+     * Select (shortlist) or unselect creators for a campaign. Each creator is
+     * written on its own; returns { done, failed } (lists of the ids passed in)
+     * and only changes local state for writes that actually saved. Throws when
+     * nothing could be saved.
+     */
     bulkShortlistCreators: async (campaignId, uidArray, shouldShortlist = true) => {
         const { creators } = get();
-        const updatePromises = uidArray.map(async (uid) => {
+        const { arrayRemove } = await import('firebase/firestore');
+        const done = [];
+        const failed = [];
+        await Promise.all((uidArray || []).map(async (uid) => {
             const creator = (creators || []).find(c => c.uid === uid || c.id === uid);
-            if (!creator) return;
+            if (!creator) { failed.push(uid); return; }
             const docId = creator.id || creator.uid || uid;
-
             const shortlisted = creator.shortlistedCampaigns || [];
-            if (shouldShortlist) {
-                if (!shortlisted.includes(campaignId)) {
-                    try {
-                        await updateDoc(doc(db, 'creators', docId), { 
-                            shortlistedCampaigns: [...shortlisted, campaignId] 
-                        });
-                    } catch (fsErr) {
-                        console.warn('[store] Direct bulkShortlistCreators failed, falling back to server API:', fsErr?.message);
-                        await fetch('/api/creator-join?action=creator-update', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ id: docId, uid: creator.uid || uid, updates: { shortlistedCampaigns: [...shortlisted, campaignId] } })
-                        }).catch(err => console.error('[store] API fallback error:', err));
-                    }
-                }
-            } else {
-                if (shortlisted.includes(campaignId)) {
-                    try {
-                        await updateDoc(doc(db, 'creators', docId), { 
-                            shortlistedCampaigns: shortlisted.filter(id => id !== campaignId) 
-                        });
-                    } catch (fsErr) {
-                        console.warn('[store] Direct bulkShortlistCreators failed, falling back to server API:', fsErr?.message);
-                        await fetch('/api/creator-join?action=creator-update', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ id: docId, uid: creator.uid || uid, updates: { shortlistedCampaigns: shortlisted.filter(id => id !== campaignId) } })
-                        }).catch(err => console.error('[store] API fallback error:', err));
-                    }
+            if (shouldShortlist === shortlisted.includes(campaignId)) { done.push(uid); return; }
+            try {
+                await updateDoc(doc(db, 'creators', docId), {
+                    shortlistedCampaigns: shouldShortlist ? arrayUnion(campaignId) : arrayRemove(campaignId)
+                });
+                done.push(uid);
+            } catch (fsErr) {
+                console.warn('[store] Direct bulkShortlistCreators failed, falling back to server API:', fsErr?.message);
+                try {
+                    const res = await fetch('/api/creator-join?action=creator-update', {
+                        method: 'POST',
+                        headers: await authJsonHeaders(),
+                        body: JSON.stringify({ id: docId, uid: creator.uid || uid, updates: { shortlistedCampaigns: shouldShortlist ? Array.from(new Set([...shortlisted, campaignId])) : shortlisted.filter(id => id !== campaignId) } })
+                    });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    done.push(uid);
+                } catch (apiErr) {
+                    console.error('[store] API fallback error:', apiErr);
+                    failed.push(uid);
                 }
             }
-        });
-        await Promise.all(updatePromises);
+        }));
         set(state => ({
             creators: (state.creators || []).map(c => {
-                if (uidArray.includes(c.uid) || uidArray.includes(c.id)) {
+                if (done.includes(c.uid) || done.includes(c.id)) {
                     const currentShortlisted = c.shortlistedCampaigns || [];
                     return {
                         ...c,
@@ -3856,40 +4522,66 @@ export const useStore = create((set, get) => ({
                 return c;
             })
         }));
+        if (!done.length && failed.length) throw new Error("Couldn't update those creators.");
+        return { done, failed };
     },
 
     toggleShortlistStatus: async (campaignId, creatorUid) => {
         const { creators } = get();
         const creator = (creators || []).find(c => c.uid === creatorUid || c.id === creatorUid);
-        if (!creator) return;
-        const docId = creator.id || creator.uid || creatorUid;
+        if (!creator) throw new Error('Creator not found');
+        const isCurrentlyShortlisted = (creator.shortlistedCampaigns || []).includes(campaignId);
+        await get().bulkShortlistCreators(campaignId, [creatorUid], !isCurrentlyShortlisted);
+        return !isCurrentlyShortlisted;
+    },
 
-        const shortlisted = creator.shortlistedCampaigns || [];
-        const isCurrentlyShortlisted = shortlisted.includes(campaignId);
-        const nextShortlisted = isCurrentlyShortlisted
-            ? shortlisted.filter(id => id !== campaignId)
-            : [...shortlisted, campaignId];
-
-        try {
-            await updateDoc(doc(db, 'creators', docId), {
-                shortlistedCampaigns: nextShortlisted
-            });
-        } catch (fsErr) {
-            console.warn('[store] Direct toggleShortlistStatus failed, falling back to server API:', fsErr?.message);
-            await fetch('/api/creator-join?action=creator-update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: docId, uid: creator.uid || creatorUid, updates: { shortlistedCampaigns: nextShortlisted } })
-            }).catch(err => console.error('[store] API fallback error:', err));
-        }
-
-        set(state => ({
-            creators: (state.creators || []).map(c => 
-                (c.id === docId || c.uid === docId || c.uid === creatorUid)
-                    ? { ...c, shortlistedCampaigns: nextShortlisted }
-                    : c
-            )
+    /**
+     * Admin-only notes about a creator's place in one campaign, kept on the
+     * creator: patch.stage ('shortlisted' | 'declined' | null) and patch.payout
+     * ({ status: 'paid', amount, paidAt, note } | null). Returns { done, failed }.
+     */
+    setCampaignApplicantMeta: async (campaignId, uidArray, patch = {}) => {
+        const { creators } = get();
+        const { FieldPath } = await import('firebase/firestore');
+        const fields = [];
+        if ('stage' in patch) fields.push(['campaignStages', patch.stage ?? null]);
+        if ('payout' in patch) fields.push(['campaignPayouts', patch.payout ?? null]);
+        if (!fields.length) return { done: [], failed: [] };
+        const done = [];
+        const failed = [];
+        await Promise.all((uidArray || []).map(async (uid) => {
+            const creator = (creators || []).find(c => c.uid === uid || c.id === uid);
+            const docId = creator?.id || creator?.uid || uid;
+            try {
+                const args = fields.flatMap(([field, value]) => [new FieldPath(field, campaignId), value]);
+                await updateDoc(doc(db, 'creators', docId), ...args);
+                done.push(uid);
+            } catch (fsErr) {
+                try {
+                    const updates = Object.fromEntries(fields.map(([field, value]) => [field, { [campaignId]: value }]));
+                    const res = await fetch('/api/creator-join?action=creator-update', {
+                        method: 'POST',
+                        headers: await authJsonHeaders(),
+                        body: JSON.stringify({ id: docId, uid: creator?.uid || uid, updates })
+                    });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    done.push(uid);
+                } catch (apiErr) {
+                    console.error('[store] setCampaignApplicantMeta failed:', fsErr?.message, apiErr?.message);
+                    failed.push(uid);
+                }
+            }
         }));
+        set(state => ({
+            creators: (state.creators || []).map(c => {
+                if (!(done.includes(c.uid) || done.includes(c.id))) return c;
+                const next = { ...c };
+                fields.forEach(([field, value]) => { next[field] = { ...(c[field] || {}), [campaignId]: value }; });
+                return next;
+            })
+        }));
+        if (!done.length && failed.length) throw new Error("Couldn't save that change.");
+        return { done, failed };
     },
 
     verifyInstagramFollowers: async (uid, accessToken) => {
@@ -3920,10 +4612,41 @@ export const useStore = create((set, get) => ({
     },
 
     // Ticket Orders (Offline System)
+    // Rejecting frees the seat (capacity counts only live orders) and gives the
+    // coupon use back, exactly once, inside a transaction.
     rejectTicketOrder: async (id) => {
-        await updateDoc(doc(db, 'ticket_orders', id), {
-            status: 'rejected',
-            rejectedAt: new Date().toISOString()
+        const orderRef = doc(db, 'ticket_orders', id);
+        await runTransaction(db, async (tx) => {
+            const snap = await tx.get(orderRef);
+            if (!snap.exists()) return;
+            const order = snap.data();
+            const couponId = order.appliedCoupon?.id;
+            const releaseCoupon = couponId && !order.couponReleased;
+            const couponRef = releaseCoupon ? doc(db, 'coupons', couponId) : null;
+            const couponSnap = couponRef ? await tx.get(couponRef) : null;
+            tx.update(orderRef, {
+                status: 'rejected',
+                rejectedAt: new Date().toISOString(),
+                ...(releaseCoupon ? { couponReleased: true } : {})
+            });
+            if (couponSnap?.exists() && Number(couponSnap.data().usedCount || 0) > 0) {
+                tx.update(couponRef, { usedCount: increment(-1) });
+            }
+        });
+    },
+
+    // One check-in helper for the desk and the order list. Writes every field the
+    // scanner, the desk and older screens read, and never changes the payment status.
+    setTicketCheckIn: async (orderId, checkedIn) => {
+        const now = new Date().toISOString();
+        await updateDoc(doc(db, 'ticket_orders', orderId), checkedIn
+            ? { attended: true, attendedAt: now, isScanned: true, scannedAt: now }
+            : { attended: false, attendedAt: null, isScanned: false, scannedAt: null });
+    },
+    setGuestCheckIn: async (guestlistId, entryId, checkedIn) => {
+        await updateDoc(doc(db, 'guestlists', guestlistId, 'entries', entryId), {
+            attended: checkedIn,
+            attendedAt: checkedIn ? new Date().toISOString() : null
         });
     },
 
@@ -3942,29 +4665,20 @@ export const useStore = create((set, get) => ({
     deleteCoupon: async (id) => {
         await deleteDoc(doc(db, 'coupons', id));
     },
+    // Fallback used by checkout when the ticket API is unreachable. Reads the
+    // coupon straight from Firestore (the coupons list is only loaded for admins).
     validateCoupon: async (code, eventId) => {
-        const { coupons } = get();
-        const coupon = coupons.find(c => c.code.toUpperCase() === code.toUpperCase() && c.isActive);
-        
-        if (!coupon) throw new Error("Invalid or inactive coupon code.");
-        
-        // Expiry check
-        if (coupon.expiryDate) {
-            const expiry = new Date(coupon.expiryDate);
-            const now = new Date();
-            if (expiry < now) throw new Error("This coupon code has expired.");
+        const normalized = normalizeCouponCode(code);
+        let candidates = (get().coupons || []).filter(c => normalizeCouponCode(c.code) === normalized);
+        if (!candidates.length) {
+            const snap = await getDocs(query(collection(db, 'coupons'), where('code', '==', normalized), limit(10)));
+            candidates = snap.docs.map(d => ({ ...d.data(), id: d.id }));
         }
-        
-        // Usage limit check
-        if (coupon.usageLimit && (coupon.usedCount || 0) >= coupon.usageLimit) {
-            throw new Error("This coupon has reached its usage limit.");
-        }
-        
-        // Event restriction check
-        if (coupon.eventId && coupon.eventId !== eventId) {
-            throw new Error("This coupon is not valid for this specific event.");
-        }
-        
+        const coupon = candidates.find(c => c.eventId === eventId && c.isActive !== false)
+            || candidates.find(c => !c.eventId && c.isActive !== false)
+            || candidates[0];
+        const problem = couponProblem(coupon, eventId);
+        if (problem) throw new Error(problem);
         return coupon;
     },
 
@@ -4477,8 +5191,8 @@ export const useStore = create((set, get) => ({
                 const { doc, setDoc, query, collection, where, getDocs } = await import('firebase/firestore');
                 
                 let resolvedUid = targetUid;
-                // If resolving admin where targetUid is doc.id (and not a real Auth UID), resolve it via email
-                if (targetEmail && (!resolvedUid || resolvedUid.length < 20 || resolvedUid === targetEmail)) {
+                // If resolving admin where targetUid is doc.id (a 20-character Firestore id, not a real Auth UID), resolve it via email
+                if (targetEmail && (!resolvedUid || resolvedUid.length <= 20 || resolvedUid === targetEmail)) {
                     try {
                         const userQuery = query(collection(db, 'users'), where('email', '==', targetEmail));
                         const userSnap = await getDocs(userQuery);
@@ -4491,9 +5205,11 @@ export const useStore = create((set, get) => ({
                 }
                 
                 if (!resolvedUid) {
+                    // Someone else was asked for but has no account: never fall back to signing out the caller.
+                    if (targetEmail || targetUid) throw new Error("That person doesn't have an account to sign out of.");
                     resolvedUid = currentUser.uid;
                 }
-                
+
                 await setDoc(doc(db, 'users', resolvedUid), { forceLogoutBefore: new Date().toISOString() }, { merge: true });
                 
                 if (resolvedUid === currentUser.uid) {
@@ -4508,8 +5224,13 @@ export const useStore = create((set, get) => ({
             throw new Error(data.error || "Failed to revoke sessions");
         }
 
-        // If revoking own sessions, run local logout
-        if (!targetUid || targetUid === currentUser.uid) {
+        // If revoking own sessions, run local logout. (A target given only by
+        // email is someone else unless it is our own address.)
+        const ownEmail = (currentUser.email || '').toLowerCase();
+        const isSelf = (!targetUid && !targetEmail)
+            || targetUid === currentUser.uid
+            || (!targetUid && targetEmail && targetEmail.toLowerCase() === ownEmail);
+        if (isSelf) {
             await get().logout();
         }
         return data;
@@ -4648,7 +5369,10 @@ export const useStore = create((set, get) => ({
         }
     },
 
-    toggleMaintenanceFeature: async (category, key) => {
+    // `value` (optional): true = switched off / under maintenance. Only this one
+    // key is written (merge), so a page opened before the live state loaded, or
+    // two people switching different things at once, can't wipe other switches.
+    toggleMaintenanceFeature: async (category, key, value) => {
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const maintenanceDocId = isLocal ? 'maintenance_local' : 'maintenance';
 
@@ -4656,15 +5380,16 @@ export const useStore = create((set, get) => ({
 
         try {
             const current = get().maintenanceState;
+            const next = typeof value === 'boolean' ? value : !current[category]?.[key];
             const newState = {
                 ...current,
                 [category]: {
                     ...current[category],
-                    [key]: !current[category]?.[key]
+                    [key]: next
                 }
             };
 
-            await setDoc(doc(db, 'app_state', maintenanceDocId), newState);
+            await setDoc(doc(db, 'app_state', maintenanceDocId), { [category]: { [key]: next } }, { merge: true });
             set({ maintenanceState: newState });
         } catch (error) {
             console.error("Error toggling maintenance:", error);
@@ -4684,10 +5409,7 @@ export const useStore = create((set, get) => ({
 
     markAttendance: async (id) => {
         try {
-            await updateDoc(doc(db, 'ticket_orders', id), {
-                attendedAt: new Date().toISOString(),
-                status: 'attended'
-            });
+            await get().setTicketCheckIn(id, true);
         } catch (error) {
             console.error("Error marking attendance:", error);
             throw error;
@@ -4704,7 +5426,9 @@ export const useStore = create((set, get) => ({
     },
 
 
-    toggleGlobalMaintenance: async () => {
+    // `value` (optional): the state to set, so a stale screen can't flip it the wrong way.
+    // Throws on failure so the caller can keep its confirm open and say so.
+    toggleGlobalMaintenance: async (value) => {
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const maintenanceDocId = isLocal ? 'maintenance_local' : 'maintenance';
 
@@ -4712,12 +5436,13 @@ export const useStore = create((set, get) => ({
 
         try {
             const current = get().maintenanceState;
-            const newState = { global: !current.global };
+            const newState = { global: typeof value === 'boolean' ? value : !current.global };
             console.log(`[Maintenance] New Global State:`, newState);
             await setDoc(doc(db, 'app_state', maintenanceDocId), newState, { merge: true });
+            set({ maintenanceState: { ...current, ...newState } });
         } catch (error) {
             console.error(`[Maintenance] Failed to update global in ${maintenanceDocId}:`, error);
-            useStore.getState().addToast("Couldn't save the update. Please try again.", 'error');
+            throw error;
         }
     },
 
@@ -4959,28 +5684,22 @@ export const useStore = create((set, get) => ({
     },
     deleteEmailTemplate: async (id) => {
         try {
-            const getLocalTemplates = () => {
-                try {
-                    const stored = safeLocalStorage.getItem('nb_local_email_templates');
-                    return stored ? JSON.parse(stored) : [];
-                } catch (e) { return []; }
-            };
-            const saveLocalTemplates = (list) => {
-                try { safeLocalStorage.setItem('nb_local_email_templates', JSON.stringify(list)); } catch (e) {}
-            };
-
-
-            const filtered = getLocalTemplates().filter(t => t.id !== id);
-            saveLocalTemplates(filtered);
-            set(state => ({
-                emailTemplates: (state.emailTemplates || []).filter(t => t.id !== id)
-            }));
-
+            // Delete the shared copy first, so a failed delete leaves the list as it was.
             if (id && !id.startsWith('tpl_local_')) {
                 await deleteDoc(doc(db, 'email_templates', id));
             }
+            try {
+                const stored = safeLocalStorage.getItem('nb_local_email_templates');
+                const list = stored ? JSON.parse(stored) : [];
+                safeLocalStorage.setItem('nb_local_email_templates', JSON.stringify(list.filter(t => t.id !== id)));
+            } catch (e) { /* local copy is optional */ }
+            set(state => ({
+                emailTemplates: (state.emailTemplates || []).filter(t => t.id !== id)
+            }));
         } catch (err) {
             console.warn("Delete template error:", err);
+            // Let the caller say so instead of reporting a delete that didn't happen.
+            throw err;
         }
     },
     deleteEmailCampaign: async (id) => {

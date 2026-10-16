@@ -1,169 +1,105 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import X from 'lucide-react/dist/esm/icons/x';
-import Upload from 'lucide-react/dist/esm/icons/upload';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
-import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import React, { useCallback, useEffect, useState } from 'react';
 import Check from 'lucide-react/dist/esm/icons/check';
-import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
-import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
-import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
-import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
-import Mail from 'lucide-react/dist/esm/icons/mail';
-import Building2 from 'lucide-react/dist/esm/icons/building-2';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import PenTool from 'lucide-react/dist/esm/icons/pen-tool';
 import { useStore } from '../../lib/store';
 import { cn } from '../../lib/utils';
-import { Button } from '../ui/Button';
-import SignatureModal from '../ui/SignatureModal';
 import { generateNextProposalNumber, embedProposalNumberInPdf } from '../../lib/pdfStampUtils';
+import { guessFields, nameFromFileName, isPdfFile } from '../../lib/pdfInspect';
+import { todayKey } from '../../lib/invoicing';
+import Sheet from './Sheet';
+import { Button } from './ui';
+import {
+    Choice, DocumentDrop, Field, Section, SignatureField, Toggle, UploadProgress,
+    areaCls, fieldCls, formatBytes, useDocumentIntake,
+} from './uploads/UploadKit';
 
-const logoOptions = [
-    { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
-    { id: 'media', label: 'Newbi Media', path: '/logo_media.png', color: '#00D1FF' },
-    { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
+/*
+ * Host a proposal or deck made elsewhere. The client gets a Newbi link where
+ * they can read it, accept or decline, and you see when they open it. The
+ * proposal number (and our signature, if drawn) is stamped onto every page.
+ */
+
+const BRANDS = [
+    { id: 'entertainment', label: 'Entertainment', path: '/logo_document.png' },
+    { id: 'media', label: 'Media', path: '/logo_media.png' },
+    { id: 'marketing', label: 'Marketing', path: '/logo_marketing.png' },
 ];
 
+const plusDays = (days) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return todayKey(d);
+};
+
+const emptyForm = () => ({
+    clientName: '', clientEmail: '', campaignName: '', dealValue: '',
+    proposalNumber: generateNextProposalNumber(useStore.getState().proposals),
+    validUntil: plusDays(30), selectedLogo: 'entertainment', status: 'Draft',
+    showSignatures: true, showSeal: true, ourSignature: null, coverDescription: '',
+});
+
+const fromProposal = (p) => ({
+    clientName: p.clientName || '',
+    clientEmail: p.clientEmail || '',
+    campaignName: p.campaignName || '',
+    dealValue: p.dealValue || p.totalOverride || '',
+    proposalNumber: p.proposalNumber || '',
+    validUntil: p.validUntil || '',
+    selectedLogo: p.selectedLogo || 'entertainment',
+    status: p.status || 'Draft',
+    showSignatures: p.showSignatures !== false,
+    showSeal: p.showSeal !== false,
+    ourSignature: p.ourSignature || null,
+    coverDescription: p.coverDescription || '',
+});
+
 const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSuccess }) => {
-    const { addProposal, updateProposal, uploadProposalFile } = useStore();
-    const fileInputRef = useRef(null);
-
-    const [file, setFile] = useState(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const [clientName, setClientName] = useState('');
-    const [proposalNumber, setProposalNumber] = useState('');
-    const [campaignName, setCampaignName] = useState('');
-    const [dealValue, setDealValue] = useState('');
-    const [clientEmail, setClientEmail] = useState('');
-    const [selectedLogo, setSelectedLogo] = useState('entertainment');
-    const [status, setStatus] = useState('Draft');
-    const [showSignatures, setShowSignatures] = useState(true);
-    const [showSeal, setShowSeal] = useState(true);
-
-    const [ourSignature, setOurSignature] = useState(null);
-    const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-
-    const [coverDescription, setCoverDescription] = useState('');
-    const [uploading, setUploading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState('');
-    const [uploadPercent, setUploadPercent] = useState(0);
+    const [form, setForm] = useState(emptyForm);
+    const [auto, setAuto] = useState({});
+    const [saving, setSaving] = useState(null); // { percent, step }
     const [error, setError] = useState('');
 
-    // Pre-populate or reset form
+    const set = (patch) => {
+        setForm(f => ({ ...f, ...patch }));
+        setAuto(a => { const next = { ...a }; Object.keys(patch).forEach(k => delete next[k]); return next; });
+    };
+
+    const onRead = useCallback((info, file) => {
+        const g = guessFields(info.lines, 'proposal');
+        setForm(f => {
+            const patch = {};
+            const filled = {};
+            const put = (k, v) => { if (v && !String(f[k] || '').trim()) { patch[k] = v; filled[k] = true; } };
+            put('clientName', g.name || nameFromFileName(file.name));
+            put('clientEmail', g.email);
+            put('dealValue', g.amount ? String(g.amount) : '');
+            if (g.validUntil && g.validUntil >= todayKey()) { patch.validUntil = g.validUntil; filled.validUntil = true; }
+            setAuto(filled);
+            return { ...f, ...patch };
+        });
+    }, []);
+
+    const intake = useDocumentIntake({ onRead });
+    const existing = editingProposal?.fileUrl ? { name: editingProposal.fileName || 'Proposal document', size: editingProposal.fileSize, url: editingProposal.fileUrl } : null;
+
     useEffect(() => {
         if (!isOpen) return;
-
-        if (editingProposal) {
-            setClientName(editingProposal.clientName || '');
-            setProposalNumber(editingProposal.proposalNumber || '');
-            setCampaignName(editingProposal.campaignName || '');
-            setDealValue(editingProposal.dealValue || editingProposal.totalOverride || '');
-            setClientEmail(editingProposal.clientEmail || '');
-            setSelectedLogo(editingProposal.selectedLogo || 'entertainment');
-            setStatus(editingProposal.status || 'Draft');
-            setShowSignatures(editingProposal.showSignatures !== false);
-            setShowSeal(editingProposal.showSeal !== false);
-            setOurSignature(editingProposal.ourSignature || null);
-            setCoverDescription(editingProposal.coverDescription || '');
-            setFile(editingProposal.fileUrl ? {
-                name: editingProposal.fileName || 'Uploaded Proposal Document',
-                size: editingProposal.fileSize || '',
-                url: editingProposal.fileUrl,
-                isExisting: true
-            } : null);
-        } else {
-            const nextProposalNum = generateNextProposalNumber(useStore.getState().proposals);
-            setProposalNumber(nextProposalNum);
-            setClientName('');
-            setCampaignName('');
-            setDealValue('');
-            setClientEmail('');
-            setSelectedLogo('entertainment');
-            setStatus('Draft');
-            setShowSignatures(true);
-            setShowSeal(true);
-            setCoverDescription('');
-            setFile(null);
-        }
+        setForm(editingProposal ? fromProposal(editingProposal) : emptyForm());
+        setAuto({});
+        setSaving(null);
         setError('');
-        setUploading(false);
-        setUploadProgress('');
-        setUploadPercent(0);
-    }, [isOpen, editingProposal]);
+        intake.clear();
+    }, [isOpen, editingProposal]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    if (!isOpen) return null;
-
-    const handleFileProcess = (selectedFile) => {
-        if (!selectedFile) return;
-
-        const maxMb = 35;
-        if (selectedFile.size > maxMb * 1024 * 1024) {
-            setError(`File is too large. Please select a document under ${maxMb}MB.`);
-            return;
-        }
-
-        setError('');
-        setFile(selectedFile);
-
-        // Auto-infer client name if currently empty
-        if (!clientName.trim()) {
-            const cleanName = selectedFile.name
-                .replace(/\.[^/.]+$/, '') // remove extension
-                .replace(/[_-]+/g, ' ') // replace dashes/underscores with space
-                .replace(/\b(proposal|quote|quotation|v\d+|final|draft|deck|presentation)\b/gi, '')
-                .trim();
-            if (cleanName.length > 2) {
-                setClientName(cleanName.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1)));
-            }
-        }
-    };
-
-    const handleDrop = (e) => {
-        e.preventDefault();
-        setIsDragging(false);
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            handleFileProcess(e.dataTransfer.files[0]);
-        }
-    };
-
-    const handleDragOver = (e) => {
-        e.preventDefault();
-        setIsDragging(true);
-    };
-
-    const handleDragLeave = () => {
-        setIsDragging(false);
-    };
-
-    const formatBytes = (bytes) => {
-        if (!bytes) return '';
-        if (typeof bytes === 'string') return bytes;
-        const k = 1024;
-        const dm = 1;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-    };
-
-    const handleSubmit = async (e) => {
+    const submit = async (e) => {
         e.preventDefault();
         setError('');
+        if (!intake.file && !existing) return setError('Add the proposal file first.');
+        if (!form.clientName.trim()) return setError('Enter who the proposal is for.');
+        if (form.dealValue && !(Number(form.dealValue) >= 0)) return setError('The value should be a number.');
 
-        if (!clientName.trim()) {
-            setError('Please enter the client or entity name.');
-            return;
-        }
-
-        if (!file && !editingProposal?.fileUrl) {
-            setError('Please upload a pre-made proposal document (PDF or document file).');
-            return;
-        }
-
-        setUploading(true);
-        setUploadPercent(0);
+        const { uploadProposalFile, addProposal, updateProposal, addToast, proposals } = useStore.getState();
+        const number = form.proposalNumber.trim() || generateNextProposalNumber(proposals);
+        const stamp = { ourSignature: form.ourSignature, senderName: 'Newbi Entertainment & Marketing LLP' };
 
         try {
             let fileUrl = editingProposal?.fileUrl || '';
@@ -171,544 +107,193 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
             let fileSize = editingProposal?.fileSize || '';
             let fileType = editingProposal?.fileType || 'pdf';
 
-            const targetPropNum = proposalNumber.trim() || generateNextProposalNumber(useStore.getState().proposals);
+            const upload = async (blob, label) => {
+                const result = await uploadProposalFile(blob, (p) => setSaving({ percent: 15 + p * 0.8, step: label }));
+                if (!result?.url) throw new Error("Couldn't upload the file.");
+                return result;
+            };
 
-            // If a new physical file is provided, upload it using fast direct streaming
-            if (file && !file.isExisting) {
-                let fileToUpload = file;
-                const isPdf = file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf');
-
-                if (isPdf) {
-                    setUploadProgress('Embedding proposal number across document pages...');
-                    setUploadPercent(10);
+            if (intake.file) {
+                let toUpload = intake.file;
+                if (isPdfFile(intake.file)) {
+                    setSaving({ percent: 5, step: 'Stamping the proposal number' });
                     try {
-                        const arrayBuffer = await file.arrayBuffer();
-                        const modifiedBytes = await embedProposalNumberInPdf(arrayBuffer, targetPropNum, {
-                            ourSignature,
-                            senderName: 'Newbi Entertainment & Marketing LLP'
-                        });
-                        fileToUpload = new File([modifiedBytes], file.name, { type: 'application/pdf' });
-                    } catch (pdfErr) {
-                        console.warn('Could not pre-embed proposal number, will upload original file:', pdfErr);
+                        const bytes = await embedProposalNumberInPdf(await intake.file.arrayBuffer(), number, stamp);
+                        toUpload = new File([bytes], intake.file.name, { type: 'application/pdf' });
+                    } catch (stampErr) {
+                        console.warn('Could not stamp the proposal number; uploading the original.', stampErr);
                     }
                 }
-
-                setUploadProgress('Initiating fast upload to Vault CDN...');
-                setUploadPercent(20);
-
-                const result = await uploadProposalFile(fileToUpload, (percent) => {
-                    setUploadPercent(Math.max(20, percent));
-                    if (percent < 100) {
-                        setUploadProgress(`Uploading proposal: ${percent}%`);
-                    } else {
-                        setUploadProgress('Securing document in Vault CDN...');
-                    }
-                });
-
-                if (!result || !result.url) {
-                    throw new Error('Upload failed. Could not obtain secure URL.');
-                }
+                const result = await upload(toUpload, 'Uploading');
                 fileUrl = result.url;
-                fileName = result.fileName || file.name;
-                fileSize = formatBytes(result.fileSize || file.size);
+                fileName = result.fileName || intake.file.name;
+                fileSize = formatBytes(result.fileSize || intake.file.size);
                 fileType = result.fileType || 'pdf';
-            } else if (editingProposal?.fileUrl && targetPropNum !== editingProposal.proposalNumber) {
-                // If proposal number was changed on an existing file, re-embed and update the hosted file
+            } else if (editingProposal?.fileUrl && (number !== editingProposal.proposalNumber || form.ourSignature !== (editingProposal.ourSignature || null))) {
+                // Number or signature changed on a saved PDF: restamp it.
                 try {
-                    setUploadProgress('Updating embedded proposal number across document pages...');
-                    setUploadPercent(20);
+                    setSaving({ percent: 10, step: 'Updating the stamped PDF' });
                     const resp = await fetch(editingProposal.fileUrl);
                     if (resp.ok) {
-                        const ab = await resp.arrayBuffer();
-                        const modifiedBytes = await embedProposalNumberInPdf(ab, targetPropNum, {
-                            ourSignature,
-                            senderName: 'Newbi Entertainment & Marketing LLP'
-                        });
-                        const fileToUpload = new File([modifiedBytes], fileName || 'proposal.pdf', { type: 'application/pdf' });
-                        const result = await uploadProposalFile(fileToUpload, (percent) => {
-                            setUploadPercent(Math.max(20, percent));
-                        });
-                        if (result?.url) {
-                            fileUrl = result.url;
-                        }
+                        const bytes = await embedProposalNumberInPdf(await resp.arrayBuffer(), number, stamp);
+                        const result = await upload(new File([bytes], fileName || 'proposal.pdf', { type: 'application/pdf' }), 'Uploading the updated PDF');
+                        fileUrl = result.url;
                     }
-                } catch (reErr) {
-                    console.warn('Could not re-embed proposal number on existing file:', reErr);
+                } catch (restampErr) {
+                    console.warn('Could not restamp the saved PDF.', restampErr);
                 }
             }
 
-            setUploadPercent(100);
-            setUploadProgress('Configuring proposal in Vault...');
-
-            const proposalData = {
-                clientName: clientName.trim(),
-                proposalNumber: targetPropNum,
-                campaignName: campaignName.trim(),
-                dealValue: dealValue ? String(dealValue).trim() : '',
-                totalOverride: dealValue ? Number(dealValue) : null,
-                clientEmail: clientEmail.trim(),
-                selectedLogo,
-                status,
-                showSignatures,
-                showSeal,
-            ourSignature,
-                coverDescription: coverDescription.trim(),
+            setSaving({ percent: 98, step: 'Saving' });
+            const value = form.dealValue === '' ? '' : String(form.dealValue).trim();
+            const data = {
+                clientName: form.clientName.trim(),
+                clientEmail: form.clientEmail.trim(),
+                campaignName: form.campaignName.trim(),
+                proposalNumber: number,
+                dealValue: value,
+                totalOverride: value ? Number(value) : null,
+                validUntil: form.validUntil || '',
+                selectedLogo: form.selectedLogo,
+                status: form.status,
+                showSignatures: form.showSignatures,
+                showSeal: form.showSeal,
+                ourSignature: form.ourSignature,
+                coverDescription: form.coverDescription.trim(),
                 isUploaded: true,
                 fileUrl,
                 fileName,
                 fileSize,
                 fileType,
+                pageCount: intake.info?.pages || editingProposal?.pageCount || null,
                 items: editingProposal?.items || [],
-                updatedAt: new Date().toISOString()
+                updatedAt: new Date().toISOString(),
             };
 
-            let savedId = editingProposal?.id;
-            if (editingProposal?.id) {
-                await updateProposal(editingProposal.id, proposalData);
-                useStore.getState().addToast('Proposal updated.', 'success');
+            let id = editingProposal?.id;
+            if (id) {
+                await updateProposal(id, data);
+                addToast('Proposal updated.', 'success');
             } else {
-                savedId = await addProposal(proposalData);
-                useStore.getState().addToast('Proposal uploaded and saved to the Vault.', 'success');
+                id = await addProposal(data);
+                addToast('Proposal added. Share the link from its details.', 'success');
             }
-
-            if (onSuccess) onSuccess(savedId);
+            onSuccess?.(id);
             onClose();
         } catch (err) {
             console.error('Error saving uploaded proposal:', err);
-            setError(err.message || 'Failed to host proposal. Please try again.');
+            setError(err.message || "Couldn't save the proposal. Please try again.");
         } finally {
-            setUploading(false);
-            setUploadProgress('');
-            setUploadPercent(0);
+            setSaving(null);
         }
     };
 
-    return createPortal(
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-            {/* Backdrop */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={uploading ? undefined : onClose}
-                className="fixed inset-0 bg-black/85 backdrop-blur-md"
-            />
+    const busy = Boolean(saving);
 
-            {/* Modal Dialog */}
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                className="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden my-auto max-h-[92vh] flex flex-col text-white"
-            >
-                {/* Header */}
-                <div className="px-6 sm:px-8 py-5 sm:py-6 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/[0.02]">
-                    <div className="flex items-center gap-3.5">
-                        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-neon-green/10 border border-neon-green/30 flex items-center justify-center text-neon-green shadow-[0_0_15px_rgba(57,255,20,0.2)]">
-                            <Upload size={20} />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-lg sm:text-xl font-black uppercase tracking-tight italic font-heading">
-                                    {editingProposal ? 'Edit Hosted Proposal' : 'Upload Pre-Made Proposal'}
-                                </h3>
-                                <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-neon-green/10 text-neon-green border border-neon-green/20 tracking-wider">
-                                    Vault Host
-                                </span>
-                            </div>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                                Host custom PDF/deck, track views, send emails & collect client e-signatures
-                            </p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        disabled={uploading}
-                        className="p-2 sm:p-2.5 hover:bg-white/10 text-gray-400 hover:text-white rounded-full transition-colors disabled:opacity-50"
-                    >
-                        <X size={18} />
-                    </button>
-                </div>
-
-                {/* Body Form */}
-                <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6 overflow-y-auto scrollbar-hide flex-1">
-                    {error && (
-                        <div className="p-3.5 sm:p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 text-red-400 text-xs font-semibold">
-                            <AlertCircle size={16} className="shrink-0" />
-                            <span>{error}</span>
-                        </div>
-                    )}
-
-                    {/* File Dropzone */}
-                    <div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">
-                            Proposal Document (PDF, Presentation, or File) <span className="text-neon-green">*</span>
-                        </label>
-                        
-                        {!file ? (
-                            <div
-                                onDrop={handleDrop}
-                                onDragOver={handleDragOver}
-                                onDragLeave={handleDragLeave}
-                                onClick={() => fileInputRef.current?.click()}
-                                className={cn(
-                                    "border-2 border-dashed rounded-2xl p-6 sm:p-8 text-center cursor-pointer transition-all duration-300 flex flex-col items-center justify-center gap-3 group",
-                                    isDragging
-                                        ? "border-neon-green bg-neon-green/10 scale-[0.99]"
-                                        : "border-white/15 hover:border-neon-green/50 bg-white/[0.02] hover:bg-white/[0.04]"
-                                )}
-                            >
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
-                                    onChange={(e) => {
-                                        if (e.target.files && e.target.files[0]) {
-                                            handleFileProcess(e.target.files[0]);
-                                        }
-                                    }}
-                                    className="hidden"
-                                />
-                                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 group-hover:text-neon-green group-hover:scale-110 transition-all">
-                                    <Upload size={22} />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-gray-200 uppercase tracking-wider">
-                                        Click to browse or drag & drop proposal
-                                    </p>
-                                    <p className="text-[10px] text-gray-500 font-medium tracking-wide mt-1">
-                                        PDF files recommended • Also supports Word docs & presentations (up to 35MB)
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-10 h-10 rounded-xl bg-neon-green/10 border border-neon-green/30 flex items-center justify-center text-neon-green shrink-0">
-                                        <FileText size={20} />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="text-xs font-bold text-white truncate">{file.name}</p>
-                                        <p className="text-[10px] font-mono text-gray-400 uppercase tracking-widest mt-0.5">
-                                            {formatBytes(file.size) || 'Attached Document'} • Ready for Vault
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                    {file.url && (
-                                        <a
-                                            href={file.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
-                                            title="Preview existing file"
-                                        >
-                                            <Eye size={16} />
-                                        </a>
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setFile(null);
-                                            if (fileInputRef.current) fileInputRef.current.value = '';
-                                        }}
-                                        className="p-2 hover:bg-red-500/10 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
-                                        title="Remove / change file"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Basic Meta: Client Name & Quotation # */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">
-                                Client / Entity Name <span className="text-neon-green">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                required
-                                value={clientName}
-                                onChange={(e) => setClientName(e.target.value)}
-                                placeholder="e.g. Red Bull India, Google"
-                                className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs font-bold uppercase tracking-wider text-white placeholder:text-gray-600 outline-none focus:border-neon-green/50 transition-colors"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">
-                                Proposal Reference # <span className="text-neon-green">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                required
-                                value={proposalNumber}
-                                onChange={(e) => setProposalNumber(e.target.value)}
-                                placeholder="e.g. NBQ-8821"
-                                className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs font-mono font-bold uppercase tracking-wider text-white placeholder:text-gray-600 outline-none focus:border-neon-green/50 transition-colors"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Campaign Title & Commercial Value */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">
-                                Project / Campaign Mission
-                            </label>
-                            <input
-                                type="text"
-                                value={campaignName}
-                                onChange={(e) => setCampaignName(e.target.value)}
-                                placeholder="e.g. Creator Partnership 2026"
-                                className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs font-medium tracking-wide text-white placeholder:text-gray-600 outline-none focus:border-neon-green/50 transition-colors"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">
-                                Deal Value / Commercials (INR ₹)
-                            </label>
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-xs">₹</span>
-                                <input
-                                    type="number"
-                                    value={dealValue}
-                                    onChange={(e) => setDealValue(e.target.value)}
-                                    placeholder="e.g. 250000"
-                                    className="w-full h-12 bg-white/5 border border-white/10 rounded-xl pl-8 pr-4 text-xs font-mono font-bold text-white placeholder:text-gray-600 outline-none focus:border-neon-green/50 transition-colors"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Client Email & Initial Status */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">
-                                Client Recipient Email (For 1-Click Send)
-                            </label>
-                            <input
-                                type="email"
-                                value={clientEmail}
-                                onChange={(e) => setClientEmail(e.target.value)}
-                                placeholder="client@company.com"
-                                className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs font-medium text-white placeholder:text-gray-600 outline-none focus:border-neon-green/50 transition-colors"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">
-                                Initial Status
-                            </label>
-                            <div className="grid grid-cols-3 gap-2">
-                                {['Draft', 'Sent', 'Accepted'].map((s) => (
-                                    <button
-                                        type="button"
-                                        key={s}
-                                        onClick={() => setStatus(s)}
-                                        className={cn(
-                                            "h-12 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
-                                            status === s
-                                                ? "bg-neon-green text-black border-neon-green shadow-[0_0_15px_rgba(57,255,20,0.3)] font-black"
-                                                : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white"
-                                        )}
-                                    >
-                                        {s}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Brand Entity / Division Selector */}
-                    <div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">
-                            Issuing Brand Division
-                        </label>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-                            {logoOptions.map((opt) => (
-                                <button
-                                    type="button"
-                                    key={opt.id}
-                                    onClick={() => setSelectedLogo(opt.id)}
-                                    className={cn(
-                                        "p-3 rounded-xl border text-left transition-all flex items-center gap-3",
-                                        selectedLogo === opt.id
-                                            ? "border-neon-green bg-neon-green/10 text-white"
-                                            : "border-white/10 bg-white/[0.02] hover:bg-white/[0.05] text-gray-400"
-                                    )}
-                                >
-                                    <img src={opt.path} alt={opt.label} className="h-6 w-auto object-contain" />
-                                    <div className="min-w-0">
-                                        <p className="text-[10px] font-black uppercase tracking-wider truncate text-white">{opt.label}</p>
-                                    </div>
-                                    {selectedLogo === opt.id && (
-                                        <Check size={14} className="ml-auto text-neon-green shrink-0" />
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Features & Options (E-Signature & Seal) */}
-                    <div className="p-4 bg-white/[0.02] border border-white/10 rounded-2xl space-y-3">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-neon-green flex items-center gap-1.5">
-                            <ShieldCheck size={14} /> Vault Client Features
-                        </p>
-                        
-                        <div className="flex items-center justify-between py-1">
-                            <div>
-                                <p className="text-xs font-bold text-white">Enable Client E-Signatures & Online Sign-Off</p>
-                                <p className="text-[10px] text-gray-500">Allow clients to digitally authorize and accept this proposal online on the hosted page</p>
-                            </div>
-                            <input
-                                type="checkbox"
-                                checked={showSignatures}
-                                onChange={(e) => setShowSignatures(e.target.checked)}
-                                className="w-5 h-5 accent-neon-green rounded cursor-pointer"
-                            />
-                        </div>
-
-                        <div className="flex items-center justify-between py-1 border-t border-white/5 pt-2">
-                            <div>
-                                <p className="text-xs font-bold text-white">Official Newbi Document Seal</p>
-                                <p className="text-[10px] text-gray-500">Stamp official cryptographic authorization seal once accepted</p>
-                            </div>
-                            <input
-                                type="checkbox"
-                                checked={showSeal}
-                                onChange={(e) => setShowSeal(e.target.checked)}
-                                className="w-5 h-5 accent-neon-green rounded cursor-pointer"
-                            />
-                        </div>
-
-                        <div className="flex flex-col gap-3 py-1 border-t border-white/5 pt-3 mt-2">
-                            <div>
-                                <p className="text-xs font-bold text-white">Pre-Signed Executive Authorization (Our Side)</p>
-                                <p className="text-[10px] text-gray-500">Apply Newbi executive signature before sending to client for execution.</p>
-                            </div>
-                            
-                            <div 
-                                onClick={() => setIsSignatureModalOpen(true)}
-                                className="h-16 border-2 border-dashed border-white/15 hover:border-neon-green/40 bg-white/[0.02] rounded-xl flex items-center justify-center cursor-pointer transition-all p-2 w-full max-w-[240px]"
-                            >
-                                {ourSignature ? (
-                                    <img src={ourSignature} alt="Our Signature" className="max-h-full object-contain filter invert" />
-                                ) : (
-                                    <div className="flex flex-col items-center gap-1 text-gray-500 hover:text-neon-green transition-colors">
-                                        <PenTool size={16} />
-                                        <p className="text-[9px] font-bold uppercase tracking-widest">
-                                            Click to Draw Signature
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                            {ourSignature && (
-                                <button 
-                                    type="button" 
-                                    onClick={(e) => { e.stopPropagation(); setOurSignature(null); }}
-                                    className="text-[9px] text-red-500 uppercase tracking-widest font-bold self-start mt-1 hover:underline"
-                                >
-                                    Remove Signature
-                                </button>
-                            )}
-                        </div>
-
-                    </div>
-
-                    {/* Optional Executive Note */}
-                    <div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">
-                            Executive Cover Note / Context for Client (Optional)
-                        </label>
-                        <textarea
-                            rows={3}
-                            value={coverDescription}
-                            onChange={(e) => setCoverDescription(e.target.value)}
-                            placeholder="Add a personalized memorandum note that the client sees above the hosted proposal document..."
-                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white placeholder:text-gray-600 outline-none focus:border-neon-green/50 transition-colors"
-                        />
-                    </div>
-                </form>
-
-                {/* Footer Actions */}
-                <div className="px-6 sm:px-8 py-4 sm:py-5 border-t border-white/10 flex flex-col gap-3 shrink-0 bg-white/[0.02]">
-                    {uploading && (
-                        <div className="w-full space-y-1.5">
-                            <div className="flex items-center justify-between text-[10px] font-mono">
-                                <span className="text-neon-green font-bold flex items-center gap-1.5">
-                                    <RefreshCw size={11} className="animate-spin text-neon-green" />
-                                    {uploadProgress || 'Uploading...'}
-                                </span>
-                                <span className="text-neon-green font-black">{uploadPercent}%</span>
-                            </div>
-                            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                <div 
-                                    className="h-full bg-neon-green shadow-[0_0_10px_rgba(57,255,20,0.8)] transition-all duration-150 ease-out rounded-full"
-                                    style={{ width: `${uploadPercent}%` }}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 w-full">
-                        <div className="text-[10px] font-mono text-gray-400">
-                            {uploading ? (
-                                <span className="text-gray-300">Fast-streaming to Vault CDN • Please wait</span>
-                            ) : (
-                                'Vault URL, analytics & sharing link created automatically'
-                            )}
-                        </div>
-
-                        <div className="flex items-center gap-3 w-full sm:w-auto">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                disabled={uploading}
-                                className="flex-1 sm:flex-none px-5 py-3 rounded-xl border border-white/10 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest text-gray-300 transition-colors disabled:opacity-50"
-                            >
-                                Cancel
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={handleSubmit}
-                                disabled={uploading}
-                                className="flex-1 sm:flex-none px-7 py-3 rounded-xl bg-neon-green hover:bg-neon-green/90 text-black text-[10px] font-black uppercase tracking-widest transition-all shadow-[0_4px_16px_rgba(57,255,20,0.4)] hover:shadow-[0_6px_24px_rgba(57,255,20,0.6)] flex items-center justify-center gap-2 disabled:opacity-50"
-                            >
-                                {uploading ? (
-                                    <>
-                                        <RefreshCw size={14} className="animate-spin" />
-                                        <span>Hosting ({uploadPercent}%)...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Upload size={14} />
-                                        <span>{editingProposal ? 'Update in Vault' : 'Host in Vault'}</span>
-                                    </>
-                                )}
-                            </button>
-                        </div>
+    return (
+        <Sheet
+            open={isOpen}
+            onClose={busy ? () => {} : onClose}
+            size="lg"
+            title={editingProposal ? 'Edit uploaded proposal' : 'Add a proposal PDF'}
+            subtitle="The client gets a link to read it and accept online, and you see when they open it"
+            footer={(
+                <div className="space-y-3">
+                    {busy && <UploadProgress percent={saving.percent} step={saving.step} />}
+                    {error && <p role="alert" className="text-[13px] font-semibold text-red-600 dark:text-red-400">{error}</p>}
+                    <div className="flex gap-2">
+                        <Button variant="ghost" onClick={onClose} disabled={busy} className="h-12">Cancel</Button>
+                        <Button variant="primary" type="submit" form="upload-proposal-form" disabled={busy || intake.reading} className="h-12 flex-1">
+                            {busy ? 'Saving…' : editingProposal ? 'Save changes' : 'Add proposal'}
+                        </Button>
                     </div>
                 </div>
-            
-            </motion.div>
+            )}
+        >
+            <form id="upload-proposal-form" onSubmit={submit} className="space-y-7" noValidate>
+                <DocumentDrop
+                    intake={intake}
+                    existing={existing}
+                    disabled={busy}
+                    accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/*"
+                    label="Drop the proposal or deck"
+                    sub="PDF works best: we read the client and value from it and stamp the proposal number on every page"
+                />
 
-            <SignatureModal 
-                isOpen={isSignatureModalOpen}
-                onClose={() => setIsSignatureModalOpen(false)}
-                onSave={(data) => {
-                    setOurSignature(data);
-                    setIsSignatureModalOpen(false);
-                }}
-            />
-        </div>
-,
-        document.body
+                <Section title="Who it's for">
+                    <Field label="Client" auto={auto.clientName}>
+                        <input className={fieldCls} value={form.clientName} onChange={e => set({ clientName: e.target.value })} placeholder="e.g. boAt Lifestyle" />
+                    </Field>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <Field label="Client email" optional auto={auto.clientEmail} hint="Pre-fills the email when you share it">
+                            <input className={fieldCls} type="email" inputMode="email" autoCapitalize="off" value={form.clientEmail} onChange={e => set({ clientEmail: e.target.value })} />
+                        </Field>
+                        <Field label="Campaign" optional>
+                            <input className={fieldCls} value={form.campaignName} onChange={e => set({ campaignName: e.target.value })} placeholder="e.g. Diwali creator push" />
+                        </Field>
+                    </div>
+                </Section>
+
+                <Section title="Deal">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Value (₹)" optional auto={auto.dealValue} hint="Counts in your pipeline">
+                            <input className={fieldCls} type="number" inputMode="decimal" min="0" value={form.dealValue} onChange={e => set({ dealValue: e.target.value })} placeholder="0" />
+                        </Field>
+                        <Field label="Proposal no.">
+                            <input className={cn(fieldCls, 'font-mono')} value={form.proposalNumber} onChange={e => set({ proposalNumber: e.target.value.toUpperCase() })} autoCapitalize="characters" />
+                        </Field>
+                    </div>
+                    <Field label="Valid until" optional auto={auto.validUntil} hint="After this the link shows the offer as expired">
+                        <input className={fieldCls} type="date" min={todayKey()} value={form.validUntil} onChange={e => set({ validUntil: e.target.value })} />
+                    </Field>
+                    <div className="flex flex-wrap gap-2">
+                        {[15, 30, 60, 90].map(d => (
+                            <button key={d} type="button" onClick={() => set({ validUntil: plusDays(d) })} className={cn('h-9 rounded-lg border px-3 text-[12px] font-bold', form.validUntil === plusDays(d) ? 'border-emerald-500/60 bg-neon-green/[0.08]' : 'border-black/10 dark:border-white/10')}>
+                                {d} days
+                            </button>
+                        ))}
+                        <button type="button" onClick={() => set({ validUntil: '' })} className={cn('h-9 rounded-lg border px-3 text-[12px] font-bold', !form.validUntil ? 'border-emerald-500/60 bg-neon-green/[0.08]' : 'border-black/10 dark:border-white/10')}>No expiry</button>
+                    </div>
+                </Section>
+
+                <Section title="Where it stands">
+                    <Choice value={form.status} onChange={(v) => set({ status: v })} options={[
+                        { value: 'Draft', label: 'Draft', hint: 'Not shared yet' },
+                        { value: 'Sent', label: 'Sent', hint: 'Client has it' },
+                        { value: 'Accepted', label: 'Accepted', hint: 'Already agreed' },
+                    ]} />
+                </Section>
+
+                <Section title="Page the client sees">
+                    <div className="grid grid-cols-3 gap-2">
+                        {BRANDS.map(b => (
+                            <button
+                                key={b.id}
+                                type="button"
+                                onClick={() => set({ selectedLogo: b.id })}
+                                className={cn('relative flex h-16 flex-col items-center justify-center gap-1 rounded-xl border bg-zinc-950 px-2 transition-colors',
+                                    form.selectedLogo === b.id ? 'border-emerald-500 ring-2 ring-neon-green/30' : 'border-black/10 dark:border-white/10')}
+                            >
+                                <img src={b.path} alt="" className="h-5 w-auto max-w-full object-contain" />
+                                <span className="text-[10px] font-bold text-zinc-300">{b.label}</span>
+                                {form.selectedLogo === b.id && <Check size={12} className="absolute right-1.5 top-1.5 text-neon-green" />}
+                            </button>
+                        ))}
+                    </div>
+                    <Field label="Note above the document" optional>
+                        <textarea className={areaCls} rows={3} value={form.coverDescription} onChange={e => set({ coverDescription: e.target.value })} placeholder="A line or two for the client, e.g. what this covers and what you need from them." />
+                    </Field>
+                </Section>
+
+                <Section title="Sign-off">
+                    <div className="divide-y divide-black/[0.06] rounded-2xl border border-black/[0.06] px-4 py-2 dark:divide-white/[0.06] dark:border-white/[0.06]">
+                        <div className="py-2"><Toggle label="Client can accept online" hint="Shows Accept and Decline on the link" checked={form.showSignatures} onChange={(v) => set({ showSignatures: v })} /></div>
+                        <div className="py-2"><Toggle label="Newbi seal on acceptance" checked={form.showSeal} onChange={(v) => set({ showSeal: v })} /></div>
+                    </div>
+                    <SignatureField value={form.ourSignature} onChange={(v) => set({ ourSignature: v })} hint="Stamped on the PDF as signed by Newbi" />
+                </Section>
+            </form>
+        </Sheet>
     );
 };
 

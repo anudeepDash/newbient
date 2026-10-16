@@ -42,6 +42,14 @@
     --scrollbar-thumb-hover: #555555;
   }
 
+  /* Admin pages: the colour behind everything (Safari's overscroll and bars) is the admin background. */
+  html.admin-route { --bg-primary: #f6f7f9; }
+  html.dark.admin-route { --bg-primary: #07080b; }
+
+  /* Native controls (date/time pickers, scrollbars, autofill) follow the site theme, not just the OS. */
+  html { color-scheme: light; }
+  html.dark { color-scheme: dark; }
+
   html {
     @apply antialiased;
     background-color: var(--bg-primary);
@@ -69,6 +77,18 @@
     -webkit-user-select: none;
     -webkit-touch-callout: none;
   }
+
+  /* Safari: date/time fields centre their value and ignore our height; line them up like other inputs. */
+  input[type="date"], input[type="time"], input[type="datetime-local"], input[type="month"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+  }
+  input::-webkit-date-and-time-value { text-align: left; margin: 0; }
+  input::-webkit-datetime-edit { padding: 0; }
+  /* Safari draws its own rounded search field and inner shadow. */
+  input[type="search"] { -webkit-appearance: none; appearance: none; }
+  input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; }
 
   /* Prevent iOS Safari auto-zooming when focusing inputs under 16px */
   @media (pointer: coarse) {

@@ -27,6 +27,10 @@ import SharedDocumentViewer from '../components/ui/SharedDocumentViewer';
 import SignatureModal from '../components/ui/SignatureModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
+import { paginateContract } from '../components/admin/useContractGenerator';
+import { parseContractDate, partyIds, termSentence, deliverablesOf, milestoneRows, gstNote, formatMoney } from '../components/admin/contracts/contractRules';
+
+const LOGOS = { entertainment: '/logo_document.png', media: '/logo_media.png', marketing: '/logo_marketing.png' };
 
 const inlineFmt = (t) => t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
 
@@ -115,6 +119,7 @@ const Agreement = () => {
     const { id } = useParams();
     const { agreements, updateAgreement, logDocumentAccess, user, loading: storeLoading } = useStore();
     const [displayAgreement, setDisplayAgreement] = useState(null);
+    const [notFound, setNotFound] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [signatureName, setSignatureName] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -125,6 +130,7 @@ const Agreement = () => {
     const [scale, setScale] = useState(1);
     const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const agreementRef = useRef(null);
+    const loggedVisitRef = useRef(null);
 
     useEffect(() => {
         const handleResize = () => {
@@ -153,9 +159,12 @@ const Agreement = () => {
                     const docSnap = await getDoc(doc(db, 'agreements', id));
                     if (docSnap.exists()) {
                         setDisplayAgreement({ ...docSnap.data(), id: docSnap.id });
+                    } else {
+                        setNotFound(true);
                     }
                 } catch (err) {
                     console.error("Error fetching agreement directly:", err);
+                    setNotFound(true);
                 }
             };
             fetchAgreement();
@@ -163,10 +172,14 @@ const Agreement = () => {
     }, [id, agreements, user, storeLoading]);
 
     const location = useLocation();
-    const isAdmin = (safeLocalStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
+    const isAdmin = ['super_admin', 'developer', 'founder'].includes(user?.role);
 
     useEffect(() => {
         if (isAdmin || !displayAgreement) return;
+        // Log once per visit; live snapshot updates must not trigger more writes.
+        const visitKey = `${id}${window.location.search}`;
+        if (loggedVisitRef.current === visitKey) return;
+        loggedVisitRef.current = visitKey;
 
         const fetchIpAndLog = async () => {
             let detectedIp = 'Hidden/Protected';
@@ -215,12 +228,6 @@ const Agreement = () => {
         url: typeof window !== 'undefined' ? window.location.href : undefined
     });
 
-    if (!displayAgreement) return (
-        <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
-            <RefreshCw className="animate-spin text-[#A855F7]" size={40} />
-        </div>
-    );
-
     const [pdfBlobUrl, setPdfBlobUrl] = useState('');
 
     useEffect(() => {
@@ -255,11 +262,25 @@ const Agreement = () => {
 
     useEffect(() => {
         if (displayAgreement) {
-            if (!signatureName && (displayAgreement.parties?.secondParty?.name || displayAgreement.clientName)) {
-                setSignatureName(displayAgreement.parties?.secondParty?.name || displayAgreement.clientName);
-            }
+            const suggested = displayAgreement.parties?.secondParty?.signatoryName || displayAgreement.parties?.secondParty?.name || displayAgreement.clientName;
+            if (!signatureName && suggested) setSignatureName(suggested);
         }
     }, [displayAgreement]);
+
+    // Hooks above must all run before any early return (React requires the same order every render).
+    if (!displayAgreement) return notFound ? (
+        <div className="min-h-dvh flex items-center justify-center bg-gray-50 px-6 text-center dark:bg-black">
+            <div className="max-w-sm space-y-3">
+                <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Contract not found</h1>
+                <p className="text-sm text-gray-500">This link may be wrong, or the contract was withdrawn. Please ask the sender for a new link.</p>
+                <Link to="/" className="inline-block rounded-xl bg-gray-900 px-5 py-3 text-xs font-bold uppercase tracking-wider text-white dark:bg-white dark:text-black">Go to Newbi</Link>
+            </div>
+        </div>
+    ) : (
+        <div className="min-h-dvh bg-white dark:bg-black flex items-center justify-center">
+            <RefreshCw className="animate-spin text-[#A855F7]" size={40} />
+        </div>
+    );
 
     const handleDownloadPDF = async (blobUrl) => {
         if (displayAgreement.isUploaded && displayAgreement.fileUrl) {
@@ -298,6 +319,7 @@ const Agreement = () => {
     const handleApprove = async () => {
         if (displayAgreement.status === 'Executed') return;
         if (!signatureName.trim()) { useStore.getState().addToast('Enter your full name to sign.', 'error'); return; }
+        if (displayAgreement.showSignatures && !clientSignature) { setIsVerifying(false); useStore.getState().addToast('Add your signature first.', 'error'); return; }
         if (!verificationEmail.trim() || !verificationEmail.includes('@')) { useStore.getState().addToast('Enter a valid email address to sign.', 'error'); return; }
         
         setIsSubmitting(true);
@@ -305,50 +327,42 @@ const Agreement = () => {
             const metadata = {
                 signedBy: signatureName.trim(),
                 signedAt: new Date().toISOString(),
-                ip: ipAddress,
+                ip: /\d/.test(String(ipAddress)) ? ipAddress : null,
                 email: verificationEmail.trim(),
                 userAgent: navigator.userAgent,
                 clientSignature: clientSignature
             };
-            await updateAgreement(id, { 
-                status: 'Executed', 
-                approvalMetadata: metadata,
-                clientSignature: clientSignature || null
-            });
+            // One transaction: refuses if the contract was already signed.
+            const saved = await useStore.getState().signAgreement(id, metadata);
             setDisplayAgreement(prev => ({
                 ...prev,
                 status: 'Executed',
-                approvalMetadata: metadata,
-                clientSignature: clientSignature || null
+                approvalMetadata: saved || metadata,
+                clientSignature: saved?.clientSignature || clientSignature || null
             }));
             setIsVerifying(false);
             useStore.getState().addToast('Agreement signed. Thank you!', 'success');
         } catch (error) {
             console.error(error);
-            useStore.getState().addToast("Couldn't sign the agreement. Please try again or contact support.", 'error');
+            useStore.getState().addToast(error?.code ? error.message : "Couldn't sign the agreement. Please try again or contact support.", 'error');
         } finally { setIsSubmitting(false); }
     };
 
-    const getPaginatedPages = () => {
-        const pages = [];
-        pages.push({ type: 'intro' });
-        if (displayAgreement.details?.purpose) pages.push({ type: 'mission' });
-        if (displayAgreement.commercials?.totalValue) pages.push({ type: 'commercials' });
-        if (displayAgreement.clauses?.length > 0) {
-            const clausesPerPage = 3;
-            for (let i = 0; i < displayAgreement.clauses.length; i += clausesPerPage) {
-                pages.push({ 
-                    type: 'clauses', 
-                    items: displayAgreement.clauses.slice(i, i + clausesPerPage),
-                    pageIndex: Math.floor(i / clausesPerPage) + 1
-                });
-            }
-        }
-        pages.push({ type: 'execution' });
-        return pages;
-    };
-
-    const paginatedPages = getPaginatedPages();
+    // Same pages as the editor preview: hidden sections and left-out clauses stay out.
+    const paginatedPages = paginateContract(displayAgreement);
+    // Older or partial records may miss whole sections; never crash the page.
+    const fp = displayAgreement.parties?.firstParty || {};
+    const sp = displayAgreement.parties?.secondParty || {};
+    const details = displayAgreement.details || {};
+    const commercials = displayAgreement.commercials || {};
+    const effDate = parseContractDate(displayAgreement.effectiveDate) || new Date();
+    const isSigned = displayAgreement.status === 'Executed';
+    const firstIds = partyIds(fp);
+    const secondIds = partyIds(sp);
+    const term = termSentence(displayAgreement);
+    const deliverables = deliverablesOf(displayAgreement);
+    const milestones = milestoneRows(displayAgreement);
+    const taxNote = gstNote(displayAgreement);
 
     const viewerData = {
         ...displayAgreement,
@@ -490,7 +504,7 @@ const Agreement = () => {
                         <Button
                             type="button"
                             onClick={() => setIsVerifying(true)}
-                            disabled={isSubmitting || !signatureName.trim()}
+                            disabled={isSubmitting || !signatureName.trim() || (displayAgreement.showSignatures && !clientSignature)}
                             className="w-full h-11 bg-[#A855F7] hover:bg-[#A855F7]/90 text-black font-black uppercase tracking-widest text-[10px] rounded-xl shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             {isSubmitting ? (
@@ -531,7 +545,7 @@ const Agreement = () => {
                             
                             {/* Header */}
                             <div className={cn("flex justify-between items-end mb-8 pb-3 relative z-10", idx > 0 && "opacity-40")}>
-                                <img src="/logo_document.png" alt="Logo" className="h-8 w-auto object-contain grayscale opacity-80" crossOrigin="anonymous" />
+                                <img src={LOGOS[displayAgreement.selectedLogo] || LOGOS.entertainment} alt="Logo" className="h-8 w-auto object-contain grayscale opacity-80" crossOrigin="anonymous" />
                                 <div className="flex items-center gap-6 text-right">
                                     <div className="space-y-0.5">
                                         <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest block">Agreement ID</span>
@@ -539,7 +553,7 @@ const Agreement = () => {
                                     </div>
                                     <div className="space-y-0.5 border-l border-black/10 pl-6">
                                         <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest block">Effective Date</span>
-                                        <span className="text-[10px] font-bold text-black uppercase tracking-wider block">{new Date(displayAgreement.effectiveDate || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                        <span className="text-[10px] font-bold text-black uppercase tracking-wider block">{effDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                                     </div>
                                 </div>
                             </div>
@@ -554,23 +568,23 @@ const Agreement = () => {
                                         </div>
                                         <div className="space-y-6 text-[12px] leading-relaxed text-justify">
                                             <p className="font-bold italic">
-                                                THIS AGREEMENT is made on this {new Date(displayAgreement.effectiveDate || Date.now()).getDate()} day of {new Date(displayAgreement.effectiveDate || Date.now()).toLocaleString('default', { month: 'long' })}, {new Date(displayAgreement.effectiveDate || Date.now()).getFullYear()} ("Effective Date").
+                                                THIS AGREEMENT is made on this {effDate.getDate()} day of {effDate.toLocaleString('en-GB', { month: 'long' })}, {effDate.getFullYear()} ("Effective Date").{term ? ` ${term}` : ''}
                                             </p>
                                             <div className="grid grid-cols-1 gap-4">
                                                 <div className="space-y-1">
                                                     <p className="font-bold uppercase tracking-widest text-[10px]">Between:</p>
-                                                    <p><span className="font-bold">{displayAgreement.parties.firstParty.name}</span>, a registered entity with its principal office at {displayAgreement.parties.firstParty.address} (hereinafter referred to as the <span className="font-bold uppercase">"Provider"</span>);</p>
+                                                    <p><span className="font-bold">{fp.name}</span>, a registered entity with its principal office at {fp.address}{firstIds ? ` (${firstIds})` : ''} (hereinafter referred to as the <span className="font-bold uppercase">"Provider"</span>);</p>
                                                 </div>
                                                 <div className="flex justify-center py-2 font-bold italic text-gray-600 dark:text-gray-400">AND</div>
                                                 <div className="space-y-1">
                                                     <p className="font-bold uppercase tracking-widest text-[10px]">And:</p>
-                                                    <p><span className="font-bold">{displayAgreement.parties.secondParty.name}</span>, a registered entity with its principal office at {displayAgreement.parties.secondParty.address} (hereinafter referred to as the <span className="font-bold uppercase">"Client"</span>).</p>
+                                                    <p><span className="font-bold">{sp.name}</span>, a registered entity with its principal office at {sp.address}{secondIds ? ` (${secondIds})` : ''} (hereinafter referred to as the <span className="font-bold uppercase">"Client"</span>).</p>
                                                 </div>
                                             </div>
                                             <div className="pt-8 space-y-4">
                                                 <p className="font-bold uppercase tracking-[0.2em] text-[10px] text-center">RECITALS (WHEREAS):</p>
                                                 <div className="space-y-3 italic text-gray-600">
-                                                    <p>A. The Provider is engaged in the business of providing professional {displayAgreement.details.projectName} services and possesses the requisite expertise;</p>
+                                                    <p>A. The Provider is engaged in the business of providing professional {details.projectName} services and possesses the requisite expertise;</p>
                                                     <p>B. The Client desires to engage the Provider for the execution of certain strategic objectives;</p>
                                                     <p>C. The Parties have agreed to enter into this Agreement to define their respective rights and obligations.</p>
                                                 </div>
@@ -584,8 +598,16 @@ const Agreement = () => {
                                     <div className="space-y-8 py-4">
                                         <h3 className="text-lg font-black uppercase tracking-widest text-black border-b border-black pb-1 inline-block">Section 01. Purpose of Engagement.</h3>
                                         <div className="text-[12px] font-medium leading-relaxed text-black text-justify mt-4">
-                                            {renderContent(displayAgreement.details.purpose)}
+                                            {renderContent(details.purpose)}
                                         </div>
+                                        {deliverables.length > 0 && (
+                                            <div className="space-y-3">
+                                                <p className="text-[9px] font-black text-black uppercase tracking-widest border-b border-black pb-1 inline-block">Deliverables</p>
+                                                {deliverables.map((d, i) => (
+                                                    <p key={i} className="flex gap-3 text-[12px] font-medium leading-relaxed text-black"><span>({String.fromCharCode(97 + i)})</span><span className="flex-1">{d}</span></p>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -595,11 +617,19 @@ const Agreement = () => {
                                         <div className="grid grid-cols-1 gap-8 mt-4">
                                             <div className="space-y-8 text-center py-8 border-y border-black/5 bg-gray-50/50">
                                                 <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Total Valuation</p>
-                                                <h2 className="text-5xl font-black tracking-tighter text-black">{displayAgreement.commercials.currency} {displayAgreement.commercials.totalValue}</h2>
+                                                <h2 className="text-5xl font-black tracking-tighter text-black">{commercials.currency} {commercials.totalValue}</h2>
+                                                {taxNote && <p className="text-[11px] font-medium text-gray-600">{taxNote}</p>}
                                             </div>
                                             <div className="space-y-4">
                                                 <p className="text-[9px] font-black text-black uppercase tracking-widest border-b border-black pb-1 inline-block">Payment Schedule</p>
-                                                {renderContent(displayAgreement.commercials.paymentSchedule)}
+                                                {milestones.map((m, i) => (
+                                                    <p key={m.id || i} className="flex gap-3 text-[12px] font-medium leading-relaxed text-black">
+                                                        <span>({String.fromCharCode(97 + i)})</span>
+                                                        <span className="flex-1">{m.label || `Instalment ${i + 1}`}{m.due ? `, ${m.due}` : ''}</span>
+                                                        <span className="font-bold whitespace-nowrap">{m.percent ? `${m.percent}% · ` : ''}{formatMoney(m.amount, commercials.currency)}</span>
+                                                    </p>
+                                                ))}
+                                                {renderContent(commercials.paymentSchedule)}
                                             </div>
                                         </div>
                                     </div>
@@ -611,7 +641,7 @@ const Agreement = () => {
                                         <div className="space-y-6 mt-4">
                                             {page.items.map((clause, i) => (
                                                 <div key={i} className="space-y-2">
-                                                    <p className="text-[11px] font-black text-black uppercase tracking-widest">Article {idx + 1 + (page.pageIndex - 1) * 3}. {clause.title}</p>
+                                                    <p className="text-[11px] font-black text-black uppercase tracking-widest">Article {i + 1 + (page.pageIndex - 1) * 3}. {clause.title}</p>
                                                     <div className="text-[12px] font-medium text-black leading-relaxed text-justify">{renderContent(clause.content)}</div>
                                                 </div>
                                             ))}
@@ -623,7 +653,7 @@ const Agreement = () => {
                                     <div className="h-full flex flex-col py-4">
                                         <h3 className="text-lg font-black uppercase tracking-widest text-black border-b border-black pb-1 inline-block mb-12">Execution & Authorization.</h3>
                                         <div className="flex-1 flex flex-col justify-start space-y-20">
-                                            {displayAgreement.showSignatures && (
+                                            {(displayAgreement.showSignatures || isSigned) && (
                                                 <>
                                                     <p className="text-[12px] italic text-gray-500 mb-8">IN WITNESS WHEREOF, the Parties hereto have executed this Agreement as of the Effective Date first above written.</p>
                                                     <div className="grid grid-cols-2 gap-20">
@@ -644,9 +674,9 @@ const Agreement = () => {
                                                     <div className="space-y-6 text-right">
                                                         <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest border-b border-black pb-1">Client Signature</p>
                                                         <div className="h-20 flex items-end justify-end">
-                                                            {displayAgreement.status === 'Executed' ? (
-                                                                displayAgreement.approvalMetadata?.clientSignature ? (
-                                                                    <img src={displayAgreement.approvalMetadata.clientSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
+                                                            {isSigned ? (
+                                                                (displayAgreement.approvalMetadata?.clientSignature || displayAgreement.clientSignature) ? (
+                                                                    <img src={displayAgreement.approvalMetadata?.clientSignature || displayAgreement.clientSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
                                                                 ) : (
                                                                     <p className="text-5xl font-signature text-black leading-none opacity-90">{displayAgreement.approvalMetadata?.signedBy || 'Authorized Signatory'}</p>
                                                                 )
@@ -655,8 +685,8 @@ const Agreement = () => {
                                                             )}
                                                         </div>
                                                         <div className="pt-2 border-t border-black/5">
-                                                            <p className="text-[10px] font-bold uppercase">Name: {displayAgreement.status === 'Executed' ? (displayAgreement.approvalMetadata?.signedBy || 'Authorized Signatory') : '________________'}</p>
-                                                            <p className="text-[9px] text-gray-500 uppercase">Title: Authorized Signatory</p>
+                                                            <p className="text-[10px] font-bold uppercase">Name: {isSigned ? (displayAgreement.approvalMetadata?.signedBy || 'Authorized Signatory') : (sp.signatoryName || '________________')}</p>
+                                                            <p className="text-[9px] text-gray-500 uppercase">Title: {sp.signatoryDesignation || 'Authorized Signatory'}</p>
                                                             {displayAgreement.status === 'Executed' && displayAgreement.approvalMetadata && (
                                                                 <p className="text-[7px] text-gray-600 dark:text-gray-400 mt-1">IP: {displayAgreement.approvalMetadata?.ip || 'N/A'} | Signed: {displayAgreement.approvalMetadata?.signedAt ? new Date(displayAgreement.approvalMetadata.signedAt).toLocaleString() : 'N/A'}</p>
                                                             )}

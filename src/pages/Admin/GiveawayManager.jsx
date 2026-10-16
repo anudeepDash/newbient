@@ -1,731 +1,357 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useStore } from '../../lib/store';
-import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { notifyAllUsers } from '../../lib/notificationTriggers';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
+import React, { useMemo, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Gift from 'lucide-react/dist/esm/icons/gift';
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
 import Plus from 'lucide-react/dist/esm/icons/plus';
-import Search from 'lucide-react/dist/esm/icons/search';
 import Edit from 'lucide-react/dist/esm/icons/edit';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Users from 'lucide-react/dist/esm/icons/users';
-import Calendar from 'lucide-react/dist/esm/icons/calendar';
-import X from 'lucide-react/dist/esm/icons/x';
-import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
-import Globe from 'lucide-react/dist/esm/icons/globe';
-import Info from 'lucide-react/dist/esm/icons/info';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
-import Download from 'lucide-react/dist/esm/icons/download';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
-import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
-import Instagram from 'lucide-react/dist/esm/icons/instagram';
-import Send from 'lucide-react/dist/esm/icons/send';
-import Youtube from 'lucide-react/dist/esm/icons/youtube';
-import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
-import Music from 'lucide-react/dist/esm/icons/music';
-import Ghost from 'lucide-react/dist/esm/icons/ghost';
-import LinkIcon from 'lucide-react/dist/esm/icons/link';
-import Camera from 'lucide-react/dist/esm/icons/camera';
-import Twitter from 'lucide-react/dist/esm/icons/twitter';
-import XCircle from 'lucide-react/dist/esm/icons/x-circle';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import { motion, AnimatePresence } from 'framer-motion';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import Unlock from 'lucide-react/dist/esm/icons/unlock';
+import Bell from 'lucide-react/dist/esm/icons/bell';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
+import Link2 from 'lucide-react/dist/esm/icons/link-2';
+import CopyPlus from 'lucide-react/dist/esm/icons/copy-plus';
+import Shuffle from 'lucide-react/dist/esm/icons/shuffle';
+import Radio from 'lucide-react/dist/esm/icons/radio';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
+import { notifyAllUsers } from '../../lib/notificationTriggers';
+import { copyToClipboard } from '../../lib/clipboard';
 import { cn } from '../../lib/utils';
+import { exportSubtitle, fileDate } from '../../lib/xlsx';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
-import { downloadCSV } from '../../components/admin/CSVHandler';
+import ExportMenu from '../../components/admin/ExportMenu';
+import { Badge, Button, EmptyState, Menu, MenuItem, SearchInput, SegmentedTabs, Select, StatTile, ViewToggle, useViewMode } from '../../components/admin/ui';
+import GiveawayEditor from '../../components/admin/giveaways/GiveawayEditor';
+import WinnerDrawSheet from '../../components/admin/giveaways/WinnerDrawSheet';
+import { GIVEAWAY_STATE, entryPoints, giveawayEndsAt, giveawayState } from '../../components/admin/giveaways/giveawayUtils';
+import { formatDateTime, formatDay, slugify, toDate, useConfirm } from '../../components/admin/forms/kit';
+
+const FILTERS = ['all', 'open', 'ended', 'closed'];
+const FILTER_LABEL = { all: 'All', open: 'Open', ended: 'Ended, still open', closed: 'Closed' };
+
+const endsText = (g, state) => {
+    const end = giveawayEndsAt(g);
+    if (state === 'closed') return g.closedAt ? `Closed ${formatDay(g.closedAt)}` : end ? `Ended ${formatDay(end)}` : 'Closed';
+    if (!end) return 'No end date';
+    const ms = end - Date.now();
+    if (ms <= 0) return `Ended ${formatDateTime(end)}`;
+    const days = Math.floor(ms / 86400000);
+    if (days >= 1) return `Ends in ${days} day${days === 1 ? '' : 's'} · ${formatDay(end, false)}`;
+    const hours = Math.max(1, Math.floor(ms / 3600000));
+    return `Ends in ${hours} hour${hours === 1 ? '' : 's'}`;
+};
 
 const GiveawayManager = () => {
     useStoreSubscription(['giveaways', 'giveawayEntries']);
-    const { giveaways = [], giveawayEntries = [], addGiveaway, updateGiveaway, deleteGiveaway, user } = useStore();
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filter, setFilter] = useState('all');
-    const [isCreating, setIsCreating] = useState(false);
-    const [editingId, setEditingId] = useState(null);
+    const navigate = useNavigate();
+    const giveaways = useStore(s => s.giveaways) || [];
+    const entries = useStore(s => s.giveawayEntries) || [];
+    const loaded = useStore(s => s.subscriptionsLoaded?.giveaways);
+    const addToast = useStore(s => s.addToast);
+    const [params, setParams] = useSearchParams();
+    const [view, setView] = useViewMode('giveaways', 'cards');
+    const [search, setSearch] = useState('');
+    const [sort, setSort] = useState('newest');
+    const [drawId, setDrawId] = useState(null);
+    const [busyId, setBusyId] = useState(null);
+    const [confirm, confirmEl] = useConfirm();
 
-    const [formData, setFormData] = useState({
-        name: '',
-        slug: '',
-        description: '',
-        ticketsAvailable: 0,
-        eventCardImage: null,
-        showSpinWheel: true,
-        endDate: '',
-        endTime: '',
-        winnerAnnouncementDate: '',
-        posterUrl: '',
-        giveawayType: 'Standard',
-        tasks: [],
-        status: 'Open',
-        alsoPostToUpcomingEvents: false,
-        alsoPostToAnnouncements: false,
-        isTicketed: false,
-        ticketCategories: [],
-        venueLayout: '',
-        location: '',
-        buttonText: 'PARTICIPATE NOW'
-    });
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [venueLayoutFile, setVenueLayoutFile] = useState(null);
-    const [uploading, setUploading] = useState(false);
-
-    const filteredGiveaways = (giveaways || []).filter(g => {
-        const matchesSearch = (g.name || '').toLowerCase().includes(searchTerm.toLowerCase());
-        if (filter === 'active') return matchesSearch && (g.status === 'Open' || g.status === 'active');
-        if (filter === 'past') return matchesSearch && (g.status !== 'Open' && g.status !== 'active');
-        return matchesSearch;
-    });
-
-    const handlePickWinner = async (campaignId, campaignName) => {
-        const participants = giveawayEntries.filter(e => e.campaignId === campaignId);
-        if (participants.length === 0) {
-            useStore.getState().addToast("No one has entered this giveaway yet.", 'warning');
-            return;
-        }
-
-        // Weighted Random Selection
-        const totalWeight = participants.reduce((sum, p) => sum + (p.entryScore || 1), 0);
-        let random = Math.random() * totalWeight;
-        
-        let winner = null;
-        for (const p of participants) {
-            random -= (p.entryScore || 1);
-            if (random <= 0) {
-                winner = p;
-                break;
-            }
-        }
-
-        if (winner) {
-            const confirmWinner = window.confirm(`🏆 WEIGHT-BASED WINNER SELECTED!\n\nName: ${winner.name}\nScore: ${winner.entryScore} points\n\nWould you like to approve this winner and close the giveaway?`);
-            
-            if (confirmWinner) {
-                // Crown the winner
-                // Assuming updateGiveawayEntry exists and is imported/available
-                // await updateGiveawayEntry(winner.id, { isWinner: true, winnerReward: true }); 
-                // Close the giveaway
-                await handleCloseGiveaway(campaignId);
-                useStore.getState().addToast(`${winner.name} is the winner! The giveaway is now closed.`, 'success');
-            }
-        }
+    const filter = FILTERS.includes(params.get('filter')) ? params.get('filter') : 'all';
+    const editId = params.get('edit');
+    const isNew = params.get('new') === '1';
+    const setParam = (updates, replace = false) => {
+        const next = new URLSearchParams(params);
+        Object.entries(updates).forEach(([k, v]) => { if (v) next.set(k, v); else next.delete(k); });
+        setParams(next, { replace });
     };
 
-    const handleCloseGiveaway = async (id) => {
-        if (!window.confirm("ARE YOU SURE YOU WANT TO CLOSE THIS GIVEAWAY? THIS ACTION IS FINAL.")) return;
-        
-        try {
-            await updateGiveaway(id, { 
-                status: 'Closed',
-                endDate: new Date().toISOString().split('T')[0] // Set to today
-            });
-        } catch (error) {
-            useStore.getState().addToast("Couldn't close the giveaway. Please try again.", 'error');
-        }
-    };
-
-    const handlePaste = (e, type) => {
-        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-        for (let index in items) {
-            const item = items[index];
-            if (item.kind === 'file' && item.type.startsWith('image/')) {
-                const file = item.getAsFile();
-                if (type === 'poster') {
-                    setSelectedFile(file);
-                    useStore.getState().addToast("Poster pasted.", 'success');
-                } else if (type === 'venueLayout') {
-                    setVenueLayoutFile(file);
-                    useStore.getState().addToast("Layout pasted.", 'success');
-                }
-                e.preventDefault();
-            }
-        }
-    };
-
-    const handleExportCSV = (campaignId, campaignName) => {
-        const participants = giveawayEntries.filter(e => e.campaignId === campaignId);
-        if (participants.length === 0) {
-            useStore.getState().addToast("There's nothing to export yet.", 'info');
-            return;
-        }
-        
-        // Clean data for export
-        const exportData = participants.map(p => ({
-            Name: p.name,
-            Email: p.email || 'N/A',
-            Phone: p.phone,
-            Score: p.entryScore,
-            Instagram: p.instagramUsername || p.instagram || 'N/A',
-            College: p.college || 'N/A',
-            City: p.city,
-            WhyShouldWin: p.answer || 'N/A',
-            RegistrationDate: p.timestamp ? new Date(p.timestamp).toLocaleDateString() : 'N/A',
-            ReferredBy: p.referredBy || 'None'
-        }));
-
-        downloadCSV(exportData, `${campaignName.replace(/\s+/g, '_')}_Participants`);
-    };
-
-    const handleFileUpload = async (file) => {
-        if (!file) return null;
-        const data = new FormData();
-        data.append("file", file);
-        data.append("upload_preset", "maw1e4ud");
-        data.append("cloud_name", "dgtalrz4n");
-
-        try {
-            const res = await fetch("https://api.cloudinary.com/v1_1/dgtalrz4n/image/upload", { method: "POST", body: data });
-            const uploadedImage = await res.json();
-            return uploadedImage.secure_url;
-        } catch (error) {
-            throw new Error("Upload failed.");
-        }
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setUploading(true);
-        try {
-            let posterUrl = formData.posterUrl;
-            if (selectedFile) posterUrl = await handleFileUpload(selectedFile);
-            
-            let venueLayoutUrl = formData.venueLayout;
-            if (venueLayoutFile) venueLayoutUrl = await handleFileUpload(venueLayoutFile);
-
-            const processedData = {
-                ...formData,
-                posterUrl,
-                venueLayout: venueLayoutUrl,
-                ticketsAvailable: Number(formData.ticketsAvailable) || 0,
-                ticketCategories: formData.ticketCategories.map(c => ({
-                    ...c,
-                    price: Number(c.price) || 0
-                }))
-            };
-
-            if (editingId) {
-                await updateGiveaway(editingId, processedData);
-            } else {
-                await addGiveaway(processedData);
-            }
-            setIsCreating(false);
-            setEditingId(null);
-            setFormData({
-                name: '', slug: '', description: '', ticketsAvailable: 0, endDate: '', endTime: '',
-                winnerAnnouncementDate: '', posterUrl: '', giveawayType: 'Standard', tasks: [], status: 'Open',
-                alsoPostToUpcomingEvents: false, alsoPostToAnnouncements: false, isTicketed: false,
-                ticketCategories: [], venueLayout: '', location: '', buttonText: 'PARTICIPATE NOW',
-                eventCardImage: null, showSpinWheel: true
-            });
-            setSelectedFile(null);
-            setVenueLayoutFile(null);
-        } catch (error) {
-            useStore.getState().addToast("Couldn't save the giveaway. Please try again.", 'error');
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const handleEdit = (giveaway) => {
-        setFormData({ 
-            ...giveaway,
-            tasks: giveaway.tasks || [],
-            alsoPostToUpcomingEvents: giveaway.alsoPostToUpcomingEvents || false,
-            alsoPostToAnnouncements: giveaway.alsoPostToAnnouncements || false,
-            isTicketed: giveaway.isTicketed || false,
-            eventCardImage: giveaway.eventCardImage || null,
-            showSpinWheel: giveaway.showSpinWheel ?? true,
-            ticketCategories: giveaway.ticketCategories || [],
-            venueLayout: giveaway.venueLayout || '',
-            location: giveaway.location || '',
-            buttonText: giveaway.buttonText || 'PARTICIPATE NOW'
+    const byCampaign = useMemo(() => {
+        const map = {};
+        entries.forEach(e => {
+            const m = map[e.campaignId] || (map[e.campaignId] = { entries: [], points: 0, winners: [] });
+            m.entries.push(e);
+            m.points += entryPoints(e);
+            if (e.isWinner) m.winners.push(e);
         });
-        setEditingId(giveaway.id);
-        setIsCreating(true);
-    };
+        return map;
+    }, [entries]);
 
-    const handleDelete = async (id) => {
-        if (window.confirm("Archive this giveaway forever?")) {
-            await deleteGiveaway(id);
+    const enriched = useMemo(() => giveaways.map(g => {
+        const m = byCampaign[g.id] || { entries: [], points: 0, winners: [] };
+        return { g, state: giveawayState(g), count: m.entries.length, points: m.points, winners: m.winners, end: giveawayEndsAt(g) };
+    }), [giveaways, byCampaign]);
+
+    const tally = useMemo(() => {
+        const c = { all: 0, open: 0, ended: 0, closed: 0, entries: 0, winners: 0 };
+        enriched.forEach(e => { c.all += 1; c[e.state] += 1; c.entries += e.count; c.winners += e.winners.length; });
+        return c;
+    }, [enriched]);
+
+    const latestWinner = useMemo(() => [...entries].filter(e => e.isWinner)
+        .sort((a, b) => String(b.winnerSelectedAt || b.createdAt || '').localeCompare(String(a.winnerSelectedAt || a.createdAt || '')))[0], [entries]);
+
+    const rows = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        const list = enriched.filter(e => (filter === 'all' || e.state === filter)
+            && (!q || [e.g.name, e.g.slug, e.g.description].some(v => String(v || '').toLowerCase().includes(q))));
+        const by = {
+            newest: (a, b) => (toDate(b.g.createdAt)?.getTime() || 0) - (toDate(a.g.createdAt)?.getTime() || 0),
+            ending: (a, b) => (a.end?.getTime() || Infinity) - (b.end?.getTime() || Infinity),
+            entries: (a, b) => b.count - a.count,
+            name: (a, b) => String(a.g.name || '').localeCompare(String(b.g.name || '')),
+        }[sort];
+        return list.sort(by);
+    }, [enriched, filter, search, sort]);
+
+    // ── actions ──
+    const run = async (id, fn, success) => {
+        if (busyId) return;
+        setBusyId(id);
+        try {
+            await fn();
+            if (success) addToast(success, 'success');
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't save. Please try again.", 'error');
+        } finally {
+            setBusyId(null);
         }
     };
+
+    const linkOf = (g) => `${window.location.origin}/giveaway/${g.slug}`;
+    const copyLink = async (g) => {
+        const ok = await copyToClipboard(linkOf(g));
+        addToast(ok ? 'Giveaway link copied.' : "Couldn't copy the link.", ok ? 'success' : 'error');
+    };
+
+    const close = async (e) => {
+        const ok = await confirm({
+            title: `Close "${e.g.name}"?`,
+            body: e.winners.length ? 'No one else can enter, and the winner is shown on the giveaway page.' : 'No one else can enter. You can still draw winners afterwards.',
+            confirmLabel: 'Close giveaway',
+            tone: 'accent',
+        });
+        if (ok) run(e.g.id, () => useStore.getState().closeGiveaways([e.g.id]), 'Giveaway closed.');
+    };
+    const reopen = (e) => {
+        if (e.end && e.end < new Date()) {
+            addToast('Its end date has passed. Set a new one in the editor to reopen it.', 'info');
+            setParam({ edit: e.g.id });
+            return;
+        }
+        run(e.g.id, () => useStore.getState().updateGiveaway(e.g.id, { status: 'Open', closedAt: null }), 'Giveaway reopened.');
+    };
+    const closeEnded = async () => {
+        const ended = enriched.filter(e => e.state === 'ended');
+        const ok = await confirm({
+            title: `Close ${ended.length} ended giveaway${ended.length === 1 ? '' : 's'}?`,
+            body: `${ended.map(e => e.g.name).join(', ')}. Their end dates have passed.`,
+            confirmLabel: 'Close them',
+            tone: 'accent',
+        });
+        if (ok) run('bulk', () => useStore.getState().closeGiveaways(ended.map(e => e.g.id)), 'Ended giveaways closed.');
+    };
+
+    const notify = async (g) => {
+        if (!(await confirm({ title: 'Notify everyone?', body: `Every user gets a notification about "${g.name}".`, confirmLabel: 'Send', tone: 'accent' }))) return;
+        run(g.id, () => notifyAllUsers(`New giveaway: ${g.name}`, g.description || '', `/giveaway/${g.slug}`, g.posterUrl || ''), 'Notification sent.');
+    };
+
+    const duplicate = (g) => run(g.id, async () => {
+        const { id, createdAt, updatedAt, drawHistory, lastDrawAt, closedAt, ...copy } = g;
+        let slug = slugify(`${g.slug || g.name}-copy`);
+        let n = 2;
+        while (giveaways.some(x => x.slug === slug)) { slug = slugify(`${g.slug || g.name}-copy-${n}`); n += 1; }
+        const ref = await useStore.getState().addGiveaway({
+            ...JSON.parse(JSON.stringify(copy)),
+            name: `${g.name || 'Giveaway'} (copy)`,
+            slug,
+            status: 'Open',
+            endDate: '',
+            endTime: '',
+            winnerAnnouncementDate: '',
+            alsoPostToUpcomingEvents: false,
+            alsoPostToAnnouncements: false,
+        });
+        if (ref?.id) setParam({ edit: ref.id });
+    }, 'Copy made. Set its dates and publish.');
+
+    const remove = async (e) => {
+        const ok = await confirm({
+            title: `Delete "${e.g.name || 'this giveaway'}"?`,
+            body: `The page /giveaway/${e.g.slug} stops working and its home page card and announcement are removed.${e.count ? ` Its ${e.count} entries are kept in the database but won't be listed anywhere.` : ''} This can't be undone.`,
+            confirmLabel: 'Delete giveaway',
+        });
+        if (ok) run(e.g.id, () => useStore.getState().deleteGiveaway(e.g.id), 'Giveaway deleted.');
+    };
+
+    const exportSpec = () => ({
+        filename: `giveaways_${filter}_${fileDate()}`,
+        sheetName: 'Giveaways',
+        title: 'Giveaways',
+        subtitle: exportSubtitle(rows.length, 'giveaway', filter !== 'all' ? FILTER_LABEL[filter] : null),
+        rows,
+        totals: { entries: true, points: true },
+        columns: [
+            { header: 'Name', value: e => e.g.name || '' },
+            { header: 'Status', value: e => GIVEAWAY_STATE[e.state].label },
+            { header: 'Entries close', type: 'datetime', value: e => e.end },
+            { header: 'Winners announced', type: 'date', value: e => e.g.winnerAnnouncementDate || null },
+            { header: 'Prize', value: e => e.g.prize || '' },
+            { header: 'Available', type: 'number', value: e => Number(e.g.ticketsAvailable) || 0 },
+            { header: 'Entries', key: 'entries', type: 'number', value: e => e.count },
+            { header: 'Points', key: 'points', type: 'number', value: e => e.points },
+            { header: 'Winners', value: e => e.winners.map(w => w.name).join(', ') },
+            { header: 'Tasks', type: 'number', value: e => (e.g.tasks || []).length },
+            { header: 'Link', value: e => linkOf(e.g) },
+        ],
+    });
+
+    // ── editor ──
+    const editing = editId ? giveaways.find(g => g.id === editId) : null;
+    if (isNew || editing) {
+        return (
+            <AdminCommunityHubLayout studioHeader={{ title: isNew ? 'New giveaway' : 'Edit giveaway', icon: Gift, description: 'Entries, tasks and the winner draw' }} hideTabs>
+                <GiveawayEditor key={editId || 'new'} giveaway={editing} giveaways={giveaways} onDone={() => setParam({ edit: null, new: null })} />
+            </AdminCommunityHubLayout>
+        );
+    }
+
+    const participantsPath = (g) => `/admin/giveaways/${g.id}/participants`;
+
+    const menu = (e) => (
+        <Menu trigger={({ toggle }) => (
+            <Button size="sm" variant="ghost" onClick={toggle} aria-label="More actions" className="h-10 w-10 px-0"><MoreHorizontal size={16} /></Button>
+        )}>
+            <MenuItem icon={Users} onClick={() => navigate(participantsPath(e.g))}>Participants</MenuItem>
+            <MenuItem icon={Edit} onClick={() => setParam({ edit: e.g.id })}>Edit</MenuItem>
+            <MenuItem icon={Shuffle} onClick={() => setDrawId(e.g.id)} disabled={!e.count}>Draw winners</MenuItem>
+            <MenuItem as="a" href={`/giveaway/${e.g.slug}`} target="_blank" rel="noopener noreferrer" icon={ExternalLink}>Open giveaway page</MenuItem>
+            <MenuItem icon={Link2} onClick={() => copyLink(e.g)}>Copy link</MenuItem>
+            {e.state !== 'closed' ? <MenuItem icon={Lock} onClick={() => close(e)}>Close giveaway</MenuItem> : <MenuItem icon={Unlock} onClick={() => reopen(e)}>Reopen</MenuItem>}
+            <MenuItem icon={Bell} onClick={() => notify(e.g)} hint="Push and in-app">Notify everyone</MenuItem>
+            <MenuItem icon={CopyPlus} onClick={() => duplicate(e.g)}>Duplicate</MenuItem>
+            <MenuItem icon={Trash2} danger onClick={() => remove(e)}>Delete</MenuItem>
+        </Menu>
+    );
+
+    const drawGiveaway = giveaways.find(g => g.id === drawId);
 
     return (
         <AdminCommunityHubLayout
-            studioHeader={{
-                title: 'Giveaway',
-                subtitle: 'Management',
-                icon: Gift,
-                accentClass: 'text-purple-500'
-            }}
-            accentColor="purple-500"
-            hideTabs={true}
-            action={
-                <Button 
-                    onClick={() => {
-                        setEditingId(null);
-                        setFormData({
-                            name: '', slug: '', description: '', ticketsAvailable: 0, endDate: '', endTime: '',
-                            winnerAnnouncementDate: '', posterUrl: '', giveawayType: 'Standard', tasks: [], status: 'Open',
-                            alsoPostToUpcomingEvents: false, alsoPostToAnnouncements: false, isTicketed: false,
-                            ticketCategories: [], venueLayout: '', location: '', buttonText: 'PARTICIPATE NOW',
-                            eventCardImage: null, showSpinWheel: true
-                        });
-                        setIsCreating(true);
-                    }} 
-                    className="h-14 px-10 rounded-2xl bg-purple-500 text-gray-900 dark:text-white text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(168,85,247,0.2)] border-none"
-                >
-                    <Plus className="mr-2 h-4 w-4" /> New Giveaway
-                </Button>
-            }
+            studioHeader={{ title: 'Giveaways', icon: Gift, description: 'Entries, tasks and fair winner draws' }}
+            hideTabs
+            action={<Button variant="primary" onClick={() => setParam({ new: '1' })} className="h-11 w-full sm:w-auto"><Plus size={15} /> New giveaway</Button>}
         >
+            <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <StatTile icon={Radio} tone="green" label="Open" value={tally.open} hint="Taking entries" active={filter === 'open'} onClick={() => setParam({ filter: filter === 'open' ? null : 'open' }, true)} />
+                    <StatTile icon={Users} tone="blue" label="Entries" value={tally.entries.toLocaleString('en-IN')} hint={`Across ${tally.all} giveaway${tally.all === 1 ? '' : 's'}`} />
+                    <StatTile icon={Trophy} tone="amber" label="Winners" value={tally.winners} hint={latestWinner ? `Latest: ${latestWinner.name}` : 'None picked yet'} />
+                    <StatTile icon={Clock} tone={tally.ended ? 'red' : 'gray'} label="Ended, still open" value={tally.ended} hint={tally.ended ? 'Close them to stop entries' : 'Nothing to close'} active={filter === 'ended'} onClick={() => setParam({ filter: filter === 'ended' ? null : 'ended' }, true)} />
+                </div>
 
-                {/* Combined Search & Filters Bar - Matching Invoice Style */}
-                <div className="bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] p-2 mb-12 backdrop-blur-3xl flex flex-col md:flex-row items-center gap-4">
-                    <div className="relative flex-1 w-full group">
-                        <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-purple-500 transition-colors" size={20} />
-                        <input 
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="SEARCH BY CAMPAIGN NAME OR SLUG..."
-                            className="w-full bg-transparent h-16 pl-20 pr-8 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
+                {tally.ended > 0 && (
+                    <div className="flex flex-col gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/[0.07] p-4 sm:flex-row sm:items-center">
+                        <AlertTriangle size={18} className="shrink-0 text-amber-600 dark:text-amber-400" />
+                        <p className="flex-1 text-[14px]"><span className="font-bold">{tally.ended} giveaway{tally.ended === 1 ? ' has' : 's have'} passed the end date.</span> New entries are already blocked; close {tally.ended === 1 ? 'it' : 'them'} to show the result on the page.</p>
+                        <Button variant="secondary" onClick={closeEnded} disabled={busyId === 'bulk'} className="h-11">Close {tally.ended === 1 ? 'it' : 'them'}</Button>
+                    </div>
+                )}
+
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                    <SearchInput value={search} onChange={setSearch} placeholder="Search giveaways" className="lg:w-80" />
+                    <div className="flex flex-1 items-center gap-2">
+                        <Select value={sort} onChange={setSort} label="Sort" className="flex-1 lg:w-48 lg:flex-none" options={[
+                            { value: 'newest', label: 'Newest first' },
+                            { value: 'ending', label: 'Ending soonest' },
+                            { value: 'entries', label: 'Most entries' },
+                            { value: 'name', label: 'Name A–Z' },
+                        ]} />
+                        <ExportMenu getSpec={exportSpec} />
+                        <ViewToggle value={view} onChange={setView} />
+                    </div>
+                </div>
+
+                <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+                    <SegmentedTabs value={filter} onChange={(v) => setParam({ filter: v === 'all' ? null : v }, true)} items={FILTERS.map(f => ({ value: f, label: FILTER_LABEL[f], count: tally[f], highlight: f === 'ended' && tally.ended > 0 }))} />
+                </div>
+
+                {!loaded && giveaways.length === 0 ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">{[0, 1, 2].map(i => <div key={i} className="h-72 rounded-2xl bg-black/[0.04] dark:bg-white/[0.04]" />)}</div>
+                ) : rows.length === 0 ? (
+                    <div className="rounded-2xl border border-black/[0.06] bg-white dark:border-white/[0.08] dark:bg-white/[0.03]">
+                        <EmptyState
+                            icon={Gift}
+                            title={giveaways.length ? 'No matching giveaways' : 'No giveaways yet'}
+                            description={giveaways.length ? 'Try another filter or search.' : 'Set a prize, add tasks that earn extra chances, share the link and draw a winner.'}
+                            action={!giveaways.length && <Button variant="primary" onClick={() => setParam({ new: '1' })}><Plus size={14} /> New giveaway</Button>}
                         />
                     </div>
-                    <div className="flex bg-white dark:bg-black/40 p-1.5 rounded-[1.5rem] border border-black/10 dark:border-white/5 w-full md:w-auto mr-1">
-                        {['ALL', 'ACTIVE', 'PAST'].map((s) => (
-                            <button
-                                key={s}
-                                onClick={() => setFilter(s.toLowerCase())}
-                                className={cn(
-                                    "px-10 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[120px]",
-                                    filter === s.toLowerCase() 
-                                        ? "bg-purple-500 text-gray-900 dark:text-white shadow-[0_10px_25px_rgba(168,85,247,0.3)] scale-[1.02]" 
-                                        : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
-                                )}
-                            >
-                                {s}
-                            </button>
+                ) : view === 'cards' ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {rows.map(e => (
+                            <article key={e.g.id} className={cn('flex flex-col overflow-hidden rounded-2xl border border-black/[0.06] bg-white transition-colors hover:border-black/15 dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-white/15', busyId === e.g.id && 'opacity-60')}>
+                                <Link to={participantsPath(e.g)} className="relative flex h-40 items-center justify-center overflow-hidden bg-rose-500/10 text-rose-500">
+                                    {e.g.posterUrl ? <img src={e.g.posterUrl} alt="" loading="lazy" className="h-full w-full object-cover" /> : <Gift size={34} />}
+                                    <span className="absolute left-3 top-3"><Badge tone={GIVEAWAY_STATE[e.state].tone} className="bg-white/90 dark:bg-black/70">{GIVEAWAY_STATE[e.state].label}</Badge></span>
+                                </Link>
+                                <div className="flex flex-1 flex-col p-4">
+                                    <h3 className="line-clamp-2 text-[16px] font-extrabold leading-snug">{e.g.name || 'Untitled giveaway'}</h3>
+                                    <p className="mt-0.5 truncate font-mono text-[12px] text-gray-500">/giveaway/{e.g.slug}</p>
+                                    <p className={cn('mt-2 flex items-center gap-1.5 text-[13px] font-semibold', e.state === 'ended' ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-zinc-300')}><Clock size={13} /> {endsText(e.g, e.state)}</p>
+                                    <div className="mb-4 mt-3 grid grid-cols-3 gap-2 text-center">
+                                        <div className="rounded-xl bg-sky-500/[0.08] py-2"><p className="text-[16px] font-extrabold tabular-nums">{e.count}</p><p className="text-[11px] font-semibold text-gray-500">entries</p></div>
+                                        <div className="rounded-xl bg-violet-500/[0.08] py-2"><p className="text-[16px] font-extrabold tabular-nums">{e.points}</p><p className="text-[11px] font-semibold text-gray-500">points</p></div>
+                                        <div className="rounded-xl bg-amber-500/[0.1] py-2"><p className="text-[16px] font-extrabold tabular-nums">{e.winners.length}</p><p className="text-[11px] font-semibold text-gray-500">winners</p></div>
+                                    </div>
+                                    {e.winners.length > 0 && <p className="-mt-2 mb-3 truncate text-[12px] text-gray-500"><Trophy size={12} className="mr-1 inline text-amber-500" />{e.winners.map(w => w.name).join(', ')}</p>}
+                                    <div className="mt-auto flex items-center gap-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+                                        <Button size="sm" variant="accent" as={Link} to={participantsPath(e.g)} className="h-10 flex-1"><Users size={14} /> Participants</Button>
+                                        {e.state !== 'closed' && e.count > 0 && <Button size="sm" variant="secondary" onClick={() => setDrawId(e.g.id)} className="h-10"><Shuffle size={14} /> Draw</Button>}
+                                        {menu(e)}
+                                    </div>
+                                </div>
+                            </article>
                         ))}
                     </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-                    <Card className="p-6 bg-gray-100 dark:bg-zinc-900/40 border-black/10 dark:border-white/5 backdrop-blur-3xl rounded-3xl">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500">
-                                <Gift size={24} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Total Giveaways</p>
-                                <h4 className="text-2xl font-black italic">{giveaways.length}</h4>
-                            </div>
-                        </div>
-                    </Card>
-                    <Card className="p-6 bg-gray-100 dark:bg-zinc-900/40 border-black/10 dark:border-white/5 backdrop-blur-3xl rounded-3xl">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
-                                <Users size={24} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Total Participants</p>
-                                <h4 className="text-2xl font-black italic">{giveawayEntries.length} Entered</h4>
-                            </div>
-                        </div>
-                    </Card>
-                    <Card className="p-6 bg-gray-100 dark:bg-zinc-900/40 border-black/10 dark:border-white/5 backdrop-blur-3xl rounded-3xl md:col-span-2">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-neon-green/10 flex items-center justify-center text-neon-green">
-                                <BarChart3 size={24} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Most Recent Winner</p>
-                                <h4 className="text-sm font-black uppercase tracking-widest line-clamp-1">{
-                                    [...giveawayEntries]
-                                        .filter(e => e.isWinner)
-                                        .sort((a, b) => new Date(b.winnerSelectedAt || b.createdAt || 0) - new Date(a.winnerSelectedAt || a.createdAt || 0))[0]?.name || 'NO WINNERS YET'
-                                }</h4>
-                            </div>
-                        </div>
-                    </Card>
-                </div>
-
-                <div className="flex overflow-x-auto lg:overflow-x-visible lg:grid lg:grid-cols-3 gap-8 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide snap-x snap-mandatory pb-8 md:pb-0">
-                    {filteredGiveaways.map(giveaway => (
-                        <motion.div 
-                            key={giveaway.id} 
-                            layout
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="min-w-[85vw] md:min-w-0 snap-center bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border border-black/10 dark:border-white/5 rounded-[2.5rem] p-8 flex flex-col h-full relative group hover:border-purple-500/30 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(168,85,247,0.05)]" 
-                        >
-                            <div className="flex items-start justify-between mb-8">
-                                <div className={cn(
-                                    "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all",
-                                    giveaway.status === 'Open' ? 'bg-neon-green/10 text-neon-green border-neon-green/20' : 'bg-red-500/10 text-red-500 border-red-500/20 opacity-60'
-                                )}>
-                                    STATUS: {giveaway.status}
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={async () => {
-                                            if (window.confirm(`Send push notification for "${giveaway.name}"?`)) {
-                                                await notifyAllUsers(
-                                                    `New giveaway: ${giveaway.name}`,
-                                                    giveaway.description,
-                                                    `/giveaways/${giveaway.slug}`,
-                                                    giveaway.posterUrl
-                                                );
-                                                useStore.getState().addToast("Notification sent.", 'success');
-                                            }
-                                        }}
-                                        className="p-2.5 bg-neon-blue/10 rounded-xl text-neon-blue border border-neon-blue/20 hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_15px_rgba(0,255,255,0.1)]"
-                                        title="Direct Push Signal"
-                                    >
-                                        <Sparkles size={16} />
-                                    </button>
-                                    <button onClick={() => handleEdit(giveaway)} className="p-2.5 bg-black/5 dark:bg-white/5 rounded-xl text-gray-500 hover:text-purple-500 transition-colors"><Edit size={16} /></button>
-                                    <button onClick={() => handleDelete(giveaway.id)} className="p-2.5 bg-black/5 dark:bg-white/5 rounded-xl text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                                </div>
-                            </div>
-
-                            <div className="flex-1">
-                                <h3 className="text-2xl font-black font-heading mb-3 uppercase italic tracking-tight group-hover:text-purple-500 transition-colors">{giveaway.name}</h3>
-                                <div className="flex flex-wrap items-center gap-6 mb-6">
-                                    <span className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest"><Globe size={12} className="text-purple-500" /> {giveaway.slug}</span>
-                                    <span className="flex items-center gap-2 text-[10px] font-black text-neon-green uppercase tracking-widest"><Gift size={12} /> {giveaway.ticketsAvailable} POINTS</span>
-                                </div>
-                                <div className="flex gap-2 mb-8">
-                                    <button 
-                                        onClick={() => handlePickWinner(giveaway.id, giveaway.name)} 
-                                        disabled={giveaway.status === 'Closed'}
-                                        className="flex-1 h-10 px-4 flex items-center justify-center bg-purple-600/10 border border-purple-500/20 text-purple-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-purple-600 hover:text-gray-900 dark:hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                                    >
-                                        <Trophy size={14} className="mr-2" /> Winner
-                                    </button>
-                                    <button 
-                                        onClick={() => handleExportCSV(giveaway.id, giveaway.name)} 
-                                        className="h-10 w-12 bg-zinc-800 border border-black/10 dark:border-white/10 flex items-center justify-center rounded-xl hover:bg-zinc-700 transition-all"
-                                    >
-                                        <Download size={18} className="text-gray-900 dark:text-white" strokeWidth={2} />
-                                    </button>
-                                    {giveaway.status !== 'Closed' && (
-                                        <button 
-                                            onClick={() => handleCloseGiveaway(giveaway.id)} 
-                                            className="h-10 w-12 bg-red-900/30 border border-red-500/40 flex items-center justify-center rounded-xl hover:bg-red-600 transition-all"
-                                        >
-                                            <X size={18} className="text-red-500 hover:text-gray-900 dark:hover:text-white transition-colors" strokeWidth={2} />
-                                        </button>
-                                    )}
-                                </div>
-
-                                <p className="text-gray-600 dark:text-gray-400 text-sm font-medium line-clamp-3 mb-10 leading-relaxed border-l-2 border-black/10 dark:border-white/5 pl-4">{giveaway.description}</p>
-                                
-                                <div className="mt-auto pt-8 border-t border-black/10 dark:border-white/5 flex items-center justify-between">
-                                    <Link to={`/admin/giveaways/${giveaway.id}/participants`} className="flex items-center gap-3 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-gray-900 dark:hover:text-white transition-colors">
-                                        VIEW PARTICIPANTS <ChevronRight size={14} />
+                ) : (
+                    <div className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white dark:border-white/[0.08] dark:bg-white/[0.03]">
+                        <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                            {rows.map(e => (
+                                <li key={e.g.id} className={cn('flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:px-5', busyId === e.g.id && 'opacity-60')}>
+                                    <Link to={participantsPath(e.g)} className="flex min-w-0 flex-1 items-center gap-3">
+                                        <span className="flex h-12 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-rose-500/10 text-rose-500">
+                                            {e.g.posterUrl ? <img src={e.g.posterUrl} alt="" className="h-full w-full object-cover" loading="lazy" /> : <Gift size={16} />}
+                                        </span>
+                                        <span className="min-w-0">
+                                            <span className="flex flex-wrap items-center gap-1.5">
+                                                <span className="truncate text-[15px] font-bold">{e.g.name || 'Untitled giveaway'}</span>
+                                                <Badge tone={GIVEAWAY_STATE[e.state].tone}>{GIVEAWAY_STATE[e.state].label}</Badge>
+                                                {e.winners.length > 0 && <Badge tone="amber"><Trophy size={10} /> {e.winners.length}</Badge>}
+                                            </span>
+                                            <span className="mt-0.5 block truncate text-[12px] text-gray-500">{endsText(e.g, e.state)} · {e.count} entries · {e.points} points</span>
+                                        </span>
                                     </Link>
-                                    <div className="flex items-center gap-2 text-[9px] text-gray-600 font-black uppercase tracking-widest">
-                                        <Clock size={12} /> {giveaway.endDate}
+                                    <div className="flex items-center gap-2 sm:justify-end">
+                                        {e.state !== 'closed' && e.count > 0 && <Button size="sm" variant="secondary" onClick={() => setDrawId(e.g.id)} className="h-10 flex-1 sm:flex-none"><Shuffle size={14} /> Draw</Button>}
+                                        <Button size="sm" variant="secondary" onClick={() => setParam({ edit: e.g.id })} className="h-10 flex-1 sm:flex-none"><Edit size={14} /> Edit</Button>
+                                        {menu(e)}
                                     </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
-
-                {(giveaways || []).length === 0 && !isCreating && (
-                    <div className="py-32 text-center bg-gray-100 dark:bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-black/10 dark:border-white/5 flex flex-col items-center gap-6">
-                        <div className="w-20 h-20 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-700">
-                            <Gift size={40} />
-                        </div>
-                        <div className="space-y-2">
-                            <h3 className="text-xl font-black uppercase tracking-tighter text-gray-500 italic">No giveaways active.</h3>
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600">Start by creating a new rewards campaign.</p>
-                        </div>
-                        <Button onClick={() => setIsCreating(true)} className="h-14 px-8 bg-purple-600 text-gray-900 dark:text-white font-black uppercase tracking-widest rounded-2xl mt-4">
-                            CREATE GIVEAWAY
-                        </Button>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
                 )}
+            </div>
 
-            {createPortal(
-                <AnimatePresence>
-                    {isCreating && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-                        <motion.div 
-                            initial={{ opacity: 0 }} 
-                            animate={{ opacity: 1 }} 
-                            exit={{ opacity: 0 }} 
-                            onClick={() => setIsCreating(false)} 
-                            className="fixed inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" 
-                        />
-                        
-                        <motion.div 
-                            initial={{ scale: 0.9, opacity: 0, y: 30 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 30 }}
-                            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="relative w-full max-w-5xl max-h-[90vh] bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2.5rem] overflow-hidden flex flex-col shadow-[0_30px_100px_rgba(0,0,0,0.8)]"
-                        >
-                            <div className="flex items-center justify-between p-8 border-b border-black/10 dark:border-white/5">
-                                <div className="space-y-1">
-                                    <h2 className="text-3xl font-black font-heading tracking-tight uppercase italic text-gray-900 dark:text-white text-4xl">
-                                        {editingId ? 'EDIT' : 'CREATE'} <span className="text-purple-500">GIVEAWAY.</span>
-                                    </h2>
-                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">CONFIGURE GIVEAWAY PARAMETERS</p>
-                                </div>
-                                <button onClick={() => setIsCreating(false)} className="w-12 h-12 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all">
-                                    <X size={20} />
-                                </button>
-                            </div>
-                            
-                            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar p-8">
-                                <div className="space-y-12">
-                                    {/* Section 1: Logistics */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="space-y-3">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Campaign Title</label>
-                                            <Input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. UN40 Music Festival" className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl text-sm font-bold" />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Slug</label>
-                                            <Input required value={formData.slug} onChange={e => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })} placeholder="un40-giveaway" className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl" />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="space-y-3">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Poster Asset (URL OR CTRL+V)</label>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div className="md:col-span-2">
-                                                    <Input 
-                                                        value={formData.posterUrl} 
-                                                        onChange={e => setFormData({ ...formData, posterUrl: e.target.value })} 
-                                                        onPaste={(e) => handlePaste(e, 'poster')}
-                                                        placeholder="Cloudinary Link or Paste" 
-                                                        className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl text-sm font-bold" 
-                                                    />
-                                                </div>
-                                                <div className="relative group">
-                                                    <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                    <div className={cn("h-12 border-2 border-dashed border-black/10 dark:border-white/5 rounded-xl flex items-center justify-center gap-3 bg-white dark:bg-black/20 group-hover:border-purple-500/30 transition-all", selectedFile && "border-purple-500/50 bg-purple-500/5")}>
-                                                        <Sparkles className={cn("text-gray-500 group-hover:text-purple-500", selectedFile && "text-purple-500")} size={14} />
-                                                        <span className="text-[8px] font-black text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest">{selectedFile ? 'READY' : 'UPLOAD'}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Giveaway Type</label>
-                                            <select 
-                                                value={formData.giveawayType} 
-                                                onChange={e => setFormData({ ...formData, giveawayType: e.target.value })}
-                                                className="w-full h-12 bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-xl px-4 text-[9px] font-black uppercase tracking-widest text-gray-900 dark:text-white appearance-none"
-                                            >
-                                                <option value="Standard">Standard Registration</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    {/* Section 2: Details */}
-                                    <div className="space-y-3">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Giveaway Description</label>
-                                        <textarea
-                                            required
-                                            value={formData.description}
-                                            onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                            className="w-full bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-2xl p-6 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:border-purple-500 transition-all h-32 resize-none"
-                                            placeholder="DESCRIBE THE GIVEAWAY..."
-                                        />
-                                    </div>
-
-
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                        <div className="space-y-3">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Tickets</label>
-                                            <Input type="number" required value={formData.ticketsAvailable} onChange={e => setFormData({ ...formData, ticketsAvailable: parseInt(e.target.value) })} className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl font-bold" />
-                                        </div>
-                                        <div className="md:col-span-2 space-y-3">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Announcement Date</label>
-                                            <Input type="date" required value={formData.winnerAnnouncementDate} onChange={e => setFormData({ ...formData, winnerAnnouncementDate: e.target.value })} className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl" />
-                                        </div>
-                                    </div>
-
-                                    {/* Section 3: Missions */}
-                                    <div className="space-y-8">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mb-1">GIVEAWAY TASKS</h3>
-                                                <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">DRIVE ENGAGEMENT THROUGH CUSTOM TASKS</p>
-                                            </div>
-                                            <Button 
-                                                type="button" 
-                                                onClick={() => {
-                                                    const id = Math.random().toString(36).substr(2, 9);
-                                                    setFormData({ ...formData, tasks: [...formData.tasks, { id, type: 'custom', label: 'New Custom Task', entryScore: 1, config: { url: '' } }] });
-                                                }}
-                                                className="h-10 px-6 bg-purple-600/10 border border-purple-500/20 text-purple-500 text-[9px] font-black uppercase tracking-widest hover:bg-purple-600 hover:text-gray-900 dark:hover:text-white transition-all rounded-xl"
-                                            >
-                                                <Plus size={14} className="mr-2" /> ADD CUSTOM
-                                            </Button>
-                                        </div>
-                                        
-                                        {/* Task Type Quick Select */}
-                                        <div className="grid grid-cols-3 gap-3">
-                                            {[
-                                                { type: 'instagram', icon: Instagram, color: 'hover:text-pink-500', label: 'Follow IG' },
-                                                { type: 'instagram_like_comment', icon: Instagram, color: 'hover:text-pink-400', label: 'Like + Comment' },
-                                                { type: 'website', icon: Globe, color: 'hover:text-blue-400', label: 'Website' },
-                                                { type: 'youtube', icon: Youtube, color: 'hover:text-red-500', label: 'YouTube' },
-                                                { type: 'telegram', icon: Send, color: 'hover:text-blue-400', label: 'Telegram' },
-                                                { type: 'custom', icon: Sparkles, color: 'hover:text-purple-500', label: 'Custom' },
-                                            ].map(preset => (
-                                                <button
-                                                    key={preset.type}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const id = Math.random().toString(36).substr(2, 9);
-                                                        const labels = {
-                                                            instagram: 'Follow on Instagram',
-                                                            twitter: 'Follow on X',
-                                                            telegram: 'Join Telegram Channel',
-                                                            discord: 'Join Discord Server',
-                                                            youtube: 'Subscribe on YouTube',
-                                                            snapchat: 'Add on Snapchat',
-                                                            spotify: 'Follow on Spotify',
-                                                            website: 'Visit our Website'
-                                                        };
-                                                        setFormData({ 
-                                                            ...formData, 
-                                                            tasks: [...formData.tasks, { 
-                                                                id, 
-                                                                type: preset.type, 
-                                                                label: labels[preset.type], 
-                                                                entryScore: 1, 
-                                                                config: { url: '' } 
-                                                            }] 
-                                                        });
-                                                    }}
-                                                    className={cn(
-                                                        "flex flex-col items-center justify-center gap-2 p-3 rounded-2xl bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 transition-all group",
-                                                        preset.color
-                                                    )}
-                                                >
-                                                    <preset.icon size={18} className="text-gray-500 group-hover:scale-110 transition-transform" />
-                                                    <span className="text-[7px] font-black text-gray-600 uppercase tracking-tighter">{preset.label}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                        
-                                        <motion.div 
-                                            layout
-                                            className="flex overflow-x-auto lg:overflow-x-visible md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide snap-x snap-mandatory pb-8 md:pb-0"
-                                        >
-                                            {(formData.tasks || []).map((task, index) => (
-                                                <motion.div 
-                                                    key={task.id} 
-                                                    initial={{ opacity: 0, x: -10 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    className="p-6 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-3xl grid grid-cols-1 md:grid-cols-12 gap-6 items-center relative overflow-hidden group min-w-[85vw] md:min-w-0 snap-center"
-                                                >
-                                                    <div className="absolute top-0 left-0 w-1 h-full bg-purple-500/20 group-hover:bg-purple-500 transition-colors" />
-                                                    
-                                                    <div className="md:col-span-1 flex justify-center">
-                                                        <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-zinc-900 flex items-center justify-center text-gray-500">
-                                                            {task.type === 'instagram' && <Instagram size={18} />}
-                                                            {task.type === 'instagram_like_comment' && <Instagram size={18} className="text-pink-400" />}
-                                                            {task.type === 'twitter' && <Twitter size={18} />}
-                                                            {task.type === 'telegram' && <Send size={18} />}
-                                                            {task.type === 'discord' && <MessageCircle size={18} />}
-                                                            {task.type === 'youtube' && <Youtube size={18} />}
-                                                            {task.type === 'snapchat' && <Ghost size={18} />}
-                                                            {task.type === 'spotify' && <Music size={18} />}
-                                                            {task.type === 'website' && <Globe size={18} />}
-                                                            {task.type === 'custom' && <Trophy size={18} />}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="md:col-span-4 space-y-1">
-                                                        <label className="text-[7px] font-black text-gray-600 uppercase tracking-widest ml-1">Label / Call to Action</label>
-                                                        <input 
-                                                            value={task.label} 
-                                                            onChange={e => {
-                                                                const newTasks = [...formData.tasks];
-                                                                newTasks[index].label = e.target.value;
-                                                                setFormData({ ...formData, tasks: newTasks });
-                                                            }}
-                                                            className="w-full h-10 bg-transparent border-b border-black/10 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-purple-500 outline-none transition-all" 
-                                                            placeholder="Follow on X..." 
-                                                        />
-                                                    </div>
-
-                                                    <div className="md:col-span-4 space-y-1">
-                                                        <label className="text-[7px] font-black text-gray-600 uppercase tracking-widest ml-1">Destination URL</label>
-                                                        <input 
-                                                            value={task.config.url} 
-                                                            onChange={e => {
-                                                                const newTasks = [...formData.tasks];
-                                                                newTasks[index].config = { ...newTasks[index].config, url: e.target.value };
-                                                                setFormData({ ...formData, tasks: newTasks });
-                                                            }}
-                                                            className="w-full h-10 bg-transparent border-b border-black/10 dark:border-white/10 text-xs font-bold text-gray-600 dark:text-gray-400 focus:border-purple-500 outline-none transition-all font-mono" 
-                                                            placeholder="https://..." 
-                                                        />
-                                                    </div>
-
-                                                    <div className="md:col-span-2 space-y-1">
-                                                        <label className="text-[7px] font-black text-gray-600 uppercase tracking-widest ml-1">Points</label>
-                                                        <div className="flex items-center gap-2">
-                                                            <input 
-                                                                type="number"
-                                                                value={task.entryScore} 
-                                                                onChange={e => {
-                                                                    const newTasks = [...formData.tasks];
-                                                                    newTasks[index].entryScore = parseInt(e.target.value) || 0;
-                                                                    setFormData({ ...formData, tasks: newTasks });
-                                                                }}
-                                                                className="w-full h-10 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 rounded-xl px-4 text-xs font-black text-gray-900 dark:text-white outline-none" 
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="md:col-span-1 flex justify-center">
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => setFormData({ ...formData, tasks: formData.tasks.filter((_, i) => i !== index) })}
-                                                            className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center border border-red-500/20"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-                                                </motion.div>
-                                            ))}
-                                            
-                                            {formData.tasks.length === 0 && (
-                                                <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-black/10 dark:border-white/5 rounded-[3rem] text-gray-600 space-y-4">
-                                                    <Plus size={48} className="opacity-20" />
-                                                    <p className="text-[10px] font-black uppercase tracking-widest">No Tasks Configured</p>
-                                                </div>
-                                            )}
-                                        </motion.div>
-                                    </div>
-                                </div>
-                            </form>
-
-                            <div className="p-8 bg-gray-100 dark:bg-zinc-900 border-t border-black/10 dark:border-white/5 flex gap-4">
-                                <Button type="button" variant="outline" onClick={() => setIsCreating(false)} className="flex-1 h-12 rounded-xl border-black/10 dark:border-white/5 text-[10px] font-black tracking-widest">CANCEL</Button>
-                                <Button onClick={handleSubmit} className="flex-1 h-12 bg-purple-600 text-gray-900 dark:text-white font-black uppercase tracking-widest rounded-xl shadow-lg">
-                                    {editingId ? 'UPDATE' : 'CREATE'}
-                                </Button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>,
-            document.body
-        )}
+            <WinnerDrawSheet open={Boolean(drawGiveaway)} onClose={() => setDrawId(null)} giveaway={drawGiveaway} entries={drawGiveaway ? byCampaign[drawGiveaway.id]?.entries || [] : []} />
+            {confirmEl}
         </AdminCommunityHubLayout>
     );
 };

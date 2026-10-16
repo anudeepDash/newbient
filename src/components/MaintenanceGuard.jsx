@@ -1,12 +1,13 @@
 import React from 'react';
 import { useStore } from '../lib/store';
 import Maintenance from '../pages/Admin/Maintenance';
+import { canBypassMaintenance } from '../constants/roles';
 
 const MaintenanceGuard = ({ children, category, featureId, isPage = false, isSection = false }) => {
     const { maintenanceState, user } = useStore();
 
-    // Only Developer role bypasses maintenance guards
-    if (user?.role === 'developer') {
+    // Founders, super admins and developers can always get in to fix things.
+    if (canBypassMaintenance(user?.role)) {
         return children;
     }
 
@@ -26,11 +27,11 @@ const MaintenanceGuard = ({ children, category, featureId, isPage = false, isSec
         if (isSection) {
             return (
                 <div className="relative group cursor-not-allowed">
-                    <div className="absolute inset-0 bg-white dark:bg-black/60 backdrop-blur-[2px] z-20 flex items-center justify-center rounded-xl border border-dashed border-red-500/50">
-                        <div className="text-center p-4">
-                            <span className="text-4xl block mb-2">🔧</span>
-                            <h3 className="text-gray-900 dark:text-white font-black italic uppercase tracking-tighter">Under Maintenance</h3>
-                            <p className="text-gray-600 dark:text-gray-400 text-xs uppercase tracking-widest mt-1">Improvements in Progress</p>
+                    <div className="absolute inset-0 z-20 flex items-center justify-center rounded-xl border border-dashed border-amber-500/50 bg-white/80 backdrop-blur-[2px] dark:bg-black/60">
+                        <div className="p-4 text-center">
+                            <span className="mb-2 block text-3xl">🔧</span>
+                            <h3 className="text-[15px] font-bold text-gray-900 dark:text-white">Being improved</h3>
+                            <p className="mt-1 text-[13px] text-gray-600 dark:text-gray-400">This section is back soon.</p>
                         </div>
                     </div>
                     <div className="grayscale opacity-30 pointer-events-none">

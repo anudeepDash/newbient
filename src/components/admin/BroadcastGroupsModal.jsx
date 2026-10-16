@@ -1,19 +1,19 @@
-import React, { useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useStore } from '../../lib/store';
 import { DEFAULT_CREATOR_GROUPS } from '../../lib/constants';
 import { sendCreatorGroupsBroadcastEmail, generateCreatorGroupsBroadcastHTML } from '../../lib/email';
 import { cn } from '../../lib/utils';
-import X from 'lucide-react/dist/esm/icons/x';
-import Mail from 'lucide-react/dist/esm/icons/mail';
 import Send from 'lucide-react/dist/esm/icons/send';
-import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
-import Users from 'lucide-react/dist/esm/icons/users';
 import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Monitor from 'lucide-react/dist/esm/icons/monitor';
+import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
+import Sheet from './Sheet';
+import { Button, SegmentedTabs } from './ui';
+import RichEditor from './RichEditor';
+import EmailPreviewIframe from '../ui/EmailPreviewIframe';
+import { Field, Toggle, fieldCls } from './uploads/UploadKit';
 
 const normalizeCity = (cityStr = '') => {
     const raw = String(cityStr || '').trim().toLowerCase();
@@ -32,6 +32,23 @@ const normalizeCity = (cityStr = '') => {
     if (raw.includes('jaipur')) return 'Jaipur';
     if (raw.includes('chennai') || raw.includes('madras')) return 'Chennai';
     return cityStr || 'Bengaluru';
+};
+
+// Same rule for the counts on the city buttons and for who actually gets the email.
+const inCity = (creator, cityFilter) => {
+    if (cityFilter === 'All') return true;
+    const normFilter = cityFilter.toLowerCase();
+    const normC = normalizeCity(creator.city).toLowerCase();
+    return normC.includes(normFilter) || (normFilter === 'delhi' && normC.includes('delhi'));
+};
+
+const defaultSubject = (city) => `🔥 ${city === 'All' ? 'Official' : city} Creator WhatsApp Community is Live • Exclusive Invitation`;
+
+// The editor leaves "<br>" behind when cleared; treat that as no message so the standard invite is used.
+const cleanMessage = (html) => {
+    const s = String(html || '');
+    if (/<img/i.test(s)) return s;
+    return s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() ? s : '';
 };
 
 const BroadcastGroupsModal = ({ onClose, preselectedCity = 'All' }) => {
@@ -54,46 +71,57 @@ const BroadcastGroupsModal = ({ onClose, preselectedCity = 'All' }) => {
         return list.sort((a, b) => (a.order || 0) - (b.order || 0));
     }, [creatorGroups]);
 
-    const [selectedCityFilter, setSelectedCityFilter] = useState(preselectedCity);
-    const [emailSubject, setEmailSubject] = useState('');
+    const [selectedCityFilter, setSelectedCityFilter] = useState(preselectedCity || 'All');
+    const [verifiedOnly, setVerifiedOnly] = useState(false);
+    const [emailSubject, setEmailSubject] = useState(() => defaultSubject(preselectedCity || 'All'));
+    const subjectEdited = useRef(false);
     const [customMessage, setCustomMessage] = useState('');
-    const [isPreviewMode, setIsPreviewMode] = useState(false);
+    const [tab, setTab] = useState('write');
+    const [device, setDevice] = useState('desktop');
     const [isSending, setIsSending] = useState(false);
     const [progress, setProgress] = useState({ current: 0, total: 0 });
     const [sendStats, setSendStats] = useState(null);
+    const [problem, setProblem] = useState('');
 
-    // Filter creators with valid email
+    // Creators with a usable email, optionally only verified ones
     const eligibleCreators = useMemo(() => {
-        return (creators || []).filter(c => c.email && c.email.includes('@'));
-    }, [creators]);
+        return (creators || []).filter(c => c.email && c.email.includes('@') && (!verifiedOnly || c.profileStatus === 'approved'));
+    }, [creators, verifiedOnly]);
 
-    // Filter by city
-    const targetRecipients = useMemo(() => {
-        if (selectedCityFilter === 'All') return eligibleCreators;
-        const normFilter = selectedCityFilter.toLowerCase();
-        return eligibleCreators.filter(c => {
-            const normC = normalizeCity(c.city).toLowerCase();
-            return normC.includes(normFilter) || (normFilter === 'delhi' && normC.includes('delhi'));
-        });
-    }, [eligibleCreators, selectedCityFilter]);
+    const verifiedCount = useMemo(() => (creators || []).filter(c => c.email && c.email.includes('@') && c.profileStatus === 'approved').length, [creators]);
 
-    // Active group for the selected city
+    const targetRecipients = useMemo(() => eligibleCreators.filter(c => inCity(c, selectedCityFilter)), [eligibleCreators, selectedCityFilter]);
+
+    const cityCounts = useMemo(() => {
+        const out = {};
+        activeGroups.forEach(g => { out[g.city] = eligibleCreators.filter(c => inCity(c, g.city)).length; });
+        return out;
+    }, [activeGroups, eligibleCreators]);
+
+    // Group for the selected city (the first group when sending to every city)
     const activeCityGroup = useMemo(() => {
         if (selectedCityFilter === 'All') return activeGroups[0] || DEFAULT_CREATOR_GROUPS[0];
         const found = activeGroups.find(g => normalizeCity(g.city).toLowerCase() === selectedCityFilter.toLowerCase());
         return found || activeGroups[0] || DEFAULT_CREATOR_GROUPS[0];
     }, [activeGroups, selectedCityFilter]);
 
-    // Auto-update subject when city changes if not manually typed
+    // Keep the subject in step with the city until it has been edited by hand
     useEffect(() => {
-        const cityName = selectedCityFilter === 'All' ? 'Official' : selectedCityFilter;
-        setEmailSubject(`🔥 ${cityName} Creator WhatsApp Community is Live • Exclusive Invitation`);
+        if (!subjectEdited.current) setEmailSubject(defaultSubject(selectedCityFilter));
     }, [selectedCityFilter]);
 
-    const handleSend = async (e) => {
-        e.preventDefault();
+    const emailCity = selectedCityFilter === 'All' ? activeCityGroup.city : selectedCityFilter;
+    const message = cleanMessage(customMessage);
+
+    const handleSend = async () => {
+        setProblem('');
         if (targetRecipients.length === 0) {
             useStore.getState().addToast('No creators to email in the selected city. Try a different city.', 'error');
+            return;
+        }
+        if (!emailSubject.trim()) {
+            setProblem('Add a subject.');
+            setTab('write');
             return;
         }
 
@@ -108,25 +136,30 @@ const BroadcastGroupsModal = ({ onClose, preselectedCity = 'All' }) => {
             }));
 
             const result = await sendCreatorGroupsBroadcastEmail(recipientsPayload, {
-                city: selectedCityFilter === 'All' ? activeCityGroup.city : selectedCityFilter,
+                city: emailCity,
                 groupUrl: activeCityGroup.groupUrl,
                 customSubject: emailSubject,
-                customMessage,
+                customMessage: message,
                 availableGroups: activeGroups,
-                onProgress: (curr, tot) => setProgress({ current: curr, total: tot })
+                // sendMassEmail reports { sent, failed, total } after each batch
+                onProgress: (p, tot) => {
+                    if (p && typeof p === 'object') setProgress({ current: (p.sent || 0) + (p.failed || 0), total: p.total || targetRecipients.length });
+                    else setProgress({ current: Number(p) || 0, total: Number(tot) || targetRecipients.length });
+                }
             });
 
-            if (result && (result.success || result.sentCount > 0)) {
-                setSendStats({
-                    sent: result.sentCount || targetRecipients.length,
-                    failed: result.failedCount || 0
-                });
-                useStore.getState().addToast(`Broadcast sent to ${result.sentCount || targetRecipients.length} creators.`, 'success');
+            const sent = result?.sent ?? result?.sentCount ?? 0;
+            const failed = result?.failed ?? result?.failedCount ?? 0;
+            if (result && (result.success || sent > 0)) {
+                const sentCount = result.success && !sent ? targetRecipients.length : sent;
+                setSendStats({ sent: sentCount, failed });
+                useStore.getState().addToast(`Broadcast sent to ${sentCount} creators.`, failed ? 'warning' : 'success');
             } else {
                 throw new Error(result?.error || 'Email dispatch failed.');
             }
         } catch (err) {
             console.error('Broadcast error:', err);
+            setProblem("Couldn't send the broadcast. Please try again.");
             useStore.getState().addToast("Couldn't send the broadcast. Please try again.", 'error');
         } finally {
             setIsSending(false);
@@ -136,241 +169,175 @@ const BroadcastGroupsModal = ({ onClose, preselectedCity = 'All' }) => {
     const previewHtml = useMemo(() => {
         return generateCreatorGroupsBroadcastHTML({
             creatorName: 'Creator Name',
-            city: selectedCityFilter === 'All' ? activeCityGroup.city : selectedCityFilter,
+            city: emailCity,
             groupUrl: activeCityGroup.groupUrl,
-            customMessage,
+            customMessage: message,
             availableGroups: activeGroups
         });
-    }, [selectedCityFilter, activeCityGroup, customMessage, activeGroups]);
+    }, [emailCity, activeCityGroup, message, activeGroups]);
 
-    return createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 md:p-8 bg-black/80 backdrop-blur-md overflow-y-auto custom-scrollbar">
-            <div className="fixed inset-0" onClick={onClose} />
+    const pct = progress.total ? Math.round((progress.current / progress.total) * 100) : 0;
+    const n = targetRecipients.length;
 
-            <motion.div
-                initial={{ scale: 0.95, opacity: 0, y: 15 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.95, opacity: 0, y: 15 }}
-                className="relative z-10 w-full max-w-3xl max-h-[94vh] rounded-[2.5rem] bg-[#0c0e14] border border-[#25D366]/30 text-white shadow-2xl flex flex-col overflow-hidden"
+    const cityChip = (value, label, count) => {
+        const active = selectedCityFilter.toLowerCase() === value.toLowerCase();
+        return (
+            <button
+                key={value}
+                type="button"
+                onClick={() => setSelectedCityFilter(value)}
+                aria-pressed={active}
+                className={cn(
+                    'inline-flex h-10 items-center gap-1.5 rounded-xl border px-3 text-[13px] font-semibold transition-colors',
+                    active
+                        ? 'border-emerald-500/60 bg-neon-green/[0.08] text-gray-900 dark:border-neon-green/50 dark:text-white'
+                        : 'border-black/10 text-gray-600 hover:border-black/20 dark:border-white/10 dark:text-zinc-400 dark:hover:border-white/20'
+                )}
             >
-                {/* ── HEADER ── */}
-                <div className="p-6 sm:p-7 border-b border-white/[0.08] flex items-center justify-between gap-4 bg-gradient-to-r from-emerald-500/10 to-transparent">
-                    <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl bg-[#25D366]/15 border border-[#25D366]/30 flex items-center justify-center text-[#25D366] shadow-[0_0_20px_rgba(37,211,102,0.3)]">
-                            <Mail size={22} />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-mono uppercase tracking-widest text-[#25D366]">Creator Operations</span>
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#25D366]" />
-                                <span className="text-[10px] font-mono text-zinc-400">Email Notification</span>
-                            </div>
-                            <h3 className="text-xl sm:text-2xl font-black font-heading tracking-tight uppercase text-white">
-                                Broadcast Creator Groups
-                            </h3>
-                        </div>
+                {label}
+                <span className={cn('rounded-md px-1.5 text-[11px] tabular-nums', active ? 'bg-emerald-500/15 text-emerald-700 dark:text-neon-green' : 'bg-black/5 text-gray-500 dark:bg-white/10')}>{count}</span>
+            </button>
+        );
+    };
+
+    const footer = sendStats ? (
+        <Button variant="primary" className="h-12 w-full" onClick={onClose}>Done</Button>
+    ) : (
+        <div className="space-y-3">
+            {problem && <p role="alert" className="text-[13px] font-semibold text-red-600 dark:text-red-400">{problem}</p>}
+            {!isSending && (
+                <p className="text-[13px] text-gray-500">
+                    {n === 0 ? 'Nobody to email with these settings.' : <><strong className="text-gray-900 dark:text-white">{n}</strong> creator{n === 1 ? '' : 's'} will get this email.</>}
+                </p>
+            )}
+            <div className="flex gap-2">
+                <Button variant="ghost" onClick={onClose} disabled={isSending} className="h-12">Cancel</Button>
+                <Button variant="primary" onClick={handleSend} disabled={isSending || n === 0} className="h-12 flex-1">
+                    <Send size={15} /> {isSending ? `Sending ${progress.current} of ${progress.total}…` : `Send to ${n}`}
+                </Button>
+            </div>
+        </div>
+    );
+
+    return (
+        <Sheet
+            open
+            onClose={isSending ? () => {} : onClose}
+            size="xl"
+            title="Email creators about WhatsApp groups"
+            subtitle="Invite creators to join their city's WhatsApp community."
+            footer={footer}
+            bodyClassName="space-y-5"
+        >
+            {sendStats ? (
+                <div className="flex flex-col items-center gap-3 py-12 text-center">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neon-green/15 text-emerald-600 dark:text-neon-green">
+                        <CheckCircle2 size={30} />
                     </div>
-
-                    <button
-                        onClick={onClose}
-                        className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-all"
-                    >
-                        <X size={18} />
-                    </button>
+                    <h3 className="text-lg font-extrabold tracking-tight">Broadcast sent</h3>
+                    <p className="max-w-sm text-[14px] text-gray-500">
+                        Sent to <strong className="text-gray-900 dark:text-white">{sendStats.sent}</strong> creator{sendStats.sent === 1 ? '' : 's'}.
+                        {sendStats.failed > 0 && ` ${sendStats.failed} couldn't be reached.`}
+                    </p>
                 </div>
+            ) : isSending ? (
+                <div className="space-y-4 py-12 text-center">
+                    <p className="text-[15px] font-bold">Sending {progress.current} of {progress.total}</p>
+                    <div className="mx-auto h-2 max-w-md overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
+                        <div className="h-full rounded-full bg-emerald-500 transition-all duration-300 dark:bg-neon-green" style={{ width: `${pct}%` }} />
+                    </div>
+                    <p className="text-[13px] text-gray-500">Keep this open until it finishes.</p>
+                </div>
+            ) : (
+                <>
+                    <SegmentedTabs value={tab} onChange={setTab} className="w-full [&>button]:flex-1 [&>button]:justify-center" items={[
+                        { value: 'write', label: 'Write' },
+                        { value: 'preview', label: 'Preview' },
+                    ]} />
 
-                {/* ── BODY ── */}
-                <div className="flex-1 overflow-y-auto p-6 sm:p-7 space-y-6 custom-scrollbar">
-                    {/* Success State */}
-                    {sendStats ? (
-                        <div className="py-12 text-center space-y-5">
-                            <div className="w-16 h-16 rounded-full bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/40 flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(37,211,102,0.3)]">
-                                <CheckCircle2 size={36} />
-                            </div>
-                            <div className="space-y-1 max-w-md mx-auto">
-                                <h4 className="text-2xl font-black uppercase text-white">Broadcast Dispatched!</h4>
-                                <p className="text-xs text-zinc-400 leading-relaxed">
-                                    Successfully delivered WhatsApp community announcement to <strong>{sendStats.sent}</strong> creators.
-                                    {sendStats.failed > 0 && ` (${sendStats.failed} failed)`}
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="px-8 h-12 rounded-xl bg-[#25D366] text-black font-black text-xs uppercase tracking-widest hover:brightness-110"
-                            >
-                                Done
-                            </button>
-                        </div>
-                    ) : isSending ? (
-                        /* Sending Progress */
-                        <div className="py-12 text-center space-y-6">
-                            <div className="relative w-16 h-16 mx-auto flex items-center justify-center">
-                                <div className="absolute inset-0 rounded-full border-2 border-white/10 border-t-[#25D366] animate-spin" />
-                                <Send size={24} className="text-[#25D366]" />
-                            </div>
-                            <div className="space-y-1">
-                                <h4 className="text-lg font-black uppercase tracking-wider text-white">
-                                    Transmitting {progress.current} of {progress.total}
-                                </h4>
-                                <p className="text-xs text-zinc-400">
-                                    Delivering branded WhatsApp community invites to creator inboxes...
-                                </p>
-                            </div>
-                            <div className="w-full bg-white/10 h-2.5 rounded-full overflow-hidden max-w-md mx-auto">
-                                <div
-                                    className="bg-[#25D366] h-full transition-all duration-300 shadow-[0_0_15px_rgba(37,211,102,0.6)]"
-                                    style={{ width: `${progress.total ? (progress.current / progress.total) * 100 : 0}%` }}
+                    {tab === 'write' ? (
+                        <div className="space-y-5">
+                            <section className="space-y-3">
+                                <h3 className="text-[13px] font-bold">Who gets it</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {cityChip('All', 'All cities', eligibleCreators.length)}
+                                    {activeGroups.map(g => cityChip(g.city, g.city, cityCounts[g.city] || 0))}
+                                </div>
+                                <div className="rounded-xl border border-black/10 px-3.5 py-2 dark:border-white/10">
+                                    <Toggle
+                                        label="Verified creators only"
+                                        hint={`${verifiedCount} verified creator${verifiedCount === 1 ? '' : 's'} have an email.`}
+                                        checked={verifiedOnly}
+                                        onChange={setVerifiedOnly}
+                                    />
+                                </div>
+                            </section>
+
+                            <section className="space-y-2">
+                                <h3 className="text-[13px] font-bold">Group in the email</h3>
+                                <div className="flex items-center gap-3 rounded-xl border border-black/10 p-3 dark:border-white/10">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-neon-green">
+                                        <MessageCircle size={18} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-[14px] font-semibold">{activeCityGroup.title || `${activeCityGroup.city} Creators Hub`}</p>
+                                        <p className="truncate text-[12px] text-gray-500">{activeCityGroup.groupUrl}</p>
+                                    </div>
+                                    {activeCityGroup.groupUrl && (
+                                        <a href={activeCityGroup.groupUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-black/10 px-3 text-[13px] font-semibold hover:border-black/20 dark:border-white/10 dark:hover:border-white/20">
+                                            <ExternalLink size={14} /> Test
+                                        </a>
+                                    )}
+                                </div>
+                                {selectedCityFilter === 'All' && (
+                                    <p className="text-[12px] text-gray-500">The main button links to the {activeCityGroup.city} group. Every active city group is listed under it.</p>
+                                )}
+                            </section>
+
+                            <Field label="Subject">
+                                <input
+                                    className={fieldCls}
+                                    value={emailSubject}
+                                    onChange={(e) => { subjectEdited.current = true; setEmailSubject(e.target.value); }}
+                                    placeholder="Official Creator Community is Live!"
                                 />
+                            </Field>
+
+                            <div>
+                                <span className="mb-1 flex items-center gap-1.5 text-[12px] font-bold text-gray-500">Personal note <span className="font-medium">(optional)</span></span>
+                                <RichEditor
+                                    value={customMessage}
+                                    onChange={setCustomMessage}
+                                    minHeight={140}
+                                    label="Personal note"
+                                    placeholder="Leave empty to use the standard invite."
+                                />
+                                <p className="mt-1 text-[11px] text-gray-500">The join button and the list of city groups are added below your note.</p>
                             </div>
                         </div>
                     ) : (
-                        <form onSubmit={handleSend} className="space-y-6">
-                            {/* City Target Filter */}
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center justify-between">
-                                    <span>Target City Audience</span>
-                                    <span className="text-[#25D366] font-mono">{targetRecipients.length} Creators Selected</span>
-                                </label>
-                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedCityFilter('All')}
-                                        className={cn(
-                                            "h-10 px-3 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all truncate",
-                                            selectedCityFilter === 'All'
-                                                ? "bg-[#25D366] text-black border-[#25D366] font-black"
-                                                : "bg-white/[0.03] text-zinc-400 border-white/[0.08] hover:text-white"
-                                        )}
-                                    >
-                                        All Cities ({eligibleCreators.length})
-                                    </button>
-                                    {activeGroups.map(g => {
-                                        const count = eligibleCreators.filter(c => normalizeCity(c.city).toLowerCase() === g.city.toLowerCase()).length;
-                                        const isSelected = selectedCityFilter.toLowerCase() === g.city.toLowerCase();
-                                        return (
-                                            <button
-                                                key={g.city}
-                                                type="button"
-                                                onClick={() => setSelectedCityFilter(g.city)}
-                                                className={cn(
-                                                    "h-10 px-3 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all truncate flex items-center justify-between gap-1",
-                                                    isSelected
-                                                        ? "bg-[#25D366] text-black border-[#25D366] font-black"
-                                                        : "bg-white/[0.03] text-zinc-400 border-white/[0.08] hover:text-white"
-                                                )}
-                                            >
-                                                <span className="truncate">{g.city}</span>
-                                                <span className="text-[9px] opacity-70 font-mono">({count})</span>
-                                            </button>
-                                        );
-                                    })}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="min-w-0 truncate text-[13px] font-semibold"><span className="text-gray-500">Subject:</span> {emailSubject}</p>
+                                <div className="hidden shrink-0 gap-1 rounded-xl bg-black/5 p-1 dark:bg-white/5 sm:flex">
+                                    {[{ v: 'desktop', I: Monitor }, { v: 'mobile', I: Smartphone }].map(({ v, I }) => (
+                                        <button key={v} type="button" onClick={() => setDevice(v)} aria-label={`${v} preview`} className={cn('flex h-8 w-8 items-center justify-center rounded-lg', device === v ? 'bg-white text-black shadow-sm dark:bg-zinc-800 dark:text-white' : 'text-gray-500')}>
+                                            <I size={14} />
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
-
-                            {/* Active Link Preview Pill */}
-                            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-between gap-3 text-xs">
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                    <MessageCircle size={18} className="text-[#25D366] shrink-0" />
-                                    <div className="min-w-0">
-                                        <p className="font-bold text-white truncate">{activeCityGroup.title || `${activeCityGroup.city} Creators Hub`}</p>
-                                        <p className="text-[10px] text-zinc-400 font-mono truncate">{activeCityGroup.groupUrl}</p>
-                                    </div>
-                                </div>
-                                <a
-                                    href={activeCityGroup.groupUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold text-white shrink-0"
-                                >
-                                    Test Link &rarr;
-                                </a>
-                            </div>
-
-                            {/* Subject Field */}
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                                    Email Subject Line
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={emailSubject}
-                                    onChange={(e) => setEmailSubject(e.target.value)}
-                                    placeholder="Official Creator Community is Live!"
-                                    className="w-full h-12 px-4 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-bold text-white outline-none focus:border-[#25D366]"
-                                />
-                            </div>
-
-                            {/* Custom Message Body Field */}
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center justify-between">
-                                    <span>Personalized Note (Optional)</span>
-                                    <span className="text-[9px] text-zinc-500">Leave blank to use official default invitation</span>
-                                </label>
-                                <textarea
-                                    rows={3}
-                                    value={customMessage}
-                                    onChange={(e) => setCustomMessage(e.target.value)}
-                                    placeholder="We have exciting brand campaigns and concert passes dropping this weekend for our verified creators. Tap below to join our city hub..."
-                                    className="w-full p-4 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-medium text-white outline-none focus:border-[#25D366] resize-none"
-                                />
-                            </div>
-
-                            {/* Toggle Preview View */}
-                            <div className="pt-1 flex items-center justify-between">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsPreviewMode(!isPreviewMode)}
-                                    className="text-xs font-bold text-zinc-400 hover:text-white flex items-center gap-1.5"
-                                >
-                                    <Eye size={14} />
-                                    <span>{isPreviewMode ? 'Hide Email Preview' : 'Show Live HTML Preview'}</span>
-                                </button>
-                            </div>
-
-                            {/* Live HTML Preview Iframe */}
-                            {isPreviewMode && (
-                                <div className="rounded-2xl border border-white/10 overflow-hidden bg-black max-h-[380px]">
-                                    <iframe
-                                        title="Email Preview"
-                                        srcDoc={previewHtml}
-                                        className="w-full h-[360px] border-none"
-                                    />
-                                </div>
-                            )}
-
-                            {/* Footer Actions */}
-                            <div className="flex items-center justify-between gap-4 pt-4 border-t border-white/[0.08]">
-                                <div className="text-[11px] text-zinc-400 flex items-center gap-1.5">
-                                    <Users size={14} className="text-[#25D366]" />
-                                    <span>Ready to notify <strong>{targetRecipients.length}</strong> creators</span>
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={onClose}
-                                        className="h-12 px-5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-zinc-300"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={targetRecipients.length === 0}
-                                        className="h-12 px-7 rounded-xl bg-[#25D366] hover:brightness-110 text-black font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-[0_0_25px_rgba(37,211,102,0.4)] disabled:opacity-40"
-                                    >
-                                        <Send size={15} />
-                                        <span>Send Broadcast</span>
-                                    </button>
+                            <div className="flex justify-center rounded-2xl bg-black/[0.03] p-2 dark:bg-white/[0.03] sm:p-4">
+                                <div className={cn('w-full overflow-hidden rounded-xl border border-black/10 bg-white shadow-sm transition-[max-width] dark:border-white/10', device === 'mobile' ? 'max-w-[375px]' : 'max-w-full')}>
+                                    <EmailPreviewIframe html={previewHtml} />
                                 </div>
                             </div>
-                        </form>
+                            <p className="text-[12px] text-gray-500">Each creator sees the same email; the greeting reads "Hey Creator".</p>
+                        </div>
                     )}
-                </div>
-            </motion.div>
-        </div>,
-        document.body
+                </>
+            )}
+        </Sheet>
     );
 };
 

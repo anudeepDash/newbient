@@ -1,372 +1,261 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Card } from '../ui/Card';
-import { Input } from '../ui/Input';
-import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
-import Sliders from 'lucide-react/dist/esm/icons/sliders';
-import Gift from 'lucide-react/dist/esm/icons/gift';
-import Users from 'lucide-react/dist/esm/icons/users';
-import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import { copyToClipboard } from '../../lib/clipboard';
+import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
-import Save from 'lucide-react/dist/esm/icons/save';
-import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import Copy from 'lucide-react/dist/esm/icons/copy';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
+import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import Info from 'lucide-react/dist/esm/icons/info';
+import { accent } from './theme';
+import { Button, Badge } from './ui';
+import { Field, Toggle, fieldCls } from './uploads/UploadKit';
+import { BuilderCard } from './events/EditorParts';
+
+/*
+ * Creator program rules: who can apply, the Instagram follower gate, points,
+ * and which sections show on the public creator page. Saves to
+ * site_settings/general (the same fields the join form and API read).
+ */
+
+const DEFAULTS = {
+    allowCreatorSignups: true,
+    minInstagramFollowersToJoin: 1000,
+    requireInstagramVerification: true,
+    creatorWelcomePoints: 100,
+    creatorReferralPoints: 200,
+    showPastClients: true,
+    showCreatorTestimonials: true,
+    creatorAnnouncement: '',
+};
+
+const fromSettings = (s) => ({
+    allowCreatorSignups: s?.allowCreatorSignups !== false,
+    minInstagramFollowersToJoin: s?.minInstagramFollowersToJoin !== undefined ? String(Number(s.minInstagramFollowersToJoin) || 0) : String(DEFAULTS.minInstagramFollowersToJoin),
+    requireInstagramVerification: s?.requireInstagramVerification !== false,
+    creatorWelcomePoints: s?.creatorWelcomePoints !== undefined ? String(Number(s.creatorWelcomePoints) || 0) : String(DEFAULTS.creatorWelcomePoints),
+    creatorReferralPoints: s?.creatorReferralPoints !== undefined ? String(Number(s.creatorReferralPoints) || 0) : String(DEFAULTS.creatorReferralPoints),
+    showPastClients: s?.showPastClients !== false,
+    showCreatorTestimonials: s?.showCreatorTestimonials !== false,
+    creatorAnnouncement: s?.creatorAnnouncement || '',
+});
+
+const FOLLOWER_PRESETS = [0, 500, 1000, 2500, 5000];
+const ANNOUNCEMENT_MAX = 180;
+
+const whole = (v) => {
+    const n = Number(String(v).trim());
+    return Number.isFinite(n) && n >= 0 && Number.isInteger(n) ? n : null;
+};
+
+const LINKS = [
+    { label: 'Creator page', path: '/creator', icon: Globe, tone: 'pink' },
+    { label: 'Join form', path: '/creator/join', icon: ClipboardList, tone: 'violet' },
+    { label: 'Creator dashboard', path: '/creator-dashboard', icon: LayoutDashboard, tone: 'blue' },
+];
 
 const CreatorProgramSettingsManager = () => {
     useStoreSubscription(['siteSettings']);
-    const { siteSettings, updateGeneralSettings } = useStore();
+    const siteSettings = useStore(s => s.siteSettings);
+    const addToast = useStore(s => s.addToast);
 
-    const [formData, setFormData] = useState({
-        allowCreatorSignups: true,
-        minInstagramFollowersToJoin: 1000,
-        requireInstagramVerification: true,
-        creatorWelcomePoints: 100,
-        creatorReferralPoints: 200,
-        showPastClients: true,
-        showCreatorTestimonials: true,
-        creatorAnnouncement: ''
-    });
+    const saved = useMemo(() => fromSettings(siteSettings), [siteSettings]);
+    const [form, setForm] = useState(saved);
     const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
-        if (siteSettings) {
-            setFormData({
-                allowCreatorSignups: siteSettings.allowCreatorSignups !== false,
-                minInstagramFollowersToJoin: siteSettings.minInstagramFollowersToJoin !== undefined ? Number(siteSettings.minInstagramFollowersToJoin) : 1000,
-                requireInstagramVerification: siteSettings.requireInstagramVerification !== false,
-                creatorWelcomePoints: siteSettings.creatorWelcomePoints !== undefined ? Number(siteSettings.creatorWelcomePoints) : 100,
-                creatorReferralPoints: siteSettings.creatorReferralPoints !== undefined ? Number(siteSettings.creatorReferralPoints) : 200,
-                showPastClients: siteSettings.showPastClients !== false,
-                showCreatorTestimonials: siteSettings.showCreatorTestimonials !== false,
-                creatorAnnouncement: siteSettings.creatorAnnouncement || ''
-            });
-        }
-    }, [siteSettings]);
+    const dirty = useMemo(() => Object.keys(DEFAULTS).some(k => String(form[k]) !== String(saved[k])), [form, saved]);
 
-    const handleSave = async (e) => {
-        if (e) e.preventDefault();
+    // Pick up changes saved elsewhere, unless you're in the middle of editing.
+    useEffect(() => {
+        if (!dirty) setForm(saved);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [saved]);
+
+    const set = (key) => (value) => setForm(prev => ({ ...prev, [key]: value }));
+
+    const errors = {
+        minInstagramFollowersToJoin: whole(form.minInstagramFollowersToJoin) === null ? 'Use a whole number, 0 or more.' : '',
+        creatorWelcomePoints: whole(form.creatorWelcomePoints) === null || Number(form.creatorWelcomePoints) > 5000 ? 'Use a whole number from 0 to 5,000.' : '',
+        creatorReferralPoints: whole(form.creatorReferralPoints) === null || Number(form.creatorReferralPoints) > 5000 ? 'Use a whole number from 0 to 5,000.' : '',
+        creatorAnnouncement: form.creatorAnnouncement.length > ANNOUNCEMENT_MAX ? `Keep it under ${ANNOUNCEMENT_MAX} characters.` : '',
+    };
+    const hasErrors = Object.values(errors).some(Boolean);
+
+    const save = async () => {
+        if (saving || !dirty) return;
+        if (hasErrors) { addToast('Fix the highlighted fields first.', 'warning'); return; }
         setSaving(true);
         try {
-            await updateGeneralSettings({
-                allowCreatorSignups: formData.allowCreatorSignups,
-                minInstagramFollowersToJoin: Math.max(0, Number(formData.minInstagramFollowersToJoin) || 0),
-                requireInstagramVerification: formData.requireInstagramVerification,
-                creatorWelcomePoints: Number(formData.creatorWelcomePoints) || 100,
-                creatorReferralPoints: Number(formData.creatorReferralPoints) || 200,
-                showPastClients: formData.showPastClients,
-                showCreatorTestimonials: formData.showCreatorTestimonials,
-                creatorAnnouncement: formData.creatorAnnouncement.trim()
+            await useStore.getState().updateGeneralSettings({
+                allowCreatorSignups: form.allowCreatorSignups,
+                minInstagramFollowersToJoin: whole(form.minInstagramFollowersToJoin),
+                requireInstagramVerification: form.requireInstagramVerification,
+                creatorWelcomePoints: whole(form.creatorWelcomePoints),
+                creatorReferralPoints: whole(form.creatorReferralPoints),
+                showPastClients: form.showPastClients,
+                showCreatorTestimonials: form.showCreatorTestimonials,
+                creatorAnnouncement: form.creatorAnnouncement.trim(),
             });
-            useStore.getState().addToast('Creator program settings saved.', 'success');
+            addToast('Creator program settings saved.', 'success');
         } catch (err) {
             console.error('Save settings error:', err);
-            useStore.getState().addToast("Couldn't save the settings. Please try again.", 'error');
+            addToast("Couldn't save the settings. Please try again.", 'error');
         } finally {
             setSaving(false);
         }
     };
 
+    const copyLink = async (path) => {
+        const ok = await copyToClipboard(`${window.location.origin}${path}`);
+        addToast(ok ? 'Link copied.' : "Couldn't copy.", ok ? 'success' : 'error');
+    };
+
+    const minFollowers = whole(form.minInstagramFollowersToJoin) ?? 0;
+
     return (
-        <section className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4 flex-1">
-                    <h2 className="text-xl font-black font-heading tracking-tight uppercase text-amber-600 dark:text-amber-400 flex items-center gap-2">
-                        <Sliders size={20} className="text-amber-600 dark:text-amber-400" />
-                        Program Rules &amp; Visibility Controls
-                    </h2>
-                    <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button
-                        type="button"
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="h-10 px-5 rounded-xl bg-neon-green text-black font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all disabled:opacity-50 flex items-center gap-2 shadow-sm"
+        <section className="space-y-5 pb-4">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start">
+                <div className="space-y-4 lg:col-span-2">
+                    <BuilderCard
+                        title="Applications"
+                        hint="The form at /creator/join"
+                        action={<Badge tone={form.allowCreatorSignups ? 'green' : 'red'}>{form.allowCreatorSignups ? 'Open' : 'Paused'}</Badge>}
                     >
-                        <Save size={13} /> {saving ? 'Saving...' : 'Save Settings'}
-                    </Button>
+                        <div className="space-y-4">
+                            <div className={cn('rounded-xl border p-3', form.allowCreatorSignups ? 'border-black/[0.06] dark:border-white/[0.08]' : cn(accent('red').border, accent('red').soft))}>
+                                <Toggle
+                                    label="Accept new creator applications"
+                                    hint={form.allowCreatorSignups ? 'Anyone can apply.' : 'The join form shows that applications are paused.'}
+                                    checked={form.allowCreatorSignups}
+                                    onChange={set('allowCreatorSignups')}
+                                />
+                            </div>
+                            <Field label="Announcement on the join form" optional hint={errors.creatorAnnouncement || `${form.creatorAnnouncement.length}/${ANNOUNCEMENT_MAX} · leave empty to show nothing`}>
+                                <div className="relative">
+                                    <Megaphone size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input
+                                        className={cn(fieldCls, 'pl-10', errors.creatorAnnouncement && 'border-red-500/60')}
+                                        value={form.creatorAnnouncement}
+                                        onChange={(e) => set('creatorAnnouncement')(e.target.value)}
+                                        placeholder="Now onboarding creators for festival season in Bengaluru and Mumbai"
+                                    />
+                                </div>
+                            </Field>
+                        </div>
+                    </BuilderCard>
+
+                    <BuilderCard title="Instagram check" hint="Applies to the join form and creators you add yourself">
+                        <div className="space-y-4">
+                            <Field label="Minimum Instagram followers to join" hint={errors.minInstagramFollowersToJoin || (minFollowers === 0 ? 'Anyone can join, whatever their follower count.' : `Creators need at least ${minFollowers.toLocaleString('en-IN')} followers. Those who type their count in by hand go to review instead.`)}>
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    min="0"
+                                    step="100"
+                                    className={cn(fieldCls, 'tabular-nums', errors.minInstagramFollowersToJoin && 'border-red-500/60')}
+                                    value={form.minInstagramFollowersToJoin}
+                                    onChange={(e) => set('minInstagramFollowersToJoin')(e.target.value)}
+                                />
+                            </Field>
+                            <div className="flex flex-wrap gap-1.5">
+                                {FOLLOWER_PRESETS.map(n => (
+                                    <button
+                                        key={n}
+                                        type="button"
+                                        onClick={() => set('minInstagramFollowersToJoin')(String(n))}
+                                        className={cn('h-10 rounded-xl border px-3.5 text-[13px] font-semibold transition-colors',
+                                            minFollowers === n && !errors.minInstagramFollowersToJoin ? cn(accent('pink').border, accent('pink').soft, accent('pink').text) : 'border-black/10 hover:border-black/20 dark:border-white/10 dark:hover:border-white/20')}
+                                    >
+                                        {n === 0 ? 'No minimum' : `${n.toLocaleString('en-IN')}+`}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="rounded-xl border border-black/[0.06] p-3 dark:border-white/[0.08]">
+                                <Toggle
+                                    label="Check followers automatically"
+                                    hint={form.requireInstagramVerification
+                                        ? 'We look up the Instagram account and use its real follower count.'
+                                        : 'Creators can type their follower count; nothing is checked against the minimum.'}
+                                    checked={form.requireInstagramVerification}
+                                    onChange={set('requireInstagramVerification')}
+                                />
+                            </div>
+                        </div>
+                    </BuilderCard>
+
+                    <BuilderCard title="Points" hint="Newbi points on the creator's ID pass">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <Field label="Welcome points" hint={errors.creatorWelcomePoints || (Number(form.creatorWelcomePoints) === 0 ? 'The join form still gives 100 when this is 0.' : 'Given when a creator finishes the join form.')}>
+                                <input type="number" inputMode="numeric" min="0" max="5000" className={cn(fieldCls, 'tabular-nums', errors.creatorWelcomePoints && 'border-red-500/60')} value={form.creatorWelcomePoints} onChange={(e) => set('creatorWelcomePoints')(e.target.value)} />
+                            </Field>
+                            <Field label="Referral points" hint={errors.creatorReferralPoints || 'Saved for the referral program. Points aren\'t added to accounts automatically yet.'}>
+                                <input type="number" inputMode="numeric" min="0" max="5000" className={cn(fieldCls, 'tabular-nums', errors.creatorReferralPoints && 'border-red-500/60')} value={form.creatorReferralPoints} onChange={(e) => set('creatorReferralPoints')(e.target.value)} />
+                            </Field>
+                        </div>
+                    </BuilderCard>
+
+                    <BuilderCard title="Creator page sections" hint="What shows on the public /creator page">
+                        <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
+                            <div className="pb-3">
+                                <Toggle label="Brand partner logos" hint="Also shown on the home page" checked={form.showPastClients} onChange={set('showPastClients')} />
+                            </div>
+                            <div className="pt-3">
+                                <Toggle label="Creator testimonials" hint="Only testimonials marked visible appear" checked={form.showCreatorTestimonials} onChange={set('showCreatorTestimonials')} />
+                            </div>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            <Button as={Link} to="/admin/creators/settings?tab=brands" size="sm" variant="ghost">Manage brand partners</Button>
+                            <Button as={Link} to="/admin/creators/settings?tab=testimonials" size="sm" variant="ghost">Manage testimonials</Button>
+                        </div>
+                    </BuilderCard>
+                </div>
+
+                <div className="space-y-4">
+                    <BuilderCard title="Public links">
+                        <ul className="space-y-2">
+                            {LINKS.map(l => (
+                                <li key={l.path} className="flex items-center gap-3 rounded-xl border border-black/[0.06] p-2.5 dark:border-white/[0.08]">
+                                    <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', accent(l.tone).chip)}><l.icon size={17} /></span>
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block text-[14px] font-bold">{l.label}</span>
+                                        <span className="block truncate font-mono text-[12px] text-gray-500">{l.path}</span>
+                                    </span>
+                                    <Button size="sm" variant="ghost" onClick={() => copyLink(l.path)} aria-label={`Copy ${l.label} link`} className="h-10 w-10 px-0"><Copy size={14} /></Button>
+                                    <Button size="sm" variant="ghost" as="a" href={l.path} target="_blank" rel="noopener noreferrer" aria-label={`Open ${l.label}`} className="h-10 w-10 px-0"><ExternalLink size={14} /></Button>
+                                </li>
+                            ))}
+                        </ul>
+                    </BuilderCard>
+                    <div className={cn('rounded-2xl border p-4', accent('teal').border, accent('teal').soft)}>
+                        <p className={cn('flex items-center gap-2 text-[14px] font-bold', accent('teal').text)}><MessageCircle size={15} /> City groups</p>
+                        <p className="mt-1 text-[13px] text-gray-600 dark:text-zinc-300">Creators are pointed to their city's group when they finish applying and in their dashboard.</p>
+                        <Button as={Link} to="/admin/creators/groups" size="sm" variant="secondary" className="mt-3">Manage city groups</Button>
+                    </div>
+                    <div className="flex items-start gap-2 rounded-2xl border border-black/[0.06] p-4 text-[12px] text-gray-500 dark:border-white/[0.08]">
+                        <Info size={14} className="mt-0.5 shrink-0" />
+                        <span>Changes apply as soon as you save. The join form picks them up the next time it opens.</span>
+                    </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Settings Card */}
-                <div className="lg:col-span-2 space-y-6">
-                    <Card className="p-5 sm:p-8 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl space-y-7 shadow-sm">
-                        {/* Section 1: Signup Intake */}
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-sm font-black font-heading uppercase tracking-wide text-gray-950 dark:text-white flex items-center gap-2">
-                                        <ShieldCheck size={16} className="text-neon-green" />
-                                        Creator Application Status
-                                    </h3>
-                                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
-                                        Toggle whether creators can submit new join applications via /creator/join
-                                    </p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setFormData(prev => ({ ...prev, allowCreatorSignups: !prev.allowCreatorSignups }))}
-                                    className={cn(
-                                        "px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm shrink-0",
-                                        formData.allowCreatorSignups
-                                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
-                                            : "bg-red-500/10 text-red-400 border-red-500/30"
-                                    )}
-                                >
-                                    {formData.allowCreatorSignups ? <><Eye size={12} /> Intake Open</> : <><EyeOff size={12} /> Intake Paused</>}
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="h-px bg-black/5 dark:bg-white/5" />
-
-                        {/* Section: Instagram Follower Gate & Verification */}
-                        <div className="space-y-4">
-                            <div>
-                                <h3 className="text-sm font-black font-heading uppercase tracking-wide text-gray-950 dark:text-white flex items-center gap-2">
-                                    <Instagram size={16} className="text-pink-500" />
-                                    Instagram Verification &amp; Follower Gate
-                                </h3>
-                                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
-                                    Enforce automated follower checks and gate creator registration to talent above a follower threshold
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300">
-                                        Minimum Followers Required to Join
-                                    </label>
-                                    <Input
-                                        type="number"
-                                        min="0"
-                                        step="100"
-                                        value={formData.minInstagramFollowersToJoin}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, minInstagramFollowersToJoin: e.target.value }))}
-                                        className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/10 rounded-xl text-xs font-mono font-bold"
-                                    />
-                                    <p className="text-[10px] text-gray-500 dark:text-zinc-500">
-                                        Creators with fewer than this number of verified followers cannot register. Set to 0 for open access.
-                                    </p>
-                                </div>
-
-                                <div className="p-4 rounded-2xl bg-white dark:bg-black/30 border border-black/10 dark:border-white/10 flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <div className="text-xs font-bold text-gray-900 dark:text-white">Auto-Verify Followers</div>
-                                        <div className="text-[10px] text-gray-500 dark:text-zinc-400">Lock follower numbers against manual entry</div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData(prev => ({ ...prev, requireInstagramVerification: !prev.requireInstagramVerification }))}
-                                        className={cn(
-                                            "text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border transition-all shrink-0",
-                                            formData.requireInstagramVerification
-                                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
-                                                : "bg-amber-500/10 text-amber-500 border-amber-500/30"
-                                        )}
-                                    >
-                                        {formData.requireInstagramVerification ? 'Enforced' : 'Optional'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="h-px bg-black/5 dark:bg-white/5" />
-
-                        {/* Section 2: Points Configuration */}
-                        <div className="space-y-4">
-                            <div>
-                                <h3 className="text-sm font-black font-heading uppercase tracking-wide text-gray-950 dark:text-white flex items-center gap-2">
-                                    <Gift size={16} className="text-neon-pink" />
-                                    Rewards &amp; Points Architecture
-                                </h3>
-                                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
-                                    Reward points credited automatically during onboardings and community activations
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300">
-                                        Welcome Bonus Points
-                                    </label>
-                                    <Input
-                                        type="number"
-                                        min="0"
-                                        max="5000"
-                                        value={formData.creatorWelcomePoints}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, creatorWelcomePoints: e.target.value }))}
-                                        className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/10 rounded-xl text-xs font-mono font-bold"
-                                    />
-                                    <p className="text-[10px] text-gray-500 dark:text-zinc-500">
-                                        Credited onto the creator&apos;s digital ID badge upon form completion.
-                                    </p>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300">
-                                        Referral Reward Points
-                                    </label>
-                                    <Input
-                                        type="number"
-                                        min="0"
-                                        max="5000"
-                                        value={formData.creatorReferralPoints}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, creatorReferralPoints: e.target.value }))}
-                                        className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/10 rounded-xl text-xs font-mono font-bold"
-                                    />
-                                    <p className="text-[10px] text-gray-500 dark:text-zinc-500">
-                                        Credited when an existing creator invites another verified talent.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="h-px bg-black/5 dark:bg-white/5" />
-
-                        {/* Section 3: Landing Page Content Toggles */}
-                        <div className="space-y-4">
-                            <div>
-                                <h3 className="text-sm font-black font-heading uppercase tracking-wide text-gray-950 dark:text-white flex items-center gap-2">
-                                    <Eye size={16} className="text-neon-blue" />
-                                    Landing Page Section Visibility
-                                </h3>
-                                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
-                                    Control which dynamic content blocks render on the public /creator landing page
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="p-4 rounded-2xl bg-white dark:bg-black/30 border border-black/10 dark:border-white/10 flex items-center justify-between">
-                                    <div>
-                                        <div className="text-xs font-bold text-gray-900 dark:text-white">Brand Partners Marquee</div>
-                                        <div className="text-[10px] text-gray-500 dark:text-zinc-400">Global clients &amp; partners reel</div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData(prev => ({ ...prev, showPastClients: !prev.showPastClients }))}
-                                        className={cn(
-                                            "text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border transition-all",
-                                            formData.showPastClients
-                                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
-                                                : "bg-red-500/10 text-red-400 border-red-500/30"
-                                        )}
-                                    >
-                                        {formData.showPastClients ? 'Visible' : 'Hidden'}
-                                    </button>
-                                </div>
-
-                                <div className="p-4 rounded-2xl bg-white dark:bg-black/30 border border-black/10 dark:border-white/10 flex items-center justify-between">
-                                    <div>
-                                        <div className="text-xs font-bold text-gray-900 dark:text-white">Creator Testimonials</div>
-                                        <div className="text-[10px] text-gray-500 dark:text-zinc-400">Stories from verified collective</div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData(prev => ({ ...prev, showCreatorTestimonials: !prev.showCreatorTestimonials }))}
-                                        className={cn(
-                                            "text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border transition-all",
-                                            formData.showCreatorTestimonials
-                                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
-                                                : "bg-red-500/10 text-red-400 border-red-500/30"
-                                        )}
-                                    >
-                                        {formData.showCreatorTestimonials ? 'Visible' : 'Hidden'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Section 4: Banner Announcement */}
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300">
-                                Optional Announcement Notice (Displayed on Join Form)
-                            </label>
-                            <Input
-                                value={formData.creatorAnnouncement}
-                                onChange={(e) => setFormData(prev => ({ ...prev, creatorAnnouncement: e.target.value }))}
-                                placeholder="e.g. 'Now onboarding creators for upcoming festival drops in Bengaluru & Mumbai.'"
-                                className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/10 rounded-xl text-xs font-medium"
-                            />
-                        </div>
-                    </Card>
+            {/* Save bar: sits above the phone tab bar, sticks while you scroll. */}
+            {(dirty || saving) && (
+                <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 lg:bottom-4">
+                    <div className="flex items-center gap-3 rounded-2xl border border-black/[0.08] bg-white p-3 shadow-xl dark:border-white/10 dark:bg-[#12141b]">
+                        <p className="min-w-0 flex-1 truncate pl-1 text-[13px] font-semibold">{hasErrors ? 'Some fields need fixing' : 'You have unsaved changes'}</p>
+                        <Button variant="ghost" onClick={() => setForm(saved)} disabled={saving} className="h-11">Discard</Button>
+                        <Button variant="primary" onClick={save} disabled={saving || hasErrors} className="h-11">
+                            {saving && <Loader2 size={14} className="animate-spin" />} {saving ? 'Saving…' : 'Save changes'}
+                        </Button>
+                    </div>
                 </div>
-
-                {/* Quick Previews & Direct Action Links */}
-                <div className="space-y-6">
-                    <Card className="p-5 sm:p-6 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl space-y-4 shadow-sm">
-                        <h3 className="text-xs font-black font-heading uppercase tracking-widest text-gray-500 dark:text-zinc-400">
-                            Live Portal Links
-                        </h3>
-
-                        <div className="space-y-2.5">
-                            <a
-                                href="/creator"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-3.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between hover:border-black/20 dark:hover:border-white/20 transition-all group"
-                            >
-                                <div>
-                                    <div className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-neon-green transition-colors">
-                                        Creator Landing
-                                    </div>
-                                    <div className="text-[10px] text-gray-500 dark:text-zinc-400 font-mono">
-                                        /creator
-                                    </div>
-                                </div>
-                                <ExternalLink size={14} className="text-gray-400 group-hover:text-neon-green transition-colors" />
-                            </a>
-
-                            <a
-                                href="/creator/join"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-3.5 rounded-xl bg-white dark:bg-black/30 border border-black/10 dark:border-white/10 flex items-center justify-between hover:border-neon-pink/40 transition-all group"
-                            >
-                                <div>
-                                    <div className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-neon-pink transition-colors">
-                                        Registration Form
-                                    </div>
-                                    <div className="text-[10px] text-gray-500 dark:text-zinc-400 font-mono">
-                                        /creator/join
-                                    </div>
-                                </div>
-                                <ExternalLink size={14} className="text-gray-400 group-hover:text-neon-pink transition-colors" />
-                            </a>
-
-                            <a
-                                href="/creator-dashboard"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-3.5 rounded-xl bg-white dark:bg-black/30 border border-black/10 dark:border-white/10 flex items-center justify-between hover:border-neon-blue/40 transition-all group"
-                            >
-                                <div>
-                                    <div className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-neon-blue transition-colors">
-                                        Creator Dashboard
-                                    </div>
-                                    <div className="text-[10px] text-gray-500 dark:text-zinc-400 font-mono">
-                                        /creator-dashboard
-                                    </div>
-                                </div>
-                                <ExternalLink size={14} className="text-gray-400 group-hover:text-neon-blue transition-colors" />
-                            </a>
-                        </div>
-                    </Card>
-
-                    <Card className="p-6 bg-gradient-to-br from-neon-green/10 via-neon-blue/5 to-transparent border border-neon-green/20 rounded-[2.5rem] space-y-3">
-                        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-neon-green">
-                            <Users size={15} /> Community Routing
-                        </div>
-                        <p className="text-xs text-gray-700 dark:text-zinc-300 leading-relaxed">
-                            Creators are automatically mapped to their city group upon completing their application and inside their personalized dashboard.
-                        </p>
-                    </Card>
-                </div>
-            </div>
+            )}
         </section>
     );
 };

@@ -1,507 +1,401 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Layout, Zap, Newspaper, Monitor, Smartphone, Send, ArrowLeft, Shield, Users, ChevronRight, LayoutGrid, Sparkles, Mail } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import Newspaper from 'lucide-react/dist/esm/icons/newspaper';
+import Send from 'lucide-react/dist/esm/icons/send';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Star from 'lucide-react/dist/esm/icons/star';
+import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up';
+import ArrowDown from 'lucide-react/dist/esm/icons/arrow-down';
+import X from 'lucide-react/dist/esm/icons/x';
+import Check from 'lucide-react/dist/esm/icons/check';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import PenLine from 'lucide-react/dist/esm/icons/pen-line';
+import FlaskConical from 'lucide-react/dist/esm/icons/flask-conical';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import History from 'lucide-react/dist/esm/icons/history';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { cn } from '../../lib/utils';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
-import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
-import { sendMassEmail, generateWeeklyHTML } from '../../lib/email';
 import { generateNewsletterBriefing } from '../../lib/ai';
-import StudioRichEditor from '../../components/ui/StudioRichEditor';
-import EmailPreviewIframe from '../../components/ui/EmailPreviewIframe';
+import { sendTestEmail } from '../../lib/email';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import { Button, EmptyState, SearchInput, SegmentedTabs } from '../../components/admin/ui';
+import { accent, useAccent } from '../../components/admin/theme';
+import { Field, areaCls, fieldCls } from '../../components/admin/uploads/UploadKit';
+import { BuilderCard } from '../../components/admin/events/EditorParts';
+import RichEditor from '../../components/admin/RichEditor';
+import AudienceBuilder from '../../components/admin/mailing/AudienceBuilder';
+import EmailPreview from '../../components/admin/mailing/EmailPreview';
+import SendSheet from '../../components/admin/mailing/SendSheet';
+import { ConfirmDialog, useSuppression } from '../../components/admin/mailing/shared';
+import { DEFAULT_AUDIENCE, buildAudience, describeAudience, normalizeEmail } from '../../components/admin/mailing/audience';
+import { stripHtml } from '../../components/admin/mailing/mailingApi';
+import { buildNewsletterHtml, defaultNewsletterSummary } from '../../components/admin/mailing/newsletterHtml';
+
+/*
+ * Newsletter studio: pick up to six published stories (the first is the
+ * featured one), add an editorial note (or have AI draft it) and an optional
+ * sponsored block, choose who gets it, preview, test, and send.
+ */
+
+const DRAFT_KEY = 'nb_newsletter_draft';
+const MAX_STORIES = 6;
+const NEWSLETTER_SEGMENTS = ['subscribers', 'users', 'team', 'custom'];
+
+const readDraft = () => { try { return JSON.parse(window.localStorage.getItem(DRAFT_KEY) || 'null'); } catch { return null; } };
+
+const postTime = (p) => Date.parse(p?.publishDate || '') || 0;
 
 const NewsletterStudio = () => {
     useStoreSubscription(['posts', 'subscribers', 'allUsers', 'admins']);
-    const { posts, subscribers, allUsers, admins, addToast } = useStore();
-    const [selectedPosts, setSelectedPosts] = useState([]);
-    const [viewMode, setViewMode] = useState('desktop');
-    const [sending, setSending] = useState(false);
-    const [theme, setTheme] = useState('light');
-    const [recipientType, setRecipientType] = useState('subscribers');
-    const [editorialText, setEditorialText] = useState('');
-    const [commercialContent, setCommercialContent] = useState('');
-    const [subStep, setSubStep] = useState('stories'); // 'stories' or 'content'
-    const [aiGuidance, setAiGuidance] = useState('');
+    const posts = useStore(s => s.posts);
+    const subscribers = useStore(s => s.subscribers);
+    const allUsers = useStore(s => s.allUsers);
+    const admins = useStore(s => s.admins);
+    const user = useStore(s => s.user);
+    const addToast = useStore(s => s.addToast);
+    const moduleAccent = useAccent();
+    const navigate = useNavigate();
+
+    const draft = useMemo(readDraft, []);
+    const [selectedIds, setSelectedIds] = useState(draft?.selectedIds || []);
+    const [editorialText, setEditorialText] = useState(draft?.editorialText || '');
+    const [commercialContent, setCommercialContent] = useState(draft?.commercialContent || '');
+    const [theme, setTheme] = useState(draft?.theme || 'light');
+    const [subject, setSubject] = useState(draft?.subject || '');
+    const [preheader, setPreheader] = useState(draft?.preheader || '');
+    const [aiGuidance, setAiGuidance] = useState(draft?.aiGuidance || '');
+    const [audience, setAudience] = useState(() => ({ ...DEFAULT_AUDIENCE, ...(draft?.audience || {}), creatorFilters: DEFAULT_AUDIENCE.creatorFilters }));
+    const [storySearch, setStorySearch] = useState('');
+    const [storyLimit, setStoryLimit] = useState(24);
+    const [mobilePane, setMobilePane] = useState('edit');
     const [generatingAI, setGeneratingAI] = useState(false);
+    const [confirmAi, setConfirmAi] = useState(false);
+    const [testing, setTesting] = useState(false);
+    const [testedAt, setTestedAt] = useState(null);
+    const [sendJob, setSendJob] = useState(null);
 
-    const availablePosts = useMemo(() => {
-        return posts
-            .filter(p => p.status === 'Published')
-            .sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate));
-    }, [posts]);
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(DRAFT_KEY, JSON.stringify({
+                selectedIds, editorialText, commercialContent, theme, subject, preheader, aiGuidance,
+                audience: { ...audience, custom: audience.custom.slice(0, 5000) },
+            }));
+        } catch { /* storage full or private mode */ }
+    }, [selectedIds, editorialText, commercialContent, theme, subject, preheader, aiGuidance, audience]);
 
-    const togglePost = (post) => {
-        if (selectedPosts.find(p => p.id === post.id)) {
-            setSelectedPosts(selectedPosts.filter(p => p.id !== post.id));
-        } else {
-            if (selectedPosts.length >= 6) {
-                addToast("Heads up: newsletters read best with 6 stories or fewer.", "info");
-                return;
-            }
-            setSelectedPosts([...selectedPosts, post]);
-        }
+    /* ---------- Stories ---------- */
+
+    const published = useMemo(() => (posts || [])
+        .filter(p => p.status === 'Published')
+        .sort((a, b) => postTime(b) - postTime(a)), [posts]);
+    const byId = useMemo(() => new Map((posts || []).map(p => [p.id, p])), [posts]);
+    // Keep the chosen order; drop stories that were deleted or unpublished.
+    const selectedPosts = useMemo(() => selectedIds.map(id => byId.get(id)).filter(p => p && p.status === 'Published'), [selectedIds, byId]);
+
+    const toggleStory = (post) => {
+        if (selectedIds.includes(post.id)) { setSelectedIds(ids => ids.filter(id => id !== post.id)); return; }
+        if (selectedIds.length >= MAX_STORIES) { addToast(`Newsletters read best with ${MAX_STORIES} stories or fewer. Remove one first.`, 'info'); return; }
+        setSelectedIds(ids => [...ids, post.id]);
     };
+    const move = (id, dir) => setSelectedIds(ids => {
+        const i = ids.indexOf(id);
+        const j = i + dir;
+        if (i < 0 || j < 0 || j >= ids.length) return ids;
+        const next = [...ids];
+        [next[i], next[j]] = [next[j], next[i]];
+        return next;
+    });
 
-    const trimDescription = (text, limit = 160) => {
-        if (!text) return "";
-        const cleanText = text.replace(/<[^>]*>?/gm, '');
-        return cleanText.length > limit ? cleanText.substring(0, limit) + '...' : cleanText;
-    };
+    const storyRows = useMemo(() => {
+        const q = storySearch.trim().toLowerCase();
+        return published.filter(p => !q || [p.title, p.category].some(v => String(v || '').toLowerCase().includes(q)));
+    }, [published, storySearch]);
 
-    const generateInternalHTML = useMemo(() => {
-        const mainPost = selectedPosts[0];
-        const otherPosts = selectedPosts.slice(1);
-        const isDark = theme === 'dark';
-        const accent = isDark ? '#00f2ff' : '#008899';
-        const borderColor = isDark ? '#1e293b' : '#e5e7eb';
-        const cardBg = isDark ? '#111111' : '#ffffff';
-        const textColor = isDark ? '#f8fafc' : '#111111';
-        const subTextColor = isDark ? '#94a3b8' : '#4b5563';
+    /* ---------- Audience ---------- */
 
-        const innerContent = `
-            <!-- Lead Editorial Briefing -->
-            ${editorialText ? `
-                <div class="responsive-px mobile-mx-10" style="margin-bottom: 30px; padding-top: 30px; padding-bottom: 30px; background: ${isDark ? '#0a0a0a' : '#f9fafb'}; border-radius: 24px; border: 1px solid ${borderColor};">
-                    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-                        <h3 style="font-size: 10px; font-weight: 900; color: ${accent}; text-transform: uppercase; letter-spacing: 4px; margin: 0;">EDITORIAL BRIEFING</h3>
-                        <div style="flex: 1; height: 1px; background: ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'};"></div>
-                    </div>
-                    <div style="font-size: 15px; line-height: 1.8; color: ${textColor} !important; font-family: Georgia, serif;">
-                        ${editorialText}
-                    </div>
-                </div>
-            ` : ''}
-
-            <!-- Primary Featured Story -->
-            ${mainPost ? `
-                <div class="responsive-px mobile-mx-10" style="margin-bottom: 30px;">
-                    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-                        <h3 style="font-size: 10px; font-weight: 900; color: ${accent}; text-transform: uppercase; letter-spacing: 4px; margin: 0;">FEATURED STORY</h3>
-                        <div style="flex: 1; height: 1px; background: ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'};"></div>
-                    </div>
-                    <div class="story-card" style="background: ${cardBg}; border: 1px solid ${borderColor}; border-radius: 24px; overflow: hidden; display: block; text-decoration: none;">
-                        <div style="position: relative; height: 200px; overflow: hidden; background: #000;">
-                            <img src="${mainPost.coverImage}" style="width: 100%; height: 100%; object-fit: cover; filter: ${isDark ? 'brightness(0.85)' : 'none'};" />
-                            <div style="position: absolute; top: 15px; left: 15px;">
-                                <span style="background: ${accent}; padding: 4px 10px; font-size: 9px; font-weight: 900; color: #000000; text-transform: uppercase; letter-spacing: 2px; border-radius: 6px;">${mainPost.category || 'FEATURE'}</span>
-                            </div>
-                        </div>
-                        <div style="padding: 24px;">
-                            <h2 style="font-size: 24px; font-weight: 900; margin: 0 0 12px 0; line-height: 1.2; text-transform: uppercase; font-style: italic; letter-spacing: -0.5px; color: ${textColor} !important;">${mainPost.title}</h2>
-                            <p style="font-size: 14px; line-height: 1.6; color: ${subTextColor} !important; margin: 0 0 20px 0;">${trimDescription(mainPost.shortDescription || mainPost.content || "Experience the latest news from Concert Zone.", 160)}</p>
-                            <a href="https://newbi.live/concertzone/${mainPost.category?.toLowerCase().replace(' ', '-')}/${mainPost.slug}" style="display: inline-block; color: ${accent}; text-decoration: none; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid ${accent}; padding-bottom: 2px;">READ STORY →</a>
-                        </div>
-                    </div>
-                </div>
-            ` : ''}
-
-            <!-- Other Stories Stack -->
-            ${otherPosts.length > 0 ? `
-                <div class="responsive-px mobile-mx-10" style="margin-bottom: 30px;">
-                    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-                        <h3 style="font-size: 10px; font-weight: 900; color: ${accent}; text-transform: uppercase; letter-spacing: 4px; margin: 0;">WEEKLY HIGHLIGHTS</h3>
-                        <div style="flex: 1; height: 1px; background: ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'};"></div>
-                    </div>
-                    
-                    ${otherPosts.map(post => `
-                        <div class="story-card" style="background: ${cardBg}; border: 1px solid ${borderColor}; border-radius: 16px; margin-bottom: 16px; overflow: hidden;">
-                            <table cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
-                                <tr>
-                                    <!-- Thumbnail Column -->
-                                    <td width="90" style="vertical-align: middle; padding: 12px; width: 90px; height: 90px;">
-                                        <div style="width: 80px; height: 80px; border-radius: 10px; overflow: hidden; background: #000;">
-                                            <img src="${post.coverImage}" style="width: 100%; height: 100%; object-fit: cover; display: block; filter: ${isDark ? 'brightness(0.85)' : 'none'};" />
-                                        </div>
-                                    </td>
-                                    <!-- Details Column -->
-                                    <td style="vertical-align: middle; padding: 12px 16px 12px 4px;">
-                                        <div style="font-size: 8px; font-weight: 900; color: ${accent}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px;">${post.category || 'HIGHLIGHT'}</div>
-                                        <h4 style="font-size: 15px; font-weight: 800; margin: 0 0 8px 0; line-height: 1.25; color: ${textColor} !important; text-transform: uppercase; font-style: italic;">${post.title}</h4>
-                                        <a href="https://newbi.live/concertzone/${post.category?.toLowerCase().replace(' ', '-')}/${post.slug}" style="font-size: 10px; font-weight: 800; color: ${accent}; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px;">EXPLORE →</a>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    `).join('')}
-                </div>
-            ` : ''}
-
-            <!-- Interactive details FAQ/Feedback block -->
-            <div class="responsive-px mobile-mx-10" style="margin-bottom: 30px;">
-                <details style="background: ${isDark ? '#0a0a0a' : '#f9fafb'}; border: 1px solid ${borderColor}; border-radius: 16px; padding: 16px; margin: 0;">
-                    <summary style="font-weight: 800; font-size: 11px; letter-spacing: 2px; color: ${accent}; text-transform: uppercase; cursor: pointer;">COULD CONCERT ZONE IMPROVE?</summary>
-                    <p style="font-size: 13px; line-height: 1.6; color: ${subTextColor} !important; margin: 12px 0 0 0;">
-                        We want to hear from you. Reply directly to this briefing or email us at <a href="mailto:weekly@newbi.live" style="color: ${accent}; font-weight: 700; text-decoration: none;">weekly@newbi.live</a> with your feedback or stories you want us to cover.
-                    </p>
-                </details>
-            </div>
-
-            <!-- Commercial Ad -->
-            ${commercialContent ? `
-                <div class="responsive-px mobile-mx-10" style="padding: 30px 24px; background: ${isDark ? '#0a0a0a' : '#f9fafb'}; border-radius: 24px; border: 1px solid ${borderColor}; text-align: center; margin-bottom: 20px;">
-                    <div style="font-size: 8px; font-weight: 900; color: ${isDark ? '#444' : '#bbb'}; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 16px;">SPONSORED BRIEFING</div>
-                    <div style="font-size: 13px; line-height: 1.7; color: ${subTextColor}; font-style: italic; max-width: 480px; margin: 0 auto;">
-                        ${commercialContent}
-                    </div>
-                </div>
-            ` : ''}
-        `;
-
-        return generateWeeklyHTML({
-            summary: mainPost ? `FEATURING: ${mainPost.title.toUpperCase()}` : "THE DEFINITIVE WEEKLY BRIEFING",
-            messageBody: innerContent,
-            theme: theme,
-            isPreview: true
+    const suppression = useSuppression();
+    const sources = useMemo(() => ({ subscribers: subscribers || [], users: allUsers || [], creators: [], team: admins || [] }), [subscribers, allUsers, admins]);
+    const audienceResult = useMemo(() => buildAudience(sources, { ...audience, segments: audience.segments.filter(s => NEWSLETTER_SEGMENTS.includes(s)) }, suppression.set), [sources, audience, suppression.set]);
+    const knownPeople = useMemo(() => {
+        const map = new Map();
+        const add = (list, label) => (list || []).forEach(r => {
+            const email = normalizeEmail(r.email);
+            if (email && !map.has(email)) map.set(email, { email, name: String(r.displayName || r.name || '').trim(), sourceLabel: label });
         });
-    }, [selectedPosts, theme, editorialText, commercialContent]);
+        add(admins, 'Team'); add(allUsers, 'User'); add(subscribers, 'Subscriber');
+        return [...map.values()];
+    }, [admins, allUsers, subscribers]);
 
-    const handleGenerateAIExtract = async () => {
-        if (selectedPosts.length === 0) {
-            addToast("Select at least one story to create a briefing.", "warning");
-            return;
-        }
+    /* ---------- Email ---------- */
+
+    const defaultSubject = selectedPosts[0] ? `Weekly by Concert Zone: ${selectedPosts[0].title}` : 'Weekly by Concert Zone';
+    const finalSubject = subject.trim() || defaultSubject;
+    const summary = preheader.trim() || defaultNewsletterSummary(selectedPosts);
+    const htmlFor = (isPreview) => buildNewsletterHtml({ selectedPosts, theme, editorialText, commercialContent, summary, isPreview });
+    const previewHtml = useMemo(() => htmlFor(true), [selectedPosts, theme, editorialText, commercialContent, summary]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const problems = [
+        selectedPosts.length === 0 && 'Pick at least one story.',
+        audienceResult.stats.final === 0 && 'Choose who gets the newsletter.',
+    ].filter(Boolean);
+
+    /* ---------- AI ---------- */
+
+    const writeBriefing = async () => {
+        setConfirmAi(false);
+        if (!selectedPosts.length) { addToast('Pick at least one story first.', 'info'); return; }
         setGeneratingAI(true);
         try {
-            const briefingHtml = await generateNewsletterBriefing(selectedPosts, aiGuidance);
-            setEditorialText(briefingHtml);
-            addToast("Briefing written by Concert Zone AI.", "success");
-        } catch (error) {
-            console.error("AI Briefing failed:", error);
-            addToast("Couldn't write the briefing. Please try again.", "error");
+            const html = await generateNewsletterBriefing(selectedPosts, aiGuidance);
+            if (!html || !stripHtml(html)) throw new Error('Empty briefing');
+            setEditorialText(html);
+            addToast('Briefing drafted. Read it through before sending.', 'success');
+        } catch (err) {
+            console.error('AI briefing failed:', err);
+            addToast("Couldn't write the briefing. Please try again.", 'error');
         } finally {
             setGeneratingAI(false);
         }
     };
 
-    const [sendProgress, setSendProgress] = useState(null);
+    /* ---------- Test and send ---------- */
 
-    const handleExecuteWeeklyBroadcast = async () => {
-        let recipients = [];
-        if (recipientType === 'subscribers') recipients = subscribers;
-        else if (recipientType === 'registered') recipients = allUsers;
-        else if (recipientType === 'admins') recipients = admins;
-        else recipients = [...subscribers, ...allUsers];
-
-        const uniqueRecipients = Array.from(new Set(recipients.map(r => r.email)))
-            .map(email => recipients.find(r => r.email === email));
-
-        if (uniqueRecipients.length === 0) {
-            addToast("There's no one to send to in this group yet.", "warning");
-            return;
-        }
-
-        if (!window.confirm(`Broadcast Weekly Newsletter to ${uniqueRecipients.length} recipients?`)) return;
-
-        setSending(true);
-        setSendProgress(null);
+    const myEmail = normalizeEmail(user?.email);
+    const sendTest = async () => {
+        if (!myEmail) { addToast('Your account has no email address to send a test to.', 'error'); return; }
+        if (!selectedPosts.length) { addToast('Pick at least one story first.', 'error'); return; }
+        setTesting(true);
         try {
-            const html = generateInternalHTML;
-            const bccList = uniqueRecipients.map(r => r.email).filter(Boolean);
-            const result = await sendMassEmail(
-                bccList, 
-                `WEEKLY NEWSLETTER: ${selectedPosts[0]?.title || 'NEWBI ENT'}`, 
-                html, 
-                'weekly',
-                (progress) => setSendProgress(progress)
-            );
-
-            if (result.success) {
-                addToast(`Newsletter sent to ${result.sent} recipients.`, "success");
-            } else {
-                addToast(`Sent to ${result.sent} of ${result.total} recipients. Some emails didn't go out, so please try again.`, result.sent > 0 ? "warning" : "error");
-            }
-        } catch (error) {
-            addToast("Couldn't send the newsletter. Please try again.", "error");
+            await sendTestEmail({ to: myEmail, subject: finalSubject, html: htmlFor(false), accountType: 'weekly' });
+            setTestedAt(Date.now());
+            addToast(`Test sent to ${myEmail}.`, 'success');
+        } catch (err) {
+            console.error('Newsletter test failed:', err);
+            addToast("Couldn't send the test. Please try again.", 'error');
         } finally {
-            setSending(false);
-            setSendProgress(null);
+            setTesting(false);
         }
     };
 
+    const openReview = () => {
+        if (problems.length) { addToast(problems[0], 'error'); return; }
+        const recipients = audienceResult.recipients;
+        const stats = audienceResult.stats;
+        const label = describeAudience({ ...audience, segments: audience.segments.filter(s => NEWSLETTER_SEGMENTS.includes(s)) });
+        const skipped = [
+            stats.unsubscribed && `${stats.unsubscribed} unsubscribed`,
+            stats.duplicates && `${stats.duplicates} duplicates`,
+            stats.invalid && `${stats.invalid} invalid`,
+            stats.excluded && `${stats.excluded} left out`,
+        ].filter(Boolean);
+        setSendJob({
+            recipients,
+            subject: finalSubject,
+            html: htmlFor(false),
+            accountType: 'weekly',
+            summary: [
+                { label: 'To', value: `${recipients.length.toLocaleString('en-IN')} ${recipients.length === 1 ? 'person' : 'people'} · ${label}` },
+                skipped.length ? { label: 'Left out', value: skipped.join(', ') } : null,
+                { label: 'From', value: 'Weekly by Concert Zone <weekly@newbi.live>' },
+                { label: 'Subject', value: finalSubject },
+                { label: 'Stories', value: `${selectedPosts.length}, featuring “${selectedPosts[0]?.title || ''}”` },
+            ].filter(Boolean),
+            warnings: [
+                !testedAt && "You haven't sent yourself a test of this newsletter yet.",
+                suppression.status === 'error' && "The unsubscribe list didn't load here. The server still skips unsubscribed people.",
+                recipients.length > 2000 && "This is a big send. Keep this tab open; it may take a while and can run into your mail provider's daily limit.",
+            ].filter(Boolean),
+            options: { audience: { label, segments: audience.segments, final: recipients.length } },
+        });
+    };
+
+    const actionButtons = (phone) => (
+        <>
+            <Button variant="secondary" onClick={sendTest} disabled={testing} className={phone ? 'h-12 flex-1' : 'h-11'}>
+                <FlaskConical size={15} /> {testing ? 'Sending…' : phone ? 'Test' : 'Send me a test'}
+            </Button>
+            <Button variant="primary" onClick={openReview} className={phone ? 'h-12 flex-[2]' : 'h-11'}>
+                <Send size={15} /> Review &amp; send{audienceResult.stats.final ? ` · ${audienceResult.stats.final.toLocaleString('en-IN')}` : ''}
+            </Button>
+        </>
+    );
+
     return (
-        <AdminCommunityHubLayout 
-            hideTabs={true}
-            accentColor="neon-blue"
-            studioHeader={{
-                title: "NEWSLETTER",
-                subtitle: "STUDIO",
-                accentClass: "text-neon-blue",
-                logo: "/weekly_logo.png"
-            }}
+        <AdminCommunityHubLayout
+            hideTabs
+            studioHeader={{ title: 'Newsletter studio', icon: Newspaper, description: 'Weekly by Concert Zone: stories, a note from the editor, and who gets it' }}
+            action={<Button as={Link} to="/admin/mailing?tab=history" variant="secondary" className="w-full sm:w-auto"><History size={15} /> Sent newsletters</Button>}
         >
-            <div className="relative z-10">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-10">
-                    {/* Left Side: Editor & Selection */}
-                    <div className="lg:col-span-7 space-y-8">
-                        <Card className="p-6 md:p-8 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem] relative overflow-hidden">
-                            {/* Sub-tab Switcher */}
-                            <div className="flex bg-white dark:bg-black/40 p-1.5 rounded-2xl border border-black/10 dark:border-white/5 w-fit mb-8 shadow-2xl">
-                                <button 
-                                    onClick={() => setSubStep('stories')}
-                                    className={cn(
-                                        "px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                        subStep === 'stories' ? "bg-neon-blue text-black" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                    )}
-                                >
-                                    1. Select Stories
-                                </button>
-                                <button 
-                                    onClick={() => setSubStep('content')}
-                                    className={cn(
-                                        "px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                        subStep === 'content' ? "bg-neon-blue text-black" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                    )}
-                                >
-                                    2. Add Content
-                                </button>
-                            </div>
+            <div className="pb-36 sm:pb-6">
+                <div className="mb-4 xl:hidden">
+                    <SegmentedTabs value={mobilePane} onChange={setMobilePane} className="w-full [&>button]:flex-1 [&>button]:justify-center" items={[
+                        { value: 'edit', label: 'Build', icon: PenLine },
+                        { value: 'preview', label: 'Preview', icon: Eye },
+                    ]} />
+                </div>
 
-                            <div className="space-y-10">
-                                {subStep === 'stories' ? (
-                                    <div className="space-y-8">
-                                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                                            <div className="space-y-2">
-                                                <h3 className="text-xl font-black font-heading uppercase italic text-gray-900 dark:text-white tracking-tight">Intelligence Stack</h3>
-                                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">Selected stories for the briefing.</p>
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,480px)]">
+                    <div className={cn('min-w-0 space-y-5', mobilePane === 'preview' && 'hidden xl:block')}>
+                        <BuilderCard
+                            title="Stories"
+                            hint={`Pick up to ${MAX_STORIES}. The first one is featured.`}
+                            action={<span className={cn('rounded-full px-2.5 py-1 text-[12px] font-bold tabular-nums', moduleAccent.chip)}>{selectedPosts.length} / {MAX_STORIES}</span>}
+                        >
+                            {selectedPosts.length > 0 && (
+                                <ol className="mb-4 space-y-2">
+                                    {selectedPosts.map((p, i) => (
+                                        <li key={p.id} className={cn('flex items-center gap-3 rounded-xl border p-2', i === 0 ? cn(moduleAccent.border, moduleAccent.soft) : 'border-black/[0.06] dark:border-white/[0.08]')}>
+                                            <img src={p.coverImage} alt="" className="h-12 w-16 shrink-0 rounded-lg bg-black/5 object-cover" />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="flex items-center gap-1.5 text-[12px] font-bold text-gray-500">
+                                                    {i === 0 ? <><Star size={12} className={moduleAccent.text} /> Featured</> : `Story ${i + 1}`}
+                                                </p>
+                                                <p className="truncate text-[14px] font-semibold">{p.title}</p>
                                             </div>
-                                            <div className="px-6 py-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl text-gray-900 dark:text-white flex items-center gap-4">
-                                                <span className="text-[9px] font-black uppercase tracking-widest opacity-40">Selected</span>
-                                                <span className="text-xl font-black font-heading text-neon-blue">{selectedPosts.length} <span className="text-sm opacity-20">/ 6</span></span>
+                                            <div className="flex shrink-0 items-center">
+                                                <button type="button" onClick={() => move(p.id, -1)} disabled={i === 0} aria-label="Move up" className="flex h-10 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-black/5 disabled:opacity-30 dark:hover:bg-white/10"><ArrowUp size={15} /></button>
+                                                <button type="button" onClick={() => move(p.id, 1)} disabled={i === selectedPosts.length - 1} aria-label="Move down" className="flex h-10 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-black/5 disabled:opacity-30 dark:hover:bg-white/10"><ArrowDown size={15} /></button>
+                                                <button type="button" onClick={() => toggleStory(p)} aria-label="Remove story" className="flex h-10 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-black/5 dark:hover:bg-white/10"><X size={15} /></button>
                                             </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                                            {availablePosts.map((post) => {
-                                                const isSelected = selectedPosts.find(p => p.id === post.id);
-                                                const selectionIndex = selectedPosts.findIndex(p => p.id === post.id);
-                                                
-                                                return (
-                                                    <motion.div
-                                                        key={post.id}
-                                                        whileHover={{ scale: 1.02 }}
-                                                        whileTap={{ scale: 0.98 }}
-                                                        onClick={() => togglePost(post)}
-                                                        className={cn(
-                                                            "relative cursor-pointer rounded-2xl overflow-hidden border transition-all duration-500 group",
-                                                            isSelected 
-                                                                ? "bg-neon-blue/10 border-neon-blue/40 shadow-2xl" 
-                                                                : "bg-white dark:bg-black/40 border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20"
-                                                        )}
-                                                    >
-                                                        <div className="aspect-[16/10] relative">
-                                                            <img src={post.coverImage} className="w-full h-full object-cover" alt="" />
-                                                            <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-transparent opacity-60" />
-                                                            {isSelected && (
-                                                                <div className="absolute inset-0 flex items-center justify-center bg-neon-blue/20 backdrop-blur-sm">
-                                                                    <div className="w-10 h-10 bg-white text-black rounded-full flex items-center justify-center font-black text-lg shadow-2xl">
-                                                                        {selectionIndex === 0 ? "★" : selectionIndex + 1}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <div className="p-4">
-                                                            <h4 className="text-[10px] font-black font-heading uppercase italic text-gray-900 dark:text-white line-clamp-2 leading-tight">
-                                                                {post.title}
-                                                            </h4>
-                                                        </div>
-                                                    </motion.div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-8">
-                                        {/* AI Briefing Assistant */}
-                                        <div className="p-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-[2rem] space-y-4">
-                                            <div className="flex items-center gap-3">
-                                                <Sparkles className="text-neon-blue w-5 h-5 animate-pulse" />
-                                                <h4 className="text-xs font-black font-heading uppercase tracking-widest text-gray-900 dark:text-white">AI Briefing Assistant</h4>
-                                            </div>
-                                            <p className="text-[10px] uppercase font-semibold text-gray-500 tracking-wider leading-relaxed">
-                                                Generate a professional, cohesive editorial lead note wrapping up your selected stories.
-                                            </p>
-                                            <div className="space-y-3">
-                                                <textarea
-                                                    value={aiGuidance}
-                                                    onChange={(e) => setAiGuidance(e.target.value)}
-                                                    placeholder="Guidance e.g. 'Keep it energetic, focus on the electronic music scene resurgence and local artists'"
-                                                    className="w-full h-20 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-xl p-3 text-xs text-gray-900 dark:text-white placeholder-gray-600 focus:outline-none focus:border-neon-blue/40 resize-none transition-all"
-                                                />
-                                                <Button
-                                                    onClick={handleGenerateAIExtract}
-                                                    disabled={generatingAI || selectedPosts.length === 0}
-                                                    className="w-full py-3 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] rounded-xl flex items-center justify-center gap-2 hover:scale-[1.01] disabled:opacity-50 transition-all"
-                                                >
-                                                    {generatingAI ? (
-                                                        <>
-                                                            <div className="w-3.5 h-3.5 border border-black border-t-transparent rounded-full animate-spin" />
-                                                            GENERATING BRIEFING NARRATIVE...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Sparkles size={12} /> GENERATE BRIEFING WITH GEMINI AI
-                                                        </>
+                                        </li>
+                                    ))}
+                                </ol>
+                            )}
+                            <SearchInput value={storySearch} onChange={(v) => { setStorySearch(v); setStoryLimit(24); }} placeholder="Search published stories" />
+                            {storyRows.length === 0 ? (
+                                <EmptyState icon={Newspaper} title={published.length ? 'No matching stories' : 'No published stories yet'} description={published.length ? 'Try another word.' : 'Publish a story in Concert Zone first.'} />
+                            ) : (
+                                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                    {storyRows.slice(0, storyLimit).map(post => {
+                                        const index = selectedIds.indexOf(post.id);
+                                        const picked = index >= 0;
+                                        return (
+                                            <button
+                                                key={post.id}
+                                                type="button"
+                                                onClick={() => toggleStory(post)}
+                                                aria-pressed={picked}
+                                                className={cn('overflow-hidden rounded-xl border text-left transition-colors',
+                                                    picked ? cn(moduleAccent.border, moduleAccent.soft) : 'border-black/[0.08] hover:border-black/20 dark:border-white/[0.08] dark:hover:border-white/20')}
+                                            >
+                                                <div className="relative aspect-[16/10] bg-black/5 dark:bg-white/5">
+                                                    {post.coverImage && <img src={post.coverImage} alt="" loading="lazy" className="h-full w-full object-cover" />}
+                                                    {picked && (
+                                                        <span className={cn('absolute right-2 top-2 flex h-7 min-w-[28px] items-center justify-center rounded-full px-1.5 text-[12px] font-bold', moduleAccent.solid)}>
+                                                            {index === 0 ? <Star size={13} /> : index + 1}
+                                                        </span>
                                                     )}
-                                                </Button>
-                                                {selectedPosts.length === 0 && (
-                                                    <p className="text-[9px] text-amber-500 font-bold uppercase tracking-wider text-center mt-1">
-                                                        ⚠ Select at least one story in Step 1 to use the AI writer.
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="px-4 py-1.5 bg-neon-blue/20 text-neon-blue text-[9px] font-black uppercase tracking-[0.2em] rounded-full border border-neon-blue/30">
-                                                    EDITORIAL
                                                 </div>
-                                                <h3 className="text-xl font-black font-heading uppercase italic text-gray-900 dark:text-white tracking-tight">Lead Commentary</h3>
-                                            </div>
-                                            <div className="bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-[2rem] p-4 overflow-hidden">
-                                                <StudioRichEditor 
-                                                    value={editorialText} 
-                                                    onChange={setEditorialText}
-                                                    placeholder="Craft your lead editorial note here... (Optional)"
-                                                    minHeight="200px"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="px-4 py-1.5 bg-amber-500/20 text-amber-500 text-[9px] font-black uppercase tracking-[0.2em] rounded-full border border-amber-500/30">
-                                                    COMMERCIAL
+                                                <div className="p-2.5">
+                                                    <p className="line-clamp-2 text-[13px] font-semibold leading-snug">{post.title}</p>
+                                                    <p className="mt-0.5 truncate text-[11px] text-gray-500">{post.category || 'Story'}</p>
                                                 </div>
-                                                <h3 className="text-xl font-black font-heading uppercase italic text-gray-900 dark:text-white tracking-tight">Ad Integration</h3>
-                                            </div>
-                                            <div className="bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-[2rem] p-4 overflow-hidden">
-                                                <StudioRichEditor 
-                                                    value={commercialContent} 
-                                                    onChange={setCommercialContent}
-                                                    placeholder="Enter promotional copy... (Optional)"
-                                                    accentColor="amber-500"
-                                                    minHeight="150px"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                            {storyRows.length > storyLimit && (
+                                <Button variant="secondary" className="mt-3 h-11 w-full" onClick={() => setStoryLimit(l => l + 24)}>Show more stories</Button>
+                            )}
+                        </BuilderCard>
+
+                        <BuilderCard title="Editor's note" hint="Opens the newsletter. Optional, but it's what people read first.">
+                            <div className={cn('mb-4 space-y-2 rounded-2xl border p-3', accent('violet').border, accent('violet').soft)}>
+                                <p className="flex items-center gap-2 text-[13px] font-bold"><Sparkles size={15} className={accent('violet').text} /> Draft it with AI</p>
+                                <textarea value={aiGuidance} onChange={(e) => setAiGuidance(e.target.value)} rows={2} className={areaCls} placeholder="Optional guidance, e.g. keep it upbeat and focus on local artists" />
+                                <Button variant="secondary" className="h-11 w-full" disabled={generatingAI || !selectedPosts.length} onClick={() => (stripHtml(editorialText) ? setConfirmAi(true) : writeBriefing())}>
+                                    <Sparkles size={14} /> {generatingAI ? 'Writing…' : 'Write the note from my stories'}
+                                </Button>
+                                {!selectedPosts.length && <p className="text-[12px] text-gray-500">Pick a story above first.</p>}
+                            </div>
+                            <RichEditor value={editorialText} onChange={setEditorialText} placeholder="A few lines to open this week's newsletter…" minHeight={180} label="Editor's note" />
+                        </BuilderCard>
+
+                        <BuilderCard title="Sponsored block" hint="Optional. Shown at the end, marked as sponsored.">
+                            <RichEditor value={commercialContent} onChange={setCommercialContent} placeholder="Promotional copy…" minHeight={120} label="Sponsored block" />
+                        </BuilderCard>
+
+                        <BuilderCard title="Subject and preview text">
+                            <div className="space-y-3">
+                                <Field label="Subject" hint={subject.trim() ? undefined : `Leave empty to use “${defaultSubject}”`}>
+                                    <input className={fieldCls} value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={defaultSubject} />
+                                </Field>
+                                <Field label="Preview text" optional hint="Shown next to the subject in most inboxes.">
+                                    <input className={fieldCls} value={preheader} onChange={(e) => setPreheader(e.target.value)} placeholder={defaultNewsletterSummary(selectedPosts)} />
+                                </Field>
+                            </div>
+                        </BuilderCard>
+
+                        <BuilderCard title="Who gets it" hint="Subscribers by default">
+                            <AudienceBuilder
+                                sources={sources}
+                                audience={audience}
+                                onChange={setAudience}
+                                result={audienceResult}
+                                suppression={{ status: suppression.status, onRetry: suppression.reload }}
+                                allowed={NEWSLETTER_SEGMENTS}
+                                knownPeople={knownPeople}
+                            />
+                        </BuilderCard>
+
+                        <div className="sticky bottom-4 z-20 hidden items-center gap-2 rounded-2xl border border-black/[0.08] bg-white/95 p-3 shadow-lg backdrop-blur-xl dark:border-white/[0.1] dark:bg-[#0d0f15]/95 sm:flex">
+                            <div className="min-w-0 flex-1">
+                                {problems.length ? (
+                                    <p className="flex items-center gap-1.5 truncate text-[13px] font-semibold text-amber-700 dark:text-amber-300"><AlertTriangle size={14} className="shrink-0" /> {problems[0]}</p>
+                                ) : (
+                                    <p className="flex items-center gap-1.5 truncate text-[13px] font-semibold text-gray-600 dark:text-zinc-300"><Check size={14} className="shrink-0" /> Ready for {audienceResult.stats.final.toLocaleString('en-IN')} people{testedAt ? ' · test sent' : ''}</p>
                                 )}
                             </div>
-                        </Card>
-
-                        {/* Audience Selection Card */}
-                        <Card className="p-6 md:p-8 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem]">
-                            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                                <div className="flex items-center gap-6">
-                                    <div className="w-14 h-14 rounded-2xl bg-neon-blue/10 flex items-center justify-center text-neon-blue border border-neon-blue/20">
-                                        <Users size={24} />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-4">
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Target Audience</p>
-                                            <div className="px-3 py-1 bg-neon-blue/10 rounded-full border border-neon-blue/20 flex items-center gap-2">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-neon-blue animate-pulse" />
-                                                <span className="text-[10px] font-black text-neon-blue uppercase">
-                                                    {recipientType === 'subscribers' ? subscribers.length : 
-                                                     recipientType === 'registered' ? allUsers.length : 
-                                                     recipientType === 'admins' ? admins.length : (subscribers.length + allUsers.length)} Recipients
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="flex bg-white dark:bg-black/40 p-1.5 rounded-2xl border border-black/10 dark:border-white/5">
-                                            {[
-                                                { id: 'subscribers', label: 'Subs' },
-                                                { id: 'registered', label: 'Users' },
-                                                { id: 'admins', label: 'Test' },
-                                                { id: 'all', label: 'Global' }
-                                            ].map(type => (
-                                                <button
-                                                    key={type.id}
-                                                    onClick={() => setRecipientType(type.id)}
-                                                    className={cn(
-                                                        "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                                                        recipientType === type.id ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                                    )}
-                                                >
-                                                    {type.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                                <Button 
-                                    onClick={handleExecuteWeeklyBroadcast}
-                                    disabled={sending || selectedPosts.length === 0}
-                                    className="h-14 px-10 bg-neon-blue text-black font-black font-heading uppercase tracking-[0.2em] rounded-2xl shadow-2xl disabled:opacity-50 disabled:grayscale hover:scale-105 transition-all flex items-center gap-3"
-                                >
-                                    {sending ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                                            {sendProgress 
-                                                ? `BATCH ${sendProgress.currentBatch}/${sendProgress.totalBatches} — ${sendProgress.sent} SENT`
-                                                : 'PREPARING...'}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Send size={18} /> SEND NEWSLETTER
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-                        </Card>
-                    </div>
-
-                    {/* Right Side: Transmission Preview */}
-                    <div className="lg:col-span-5">
-                        <div className="sticky top-32">
-                            <div className="flex items-center justify-between mb-8 px-4">
-                                <h3 className="text-sm font-black uppercase tracking-[0.4em] text-gray-900 dark:text-white/40">Transmission Preview</h3>
-                                <div className="flex items-center gap-4">
-                                    <div className="flex bg-white dark:bg-black/40 p-1 rounded-xl border border-black/10 dark:border-white/5">
-                                        <button 
-                                            onClick={() => setTheme('light')}
-                                            className={cn("px-3 py-1.5 rounded-lg transition-all text-[8px] font-black uppercase tracking-widest", theme === 'light' ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white")}
-                                        >
-                                            Light
-                                        </button>
-                                        <button 
-                                            onClick={() => setTheme('dark')}
-                                            className={cn("px-3 py-1.5 rounded-lg transition-all text-[8px] font-black uppercase tracking-widest", theme === 'dark' ? "bg-zinc-800 text-gray-900 dark:text-white shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white")}
-                                        >
-                                            Dark
-                                        </button>
-                                    </div>
-                                    <div className="flex bg-white dark:bg-black/40 p-1 rounded-xl border border-black/10 dark:border-white/5">
-                                        <button 
-                                            onClick={() => setViewMode('desktop')}
-                                            className={cn("p-1.5 rounded-lg transition-all", viewMode === 'desktop' ? "bg-white text-black" : "text-gray-500")}
-                                        >
-                                            <Monitor size={12} />
-                                        </button>
-                                        <button 
-                                            onClick={() => setViewMode('mobile')}
-                                            className={cn("p-1.5 rounded-lg transition-all", viewMode === 'mobile' ? "bg-white text-black" : "text-gray-500")}
-                                        >
-                                            <Smartphone size={12} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className={cn(
-                                "mx-auto transition-all duration-500 rounded-[3rem] overflow-hidden border border-black/10 dark:border-white/5 shadow-[0_40px_120px_rgba(0,0,0,0.5)]",
-                                viewMode === 'mobile' ? "max-w-[375px]" : "w-full",
-                                theme === 'dark' ? "bg-white dark:bg-black" : "bg-white"
-                            )}>
-                                <EmailPreviewIframe html={generateInternalHTML} />
-                            </div>
+                            {actionButtons(false)}
                         </div>
                     </div>
+
+                    <aside className={cn('min-w-0 space-y-3 xl:sticky xl:top-24 xl:self-start', mobilePane === 'edit' && 'hidden xl:block')}>
+                        <p className="text-[12px] font-bold text-gray-500">Preview</p>
+                        {selectedPosts.length || stripHtml(editorialText) ? (
+                            <EmailPreview
+                                html={previewHtml}
+                                subject={finalSubject}
+                                preheader={summary}
+                                fromName="Weekly by Concert Zone"
+                                fromEmail="weekly@newbi.live"
+                                theme={theme}
+                                onThemeChange={setTheme}
+                            />
+                        ) : (
+                            <div className="rounded-2xl border border-dashed border-black/10 dark:border-white/10">
+                                <EmptyState icon={Newspaper} title="Nothing to preview yet" description="Pick a story and the newsletter appears here." />
+                            </div>
+                        )}
+                    </aside>
+                </div>
+
+                <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 border-t border-black/[0.06] bg-white/95 px-4 py-3 backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#0a0b10]/95 sm:hidden">
+                    {problems.length > 0 && <p className="mb-2 truncate text-[12px] font-semibold text-amber-700 dark:text-amber-300">{problems[0]}</p>}
+                    <div className="flex gap-2">{actionButtons(true)}</div>
                 </div>
             </div>
+
+            <SendSheet
+                open={!!sendJob}
+                job={sendJob}
+                onClose={() => setSendJob(null)}
+                onFinished={(res) => { if (res.success) addToast(`Newsletter sent to ${res.sent.toLocaleString('en-IN')} people.`, 'success'); }}
+                onViewReport={(id) => { setSendJob(null); navigate(`/admin/mailing?tab=history&campaign=${encodeURIComponent(id)}`); }}
+            />
+
+            <ConfirmDialog
+                open={confirmAi}
+                onClose={() => setConfirmAi(false)}
+                title="Replace your note?"
+                confirmLabel="Replace it"
+                danger
+                onConfirm={writeBriefing}
+            >
+                The AI draft will replace what's in the editor's note now.
+            </ConfirmDialog>
         </AdminCommunityHubLayout>
     );
 };

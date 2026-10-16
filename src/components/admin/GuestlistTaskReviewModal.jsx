@@ -1,32 +1,49 @@
-import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    X, 
-    FileUp, 
-    Link as LinkIcon, 
-    FileText, 
-    CheckCircle2, 
-    XCircle, 
-    Clock, 
-    ExternalLink, 
-    Download, 
-    User, 
-    Mail, 
-    Phone, 
-    Calendar, 
-    Copy, 
-    Eye,
-    Music,
-    Film,
-    FileIcon,
-    AlertTriangle,
-    Sparkles
-} from 'lucide-react';
-import { Button } from '../ui/Button';
-import LoadingSpinner from '../ui/LoadingSpinner';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import FileIcon from 'lucide-react/dist/esm/icons/file';
+import Film from 'lucide-react/dist/esm/icons/film';
+import Music from 'lucide-react/dist/esm/icons/music';
+import LinkIcon from 'lucide-react/dist/esm/icons/link';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Download from 'lucide-react/dist/esm/icons/download';
+import Copy from 'lucide-react/dist/esm/icons/copy';
+import Check from 'lucide-react/dist/esm/icons/check';
+import X from 'lucide-react/dist/esm/icons/x';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Phone from 'lucide-react/dist/esm/icons/phone';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import { cn } from '../../lib/utils';
 import { useStore } from '../../lib/store';
+import Sheet from './Sheet';
+import { Button, Badge } from './ui';
+import { accent } from './theme';
+import { formatDateTime } from './ticketing/format';
+
+/*
+ * Review one guestlist task submission: what the event asked for, what the
+ * guest sent (file preview, link, written answer) and big approve / reject
+ * buttons. On a keyboard, A approves and R rejects.
+ */
+
+const withProtocol = (url) => (/^https?:\/\//i.test(url) ? url : `https://${url}`);
+const hostOf = (url) => {
+    try { return new URL(withProtocol(url)).hostname.replace(/^www\./, ''); } catch { return ''; }
+};
+
+const SectionLabel = ({ icon: Icon, children, action }) => (
+    <div className="mb-2 flex items-center justify-between gap-3">
+        <h3 className="flex items-center gap-1.5 text-[13px] font-bold">
+            {Icon && <Icon size={14} className="text-gray-400" />}
+            {children}
+        </h3>
+        {action}
+    </div>
+);
+
+const box = 'rounded-2xl border border-black/10 bg-black/[0.02] dark:border-white/10 dark:bg-white/[0.03]';
+const smallLink = 'inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 text-[13px] font-semibold text-gray-800 hover:border-black/20 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:border-white/20';
 
 export const GuestlistTaskReviewModal = ({
     isOpen,
@@ -35,8 +52,71 @@ export const GuestlistTaskReviewModal = ({
     event,
     onStatusChange
 }) => {
-    const [actionLoading, setActionLoading] = useState(false);
+    const [actionLoading, setActionLoading] = useState(null); // 'approved' | 'rejected' | null
     const [copiedRef, setCopiedRef] = useState(false);
+    const [confirmReject, setConfirmReject] = useState(false);
+    const [actionError, setActionError] = useState('');
+    const busyRef = useRef(false);
+
+    const name = entry?.customerName || entry?.name || 'Guest';
+    const currentStatus = entry ? (entry.status || (entry.hasTask ? 'pending' : 'approved')) : 'pending';
+    const isApproved = currentStatus === 'approved' || currentStatus === 'confirmed';
+    const isRejected = currentStatus === 'rejected';
+
+    const handleApprove = useCallback(async () => {
+        if (!entry || busyRef.current) return;
+        busyRef.current = true;
+        setActionLoading('approved');
+        setActionError('');
+        try {
+            await onStatusChange(entry.id, 'approved');
+            useStore.getState().addToast(`Guestlist application from ${entry.customerName || entry.name} approved.`, 'success');
+            onClose();
+        } catch (error) {
+            console.error('Error approving entry:', error);
+            setActionError("Couldn't approve the application. Please try again.");
+        } finally {
+            busyRef.current = false;
+            setActionLoading(null);
+        }
+    }, [entry, onStatusChange, onClose]);
+
+    // First tap asks, second tap declines (no browser pop-up).
+    const handleReject = useCallback(async () => {
+        if (!entry || busyRef.current) return;
+        if (!confirmReject) { setConfirmReject(true); return; }
+        busyRef.current = true;
+        setActionLoading('rejected');
+        setActionError('');
+        try {
+            await onStatusChange(entry.id, 'rejected');
+            useStore.getState().addToast(`Application from ${entry.customerName || entry.name} declined.`, 'info');
+            onClose();
+        } catch (error) {
+            console.error('Error rejecting entry:', error);
+            setActionError("Couldn't decline the application. Please try again.");
+        } finally {
+            busyRef.current = false;
+            setActionLoading(null);
+        }
+    }, [entry, onStatusChange, onClose, confirmReject]);
+
+    useEffect(() => { setConfirmReject(false); setActionError(''); }, [entry?.id, isOpen]);
+
+    // A to approve, R to reject (ignored while typing or with modifier keys).
+    useEffect(() => {
+        if (!isOpen || !entry) return undefined;
+        const onKey = (e) => {
+            if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+            const t = e.target;
+            if (t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName))) return;
+            const key = e.key.toLowerCase();
+            if (key === 'a' && !isApproved) { e.preventDefault(); handleApprove(); }
+            if (key === 'r' && !isRejected) { e.preventDefault(); handleReject(); }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isOpen, entry, isApproved, isRejected, handleApprove, handleReject]);
 
     if (!isOpen || !entry) return null;
 
@@ -45,341 +125,197 @@ export const GuestlistTaskReviewModal = ({
     const hasFile = !!taskSubmission.fileUrl;
     const hasLink = !!taskSubmission.link;
     const hasText = !!taskSubmission.text;
-    const currentStatus = entry.status || (entry.hasTask ? 'pending' : 'approved');
+    const email = entry.customerEmail || entry.email;
+    const phone = entry.customerPhone || entry.phone;
+    const guests = Number(entry.guestsCount) || 1;
+    const submittedAt = formatDateTime(entry.createdAt);
 
-    const handleCopyRef = () => {
-        if (entry.bookingRef) {
-            navigator.clipboard.writeText(entry.bookingRef);
+    const handleCopyRef = async () => {
+        if (!entry.bookingRef) return;
+        try {
+            await navigator.clipboard.writeText(entry.bookingRef);
             setCopiedRef(true);
             setTimeout(() => setCopiedRef(false), 2000);
             useStore.getState().addToast('Booking reference copied.', 'success');
-        }
-    };
-
-    const handleApprove = async () => {
-        setActionLoading(true);
-        try {
-            await onStatusChange(entry.id, 'approved');
-            useStore.getState().addToast(`Guestlist application from ${entry.customerName || entry.name} approved.`, 'success');
-            onClose();
-        } catch (error) {
-            console.error('Error approving entry:', error);
-            useStore.getState().addToast("Couldn't approve the application. Please try again.", 'error');
-        } finally {
-            setActionLoading(false);
-        }
-    };
-
-    const handleReject = async () => {
-        if (!window.confirm(`Reject guestlist application for ${entry.customerName || entry.name}?`)) {
-            return;
-        }
-        setActionLoading(true);
-        try {
-            await onStatusChange(entry.id, 'rejected');
-            useStore.getState().addToast(`Application from ${entry.customerName || entry.name} rejected.`, 'info');
-            onClose();
-        } catch (error) {
-            console.error('Error rejecting entry:', error);
-            useStore.getState().addToast("Couldn't reject the application. Please try again.", 'error');
-        } finally {
-            setActionLoading(false);
+        } catch {
+            useStore.getState().addToast("Couldn't copy. Please copy it by hand.", 'error');
         }
     };
 
     // Detect file type for preview
     const fileUrl = taskSubmission.fileUrl || '';
-    const fileName = taskSubmission.fileName || 'Submitted Attachment';
-    const isImage = fileUrl.match(/\.(jpg|jpeg|png|gif|webp|svg)($|\?)/i) || taskSubmission.fileType?.startsWith('image/');
-    const isAudio = fileUrl.match(/\.(mp3|wav|ogg|m4a|aac)($|\?)/i) || taskSubmission.fileType?.startsWith('audio/');
-    const isVideo = fileUrl.match(/\.(mp4|webm|mov)($|\?)/i) || taskSubmission.fileType?.startsWith('video/');
-    const isPdf = fileUrl.match(/\.pdf($|\?)/i) || taskSubmission.fileType?.includes('pdf');
+    const fileName = taskSubmission.fileName || 'Submitted file';
+    const fileType = taskSubmission.fileType || '';
+    const isImage = /\.(jpg|jpeg|png|gif|webp|svg)($|\?)/i.test(fileUrl) || fileType.startsWith('image/');
+    const isAudio = /\.(mp3|wav|ogg|m4a|aac)($|\?)/i.test(fileUrl) || fileType.startsWith('audio/');
+    const isVideo = /\.(mp4|webm|mov)($|\?)/i.test(fileUrl) || fileType.startsWith('video/');
+    const isPdf = /\.pdf($|\?)/i.test(fileUrl) || fileType.includes('pdf');
+    const fileKind = isImage ? 'Image' : isAudio ? 'Audio' : isVideo ? 'Video' : isPdf ? 'PDF' : 'File';
+    const KindIcon = isAudio ? Music : isVideo ? Film : isPdf ? FileText : FileIcon;
 
-    return createPortal(
-        <AnimatePresence>
-            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-                {/* Backdrop */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={onClose}
-                    className="absolute inset-0 bg-black/70 backdrop-blur-md"
-                />
+    const linkHref = hasLink ? withProtocol(taskSubmission.link) : '';
+    const statusBadge = isApproved
+        ? <Badge tone="green"><Check size={10} /> Approved</Badge>
+        : isRejected
+            ? <Badge tone="red"><X size={10} /> Declined</Badge>
+            : <Badge tone="amber"><Clock size={10} /> To review</Badge>;
 
-                {/* Modal Container */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    className="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-[#0c0c0e] border border-black/10 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col z-10"
-                >
-                    {/* Header */}
-                    <div className="p-6 md:p-8 border-b border-black/10 dark:border-white/10 bg-gray-50 dark:bg-white/[0.02] flex items-start justify-between gap-4 shrink-0">
-                        <div className="space-y-1.5">
-                            <div className="flex items-center gap-2">
-                                <span className={cn(
-                                    "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5",
-                                    currentStatus === 'approved' || currentStatus === 'confirmed'
-                                        ? "bg-neon-green/10 text-neon-green border border-neon-green/20"
-                                        : currentStatus === 'rejected'
-                                        ? "bg-red-500/10 text-red-500 border border-red-500/20"
-                                        : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
-                                )}>
-                                    {currentStatus === 'approved' || currentStatus === 'confirmed' ? (
-                                        <CheckCircle2 size={12} />
-                                    ) : currentStatus === 'rejected' ? (
-                                        <XCircle size={12} />
-                                    ) : (
-                                        <Clock size={12} />
-                                    )}
-                                    {currentStatus.toUpperCase()}
-                                </span>
-                                <span className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">
-                                    {entry.bookingRef}
-                                </span>
-                            </div>
-                            <h3 className="text-xl md:text-2xl font-black font-heading tracking-tight text-gray-900 dark:text-white uppercase">
-                                Guestlist Task Submission
-                            </h3>
-                            <p className="text-[11px] font-medium text-gray-500">
-                                Review task materials submitted by <strong className="text-gray-900 dark:text-white">{entry.customerName || entry.name}</strong>
-                            </p>
-                        </div>
-
-                        <button
-                            onClick={onClose}
-                            className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all hover:rotate-90 shrink-0"
-                        >
-                            <X size={18} />
-                        </button>
-                    </div>
-
-                    {/* Scrollable Content Body */}
-                    <div className="p-6 md:p-8 space-y-6 overflow-y-auto min-h-0 flex-1">
-                        
-                        {/* Applicant Summary Ribbon */}
-                        <div className="p-4 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 grid grid-cols-2 sm:grid-cols-4 gap-4 text-left">
-                            <div>
-                                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Applicant</span>
-                                <span className="text-[11px] font-black text-gray-900 dark:text-white truncate block">
-                                    {entry.customerName || entry.name}
-                                </span>
-                            </div>
-                            <div>
-                                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Contact</span>
-                                <span className="text-[11px] font-mono text-gray-600 dark:text-gray-300 truncate block">
-                                    {entry.customerEmail || entry.email || 'N/A'}
-                                </span>
-                            </div>
-                            <div>
-                                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Spots</span>
-                                <span className="text-[11px] font-black text-neon-blue">
-                                    {entry.guestsCount || 1} Person(s)
-                                </span>
-                            </div>
-                            <div>
-                                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Submitted</span>
-                                <span className="text-[10px] font-mono text-gray-500">
-                                    {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : 'Recent'}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Event Task Prompt Info */}
-                        {(taskConfig.title || taskConfig.description) && (
-                            <div className="p-4 rounded-2xl bg-neon-pink/5 border border-neon-pink/20 space-y-1">
-                                <span className="text-[8px] font-black text-neon-pink uppercase tracking-widest flex items-center gap-1.5">
-                                    <Sparkles size={10} /> Task Prompt: {taskConfig.title || 'Application Task'}
-                                </span>
-                                {taskConfig.description && (
-                                    <p className="text-[11px] text-gray-700 dark:text-gray-300 font-medium leading-relaxed italic">
-                                        "{taskConfig.description}"
-                                    </p>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Submission Item 1: Uploaded File */}
-                        {hasFile ? (
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                    <FileUp size={14} className="text-neon-green" /> Submitted Attachment
-                                </label>
-                                
-                                {isImage && (
-                                    <div className="rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 bg-black/40 relative group max-h-72 flex items-center justify-center">
-                                        <img 
-                                            src={fileUrl} 
-                                            alt={fileName} 
-                                            className="max-h-72 w-auto object-contain"
-                                        />
-                                        <a 
-                                            href={fileUrl} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-black/80 hover:bg-black text-white text-[9px] font-black uppercase tracking-wider backdrop-blur-md flex items-center gap-1.5 transition-all shadow-lg"
-                                        >
-                                            <ExternalLink size={12} /> View Full Image
-                                        </a>
-                                    </div>
-                                )}
-
-                                {isAudio && (
-                                    <div className="p-4 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 space-y-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-neon-blue/10 text-neon-blue flex items-center justify-center shrink-0">
-                                                <Music size={20} />
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white truncate">
-                                                    {fileName}
-                                                </p>
-                                                <p className="text-[9px] text-gray-500 font-mono">Audio Submission</p>
-                                            </div>
-                                            <a 
-                                                href={fileUrl} 
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                                download
-                                                className="px-3 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 text-gray-900 dark:text-white text-[9px] font-bold uppercase tracking-wider flex items-center gap-1"
-                                            >
-                                                <Download size={12} /> Save
-                                            </a>
-                                        </div>
-                                        <audio controls src={fileUrl} className="w-full h-10 rounded-lg outline-none" />
-                                    </div>
-                                )}
-
-                                {!isImage && !isAudio && (
-                                    <div className="p-4 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-between gap-4">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <div className="w-10 h-10 rounded-xl bg-neon-green/10 text-neon-green flex items-center justify-center shrink-0">
-                                                {isPdf ? <FileText size={20} /> : isVideo ? <Film size={20} /> : <FileIcon size={20} />}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-xs font-black text-gray-900 dark:text-white truncate">
-                                                    {fileName}
-                                                </p>
-                                                <p className="text-[9px] text-gray-500 font-mono">
-                                                    {isPdf ? 'PDF Document' : isVideo ? 'Video File' : 'Attachment'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <a
-                                            href={fileUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="px-4 py-2 rounded-xl bg-black dark:bg-white text-white dark:text-black hover:bg-neon-green hover:text-black dark:hover:bg-neon-green dark:hover:text-black text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shrink-0"
-                                        >
-                                            <Download size={12} /> Open File
-                                        </a>
-                                    </div>
-                                )}
-                            </div>
-                        ) : null}
-
-                        {/* Submission Item 2: Link */}
-                        {hasLink ? (
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                    <LinkIcon size={14} className="text-neon-blue" /> Submitted Link / Portfolio
-                                </label>
-                                <div className="p-4 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-between gap-4">
-                                    <div className="min-w-0 flex-1">
-                                        <a 
-                                            href={taskSubmission.link.startsWith('http') ? taskSubmission.link : `https://${taskSubmission.link}`}
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="text-xs font-mono font-bold text-neon-blue hover:underline truncate block"
-                                        >
-                                            {taskSubmission.link}
-                                        </a>
-                                    </div>
-                                    <a
-                                        href={taskSubmission.link.startsWith('http') ? taskSubmission.link : `https://${taskSubmission.link}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="px-3 py-1.5 rounded-xl bg-neon-blue/10 hover:bg-neon-blue hover:text-black text-neon-blue text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shrink-0"
-                                    >
-                                        <ExternalLink size={12} /> Open URL
-                                    </a>
-                                </div>
-                            </div>
-                        ) : null}
-
-                        {/* Submission Item 3: Written Response */}
-                        {hasText ? (
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                    <FileText size={14} className="text-neon-pink" /> Written Statement / Answer
-                                </label>
-                                <div className="p-5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-left">
-                                    <p className="text-xs text-gray-800 dark:text-gray-200 font-medium leading-relaxed whitespace-pre-wrap">
-                                        {taskSubmission.text}
-                                    </p>
-                                </div>
-                            </div>
-                        ) : null}
-
-                        {!hasFile && !hasLink && !hasText && (
-                            <div className="p-8 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center space-y-2">
-                                <AlertTriangle size={24} className="text-amber-500 mx-auto" />
-                                <p className="text-xs font-black uppercase tracking-wider text-amber-500">No Task Data Attached</p>
-                                <p className="text-[10px] text-gray-500">This applicant registered without submitting task files or links.</p>
-                            </div>
-                        )}
-
-                    </div>
-
-                    {/* Footer Actions */}
-                    <div className="p-6 md:p-8 border-t border-black/10 dark:border-white/10 bg-gray-50 dark:bg-white/[0.02] flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
-                        <button
-                            type="button"
-                            onClick={handleCopyRef}
-                            className="text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center gap-1.5"
-                        >
-                            <Copy size={12} /> {copiedRef ? 'COPIED!' : 'COPY REF'}
-                        </button>
-
-                        <div className="flex items-center gap-3 w-full sm:w-auto">
-                            {currentStatus !== 'rejected' && (
-                                <button
-                                    disabled={actionLoading}
-                                    onClick={handleReject}
-                                    className="flex-1 sm:flex-none h-12 px-6 rounded-2xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 border border-red-500/20 text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50"
-                                >
-                                    REJECT
-                                </button>
-                            )}
-
-                            {currentStatus !== 'approved' && currentStatus !== 'confirmed' && (
-                                <Button
-                                    disabled={actionLoading}
-                                    onClick={handleApprove}
-                                    className="flex-1 sm:flex-none h-12 px-8 rounded-2xl bg-neon-green text-black hover:scale-105 active:scale-95 text-[10px] font-black uppercase tracking-wider shadow-[0_0_25px_rgba(57,255,20,0.3)] transition-all flex items-center justify-center gap-2"
-                                >
-                                    {actionLoading ? <LoadingSpinner size="xs" color="black" /> : (
-                                        <>
-                                            <CheckCircle2 size={14} /> APPROVE PASS
-                                        </>
-                                    )}
-                                </Button>
-                            )}
-
-                            {(currentStatus === 'approved' || currentStatus === 'confirmed') && (
-                                <div className="flex items-center gap-2 text-neon-green text-[10px] font-black uppercase tracking-wider px-4 py-2 rounded-xl bg-neon-green/10 border border-neon-green/20">
-                                    <CheckCircle2 size={14} /> APPROVED
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                </motion.div>
+    const header = (
+        <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+                {statusBadge}
+                {entry.bookingRef && (
+                    <button type="button" onClick={handleCopyRef} className="inline-flex items-center gap-1 font-mono text-[12px] text-gray-500 hover:text-gray-900 dark:hover:text-white" aria-label="Copy booking reference">
+                        {entry.bookingRef} {copiedRef ? <Check size={12} className="text-emerald-600 dark:text-neon-green" /> : <Copy size={12} />}
+                    </button>
+                )}
             </div>
-        </AnimatePresence>,
-        document.body
+            <h2 className="mt-1 truncate text-lg font-extrabold tracking-tight">{name}</h2>
+            <p className="mt-0.5 truncate text-[13px] text-gray-500">
+                Guestlist task{event?.title ? ` for ${event.title}` : ''}
+            </p>
+        </div>
+    );
+
+    const footer = (
+        <div className="space-y-2">
+            {actionError && <p role="alert" className="text-[13px] font-semibold text-red-600 dark:text-red-400">{actionError}</p>}
+            {isApproved ? (
+                <div className="flex gap-2">
+                    <div className={cn('flex h-12 flex-1 items-center justify-center gap-2 rounded-xl text-[14px] font-bold', accent('green').chip)}>
+                        <Check size={16} /> Approved
+                    </div>
+                    <Button variant="secondary" className="h-12 text-red-600 dark:text-red-400" onClick={handleReject} disabled={!!actionLoading}>
+                        {actionLoading === 'rejected' ? 'Declining…' : confirmReject ? 'Tap again to decline' : 'Decline'}
+                    </Button>
+                </div>
+            ) : (
+                <div className="flex gap-2">
+                    {!isRejected && (
+                        <Button variant="secondary" className="h-12 flex-1 text-red-600 dark:text-red-400" onClick={handleReject} disabled={!!actionLoading}>
+                            <X size={16} /> {actionLoading === 'rejected' ? 'Declining…' : confirmReject ? 'Tap again to decline' : 'Decline'}
+                        </Button>
+                    )}
+                    <Button variant="success" className="h-12 flex-[2]" onClick={handleApprove} disabled={!!actionLoading}>
+                        <Check size={16} /> {actionLoading === 'approved' ? 'Approving…' : isRejected ? 'Approve instead' : 'Approve'}
+                    </Button>
+                </div>
+            )}
+            <p className="hidden text-center text-[11px] text-gray-500 md:block">
+                Shortcuts: {!isApproved && <><kbd className="rounded border border-black/15 px-1 font-mono dark:border-white/15">A</kbd> approve</>}
+                {!isApproved && !isRejected && ', '}
+                {!isRejected && <><kbd className="rounded border border-black/15 px-1 font-mono dark:border-white/15">R</kbd> decline</>}
+                , <kbd className="rounded border border-black/15 px-1 font-mono dark:border-white/15">Esc</kbd> close
+            </p>
+        </div>
+    );
+
+    return (
+        <Sheet
+            open={isOpen}
+            onClose={actionLoading ? () => {} : onClose}
+            size="lg"
+            header={header}
+            footer={footer}
+            bodyClassName="space-y-6"
+        >
+            {/* Who applied */}
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-[13px] text-gray-600 dark:text-zinc-400">
+                {email && <a href={`mailto:${email}`} className="inline-flex min-w-0 items-center gap-1.5 hover:text-gray-900 dark:hover:text-white"><Mail size={13} /><span className="truncate">{email}</span></a>}
+                {phone && <a href={`tel:${String(phone).replace(/\s/g, '')}`} className="inline-flex items-center gap-1.5 hover:text-gray-900 dark:hover:text-white"><Phone size={13} />{phone}</a>}
+                <span className="inline-flex items-center gap-1.5"><Users size={13} />{guests} {guests > 1 ? 'people' : 'person'}</span>
+                {submittedAt && <span className="inline-flex items-center gap-1.5"><Clock size={13} />{submittedAt}</span>}
+            </div>
+
+            {/* What the event asked for */}
+            {(taskConfig.title || taskConfig.description) && (
+                <div className={cn(box, 'p-4')}>
+                    <p className="text-[12px] font-bold text-gray-500">The task</p>
+                    <p className="mt-0.5 text-[14px] font-bold">{taskConfig.title || 'Application task'}</p>
+                    {taskConfig.description && (
+                        <p className="mt-1 whitespace-pre-wrap text-[13px] leading-relaxed text-gray-600 dark:text-zinc-400">{taskConfig.description}</p>
+                    )}
+                </div>
+            )}
+
+            {/* Uploaded file */}
+            {hasFile && (
+                <section>
+                    <SectionLabel icon={KindIcon} action={(
+                        <a href={fileUrl} target="_blank" rel="noopener noreferrer" className={smallLink}>
+                            <ExternalLink size={14} /> Open
+                        </a>
+                    )}>
+                        {fileKind} attached
+                    </SectionLabel>
+
+                    {isImage ? (
+                        <a href={fileUrl} target="_blank" rel="noopener noreferrer" className={cn(box, 'flex max-h-[55dvh] items-center justify-center overflow-hidden bg-black/5 dark:bg-black/40')}>
+                            <img src={fileUrl} alt={fileName} className="max-h-[55dvh] w-auto object-contain" />
+                        </a>
+                    ) : isVideo ? (
+                        <video controls playsInline preload="metadata" src={fileUrl} className="max-h-[55dvh] w-full rounded-2xl bg-black" />
+                    ) : isAudio ? (
+                        <div className={cn(box, 'space-y-3 p-4')}>
+                            <p className="truncate text-[14px] font-semibold">{fileName}</p>
+                            <audio controls src={fileUrl} className="w-full" />
+                        </div>
+                    ) : (
+                        <div className={cn(box, 'overflow-hidden')}>
+                            {isPdf && (
+                                <iframe title={fileName} src={fileUrl} className="hidden h-[55dvh] w-full border-0 bg-white md:block" />
+                            )}
+                            <div className={cn('flex items-center gap-3 p-4', isPdf && 'md:border-t md:border-black/10 md:dark:border-white/10')}>
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black/5 text-gray-600 dark:bg-white/10 dark:text-zinc-300">
+                                    <KindIcon size={18} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate text-[14px] font-semibold">{fileName}</p>
+                                    <p className="text-[12px] text-gray-500">{fileKind}</p>
+                                </div>
+                                <a href={fileUrl} target="_blank" rel="noopener noreferrer" download className={smallLink}>
+                                    <Download size={14} /> Download
+                                </a>
+                            </div>
+                        </div>
+                    )}
+                </section>
+            )}
+
+            {/* Link */}
+            {hasLink && (
+                <section>
+                    <SectionLabel icon={LinkIcon}>Link</SectionLabel>
+                    <a href={linkHref} target="_blank" rel="noopener noreferrer" className={cn(box, 'flex items-center gap-3 p-4 transition-colors hover:border-black/20 dark:hover:border-white/20')}>
+                        <div className="min-w-0 flex-1">
+                            {hostOf(taskSubmission.link) && <p className="text-[12px] font-bold text-gray-500">{hostOf(taskSubmission.link)}</p>}
+                            <p className={cn('break-all text-[14px] font-semibold', accent('blue').text)}>{taskSubmission.link}</p>
+                        </div>
+                        <ExternalLink size={16} className="shrink-0 text-gray-400" />
+                    </a>
+                </section>
+            )}
+
+            {/* Written answer */}
+            {hasText && (
+                <section>
+                    <SectionLabel icon={FileText}>Written answer</SectionLabel>
+                    <div className={cn(box, 'p-4')}>
+                        <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-gray-800 dark:text-zinc-200">{taskSubmission.text}</p>
+                    </div>
+                </section>
+            )}
+
+            {!hasFile && !hasLink && !hasText && (
+                <div className={cn('flex items-start gap-3 rounded-2xl border p-4', accent('amber').border, accent('amber').soft)}>
+                    <AlertTriangle size={18} className={cn('mt-0.5 shrink-0', accent('amber').text)} />
+                    <div>
+                        <p className={cn('text-[14px] font-bold', accent('amber').text)}>Nothing was submitted</p>
+                        <p className="text-[13px] text-gray-600 dark:text-zinc-300">This guest signed up without adding a file, link or answer.</p>
+                    </div>
+                </div>
+            )}
+        </Sheet>
     );
 };
 

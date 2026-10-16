@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
-import { useStore } from '../lib/store';
+import { useStore, giveawayEndsAt } from '../lib/store';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -73,7 +73,8 @@ const GiveawayPage = () => {
     useEffect(() => {
         if (!giveaway?.endDate) return;
         const interval = setInterval(() => {
-            const end = new Date(giveaway.endDate).getTime();
+            // Local end of the chosen day (or the set end time), same rule as entries use.
+            const end = giveawayEndsAt(giveaway)?.getTime() ?? 0;
             const now = new Date().getTime();
             const distance = end - now;
 
@@ -90,7 +91,7 @@ const GiveawayPage = () => {
             setTimeLeft(`${days}D ${hours}H ${minutes}M ${seconds}S`);
         }, 1000);
         return () => clearInterval(interval);
-    }, [giveaway?.endDate]);
+    }, [giveaway?.endDate, giveaway?.endTime]);
 
     const campaignEntries = giveawayEntries.filter(e => e.campaignId === giveaway?.id);
     const leaderboard = [...campaignEntries]
@@ -179,7 +180,8 @@ const GiveawayPage = () => {
         </div>
     );
 
-    const isEnded = giveaway.status === 'Closed' || new Date(giveaway.endDate) < new Date();
+    const endsAt = giveawayEndsAt(giveaway);
+    const isEnded = giveaway.status === 'Closed' || Boolean(endsAt && endsAt < new Date());
 
     const taskIcons = {
         instagram: Instagram,

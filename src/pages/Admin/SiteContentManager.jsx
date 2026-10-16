@@ -1,432 +1,283 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
-import Save from 'lucide-react/dist/esm/icons/save';
-import Users from 'lucide-react/dist/esm/icons/users';
 import Globe from 'lucide-react/dist/esm/icons/globe';
-import Settings from 'lucide-react/dist/esm/icons/settings';
-import Bell from 'lucide-react/dist/esm/icons/bell';
-import Shield from 'lucide-react/dist/esm/icons/shield';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import Heart from 'lucide-react/dist/esm/icons/heart';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import MessageSquareQuote from 'lucide-react/dist/esm/icons/message-square-quote';
+import Phone from 'lucide-react/dist/esm/icons/phone';
+import Mail from 'lucide-react/dist/esm/icons/mail';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
 import Linkedin from 'lucide-react/dist/esm/icons/linkedin';
-import Mail from 'lucide-react/dist/esm/icons/mail';
-import Phone from 'lucide-react/dist/esm/icons/phone';
-import MapPin from 'lucide-react/dist/esm/icons/map-pin';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
-import ImageIcon from 'lucide-react/dist/esm/icons/image';
-import Plus from 'lucide-react/dist/esm/icons/plus';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Building2 from 'lucide-react/dist/esm/icons/building-2';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import ShieldAlert from 'lucide-react/dist/esm/icons/shield-alert';
+import Save from 'lucide-react/dist/esm/icons/save';
+import Users from 'lucide-react/dist/esm/icons/users';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import CityGroupManager from '../../components/admin/CityGroupManager';
 import CreatorTestimonialsManager from '../../components/admin/CreatorTestimonialsManager';
 import { useStore } from '../../lib/store';
-import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
-import { motion } from 'framer-motion';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import { Button, Badge, SegmentedTabs } from '../../components/admin/ui';
+import { accent } from '../../components/admin/theme';
+import { fieldCls, areaCls, Toggle } from '../../components/admin/uploads/UploadKit';
+import { BuilderCard } from '../../components/admin/events/EditorParts';
+import { CONTENT_TABS, CharCount, LabelRow } from '../../components/admin/content/ContentKit';
+import PartnerBrandsCard from '../../components/admin/content/PartnerBrandsCard';
+
+const DETAIL_FIELDS = ['title', 'tagline', 'description', 'phone', 'email', 'whatsappCommunity', 'instagram', 'linkedin', 'address'];
+const pickDetails = (d) => DETAIL_FIELDS.reduce((acc, k) => ({ ...acc, [k]: d?.[k] && d[k] !== '#' ? d[k] : '' }), {});
+
+const SECTIONS = [
+    { value: 'website', label: 'Website', icon: Globe },
+    { value: 'groups', label: 'Creator groups', icon: Users },
+    { value: 'testimonials', label: 'Testimonials', icon: MessageSquareQuote },
+];
+
+const IconField = ({ icon: Icon, label, hint, right, children }) => (
+    <label className="block min-w-0">
+        <LabelRow label={label} right={right} />
+        <span className="relative block">
+            <Icon size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            {children}
+        </span>
+        {hint && <span className="mt-1 block text-[11px] text-gray-500">{hint}</span>}
+    </label>
+);
 
 const SiteContentManager = () => {
-    const { siteDetails, updateSiteDetails, siteSettings, updateGeneralSettings, pastClients, addPastClient, updatePastClient, deletePastClient, uploadToCloudinary } = useStore();
-    const navigate = useNavigate();
+    const { siteDetails, updateSiteDetails, siteSettings = {}, updateGeneralSettings, maintenanceState = {}, addToast } = useStore();
+    const [params, setParams] = useSearchParams();
+    const tab = SECTIONS.some(s => s.value === params.get('tab')) ? params.get('tab') : 'website';
+    const setTab = (v) => { const next = new URLSearchParams(params); if (v === 'website') next.delete('tab'); else next.set('tab', v); setParams(next, { replace: true }); };
 
-    useStoreSubscription(['pastClients']);
-    const [newClient, setNewClient] = useState({ name: '', logoUrl: '' });
-    const [uploadingLogo, setUploadingLogo] = useState(false);
+    const [form, setForm] = useState(() => pickDetails(siteDetails));
+    const [dirty, setDirty] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [settingKey, setSettingKey] = useState(null);
+    const saveLock = useRef(false);
 
-    const [formData, setFormData] = useState({ ...siteDetails });
+    // Pick up the saved details when they arrive, unless you are mid-edit.
+    useEffect(() => { if (!dirty) setForm(pickDetails(siteDetails)); }, [siteDetails, dirty]);
 
     useEffect(() => {
-        if (siteDetails && Object.keys(siteDetails).length > 0) {
-            setFormData(prev => {
-                // Only sync if form hasn't been modified by user
-                const hasUserEdits = Object.keys(prev).some(key => 
-                    prev[key] !== '' && prev[key] !== '#' && prev[key] !== false && prev[key] !== undefined
-                );
-                if (!hasUserEdits) return { ...siteDetails };
-                return prev;
-            });
-        }
-    }, [siteDetails]);
+        if (!dirty) return undefined;
+        const warn = (e) => { e.preventDefault(); e.returnValue = ''; };
+        window.addEventListener('beforeunload', warn);
+        return () => window.removeEventListener('beforeunload', warn);
+    }, [dirty]);
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
+    const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setDirty(true); };
+    const changed = useMemo(() => {
+        const saved = pickDetails(siteDetails);
+        return DETAIL_FIELDS.filter(k => (form[k] || '') !== (saved[k] || ''));
+    }, [form, siteDetails]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const emailBad = form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+    const waBad = form.whatsappCommunity && !/^https?:\/\//i.test(form.whatsappCommunity.trim());
+
+    const saveDetails = async () => {
+        if (saveLock.current || emailBad || waBad) return;
+        saveLock.current = true;
+        setSaving(true);
         try {
-            await updateSiteDetails(formData);
-            useStore.getState().addToast('Site details updated.', 'success');
-            navigate('/admin');
-        } catch (error) {
-            useStore.getState().addToast("Couldn't update the site details. Please try again.", 'error');
-        }
-    };
-
-    const handleLogoUpload = async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        setUploadingLogo(true);
-        try {
-            const url = await uploadToCloudinary(file);
-            setNewClient(prev => ({ ...prev, logoUrl: url }));
-            useStore.getState().addToast('Logo uploaded.', 'success');
+            const payload = changed.reduce((acc, k) => ({ ...acc, [k]: (form[k] || '').trim() }), {});
+            await updateSiteDetails(payload);
+            setDirty(false);
+            addToast('Site details saved.', 'success');
         } catch (err) {
-            useStore.getState().addToast("Couldn't upload the logo. Please try again.", 'error');
+            console.error(err);
+            addToast("Couldn't save the site details. Please try again.", 'error');
         } finally {
-            setUploadingLogo(false);
+            saveLock.current = false;
+            setSaving(false);
+        }
+    };
+    const discard = () => { setForm(pickDetails(siteDetails)); setDirty(false); };
+
+    const setSetting = async (key, value, label) => {
+        if (settingKey) return;
+        setSettingKey(key);
+        try {
+            await updateGeneralSettings({ [key]: value });
+            addToast(`${label} ${value ? 'on' : 'off'}.`, 'success');
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't change that setting. Please try again.", 'error');
+        } finally {
+            setSettingKey(null);
         }
     };
 
-    const handleAddClient = async () => {
-        if (!newClient.name.trim()) return;
-        try {
-            await addPastClient(newClient);
-            setNewClient({ name: '', logoUrl: '' });
-            useStore.getState().addToast('Client added.', 'success');
-        } catch (err) {
-            useStore.getState().addToast("Couldn't add the client. Please try again.", 'error');
-        }
-    };
+    const locked = !!maintenanceState.global;
+    const sectionToggles = [
+        { key: 'showUpcomingEvents', label: 'Upcoming events', hint: 'The events section on the home page', on: !!siteSettings.showUpcomingEvents, value: (v) => v, href: '/#upcoming' },
+        { key: 'showPastClients', label: 'Partner brands', hint: 'The logo strip on the home and creator pages', on: siteSettings.showPastClients !== false, value: (v) => v, href: '/' },
+        { key: 'showVolunteerGigs', label: 'Volunteer gigs', hint: 'The gigs list on the community page', on: siteSettings.showVolunteerGigs !== false, value: (v) => v, href: '/community' },
+        { key: 'enableTribeForm', label: 'Community joining form', hint: 'The sign-up step on the community page', on: siteSettings.enableTribeForm !== false, value: (v) => v, href: '/community' },
+    ];
 
-    const handleDeleteClient = async (id) => {
-        if (!window.confirm('Remove this client?')) return;
-        try {
-            await deletePastClient(id);
-            useStore.getState().addToast('Client removed.', 'success');
-        } catch (err) {
-            useStore.getState().addToast("Couldn't remove the client. Please try again.", 'error');
-        }
-    };
+    const sticky = dirty && changed.length > 0;
 
     return (
         <AdminCommunityHubLayout
-            studioHeader={{
-                title: 'Site',
-                subtitle: 'Config',
-                icon: Settings,
-                accentClass: 'text-neon-green'
-            }}
-            accentColor="neon-green"
-            hideTabs={true}
+            studioHeader={{ title: 'Site content', icon: LayoutGrid, description: 'What the public website shows, and how people reach you' }}
+            tabs={CONTENT_TABS}
         >
-            <form onSubmit={handleSubmit} className="space-y-16">
-                    {/* Critical Control */}
-                    <section>
-                        <div className="flex items-center gap-4 mb-8">
-                            <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-red-500">Critical Control</h2>
-                            <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <ToggleCard 
-                                title="Global Maintenance" 
-                                desc="Lock the entire site for visitors. Admins maintain access." 
-                                icon={Shield}
-                                checked={siteSettings.globalMaintenance === true}
-                                onChange={(val) => updateGeneralSettings({ globalMaintenance: val })}
-                                variant="danger"
-                            />
-                            <ToggleCard 
-                                title="Stealth Maintenance" 
-                                desc="Hide inactive pages from Navigation menus." 
-                                icon={Globe}
-                                checked={siteSettings.hideMaintenancePages === true}
-                                onChange={(val) => updateGeneralSettings({ hideMaintenancePages: val })}
-                            />
-                        </div>
-                    </section>
+            <div className="space-y-5">
+                <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+                    <SegmentedTabs value={tab} onChange={setTab} items={SECTIONS} />
+                </div>
 
-                    {/* Site Identity */}
-                    <section>
-                        <div className="flex items-center gap-4 mb-8">
-                            <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-neon-blue">Site Identity</h2>
-                            <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
-                        </div>
+                {tab === 'groups' && <CityGroupManager />}
+                {tab === 'testimonials' && <CreatorTestimonialsManager />}
 
-                        <Card className="p-10 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem]">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <InputGroup label="Site Title" name="title" icon={Settings} value={formData.title} onChange={handleChange} placeholder="Newbi | Disrupting Marketing" />
-                                <InputGroup label="Tagline" name="tagline" icon={Sparkles} value={formData.tagline} onChange={handleChange} placeholder="The future of creator marketing" />
-                                
-                                <div className="md:col-span-2 space-y-3">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">SEO Description</label>
-                                    <div className="relative">
-                                        <FileText className="absolute left-4 top-4 text-gray-500" size={16} />
-                                        <textarea
-                                            name="description"
-                                            value={formData.description || ''}
-                                            onChange={handleChange}
-                                            className="w-full bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-xl p-4 pl-12 text-sm font-medium h-24 focus:border-neon-blue/50 outline-none transition-colors"
-                                            placeholder="Write a compelling meta description for search engines..."
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </Card>
-                    </section>
-
-                    {/* Feature Control */}
-                    <section>
-                        <div className="flex items-center gap-4 mb-8">
-                            <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-neon-green">Feature Control</h2>
-                            <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <ToggleCard 
-                                title="Tribe Intake Form" 
-                                desc="Enable Step 1 Google Form for new members." 
-                                icon={Heart}
-                                checked={siteSettings.enableTribeForm !== false}
-                                onChange={(val) => updateGeneralSettings({ enableTribeForm: val })}
-                            />
-                            <ToggleCard 
-                                title="Client Showcase" 
-                                desc="Display the animated past clients marquee." 
-                                icon={Zap}
-                                checked={siteSettings.showPastClients !== false}
-                                onChange={(val) => updateGeneralSettings({ showPastClients: val })}
-                            />
-                            <ToggleCard 
-                                title="Creator Insights" 
-                                desc="Show campaign stats in Creator Hub dashboard." 
-                                icon={Sparkles}
-                                checked={siteSettings.showCreatorStats !== false}
-                                onChange={(val) => updateGeneralSettings({ showCreatorStats: val })}
-                            />
-                        </div>
-                    </section>
-
-                    {/* Contact & Socials */}
-                    <section>
-                        <div className="flex items-center gap-4 mb-8">
-                            <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-neon-pink">Communication Endpoint</h2>
-                            <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
-                        </div>
-
-                        <Card className="p-10 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem]">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="md:col-span-2 space-y-3">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">WhatsApp Community Endpoint</label>
-                                    <div className="relative">
-                                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-neon-green" size={16} />
-                                        <Input
-                                            name="whatsappCommunity"
-                                            value={formData.whatsappCommunity || ''}
-                                            onChange={handleChange}
-                                            className="h-12 pl-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl font-medium"
-                                            placeholder="https://chat.whatsapp.com/..."
-                                        />
-                                    </div>
-                                </div>
-
-                                <InputGroup label="Official Phone" name="phone" icon={Phone} value={formData.phone} onChange={handleChange} placeholder="+91..." />
-                                <InputGroup label="Corporate Email" name="email" icon={Mail} value={formData.email} onChange={handleChange} placeholder="hello@newbi.live" />
-                                <InputGroup label="Instagram Handle" name="instagram" icon={Instagram} value={formData.instagram} onChange={handleChange} placeholder="Handle or URL" />
-                                <InputGroup label="LinkedIn Profile" name="linkedin" icon={Linkedin} value={formData.linkedin} onChange={handleChange} placeholder="Handle or URL" />
-                                
-                                <div className="md:col-span-2 space-y-3">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">HQ Physical Location</label>
-                                    <div className="relative">
-                                        <MapPin className="absolute left-4 top-4 text-gray-500" size={16} />
-                                        <textarea
-                                            name="address"
-                                            value={formData.address || ''}
-                                            onChange={handleChange}
-                                            className="w-full bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-xl p-4 pl-12 text-sm font-medium h-24 focus:border-neon-pink/50 outline-none transition-colors"
-                                            placeholder="Full office address..."
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </Card>
-                    </section>
-
-
-                    {/* Past Clients Manager */}
-                    <section>
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                            <div className="flex items-center gap-4 flex-1">
-                                <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-neon-green">Past Clients / Partner Brands</h2>
-                                <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
-                            </div>
-                            <div className="flex items-center gap-3 bg-white dark:bg-zinc-900/60 px-4 py-2 rounded-2xl border border-black/10 dark:border-white/10 shadow-sm shrink-0">
-                                <div className="flex items-center gap-2">
-                                    {siteSettings?.showPastClients !== false ? (
-                                        <Eye size={16} className="text-neon-green" />
-                                    ) : (
-                                        <EyeOff size={16} className="text-gray-400" />
-                                    )}
-                                    <span className="text-xs font-black uppercase tracking-wider text-gray-800 dark:text-gray-200">
-                                        Show on Site
-                                    </span>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={siteSettings?.showPastClients !== false}
-                                        onChange={(e) => updateGeneralSettings({ showPastClients: e.target.checked })}
-                                        className="sr-only peer"
+                {tab === 'website' && (
+                    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+                        <div className="min-w-0 space-y-5">
+                            <BuilderCard
+                                title="Site status"
+                                hint="For emergencies and big updates"
+                                action={<Badge tone={locked ? 'red' : 'green'}>{locked ? 'Locked for visitors' : 'Open to everyone'}</Badge>}
+                            >
+                                <div className="space-y-3">
+                                    <Link to="/admin/system-command" className={cn('flex min-h-[56px] items-center gap-3 rounded-xl border p-3 transition-colors hover:border-black/15 dark:hover:border-white/20', locked ? cn(accent('red').border, accent('red').soft) : 'border-black/[0.06] dark:border-white/[0.08]')}>
+                                        <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', accent('red').chip)}><ShieldAlert size={18} /></span>
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block text-[14px] font-semibold">Maintenance mode lives in System</span>
+                                            <span className="block text-[12px] text-gray-500">{locked ? 'The site is locked for visitors right now.' : 'Lock the whole site for visitors from there.'}</span>
+                                        </span>
+                                        <ChevronRight size={16} className="shrink-0 text-gray-400" />
+                                    </Link>
+                                    <Toggle
+                                        label="Hide pages under maintenance from menus"
+                                        hint="Visitors won't see links to pages that are switched off"
+                                        checked={siteSettings.hideMaintenancePages === true}
+                                        onChange={(v) => setSetting('hideMaintenancePages', v, 'Hiding pages under maintenance')}
                                     />
-                                    <div className="w-10 h-5 bg-black/20 peer-focus:outline-none rounded-full peer dark:bg-white/10 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neon-green"></div>
-                                </label>
-                                <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${siteSettings?.showPastClients !== false ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                                    {siteSettings?.showPastClients !== false ? 'Visible' : 'Hidden'}
-                                </span>
-                            </div>
+                                </div>
+                            </BuilderCard>
+
+                            <BuilderCard title="Sections on the website" hint="Switch a section off to hide it right away">
+                                <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
+                                    {sectionToggles.map(t => (
+                                        <li key={t.key} className="flex items-center gap-2 py-2 first:pt-0 last:pb-0">
+                                            <div className={cn('min-w-0 flex-1', settingKey === t.key && 'opacity-60')}>
+                                                <Toggle label={t.label} hint={t.hint} checked={t.on} onChange={(v) => setSetting(t.key, t.value(v), t.label)} />
+                                            </div>
+                                            <a href={t.href} target="_blank" rel="noopener noreferrer" aria-label={`Open ${t.label} on the site`} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-400 hover:bg-black/5 hover:text-gray-900 dark:hover:bg-white/10 dark:hover:text-white">
+                                                <ExternalLink size={15} />
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </BuilderCard>
+
+                            <BuilderCard title="Contact details" hint="Shown on the contact page; the WhatsApp link is the community page's join button">
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <IconField icon={Phone} label="Phone" hint="Also used for the WhatsApp chat button">
+                                        <input className={cn(fieldCls, 'pl-10')} value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="+91 98765 43210" inputMode="tel" autoComplete="off" />
+                                    </IconField>
+                                    <IconField icon={Mail} label="Email" hint={emailBad ? undefined : 'Where the contact page sends people'}>
+                                        <input className={cn(fieldCls, 'pl-10', emailBad && 'border-red-400')} value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="hello@newbi.live" inputMode="email" autoCapitalize="off" autoComplete="off" />
+                                        {emailBad && <span role="alert" className="mt-1 block text-[12px] font-semibold text-red-600 dark:text-red-400">That doesn't look like an email address.</span>}
+                                    </IconField>
+                                    <IconField icon={MessageCircle} label="WhatsApp community link">
+                                        <input className={cn(fieldCls, 'pl-10', waBad && 'border-red-400')} value={form.whatsappCommunity} onChange={(e) => set('whatsappCommunity', e.target.value)} placeholder="https://chat.whatsapp.com/…" inputMode="url" autoCapitalize="off" autoCorrect="off" />
+                                        {waBad && <span role="alert" className="mt-1 block text-[12px] font-semibold text-red-600 dark:text-red-400">Paste the full link, starting with https://</span>}
+                                    </IconField>
+                                    <IconField icon={Instagram} label="Instagram">
+                                        <input className={cn(fieldCls, 'pl-10')} value={form.instagram} onChange={(e) => set('instagram', e.target.value)} placeholder="@newbi.live or a link" autoCapitalize="off" autoCorrect="off" />
+                                    </IconField>
+                                    <IconField icon={Linkedin} label="LinkedIn">
+                                        <input className={cn(fieldCls, 'pl-10')} value={form.linkedin} onChange={(e) => set('linkedin', e.target.value)} placeholder="Company page link" autoCapitalize="off" autoCorrect="off" />
+                                    </IconField>
+                                    <label className="block min-w-0 sm:col-span-2">
+                                        <LabelRow label="Office address" />
+                                        <span className="relative block">
+                                            <MapPin size={16} className="pointer-events-none absolute left-3.5 top-3.5 text-gray-400" />
+                                            <textarea className={cn(areaCls, 'min-h-[88px] resize-y pl-10')} value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="Full address, used for the map link" />
+                                        </span>
+                                    </label>
+                                </div>
+                            </BuilderCard>
+
+                            <BuilderCard title="Search and sharing" hint="Name, tagline and description of the site">
+                                <div className="space-y-4">
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <label className="block">
+                                            <LabelRow label="Site title" right={<CharCount value={form.title} ideal={30} max={60} />} />
+                                            <input className={fieldCls} value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Newbi Entertainment & Marketing" />
+                                        </label>
+                                        <label className="block">
+                                            <LabelRow label="Tagline" />
+                                            <input className={fieldCls} value={form.tagline} onChange={(e) => set('tagline', e.target.value)} placeholder="Music, culture and creators" />
+                                        </label>
+                                    </div>
+                                    <label className="block">
+                                        <LabelRow label="Description" right={<CharCount value={form.description} ideal={120} max={160} />} />
+                                        <textarea className={cn(areaCls, 'min-h-[88px] resize-y')} value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="One or two sentences about Newbi for search results" />
+                                    </label>
+                                    <div className="rounded-xl border border-black/[0.06] p-3 dark:border-white/[0.08]">
+                                        <p className="mb-1 text-[11px] font-bold text-gray-500">Search result preview</p>
+                                        <p className="truncate text-[12px] text-emerald-700 dark:text-neon-green">newbi.live</p>
+                                        <p className="truncate text-[17px] font-medium text-sky-700 dark:text-neon-blue">{form.title || 'Newbi Entertainment & Marketing'}</p>
+                                        <p className="line-clamp-2 text-[13px] text-gray-600 dark:text-zinc-400">{form.description || 'Your description will appear here.'}</p>
+                                    </div>
+                                    <p className="text-[12px] text-gray-500">These are saved for the team. The website's own page title is set in its code, so changing them here doesn't change Google results yet.</p>
+                                </div>
+                            </BuilderCard>
+
+                            <PartnerBrandsCard visible={siteSettings.showPastClients !== false} />
                         </div>
 
-                        {siteSettings?.showPastClients === false && (
-                            <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center gap-3 text-xs font-bold">
-                                <EyeOff size={16} className="shrink-0" />
-                                <span>The Past Clients section is currently hidden from the website (Home &amp; Creator landing pages). Toggle "Show on Site" above to display it.</span>
-                            </div>
-                        )}
-
-                        <Card className="p-8 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem] space-y-8">
-                            {/* Add New Client */}
-                            <div className="space-y-4">
-                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Add New Brand</p>
-                                <div className="flex flex-col sm:flex-row gap-4 items-start">
-                                    <div className="flex-1 space-y-3">
-                                        <div className="relative">
-                                            <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                            <Input
-                                                value={newClient.name}
-                                                onChange={(e) => setNewClient(prev => ({ ...prev, name: e.target.value }))}
-                                                className="h-12 pl-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl font-medium text-sm"
-                                                placeholder="Brand name (e.g. Red Bull)"
-                                            />
-                                        </div>
-                                        {newClient.logoUrl && (
-                                            <div className="flex items-center gap-3">
-                                                <img src={newClient.logoUrl} alt="Preview" className="h-10 w-auto object-contain rounded-lg bg-white p-1 border border-black/10" />
-                                                <span className="text-[10px] text-neon-green font-black uppercase tracking-widest">Logo ready</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <label className="h-12 px-5 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-700 dark:text-gray-300 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-all shrink-0">
-                                        {uploadingLogo ? 'Uploading...' : <><ImageIcon size={14} /> Upload Logo</>}
-                                        <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
-                                    </label>
-                                    <Button
-                                        type="button"
-                                        onClick={handleAddClient}
-                                        disabled={!newClient.name.trim()}
-                                        className="h-12 px-6 rounded-xl bg-neon-green text-black font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
-                                    >
-                                        <Plus size={14} /> Add
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {/* Existing Clients */}
-                            <div className="space-y-3">
-                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{pastClients?.length || 0} Brands Listed</p>
-                                {(!pastClients || pastClients.length === 0) ? (
-                                    <p className="text-sm text-gray-500 font-medium italic">No brands added yet — will show default names.</p>
-                                ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {pastClients.map(client => (
-                                            <div key={client.id} className="flex items-center justify-between gap-3 p-4 bg-white dark:bg-black/30 border border-black/10 dark:border-white/10 rounded-2xl">
-                                                <div className="flex items-center gap-3">
-                                                    {client.logoUrl ? (
-                                                        <img src={client.logoUrl} alt={client.name} className="h-8 w-auto object-contain rounded bg-white p-0.5 border border-black/10" />
-                                                    ) : (
-                                                        <div className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center">
-                                                            <Building2 size={14} className="text-gray-500" />
-                                                        </div>
-                                                    )}
-                                                    <span className="text-sm font-bold text-gray-900 dark:text-white">{client.name}</span>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleDeleteClient(client.id)}
-                                                    className="w-8 h-8 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center transition-all shrink-0"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </Card>
-                    </section>
-
-                    {/* City-Wise Creator Groups Section */}
-                    <CityGroupManager />
-
-                    {/* Creator Testimonials Section */}
-                    <CreatorTestimonialsManager />
-
-                    {/* Footer Actions */}
-                    <div className="flex justify-end pt-8 border-t border-black/10 dark:border-white/5">
-                        <Button type="submit" className="bg-neon-green text-black font-black font-heading uppercase tracking-widest text-xs h-16 px-16 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(57,255,20,0.3)]">
-                            <Save className="mr-3 h-5 w-5" /> Commit Site Configuration
-                        </Button>
+                        <aside className="hidden space-y-3 xl:sticky xl:top-24 xl:block xl:self-start">
+                            <p className="text-[12px] font-bold text-gray-500">Contact page preview</p>
+                            <ContactPreview form={form} />
+                        </aside>
                     </div>
-                </form>
+                )}
+                {tab === 'website' && sticky && (
+                    <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 lg:bottom-4">
+                        <div className="flex items-center gap-2 rounded-2xl border border-black/[0.08] bg-white/95 p-2 pl-4 shadow-xl backdrop-blur-xl dark:border-white/[0.1] dark:bg-[#0d0f15]/95">
+                            <p className="min-w-0 flex-1 truncate text-[13px] font-semibold text-gray-600 dark:text-zinc-300">
+                                {changed.length} unsaved change{changed.length === 1 ? '' : 's'}
+                            </p>
+                            <Button variant="ghost" onClick={discard} disabled={saving} className="h-11">Discard</Button>
+                            <Button variant="accent" onClick={saveDetails} disabled={saving || emailBad || waBad} className="h-11 px-5"><Save size={15} /> {saving ? 'Saving…' : 'Save'}</Button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
         </AdminCommunityHubLayout>
     );
 };
 
-const ToggleCard = ({ title, desc, icon: Icon, checked, onChange, variant = 'primary' }) => (
-    <div className={cn(
-        "p-6 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border border-black/10 dark:border-white/5 rounded-[2rem] flex items-center justify-between group hover:border-black/10 dark:hover:border-white/10 transition-all",
-        variant === 'danger' && "hover:border-red-500/30"
-    )}>
-        <div className="flex items-center gap-5">
-            <div className={cn(
-                "p-3 rounded-xl bg-black/5 dark:bg-white/5 text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors",
-                variant === 'danger' && "group-hover:text-red-500"
-            )}>
-                <Icon size={20} />
-            </div>
-            <div>
-                <h4 className="text-sm font-black uppercase tracking-tight text-gray-900 dark:text-white">{title}</h4>
-                <p className="text-[10px] text-gray-500 font-bold uppercase mt-1 tracking-wider leading-relaxed">{desc}</p>
+const ContactPreview = ({ form }) => {
+    const rows = [
+        { icon: Phone, label: 'Call or WhatsApp', value: form.phone, tone: 'green' },
+        { icon: Mail, label: 'Email', value: form.email, tone: 'blue' },
+        { icon: Instagram, label: 'Instagram', value: form.instagram, tone: 'pink' },
+        { icon: MapPin, label: 'Office', value: form.address, tone: 'amber' },
+    ];
+    return (
+        <div className="space-y-2 rounded-2xl border border-black/[0.06] bg-white p-3 dark:border-white/[0.08] dark:bg-white/[0.03]">
+            {rows.map(r => (
+                <div key={r.label} className="flex items-start gap-3 rounded-xl p-2">
+                    <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', accent(r.tone).chip)}><r.icon size={16} /></span>
+                    <span className="min-w-0">
+                        <span className="block text-[11px] font-semibold text-gray-500">{r.label}</span>
+                        <span className={cn('block break-words text-[13px] font-semibold', !r.value && 'text-gray-400')}>{r.value || 'Not set'}</span>
+                    </span>
+                </div>
+            ))}
+            <div className={cn('flex h-11 items-center justify-center gap-2 rounded-xl text-[13px] font-bold', form.whatsappCommunity ? 'bg-emerald-500 text-white dark:bg-neon-green dark:text-black' : 'bg-black/5 text-gray-400 dark:bg-white/5')}>
+                <MessageCircle size={15} /> Join the WhatsApp community
             </div>
         </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-            <input
-                type="checkbox"
-                className="sr-only peer"
-                checked={checked}
-                onChange={(e) => onChange(e.target.checked)}
-            />
-            <div className={cn(
-                "w-12 h-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:bg-white dark:peer-checked:after:bg-black after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-gray-700 after:rounded-full after:h-4 after:w-4 after:transition-all",
-                variant === 'danger' ? "peer-checked:bg-red-500 peer-checked:border-red-500" : "peer-checked:bg-emerald-500 dark:peer-checked:bg-neon-green peer-checked:border-emerald-500 dark:peer-checked:border-neon-green"
-            )}></div>
-        </label>
-    </div>
-);
-
-const InputGroup = ({ label, name, icon: Icon, value, onChange, placeholder }) => (
-    <div className="space-y-2">
-        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">{label}</label>
-        <div className="relative">
-            <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-            <Input
-                name={name}
-                value={value || ''}
-                onChange={onChange}
-                className="h-12 pl-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl font-medium text-sm"
-                placeholder={placeholder}
-            />
-        </div>
-    </div>
-);
+    );
+};
 
 export default SiteContentManager;

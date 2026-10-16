@@ -1,6 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import Printer from 'lucide-react/dist/esm/icons/printer';
 import Share2 from 'lucide-react/dist/esm/icons/share-2';
@@ -30,36 +29,222 @@ import Check from 'lucide-react/dist/esm/icons/check';
 import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
 import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
 import Info from 'lucide-react/dist/esm/icons/info';
-import Zap from 'lucide-react/dist/esm/icons/zap';
 import Mail from 'lucide-react/dist/esm/icons/mail';
 import Send from 'lucide-react/dist/esm/icons/send';
 import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import QrCode from 'lucide-react/dist/esm/icons/qr-code';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
+import Wallet from 'lucide-react/dist/esm/icons/wallet';
+import Inbox from 'lucide-react/dist/esm/icons/inbox';
 import ReceiptEmailModal from '../../components/admin/ReceiptEmailModal';
 
+import ExportMenu from '../../components/admin/ExportMenu';
+import { exportSubtitle, fileDate } from '../../lib/xlsx';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import Sheet from '../../components/admin/Sheet';
+import { Card, Button, Badge, StatTile, SearchInput, Select, SegmentedTabs, EmptyState, Menu, MenuItem, ViewToggle, useViewMode } from '../../components/admin/ui';
+import { inr } from '../../components/admin/ticketing/format';
+import { Field, Section, Choice, fieldCls, areaCls } from '../../components/admin/uploads/UploadKit';
+import ConfirmDialog from '../../components/admin/finance/ConfirmDialog';
+import { FINANCE_TABS, spendDay, todayIST, monthLabel, formatDay, isSpendPaid, isSpendPending, spendPayee } from '../../components/admin/finance/money';
+import ThemedSelect from '../../components/admin/ThemedSelect';
+
+const PAYOUT_TYPES = ['Salary', 'Volunteer Payout', 'Vendor Payout', 'Artist Fee', 'General Expense'];
+const TYPE_LABEL = { 'Salary': 'Salary', 'Volunteer Payout': 'Volunteer payout', 'Vendor Payout': 'Vendor payout', 'Artist Fee': 'Artist fee', 'General Expense': 'General expense' };
+const TYPE_TONE = { 'Salary': 'violet', 'Volunteer Payout': 'blue', 'Vendor Payout': 'orange', 'Artist Fee': 'pink', 'General Expense': 'gray' };
+const PAGE = 30;
+const KPI_CLS = 'w-[78%] shrink-0 snap-start sm:w-auto';
+
+// ---------- Small form pieces used by the sheets below ----------
+
+// Pill buttons for short lists (payout type, payment method).
+const Chips = ({ value, onChange, options, label }) => (
+    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
+        {options.map(opt => (
+            <button
+                key={opt}
+                type="button"
+                role="radio"
+                aria-checked={value === opt}
+                onClick={() => onChange(opt)}
+                className={cn(
+                    'h-10 rounded-xl border px-3.5 text-[13px] font-semibold transition-colors',
+                    value === opt
+                        ? 'border-emerald-500/60 bg-neon-green/[0.08] text-gray-900 dark:border-neon-green/50 dark:text-white'
+                        : 'border-black/10 text-gray-600 hover:border-black/20 dark:border-white/10 dark:text-zinc-300 dark:hover:border-white/20'
+                )}
+            >
+                {opt}
+            </button>
+        ))}
+    </div>
+);
+
+const GroupLabel = ({ children, optional }) => (
+    <span className="mb-1.5 block text-[12px] font-bold text-gray-500">
+        {children}{optional && <span className="font-medium"> (optional)</span>}
+    </span>
+);
+
+const NativeSelect = ({ className, children, ...rest }) => (
+    <ThemedSelect className={cn(fieldCls, className)} {...rest}>
+        {children}
+    </ThemedSelect>
+);
+
+const isImageUrl = (url = '') => /\.(png|jpe?g|webp|gif|avif)(\?|$)/i.test(url) || (/\/image\/upload\//.test(url) && !/\.pdf(\?|$)/i.test(url));
+
+// Pick a file and upload it straight away (same upload as before); shows what's attached.
+const AttachmentField = ({ url, uploading, onPick, onRemove, label = 'Attach a file', sub = 'Screenshot, photo or PDF' }) => {
+    const inputRef = useRef(null);
+    const input = (
+        <input
+            ref={inputRef}
+            type="file"
+            className="hidden"
+            onChange={(e) => { onPick(e); e.target.value = ''; }}
+        />
+    );
+
+    if (uploading) {
+        return (
+            <div className="flex h-16 items-center gap-3 rounded-2xl border border-black/[0.08] px-4 text-[13px] font-semibold text-gray-500 dark:border-white/[0.08]">
+                <Loader2 size={16} className="animate-spin" /> Uploading…
+            </div>
+        );
+    }
+
+    if (!url) {
+        return (
+            <div>
+                <button
+                    type="button"
+                    onClick={() => inputRef.current?.click()}
+                    className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-black/10 px-4 py-4 text-left transition-colors hover:border-black/25 dark:border-white/10 dark:hover:border-white/25"
+                >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black/5 text-gray-500 dark:bg-white/[0.06] dark:text-zinc-300"><Upload size={17} /></span>
+                    <span className="min-w-0">
+                        <span className="block text-[14px] font-bold">{label}</span>
+                        <span className="block text-[12px] text-gray-500">{sub}</span>
+                    </span>
+                </button>
+                {input}
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center gap-3 rounded-2xl border border-black/[0.08] p-3 dark:border-white/[0.08]">
+            <a href={url} target="_blank" rel="noopener noreferrer" className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-black/10 bg-gray-50 dark:border-white/10 dark:bg-white/[0.04]">
+                {isImageUrl(url) ? <img src={url} alt="Attachment" className="h-full w-full object-cover" /> : <FileText size={18} className="text-gray-400" />}
+            </a>
+            <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-bold">File attached</p>
+                <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[12px] font-semibold text-sky-600 dark:text-neon-blue">
+                    Open <ExternalLink size={11} />
+                </a>
+            </div>
+            <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-black/10 px-3 text-[12px] font-bold hover:border-black/25 dark:border-white/10 dark:hover:border-white/25">
+                <RefreshCw size={13} /> Replace
+            </button>
+            {onRemove && (
+                <button type="button" onClick={onRemove} aria-label="Remove attachment" className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-500 hover:bg-red-500/10 hover:text-red-600">
+                    <Trash2 size={15} />
+                </button>
+            )}
+            {input}
+        </div>
+    );
+};
+
+// Read-only label / value list.
+const DetailList = ({ children, className }) => (
+    <div className={cn('divide-y divide-black/[0.06] rounded-2xl border border-black/[0.08] px-4 dark:divide-white/[0.06] dark:border-white/[0.08]', className)}>
+        {children}
+    </div>
+);
+
+const DetailRow = ({ label, children, mono, onCopy }) => (
+    <div className="flex items-center justify-between gap-4 py-2.5">
+        <span className="min-w-[30%] break-words text-[13px] text-gray-500">{label}</span>
+        <span className="flex min-w-0 items-center gap-1.5">
+            <span className={cn('min-w-0 break-words text-right text-[13px] font-semibold', mono && 'break-all font-mono')}>{children}</span>
+            {onCopy && (
+                <button type="button" onClick={onCopy} aria-label={`Copy ${label}`} className="-mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-500 hover:bg-black/5 hover:text-gray-900 dark:hover:bg-white/10 dark:hover:text-white">
+                    <Copy size={14} />
+                </button>
+            )}
+        </span>
+    </div>
+);
+
+// A spend's date is usually a bare "YYYY-MM-DD"; show it as that day, not midnight UTC in IST.
+const slipDate = (value) => {
+    if (!value) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
+        return new Date(`${value}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? String(value) : d.toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+};
+
+const formatINR = (value) => `₹${Number(value || 0).toLocaleString('en-IN')}`;
+
+// 'PENDING' and 'OFFLINE' are placeholders, not real payment references.
+const hasRealRef = (sp) => Boolean(sp?.paymentRef) && sp.paymentRef !== 'PENDING' && sp.paymentRef !== 'OFFLINE';
+
+// Where a UPI ID is stored as "UPI: name@bank" or just "name@bank".
+const upiFrom = (dest = '') => (dest.includes('UPI:') ? dest.split('UPI:')[1].trim() : dest);
 
 const SpendsManagement = () => {
     useStoreSubscription(['spends', 'financePayees', 'invoices', 'upcomingEvents']);
     const { spends, addSpend, updateSpend, deleteSpend, uploadToCloudinary, user, financePayees, invoices, upcomingEvents, addUpcomingEvent } = useStore();
     
-    // Filter states
-    const [searchTerm, setSearchTerm] = useState('');
-    const [monthFilter, setMonthFilter] = useState(
-        new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-    );
-    const [payoutTypeFilter, setPayoutTypeFilter] = useState('All');
-    const [statusFilter, setStatusFilter] = useState('All');
-    const [accountFilter, setAccountFilter] = useState('All');
-    const [viewMode, setViewMode] = useState('grid');
+    // Filters live in the URL so a filtered view can be shared or reloaded.
+    // No month in the URL means this month (IST), as before; "all" means all time.
+    // Months are "YYYY-MM" and follow the payout date, the same as the Finance board.
+    const [params, setParams] = useSearchParams();
+    const currentMonth = todayIST().slice(0, 7);
+    const [searchTerm, setSearchTerm] = useState(() => params.get('q') || '');
+    const monthFilter = params.get('month') === 'all' ? 'all' : (/^\d{4}-\d{2}$/.test(params.get('month') || '') ? params.get('month') : currentMonth);
+    const payoutTypeFilter = PAYOUT_TYPES.includes(params.get('type')) ? params.get('type') : 'All';
+    const statusFilter = ['Paid', 'Pending'].includes(params.get('status')) ? params.get('status') : 'All';
+    const accountFilter = ['newbi', 'personal'].includes(params.get('account')) ? params.get('account') : 'All';
+    const [view, setView] = useViewMode('spends', 'cards');
+    const [limit, setLimit] = useState(PAGE);
+
+    const setFilter = (key, value) => {
+        const next = new URLSearchParams(params);
+        if (value) next.set(key, value); else next.delete(key);
+        setParams(next, { replace: true });
+        setLimit(PAGE);
+    };
+    const setMonth = (value) => setFilter('month', value === currentMonth ? null : value);
+    const setStatusFilter = (value) => setFilter('status', value === 'All' ? null : value);
+    const filtersActive = Boolean(searchTerm || params.get('month') || payoutTypeFilter !== 'All' || statusFilter !== 'All' || accountFilter !== 'All');
+    const clearFilters = () => {
+        setSearchTerm('');
+        const next = new URLSearchParams(params);
+        ['q', 'month', 'type', 'status', 'account'].forEach(k => next.delete(k));
+        setParams(next, { replace: true });
+        setLimit(PAGE);
+    };
 
     // Modals
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(null);
     const [uploadingReceipt, setUploadingReceipt] = useState(false);
+    const [savingSpend, setSavingSpend] = useState(false);
+    const [deletingSpend, setDeletingSpend] = useState(null);
 
     // Form fields
     const [title, setTitle] = useState('');
@@ -69,11 +254,13 @@ const SpendsManagement = () => {
     const [accountType, setAccountType] = useState('newbi'); // newbi vs personal
     const [paymentMode, setPaymentMode] = useState('UPI'); // UPI, Bank Transfer, Cash, Card, Other
     const [status, setStatus] = useState('Paid'); // Paid vs Pending
+    const statusValue = status;
     const [notes, setNotes] = useState('');
     const [receiptUrl, setReceiptUrl] = useState('');
 
     // Dynamic Extra Payout Fields
     const [receiverName, setReceiverName] = useState(''); // Recipient / core member name / artist / volunteer / vendor
+    const [paidByName, setPaidByName] = useState(''); // Team member who paid from a personal account (saved as paidBy)
     const [designation, setDesignation] = useState(''); // For Salaries
     const [salaryPeriod, setSalaryPeriod] = useState(''); // Month/Period (e.g. May 2026)
     const [volunteerPhone, setVolunteerPhone] = useState(''); // For volunteers
@@ -93,6 +280,7 @@ const SpendsManagement = () => {
     const [verificationUTR, setVerificationUTR] = useState('');
     const [showQR, setShowQR] = useState(false);
     const [verificationReceiptUrl, setVerificationReceiptUrl] = useState('');
+    const [slipBusy, setSlipBusy] = useState(false);
 
     // Email Receipt Modal
     const [showEmailModal, setShowEmailModal] = useState(false);
@@ -155,12 +343,13 @@ const SpendsManagement = () => {
     const handleUpiPayClick = async () => {
         if (!activeSlipData) return;
         
-        // Generate Transaction ID directly
-        const autoTxnId = `UPI-TXN-${Date.now()}`;
+        // Keep a reference that's already saved; otherwise make one.
+        const autoTxnId = activeSlipData.reference || `UPI-TXN-${Date.now()}`;
         setVerificationUTR(autoTxnId);
         
         // Update status in the database to Paid (cleared)
         if (activeSlipData.id) {
+            setSlipBusy(true);
             try {
                 await updateSpend(activeSlipData.id, {
                     paymentRef: autoTxnId,
@@ -174,6 +363,10 @@ const SpendsManagement = () => {
                 useStore.getState().addToast('Payment marked as paid via UPI.', 'success');
             } catch (e) {
                 console.error("Error updating upi spend status: ", e);
+                useStore.getState().addToast("Couldn't mark it as paid. Please try again.", 'error');
+                return;
+            } finally {
+                setSlipBusy(false);
             }
         }
         
@@ -187,10 +380,13 @@ const SpendsManagement = () => {
     };
 
     const handleViewReceiptSlip = (spend) => {
+        // 'PENDING' / 'OFFLINE' are placeholders, not real references. A pending payout must not
+        // carry 'PENDING' into the UTR box, or marking it paid would save that as its reference.
+        const realRef = spend.paymentRef && spend.paymentRef !== 'OFFLINE' && spend.paymentRef !== 'PENDING' ? spend.paymentRef : '';
         const slip = {
             id: spend.id || '',
-            date: new Date(spend.date).toLocaleString(),
-            reference: spend.paymentRef && spend.paymentRef !== 'OFFLINE' ? spend.paymentRef : (spend.id || 'N/A'),
+            date: slipDate(spend.date),
+            reference: realRef || (isSpendPaid(spend) ? (spend.id || 'N/A') : ''),
             payoutType: spend.payoutType || 'Expense',
             receiverName: spend.receiverName || spend.paidTo || 'N/A',
             paymentMode: spend.paymentMode || 'N/A',
@@ -203,10 +399,10 @@ const SpendsManagement = () => {
             receiptUrl: spend.receiptUrl || ''
         };
         setActiveSlipData(slip);
-        setVerificationUTR(spend.paymentRef && !spend.paymentRef.startsWith('TXN-') && !spend.paymentRef.startsWith('BULK-') ? spend.paymentRef : '');
+        setVerificationUTR(realRef && !realRef.startsWith('TXN-') && !realRef.startsWith('BULK-') ? realRef : '');
         setShowQR(false);
         setVerificationReceiptUrl(spend.receiptUrl || '');
-        if (spend.status === 'Paid') {
+        if (isSpendPaid(spend)) {
             setPrinterStage('printing');
         } else {
             setPrinterStage('verify');
@@ -231,34 +427,76 @@ const SpendsManagement = () => {
         return null;
     };
 
+    // "Paid, no reference": same as the old Skip UTR button.
+    const handleSkipReference = async () => {
+        const autoTxnId = activeSlipData.reference || `TXN-SKIPPED-${Date.now()}`;
+        if (activeSlipData.id) {
+            setSlipBusy(true);
+            try {
+                const updateData = {
+                    paymentRef: autoTxnId,
+                    status: 'Paid'
+                };
+                if (verificationReceiptUrl) updateData.receiptUrl = verificationReceiptUrl;
+                await updateSpend(activeSlipData.id, updateData);
+                setActiveSlipData(prev => ({ ...prev, reference: autoTxnId, status: 'Paid', receiptUrl: verificationReceiptUrl || prev.receiptUrl, proofUrl: verificationReceiptUrl || prev.receiptUrl }));
+                useStore.getState().addToast('Payment marked as paid.', 'success');
+            } catch (e) {
+                console.error(e);
+                useStore.getState().addToast("Couldn't mark it as paid. Please try again.", 'error');
+                return;
+            } finally {
+                setSlipBusy(false);
+            }
+        } else {
+            setActiveSlipData(prev => ({ ...prev, reference: autoTxnId, status: 'Paid', receiptUrl: verificationReceiptUrl || prev.receiptUrl, proofUrl: verificationReceiptUrl || prev.receiptUrl }));
+        }
+        setPrinterStage('printing');
+    };
+
+    // "Mark paid and print" / "Print receipt": same as the old Verify & Print / Print Receipt buttons.
+    const handleConfirmSlip = async (successMessage) => {
+        if (activeSlipData.id) {
+            setSlipBusy(true);
+            try {
+                const utrValue = verificationUTR || activeSlipData.reference || `TXN-AUTO-${Date.now()}`;
+                const updateData = {
+                    paymentRef: utrValue,
+                    status: 'Paid'
+                };
+                if (verificationReceiptUrl) updateData.receiptUrl = verificationReceiptUrl;
+                await updateSpend(activeSlipData.id, updateData);
+                setActiveSlipData(prev => ({ ...prev, reference: utrValue, status: 'Paid', receiptUrl: verificationReceiptUrl || prev.receiptUrl, proofUrl: verificationReceiptUrl || prev.receiptUrl }));
+                if (verificationUTR) {
+                    useStore.getState().addToast(successMessage, 'success');
+                }
+            } catch (e) {
+                console.error(e);
+                useStore.getState().addToast("Couldn't save the payment details. Please try again.", 'error');
+                return;
+            } finally {
+                setSlipBusy(false);
+            }
+        }
+        setPrinterStage('printing');
+    };
+
     const handleCopy = (text, label) => {
         navigator.clipboard.writeText(text);
         useStore.getState().addToast(`${label} copied.`, 'success');
     };
 
-    const renderPrinterSlot = (statusText, statusColorClass) => (
-        <div className="w-full max-w-[300px] relative select-none">
-            {/* Printer Back Chassis - z-10 (behind paper) */}
-            <div className="relative z-10 bg-gradient-to-b from-zinc-800 to-zinc-900 border border-black/10 dark:border-white/10 rounded-t-3xl pt-5 px-5 pb-4 shadow-[inset_0_4px_12px_rgba(255,255,255,0.05),0_10px_25px_rgba(0,0,0,0.8)] flex flex-col items-center">
-                <div className="flex justify-between items-center w-full px-2 mb-3 text-[8px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 font-mono">
-                    <span>NEWBI DISBURSEMENT TERMINAL</span>
-                    <span className={`flex items-center gap-1.5 ${statusColorClass} font-mono`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${statusColorClass.includes('green') ? 'bg-[#39ff14] shadow-[0_0_8px_#39ff14]' : 'bg-amber-500 animate-ping'}`} />
-                        <span>{statusText}</span>
-                    </span>
-                </div>
-                
-                {/* Dark slot opening - the gap where paper comes out */}
-                <div className="w-full h-4 bg-white dark:bg-black rounded-full border border-zinc-800 relative shadow-[inset_0_4px_12px_rgba(0,0,0,1)]" />
+    // The slot the receipt slides out of.
+    const renderPrinterSlot = (statusText, busy) => (
+        <div className="relative z-30 w-[284px] max-w-full select-none">
+            <div className="flex items-center justify-between px-1 pb-2 text-[12px] font-semibold text-gray-500">
+                <span>Newbi payout receipt</span>
+                <span className="inline-flex items-center gap-1.5">
+                    <span className={cn('h-1.5 w-1.5 rounded-full', busy ? 'animate-pulse bg-amber-500' : 'bg-emerald-500')} />
+                    {statusText}
+                </span>
             </div>
-
-            {/* Front Lip / Cutter Bar Overlay - z-30 (in front of paper, clips over paper top edge) */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2.5rem)]">
-                {/* Glowing cutter bar */}
-                <div className="w-full h-[3px] bg-gradient-to-r from-transparent via-[#39ff14] to-transparent rounded-full shadow-[0_0_12px_rgba(57,255,20,0.6),0_0_4px_rgba(57,255,20,0.9)]" />
-                {/* Thin metal lip below cutter */}
-                <div className="w-full h-[2px] bg-gradient-to-r from-zinc-700 via-zinc-500 to-zinc-700 rounded-full mt-px" />
-            </div>
+            <div className="h-3 rounded-full bg-zinc-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] ring-1 ring-black/10 dark:bg-black dark:ring-white/10" />
         </div>
     );
 
@@ -269,55 +507,52 @@ const SpendsManagement = () => {
         return (
             <div 
                 id="thermal-receipt-body"
-                className="w-[260px] bg-transparent text-gray-900 dark:text-white flex flex-col relative select-none"
+                className="w-[260px] bg-transparent text-white flex flex-col relative select-none"
                 style={{
                     fontFamily: "Outfit, Inter, system-ui, sans-serif"
                 }}
             >
                 {/* Top Header Card */}
-                <div className="bg-gradient-to-br from-[#06120a] via-[#0b2416] to-[#070b09] p-4 text-center text-gray-900 dark:text-white rounded-t-none relative overflow-hidden border-b border-[#39ff14]/25">
-                    {/* Ambient gloss shimmer */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-gray-900 dark:from-white/0 via-gray-900 dark:via-white/10 to-gray-900 dark:to-white/0 -translate-x-full animate-[shimmer_2.5s_infinite]" />
-                    
+                <div className="bg-gradient-to-br from-[#06120a] via-[#0b2416] to-[#070b09] p-4 text-center text-white rounded-t-none relative overflow-hidden border-b border-[#39ff14]/25">
                     <img 
                         src="/logo_full.png" 
                         alt="Newbi Logo" 
                         className="h-5 object-contain mx-auto mb-1.5 filter brightness-0 invert"
                     />
                     <p className="text-[7px] font-black uppercase tracking-[0.3em] text-[#39ff14]">Disbursement Voucher</p>
-                    <h4 className="text-xl font-black tracking-tight text-gray-900 dark:text-white mt-1.5 mb-0.5 drop-shadow-[0_2px_8px_rgba(57,255,20,0.35)]">
+                    <h4 className="text-xl font-black tracking-tight text-white mt-1.5 mb-0.5 drop-shadow-[0_2px_8px_rgba(57,255,20,0.35)]">
                         ₹{Number(data.amount).toLocaleString('en-IN')}
                     </h4>
-                    <p className="text-[7px] font-mono text-gray-900 dark:text-white/70 tracking-wider">REF: {finalUTR}</p>
+                    <p className="text-[7px] font-mono text-white/70 tracking-wider">REF: {finalUTR}</p>
                 </div>
 
                 {/* Details Card Body */}
-                <div className="bg-[#070b09] text-gray-900 dark:text-white px-5 pt-3 pb-2 flex flex-col relative border-x border-[#39ff14]/10">
-                    <div className="space-y-2 text-[9px] uppercase font-bold text-gray-700 dark:text-gray-300">
+                <div className="bg-[#070b09] text-white px-5 pt-3 pb-2 flex flex-col relative border-x border-[#39ff14]/10">
+                    <div className="space-y-2 text-[9px] uppercase font-bold text-zinc-300">
                         <div className="flex justify-between items-center py-0.5">
                             <span className="text-gray-500 font-extrabold text-[7.5px] tracking-wider">Date</span>
-                            <span className="text-gray-900 dark:text-white font-bold">{data.date}</span>
+                            <span className="text-white font-bold">{data.date}</span>
                         </div>
-                        <div className="flex justify-between items-center py-0.5 border-t border-black/10 dark:border-white/5 pt-1.5">
+                        <div className="flex justify-between items-center py-0.5 border-t border-white/5 pt-1.5">
                             <span className="text-gray-500 font-extrabold text-[7.5px] tracking-wider">Payee</span>
                             <span className="text-[#39ff14] font-bold">{data.receiverName}</span>
                         </div>
-                        <div className="flex justify-between items-center py-0.5 border-t border-black/10 dark:border-white/5 pt-1.5">
+                        <div className="flex justify-between items-center py-0.5 border-t border-white/5 pt-1.5">
                             <span className="text-gray-500 font-extrabold text-[7.5px] tracking-wider">Method</span>
                             <span className="text-[#39ff14] font-bold border border-[#39ff14]/20 bg-[#39ff14]/5 px-1.5 py-0.5 rounded text-[7.5px]">
                                 {data.paymentMode}
                             </span>
                         </div>
-                        <div className="flex justify-between items-center py-0.5 border-t border-black/10 dark:border-white/5 pt-1.5 font-mono">
+                        <div className="flex justify-between items-center py-0.5 border-t border-white/5 pt-1.5 font-mono">
                             <span className="text-gray-500 font-extrabold text-[7.5px] tracking-wider font-sans uppercase">Txn ID / UTR</span>
-                            <span className="text-gray-900 dark:text-white font-bold select-all tracking-normal text-right truncate max-w-[140px]">{finalUTR}</span>
+                            <span className="text-white font-bold select-all tracking-normal text-right truncate max-w-[140px]">{finalUTR}</span>
                         </div>
                     </div>
 
                     <div className="border-t border-dashed border-[#39ff14]/20 my-2.5" />
 
                     {/* Verification QR Code pointing to functional verification URL */}
-                    <div className="flex flex-col items-center justify-center p-1.5 bg-white rounded-xl border border-black/10 dark:border-white/10 w-fit mx-auto shadow-inner mb-2.5">
+                    <div className="flex flex-col items-center justify-center p-1.5 bg-white rounded-xl border border-white/10 w-fit mx-auto shadow-inner mb-2.5">
                         <img 
                             src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&color=020202&data=${encodeURIComponent(
                                 `https://newbi.live/verify-payout?ref=${finalUTR}&amt=${data.amount}&payee=${encodeURIComponent(data.receiverName)}&date=${encodeURIComponent(data.date)}&mode=${encodeURIComponent(data.paymentMode)}${(data.receiptUrl || data.proofUrl) ? `&proof=${encodeURIComponent(data.receiptUrl || data.proofUrl)}` : ''}`
@@ -456,45 +691,23 @@ const SpendsManagement = () => {
         }
     };
 
-    const financeTabs = [
-        { name: 'Overview', path: '/admin/finance', icon: LayoutGrid, color: 'text-[#39FF14]' },
-        { name: 'Spends Ledger', path: '/admin/spends', icon: IndianRupee, color: 'text-neon-pink' },
-        { name: 'Other Income', path: '/admin/other-income', icon: FileSpreadsheet, color: 'text-[#39FF14]' },
-        { name: 'Payee Registry', path: '/admin/payees', icon: User, color: 'text-neon-blue' }
-    ];
-
-    const navPills = [
-        { name: 'Overview', path: '/admin/finance', icon: LayoutGrid, isActive: false },
-        { name: 'Expense Ledger', path: '/admin/spends', icon: IndianRupee, isActive: true },
-        { name: 'Other Revenue', path: '/admin/other-income', icon: FileSpreadsheet, isActive: false },
-        { name: 'Payee Database', path: '/admin/payees', icon: User, isActive: false }
-    ];
-
-    const payoutTypes = ['Salary', 'Volunteer Payout', 'Vendor Payout', 'Artist Fee', 'General Expense'];
+    const financeTabs = FINANCE_TABS;
+    const payoutTypes = PAYOUT_TYPES;
     const paymentModes = ['UPI', 'Bank Transfer', 'Cash', 'Card', 'Other'];
 
-    // Helper to extract month label
-    const getMonthLabel = (dateStr) => {
-        if (!dateStr) return '';
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return '';
-        return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    };
-
-    // Calculate month selector list dynamically
+    // Months that have payouts, newest first ("YYYY-MM").
     const monthOptions = useMemo(() => {
-        const months = new Set();
-        months.add(new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
+        const months = new Set([currentMonth]);
+        if (monthFilter !== 'all') months.add(monthFilter);
         spends.forEach(sp => {
-            const label = getMonthLabel(sp.createdAt || sp.date);
-            if (label) months.add(label);
+            const key = spendDay(sp).slice(0, 7);
+            if (key) months.add(key);
         });
-        const sorted = Array.from(months).sort((a, b) => new Date(b) - new Date(a));
-        return ['All Time', ...sorted];
-    }, [spends]);
+        return [...months].sort().reverse();
+    }, [spends, currentMonth, monthFilter]);
 
-    // Filtering logic
-    const filteredSpends = spends.filter(sp => {
+    // Filtering logic (status is applied last so the status tabs can show counts)
+    const spendsBeforeStatus = spends.filter(sp => {
         const matchesSearch = 
             sp.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             sp.receiverName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -502,20 +715,24 @@ const SpendsManagement = () => {
             sp.paidBy?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             sp.linkedInvoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const label = getMonthLabel(sp.createdAt || sp.date);
-        const matchesMonth = monthFilter === 'All Time' ? true : label === monthFilter;
+        const matchesMonth = monthFilter === 'all' ? true : spendDay(sp).slice(0, 7) === monthFilter;
         
         const matchesPayoutType = payoutTypeFilter === 'All' ? true : (sp.payoutType || 'General Expense') === payoutTypeFilter;
-        const matchesStatus = statusFilter === 'All' ? true : sp.status === statusFilter;
         const matchesAccount = accountFilter === 'All' ? true : sp.accountType === accountFilter;
 
-        return matchesSearch && matchesMonth && matchesPayoutType && matchesStatus && matchesAccount;
+        return matchesSearch && matchesMonth && matchesPayoutType && matchesAccount;
     });
+    const filteredSpends = statusFilter === 'All' ? spendsBeforeStatus : spendsBeforeStatus.filter(sp => (statusFilter === 'Paid' ? isSpendPaid(sp) : isSpendPending(sp)));
+    const statusCounts = {
+        All: spendsBeforeStatus.length,
+        Paid: spendsBeforeStatus.filter(isSpendPaid).length,
+        Pending: spendsBeforeStatus.filter(isSpendPending).length,
+    };
 
     // Compute stats for current selection
     const stats = useMemo(() => {
-        const cleared = filteredSpends.filter(s => s.status === 'Paid');
-        const pending = filteredSpends.filter(s => s.status === 'Pending');
+        const cleared = filteredSpends.filter(isSpendPaid);
+        const pending = filteredSpends.filter(isSpendPending);
         const totalCleared = cleared.reduce((sum, s) => sum + Number(s.amount || 0), 0);
         const totalPending = pending.reduce((sum, s) => sum + Number(s.amount || 0), 0);
         const avgOutlay = filteredSpends.length > 0 
@@ -572,13 +789,17 @@ const SpendsManagement = () => {
     };
 
     // Create Spend submission
-    const handleCreateSpend = async (e) => {
+    // forcedStatus: the UPI "confirm" button saves as Paid without waiting for a re-render.
+    const handleCreateSpend = async (e, forcedStatus) => {
         if (e && e.preventDefault) e.preventDefault();
+        const status = forcedStatus || statusValue;
         
         if (!title || !amount || !date) {
             useStore.getState().addToast('Add a title, amount and date before saving.', 'error');
             return;
         }
+        if (savingSpend) return;
+        setSavingSpend(true);
 
         try {
             const newSpendRef = status === 'Paid' ? (customUTR?.trim() || `TXN-${Date.now().toString().slice(-6)}`) : 'PENDING';
@@ -595,7 +816,7 @@ const SpendsManagement = () => {
                 receiptUrl,
                 receiverName: payoutType === 'Salary' || payoutType === 'Volunteer Payout' || payoutType === 'Artist Fee' || payoutType === 'General Expense' ? receiverName : paidTo,
                 paidTo: payoutType === 'Vendor Payout' || payoutType === 'General Expense' ? paidTo : receiverName,
-                paidBy: accountType === 'personal' ? (receiverName || 'Team Member') : 'Newbi Core',
+                paidBy: accountType === 'personal' ? (paidByName.trim() || 'Team Member') : 'Newbi Core',
                 designation: payoutType === 'Salary' || payoutType === 'General Expense' ? designation : '',
                 salaryPeriod: payoutType === 'Salary' ? salaryPeriod : '',
                 volunteerPhone: payoutType === 'Volunteer Payout' ? volunteerPhone : '',
@@ -616,7 +837,7 @@ const SpendsManagement = () => {
             // Only trigger receipt printer if status is Paid
             if (status === 'Paid') {
                 const slip = {
-                    date: new Date(date).toLocaleString(),
+                    date: slipDate(date),
                     reference: newSpendRef,
                     payoutType,
                     receiverName: spendData.receiverName,
@@ -628,6 +849,10 @@ const SpendsManagement = () => {
                     receiptUrl: receiptUrl || ''
                 };
                 setActiveSlipData(slip);
+                setPrinterStage('verify');
+                setVerificationUTR('');
+                setVerificationReceiptUrl('');
+                setShowQR(false);
                 setShowPrinterModal(true);
             }
 
@@ -637,6 +862,8 @@ const SpendsManagement = () => {
         } catch (err) {
             console.error(err);
             useStore.getState().addToast("Couldn't save the spend. Please try again.", 'error');
+        } finally {
+            setSavingSpend(false);
         }
     };
 
@@ -646,39 +873,43 @@ const SpendsManagement = () => {
             useStore.getState().addToast('Choose an event and at least one volunteer first.', 'error');
             return;
         }
+        if (savingSpend) return;
+        setSavingSpend(true);
 
         try {
             const bulkTransactionId = `BULK-${Date.now()}`;
-            const promises = [];
 
             // Get selected volunteers with their custom amounts
             const targets = bulkVolunteers.filter(v => selectedVolunteerIds.includes(v.id));
-
-            for (const vol of targets) {
-                const p = addSpend({
-                    title: `Volunteer Payout: ${selectedBulkEvent}`,
-                    amount: Number(vol.amount || bulkPayoutAmount),
-                    payoutType: 'Volunteer Payout',
-                    date: bulkDate,
-                    accountType: bulkAccountType,
-                    paymentMode: bulkPaymentMode,
-                    status: 'Paid',
-                    notes: bulkNotes || `Bulk event payout clearance.`,
-                    receiverName: vol.name,
-                    paidTo: vol.name,
-                    paidBy: bulkAccountType === 'personal' ? 'Team Member' : 'Newbi Core',
-                    volunteerPhone: vol.phone || '',
-                    linkedGig: selectedBulkEvent,
-                    destinationDetails: vol.destinationDetails || `UPI: ${vol.upiId || ''}`,
-                    linkedInvoiceId: bulkLinkedInvoiceId || '',
-                    linkedInvoiceNumber: bulkLinkedInvoiceNumber || '',
-                    paymentRef: bulkTransactionId,
-                    createdAt: new Date().toISOString()
-                });
-                promises.push(p);
+            const badAmounts = targets.filter(v => !(Number(v.amount || bulkPayoutAmount) > 0));
+            if (badAmounts.length) {
+                useStore.getState().addToast(`Enter an amount above ₹0 for ${badAmounts.map(v => v.name).join(', ')}.`, 'error');
+                return;
             }
 
-            await Promise.all(promises);
+            const records = targets.map(vol => ({
+                title: `Volunteer Payout: ${selectedBulkEvent}`,
+                amount: Number(vol.amount || bulkPayoutAmount),
+                payoutType: 'Volunteer Payout',
+                date: bulkDate,
+                accountType: bulkAccountType,
+                paymentMode: bulkPaymentMode,
+                status: 'Paid',
+                notes: bulkNotes || `Bulk event payout clearance.`,
+                receiverName: vol.name,
+                paidTo: vol.name,
+                paidBy: bulkAccountType === 'personal' ? 'Team Member' : 'Newbi Core',
+                volunteerPhone: vol.phone || '',
+                linkedGig: selectedBulkEvent,
+                destinationDetails: vol.destinationDetails || `UPI: ${vol.upiId || ''}`,
+                linkedInvoiceId: bulkLinkedInvoiceId || '',
+                linkedInvoiceNumber: bulkLinkedInvoiceNumber || '',
+                paymentRef: bulkTransactionId,
+                createdAt: new Date().toISOString()
+            }));
+
+            // Saved together: either every payout is logged or none are, so a retry can't duplicate.
+            await useStore.getState().addSpendsBatch(records);
 
             useStore.getState().addToast(`${targets.length} volunteer payouts logged.`, 'success');
             
@@ -697,12 +928,18 @@ const SpendsManagement = () => {
             };
             
             setActiveSlipData(bulkSlip);
+            setPrinterStage('verify');
+            setVerificationUTR('');
+            setVerificationReceiptUrl('');
+            setShowQR(false);
             setShowPrinterModal(true);
             setShowBulkModal(false);
             resetBulkForm();
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast("Couldn't log the volunteer payouts. Please try again.", 'error');
+            useStore.getState().addToast("Couldn't log the volunteer payouts. Nothing was saved, so it's safe to try again.", 'error');
+        } finally {
+            setSavingSpend(false);
         }
     };
 
@@ -713,10 +950,13 @@ const SpendsManagement = () => {
             useStore.getState().addToast('Add a title, amount and date before saving.', 'error');
             return;
         }
+        if (savingSpend) return;
+        setSavingSpend(true);
 
         try {
-            const existingRef = showEditModal.paymentRef && showEditModal.paymentRef !== 'OFFLINE' && showEditModal.paymentRef !== 'PENDING' ? showEditModal.paymentRef : `TXN-${Date.now().toString().slice(-6)}`;
-            const newSpendRef = status === 'Paid' ? (customUTR?.trim() || existingRef) : 'PENDING';
+            // A saved reference is kept, also when the payout goes back to pending.
+            const savedRef = hasRealRef(showEditModal) ? showEditModal.paymentRef : '';
+            const newSpendRef = status === 'Paid' ? (customUTR?.trim() || savedRef || `TXN-${Date.now().toString().slice(-6)}`) : (savedRef || 'PENDING');
             
             await updateSpend(showEditModal.id, {
                 title,
@@ -730,7 +970,7 @@ const SpendsManagement = () => {
                 receiptUrl,
                 receiverName: payoutType === 'Salary' || payoutType === 'Volunteer Payout' || payoutType === 'Artist Fee' || payoutType === 'General Expense' ? receiverName : paidTo,
                 paidTo: payoutType === 'Vendor Payout' || payoutType === 'General Expense' ? paidTo : receiverName,
-                paidBy: accountType === 'personal' ? receiverName : 'Newbi Core',
+                paidBy: accountType === 'personal' ? (paidByName.trim() || 'Team Member') : 'Newbi Core',
                 designation: payoutType === 'Salary' || payoutType === 'General Expense' ? designation : '',
                 salaryPeriod: payoutType === 'Salary' ? salaryPeriod : '',
                 volunteerPhone: payoutType === 'Volunteer Payout' ? volunteerPhone : '',
@@ -747,26 +987,32 @@ const SpendsManagement = () => {
             resetForm();
         } catch (err) {
             useStore.getState().addToast("Couldn't update the spend. Please try again.", 'error');
+        } finally {
+            setSavingSpend(false);
         }
     };
 
-    const handleDeleteSpend = (id) => {
+    const handleDeleteSpend = (spend) => {
         if (user?.role === 'editor' || user?.role === 'content_admin') {
             useStore.getState().addToast("Only admins can delete spends.", 'error');
             return;
         }
+        setDeletingSpend(spend);
+    };
 
-        if (window.confirm('Are you sure you want to delete this spend record?')) {
-            deleteSpend(id);
-            useStore.getState().addToast('Spend deleted.', 'success');
-        }
+    // Runs from the confirm dialog, which stays open and shows the error if this throws.
+    const confirmDeleteSpend = async () => {
+        await deleteSpend(deletingSpend.id);
+        useStore.getState().addToast('Spend deleted.', 'success');
     };
 
     const handleToggleStatus = async (spend) => {
         try {
-            const newStatus = spend.status === 'Paid' ? 'Pending' : 'Paid';
-            const autoTxnId = newStatus === 'Paid' ? `TXN-${Date.now().toString().slice(-6)}` : 'PENDING';
-            await updateSpend(spend.id, { status: newStatus, paymentRef: autoTxnId });
+            const newStatus = isSpendPaid(spend) ? 'Pending' : 'Paid';
+            const update = { status: newStatus };
+            // Only fill in a placeholder; a saved UTR or reference is never replaced.
+            if (!hasRealRef(spend)) update.paymentRef = newStatus === 'Paid' ? `TXN-${Date.now().toString().slice(-6)}` : 'PENDING';
+            await updateSpend(spend.id, update);
             useStore.getState().addToast(`Spend marked as ${newStatus}.`, 'success');
         } catch (err) {
             useStore.getState().addToast("Couldn't update the spend status. Please try again.", 'error');
@@ -784,6 +1030,7 @@ const SpendsManagement = () => {
         setNotes('');
         setReceiptUrl('');
         setReceiverName('');
+        setPaidByName('');
         setDesignation('');
         setSalaryPeriod(new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
         setVolunteerPhone('');
@@ -808,6 +1055,7 @@ const SpendsManagement = () => {
         setNotes(spend.notes || '');
         setReceiptUrl(spend.receiptUrl || '');
         setReceiverName(spend.receiverName || spend.paidTo || '');
+        setPaidByName(spend.accountType === 'personal' && spend.paidBy && spend.paidBy !== 'Newbi Core' && spend.paidBy !== 'Team Member' ? spend.paidBy : '');
         setDesignation(spend.designation || '');
         setSalaryPeriod(spend.salaryPeriod || '');
         setVolunteerPhone(spend.volunteerPhone || '');
@@ -821,1993 +1069,1138 @@ const SpendsManagement = () => {
     };
 
     // CSV Exporter
-    const handleExportCSV = () => {
-        if (filteredSpends.length === 0) {
-            useStore.getState().addToast("There's nothing to export yet.", 'info');
+    const spendsExportSpec = () => ({
+        filename: `newbi_spends_${fileDate()}`,
+        sheetName: 'Spends',
+        title: 'Newbi spends',
+        subtitle: exportSubtitle(filteredSpends.length, 'payout'),
+        rows: filteredSpends,
+        totals: { amount: true },
+        columns: [
+            { header: 'Date', type: 'date', value: sp => sp.date || null },
+            { header: 'Title', value: sp => sp.title || '' },
+            { header: 'Amount', key: 'amount', type: 'money', value: sp => Number(sp.amount) || 0 },
+            { header: 'Payout Type', value: sp => sp.payoutType || 'General Expense' },
+            { header: 'Account', value: sp => (sp.accountType === 'personal' ? 'Personal account' : 'Newbi official') },
+            { header: 'Paid By', value: sp => sp.paidBy || '' },
+            { header: 'Receiver', value: sp => sp.receiverName || '' },
+            { header: 'Paid To / Vendor', value: sp => sp.paidTo || '' },
+            { header: 'Payment Mode', value: sp => sp.paymentMode || '' },
+            { header: 'Status', value: sp => sp.status || '' },
+            { header: 'Payment Ref', value: sp => sp.paymentRef || '' },
+            { header: 'Notes', value: sp => sp.notes || '', width: 40 },
+            { header: 'Recipient Details', value: sp => sp.destinationDetails || '', width: 40 },
+        ],
+    });
+
+
+    // ---------- Sheet contents ----------
+
+    // Quick fill from a saved payee (same mapping as before).
+    const applyPayee = (payeeId) => {
+        if (!payeeId) return;
+        const payee = financePayees.find(p => p.id === payeeId);
+        if (payee) {
+            setReceiverName(payee.name);
+            setPaidTo(payee.name);
+            setPaymentMode(payee.paymentMode || 'UPI');
+            setDestinationDetails(payee.destinationDetails || '');
+            if (payee.phone) setVolunteerPhone(payee.phone);
+
+            // Map payee type to payout classification
+            if (payee.type === 'Salary') {
+                setPayoutType('Salary');
+                setTitle('Core Salary Payout');
+            } else if (payee.type === 'Volunteer') {
+                setPayoutType('Volunteer Payout');
+                setTitle('Volunteer Gig Remuneration');
+            } else if (payee.type === 'Vendor') {
+                setPayoutType('Vendor Payout');
+                setTitle('Vendor Service Clearance');
+            } else if (payee.type === 'Artist') {
+                setPayoutType('Artist Fee');
+                setTitle('Artist Clearance');
+            }
+            useStore.getState().addToast(`Details filled in for ${payee.name}.`, 'success');
+        }
+    };
+
+    // New payouts get a starter title for the type; editing keeps the title as it is.
+    const changePayoutType = (value, isEdit) => {
+        setPayoutType(value);
+        if (isEdit) return;
+        if (value === 'Salary') setTitle('Core Salary Payout');
+        else if (value === 'Volunteer Payout') setTitle('Volunteer Gig Remuneration');
+        else if (value === 'Vendor Payout') setTitle('Vendor Service Clearance');
+        else if (value === 'Artist Fee') setTitle('Artist Clearance');
+        else setTitle('');
+    };
+
+    const upiCheckoutLink = () => `upi://pay?pa=${upiFrom(destinationDetails)}&pn=${encodeURIComponent(receiverName || paidTo || 'Newbi Payee')}&am=${amount}&cu=INR`;
+
+    const invoiceOptions = (invoices || []).map(inv => (
+        <option key={inv.id} value={inv.id}>
+            {inv.invoiceNumber || 'INV'} - {inv.clientName} (₹{inv.amount?.toLocaleString()})
+        </option>
+    ));
+
+    const renderRecipientFields = () => {
+        if (payoutType === 'Salary') {
+            return (
+                <>
+                    <Field label="Team member">
+                        <input className={fieldCls} value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Who is being paid" required />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Role">
+                            <input className={fieldCls} value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Creative director" required />
+                        </Field>
+                        <Field label="Salary month">
+                            <input className={fieldCls} value={salaryPeriod} onChange={(e) => setSalaryPeriod(e.target.value)} placeholder="e.g. May 2026" required />
+                        </Field>
+                    </div>
+                </>
+            );
+        }
+        if (payoutType === 'Volunteer Payout') {
+            return (
+                <>
+                    <Field label="Volunteer">
+                        <input className={fieldCls} value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Full name" required />
+                    </Field>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <Field label="Phone" optional>
+                            <input className={fieldCls} type="tel" inputMode="tel" value={volunteerPhone} onChange={(e) => setVolunteerPhone(e.target.value)} placeholder="Phone number" />
+                        </Field>
+                        <Field label="Event or gig" optional>
+                            <input className={fieldCls} value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Arena concert gate" />
+                        </Field>
+                    </div>
+                    {invoices && invoices.length > 0 && (
+                        <Field label="Client invoice this is paid from" optional>
+                            <NativeSelect
+                                value={linkedInvoiceId}
+                                onChange={(e) => {
+                                    const invId = e.target.value;
+                                    setLinkedInvoiceId(invId);
+                                    const inv = invoices.find(i => i.id === invId);
+                                    setLinkedInvoiceNumber(inv ? (inv.invoiceNumber || inv.id) : '');
+                                }}
+                            >
+                                <option value="">No invoice linked</option>
+                                {invoiceOptions}
+                            </NativeSelect>
+                        </Field>
+                    )}
+                </>
+            );
+        }
+        if (payoutType === 'Vendor Payout') {
+            return (
+                <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="Vendor">
+                        <input className={fieldCls} value={paidTo} onChange={(e) => setPaidTo(e.target.value)} placeholder="e.g. Sound Rentals Ltd." required />
+                    </Field>
+                    <Field label="Their invoice no." optional>
+                        <input className={fieldCls} value={invoiceRef} onChange={(e) => setInvoiceRef(e.target.value)} placeholder="e.g. INV-10023" />
+                    </Field>
+                </div>
+            );
+        }
+        if (payoutType === 'Artist Fee') {
+            return (
+                <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="Artist or DJ">
+                        <input className={fieldCls} value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Artist name" required />
+                    </Field>
+                    <Field label="Event" optional>
+                        <input className={fieldCls} value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Sunburn stage" />
+                    </Field>
+                </div>
+            );
+        }
+        // General Expense
+        return (
+            <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Paid to">
+                    <input className={fieldCls} value={receiverName} onChange={(e) => { setReceiverName(e.target.value); setPaidTo(e.target.value); }} placeholder="e.g. Amazon office supplies" required />
+                </Field>
+                <Field label="Expense category" optional>
+                    <input className={fieldCls} value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Office, travel, food" />
+                </Field>
+            </div>
+        );
+    };
+
+    const showUpiCheckout = paymentMode === 'UPI' && destinationDetails.includes('@');
+
+    // Log / edit payout form. Fields, validation and saved data are unchanged; only the layout is new.
+    const renderSpendForm = (isEdit) => (
+        <form id={isEdit ? 'spend-form-edit' : 'spend-form-add'} onSubmit={isEdit ? handleUpdateSpend : handleCreateSpend} className="space-y-7">
+            {financePayees && financePayees.length > 0 && (
+                <Field label="Fill from a saved payee" optional hint="Copies their name, payment method and UPI or bank details.">
+                    <NativeSelect defaultValue="" onChange={(e) => applyPayee(e.target.value)}>
+                        <option value="">Choose a payee</option>
+                        {financePayees.map(payee => (
+                            <option key={payee.id} value={payee.id}>
+                                {payee.name} ({payee.type} - {payee.paymentMode})
+                            </option>
+                        ))}
+                    </NativeSelect>
+                </Field>
+            )}
+
+            <Section title="What it's for">
+                <div>
+                    <GroupLabel>Type</GroupLabel>
+                    <Chips label="Payout type" value={payoutType} onChange={(v) => changePayoutType(v, isEdit)} options={payoutTypes} />
+                </div>
+                <Field label="Title">
+                    <input className={fieldCls} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={isEdit ? 'e.g. Monthly salary retainer' : 'e.g. Graphic design monthly retainer'} required />
+                </Field>
+            </Section>
+
+            <Section title="Amount and date">
+                <div className="grid grid-cols-2 gap-3">
+                    <Field label="Amount (₹)">
+                        <input className={fieldCls} type="number" inputMode="decimal" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" required />
+                    </Field>
+                    <Field label="Date">
+                        <input className={fieldCls} type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+                    </Field>
+                </div>
+            </Section>
+
+            <Section title="Who gets paid">
+                {renderRecipientFields()}
+            </Section>
+
+            <Section title="Payment details">
+                <div>
+                    <GroupLabel>Paid from</GroupLabel>
+                    <Choice
+                        value={accountType}
+                        onChange={setAccountType}
+                        options={[
+                            { value: 'newbi', label: 'Newbi account', hint: 'Official company account' },
+                            { value: 'personal', label: 'Personal account', hint: 'A team member paid, to be reimbursed' },
+                        ]}
+                    />
+                </div>
+                {accountType === 'personal' && (
+                    <Field label="Team member who paid">
+                        <input className={fieldCls} value={paidByName} onChange={(e) => setPaidByName(e.target.value)} placeholder="Name of the member paying" required />
+                    </Field>
+                )}
+                <div>
+                    <GroupLabel>Method</GroupLabel>
+                    <Chips label="Payment method" value={paymentMode} onChange={setPaymentMode} options={paymentModes} />
+                </div>
+                <div>
+                    <GroupLabel>Status</GroupLabel>
+                    <Choice
+                        value={status}
+                        onChange={setStatus}
+                        options={[
+                            { value: 'Paid', label: 'Paid', hint: 'Money has gone out' },
+                            { value: 'Pending', label: 'Pending', hint: 'Still to pay' },
+                        ]}
+                    />
+                </div>
+                {status === 'Paid' && !(showUpiCheckout && showUPIFlow && !isEdit) && (
+                    <Field label="UTR or reference" optional hint="Leave empty and we'll make one up.">
+                        <input className={cn(fieldCls, 'font-mono')} value={customUTR} onChange={(e) => setCustomUTR(e.target.value)} placeholder="UPI UTR, bank ref or receipt no." autoCapitalize="characters" />
+                    </Field>
+                )}
+                <Field label="Their UPI ID or bank details" optional hint="Saved with the payout so you can copy it later.">
+                    <input className={fieldCls} value={destinationDetails} onChange={(e) => setDestinationDetails(e.target.value)} placeholder="e.g. UPI: name@okaxis" autoCapitalize="off" />
+                </Field>
+            </Section>
+
+            {!isEdit && showUpiCheckout && (
+                <section className="space-y-4 rounded-2xl border border-black/[0.08] p-4 dark:border-white/[0.08]">
+                    <div>
+                        <h3 className="text-[13px] font-bold">Pay now with UPI</h3>
+                        <p className="text-[12px] text-gray-500">Pay {upiFrom(destinationDetails)}{amount ? ` ${formatINR(amount)}` : ''}, then add the UTR to save it as paid.</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button
+                            variant="secondary"
+                            className="h-12"
+                            onClick={() => {
+                                window.open(upiCheckoutLink(), '_blank');
+                                setShowUPIFlow(true);
+                            }}
+                        >
+                            <Smartphone size={15} /> Open UPI app
+                        </Button>
+                        <Button variant="secondary" className="h-12" onClick={() => setShowUPIFlow(true)}>
+                            <QrCode size={15} /> Show QR
+                        </Button>
+                    </div>
+                    {showUPIFlow && (
+                        <div className="space-y-4 border-t border-black/[0.06] pt-4 dark:border-white/[0.06]">
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="rounded-2xl border border-black/10 bg-white p-3">
+                                    <img
+                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=020202&data=${encodeURIComponent(upiCheckoutLink())}`}
+                                        alt="UPI payment QR code"
+                                        className="h-[150px] w-[150px]"
+                                    />
+                                </div>
+                                <span className="text-[12px] text-gray-500">Scan with any UPI app</span>
+                            </div>
+                            <Field label="UTR from the payment">
+                                <input className={cn(fieldCls, 'font-mono')} value={customUTR} onChange={(e) => setCustomUTR(e.target.value)} placeholder="12-digit UPI reference" inputMode="numeric" />
+                            </Field>
+                            <Button
+                                variant="primary"
+                                className="h-12 w-full"
+                                disabled={savingSpend || uploadingReceipt}
+                                onClick={() => {
+                                    if (!customUTR) {
+                                        useStore.getState().addToast('Enter the UTR number to mark this payment as paid.', 'error');
+                                        return;
+                                    }
+                                    setStatus('Paid');
+                                    handleCreateSpend(null, 'Paid');
+                                }}
+                            >
+                                <Check size={15} /> Confirm and save as paid
+                            </Button>
+                        </div>
+                    )}
+                </section>
+            )}
+
+            <Section title="Receipt" hint="Optional. An invoice, bill or payment screenshot.">
+                <AttachmentField
+                    url={receiptUrl}
+                    uploading={uploadingReceipt}
+                    onPick={(e) => handleReceiptUpload(e, setReceiptUrl)}
+                    onRemove={() => setReceiptUrl('')}
+                    label="Attach a receipt"
+                />
+            </Section>
+
+            <Section title="Notes">
+                <textarea className={cn(areaCls, 'min-h-[96px] resize-y')} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Anything worth remembering about this payout" />
+            </Section>
+        </form>
+    );
+
+    const renderSpendFooter = (isEdit) => (
+        <div className="flex gap-2">
+            <Button variant="ghost" className="h-12" onClick={() => (isEdit ? setShowEditModal(null) : setShowAddModal(false))}>Cancel</Button>
+            <Button variant="primary" type="submit" form={isEdit ? 'spend-form-edit' : 'spend-form-add'} disabled={uploadingReceipt || savingSpend} className="h-12 flex-1">
+                {savingSpend ? 'Saving…' : uploadingReceipt ? 'Uploading…' : isEdit ? 'Save changes' : status === 'Paid' ? 'Save payout' : 'Save as pending'}
+            </Button>
+        </div>
+    );
+
+    // ---------- Bulk volunteer payouts ----------
+
+    const handleBulkCreateEvent = async () => {
+        const eventName = bulkNewEventName.trim();
+        if (!eventName) return;
+        // Check if event already exists
+        const exists = upcomingEvents?.find(e => e.title.toLowerCase() === eventName.toLowerCase());
+        if (exists) {
+            setSelectedBulkEvent(exists.title);
+            setBulkNewEventName('');
+            useStore.getState().addToast('That event already exists, so we selected it for you.', 'info');
             return;
         }
-
-        const headers = ['Title', 'Amount (INR)', 'Payout Type', 'Date', 'Account Type', 'Paid By', 'Receiver Name', 'Paid To / Vendor', 'Payment Mode', 'Status', 'Notes', 'Recipient Details'];
-        const rows = filteredSpends.map(sp => [
-            `"${sp.title?.replace(/"/g, '""') || ''}"`,
-            sp.amount || 0,
-            sp.payoutType || 'General Expense',
-            sp.date || '',
-            sp.accountType === 'personal' ? 'Personal Account' : 'Newbi Official',
-            `"${sp.paidBy || ''}"`,
-            `"${sp.receiverName || ''}"`,
-            `"${sp.paidTo || ''}"`,
-            sp.paymentMode || '',
-            sp.status || '',
-            `"${sp.notes?.replace(/"/g, '""') || ''}"`,
-            `"${sp.destinationDetails?.replace(/"/g, '""') || ''}"`
-        ]);
-
-        const csvContent = "data:text/csv;charset=utf-8," 
-            + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-        
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `newbi_spends_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        try {
+            await addUpcomingEvent({
+                title: eventName,
+                date: new Date().toISOString(),
+                description: `Created from Bulk Payout for volunteer disbursements`,
+                status: 'active',
+                category: 'Event',
+            });
+            setSelectedBulkEvent(eventName);
+            setBulkNewEventName('');
+            useStore.getState().addToast(`Event "${eventName}" created.`, 'success');
+        } catch (err) {
+            console.error(err);
+            useStore.getState().addToast("Couldn't create the event. Please try again.", 'error');
+        }
     };
+
+    const bulkSelected = bulkVolunteers.filter(v => selectedVolunteerIds.includes(v.id));
+    const bulkTotal = bulkSelected.reduce((sum, v) => sum + Number(v.amount || bulkPayoutAmount), 0);
+    const bulkCanContinue = !!selectedBulkEvent && selectedVolunteerIds.length > 0;
+
+    const renderBulkBody = () => (bulkStep === 1 ? (
+        <div className="space-y-7">
+            <Section title="Event">
+                <Field label="Event">
+                    <NativeSelect value={selectedBulkEvent} onChange={(e) => setSelectedBulkEvent(e.target.value)}>
+                        <option value="">Choose an event</option>
+                        {upcomingEvents && upcomingEvents.map(evt => (
+                            <option key={evt.id || evt.title} value={evt.title}>{evt.title}</option>
+                        ))}
+                    </NativeSelect>
+                </Field>
+                <div>
+                    <GroupLabel optional>Or add a new event</GroupLabel>
+                    <div className="flex gap-2">
+                        <input
+                            className={fieldCls}
+                            placeholder="New event name"
+                            value={bulkNewEventName || ''}
+                            onChange={(e) => setBulkNewEventName(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleBulkCreateEvent(); } }}
+                        />
+                        <Button variant="secondary" className="h-12" disabled={!bulkNewEventName?.trim()} onClick={handleBulkCreateEvent}>
+                            <Plus size={14} /> Add
+                        </Button>
+                    </div>
+                </div>
+                <Field label="Default amount per volunteer (₹)" hint="You can change each person's amount below.">
+                    <input className={fieldCls} type="number" inputMode="decimal" step="any" value={bulkPayoutAmount} onChange={(e) => setBulkPayoutAmount(e.target.value)} required />
+                </Field>
+            </Section>
+
+            {selectedBulkEvent && (
+                <Section>
+                    <div className="flex items-end justify-between gap-3">
+                        <div>
+                            <h3 className="text-[13px] font-bold">Volunteers</h3>
+                            <p className="text-[12px] text-gray-500">
+                                {bulkVolunteers.length === 0 ? 'Registered for this event' : `${selectedVolunteerIds.length} of ${bulkVolunteers.length} selected · ${formatINR(bulkTotal)}`}
+                            </p>
+                        </div>
+                        {bulkVolunteers.length > 0 && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-10"
+                                onClick={() => {
+                                    if (selectedVolunteerIds.length === bulkVolunteers.length) {
+                                        setSelectedVolunteerIds([]);
+                                    } else {
+                                        setSelectedVolunteerIds(bulkVolunteers.map(v => v.id));
+                                    }
+                                }}
+                            >
+                                {selectedVolunteerIds.length === bulkVolunteers.length ? 'Clear all' : 'Select all'}
+                            </Button>
+                        )}
+                    </div>
+
+                    {bulkVolunteers.length === 0 ? (
+                        <p className="rounded-2xl border border-dashed border-black/10 px-4 py-6 text-center text-[13px] text-gray-500 dark:border-white/10">
+                            No volunteers registered for this event yet. Share a registration link to get started.
+                        </p>
+                    ) : (
+                        <div className="divide-y divide-black/[0.06] rounded-2xl border border-black/[0.08] dark:divide-white/[0.06] dark:border-white/[0.08]">
+                            {bulkVolunteers.map((vol, index) => {
+                                const isSelected = selectedVolunteerIds.includes(vol.id);
+                                return (
+                                    <div key={vol.id} className={cn('flex items-center gap-3 px-3 py-2.5 transition-opacity', !isSelected && 'opacity-60')}>
+                                        <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 py-1">
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => {
+                                                    if (isSelected) {
+                                                        setSelectedVolunteerIds(prev => prev.filter(id => id !== vol.id));
+                                                    } else {
+                                                        setSelectedVolunteerIds(prev => [...prev, vol.id]);
+                                                    }
+                                                }}
+                                                className="h-5 w-5 shrink-0 cursor-pointer rounded accent-emerald-500"
+                                            />
+                                            <span className="min-w-0">
+                                                <span className="block truncate text-[14px] font-semibold">{vol.name}</span>
+                                                <span className="block truncate text-[12px] text-gray-500">{vol.upiId || vol.phone || 'No UPI ID or phone'}</span>
+                                            </span>
+                                        </label>
+                                        <div className="relative w-28 shrink-0">
+                                            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-gray-400">₹</span>
+                                            <input
+                                                type="number"
+                                                inputMode="decimal"
+                                                step="any"
+                                                aria-label={`Amount for ${vol.name}`}
+                                                value={vol.amount}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setBulkVolunteers(prev => prev.map((v, i) => i === index ? { ...v, amount: val } : v));
+                                                }}
+                                                className={cn(fieldCls, 'h-11 pl-7 pr-2 text-right font-mono text-[14px]')}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </Section>
+            )}
+
+            <Section title="Payment details">
+                <div>
+                    <GroupLabel>Method</GroupLabel>
+                    <Chips label="Payment method" value={bulkPaymentMode} onChange={setBulkPaymentMode} options={paymentModes} />
+                </div>
+                <div>
+                    <GroupLabel>Paid from</GroupLabel>
+                    <Choice
+                        value={bulkAccountType}
+                        onChange={setBulkAccountType}
+                        options={[
+                            { value: 'newbi', label: 'Newbi account', hint: 'Official company account' },
+                            { value: 'personal', label: 'Personal account', hint: 'A team member paid' },
+                        ]}
+                    />
+                </div>
+                <Field label="Date">
+                    <input className={fieldCls} type="date" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} required />
+                </Field>
+                {invoices && invoices.length > 0 && (
+                    <Field label="Client invoice these are paid from" optional>
+                        <NativeSelect
+                            value={bulkLinkedInvoiceId}
+                            onChange={(e) => {
+                                const invId = e.target.value;
+                                setBulkLinkedInvoiceId(invId);
+                                const inv = invoices.find(i => i.id === invId);
+                                setBulkLinkedInvoiceNumber(inv ? (inv.invoiceNumber || inv.id) : '');
+                            }}
+                        >
+                            <option value="">No invoice linked</option>
+                            {invoiceOptions}
+                        </NativeSelect>
+                    </Field>
+                )}
+            </Section>
+
+            <Section title="Notes">
+                <textarea className={cn(areaCls, 'min-h-[88px] resize-y')} value={bulkNotes} onChange={(e) => setBulkNotes(e.target.value)} placeholder="Added to every payout in this batch" />
+            </Section>
+        </div>
+    ) : (
+        <div className="space-y-6">
+            <DetailList>
+                <DetailRow label="Event">{selectedBulkEvent}</DetailRow>
+                <DetailRow label="Volunteers">{selectedVolunteerIds.length}</DetailRow>
+                <DetailRow label="Total">{formatINR(bulkTotal)}</DetailRow>
+            </DetailList>
+
+            <Section title="Pay each volunteer" hint="Tap Pay to open your UPI app, then tick them off once the money has gone.">
+                <div className="divide-y divide-black/[0.06] rounded-2xl border border-black/[0.08] dark:divide-white/[0.06] dark:border-white/[0.08]">
+                    {bulkSelected.map((vol) => {
+                        const isPaid = completedPayments[vol.id];
+                        return (
+                            <div key={vol.id} className="flex items-center gap-3 px-3 py-3">
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="truncate text-[14px] font-semibold">{vol.name}</span>
+                                        {isPaid && <Badge tone="green">Done</Badge>}
+                                    </div>
+                                    <span className="block truncate font-mono text-[12px] text-gray-500">{vol.upiId || 'No UPI ID'} · ₹{vol.amount || bulkPayoutAmount}</span>
+                                </div>
+                                <Button
+                                    variant="secondary"
+                                    className="h-10"
+                                    onClick={() => {
+                                        if (!vol.upiId) {
+                                            useStore.getState().addToast("This payee doesn't have a UPI ID saved yet.", 'error');
+                                            return;
+                                        }
+                                        const deepLink = `upi://pay?pa=${vol.upiId}&pn=${encodeURIComponent(vol.name)}&am=${vol.amount || bulkPayoutAmount}&cu=INR`;
+                                        window.open(deepLink, '_blank');
+                                        setCompletedPayments(prev => ({ ...prev, [vol.id]: true }));
+                                    }}
+                                >
+                                    <Smartphone size={13} /> Pay
+                                </Button>
+                                <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center" aria-label={`Mark ${vol.name} as paid`}>
+                                    <input
+                                        type="checkbox"
+                                        checked={!!isPaid}
+                                        onChange={(e) => {
+                                            setCompletedPayments(prev => ({ ...prev, [vol.id]: e.target.checked }));
+                                        }}
+                                        className="h-5 w-5 cursor-pointer rounded accent-emerald-500"
+                                    />
+                                </label>
+                            </div>
+                        );
+                    })}
+                </div>
+            </Section>
+        </div>
+    ));
+
+    const renderBulkFooter = () => (bulkStep === 1 ? (
+        <div className="flex gap-2">
+            <Button variant="ghost" className="h-12" onClick={() => setShowBulkModal(false)}>Cancel</Button>
+            <Button
+                variant="primary"
+                className="h-12 flex-1"
+                disabled={!bulkCanContinue || savingSpend}
+                onClick={() => {
+                    if (bulkPaymentMode === 'UPI') {
+                        setBulkStep(2);
+                    } else {
+                        handleCreateBulkPayout();
+                    }
+                }}
+            >
+                {bulkPaymentMode === 'UPI'
+                    ? 'Next: pay on UPI'
+                    : savingSpend ? 'Saving…' : `Log ${selectedVolunteerIds.length || ''} payout${selectedVolunteerIds.length === 1 ? '' : 's'}`}
+            </Button>
+        </div>
+    ) : (
+        <div className="flex gap-2">
+            <Button variant="secondary" className="h-12" onClick={() => setBulkStep(1)}><ArrowLeft size={14} /> Back</Button>
+            <Button variant="primary" className="h-12 flex-1" disabled={savingSpend} onClick={handleCreateBulkPayout}>
+                {savingSpend ? 'Saving…' : 'Log payouts and make receipt'}
+            </Button>
+        </div>
+    ));
+
+    // ---------- Payout slip / receipt ----------
+
+    const slipIsPending = !!activeSlipData && (activeSlipData.status === 'Pending' || activeSlipData.status === 'Unpaid');
+
+    const slipTitle = printerStage === 'verify'
+        ? (slipIsPending ? 'Mark payout as paid' : 'Payout receipt')
+        : printerStage === 'printing' ? 'Printing receipt' : 'Payout receipt';
+
+    const closeSlip = () => {
+        // Escape also reaches this sheet while the email sheet is on top; let that one close first.
+        if (showEmailModal) return;
+        setShowPrinterModal(false);
+    };
+
+    const renderSlipHero = () => (
+        <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+                <p className="text-[12px] font-bold text-gray-500">{activeSlipData.isBulk ? 'Bulk payout' : 'Paying'}</p>
+                <p className="break-words text-[16px] font-bold leading-snug">{activeSlipData.receiverName}</p>
+            </div>
+            <div className="shrink-0 text-right">
+                <p className="text-[24px] font-extrabold tracking-tight">{formatINR(activeSlipData.amount)}</p>
+                <Badge tone={slipIsPending ? 'amber' : 'green'}>{slipIsPending ? 'Pending' : 'Paid'}</Badge>
+            </div>
+        </div>
+    );
+
+    const renderBulkBreakdown = () => (activeSlipData.isBulk && activeSlipData.volunteers && activeSlipData.volunteers.length > 0 ? (
+        <Section title={`Volunteers (${activeSlipData.volunteers.length})`}>
+            <DetailList className="max-h-56 overflow-y-auto">
+                {activeSlipData.volunteers.map((vol, idx) => (
+                    <DetailRow key={idx} label={vol.name} mono>{formatINR(vol.amount)}</DetailRow>
+                ))}
+            </DetailList>
+        </Section>
+    ) : null);
+
+    const renderSlipBody = () => {
+        if (!activeSlipData) return null;
+
+        if (printerStage === 'verify' && slipIsPending) {
+            const bank = activeSlipData.paymentMode === 'Bank Transfer' ? getBankDetails() : null;
+            return (
+                <div className="space-y-7">
+                    {renderSlipHero()}
+
+                    <DetailList>
+                        <DetailRow label="Method">{activeSlipData.paymentMode}</DetailRow>
+                        <DetailRow label="Type">{activeSlipData.payoutType}</DetailRow>
+                        {activeSlipData.linkedGig && <DetailRow label="Event">{activeSlipData.linkedGig}</DetailRow>}
+                    </DetailList>
+
+                    {activeSlipData.paymentMode === 'UPI' && (
+                        <Section title="Pay with UPI">
+                            {activeSlipData.destinationDetails && (
+                                <DetailList>
+                                    <DetailRow
+                                        label="UPI ID"
+                                        mono
+                                        onCopy={() => handleCopy(activeSlipData.destinationDetails.replace('UPI:', '').trim(), 'UPI ID')}
+                                    >
+                                        {activeSlipData.destinationDetails.replace('UPI:', '').trim()}
+                                    </DetailRow>
+                                </DetailList>
+                            )}
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button variant="secondary" className="h-12" disabled={slipBusy} onClick={handleUpiPayClick}>
+                                    <Smartphone size={15} /> Pay in UPI app
+                                </Button>
+                                <Button variant="secondary" className="h-12" onClick={() => setShowQR(!showQR)}>
+                                    <QrCode size={15} /> {showQR ? 'Hide QR' : 'Show QR'}
+                                </Button>
+                            </div>
+                            <p className="text-[12px] text-gray-500">Pay in UPI app opens your UPI app and marks this payout as paid straight away.</p>
+                            {showQR && activeSlipData.destinationDetails && (
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="rounded-2xl border border-black/10 bg-white p-3">
+                                        <img
+                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&color=020202&data=${encodeURIComponent(
+                                                `upi://pay?pa=${activeSlipData.destinationDetails.replace('UPI:', '').trim()}&pn=${encodeURIComponent(activeSlipData.receiverName)}&am=${activeSlipData.amount}&cu=INR`
+                                            )}`}
+                                            alt="UPI payment QR code"
+                                            className="h-[160px] w-[160px]"
+                                        />
+                                    </div>
+                                    <span className="text-[12px] text-gray-500">Scan with any UPI app</span>
+                                </div>
+                            )}
+                        </Section>
+                    )}
+
+                    {activeSlipData.paymentMode === 'Bank Transfer' && (
+                        <Section title="Bank details">
+                            {!bank ? (
+                                <p className="rounded-2xl border border-dashed border-black/10 px-4 py-4 text-[13px] text-gray-500 dark:border-white/10">No bank details saved for this payee. Transfer manually.</p>
+                            ) : (
+                                <DetailList>
+                                    <DetailRow label="Account name" onCopy={() => handleCopy(activeSlipData.receiverName, 'Account name')}>{activeSlipData.receiverName}</DetailRow>
+                                    <DetailRow label="Bank" onCopy={() => handleCopy(bank.bankName, 'Bank name')}>{bank.bankName}</DetailRow>
+                                    <DetailRow label="Account no." mono onCopy={() => handleCopy(bank.accountNumber, 'Account number')}>{bank.accountNumber}</DetailRow>
+                                    <DetailRow label="IFSC" mono onCopy={() => handleCopy(bank.ifscCode, 'IFSC code')}>{bank.ifscCode}</DetailRow>
+                                </DetailList>
+                            )}
+                        </Section>
+                    )}
+
+                    {renderBulkBreakdown()}
+
+                    <Section title="Confirm the payment">
+                        <Field label="UTR or reference" optional hint="Leave empty to keep the current reference.">
+                            <input className={cn(fieldCls, 'font-mono')} value={verificationUTR} onChange={(e) => setVerificationUTR(e.target.value)} placeholder="UPI UTR or bank ref" autoCapitalize="characters" />
+                        </Field>
+                        {activeSlipData.id && (
+                            <div>
+                                <GroupLabel optional>Payment proof</GroupLabel>
+                                <AttachmentField
+                                    url={verificationReceiptUrl}
+                                    uploading={uploadingReceipt}
+                                    onPick={(e) => handleReceiptUpload(e, setVerificationReceiptUrl)}
+                                    label="Attach payment proof"
+                                />
+                            </div>
+                        )}
+                    </Section>
+                </div>
+            );
+        }
+
+        if (printerStage === 'verify') {
+            return (
+                <div className="space-y-7">
+                    {renderSlipHero()}
+                    <DetailList>
+                        <DetailRow label="Method">{activeSlipData.paymentMode}</DetailRow>
+                        <DetailRow label="Reference" mono>{activeSlipData.reference}</DetailRow>
+                    </DetailList>
+                    <Section title="Before you print">
+                        <Field
+                            label="UTR or reference on the receipt"
+                            optional
+                            hint={activeSlipData.id ? 'Saved to the payout too.' : 'Only changes the receipt. Edit the payout to change the saved reference.'}
+                        >
+                            <input className={cn(fieldCls, 'font-mono')} value={verificationUTR} onChange={(e) => setVerificationUTR(e.target.value)} placeholder={activeSlipData.reference || 'UPI UTR or bank ref'} autoCapitalize="characters" />
+                        </Field>
+                        {activeSlipData.id && (
+                            <div>
+                                <GroupLabel optional>Payment proof</GroupLabel>
+                                <AttachmentField
+                                    url={verificationReceiptUrl}
+                                    uploading={uploadingReceipt}
+                                    onPick={(e) => handleReceiptUpload(e, setVerificationReceiptUrl)}
+                                    label="Attach payment proof"
+                                />
+                            </div>
+                        )}
+                    </Section>
+                    {renderBulkBreakdown()}
+                </div>
+            );
+        }
+
+        // printing / done: the receipt comes out of the slot, then the actions show.
+        return (
+            <div className="flex flex-col items-center gap-6">
+                <div className="flex w-full flex-col items-center">
+                    {renderPrinterSlot(printerStage === 'printing' ? 'Printing' : 'Ready', printerStage === 'printing')}
+                    <div className="relative z-20 -mt-1.5 flex w-[260px] justify-center overflow-hidden">
+                        {printerStage === 'printing' ? (
+                            <motion.div
+                                initial={{ y: '-100%' }}
+                                animate={{ y: 0 }}
+                                transition={{ duration: 2.2, ease: 'linear' }}
+                                onAnimationComplete={() => setPrinterStage('done')}
+                                className="flex w-full justify-center"
+                            >
+                                {renderThermalReceipt(activeSlipData, verificationUTR)}
+                            </motion.div>
+                        ) : (
+                            renderThermalReceipt(activeSlipData, verificationUTR)
+                        )}
+                    </div>
+                </div>
+
+                {printerStage === 'done' && (
+                    <div className="w-full space-y-6">
+                        <DetailList>
+                            <DetailRow label="Type">{activeSlipData.payoutType}</DetailRow>
+                            {activeSlipData.linkedGig && <DetailRow label="Event">{activeSlipData.linkedGig}</DetailRow>}
+                            {activeSlipData.destinationDetails && (
+                                <DetailRow label="Paid to" mono>{activeSlipData.destinationDetails.replace('UPI:', '').replace('Bank:', '').trim()}</DetailRow>
+                            )}
+                        </DetailList>
+                        {renderBulkBreakdown()}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const renderSlipFooter = () => {
+        if (!activeSlipData) return null;
+        if (printerStage === 'verify' && slipIsPending) {
+            return (
+                <div className="flex gap-2">
+                    <Button variant="secondary" className="h-12" disabled={slipBusy || uploadingReceipt} onClick={handleSkipReference}>
+                        Paid, no reference
+                    </Button>
+                    <Button variant="primary" className="h-12 flex-1" disabled={slipBusy || uploadingReceipt} onClick={() => handleConfirmSlip('Payment details updated and marked as paid.')}>
+                        <Printer size={15} /> {slipBusy ? 'Saving…' : 'Mark paid and print'}
+                    </Button>
+                </div>
+            );
+        }
+        if (printerStage === 'verify') {
+            return (
+                <Button variant="primary" className="h-12 w-full" disabled={slipBusy || uploadingReceipt} onClick={() => handleConfirmSlip('Payment details updated.')}>
+                    <Printer size={15} /> {slipBusy ? 'Saving…' : 'Print receipt'}
+                </Button>
+            );
+        }
+        if (printerStage === 'printing') return null;
+        return (
+            <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-2">
+                    <Button variant="secondary" className="h-11 px-2" onClick={handleShareReceiptText}><Share2 size={14} /> Share</Button>
+                    <Button variant="secondary" className="h-11 px-2" onClick={handleWhatsAppShare}><MessageCircle size={14} /> WhatsApp</Button>
+                    <Button variant="secondary" className="h-11 px-2" onClick={() => setShowEmailModal(true)}><Mail size={14} /> Email</Button>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="ghost" className="h-12" onClick={() => setShowPrinterModal(false)}>Done</Button>
+                    <Button variant="primary" className="h-12 flex-1" onClick={handleDownloadReceipt}><Download size={15} /> Download receipt</Button>
+                </div>
+            </div>
+        );
+    };
+
+    const canDelete = user?.role !== 'editor' && user?.role !== 'content_admin';
+    const shown = filteredSpends.slice(0, limit);
+    const recipientOf = (sp) => sp.receiverName || sp.paidTo || '';
+    const accountLabel = (sp) => {
+        if (sp.accountType !== 'personal') return 'Newbi account';
+        const payer = sp.paidBy && sp.paidBy !== 'Team Member' && sp.paidBy !== 'Newbi Core' ? sp.paidBy : '';
+        return payer ? `Personal (${payer})` : 'Personal account';
+    };
+
+    // Type-specific lines shown on the card (same details as before).
+    const spendFacts = (sp) => {
+        const facts = [];
+        if (sp.payoutType === 'Salary') {
+            facts.push(['Month', sp.salaryPeriod || '—']);
+            facts.push(['Role', sp.designation || 'Core team']);
+        } else if (sp.payoutType === 'Volunteer Payout') {
+            facts.push(['Phone', sp.volunteerPhone || '—', true]);
+            facts.push(['Gig', sp.linkedGig || 'General support']);
+            if (sp.linkedInvoiceNumber) facts.push(['Invoice', `#${sp.linkedInvoiceNumber}`, true]);
+        } else if (sp.payoutType === 'Vendor Payout') {
+            facts.push(['Vendor', sp.paidTo || '—']);
+            facts.push(['Their invoice', sp.invoiceRef || '—', true]);
+        } else if (sp.payoutType === 'Artist Fee') {
+            if (sp.linkedGig) facts.push(['Event', sp.linkedGig]);
+        } else if (sp.designation) {
+            facts.push(['Category', sp.designation]);
+        }
+        facts.push(['Paid from', accountLabel(sp)]);
+        facts.push(['Method', sp.paymentMode || '—']);
+        return facts;
+    };
+
+    // Other gigs this volunteer is registered for (shown when there's more than one).
+    const volunteerGigs = (sp) => financePayees
+        .filter(p => p.type === 'Volunteer' && p.linkedGig && (
+            (sp.receiverName && p.name?.toLowerCase() === sp.receiverName?.toLowerCase()) ||
+            (sp.volunteerPhone && p.phone === sp.volunteerPhone)
+        ))
+        .map(p => p.linkedGig)
+        .filter((g, idx, arr) => arr.indexOf(g) === idx);
+
+    const slipButton = (sp, className) => (
+        isSpendPaid(sp) ? (
+            <Button size="sm" variant="secondary" onClick={() => handleViewReceiptSlip(sp)} className={className}><Printer size={13} /> Receipt</Button>
+        ) : (
+            <Button size="sm" variant="success" onClick={() => handleViewReceiptSlip(sp)} className={className}><Printer size={13} /> Pay or mark paid</Button>
+        )
+    );
+
+    const spendMenu = (sp) => (
+        <Menu trigger={({ toggle }) => (
+            <Button size="sm" variant="ghost" onClick={toggle} aria-label="More actions" className="w-9 px-0"><MoreHorizontal size={15} /></Button>
+        )}>
+            <MenuItem icon={Printer} onClick={() => handleViewReceiptSlip(sp)}>{isSpendPaid(sp) ? 'Payout slip' : 'Payout slip / mark paid'}</MenuItem>
+            <MenuItem icon={Edit} onClick={() => openEdit(sp)}>Edit</MenuItem>
+            <MenuItem icon={isSpendPaid(sp) ? Clock : CheckCircle} onClick={() => handleToggleStatus(sp)} hint={isSpendPaid(sp) ? 'Moves it back to pending' : 'Saves it as paid without a receipt'}>
+                {isSpendPaid(sp) ? 'Mark as pending' : 'Mark as paid'}
+            </MenuItem>
+            {sp.receiptUrl && <MenuItem as="a" href={sp.receiptUrl} target="_blank" rel="noopener noreferrer" icon={Eye}>View proof</MenuItem>}
+            {sp.destinationDetails && <MenuItem icon={Copy} onClick={() => copyToClipboard(sp.destinationDetails)} hint={sp.destinationDetails}>Copy UPI or bank details</MenuItem>}
+            {canDelete && <MenuItem icon={Trash2} danger onClick={() => handleDeleteSpend(sp)}>Delete</MenuItem>}
+        </Menu>
+    );
 
     return (
         <>
             <AdminCommunityHubLayout
-            studioHeader={{
-                title: 'SPENDS',
-                subtitle: 'LEDGER',
-                accentClass: 'text-neon-pink',
-                icon: IndianRupee
-            }}
-            tabs={financeTabs}
-            accentColor="neon-pink"
-            action={
-                <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
-                    <button
-                        onClick={() => { resetBulkForm(); setShowBulkModal(true); }}
-                        className="flex-1 md:flex-none h-11 md:h-12 px-4 md:px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-neon-blue hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[8px] md:text-[9px] rounded-xl border border-neon-blue/20 hover:border-neon-blue/40 transition-all flex items-center justify-center gap-2"
-                    >
-                        <Layers size={14} /> Bulk Payout
-                    </button>
-                    <button
-                        onClick={handleExportCSV}
-                        className="flex-1 md:flex-none h-11 md:h-12 px-4 md:px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[8px] md:text-[9px] rounded-xl border border-black/10 dark:border-white/5 transition-all flex items-center justify-center gap-2"
-                    >
-                        <Download size={14} /> Export CSV
-                    </button>
-                    <button
-                        onClick={() => { resetForm(); setShowAddModal(true); }}
-                        className="flex-1 md:flex-none h-11 md:h-12 px-4 md:px-8 bg-neon-pink text-white font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl shadow-[0_4px_12px_rgba(255,79,139,0.2)] hover:shadow-[0_8px_24px_rgba(255,79,139,0.3)] hover:scale-[1.02] transition-all flex items-center justify-center gap-2 md:gap-3 active:scale-95"
-                    >
-                        <Plus size={16} /> Log Payout
-                    </button>
-                </div>
-            }
-        >
-            <div className="space-y-8 relative">
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex flex-wrap gap-3">
-                    {navPills.map((pill) => {
-                        const Icon = pill.icon;
-                        return (
-                            <Link key={pill.name} to={pill.path}
-                                className={cn(
-                                    "flex items-center gap-2 px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all duration-300 group",
-                                    pill.isActive 
-                                        ? "bg-neon-pink text-white border-neon-pink shadow-[0_0_15px_rgba(255,79,139,0.3)]" 
-                                        : "bg-white/[0.03] text-zinc-400 border-black/10 dark:border-white/10 hover:border-white/30 hover:text-gray-900 dark:hover:text-white hover:bg-white/[0.05]"
-                                )}
-                            >
-                                <Icon size={14} className={cn("transition-transform group-hover:scale-110", pill.isActive ? "text-gray-900 dark:text-white" : "text-neon-pink")} />
-                                {pill.name}
-                            </Link>
-                        )
-                    })}
-                </motion.div>
+                studioHeader={{ title: 'Spends', icon: IndianRupee, description: 'Salaries, volunteer, vendor and artist payouts' }}
+                tabs={financeTabs}
+                action={(
+                    <div className="flex w-full gap-2 sm:w-auto">
+                        <Button variant="secondary" onClick={() => { resetBulkForm(); setShowBulkModal(true); }} className="flex-1 sm:flex-none"><Layers size={14} /> Pay volunteers</Button>
+                        <Button variant="primary" onClick={() => { resetForm(); setShowAddModal(true); }} className="flex-1 sm:flex-none"><Plus size={14} /> Log payout</Button>
+                    </div>
+                )}
+            >
+                <div className="space-y-5">
+                    <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-4 [&::-webkit-scrollbar]:hidden">
+                        <StatTile className={KPI_CLS} icon={CheckCircle} tone="green" label="Paid out" value={inr(stats.totalCleared)} hint={`${stats.countCleared} paid ${stats.countCleared === 1 ? 'payout' : 'payouts'}`} active={statusFilter === 'Paid'} onClick={() => setStatusFilter(statusFilter === 'Paid' ? 'All' : 'Paid')} />
+                        <StatTile className={KPI_CLS} icon={Clock} tone={stats.countPending ? 'amber' : 'gray'} label="Still to pay" value={inr(stats.totalPending)} hint={stats.countPending ? `${stats.countPending} pending ${stats.countPending === 1 ? 'payout' : 'payouts'}` : 'Nothing pending'} active={statusFilter === 'Pending'} onClick={() => setStatusFilter(statusFilter === 'Pending' ? 'All' : 'Pending')} />
+                        <StatTile className={KPI_CLS} icon={Wallet} tone="teal" label="Average payout" value={inr(Math.round(stats.avgOutlay))} hint="Across the payouts shown" />
+                        <StatTile className={KPI_CLS} icon={Award} tone={TYPE_TONE[stats.topCat] || 'gray'} label="Biggest category" value={stats.topCat === 'None' ? '—' : (TYPE_LABEL[stats.topCat] || stats.topCat)} hint={stats.maxCatVal ? `${inr(stats.maxCatVal)} spent` : 'No payouts yet'} active={stats.topCat !== 'None' && payoutTypeFilter === stats.topCat} onClick={stats.topCat !== 'None' ? () => setFilter('type', payoutTypeFilter === stats.topCat ? null : stats.topCat) : undefined} />
+                    </div>
 
-                {/* Stats Panel Overhaul */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                    className="bg-gray-100 dark:bg-zinc-950/35 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl overflow-hidden flex flex-col md:flex-row">
-                    {/* Card 1: Cleared Outflow */}
-                    <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-black/10 dark:border-white/10 hover:bg-white/[0.04] transition-colors">
-                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Cleared Debits</span>
-                        <div className="text-2xl font-mono font-black text-gray-900 dark:text-white">₹{stats.totalCleared.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
-                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1">{stats.countCleared} cleared records</p>
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                        <SearchInput value={searchTerm} onChange={(v) => { setSearchTerm(v); setLimit(PAGE); }} placeholder="Title, recipient, vendor or invoice" className="lg:w-72" />
+                        <div className="grid flex-1 grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+                            <Select label="Month" value={monthFilter} onChange={setMonth} className="sm:w-36" options={[{ value: 'all', label: 'All time' }, ...monthOptions.map(m => ({ value: m, label: monthLabel(m) }))]} />
+                            <Select label="Payout type" value={payoutTypeFilter} onChange={(v) => setFilter('type', v === 'All' ? null : v)} className="sm:w-44" options={[{ value: 'All', label: 'All types' }, ...payoutTypes.map(t => ({ value: t, label: TYPE_LABEL[t] || t }))]} />
+                            <Select label="Paid from" value={accountFilter} onChange={(v) => setFilter('account', v === 'All' ? null : v)} className="sm:w-44" options={[{ value: 'All', label: 'Any account' }, { value: 'newbi', label: 'Newbi account' }, { value: 'personal', label: 'Personal account' }]} />
+                            <div className="sm:ml-auto">
+                                <ExportMenu getSpec={spendsExportSpec} className="w-full [&>button]:w-full" />
+                            </div>
+                        </div>
                     </div>
-                    {/* Card 2: Pending Outflow */}
-                    <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-black/10 dark:border-white/10 hover:bg-white/[0.04] transition-colors">
-                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Pending Outflow</span>
-                        <div className="text-2xl font-mono font-black text-amber-500">₹{stats.totalPending.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
-                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1">{stats.countPending} payouts outstanding</p>
-                    </div>
-                    {/* Card 3: Avg Transaction */}
-                    <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-black/10 dark:border-white/10 hover:bg-white/[0.04] transition-colors">
-                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Average Outlay</span>
-                        <div className="text-2xl font-mono font-black text-gray-900 dark:text-white">₹{Math.round(stats.avgOutlay).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
-                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1">Per filtered entry</p>
-                    </div>
-                    {/* Card 4: Top Category */}
-                    <div className="flex-1 p-5 hover:bg-white/[0.04] transition-colors">
-                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Primary Channel</span>
-                        <div className="text-xl font-mono font-black text-gray-900 dark:text-white uppercase truncate">{stats.topCat}</div>
-                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1">₹{stats.maxCatVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })} Outlay</p>
-                    </div>
-                </motion.div>
 
-                {/* Advanced Command Filter Panel */}
-                <div className="bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-2xl p-6 space-y-4">
-                    {/* First Row: Search & View modes */}
-                    <div className="flex flex-col xl:flex-row items-center gap-4">
-                        <div className="relative flex-1 w-full group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-pink-600 dark:group-focus-within:text-neon-pink transition-colors" size={16} />
-                            <input 
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Search by recipient name, vendor, note or title..."
-                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-12 pl-12 pr-6 outline-none focus:border-neon-pink transition-all placeholder:text-gray-600"
+                    <div className="flex items-center gap-2">
+                        <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                            <SegmentedTabs
+                                value={statusFilter}
+                                onChange={setStatusFilter}
+                                items={[
+                                    { value: 'All', label: 'All', count: statusCounts.All },
+                                    { value: 'Pending', label: 'Pending', count: statusCounts.Pending, highlight: statusCounts.Pending > 0 },
+                                    { value: 'Paid', label: 'Paid', count: statusCounts.Paid },
+                                ]}
                             />
                         </div>
-
-                        {/* View Mode Toggle */}
-                        <div className="flex bg-white dark:bg-black/40 p-1 rounded-xl border border-black/10 dark:border-white/5 w-full xl:w-auto justify-center shrink-0">
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                className={cn(
-                                    "flex-1 xl:flex-none px-6 py-2.5 rounded-lg transition-all flex justify-center gap-2 text-[9px] font-black uppercase tracking-widest",
-                                    viewMode === 'grid' ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                )}
-                            >
-                                <LayoutGrid size={14} /> Grid
-                            </button>
-                            <button
-                                onClick={() => setViewMode('table')}
-                                className={cn(
-                                    "flex-1 xl:flex-none px-6 py-2.5 rounded-lg transition-all flex justify-center gap-2 text-[9px] font-black uppercase tracking-widest",
-                                    viewMode === 'table' ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                )}
-                            >
-                                <FileText size={14} /> Table
-                            </button>
-                        </div>
+                        {filtersActive && (
+                            <Button variant="ghost" size="sm" onClick={clearFilters} aria-label="Clear filters" className="px-2.5 sm:px-3"><X size={14} /><span className="hidden sm:inline">Clear filters</span></Button>
+                        )}
+                        <ViewToggle value={view} onChange={setView} />
                     </div>
 
-                    {/* Second Row: Detailed filtration toggles */}
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-[9px] font-black uppercase tracking-[0.2em] text-gray-600 dark:text-gray-400">
-                        {/* Month selection */}
-                        <div className="space-y-1.5">
-                            <span className="text-[8px] text-gray-500 tracking-widest">Select Month</span>
-                            <select 
-                                value={monthFilter} 
-                                onChange={(e) => setMonthFilter(e.target.value)}
-                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 h-10 rounded-xl px-3 text-gray-900 dark:text-white outline-none focus:border-neon-pink transition-all font-bold font-mono"
-                            >
-                                {monthOptions.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950">{m}</option>)}
-                            </select>
-                        </div>
-
-                        {/* Payout Category type selection */}
-                        <div className="space-y-1.5">
-                            <span className="text-[8px] text-gray-500 tracking-widest">Payout Type</span>
-                            <select 
-                                value={payoutTypeFilter} 
-                                onChange={(e) => setPayoutTypeFilter(e.target.value)}
-                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 h-10 rounded-xl px-3 text-gray-900 dark:text-white outline-none focus:border-neon-pink transition-all font-bold"
-                            >
-                                <option value="All" className="bg-gray-100 dark:bg-zinc-950 font-bold">All Types</option>
-                                {payoutTypes.map(pt => <option key={pt} value={pt} className="bg-gray-100 dark:bg-zinc-950">{pt}</option>)}
-                            </select>
-                        </div>
-
-                        {/* Account type filter */}
-                        <div className="space-y-1.5">
-                            <span className="text-[8px] text-gray-500 tracking-widest">Source Account</span>
-                            <select 
-                                value={accountFilter} 
-                                onChange={(e) => setAccountFilter(e.target.value)}
-                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 h-10 rounded-xl px-3 text-gray-900 dark:text-white outline-none focus:border-neon-pink transition-all font-bold"
-                            >
-                                <option value="All" className="bg-gray-100 dark:bg-zinc-950">All Accounts</option>
-                                <option value="newbi" className="bg-gray-100 dark:bg-zinc-950">Newbi Official</option>
-                                <option value="personal" className="bg-gray-100 dark:bg-zinc-950">Personal Account</option>
-                            </select>
-                        </div>
-
-                        {/* Status filter */}
-                        <div className="space-y-1.5">
-                            <span className="text-[8px] text-gray-500 tracking-widest">Payment Status</span>
-                            <select 
-                                value={statusFilter} 
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 h-10 rounded-xl px-3 text-gray-900 dark:text-white outline-none focus:border-neon-pink transition-all font-bold"
-                            >
-                                <option value="All" className="bg-gray-100 dark:bg-zinc-950">All Status</option>
-                                <option value="Paid" className="bg-gray-100 dark:bg-zinc-950">Paid / Cleared</option>
-                                <option value="Pending" className="bg-gray-100 dark:bg-zinc-950">Pending / Unpaid</option>
-                            </select>
-                        </div>
-
-                        {/* Clear/Reset button */}
-                        <div className="flex items-end justify-end">
-                            <button
-                                onClick={() => {
-                                    setSearchTerm('');
-                                    setMonthFilter(new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
-                                    setPayoutTypeFilter('All');
-                                    setStatusFilter('All');
-                                    setAccountFilter('All');
-                                }}
-                                className="w-full h-10 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white rounded-xl transition-all border border-black/10 dark:border-white/5 flex items-center justify-center gap-2 font-black tracking-widest uppercase text-[9px]"
-                            >
-                                <X size={12} /> Clear Filters
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Spends Display Ledger */}
-                <AnimatePresence mode="wait">
-                    {viewMode === 'grid' ? (
-                        <motion.div key="grid" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredSpends.map((sp, i) => (
-                                <motion.div key={sp.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} className="h-full flex flex-col">
-                                    <div className="group relative p-6 bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2.5rem] flex flex-col justify-between h-full overflow-hidden hover:border-black/20 dark:hover:border-white/20 duration-500 hover:-translate-y-1 hover:shadow-[0_15px_40px_rgba(255,46,144,0.06)]">
-                                        <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform pointer-events-none"><IndianRupee size={100} /></div>
-                                        <div>
-                                            {/* Top badges */}
-                                            <div className="flex justify-between items-start mb-6">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[8px] font-black uppercase tracking-widest text-neon-pink bg-neon-pink/10 px-3 py-1 rounded-full border border-neon-pink/20">
-                                                        {sp.payoutType || 'General Expense'}
-                                                    </span>
-                                                    <div className={cn("w-2 h-2 rounded-full animate-pulse shadow-[0_0_8px_currentColor]", sp.status === 'Paid' ? 'text-neon-green bg-neon-green' : 'text-yellow-500 bg-yellow-500')} />
-                                                </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <button onClick={() => openEdit(sp)} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5 hover:text-gray-900 dark:hover:text-white" title="Edit Payout"><Edit size={14} /></button>
-                                                    {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                        <button onClick={() => handleDeleteSpend(sp.id)} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5" title="Purge Record"><Trash2 size={14} /></button>
-                                                    )}
-                                                </div>
+                    {shown.length === 0 ? (
+                        <Card className="rounded-2xl">
+                            <EmptyState
+                                icon={Inbox}
+                                title={spends.length ? 'No matching payouts' : 'No payouts yet'}
+                                description={spends.length ? `Nothing for ${monthFilter === 'all' ? 'these filters' : monthLabel(monthFilter)}. Try another month or clear the filters.` : 'Log salaries, volunteer, vendor and artist payouts here.'}
+                                action={spends.length
+                                    ? (filtersActive && <Button variant="secondary" onClick={clearFilters}><X size={14} /> Clear filters</Button>)
+                                    : <Button variant="primary" onClick={() => { resetForm(); setShowAddModal(true); }}><Plus size={14} /> Log payout</Button>}
+                            />
+                        </Card>
+                    ) : view === 'cards' ? (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                            {shown.map(sp => {
+                                const gigs = sp.payoutType === 'Volunteer Payout' ? volunteerGigs(sp) : [];
+                                return (
+                                    <Card key={sp.id} className="flex flex-col rounded-2xl p-4 transition-colors hover:border-black/15 dark:hover:border-white/15">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                <Badge tone={isSpendPaid(sp) ? 'green' : 'amber'}>{isSpendPaid(sp) ? 'Paid' : 'Pending'}</Badge>
+                                                <Badge tone={TYPE_TONE[sp.payoutType || 'General Expense'] || 'gray'}>{TYPE_LABEL[sp.payoutType || 'General Expense'] || sp.payoutType}</Badge>
+                                                {sp.isBulk && <Badge tone="blue">Bulk</Badge>}
                                             </div>
-
-                                            {/* Details section based on payout type */}
-                                            <h3 className="text-xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-2 leading-tight line-clamp-2">{sp.title}</h3>
-                                            
-                                            <div className="space-y-2 mt-5 p-4 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-2xl text-[9px] text-gray-500 font-bold uppercase tracking-wider">
-                                                {/* Payout Specific Card Information */}
-                                                {sp.payoutType === 'Salary' && (
-                                                    <>
-                                                        <div className="flex justify-between"><span className="text-gray-600">Period:</span> <span className="text-gray-900 dark:text-white font-mono">{sp.salaryPeriod || 'N/A'}</span></div>
-                                                        <div className="flex justify-between"><span className="text-gray-600">Designation:</span> <span className="text-gray-900 dark:text-white">{sp.designation || 'Core Team'}</span></div>
-                                                    </>
-                                                )}
-
-                                                {sp.payoutType === 'Volunteer Payout' && (
-                                                    <>
-                                                        <div className="flex justify-between"><span className="text-gray-600">Volunteer Phone:</span> <span className="text-gray-900 dark:text-white font-mono select-all">{sp.volunteerPhone || 'N/A'}</span></div>
-                                                        <div className="flex justify-between"><span className="text-gray-600">Gig Reference:</span> <span className="text-neon-pink truncate max-w-[140px]">{sp.linkedGig || 'General Support'}</span></div>
-                                                        {/* All registered gigs for this payee */}
-                                                        {(() => {
-                                                            const payeeGigs = financePayees
-                                                                .filter(p => p.type === 'Volunteer' && p.linkedGig && (
-                                                                    (sp.receiverName && p.name?.toLowerCase() === sp.receiverName?.toLowerCase()) ||
-                                                                    (sp.volunteerPhone && p.phone === sp.volunteerPhone)
-                                                                ))
-                                                                .map(p => p.linkedGig)
-                                                                .filter((g, idx, arr) => arr.indexOf(g) === idx);
-                                                            return payeeGigs.length > 1 ? (
-                                                                <div className="mt-1">
-                                                                    <span className="text-gray-600 text-[8px]">All Registered Gigs:</span>
-                                                                    <div className="flex flex-wrap gap-1 mt-1">
-                                                                        {payeeGigs.map(g => (
-                                                                            <span key={g} className={cn(
-                                                                                "text-[7px] px-2 py-0.5 rounded-full border font-black uppercase tracking-wider",
-                                                                                g === sp.linkedGig
-                                                                                    ? "bg-neon-green/10 text-neon-green border-neon-green/20"
-                                                                                    : "bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 border-black/10 dark:border-white/10"
-                                                                            )}>
-                                                                                {g}
-                                                                            </span>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            ) : null;
-                                                        })()}
-                                                        {sp.linkedInvoiceNumber && (
-                                                            <div className="flex justify-between"><span className="text-gray-600">Linked Invoice:</span> <span className="text-neon-blue font-mono font-black">#{sp.linkedInvoiceNumber}</span></div>
-                                                        )}
-                                                    </>
-                                                )}
-
-                                                {sp.payoutType === 'Vendor Payout' && (
-                                                    <>
-                                                        <div className="flex justify-between"><span className="text-gray-600">Vendor Entity:</span> <span className="text-gray-900 dark:text-white">{sp.paidTo || 'N/A'}</span></div>
-                                                        <div className="flex justify-between"><span className="text-gray-600">Invoice Ref:</span> <span className="text-gray-900 dark:text-white font-mono">{sp.invoiceRef || 'N/A'}</span></div>
-                                                    </>
-                                                )}
-
-                                                {sp.payoutType === 'Artist Fee' && (
-                                                    <>
-                                                        <div className="flex justify-between"><span className="text-gray-600">Artist Entity:</span> <span className="text-gray-900 dark:text-white">{sp.receiverName || 'N/A'}</span></div>
-                                                    </>
-                                                )}
-
-                                                {sp.payoutType === 'General Expense' && (
-                                                    <>
-                                                        <div className="flex justify-between"><span className="text-gray-600">Payee:</span> <span className="text-gray-900 dark:text-white">{sp.receiverName || sp.paidTo || 'N/A'}</span></div>
-                                                        {sp.designation && <div className="flex justify-between"><span className="text-gray-600">Category:</span> <span className="text-gray-900 dark:text-white">{sp.designation}</span></div>}
-                                                    </>
-                                                )}
-
-                                                <div className="flex justify-between pt-2 border-t border-black/10 dark:border-white/5"><span className="text-gray-600">Account:</span> <span className="text-gray-900 dark:text-white">{sp.accountType === 'personal' ? `Personal (${sp.receiverName || sp.paidBy})` : 'Newbi Official'}</span></div>
-                                                <div className="flex justify-between"><span className="text-gray-600">Mode:</span> <span className="text-gray-900 dark:text-white">{sp.paymentMode}</span></div>
-                                                <div className="flex justify-between"><span className="text-gray-600">Date:</span> <span className="text-gray-600 dark:text-gray-400 font-mono">{new Date(sp.date).toLocaleDateString()}</span></div>
-                                            </div>
-
-                                            {/* Destination UPI / Bank block with quick copy */}
-                                            {sp.destinationDetails && (
-                                                <div className="mt-4 p-3 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-xl flex items-center justify-between gap-3 text-[8px] font-black uppercase tracking-widest">
-                                                    <div className="truncate flex-1">
-                                                        <span className="text-gray-600 block text-[6px]">Payout Destination</span>
-                                                        <span className="text-gray-900 dark:text-white font-mono select-all truncate block mt-0.5">{sp.destinationDetails}</span>
-                                                    </div>
-                                                    <button 
-                                                        onClick={() => copyToClipboard(sp.destinationDetails)}
-                                                        className="p-2 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg border border-black/10 dark:border-white/5 transition-all shrink-0"
-                                                        title="Copy Details"
-                                                    >
-                                                        <Copy size={12} />
-                                                    </button>
-                                                </div>
-                                            )}
+                                            <span className="shrink-0 text-[12px] text-gray-500">{formatDay(spendDay(sp)) || '—'}</span>
                                         </div>
 
-                                        {/* Bottom metrics and Action toggles */}
-                                        <div className="flex items-center justify-between pt-6 mt-6 border-t border-black/10 dark:border-white/5 shrink-0 relative z-10">
-                                            <div className="text-xl font-black text-gray-900 dark:text-white tabular-nums flex items-center gap-0.5 leading-none">
-                                                <IndianRupee className="size-4 stroke-[2] text-[#FF2E90]" />
-                                                {sp.amount?.toLocaleString()}
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                {sp.status === 'Paid' && (
-                                                    <button
-                                                        onClick={() => handleViewReceiptSlip(sp)}
-                                                        className="h-10 w-10 bg-black/5 dark:bg-white/5 hover:bg-neon-pink hover:text-black text-gray-600 dark:text-gray-400 rounded-xl border border-black/10 dark:border-white/5 transition-all flex items-center justify-center"
-                                                        title="Print Payout Slip"
-                                                    >
-                                                        <Printer size={12} />
-                                                    </button>
-                                                )}
-                                                {sp.receiptUrl ? (
-                                                    <a 
-                                                        href={sp.receiptUrl} 
-                                                        target="_blank" 
-                                                        rel="noopener noreferrer" 
-                                                        className="h-10 px-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl border border-black/10 dark:border-white/5 flex items-center justify-center gap-1 text-[9px] font-black uppercase tracking-widest transition-all"
-                                                    >
-                                                        <Eye size={12} /> Proof
-                                                    </a>
-                                                ) : (
-                                                    <span className="text-[7px] text-gray-600 font-black uppercase tracking-widest flex items-center gap-1.5 pl-2"><AlertTriangle size={10} /> No Proof</span>
-                                                )}
-                                                <button
-                                                    onClick={() => handleToggleStatus(sp)}
-                                                    className={cn(
-                                                        "h-10 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border",
-                                                        sp.status === 'Paid' 
-                                                            ? "bg-neon-green/10 text-neon-green border-neon-green/20 hover:bg-neon-green/20 shadow-[0_0_10px_rgba(57,255,20,0.1)]" 
-                                                            : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/20"
-                                                    )}
-                                                >
-                                                    {sp.status === 'Paid' ? 'Cleared' : 'Pending'}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    ) : (
-                        <motion.div key="table" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="overflow-x-auto scrollbar-hide">
-                            <div className="md:min-w-[1000px] bg-gray-100 dark:bg-zinc-900/40 border-black/10 dark:border-white/5 rounded-3xl p-0 border overflow-hidden">
-                                <table className="w-full text-left hidden md:table">
-                                    <thead>
-                                        <tr className="border-b border-black/10 dark:border-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">
-                                            <th className="p-6">Spend Item</th>
-                                            <th className="p-6">Amount</th>
-                                            <th className="p-6">Payout Type</th>
-                                            <th className="p-6">Source Account</th>
-                                            <th className="p-6">Recipient Info</th>
-                                            <th className="p-6">Payout Destination</th>
-                                            <th className="p-6">Date</th>
-                                            <th className="p-6">Status</th>
-                                            <th className="p-6 text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5 text-[11px] font-bold uppercase tracking-wider">
-                                        {filteredSpends.map((sp) => (
-                                            <tr key={sp.id} className="hover:bg-white/[0.01] transition-colors group">
-                                                <td className="p-6">
-                                                    <div className="text-xs font-black text-gray-900 dark:text-white">{sp.title}</div>
-                                                    {sp.notes && <div className="text-[8px] text-gray-600 tracking-wide mt-1 lowercase normal-case">{sp.notes}</div>}
-                                                </td>
-                                                <td className="p-6 text-gray-900 dark:text-white font-black tabular-nums">
-                                                    <div className="flex items-center gap-0.5">₹{sp.amount?.toLocaleString()}</div>
-                                                </td>
-                                                <td className="p-6 text-neon-pink font-black text-[9px]">{sp.payoutType || 'General Expense'}</td>
-                                                <td className="p-6 text-gray-600 dark:text-gray-400">
-                                                    {sp.accountType === 'personal' ? `Personal (${sp.receiverName || sp.paidBy})` : 'Newbi Official'}
-                                                </td>
-                                                <td className="p-6 text-gray-600 dark:text-gray-400">
-                                                    <div className="text-xs font-black text-gray-900 dark:text-white">{sp.receiverName || sp.paidTo || 'N/A'}</div>
-                                                    {sp.payoutType === 'Salary' && sp.designation && <div className="text-[8px] text-gray-600 mt-0.5">{sp.designation}</div>}
-                                                    {sp.payoutType === 'General Expense' && sp.designation && <div className="text-[8px] text-gray-600 mt-0.5">{sp.designation}</div>}
-                                                    {sp.payoutType === 'Volunteer Payout' && sp.volunteerPhone && <div className="text-[8px] text-gray-600 font-mono mt-0.5">{sp.volunteerPhone}</div>}
-                                                    {sp.linkedGig && <div className="text-[8px] text-neon-pink font-black mt-0.5">🎤 {sp.linkedGig}</div>}
-                                                    {sp.linkedInvoiceNumber && <div className="text-[8px] text-neon-blue font-black font-mono mt-0.5">Inv: #{sp.linkedInvoiceNumber}</div>}
-                                                </td>
-                                                <td className="p-6 text-gray-600 dark:text-gray-400">
-                                                    {sp.destinationDetails ? (
-                                                        <div className="flex items-center gap-2 max-w-[200px]">
-                                                            <span className="font-mono text-[9px] truncate text-gray-900 dark:text-white select-all">{sp.destinationDetails}</span>
-                                                            <button 
-                                                                onClick={() => copyToClipboard(sp.destinationDetails)}
-                                                                className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-500 rounded hover:text-gray-900 dark:hover:text-white transition-all shrink-0"
-                                                                title="Copy Payout Address"
-                                                            >
-                                                                <Copy size={10} />
-                                                            </button>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-[8px] text-gray-700 font-black">N/A</span>
-                                                    )}
-                                                </td>
-                                                <td className="p-6 text-gray-500 font-mono text-[10px]">{new Date(sp.date).toLocaleDateString()}</td>
-                                                <td className="p-6">
-                                                    <button 
-                                                        onClick={() => handleToggleStatus(sp)}
-                                                        className={cn(
-                                                            "px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-[0.2em] border",
-                                                            sp.status === 'Paid' 
-                                                                ? "bg-neon-green/10 text-neon-green border-neon-green/20" 
-                                                                : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-                                                        )}
-                                                    >
-                                                        {sp.status === 'Paid' ? 'Cleared' : 'Pending'}
-                                                    </button>
-                                                </td>
-                                                <td className="p-6 text-right">
-                                                    <div className="flex justify-end gap-2">
-                                                        {sp.status === 'Paid' && (
-                                                            <button onClick={() => handleViewReceiptSlip(sp)} className="p-2 text-gray-500 hover:text-neon-pink transition-colors" title="Print Payout Slip"><Printer size={16} /></button>
-                                                        )}
-                                                        {sp.receiptUrl && (
-                                                            <a href={sp.receiptUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><Eye size={16} /></a>
-                                                        )}
-                                                        <button onClick={() => openEdit(sp)} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={16} /></button>
-                                                        {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                            <button onClick={() => handleDeleteSpend(sp.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-
-                                {/* Mobile Stacked Cards for Spends */}
-                                <div className="flex md:hidden flex-col gap-4 p-4">
-                                    {filteredSpends.map((sp) => (
-                                        <div key={sp.id} className="bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl p-4 flex flex-col gap-4">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-neon-pink/10 flex items-center justify-center text-neon-pink">
-                                                        <CreditCard size={20} />
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-xs font-black text-gray-900 dark:text-white">{sp.title}</div>
-                                                        {sp.notes && <div className="text-[8px] text-gray-600 tracking-wide mt-1 lowercase normal-case">{sp.notes}</div>}
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-sm font-black text-gray-900 dark:text-white tabular-nums">₹{sp.amount?.toLocaleString()}</div>
-                                                    <div className="text-[10px] text-gray-500 font-mono mt-0.5">{new Date(sp.date).toLocaleDateString()}</div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="flex justify-between items-center bg-black/5 dark:bg-white/5 rounded-xl p-3">
-                                                <div>
-                                                    <div className="text-xs font-black text-gray-900 dark:text-white">{sp.receiverName || sp.paidTo || 'N/A'}</div>
-                                                    <div className="text-[8px] font-bold text-neon-pink uppercase mt-0.5">{sp.payoutType || 'General Expense'}</div>
-                                                </div>
-                                                <button 
-                                                    onClick={() => handleToggleStatus(sp)}
-                                                    className={cn(
-                                                        "px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-[0.2em] border",
-                                                        sp.status === 'Paid' 
-                                                            ? "bg-neon-green/10 text-neon-green border-neon-green/20" 
-                                                            : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-                                                    )}
-                                                >
-                                                    {sp.status === 'Paid' ? 'Cleared' : 'Pending'}
-                                                </button>
-                                            </div>
-
-                                            <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-black/10 dark:border-white/5">
-                                                {sp.status === 'Paid' && (
-                                                    <button onClick={() => handleViewReceiptSlip(sp)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-pink transition-colors" title="Print Payout Slip"><Printer size={16} /></button>
-                                                )}
-                                                {sp.receiptUrl && (
-                                                    <a href={sp.receiptUrl} target="_blank" rel="noopener noreferrer" className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Eye size={16} /></a>
-                                                )}
-                                                <button onClick={() => openEdit(sp)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={16} /></button>
-                                                {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                    <button onClick={() => handleDeleteSpend(sp.id)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
-        </AdminCommunityHubLayout>
-
-            {/* Add Spend Modal - Glassmorphic Overlay Overhaul */}
-            {createPortal(
-                <AnimatePresence>
-                    {showAddModal && (
-                        <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddModal(false)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
-                        <motion.div 
-                            initial={{ x: '100%' }} 
-                            animate={{ x: 0 }} 
-                            exit={{ x: '100%' }}
-                            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 z-[101] flex flex-col text-gray-900 dark:text-white"
-                        >
-                            <div className="p-6 border-b border-black/10 dark:border-white/5 flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white">LOG <span className="text-neon-pink">PAYOUT.</span></h2>
-                                    <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Central Expense & Payout Registration Console</p>
-                                </div>
-                                <button type="button" onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"><X size={14} /></button>
-                            </div>
-                            
-                            <form onSubmit={handleCreateSpend} className="flex-1 flex flex-col overflow-hidden">
-                                <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar pb-24">
-                                {/* Quick Fill Selection */}
-                                {financePayees && financePayees.length > 0 && (
-                                    <div className="space-y-1.5 p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest text-neon-pink">Quick Fill from Registered Payee</label>
-                                        <select 
-                                            onChange={(e) => {
-                                                const payeeId = e.target.value;
-                                                if (!payeeId) return;
-                                                const payee = financePayees.find(p => p.id === payeeId);
-                                                if (payee) {
-                                                    setReceiverName(payee.name);
-                                                    setPaidTo(payee.name);
-                                                    setPaymentMode(payee.paymentMode || 'UPI');
-                                                    setDestinationDetails(payee.destinationDetails || '');
-                                                    if (payee.phone) setVolunteerPhone(payee.phone);
-                                                    
-                                                    // Map payee type to payout classification
-                                                    if (payee.type === 'Salary') {
-                                                        setPayoutType('Salary');
-                                                        setTitle('Core Salary Payout');
-                                                    } else if (payee.type === 'Volunteer') {
-                                                        setPayoutType('Volunteer Payout');
-                                                        setTitle('Volunteer Gig Remuneration');
-                                                    } else if (payee.type === 'Vendor') {
-                                                        setPayoutType('Vendor Payout');
-                                                        setTitle('Vendor Service Clearance');
-                                                    } else if (payee.type === 'Artist') {
-                                                        setPayoutType('Artist Fee');
-                                                        setTitle('Artist Clearance');
-                                                    }
-                                                    useStore.getState().addToast(`Details filled in for ${payee.name}.`, 'success');
-                                                }
-                                            }}
-                                            className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
-                                            defaultValue=""
-                                        >
-                                            <option value="" className="bg-gray-100 dark:bg-zinc-950 text-gray-600 dark:text-gray-400">-- Select a Registered Payee to Autofill --</option>
-                                            {financePayees.map(payee => (
-                                                <option key={payee.id} value={payee.id} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">
-                                                    {payee.name} ({payee.type} - {payee.paymentMode})
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
-
-                                {/* Payout classification selection */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Classification *</label>
-                                        <select 
-                                            value={payoutType} 
-                                            onChange={(e) => {
-                                                setPayoutType(e.target.value);
-                                                // Prepopulate category tags relative to Payout Classification
-                                                if (e.target.value === 'Salary') setTitle('Core Salary Payout');
-                                                else if (e.target.value === 'Volunteer Payout') setTitle('Volunteer Gig Remuneration');
-                                                else if (e.target.value === 'Vendor Payout') setTitle('Vendor Service Clearance');
-                                                else if (e.target.value === 'Artist Fee') setTitle('Artist Clearance');
-                                                else setTitle('');
-                                            }} 
-                                            className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
-                                        >
-                                            {payoutTypes.map(pt => <option key={pt} value={pt} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">{pt}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Amount (INR) *</label>
-                                        <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount to pay" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction Label / Title *</label>
-                                        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Graphic design monthly retainer" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Value Date *</label>
-                                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                    </div>
-                                </div>
-
-                                {/* Dynamic Fields relative to Payout Classification */}
-                                <AnimatePresence mode="wait">
-                                    <motion.div 
-                                        key={payoutType} 
-                                        initial={{ opacity: 0, y: 5 }} 
-                                        animate={{ opacity: 1, y: 0 }} 
-                                        exit={{ opacity: 0, y: 5 }}
-                                        className="space-y-5"
-                                    >
-                                        {/* SALARY SPECIFIC */}
-                                        {payoutType === 'Salary' && (
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Core Member Name *</label>
-                                                    <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Recipient name" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Designation/Role *</label>
-                                                    <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Creative Director" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Salary Month *</label>
-                                                    <input value={salaryPeriod} onChange={(e) => setSalaryPeriod(e.target.value)} placeholder="e.g. May 2026" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* VOLUNTEER SPECIFIC */}
-                                        {payoutType === 'Volunteer Payout' && (
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Volunteer Name *</label>
-                                                    <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Volunteer full name" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Volunteer Phone</label>
-                                                    <input value={volunteerPhone} onChange={(e) => setVolunteerPhone(e.target.value)} placeholder="Phone number" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Gig Title / Link</label>
-                                                    <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Arena Concert Gate" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
-                                                </div>
-                                                {invoices && invoices.length > 0 && (
-                                                    <div className="space-y-1.5 col-span-full pt-2">
-                                                        <label className="text-[8px] font-black text-neon-pink uppercase tracking-widest">Link Payment Received Invoice (Optional)</label>
-                                                        <select
-                                                            value={linkedInvoiceId}
-                                                            onChange={(e) => {
-                                                                const invId = e.target.value;
-                                                                setLinkedInvoiceId(invId);
-                                                                const inv = invoices.find(i => i.id === invId);
-                                                                setLinkedInvoiceNumber(inv ? (inv.invoiceNumber || inv.id) : '');
-                                                            }}
-                                                            className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 h-11 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
-                                                        >
-                                                            <option value="" className="bg-gray-100 dark:bg-zinc-950 text-gray-600 dark:text-gray-400">-- No Invoice Linked --</option>
-                                                            {invoices.map(inv => (
-                                                                <option key={inv.id} value={inv.id} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">
-                                                                    {inv.invoiceNumber || 'INV'} - {inv.clientName} (₹{inv.amount?.toLocaleString()})
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* VENDOR SPECIFIC */}
-                                        {payoutType === 'Vendor Payout' && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Vendor Entity Name *</label>
-                                                    <input value={paidTo} onChange={(e) => setPaidTo(e.target.value)} placeholder="e.g. Sound Rentals Ltd." className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Invoice Reference #</label>
-                                                    <input value={invoiceRef} onChange={(e) => setInvoiceRef(e.target.value)} placeholder="e.g. INV-10023" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* ARTIST SPECIFIC */}
-                                        {payoutType === 'Artist Fee' && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Artist / DJ Name *</label>
-                                                    <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Artist name" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Event Reference</label>
-                                                    <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Sunburn Stage" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {payoutType === 'General Expense' && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Recipient / Payee Name *</label>
-                                                    <input value={receiverName} onChange={(e) => { setReceiverName(e.target.value); setPaidTo(e.target.value); }} placeholder="e.g. Amazon Office Supplies" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Expense Category</label>
-                                                    <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Office Operations / Travel / F&B" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                </AnimatePresence>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Source Account *</label>
-                                        <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
-                                            <option value="newbi" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Official Newbi Account</option>
-                                            <option value="personal" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Personal Account (Core Member Reimbursement)</option>
-                                        </select>
-                                    </div>
-                                    
-                                    {accountType === 'personal' && (
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payer Name (Team Member) *</label>
-                                            <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Name of member paying" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payment Method</label>
-                                        <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
-                                            {paymentModes.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">{m}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Cleared / Paid Status</label>
-                                        <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
-                                            <option value="Paid" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Cleared / Settled</option>
-                                            <option value="Pending" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Pending / Unpaid</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {status === 'Paid' && (
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction Ref / UTR (Optional)</label>
-                                        <input 
-                                            value={customUTR} 
-                                            onChange={(e) => setCustomUTR(e.target.value)} 
-                                            placeholder="Enter UPI UTR, Bank Ref ID, or receipt number" 
-                                            className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink font-mono"
-                                        />
-                                    </div>
-                                )}
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Destination Details (UPI ID / Bank details to copy)</label>
-                                    <input value={destinationDetails} onChange={(e) => setDestinationDetails(e.target.value)} placeholder="e.g. UPI: name@okaxis or Bank transfer details" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5 md:col-span-2">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Slip / Receipt Attachment</label>
-                                        <div className="relative group cursor-pointer h-12 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-3 bg-black/5 dark:bg-white/5 hover:border-neon-pink/40 transition-all">
-                                            <input type="file" onChange={(e) => handleReceiptUpload(e, setReceiptUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                            <Upload className="text-gray-500 group-hover:text-neon-pink" size={16} />
-                                            <span className="text-[10px] font-black text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest">
-                                                {uploadingReceipt ? 'UPLOADING...' : (receiptUrl ? 'CHANGE ATTACHMENT' : 'CHOOSE RECEIPT FILE')}
-                                            </span>
-                                        </div>
-                                        {receiptUrl && (
-                                            <div className="text-[8px] text-neon-green font-bold uppercase tracking-wider mt-1 truncate">
-                                                File linked: <a href={receiptUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View Attachment</a>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Internal Operational Notes</label>
-                                    <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction notes or descriptions..." className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-20 rounded-xl text-xs font-semibold p-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink placeholder:text-gray-900 dark:placeholder:text-white/20 transition-all" />
-                                </div>
-
-                                {paymentMode === 'UPI' && destinationDetails.includes('@') ? (
-                                    <div className="bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl p-5 space-y-4 pt-4 mt-2">
-                                        <span className="text-[10px] font-black text-neon-pink uppercase tracking-widest block">UPI Direct Checkout</span>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    let upiAddress = destinationDetails;
-                                                    if (destinationDetails.includes('UPI:')) {
-                                                        upiAddress = destinationDetails.split('UPI:')[1].trim();
-                                                    }
-                                                    const upiLink = `upi://pay?pa=${upiAddress}&pn=${encodeURIComponent(receiverName || paidTo || 'Newbi Payee')}&am=${amount}&cu=INR`;
-                                                    window.open(upiLink, '_blank');
-                                                    setShowUPIFlow(true);
-                                                }}
-                                                className="h-12 bg-neon-pink hover:bg-neon-pink/90 text-gray-900 dark:text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(255,79,139,0.2)]"
-                                            >
-                                                <Smartphone size={14} /> Pay via UPI App
-                                            </button>
-                                            <button
-                                                type="submit"
-                                                onClick={() => setStatus('Paid')}
-                                                className="h-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-all"
-                                            >
-                                                Mark as Already Paid
-                                            </button>
-                                        </div>
-
-                                        {showUPIFlow && (
-                                            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="pt-4 border-t border-black/10 dark:border-white/5 space-y-4">
-                                                <div className="flex flex-col items-center gap-3">
-                                                    <div className="p-3 bg-white rounded-2xl shadow-xl">
-                                                        <img 
-                                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=020202&data=${encodeURIComponent(
-                                                                `upi://pay?pa=${destinationDetails.includes('UPI:') ? destinationDetails.split('UPI:')[1].trim() : destinationDetails}&pn=${encodeURIComponent(receiverName || paidTo || 'Newbi Payee')}&am=${amount}&cu=INR`
-                                                            )}`}
-                                                            alt="Payment QR"
-                                                            className="w-[130px] h-[130px]"
-                                                        />
-                                                    </div>
-                                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest text-center">Scan QR Code with any UPI App</span>
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction Ref / UTR *</label>
-                                                    <div className="flex gap-2">
-                                                        <input 
-                                                            value={customUTR} 
-                                                            onChange={(e) => setCustomUTR(e.target.value)} 
-                                                            placeholder="Enter 12-digit UPI UTR / Ref Number" 
-                                                            className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink font-mono"
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            onClick={async () => {
-                                                                if (!customUTR) {
-                                                                    useStore.getState().addToast('Enter the UTR number to mark this payment as paid.', 'error');
-                                                                    return;
-                                                                }
-                                                                setStatus('Paid');
-                                                                setTimeout(() => {
-                                                                    const mockEvent = { preventDefault: () => {} };
-                                                                    handleCreateSpend(mockEvent);
-                                                                }, 100);
-                                                            }}
-                                                            className="px-6 bg-neon-green hover:bg-neon-green/95 text-black text-[9px] font-black uppercase tracking-widest rounded-xl transition-all shrink-0 font-bold"
-                                                        >
-                                                            Confirm
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="pt-4 flex gap-3">
-                                        <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 h-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/10 transition-all font-bold">
-                                            Cancel
+                                        <button type="button" onClick={() => openEdit(sp)} className="mt-3 min-w-0 text-left">
+                                            <p className="line-clamp-2 text-[17px] font-extrabold leading-snug">{sp.title || 'Untitled payout'}</p>
+                                            {recipientOf(sp) && <p className="mt-0.5 truncate text-[13px] text-gray-500">To {recipientOf(sp)}</p>}
                                         </button>
-                                        <button type="submit" className="flex-1 h-12 bg-neon-pink text-white font-black uppercase tracking-[0.2em] text-[9px] rounded-xl shadow-[0_4px_15px_rgba(255,79,139,0.2)] hover:scale-[1.01]" disabled={uploadingReceipt}>
-                                            LOG SPEND RECORD
-                                        </button>
-                                    </div>
-                                )}
-                                </div>
-                            </form>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>,
-            document.body
-        )}
 
-            {/* Edit Spend Modal - Overhauled */}
-            {createPortal(
-                <AnimatePresence>
-                    {showEditModal && (
-                        <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEditModal(null)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
-                        <motion.div 
-                            initial={{ x: '100%' }} 
-                            animate={{ x: 0 }} 
-                            exit={{ x: '100%' }}
-                            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 z-[101] flex flex-col text-gray-900 dark:text-white"
-                        >
-                            <div className="p-6 border-b border-black/10 dark:border-white/5 flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white">EDIT <span className="text-neon-pink">PAYOUT.</span></h2>
-                                    <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Update Payout Record #{showEditModal.id?.substring(0, 8)}</p>
-                                </div>
-                                <button type="button" onClick={() => setShowEditModal(null)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"><X size={14} /></button>
-                            </div>
-                            
-                            <form onSubmit={handleUpdateSpend} className="flex-1 flex flex-col overflow-hidden">
-                                <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar pb-24">
-                                {/* Quick Fill Selection */}
-                                {financePayees && financePayees.length > 0 && (
-                                    <div className="space-y-1.5 p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest text-neon-pink">Quick Fill from Registered Payee</label>
-                                        <select 
-                                            onChange={(e) => {
-                                                const payeeId = e.target.value;
-                                                if (!payeeId) return;
-                                                const payee = financePayees.find(p => p.id === payeeId);
-                                                if (payee) {
-                                                    setReceiverName(payee.name);
-                                                    setPaidTo(payee.name);
-                                                    setPaymentMode(payee.paymentMode || 'UPI');
-                                                    setDestinationDetails(payee.destinationDetails || '');
-                                                    if (payee.phone) setVolunteerPhone(payee.phone);
-                                                    
-                                                    // Map payee type to payout classification
-                                                    if (payee.type === 'Salary') {
-                                                        setPayoutType('Salary');
-                                                        setTitle('Core Salary Payout');
-                                                    } else if (payee.type === 'Volunteer') {
-                                                        setPayoutType('Volunteer Payout');
-                                                        setTitle('Volunteer Gig Remuneration');
-                                                    } else if (payee.type === 'Vendor') {
-                                                        setPayoutType('Vendor Payout');
-                                                        setTitle('Vendor Service Clearance');
-                                                    } else if (payee.type === 'Artist') {
-                                                        setPayoutType('Artist Fee');
-                                                        setTitle('Artist Clearance');
-                                                    }
-                                                    useStore.getState().addToast(`Details filled in for ${payee.name}.`, 'success');
-                                                }
-                                            }}
-                                            className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
-                                            defaultValue=""
-                                        >
-                                            <option value="" className="bg-gray-100 dark:bg-zinc-950 text-gray-600 dark:text-gray-400">-- Select a Registered Payee to Autofill --</option>
-                                            {financePayees.map(payee => (
-                                                <option key={payee.id} value={payee.id} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">
-                                                    {payee.name} ({payee.type} - {payee.paymentMode})
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
+                                        <p className="mt-3 text-[24px] font-extrabold tracking-tight tabular-nums">{formatINR(sp.amount)}</p>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Classification *</label>
-                                        <select value={payoutType} onChange={(e) => setPayoutType(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
-                                            {payoutTypes.map(pt => <option key={pt} value={pt} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">{pt}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Amount (INR) *</label>
-                                        <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount to pay" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction Label / Title *</label>
-                                        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Monthly salary retainer" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Value Date *</label>
-                                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                    </div>
-                                </div>
-
-                                {/* Dynamic Edit Payout Fields */}
-                                <div className="space-y-5">
-                                    {payoutType === 'Salary' && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Core Member Name *</label>
-                                                <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Recipient name" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Designation/Role *</label>
-                                                <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Creative Director" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Salary Month *</label>
-                                                <input value={salaryPeriod} onChange={(e) => setSalaryPeriod(e.target.value)} placeholder="e.g. May 2026" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {payoutType === 'Volunteer Payout' && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Volunteer Name *</label>
-                                                <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Volunteer full name" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Volunteer Phone</label>
-                                                <input value={volunteerPhone} onChange={(e) => setVolunteerPhone(e.target.value)} placeholder="Phone number" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Gig Title / Link</label>
-                                                <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Arena Concert Gate" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
-                                            </div>
-                                            {invoices && invoices.length > 0 && (
-                                                <div className="space-y-1.5 col-span-full pt-2">
-                                                    <label className="text-[8px] font-black text-neon-pink uppercase tracking-widest">Link Payment Received Invoice (Optional)</label>
-                                                    <select
-                                                        value={linkedInvoiceId}
-                                                        onChange={(e) => {
-                                                            const invId = e.target.value;
-                                                            setLinkedInvoiceId(invId);
-                                                            const inv = invoices.find(i => i.id === invId);
-                                                            setLinkedInvoiceNumber(inv ? (inv.invoiceNumber || inv.id) : '');
-                                                        }}
-                                                        className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 h-11 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
-                                                    >
-                                                        <option value="" className="bg-gray-100 dark:bg-zinc-950 text-gray-600 dark:text-gray-400">-- No Invoice Linked --</option>
-                                                        {invoices.map(inv => (
-                                                            <option key={inv.id} value={inv.id} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">
-                                                                {inv.invoiceNumber || 'INV'} - {inv.clientName} (₹{inv.amount?.toLocaleString()})
-                                                            </option>
-                                                        ))}
-                                                    </select>
+                                        <dl className="mt-2 space-y-1 text-[12px]">
+                                            {spendFacts(sp).map(([label, value, mono]) => (
+                                                <div key={label} className="flex justify-between gap-3">
+                                                    <dt className="shrink-0 text-gray-500">{label}</dt>
+                                                    <dd className={cn('min-w-0 truncate text-right font-semibold text-gray-800 dark:text-zinc-200', mono && 'font-mono')}>{value}</dd>
                                                 </div>
-                                            )}
-                                        </div>
-                                    )}
+                                            ))}
+                                        </dl>
 
-                                    {payoutType === 'Vendor Payout' && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Vendor Entity Name *</label>
-                                                <input value={paidTo} onChange={(e) => setPaidTo(e.target.value)} placeholder="e.g. Sound Rentals Ltd." className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Invoice Reference #</label>
-                                                <input value={invoiceRef} onChange={(e) => setInvoiceRef(e.target.value)} placeholder="e.g. INV-10023" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {payoutType === 'Artist Fee' && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Artist / DJ Name *</label>
-                                                <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Artist name" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Event Reference</label>
-                                                <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Stage 1 VIP" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {payoutType === 'General Expense' && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Recipient / Payee Name *</label>
-                                                <input value={receiverName} onChange={(e) => { setReceiverName(e.target.value); setPaidTo(e.target.value); }} placeholder="e.g. Amazon Office Supplies" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Expense Category</label>
-                                                <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Office Operations / Travel / F&B" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Source Account *</label>
-                                        <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
-                                            <option value="newbi" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Official Newbi Account</option>
-                                            <option value="personal" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Personal Account (Core Member Reimbursement)</option>
-                                        </select>
-                                    </div>
-                                    
-                                    {accountType === 'personal' && (
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payer Name (Team Member) *</label>
-                                            <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Name of member paying" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payment Method</label>
-                                        <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
-                                            {paymentModes.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">{m}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Cleared / Paid Status</label>
-                                        <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-[#FF2E90] focus:ring-1 focus:ring-[#FF2E90] transition-all">
-                                            <option value="Paid" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Cleared / Settled</option>
-                                            <option value="Pending" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Pending / Unpaid</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {status === 'Paid' && (
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction Ref / UTR (Optional)</label>
-                                        <input 
-                                            value={customUTR} 
-                                            onChange={(e) => setCustomUTR(e.target.value)} 
-                                            placeholder="Enter UPI UTR, Bank Ref ID, or receipt number" 
-                                            className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-[#FF2E90] font-mono"
-                                        />
-                                    </div>
-                                )}
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Destination Details (UPI ID / Bank details to copy)</label>
-                                    <input value={destinationDetails} onChange={(e) => setDestinationDetails(e.target.value)} placeholder="e.g. UPI: name@okaxis or Bank transfer details" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5 md:col-span-2">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Slip / Receipt Attachment</label>
-                                        <div className="relative group cursor-pointer h-12 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-3 bg-black/5 dark:bg-white/5 hover:border-neon-pink/40 transition-all">
-                                            <input type="file" onChange={(e) => handleReceiptUpload(e, setReceiptUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                            <Upload className="text-gray-500 group-hover:text-neon-pink" size={16} />
-                                            <span className="text-[10px] font-black text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest">
-                                                {uploadingReceipt ? 'UPLOADING...' : (receiptUrl ? 'CHANGE ATTACHMENT' : 'CHOOSE RECEIPT FILE')}
-                                            </span>
-                                        </div>
-                                        {receiptUrl && (
-                                            <div className="text-[8px] text-neon-green font-bold uppercase tracking-wider mt-1 truncate">
-                                                File linked: <a href={receiptUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View Attachment</a>
+                                        {gigs.length > 1 && (
+                                            <div className="mt-2">
+                                                <p className="text-[11px] text-gray-500">Registered for</p>
+                                                <div className="mt-1 flex flex-wrap gap-1">
+                                                    {gigs.map(g => <Badge key={g} tone={g === sp.linkedGig ? 'green' : 'gray'}>{g}</Badge>)}
+                                                </div>
                                             </div>
                                         )}
-                                    </div>
-                                </div>
 
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Internal Notes</label>
-                                    <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction notes or descriptions..." className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-20 rounded-xl text-xs font-semibold p-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink placeholder:text-gray-900 dark:placeholder:text-white/20 transition-all" />
-                                </div>
-
-                                <div className="pt-4 flex gap-3">
-                                    <button type="button" onClick={() => setShowEditModal(null)} className="flex-1 h-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/10 transition-all font-bold">
-                                        Cancel
-                                    </button>
-                                    <button type="submit" className="flex-1 h-12 bg-neon-pink text-white font-black uppercase tracking-[0.2em] text-[9px] rounded-xl shadow-[0_4px_15px_rgba(255,79,139,0.2)] hover:scale-[1.01]" disabled={uploadingReceipt}>
-                                        UPDATE SPEND ENTRY
-                                    </button>
-                                </div>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>,
-            document.body
-        )}
-
-            {/* Bulk Payout Wizard Modal */}
-            {createPortal(
-                <AnimatePresence>
-                    {showBulkModal && (
-                        <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
-                        <motion.div 
-                            initial={{ x: '100%' }} 
-                            animate={{ x: 0 }} 
-                            exit={{ x: '100%' }}
-                            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 z-[101] flex flex-col text-gray-900 dark:text-white"
-                        >
-                            <div className="p-6 border-b border-black/10 dark:border-white/5 flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white">BULK <span className="text-neon-pink">PAYOUTS.</span></h2>
-                                    <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Disburse payments to registered event volunteers in batches</p>
-                                </div>
-                                <button type="button" onClick={() => setShowBulkModal(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"><X size={14} /></button>
-                            </div>
-                            
-                            <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar pb-24">
-                            
-                            {bulkStep === 1 ? (
-                                <div className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Select Event Gig *</label>
-                                            <select 
-                                                value={selectedBulkEvent} 
-                                                onChange={(e) => setSelectedBulkEvent(e.target.value)} 
-                                                className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all"
-                                            >
-                                                <option value="" className="bg-gray-100 dark:bg-zinc-950 text-gray-600 dark:text-gray-400">-- Choose an Event --</option>
-                                                {upcomingEvents && upcomingEvents.map(evt => (
-                                                    <option key={evt.id || evt.title} value={evt.title} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">{evt.title}</option>
-                                                ))}
-                                            </select>
-                                            {/* Create New Event inline */}
-                                            <div className="flex items-center gap-2 mt-2">
-                                                <input 
-                                                    placeholder="Or type a new event name..." 
-                                                    value={bulkNewEventName || ''} 
-                                                    onChange={(e) => setBulkNewEventName(e.target.value)}
-                                                    className="h-9 text-[10px] bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-blue flex-1"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    disabled={!bulkNewEventName?.trim()}
-                                                    onClick={async () => {
-                                                        const eventName = bulkNewEventName.trim();
-                                                        if (!eventName) return;
-                                                        // Check if event already exists
-                                                        const exists = upcomingEvents?.find(e => e.title.toLowerCase() === eventName.toLowerCase());
-                                                        if (exists) {
-                                                            setSelectedBulkEvent(exists.title);
-                                                            setBulkNewEventName('');
-                                                            useStore.getState().addToast('That event already exists, so we selected it for you.', 'info');
-                                                            return;
-                                                        }
-                                                        try {
-                                                            await addUpcomingEvent({
-                                                                title: eventName,
-                                                                date: new Date().toISOString(),
-                                                                description: `Created from Bulk Payout for volunteer disbursements`,
-                                                                status: 'active',
-                                                                category: 'Event',
-                                                            });
-                                                            setSelectedBulkEvent(eventName);
-                                                            setBulkNewEventName('');
-                                                            useStore.getState().addToast(`Event "${eventName}" created.`, 'success');
-                                                        } catch (err) {
-                                                            console.error(err);
-                                                            useStore.getState().addToast("Couldn't create the event. Please try again.", 'error');
-                                                        }
-                                                    }}
-                                                    className="h-9 px-4 bg-neon-blue/10 hover:bg-neon-blue/20 text-neon-blue text-[8px] font-black uppercase tracking-widest rounded-lg border border-neon-blue/20 transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-                                                >
-                                                    + Create
+                                        {sp.destinationDetails && (
+                                            <div className="mt-3 flex items-center gap-2 rounded-xl border border-black/[0.06] bg-black/[0.02] py-1.5 pl-3 pr-1 dark:border-white/[0.06] dark:bg-white/[0.02]">
+                                                <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-gray-700 dark:text-zinc-300">{sp.destinationDetails}</span>
+                                                <button type="button" onClick={() => copyToClipboard(sp.destinationDetails)} aria-label="Copy UPI or bank details" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-black/5 hover:text-gray-900 dark:hover:bg-white/10 dark:hover:text-white">
+                                                    <Copy size={14} />
                                                 </button>
                                             </div>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Default Payout Rate (INR) *</label>
-                                            <input type="number" value={bulkPayoutAmount} onChange={(e) => setBulkPayoutAmount(e.target.value)} className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-blue" required />
-                                        </div>
-                                    </div>
+                                        )}
 
-                                    {/* Volunteer Selector List */}
-                                    {selectedBulkEvent && (
-                                        <div className="space-y-3 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
-                                            <div className="flex justify-between items-center pb-2 border-b border-black/10 dark:border-white/5">
-                                                <span className="text-[10px] font-black text-neon-blue uppercase tracking-widest">Registered Volunteers ({bulkVolunteers.length})</span>
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => {
-                                                        if (selectedVolunteerIds.length === bulkVolunteers.length) {
-                                                            setSelectedVolunteerIds([]);
-                                                        } else {
-                                                            setSelectedVolunteerIds(bulkVolunteers.map(v => v.id));
-                                                        }
-                                                    }}
-                                                    className="text-[8px] font-black text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest"
-                                                >
-                                                    Toggle All
-                                                </button>
-                                            </div>
-
-                                            {bulkVolunteers.length === 0 ? (
-                                                <p className="text-xs font-semibold text-gray-500 py-4 text-center">No volunteers registered under this event yet. Share a registration link to get started.</p>
+                                        <div className="min-h-4 flex-1" />
+                                        <div className="flex items-center gap-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+                                            {slipButton(sp, 'flex-1')}
+                                            {sp.receiptUrl ? (
+                                                <Button size="sm" as="a" href={sp.receiptUrl} target="_blank" rel="noopener noreferrer" variant="secondary"><Eye size={13} /> Proof</Button>
                                             ) : (
-                                                <div className="max-h-60 overflow-y-auto space-y-2 pr-2 scrollbar-hide">
-                                                    {bulkVolunteers.map((vol, index) => {
-                                                        const isSelected = selectedVolunteerIds.includes(vol.id);
-                                                        return (
-                                                            <div key={vol.id} className={cn(
-                                                                "flex items-center justify-between p-3 rounded-xl border transition-all",
-                                                                isSelected ? "bg-neon-blue/5 border-neon-blue/20" : "bg-white/[0.01] border-black/10 dark:border-white/5 opacity-60"
-                                                            )}>
-                                                                <div className="flex items-center gap-3">
-                                                                    <input 
-                                                                        type="checkbox" 
-                                                                        checked={isSelected}
-                                                                        onChange={() => {
-                                                                            if (isSelected) {
-                                                                                setSelectedVolunteerIds(prev => prev.filter(id => id !== vol.id));
-                                                                            } else {
-                                                                                setSelectedVolunteerIds(prev => [...prev, vol.id]);
-                                                                            }
-                                                                        }}
-                                                                        className="rounded bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-neon-blue focus:ring-0 w-4 h-4 cursor-pointer"
-                                                                    />
-                                                                    <div>
-                                                                        <span className="text-xs font-bold text-gray-900 dark:text-white block">{vol.name}</span>
-                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{vol.upiId || vol.phone || 'No Info'}</span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">₹</span>
-                                                                    <input 
-                                                                        type="number" 
-                                                                        value={vol.amount} 
-                                                                        onChange={(e) => {
-                                                                            const val = e.target.value;
-                                                                            setBulkVolunteers(prev => prev.map((v, i) => i === index ? { ...v, amount: val } : v));
-                                                                        }}
-                                                                        className="w-20 h-8 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-lg text-xs font-bold text-right px-2 text-gray-900 dark:text-white outline-none focus:border-neon-blue font-mono"
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
+                                                <span className="inline-flex items-center gap-1 px-1 text-[11px] text-gray-400"><AlertTriangle size={12} /> No proof</span>
                                             )}
+                                            {spendMenu(sp)}
                                         </div>
-                                    )}
-
-                                    {/* Settings */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payment Method</label>
-                                            <select value={bulkPaymentMode} onChange={(e) => setBulkPaymentMode(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all">
-                                                {paymentModes.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">{m}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Source Account</label>
-                                            <select value={bulkAccountType} onChange={(e) => setBulkAccountType(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all">
-                                                <option value="newbi" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Official Newbi Account</option>
-                                                <option value="personal" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Personal Account</option>
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Value Date</label>
-                                            <input type="date" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-blue" required />
-                                        </div>
-                                    </div>
-
-                                    {/* Invoice Link */}
-                                    {invoices && invoices.length > 0 && (
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Link Payouts with Incoming Client Invoice (Optional)</label>
-                                            <select
-                                                value={bulkLinkedInvoiceId}
-                                                onChange={(e) => {
-                                                    const invId = e.target.value;
-                                                    setBulkLinkedInvoiceId(invId);
-                                                    const inv = invoices.find(i => i.id === invId);
-                                                    setBulkLinkedInvoiceNumber(inv ? (inv.invoiceNumber || inv.id) : '');
-                                                }}
-                                                className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all"
-                                            >
-                                                <option value="" className="bg-gray-100 dark:bg-zinc-950 text-gray-600 dark:text-gray-400">-- Select Client Invoice --</option>
-                                                {invoices.map(inv => (
-                                                    <option key={inv.id} value={inv.id} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">
-                                                        {inv.invoiceNumber || 'INV'} - {inv.clientName} (₹{inv.amount?.toLocaleString()})
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    )}
-
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Notes</label>
-                                        <textarea value={bulkNotes} onChange={(e) => setBulkNotes(e.target.value)} placeholder="Add bulk notes..." className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-20 rounded-xl text-xs font-semibold p-4 text-gray-900 dark:text-white outline-none focus:border-neon-blue placeholder:text-gray-900 dark:placeholder:text-white/20 transition-all" />
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        disabled={!selectedBulkEvent || selectedVolunteerIds.length === 0}
-                                        onClick={() => {
-                                            if (bulkPaymentMode === 'UPI') {
-                                                setBulkStep(2);
-                                            } else {
-                                                handleCreateBulkPayout();
-                                            }
-                                        }}
-                                        className="w-full h-14 bg-neon-blue hover:bg-blue-600 disabled:bg-black/5 dark:disabled:bg-white/5 disabled:text-gray-500 disabled:scale-100 disabled:shadow-none text-gray-900 dark:text-white font-black uppercase tracking-[0.2em] text-[10px] sm:text-xs rounded-xl shadow-[0_8px_30px_rgba(59,130,246,0.3)] hover:scale-[1.01] transition-all flex items-center justify-center gap-2"
-                                    >
-                                        {bulkPaymentMode === 'UPI' ? 'Proceed to UPI payments' : 'Confirm Bulk log'}
-                                    </button>
-                                </div>
-                            ) : (
-                                /* UPI App link Checklist step */
-                                <div className="space-y-6">
-                                    <div className="p-4 bg-neon-blue/5 border border-neon-blue/10 rounded-2xl flex items-center justify-between">
-                                        <div>
-                                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block">Linked Gig Event</span>
-                                            <span className="text-xs font-bold text-gray-900 dark:text-white">{selectedBulkEvent}</span>
-                                        </div>
-                                        <div className="text-right">
-                                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block">Total Selected Payees</span>
-                                            <span className="text-xs font-bold text-gray-900 dark:text-white">{selectedVolunteerIds.length} Volunteers</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <span className="text-[10px] font-black text-neon-blue uppercase tracking-widest block">Sequential Payment Checklist</span>
-                                        <div className="space-y-2.5 max-h-80 overflow-y-auto pr-2 scrollbar-hide">
-                                            {bulkVolunteers.filter(v => selectedVolunteerIds.includes(v.id)).map((vol, idx) => {
-                                                const isPaid = completedPayments[vol.id];
-                                                return (
-                                                    <div key={vol.id} className={cn(
-                                                        "flex items-center justify-between p-4 rounded-xl border transition-all",
-                                                        isPaid ? "bg-neon-green/5 border-neon-green/20" : "bg-white/[0.02] border-black/10 dark:border-white/5"
-                                                    )}>
-                                                        <div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-xs font-bold text-gray-900 dark:text-white">{vol.name}</span>
-                                                                {isPaid && <span className="px-1.5 py-0.5 rounded bg-neon-green/10 border border-neon-green/20 text-[6px] font-black uppercase text-neon-green">Ready</span>}
-                                                            </div>
-                                                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block font-mono">{vol.upiId || 'No UPI Address'}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-3">
-                                                            <span className="text-xs font-bold text-gray-900 dark:text-white font-mono">₹{vol.amount || bulkPayoutAmount}</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    if (!vol.upiId) {
-                                                                        useStore.getState().addToast("This payee doesn't have a UPI ID saved yet.", 'error');
-                                                                        return;
-                                                                    }
-                                                                    const deepLink = `upi://pay?pa=${vol.upiId}&pn=${encodeURIComponent(vol.name)}&am=${vol.amount || bulkPayoutAmount}&cu=INR`;
-                                                                    window.open(deepLink, '_blank');
-                                                                    setCompletedPayments(prev => ({ ...prev, [vol.id]: true }));
-                                                                }}
-                                                                className="h-9 px-3 bg-neon-blue/10 hover:bg-neon-blue text-neon-blue hover:text-gray-900 dark:hover:text-white border border-neon-blue/20 hover:border-transparent text-[8px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5"
-                                                            >
-                                                                <Smartphone size={10} /> Pay Now
-                                                            </button>
-                                                            <input 
-                                                                type="checkbox"
-                                                                checked={!!isPaid}
-                                                                onChange={(e) => {
-                                                                    setCompletedPayments(prev => ({ ...prev, [vol.id]: e.target.checked }));
-                                                                }}
-                                                                className="rounded bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-neon-green focus:ring-0 w-4 h-4 cursor-pointer"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between gap-4 pt-4 border-t border-black/10 dark:border-white/5">
-                                        <button
-                                            type="button"
-                                            onClick={() => setBulkStep(1)}
-                                            className="h-12 px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/5 transition-all"
-                                        >
-                                            Back to Settings
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={handleCreateBulkPayout}
-                                            className="flex-1 h-12 bg-neon-green hover:bg-neon-green/90 text-black font-black uppercase tracking-widest text-[9px] rounded-xl transition-all shadow-[0_4px_12px_rgba(16,185,129,0.2)]"
-                                        >
-                                            Complete Payout Log & Print Receipt
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
+                                    </Card>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <Card className="overflow-hidden rounded-2xl">
+                            <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.8fr)_auto] gap-4 border-b border-black/[0.06] px-5 py-2.5 text-[11px] font-bold text-gray-500 dark:border-white/[0.06] xl:grid">
+                                <span>Payout</span><span>Paid to</span><span>Paid from</span><span className="text-right">Amount</span><span className="w-[232px]" />
                             </div>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>,
-            document.body
-        )}
+                            <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                                {shown.map(sp => (
+                                    <li key={sp.id} className="transition-colors hover:bg-black/[0.015] dark:hover:bg-white/[0.02]">
+                                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-3.5 sm:px-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.8fr)_auto] xl:gap-4">
+                                            <button type="button" onClick={() => openEdit(sp)} className="min-w-0 text-left">
+                                                <span className="flex flex-wrap items-center gap-2">
+                                                    <span className="truncate text-[15px] font-bold">{sp.title || 'Untitled payout'}</span>
+                                                    <Badge tone={isSpendPaid(sp) ? 'green' : 'amber'}>{isSpendPaid(sp) ? 'Paid' : 'Pending'}</Badge>
+                                                </span>
+                                                <span className="mt-0.5 block truncate text-[12px] text-gray-500">
+                                                    {TYPE_LABEL[sp.payoutType || 'General Expense'] || sp.payoutType} · {formatDay(spendDay(sp)) || 'No date'}
+                                                    <span className="xl:hidden">{recipientOf(sp) ? ` · ${recipientOf(sp)}` : ''}</span>
+                                                </span>
+                                                {sp.notes && <span className="mt-0.5 hidden truncate text-[12px] text-gray-400 xl:block">{sp.notes}</span>}
+                                            </button>
 
-            {createPortal(
-                <AnimatePresence>
-                    {showPrinterModal && activeSlipData && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPrinterModal(false)} className="absolute inset-0 bg-white dark:bg-black/85 backdrop-blur-xl" />
-                        
-                        <motion.div 
-                            initial={{ scale: 0.95, opacity: 0, y: 40 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.95, opacity: 0, y: 40 }}
-                            transition={{ type: "spring", stiffness: 260, damping: 22 }}
-                            className={`relative w-full z-10 bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-3xl p-4 sm:p-6 md:p-8 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar transition-all duration-300 ${
-                                printerStage === 'verify' && (activeSlipData.status === 'Pending' || activeSlipData.status === 'Unpaid') 
-                                    ? 'max-w-3xl' 
-                                    : 'max-w-md'
-                            }`}
-                        >
-                            {/* Close Button */}
-                            <button 
-                                onClick={() => setShowPrinterModal(false)}
-                                className="absolute top-6 right-6 p-2 rounded-full text-gray-500 hover:text-gray-900 dark:hover:text-white bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all z-[30]"
-                                title="Close"
-                            >
-                                <X size={16} />
-                            </button>
+                                            <p className="text-right text-[15px] font-extrabold tabular-nums xl:hidden">{formatINR(sp.amount)}</p>
 
-                            {printerStage === 'verify' && (
-                                <>
-                                    {(activeSlipData.status === 'Pending' || activeSlipData.status === 'Unpaid') ? (
-                                        /* 2-Column Layout for Pending Payouts */
-                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 pt-4">
-                                            {/* Left Column: Printer Slot & Load Status */}
-                                            <div className="md:col-span-5 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-black/10 dark:border-white/5 pb-6 md:pb-0 pr-0 md:pr-6 space-y-4">
-                                                <div className="flex flex-col items-center w-full relative">
-                                                    {renderPrinterSlot('READY', 'text-neon-green')}
-                                                    
-                                                    {/* Short piece of blank paper representing loaded state - z-20 (in front of printer back, behind front lip) */}
-                                                    <div className="w-[260px] h-[35px] overflow-hidden bg-gray-100 dark:bg-zinc-950/20 border-x border-b border-black/10 dark:border-white/5 rounded-b-xl relative z-20 flex flex-col justify-start -mt-5 pt-0 shadow-[inset_0_4px_8px_rgba(0,0,0,0.6)] px-2">
-                                                        <div className="w-full bg-gradient-to-br from-[#021f0b] to-[#39ff14] h-full rounded-t-md flex items-center justify-center text-gray-900 dark:text-white border-x border-t border-[#39ff14]/20">
-                                                            <span className="text-[6.5px] font-black uppercase tracking-widest text-[#39ff14]">READY</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.25em] animate-pulse">Printer Loaded</p>
+                                            <div className="hidden min-w-0 text-[13px] xl:block">
+                                                <p className="truncate font-semibold">{recipientOf(sp) || '—'}</p>
+                                                <p className="truncate text-[12px] text-gray-500">
+                                                    {[sp.designation, sp.volunteerPhone, sp.linkedGig, sp.linkedInvoiceNumber && `Invoice #${sp.linkedInvoiceNumber}`].filter(Boolean).join(' · ') || (sp.destinationDetails ? sp.destinationDetails : '')}
+                                                </p>
                                             </div>
+                                            <div className="hidden min-w-0 text-[13px] xl:block">
+                                                <p className="truncate">{accountLabel(sp)}</p>
+                                                <p className="truncate text-[12px] text-gray-500">{sp.paymentMode || '—'}</p>
+                                            </div>
+                                            <p className="hidden text-right text-[14px] font-extrabold tabular-nums xl:block">{formatINR(sp.amount)}</p>
 
-                                            {/* Right Column: Operational Payment details */}
-                                            <div className="md:col-span-7 flex flex-col justify-between space-y-5">
-                                                <div className="space-y-4">
-                                                    <div>
-                                                        <h3 className="text-base font-black font-heading uppercase italic tracking-wider text-gray-900 dark:text-white">Payment Clearance</h3>
-                                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Settle disbursement and enter transaction reference</p>
-                                                    </div>
-
-                                                    {/* Payout Metadata Panel */}
-                                                    <div className="p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl space-y-2.5 text-[10px]">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Recipient</span>
-                                                            <span className="text-gray-900 dark:text-white font-bold">{activeSlipData.receiverName}</span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center border-t border-black/10 dark:border-white/5 pt-2">
-                                                            <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Amount</span>
-                                                            <span className="text-neon-green font-heading italic font-black text-sm">₹{Number(activeSlipData.amount).toLocaleString('en-IN')}</span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center border-t border-black/10 dark:border-white/5 pt-2">
-                                                            <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Mode</span>
-                                                            <span className="text-gray-900 dark:text-white font-bold border border-[#39ff14]/20 bg-[#39ff14]/5 px-2 py-0.5 rounded text-[8px]">{activeSlipData.paymentMode}</span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center border-t border-black/10 dark:border-white/5 pt-2">
-                                                            <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Payout Type</span>
-                                                            <span className="text-gray-900 dark:text-white font-bold">{activeSlipData.payoutType}</span>
-                                                        </div>
-                                                        {activeSlipData.linkedGig && (
-                                                            <div className="flex justify-between items-center border-t border-black/10 dark:border-white/5 pt-2">
-                                                                <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Gig Ref</span>
-                                                                <span className="text-gray-900 dark:text-white font-bold truncate max-w-[60%] text-right">{activeSlipData.linkedGig}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    {/* UPI options */}
-                                                    {activeSlipData.paymentMode === 'UPI' && (
-                                                        <div className="space-y-4">
-                                                            {activeSlipData.destinationDetails && (
-                                                                <div className="flex items-center gap-2 p-3 bg-neon-green/5 border border-neon-green/10 rounded-2xl text-[9px] font-black uppercase tracking-wider">
-                                                                    <span className="text-gray-500">Payee UPI ID:</span>
-                                                                    <span className="text-neon-green select-all tracking-widest">{activeSlipData.destinationDetails.replace('UPI:', '').trim()}</span>
-                                                                </div>
-                                                            )}
-                                                            
-                                                            <div className="grid grid-cols-2 gap-3">
-                                                                <button 
-                                                                    type="button"
-                                                                    onClick={handleUpiPayClick}
-                                                                    className="flex items-center justify-center gap-2 h-12 bg-neon-green hover:bg-neon-green/95 text-black font-black uppercase tracking-widest text-[9px] rounded-xl transition-all shadow-[0_4px_12px_rgba(57,255,20,0.15)] font-bold"
-                                                                >
-                                                                    <Zap size={14} /> Pay UPI App
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setShowQR(!showQR)}
-                                                                    className="flex items-center justify-center gap-2 h-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/10 transition-all font-bold"
-                                                                >
-                                                                    <Smartphone size={14} /> {showQR ? 'Hide QR Code' : 'Show QR Code'}
-                                                                </button>
-                                                            </div>
-
-                                                            {showQR && activeSlipData.destinationDetails && (
-                                                                <motion.div 
-                                                                    initial={{ opacity: 0, y: -10 }} 
-                                                                    animate={{ opacity: 1, y: 0 }}
-                                                                    className="flex flex-col items-center bg-white p-4 rounded-2xl shadow-xl mx-auto w-fit"
-                                                                >
-                                                                    <img 
-                                                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&color=020202&data=${encodeURIComponent(
-                                                                            `upi://pay?pa=${activeSlipData.destinationDetails.replace('UPI:', '').trim()}&pn=${encodeURIComponent(activeSlipData.receiverName)}&am=${activeSlipData.amount}&cu=INR`
-                                                                        )}`}
-                                                                        alt="Scan QR"
-                                                                        className="w-[150px] h-[150px]"
-                                                                    />
-                                                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-2">Scan QR with UPI App to Pay</span>
-                                                                </motion.div>
-                                                            )}
-                                                        </div>
-                                                    )}
-
-                                                    {/* Bank details copy options */}
-                                                    {activeSlipData.paymentMode === 'Bank Transfer' && (
-                                                        <div className="space-y-3 bg-white/[0.01] border border-black/10 dark:border-white/5 p-4 rounded-2xl">
-                                                            <h4 className="text-[9px] font-black text-gray-500 uppercase tracking-widest border-b border-black/10 dark:border-white/5 pb-2">Beneficiary Bank Credentials</h4>
-                                                            {(() => {
-                                                                const b = getBankDetails();
-                                                                if (!b) return <p className="text-[9px] font-black text-gray-600 uppercase py-2">No bank details stored. Please transfer manually.</p>;
-                                                                return (
-                                                                    <div className="space-y-2.5">
-                                                                        <div className="flex justify-between items-center text-xs">
-                                                                            <div className="flex flex-col">
-                                                                                <span className="text-[8px] text-gray-500 uppercase font-black">Account Name</span>
-                                                                                <span className="text-gray-900 dark:text-white text-[10px] uppercase font-bold tracking-wide">{activeSlipData.receiverName}</span>
-                                                                            </div>
-                                                                            <button type="button" onClick={() => handleCopy(activeSlipData.receiverName, 'Account Name')} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Copy size={12} /></button>
-                                                                        </div>
-                                                                        <div className="flex justify-between items-center text-xs border-t border-black/10 dark:border-white/5 pt-2">
-                                                                            <div className="flex flex-col">
-                                                                                <span className="text-[8px] text-gray-500 uppercase font-black">Bank Name</span>
-                                                                                <span className="text-gray-900 dark:text-white text-[10px] uppercase font-bold tracking-wide">{b.bankName}</span>
-                                                                            </div>
-                                                                            <button type="button" onClick={() => handleCopy(b.bankName, 'Bank Name')} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Copy size={12} /></button>
-                                                                        </div>
-                                                                        <div className="flex justify-between items-center text-xs border-t border-black/10 dark:border-white/5 pt-2">
-                                                                            <div className="flex flex-col">
-                                                                                <span className="text-[8px] text-gray-500 uppercase font-black">Account Number</span>
-                                                                                <span className="text-neon-blue font-mono text-[11px] font-bold tracking-wider">{b.accountNumber}</span>
-                                                                            </div>
-                                                                            <button type="button" onClick={() => handleCopy(b.accountNumber, 'Account Number')} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Copy size={12} /></button>
-                                                                        </div>
-                                                                        <div className="flex justify-between items-center text-xs border-t border-black/10 dark:border-white/5 pt-2">
-                                                                            <div className="flex flex-col">
-                                                                                <span className="text-[8px] text-gray-500 uppercase font-black">IFSC Code</span>
-                                                                                <span className="text-neon-pink font-mono text-[11px] font-bold tracking-wider">{b.ifscCode}</span>
-                                                                            </div>
-                                                                            <button type="button" onClick={() => handleCopy(b.ifscCode, 'IFSC Code')} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Copy size={12} /></button>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })()}
-                                                        </div>
-                                                    )}
-
-                                                    {/* Bulk Beneficiaries breakdown list shown here, NOT on receipt! */}
-                                                    {activeSlipData.isBulk && activeSlipData.volunteers && activeSlipData.volunteers.length > 0 && (
-                                                        <div className="space-y-3 bg-white/[0.01] border border-black/10 dark:border-white/5 p-4 rounded-2xl">
-                                                            <h4 className="text-[9px] font-black text-gray-500 uppercase tracking-widest border-b border-black/10 dark:border-white/5 pb-2">Beneficiaries Breakdown</h4>
-                                                            <div className="max-h-28 overflow-y-auto space-y-1.5 scrollbar-hide pr-1">
-                                                                {activeSlipData.volunteers.map((vol, idx) => (
-                                                                    <div key={idx} className="flex justify-between text-[10px]">
-                                                                        <span className="text-gray-600 dark:text-gray-400 truncate max-w-[150px] uppercase font-bold">{vol.name}</span>
-                                                                        <span className="text-gray-900 dark:text-white font-mono font-bold">₹{Number(vol.amount).toLocaleString('en-IN')}</span>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {/* UTR Input Form */}
-                                                    <div className="space-y-2 pt-2">
-                                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction UTR / Ref Number</label>
-                                                        <Input
-                                                            value={verificationUTR}
-                                                            onChange={(e) => setVerificationUTR(e.target.value)}
-                                                            placeholder="Enter UPI UTR or Bank Ref ID"
-                                                            className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-[#39ff14] font-mono tracking-widest text-center text-gray-900 dark:text-white"
-                                                        />
-                                                    </div>
-
-                                                    {/* Payment Proof Upload */}
-                                                    <div className="space-y-2 pt-1">
-                                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payment Proof (Screenshot / PDF)</label>
-                                                        <div className="relative">
-                                                            <input type="file" onChange={(e) => handleReceiptUpload(e, setVerificationReceiptUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                            <div className="h-10 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-2 text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest transition-all cursor-pointer">
-                                                                {uploadingReceipt ? 'UPLOADING...' : (verificationReceiptUrl ? '✓ PROOF ATTACHED — TAP TO CHANGE' : 'ATTACH PAYMENT PROOF')}
-                                                            </div>
-                                                        </div>
-                                                        {verificationReceiptUrl && (
-                                                            <p className="text-[8px] text-[#39ff14] font-bold pl-1">
-                                                                Proof linked: <a href={verificationReceiptUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View Attachment</a>
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex gap-3 pt-4 border-t border-black/10 dark:border-white/5">
-                                                    <button
-                                                        type="button"
-                                                        onClick={async () => {
-                                                            const autoTxnId = `TXN-SKIPPED-${Date.now()}`;
-                                                            if (activeSlipData.id) {
-                                                                try {
-                                                                    const updateData = {
-                                                                        paymentRef: autoTxnId,
-                                                                        status: 'Paid'
-                                                                    };
-                                                                    if (verificationReceiptUrl) updateData.receiptUrl = verificationReceiptUrl;
-                                                                    await updateSpend(activeSlipData.id, updateData);
-                                                                    setActiveSlipData(prev => ({ ...prev, reference: autoTxnId, status: 'Paid', receiptUrl: verificationReceiptUrl || prev.receiptUrl, proofUrl: verificationReceiptUrl || prev.receiptUrl }));
-                                                                    useStore.getState().addToast('Payment marked as paid.', 'success');
-                                                                } catch (e) {
-                                                                    console.error(e);
-                                                                }
-                                                            } else {
-                                                                    setActiveSlipData(prev => ({ ...prev, reference: autoTxnId, status: 'Paid', receiptUrl: verificationReceiptUrl || prev.receiptUrl, proofUrl: verificationReceiptUrl || prev.receiptUrl }));
-                                                            }
-                                                            setPrinterStage('printing');
-                                                        }}
-                                                        className="flex-1 h-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/5 transition-all font-bold"
-                                                    >
-                                                        Skip UTR
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={async () => {
-                                                            if (activeSlipData.id) {
-                                                                try {
-                                                                    const utrValue = verificationUTR || activeSlipData.reference || `TXN-AUTO-${Date.now()}`;
-                                                                    const updateData = {
-                                                                        paymentRef: utrValue,
-                                                                        status: 'Paid'
-                                                                    };
-                                                                    if (verificationReceiptUrl) updateData.receiptUrl = verificationReceiptUrl;
-                                                                    await updateSpend(activeSlipData.id, updateData);
-                                                                    setActiveSlipData(prev => ({ ...prev, reference: utrValue, status: 'Paid', receiptUrl: verificationReceiptUrl || prev.receiptUrl, proofUrl: verificationReceiptUrl || prev.receiptUrl }));
-                                                                    if (verificationUTR) {
-                                                                        useStore.getState().addToast('Payment details updated and marked as paid.', 'success');
-                                                                    }
-                                                                } catch (e) {
-                                                                    console.error(e);
-                                                                }
-                                                            }
-                                                            setPrinterStage('printing');
-                                                        }}
-                                                        className="flex-1 h-12 bg-neon-green hover:bg-neon-green/95 text-black font-black uppercase tracking-widest text-[9px] rounded-xl transition-all shadow-[0_4px_15px_rgba(57,255,20,0.25)] font-bold"
-                                                    >
-                                                        Verify & Print
-                                                    </button>
-                                                </div>
+                                            <div className="col-span-2 flex items-center justify-end gap-2 pt-2 xl:col-span-1 xl:w-[232px] xl:pt-0">
+                                                {slipButton(sp, 'flex-1 sm:flex-none')}
+                                                {sp.receiptUrl && (
+                                                    <Button size="sm" as="a" href={sp.receiptUrl} target="_blank" rel="noopener noreferrer" variant="secondary" aria-label="View proof" className="w-9 px-0"><Eye size={14} /></Button>
+                                                )}
+                                                {spendMenu(sp)}
                                             </div>
                                         </div>
-                                    ) : (
-                                        /* 1-Column Layout for Cleared Payouts (Direct Receipt access) */
-                                        <div className="flex flex-col items-center justify-center space-y-6 pt-4 w-full">
-                                            <div className="flex flex-col items-center w-full relative">
-                                                {renderPrinterSlot('READY', 'text-neon-green')}
-                                                
-                                                {/* Short piece of blank paper representing loaded state - z-20 */}
-                                                <div className="w-[260px] h-[35px] overflow-hidden bg-gray-100 dark:bg-zinc-950/20 border-x border-b border-black/10 dark:border-white/5 rounded-b-xl relative z-20 flex flex-col justify-start -mt-5 pt-0 shadow-[inset_0_4px_8px_rgba(0,0,0,0.6)] px-2">
-                                                    <div className="w-full bg-gradient-to-br from-[#021f0b] to-[#39ff14] h-full rounded-t-md flex items-center justify-center text-gray-900 dark:text-white border-x border-t border-[#39ff14]/20">
-                                                        <span className="text-[6.5px] font-black uppercase tracking-widest text-[#39ff14]">READY</span>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </Card>
+                    )}
+                    {filteredSpends.length > limit && (
+                        <div className="text-center">
+                            <Button variant="ghost" onClick={() => setLimit(l => l + PAGE)}>Show {Math.min(PAGE, filteredSpends.length - limit)} more of {filteredSpends.length - limit}</Button>
+                        </div>
+                    )}
+                </div>
+            </AdminCommunityHubLayout>
 
-                                            <div className="w-full space-y-4">
-                                                <div className="p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl space-y-2 text-[10px]">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Recipient</span>
-                                                        <span className="text-gray-900 dark:text-white font-bold">{activeSlipData.receiverName}</span>
-                                                    </div>
-                                                    <div className="flex justify-between items-center border-t border-black/10 dark:border-white/5 pt-2">
-                                                        <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Amount</span>
-                                                        <span className="text-neon-green font-heading italic font-black text-sm">₹{Number(activeSlipData.amount).toLocaleString('en-IN')}</span>
-                                                    </div>
-                                                    <div className="flex justify-between items-center border-t border-black/10 dark:border-white/5 pt-2">
-                                                        <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Mode</span>
-                                                        <span className="text-gray-900 dark:text-white font-bold border border-[#39ff14]/20 bg-[#39ff14]/5 px-2 py-0.5 rounded text-[8px]">{activeSlipData.paymentMode}</span>
-                                                    </div>
-                                                </div>
+            {/* Log a payout */}
+            <Sheet
+                open={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                size="lg"
+                title="Log a payout"
+                subtitle="Record money going out. Paid payouts get a receipt you can share."
+                footer={renderSpendFooter(false)}
+            >
+                {renderSpendForm(false)}
+            </Sheet>
 
-                                                {/* UTR Input Form */}
-                                                <div className="space-y-2">
-                                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction UTR / Ref Number</label>
-                                                    <Input
-                                                        value={verificationUTR}
-                                                        onChange={(e) => setVerificationUTR(e.target.value)}
-                                                        placeholder="Enter UPI UTR or Bank Ref ID"
-                                                        className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-[#39ff14] font-mono tracking-widest text-center text-gray-900 dark:text-white"
-                                                    />
-                                                </div>
+            {/* Edit a payout */}
+            <Sheet
+                open={!!showEditModal}
+                onClose={() => setShowEditModal(null)}
+                size="lg"
+                title="Edit payout"
+                subtitle={showEditModal ? `${showEditModal.title || 'Payout'} · ref ${showEditModal.id?.substring(0, 8)}` : undefined}
+                footer={renderSpendFooter(true)}
+            >
+                {renderSpendForm(true)}
+            </Sheet>
 
-                                                {/* Payment Proof Upload */}
-                                                <div className="space-y-2">
-                                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payment Proof (Screenshot / PDF)</label>
-                                                    <div className="relative">
-                                                        <input type="file" onChange={(e) => handleReceiptUpload(e, setVerificationReceiptUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                        <div className="h-10 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-2 text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest transition-all cursor-pointer">
-                                                            {uploadingReceipt ? 'UPLOADING...' : (verificationReceiptUrl ? '✓ PROOF ATTACHED — TAP TO CHANGE' : 'ATTACH PAYMENT PROOF')}
-                                                        </div>
-                                                    </div>
-                                                    {verificationReceiptUrl && (
-                                                        <p className="text-[8px] text-[#39ff14] font-bold pl-1">
-                                                            Proof linked: <a href={verificationReceiptUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View Attachment</a>
-                                                        </p>
-                                                    )}
-                                                </div>
+            {/* Bulk volunteer payouts */}
+            <Sheet
+                open={showBulkModal}
+                onClose={() => setShowBulkModal(false)}
+                size="lg"
+                title="Pay volunteers in bulk"
+                subtitle={bulkStep === 1 ? 'Pick an event, choose who to pay, then log every payout at once.' : `Step 2 of 2 · ${selectedBulkEvent}`}
+                footer={renderBulkFooter()}
+            >
+                {renderBulkBody()}
+            </Sheet>
 
-                                                <button
-                                                    type="button"
-                                                    onClick={async () => {
-                                                        if (activeSlipData.id) {
-                                                            try {
-                                                                const utrValue = verificationUTR || activeSlipData.reference || `TXN-AUTO-${Date.now()}`;
-                                                                const updateData = {
-                                                                    paymentRef: utrValue,
-                                                                    status: 'Paid'
-                                                                };
-                                                                if (verificationReceiptUrl) updateData.receiptUrl = verificationReceiptUrl;
-                                                                await updateSpend(activeSlipData.id, updateData);
-                                                                setActiveSlipData(prev => ({ ...prev, reference: utrValue, status: 'Paid', receiptUrl: verificationReceiptUrl || prev.receiptUrl, proofUrl: verificationReceiptUrl || prev.receiptUrl }));
-                                                                if (verificationUTR) {
-                                                                    useStore.getState().addToast('Payment details updated.', 'success');
-                                                                }
-                                                            } catch (e) {
-                                                                console.error(e);
-                                                            }
-                                                        }
-                                                        setPrinterStage('printing');
-                                                    }}
-                                                    className="w-full h-12 bg-neon-green hover:bg-neon-green/95 text-black font-black uppercase tracking-widest text-[9px] rounded-xl transition-all shadow-[0_4px_15px_rgba(57,255,20,0.25)] font-bold"
-                                                >
-                                                    Print Receipt
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </>
-                            )}
+            {/* Payout slip: mark as paid, then print / share the receipt */}
+            <Sheet
+                open={showPrinterModal && !!activeSlipData}
+                onClose={closeSlip}
+                size={printerStage === 'verify' && slipIsPending ? 'lg' : 'md'}
+                title={slipTitle}
+                subtitle={activeSlipData ? `${activeSlipData.receiverName} · ${formatINR(activeSlipData.amount)}` : undefined}
+                footer={renderSlipFooter()}
+            >
+                {renderSlipBody()}
+            </Sheet>
 
-                            {printerStage === 'printing' && (
-                                <div className="flex flex-col items-center justify-center py-6 space-y-6">
-                                    {/* Group Slot and Slit Exit Box to prevent space-y-6 margin gap */}
-                                    <div className="flex flex-col items-center w-full relative">
-                                        {renderPrinterSlot('PRINTING...', 'text-amber-500')}
-
-                                        {/* Slit exit view box - receipt emerges OUT of the slot - z-40 (in front of printer back and cutter lip) */}
-                                        <div className="w-[260px] h-[300px] overflow-hidden rounded-b-2xl relative z-40 flex flex-col justify-start -mt-5 pt-0 px-0">
-                                            {/* Printing paper container */}
-                                            <motion.div
-                                                initial={{ y: '-100%' }}
-                                                animate={{ y: 0 }}
-                                                transition={{ duration: 3.5, ease: 'linear' }}
-                                                onAnimationComplete={() => setPrinterStage('done')}
-                                                className="w-full flex justify-center origin-top"
-                                            >
-                                                {renderThermalReceipt(activeSlipData, verificationUTR)}
-                                            </motion.div>
-                                        </div>
-                                    </div>
-
-                                    <div className="text-center">
-                                        <p className="text-[9px] font-black text-[#39ff14] uppercase tracking-[0.25em] animate-pulse">DISBURSING PAYOUT SLIP...</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {printerStage === 'done' && (
-                                <div className="space-y-6 flex flex-col items-center pt-2">
-                                    {/* Group Slot and Receipt to prevent space-y-6 margin gap */}
-                                    <div className="flex flex-col items-center w-full relative">
-                                        {renderPrinterSlot('READY', 'text-neon-green')}
-
-                                        {/* Receipt Container - z-40 (in front of printer back and cutter lip) */}
-                                        <div className="w-[270px] relative z-40 flex flex-col items-center -mt-5 pt-0 px-1">
-                                            <div className="w-full flex justify-center shadow-2xl" style={{ filter: 'drop-shadow(0 10px 25px rgba(0,0,0,0.6))' }}>
-                                                {renderThermalReceipt(activeSlipData, verificationUTR)}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Other Details Panel shown on printer screen below receipt */}
-                                    <div className="w-full max-w-[300px] p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl space-y-2 text-[9px] uppercase font-bold text-gray-600 dark:text-gray-400">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-gray-500 font-extrabold text-[8px] tracking-wider">Payout Type</span>
-                                            <span className="text-gray-900 dark:text-white font-bold">{activeSlipData.payoutType}</span>
-                                        </div>
-                                        {activeSlipData.linkedGig && (
-                                            <div className="flex justify-between items-center border-t border-black/10 dark:border-white/5 pt-2">
-                                                <span className="text-gray-500 font-extrabold text-[8px] tracking-wider">Gig Ref</span>
-                                                <span className="text-gray-900 dark:text-white font-bold truncate max-w-[60%] text-right">{activeSlipData.linkedGig}</span>
-                                            </div>
-                                        )}
-                                        {activeSlipData.destinationDetails && (
-                                            <div className="flex flex-col gap-1 border-t border-black/10 dark:border-white/5 pt-2 mt-1">
-                                                <span className="text-gray-500 font-extrabold text-[8px] tracking-wider">Destination</span>
-                                                <span className="text-gray-900 dark:text-white font-mono text-[9px] break-all tracking-normal lowercase">{activeSlipData.destinationDetails.replace('UPI:', '').replace('Bank:', '').trim()}</span>
-                                            </div>
-                                        )}
-
-                                        {/* Bulk Beneficiaries breakdown list shown here, NOT on receipt! */}
-                                        {activeSlipData.isBulk && activeSlipData.volunteers && activeSlipData.volunteers.length > 0 && (
-                                            <div className="border-t border-black/10 dark:border-white/5 pt-2 mt-1">
-                                                <span className="block text-gray-500 font-extrabold text-[8px] tracking-wider mb-2">Beneficiaries Breakdown</span>
-                                                <div className="max-h-24 overflow-y-auto space-y-1.5 scrollbar-hide pr-1">
-                                                    {activeSlipData.volunteers.map((vol, idx) => (
-                                                        <div key={idx} className="flex justify-between text-[8px]">
-                                                            <span className="text-gray-600 dark:text-gray-400 truncate max-w-[130px]">{vol.name}</span>
-                                                            <span className="text-gray-900 dark:text-white font-mono">₹{Number(vol.amount).toLocaleString('en-IN')}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Action Buttons */}
-                                    <div className="flex flex-wrap items-center justify-center gap-2 w-full max-w-[340px] pt-2">
-                                        <button
-                                            onClick={handleDownloadReceipt}
-                                            className="flex-1 h-11 bg-neon-green hover:bg-neon-green/90 text-black font-black uppercase tracking-widest text-[8px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(57,255,20,0.25)] active:scale-95"
-                                        >
-                                            <Download size={13} /> Download
-                                        </button>
-                                        <button
-                                            onClick={handleShareReceiptText}
-                                            className="h-11 w-11 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white rounded-xl border border-black/10 dark:border-white/10 transition-all flex items-center justify-center active:scale-95"
-                                            title="Share Receipt"
-                                        >
-                                            <Share2 size={15} />
-                                        </button>
-                                        <button
-                                            onClick={handleWhatsAppShare}
-                                            className="h-11 w-11 bg-green-500/10 hover:bg-green-500/20 text-green-500 rounded-xl border border-green-500/20 transition-all flex items-center justify-center active:scale-95"
-                                            title="Share via WhatsApp"
-                                        >
-                                            <MessageCircle size={15} />
-                                        </button>
-                                        <button
-                                            onClick={() => setShowEmailModal(true)}
-                                            className="h-11 w-11 bg-neon-blue/10 hover:bg-neon-blue/20 text-neon-blue rounded-xl border border-neon-blue/20 transition-all flex items-center justify-center active:scale-95"
-                                            title="Email Receipt"
-                                        >
-                                            <Mail size={15} />
-                                        </button>
-                                        <button
-                                            onClick={() => setShowPrinterModal(false)}
-                                            className="h-11 px-5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[8px] rounded-xl border border-black/10 dark:border-white/10 transition-all active:scale-95"
-                                        >
-                                            Done
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>,
-            document.body
-        )}
+            <ConfirmDialog
+                open={!!deletingSpend}
+                onClose={() => setDeletingSpend(null)}
+                title="Delete this payout?"
+                body={deletingSpend ? `${deletingSpend.title || 'This payout'} for ${formatINR(deletingSpend.amount)}${spendPayee(deletingSpend) ? ` to ${spendPayee(deletingSpend)}` : ''} will be removed from the ledger. This can't be undone.` : ''}
+                confirmLabel="Delete payout"
+                onConfirm={confirmDeleteSpend}
+            />
 
             {/* Receipt Email Modal */}
             <AnimatePresence>

@@ -29,6 +29,8 @@ import BlogCard from '../components/blog/BlogCard';
 import AdSenseSlot from '../components/blog/AdSenseSlot';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { TEST_POSTS } from './ConcertZoneBlog';
+import { isAdminRole } from '../constants/roles';
+import { isPostPublic } from '../components/admin/content/contentRules';
 
 const CATEGORY_COLORS = {
     'Live Events': '#00ffff', // neon-blue
@@ -102,13 +104,17 @@ const BlogPostDetail = () => {
     });
 
 
+    const viewerRole = useStore(state => state.user?.role);
     const post = useMemo(() => {
+        // Drafts and posts scheduled for later are only visible to the admin team (for previews).
+        const canPreview = isAdminRole(viewerRole) && !['scanner', 'gate_manager'].includes(viewerRole);
+        const found = posts.find(p => p.slug === slug && (isPostPublic(p) || canPreview));
         // Try Firestore posts first, then fall back to test posts
-        return posts.find(p => p.slug === slug) || TEST_POSTS.find(p => p.slug === slug);
-    }, [posts, slug]);
+        return found || TEST_POSTS.find(p => p.slug === slug);
+    }, [posts, slug, viewerRole]);
 
     useDynamicMeta({
-        title: post ? post.title : "Newbi Article",
+        title: post ? (post.seoTitle || post.title) : "Newbi Article",
         description: post ? post.shortDescription : "Read this article on Concert Zone.",
         image: post?.coverImage || "/og-image.png",
         url: window.location.href

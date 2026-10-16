@@ -1,17 +1,54 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { SharedLayoutModal } from '../../design-system/overlays/SharedLayoutModal';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Check from 'lucide-react/dist/esm/icons/check';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import SkipForward from 'lucide-react/dist/esm/icons/skip-forward';
+import Square from 'lucide-react/dist/esm/icons/square';
+import Undo2 from 'lucide-react/dist/esm/icons/undo-2';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Repeat from 'lucide-react/dist/esm/icons/repeat';
 import { useStore } from '../../lib/store';
 import { PREDEFINED_CITIES, DEFAULT_CREATOR_GROUPS } from '../../lib/constants';
 import { sendCreatorGroupsBroadcastEmail } from '../../lib/email';
 import { cn } from '../../lib/utils';
-import {
-    Users, Phone, Copy, Check, CheckCircle2, Search, MapPin, 
-    MessageSquare, Play, Send, Mail, ShieldCheck, SkipForward, Square, ExternalLink, X, Undo2, ChevronDown
-} from 'lucide-react';
+import Sheet from './Sheet';
+import { Button, Badge, SearchInput, Select, SegmentedTabs, Avatar, Menu, MenuItem, EmptyState } from './ui';
 
-const normalizeCity = (cityStr = '') => {
+/*
+ * Group invites, mostly on autopilot:
+ *  - every creator gets the group for their own city (no more one link for all);
+ *  - the people who need an invite (never sent, or sent days ago and still not
+ *    in) are picked automatically;
+ *  - each person goes out on the best channel: WhatsApp when they have a phone,
+ *    email when they don't;
+ *  - the WhatsApp queue opens one chat at a time and moves on by itself as soon
+ *    as you come back from WhatsApp, so it's one tap per creator.
+ * Browsers only allow one chat window per tap, which is why WhatsApp can't be
+ * fully hands-free; email goes out in the background.
+ */
+
+const FOLLOW_UP_DAYS = 3;
+const TEMPLATE_KEY = 'nb_group_invite_template';
+const FOLLOW_UP_KEY = 'nb_group_followup_template';
+
+const DEFAULT_INVITE = `Hey {name}! 👋 Here's your invite to the Newbi {city} Creator community on WhatsApp:
+
+👉 {groupLink}
+
+It's where we share paid brand gigs, guestlist passes and meetups in {city}. See you inside!`;
+
+const DEFAULT_FOLLOW_UP = `Hey {name}, just checking you saw this 🙂 The Newbi {city} Creator group is where all the gigs and guestlists drop first:
+
+👉 {groupLink}`;
+
+export const normalizeCity = (cityStr = '') => {
     const raw = String(cityStr || '').trim().toLowerCase();
+    if (!raw) return '';
     if (/^bang[al]*o?re$/i.test(raw) || raw.includes('bengaluru') || raw.includes('bangalore')) return 'Bengaluru';
     if (raw.includes('hyderabad')) return 'Hyderabad';
     if (raw.includes('chandigarh')) return 'Chandigarh';
@@ -19,7 +56,7 @@ const normalizeCity = (cityStr = '') => {
     if (raw.includes('pune')) return 'Pune';
     if (raw.includes('kolkata') || raw.includes('calcutta')) return 'Kolkata';
     if (raw.includes('kochi') || raw.includes('cochin')) return 'Kochi';
-    if (raw.includes('delhi')) return 'Delhi NCR';
+    if (raw.includes('delhi') || raw.includes('gurgaon') || raw.includes('gurugram') || raw.includes('noida')) return 'Delhi NCR';
     if (raw.includes('chennai') || raw.includes('madras')) return 'Chennai';
     if (raw.includes('jaipur')) return 'Jaipur';
     if (raw.includes('goa')) return 'Goa';
@@ -27,670 +64,561 @@ const normalizeCity = (cityStr = '') => {
     if (raw.includes('bhubaneswar') || raw.includes('bhubaneshwar') || raw.includes('cuttack') || raw.includes('odisha')) return 'Bhubaneswar & Cuttack';
     if (raw.includes('vizag') || raw.includes('visakhapatnam')) return 'Vizag';
     if (raw.includes('surat')) return 'Surat';
-    return cityStr ? (cityStr.charAt(0).toUpperCase() + cityStr.slice(1)) : 'Bengaluru';
+    return raw.replace(/\b\w/g, ch => ch.toUpperCase());
 };
 
-const formatPhoneForWhatsApp = (raw) => {
-    if (!raw) return '';
-    const digits = String(raw).replace(/\D/g, '');
-    if (digits.length === 10) return `+91${digits}`;
-    if (digits.length === 12 && digits.startsWith('91')) return `+${digits}`;
-    if (digits.length > 10) return `+${digits}`;
-    return digits;
+const waNumber = (raw) => {
+    const digits = String(raw || '').replace(/\D/g, '');
+    if (digits.length === 10) return `91${digits}`;
+    if (digits.length >= 11 && digits.length <= 15) return digits.replace(/^0+/, '');
+    return '';
+};
+const prettyPhone = (n) => (n ? `+${n.slice(0, n.length - 10)} ${n.slice(-10, -5)} ${n.slice(-5)}` : '');
+
+const idOf = (c) => c.id || c.uid;
+const firstName = (c) => String(c?.name || c?.displayName || 'there').trim().split(/\s+/)[0];
+const daysSince = (iso) => {
+    const t = iso ? new Date(iso).getTime() : NaN;
+    return Number.isFinite(t) ? Math.floor((Date.now() - t) / 86400000) : null;
+};
+const ago = (days) => (days === null ? '' : days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`);
+
+const readStored = (key, fallback) => {
+    try { return window.localStorage.getItem(key) || fallback; } catch { return fallback; }
+};
+const writeStored = (key, value) => {
+    try { window.localStorage.setItem(key, value); } catch { /* private mode */ }
 };
 
-const DEFAULT_INVITE_TEMPLATE = `Hey {name}! \u{1F44B} Here is your exclusive invite link to join the Newbi {city} Creator WhatsApp Community:
-
-\u{1F449} {groupLink}
-
-Join to connect with local creators in {city}, unlock paid brand gigs, and get guestlist passes to exclusive events!`;
-
-const TABS = [
-    { id: 'audience', label: '1. Select Audience' },
-    { id: 'message', label: '2. Customize Message' },
-    { id: 'dispatch', label: '3. Dispatch' },
-];
-
-
-const CustomDropdown = ({ value, options, onChange }) => {
-    const [isOpen, setIsOpen] = React.useState(false);
-    const containerRef = React.useRef(null);
-
-    React.useEffect(() => {
-        const handleClick = (e) => {
-            if (containerRef.current && !containerRef.current.contains(e.target)) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
-    }, []);
-
-    return (
-        <div className="relative w-full z-50" ref={containerRef}>
-            <button 
-                type="button"
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full h-12 px-4 bg-white dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] hover:border-neon-blue/50 rounded-xl flex items-center justify-between transition-all"
-            >
-                <div className="flex items-center gap-2">
-                    <MapPin size={16} className="text-neon-blue" />
-                    <span className="text-[13px] font-bold text-gray-900 dark:text-white">{value}</span>
-                </div>
-                <ChevronDown size={14} className={cn("text-gray-500 dark:text-white/50 transition-transform", isOpen && "rotate-180")} />
-            </button>
-
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-2xl overflow-hidden"
-                    >
-                        <div className="max-h-64 overflow-y-auto no-scrollbar p-1.5 space-y-0.5">
-                            {options.map(opt => (
-                                <button
-                                    key={opt}
-                                    type="button"
-                                    onClick={() => { onChange(opt); setIsOpen(false); }}
-                                    className={cn(
-                                        "w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors",
-                                        value === opt ? "bg-neon-blue/10 text-neon-blue font-bold" : "text-gray-700 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 hover:text-gray-900 dark:text-white"
-                                    )}
-                                >
-                                    {opt}
-                                </button>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
+const STAGE = {
+    ready: { label: 'To invite', tone: 'amber' },
+    follow_up: { label: 'Follow up', tone: 'violet' },
+    sent: { label: 'Invited', tone: 'blue' },
+    joined: { label: 'In group', tone: 'green' },
+    blocked: { label: "Can't invite", tone: 'gray' },
 };
+
+const fill = (template, creator, group) => template
+    .replace(/{name}/g, firstName(creator))
+    .replace(/{city}/g, group?.city || normalizeCity(creator.city) || 'your city')
+    .replace(/{groupLink}/g, group?.groupUrl || '');
 
 const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru', preselectedUids = null }) => {
+    const creators = useStore(s => s.creators);
+    const creatorGroups = useStore(s => s.creatorGroups);
+    const addToast = useStore(s => s.addToast);
 
-    const { 
-        creators, 
-        creatorGroups, 
-        bulkAddCreatorsToCityGroup,
-        markCreatorInviteSent,
-        updateCreator,
-        bulkMarkCreatorInvitesSent,
-        addToast
-    } = useStore();
+    const fromSelection = Boolean(preselectedUids?.length);
+    const [city, setCity] = useState(() => (fromSelection ? 'all' : normalizeCity(initialCity) || 'all'));
+    const [stage, setStage] = useState('todo');
+    const [search, setSearch] = useState('');
+    const [verifiedOnly, setVerifiedOnly] = useState(!fromSelection);
+    const [channel, setChannel] = useState('auto'); // auto | whatsapp | email
+    const [picked, setPicked] = useState(null); // null = automatic selection
+    const [showMessage, setShowMessage] = useState(false);
+    const [template, setTemplate] = useState(() => readStored(TEMPLATE_KEY, DEFAULT_INVITE));
+    const [followUp, setFollowUp] = useState(() => readStored(FOLLOW_UP_KEY, DEFAULT_FOLLOW_UP));
+    const [run, setRun] = useState(null); // { queue: [...ids], index, emailed, emailTotal, emailing, done }
+    const [busy, setBusy] = useState(false);
+    const awaitingReturn = useRef(false);
 
-    const [activeTab, setActiveTab] = useState('audience');
-    const [selectedCity, setSelectedCity] = useState(() => normalizeCity(initialCity));
-    const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [selectedIds, setSelectedIds] = useState(() => preselectedUids ? new Set(preselectedUids) : null);
-    
-    // Copy/Status
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    useEffect(() => writeStored(TEMPLATE_KEY, template), [template]);
+    useEffect(() => writeStored(FOLLOW_UP_KEY, followUp), [followUp]);
 
-    // Template
-    const [inviteTemplate, setInviteTemplate] = useState(DEFAULT_INVITE_TEMPLATE);
-
-    // Dispatch states
-    const [isEmailSending, setIsEmailSending] = useState(false);
-    const [emailProgress, setEmailProgress] = useState({ current: 0, total: 0 });
-    const [isQueueActive, setIsQueueActive] = useState(false);
-    const [queueIndex, setQueueIndex] = useState(0);
-
-    // Derived Data
-    const activeGroups = useMemo(() => {
-        const remote = (creatorGroups || []).filter(g => g.isActive !== false);
+    // City → group. Saved groups win; the official defaults fill any gaps.
+    const groupFor = useMemo(() => {
         const map = new Map();
-        remote.forEach(g => {
-            if (g.city) map.set(normalizeCity(g.city).toLowerCase(), g);
+        (creatorGroups || []).filter(g => g.isActive !== false && g.groupUrl).forEach(g => {
+            const key = normalizeCity(g.city);
+            if (key && !map.has(key)) map.set(key, g);
         });
-        const list = [...remote];
-        DEFAULT_CREATOR_GROUPS.forEach(dg => {
-            const key = normalizeCity(dg.city).toLowerCase();
-            if (!map.has(key)) {
-                list.push(dg);
-                map.set(key, dg);
-            }
+        DEFAULT_CREATOR_GROUPS.forEach(g => {
+            const key = normalizeCity(g.city);
+            if (!map.has(key)) map.set(key, g);
         });
-        return list;
+        return map;
     }, [creatorGroups]);
 
-    const currentGroup = useMemo(() => {
-        const normSelected = normalizeCity(selectedCity).toLowerCase();
-        return activeGroups.find(g => normalizeCity(g.city).toLowerCase() === normSelected) || null;
-    }, [activeGroups, selectedCity]);
-
-    const availableCities = useMemo(() => {
-        const citySet = new Set(PREDEFINED_CITIES.filter(c => c !== 'Others' && c !== 'Pan-India / Remote'));
-        (creators || []).forEach(c => {
-            if (c.city) citySet.add(normalizeCity(c.city));
-        });
-        return Array.from(citySet).sort();
-    }, [creators]);
-
-    const cityCreators = useMemo(() => {
-        if (preselectedUids && preselectedUids.length > 0) {
-            const preselectedSet = new Set(preselectedUids);
-            return (creators || []).filter(c => preselectedSet.has(c.id) || preselectedSet.has(c.uid));
-        }
-        const normTarget = normalizeCity(selectedCity).toLowerCase();
-        return (creators || []).filter(c => {
-            const normC = normalizeCity(c.city).toLowerCase();
-            return normC === normTarget || (normTarget === 'bengaluru' && /bang[al]*o?re/i.test(normC));
-        });
-    }, [creators, selectedCity, preselectedUids]);
-
-    const filteredCreators = useMemo(() => {
-        return cityCreators.filter(c => {
-            const isJoined = Boolean(c.hasJoinedCityGroup);
-            const isSent = Boolean(c.inviteLinkSent) && !isJoined;
-            const isPending = !isJoined && !c.inviteLinkSent;
-
-            if (statusFilter === 'pending' && !isPending) return false;
-            if (statusFilter === 'sent' && !isSent) return false;
-            if (statusFilter === 'joined' && !isJoined) return false;
-
-            if (!searchQuery.trim()) return true;
-            const q = searchQuery.toLowerCase().trim();
-            const name = (c.name || c.displayName || c.fullName || '').toLowerCase();
-            const rawPhones = [c.phone, c.mobile, c.whatsapp].filter(Boolean).map(String);
-            const phoneMatches = rawPhones.some(p => p.toLowerCase().includes(q));
-            return name.includes(q) || phoneMatches;
-        });
-    }, [cityCreators, statusFilter, searchQuery]);
-
-    const currentSelectedIds = useMemo(() => {
-        if (selectedIds === null) {
-            return new Set(filteredCreators.map(c => c.id || c.uid));
-        }
-        return selectedIds;
-    }, [selectedIds, filteredCreators]);
-
-    const isAllSelected = filteredCreators.length > 0 && filteredCreators.every(c => currentSelectedIds.has(c.id || c.uid));
-
-    const handleToggleSelectAll = () => {
-        if (isAllSelected) {
-            setSelectedIds(new Set());
-        } else {
-            const next = new Set(currentSelectedIds);
-            filteredCreators.forEach(c => next.add(c.id || c.uid));
-            setSelectedIds(next);
-        }
-    };
-
-    const handleToggleCreator = (id) => {
-        const next = new Set(currentSelectedIds);
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
-        setSelectedIds(next);
-    };
-
-    const stats = useMemo(() => {
-        const total = cityCreators.length;
-        const joined = cityCreators.filter(c => c.hasJoinedCityGroup).length;
-        const sent = cityCreators.filter(c => c.inviteLinkSent && !c.hasJoinedCityGroup).length;
-        const pending = total - (joined + sent);
-        const withPhone = cityCreators.filter(c => c.phone && String(c.phone).trim().length >= 10).length;
-        const withEmail = cityCreators.filter(c => c.email && c.email.includes('@')).length;
-        return { total, joined, sent, pending, withPhone, withEmail };
-    }, [cityCreators]);
-
-    const getInviteMessageForCreator = (creator) => {
-        const name = (creator?.name || creator?.displayName || 'Creator').trim().split(' ')[0];
-        const groupLink = currentGroup?.groupUrl || 'https://chat.whatsapp.com/K6MtDAOlZ7s7AUtOFHxduU';
-        return inviteTemplate
-            .replace(/{name}/g, name)
-            .replace(/{city}/g, selectedCity)
-            .replace(/{groupLink}/g, groupLink);
-    };
-
-    const queueCandidates = useMemo(() => {
-        return cityCreators.filter(c => {
-            const id = c.id || c.uid;
-            if (!currentSelectedIds.has(id)) return false;
-            const phone = formatPhoneForWhatsApp(c.phone);
-            return Boolean(phone) && !c.hasJoinedCityGroup;
-        });
-    }, [cityCreators, currentSelectedIds]);
-
-    const currentQueueCreator = queueCandidates[queueIndex] || null;
-
-    // Handlers
-    const handleSendIndividualWhatsApp = (creator) => {
-        const phone = formatPhoneForWhatsApp(creator.phone).replace(/\+/g, '');
-        if (!phone) { addToast(`${creator.name} doesn't have a valid phone number.`, 'warning'); return; }
-        
-        // Fix for WhatsApp Web preview: convert LF to CRLF so newlines don't get stripped
-        const rawMessage = getInviteMessageForCreator(creator);
-        const formattedMessage = rawMessage.replace(/\r?\n/g, '\r\n');
-        
-        // Use api.whatsapp.com directly to avoid wa.me redirect mangling emojis on some devices
-        const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(formattedMessage)}`;
-        window.open(waUrl, '_blank');
-        
-        if (markCreatorInviteSent) markCreatorInviteSent(creator.id || creator.uid, 'whatsapp');
-    };
-
-    const handleUndoSent = async (creator) => {
-        const id = creator.id || creator.uid;
-        if (updateCreator) {
-            try {
-                await updateCreator(id, { inviteLinkSent: false, inviteLinkSentAt: null, inviteLinkChannel: null });
-                addToast(`${creator.name} is no longer marked as sent.`, 'info');
-            } catch (err) {
-                addToast("Couldn't undo that. Please try again.", 'error');
-            }
-        }
-    };
-
-    const handleStartQueue = () => {
-        if (!queueCandidates.length) { addToast('No one in your selection has a phone number and still needs an invite.', 'warning'); return; }
-        setQueueIndex(0); setIsQueueActive(true);
-    };
-
-    const handleQueueNext = () => {
-        if (!currentQueueCreator) { setIsQueueActive(false); return; }
-        handleSendIndividualWhatsApp(currentQueueCreator);
-        if (queueIndex + 1 < queueCandidates.length) setQueueIndex(prev => prev + 1);
-        else { setIsQueueActive(false); setQueueIndex(0); addToast('All done. Every creator in the queue has been messaged.', 'success'); }
-    };
-
-    const handleQueueSkip = () => {
-        if (queueIndex + 1 < queueCandidates.length) setQueueIndex(prev => prev + 1);
-        else { setIsQueueActive(false); setQueueIndex(0); addToast('You reached the end of the queue.', 'info'); }
-    };
-
-    const handleBulkSendEmail = async () => {
-        const targetCreators = cityCreators.filter(c => currentSelectedIds.has(c.id || c.uid) && c.email?.includes('@'));
-        if (!targetCreators.length) { addToast('None of these creators have a valid email address.', 'warning'); return; }
-
-        setIsEmailSending(true);
-        setEmailProgress({ current: 0, total: targetCreators.length });
-
-        try {
-            const recipientsPayload = targetCreators.map(c => ({
-                email: c.email.trim().toLowerCase(),
-                name: c.name || c.displayName || 'Creator',
-                city: c.city || selectedCity
-            }));
-
-            const result = await sendCreatorGroupsBroadcastEmail(recipientsPayload, {
-                city: currentGroup?.city || selectedCity,
-                groupUrl: currentGroup?.groupUrl || '',
-                customSubject: `\u26A1 Official ${selectedCity} Creator WhatsApp Group Invitation`,
-                customMessage: `You've been invited to join the exclusive Newbi ${selectedCity} Creator WhatsApp community! Connect with verified creators and access priority gig alerts.`,
-                availableGroups: activeGroups,
-                onProgress: (curr, tot) => setEmailProgress({ current: curr, total: tot })
+    const people = useMemo(() => {
+        const only = fromSelection ? new Set(preselectedUids) : null;
+        return (creators || [])
+            .filter(c => !only || only.has(c.id) || only.has(c.uid))
+            .map(c => {
+                const cityName = normalizeCity(c.city);
+                const group = groupFor.get(cityName) || null;
+                const phone = waNumber(c.whatsapp || c.phone || c.mobile);
+                const email = String(c.email || '').includes('@') ? String(c.email).trim().toLowerCase() : '';
+                const sentDays = c.inviteLinkSent ? daysSince(c.inviteLinkSentAt) : null;
+                let st;
+                if (c.hasJoinedCityGroup) st = 'joined';
+                else if (!group || (!phone && !email)) st = 'blocked';
+                else if (c.inviteLinkSent) st = sentDays === null || sentDays >= FOLLOW_UP_DAYS ? 'follow_up' : 'sent';
+                else st = 'ready';
+                return {
+                    c, id: idOf(c), cityName, group, phone, email, sentDays, stage: st,
+                    verified: c.profileStatus === 'approved',
+                    blockedWhy: !group ? `No group for ${cityName || 'their city'}` : (!phone && !email ? 'No phone or email' : ''),
+                };
             });
+    }, [creators, preselectedUids, fromSelection, groupFor]);
 
-            if (result?.success || result?.sentCount > 0) {
-                if (bulkMarkCreatorInvitesSent) await bulkMarkCreatorInvitesSent(targetCreators.map(c => c.id || c.uid), 'email');
-                addToast(`Emails sent to ${result.sentCount || targetCreators.length} creators.`, 'success');
-            } else throw new Error(result?.error || 'Email dispatch failed.');
-        } catch (err) {
-            addToast("Couldn't send the emails. Please try again.", 'error');
-        } finally {
-            setIsEmailSending(false);
+    const inScope = useMemo(() => people.filter(p =>
+        (city === 'all' || p.cityName === city) && (!verifiedOnly || p.verified)
+    ), [people, city, verifiedOnly]);
+
+    const counts = useMemo(() => {
+        const out = { todo: 0, ready: 0, follow_up: 0, sent: 0, joined: 0, blocked: 0, all: inScope.length };
+        inScope.forEach(p => { out[p.stage] += 1; if (p.stage === 'ready' || p.stage === 'follow_up') out.todo += 1; });
+        return out;
+    }, [inScope]);
+
+    const listed = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        return inScope
+            .filter(p => stage === 'all' || (stage === 'todo' ? (p.stage === 'ready' || p.stage === 'follow_up') : p.stage === stage))
+            .filter(p => !q || [p.c.name, p.c.email, p.c.phone, p.c.instagram, p.cityName].some(v => String(v || '').toLowerCase().includes(q)))
+            .sort((a, b) => (a.cityName || '').localeCompare(b.cityName || '') || String(a.c.name || '').localeCompare(String(b.c.name || '')));
+    }, [inScope, stage, search]);
+
+    // Automatic selection: everyone who still needs an invite.
+    const selected = useMemo(() => {
+        if (picked) return picked;
+        return new Set(inScope.filter(p => p.stage === 'ready' || p.stage === 'follow_up').map(p => p.id));
+    }, [picked, inScope]);
+
+    const toggle = (id) => {
+        const next = new Set(selected);
+        if (next.has(id)) next.delete(id); else next.add(id);
+        setPicked(next);
+    };
+    const allListedSelected = listed.length > 0 && listed.every(p => selected.has(p.id));
+    const toggleAll = () => {
+        const next = new Set(selected);
+        listed.forEach(p => (allListedSelected ? next.delete(p.id) : next.add(p.id)));
+        setPicked(next);
+    };
+
+    // Who goes where, for the current selection.
+    const plan = useMemo(() => {
+        const chosen = inScope.filter(p => selected.has(p.id) && p.stage !== 'joined' && p.stage !== 'blocked');
+        const wa = [];
+        const mail = [];
+        chosen.forEach(p => {
+            if (channel === 'whatsapp') { if (p.phone) wa.push(p); }
+            else if (channel === 'email') { if (p.email) mail.push(p); }
+            else if (p.phone) wa.push(p);
+            else if (p.email) mail.push(p);
+        });
+        const skipped = chosen.length - wa.length - mail.length;
+        const noGroupCities = [...new Set(inScope.filter(p => !p.group && p.stage !== 'joined').map(p => p.cityName).filter(Boolean))];
+        return { wa, mail, skipped, noGroupCities, chosen };
+    }, [inScope, selected, channel]);
+
+    const messageFor = useCallback((p) => fill(p.stage === 'follow_up' ? followUp : template, p.c, p.group), [template, followUp]);
+
+    const openWhatsApp = useCallback((p) => {
+        const text = messageFor(p).replace(/\r?\n/g, '\r\n');
+        // api.whatsapp.com keeps emoji intact where wa.me sometimes mangles them.
+        window.open(`https://api.whatsapp.com/send?phone=${p.phone}&text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+        useStore.getState().markCreatorInviteSent(p.id, 'whatsapp');
+    }, [messageFor]);
+
+    // ---------- Running the invites ----------
+    const queuePeople = useMemo(() => {
+        if (!run) return [];
+        const byId = new Map(people.map(p => [p.id, p]));
+        return run.queue.map(id => byId.get(id)).filter(Boolean);
+    }, [run, people]);
+    const current = run && !run.done ? queuePeople[run.index] : null;
+
+    const advance = useCallback(() => {
+        setRun(r => {
+            if (!r) return r;
+            const index = r.index + 1;
+            return index >= r.queue.length ? { ...r, index, done: !r.emailing } : { ...r, index };
+        });
+    }, []);
+
+    // Back from WhatsApp → next creator is ready.
+    useEffect(() => {
+        if (!run || run.done) return undefined;
+        const back = () => {
+            if (document.visibilityState === 'visible' && awaitingReturn.current) {
+                awaitingReturn.current = false;
+                setTimeout(advance, 250);
+            }
+        };
+        document.addEventListener('visibilitychange', back);
+        window.addEventListener('focus', back);
+        return () => {
+            document.removeEventListener('visibilitychange', back);
+            window.removeEventListener('focus', back);
+        };
+    }, [run, advance]);
+
+    const sendCurrent = () => {
+        if (!current) return;
+        awaitingReturn.current = true;
+        openWhatsApp(current);
+    };
+
+    // Keyboard: Enter sends, S skips.
+    useEffect(() => {
+        if (!current) return undefined;
+        const onKey = (e) => {
+            if (e.target?.tagName === 'TEXTAREA' || e.target?.tagName === 'INPUT') return;
+            if (e.key === 'Enter') { e.preventDefault(); sendCurrent(); }
+            if (e.key.toLowerCase() === 's') { e.preventDefault(); awaitingReturn.current = false; advance(); }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    });
+
+    const sendEmails = async (list) => {
+        // One email per group, so everyone gets their own city's link.
+        const byGroup = new Map();
+        list.forEach(p => {
+            const key = p.group.groupUrl;
+            if (!byGroup.has(key)) byGroup.set(key, { group: p.group, people: [] });
+            byGroup.get(key).people.push(p);
+        });
+        let sent = 0;
+        let failed = 0;
+        for (const { group, people: batch } of byGroup.values()) {
+            try {
+                const result = await sendCreatorGroupsBroadcastEmail(
+                    batch.map(p => ({ email: p.email, name: p.c.name || 'Creator', city: group.city })),
+                    {
+                        city: group.city,
+                        groupUrl: group.groupUrl,
+                        customSubject: `Your invite to the Newbi ${group.city} Creator group`,
+                        customMessage: `You're invited to the Newbi ${group.city} Creator community on WhatsApp, where we share paid brand gigs, guestlist passes and meetups first.`,
+                        availableGroups: [group],
+                    }
+                );
+                if (result?.success || result?.sentCount > 0) {
+                    await useStore.getState().bulkMarkCreatorInvitesSent(batch.map(p => p.id), 'email');
+                    sent += result?.sentCount || batch.length;
+                } else failed += batch.length;
+            } catch {
+                failed += batch.length;
+            }
+            setRun(r => (r ? { ...r, emailed: sent, emailFailed: failed } : r));
+        }
+        return { sent, failed };
+    };
+
+    const start = async () => {
+        if (!plan.wa.length && !plan.mail.length) {
+            addToast('No one selected can be invited on that channel.', 'info');
+            return;
+        }
+        if (plan.mail.length && !window.confirm(`Email the group invite to ${plan.mail.length} creator${plan.mail.length === 1 ? '' : 's'} now?`)) return;
+        setRun({
+            queue: plan.wa.map(p => p.id),
+            index: 0,
+            emailTotal: plan.mail.length,
+            emailed: 0,
+            emailFailed: 0,
+            emailing: plan.mail.length > 0,
+            done: plan.wa.length === 0 && plan.mail.length === 0,
+        });
+        if (plan.mail.length) {
+            const { sent, failed } = await sendEmails(plan.mail);
+            setRun(r => (r ? { ...r, emailing: false, done: r.index >= r.queue.length } : r));
+            addToast(failed ? `Emailed ${sent}. ${failed} couldn't be sent.` : `Emailed ${sent} creator${sent === 1 ? '' : 's'}.`, failed ? 'warning' : 'success');
         }
     };
 
-    const goToNextTab = () => {
-        if (activeTab === 'audience') setActiveTab('message');
-        else if (activeTab === 'message') setActiveTab('dispatch');
+    const stop = () => { awaitingReturn.current = false; setRun(null); setPicked(null); };
+
+    const markJoined = async (ids) => {
+        if (!ids.length) return;
+        setBusy(true);
+        try {
+            await useStore.getState().bulkAddCreatorsToCityGroup(city === 'all' ? '' : city, ids);
+            addToast(`${ids.length} marked as in the group.`, 'success');
+            setPicked(null);
+        } catch {
+            addToast("Couldn't update them. Please try again.", 'error');
+        } finally {
+            setBusy(false);
+        }
     };
 
-    const goToPrevTab = () => {
-        if (activeTab === 'dispatch') setActiveTab('message');
-        else if (activeTab === 'message') setActiveTab('audience');
+    const undoSent = async (p) => {
+        try {
+            await useStore.getState().updateCreator(p.id, { inviteLinkSent: false, inviteLinkSentAt: null, inviteLinkChannel: null });
+            addToast(`${firstName(p.c)} is back on the to-invite list.`, 'info');
+        } catch {
+            addToast("Couldn't undo that. Please try again.", 'error');
+        }
+    };
+    const undoJoined = async (p) => {
+        try {
+            await useStore.getState().updateCreator(p.id, { hasJoinedCityGroup: false, joinedCityGroupAt: null });
+            addToast(`${firstName(p.c)} is no longer marked as in the group.`, 'info');
+        } catch {
+            addToast("Couldn't update that. Please try again.", 'error');
+        }
     };
 
-    if (!isOpen) return null;
+    const cities = useMemo(() => {
+        const set = new Set(PREDEFINED_CITIES.filter(c => c !== 'Others' && c !== 'Pan-India / Remote').map(normalizeCity));
+        people.forEach(p => p.cityName && set.add(p.cityName));
+        return [...set].sort();
+    }, [people]);
+
+    const selectedJoinable = inScope.filter(p => selected.has(p.id) && p.stage !== 'joined').map(p => p.id);
+    const previewPerson = plan.wa[0] || plan.mail[0] || inScope.find(p => p.group) || null;
+
+    // ---------- Run view ----------
+    const runView = run && (
+        <div className="space-y-4">
+            {run.emailTotal > 0 && (
+                <div className="flex items-center gap-3 rounded-2xl border border-black/[0.06] bg-black/[0.02] p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neon-blue/10 text-sky-600 dark:text-neon-blue"><Mail size={18} /></div>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-bold">{run.emailing ? 'Sending emails…' : 'Emails sent'}</p>
+                        <p className="text-[12px] text-gray-500">{run.emailed} of {run.emailTotal}{run.emailFailed ? ` · ${run.emailFailed} failed` : ''}</p>
+                    </div>
+                    {run.emailing ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" /> : <CheckCircle2 size={18} className="text-emerald-500" />}
+                </div>
+            )}
+
+            {run.queue.length > 0 && (
+                <div className="rounded-2xl border border-black/[0.06] p-4 dark:border-white/[0.06]">
+                    <div className="flex items-center justify-between gap-3">
+                        <p className="text-[13px] font-bold">WhatsApp queue</p>
+                        <p className="text-[12px] font-semibold text-gray-500">{Math.min(run.index, run.queue.length)} of {run.queue.length} done</p>
+                    </div>
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
+                        <div className="h-full rounded-full bg-neon-green transition-all" style={{ width: `${(Math.min(run.index, run.queue.length) / run.queue.length) * 100}%` }} />
+                    </div>
+
+                    {current ? (
+                        <div className="mt-4 space-y-3">
+                            <div className="flex items-center gap-3">
+                                <Avatar src={current.c.profileImage || current.c.photoURL} name={current.c.name} size={44} />
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate text-[15px] font-bold">{current.c.name || 'Creator'}</p>
+                                    <p className="truncate text-[12px] text-gray-500">{prettyPhone(current.phone)} · {current.group?.city}</p>
+                                </div>
+                                {current.stage === 'follow_up' && <Badge tone="violet">Follow-up</Badge>}
+                            </div>
+                            <p className="whitespace-pre-wrap rounded-xl bg-[#e7ffdb] p-3 text-[13px] leading-relaxed text-gray-900 dark:bg-emerald-950/40 dark:text-emerald-50">{messageFor(current)}</p>
+                            <div className="flex gap-2">
+                                <Button variant="primary" className="h-12 flex-1" onClick={sendCurrent}>
+                                    <MessageCircle size={15} /> Open WhatsApp
+                                </Button>
+                                <Button variant="secondary" className="h-12" onClick={() => { awaitingReturn.current = false; advance(); }} aria-label="Skip">
+                                    <SkipForward size={15} /> Skip
+                                </Button>
+                            </div>
+                            <p className="text-[11px] text-gray-500">Send the message in WhatsApp, then come back here: the next creator loads by itself. On a computer, Enter opens the chat and S skips.</p>
+                        </div>
+                    ) : (
+                        <div className="mt-4 flex items-center gap-2 text-[13px] font-semibold text-emerald-600 dark:text-neon-green">
+                            <CheckCircle2 size={16} /> Queue finished.
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {run.done && (
+                <div className="rounded-2xl border border-neon-green/30 bg-neon-green/[0.06] p-4">
+                    <p className="text-[14px] font-bold">All done</p>
+                    <p className="mt-1 text-[12px] text-gray-600 dark:text-zinc-400">
+                        People who don't join within {FOLLOW_UP_DAYS} days show up under Follow up, with a shorter reminder message.
+                        When you see someone in the WhatsApp group, mark them as in the group.
+                    </p>
+                </div>
+            )}
+        </div>
+    );
 
     return (
-        <SharedLayoutModal
-            isOpen={isOpen}
+        <Sheet
+            open={isOpen}
             onClose={onClose}
-            layoutId="add-city-creators-modal"
-            className="w-full max-w-5xl h-[92vh] sm:h-[90vh] bg-white/95 dark:bg-[#0a0c12]/70 backdrop-blur-3xl border border-black/10 dark:border-white/[0.1] rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_24px_80px_-12px_rgba(0,0,0,0.6)] overflow-hidden"
-            contentClassName="p-0 flex flex-col h-full"
-            hideCloseButton={true}
+            size="xl"
+            title="Invite to WhatsApp groups"
+            subtitle={fromSelection ? `${preselectedUids.length} selected creators · each gets their own city's group` : 'Each creator gets the group for their own city'}
+            bodyClassName="space-y-4"
+            footer={run ? (
+                <div className="flex gap-2">
+                    {!run.done && <Button variant="secondary" className="h-12" onClick={stop}><Square size={13} /> Stop</Button>}
+                    <Button variant={run.done ? 'primary' : 'secondary'} className="h-12 flex-1" onClick={run.done ? stop : onClose}>
+                        {run.done ? 'Back to list' : 'Close'}
+                    </Button>
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] font-semibold text-gray-600 dark:text-zinc-400">
+                        <span className="inline-flex items-center gap-1.5"><MessageCircle size={13} className="text-emerald-500" /> {plan.wa.length} on WhatsApp</span>
+                        <span className="inline-flex items-center gap-1.5"><Mail size={13} className="text-sky-500" /> {plan.mail.length} by email</span>
+                        {plan.skipped > 0 && <span className="text-amber-600">{plan.skipped} skipped (no {channel === 'email' ? 'email' : 'phone'})</span>}
+                    </div>
+                    <div className="flex gap-2">
+                        <Menu align="left" trigger={({ toggle: open }) => (
+                            <Button variant="secondary" className="h-12" onClick={open} disabled={!selectedJoinable.length || busy}>
+                                <MoreHorizontal size={15} /> <span className="hidden sm:inline">More</span>
+                            </Button>
+                        )}>
+                            <MenuItem icon={Users} onClick={() => markJoined(selectedJoinable)} hint="For people you've already seen in the group">
+                                Mark {selectedJoinable.length} as in group
+                            </MenuItem>
+                        </Menu>
+                        <Button variant="primary" className="h-12 flex-1" onClick={start} disabled={!plan.wa.length && !plan.mail.length}>
+                            <Zap size={15} /> Invite {plan.wa.length + plan.mail.length || ''}
+                        </Button>
+                    </div>
+                </div>
+            )}
         >
-            <div className="flex flex-col h-full text-gray-900 dark:text-white">
-                
-                {/* ── HEADER & TABS ── */}
-                <div className="shrink-0 pt-6 px-6 sm:px-8 border-b border-black/[0.08] dark:border-white/[0.08] relative overflow-hidden backdrop-blur-xl">
-                    <div className="flex items-start justify-between gap-4 mb-6">
-                        <div>
-                            <div className="flex items-center gap-3">
-                                <h2 className="text-xl sm:text-2xl font-black font-heading tracking-tight text-gray-900 dark:text-white uppercase italic">
-                                    Send Group Invites
-                                </h2>
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                    <ShieldCheck size={12} /> Anti-Spam Safe
-                                </span>
-                            </div>
-                            <p className="text-xs text-gray-500 dark:text-white/50 mt-1">
-                                Send WhatsApp group links naturally via 1-on-1 chats or email to avoid bans.
-                            </p>
+            {run ? runView : (
+                <>
+                    {/* Scope */}
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                        <Select value={city} onChange={(v) => { setCity(v); setPicked(null); }} label="City" options={[
+                            { value: 'all', label: fromSelection ? 'All their cities' : 'All cities' },
+                            ...cities.map(c => ({ value: c, label: `${c}${groupFor.has(c) ? '' : ' · no group'}` })),
+                        ]} />
+                        <Select value={channel} onChange={setChannel} label="Channel" options={[
+                            { value: 'auto', label: 'Best channel each' },
+                            { value: 'whatsapp', label: 'WhatsApp only' },
+                            { value: 'email', label: 'Email only' },
+                        ]} />
+                        <button
+                            type="button"
+                            onClick={() => { setVerifiedOnly(v => !v); setPicked(null); }}
+                            className={cn('col-span-2 flex h-11 items-center justify-center gap-2 rounded-xl border px-3.5 text-xs font-bold transition-colors sm:col-span-1',
+                                verifiedOnly ? 'border-neon-green/40 bg-neon-green/10 text-emerald-700 dark:text-neon-green' : 'border-black/10 text-gray-600 dark:border-white/10 dark:text-zinc-300')}
+                        >
+                            <span className={cn('flex h-4 w-4 items-center justify-center rounded border', verifiedOnly ? 'border-emerald-600 bg-emerald-600 text-white dark:border-neon-green dark:bg-neon-green dark:text-black' : 'border-gray-300')}>
+                                {verifiedOnly && <Check size={11} strokeWidth={3} />}
+                            </span>
+                            Verified only
+                        </button>
+                    </div>
+
+                    {plan.noGroupCities.length > 0 && (
+                        <div className="flex items-start gap-2.5 rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] p-3 text-[12px] text-amber-800 dark:text-amber-300">
+                            <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+                            <p>No group yet for {plan.noGroupCities.slice(0, 4).join(', ')}{plan.noGroupCities.length > 4 ? ` and ${plan.noGroupCities.length - 4} more` : ''}. Creators there are skipped until you add one under Groups.</p>
                         </div>
+                    )}
 
-                    </div>
-
-                    <div className="flex items-center gap-6 overflow-x-auto no-scrollbar scroll-smooth">
-                        {TABS.map((tab) => {
-                            const isActive = activeTab === tab.id;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    type="button"
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={cn(
-                                        "relative pb-4 text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-colors outline-none",
-                                        isActive ? "text-neon-green" : "text-gray-400 dark:text-white/40 hover:text-gray-700 dark:text-white/70"
-                                    )}
-                                >
-                                    <span>{tab.label}</span>
-                                    {isActive && (
-                                        <motion.div
-                                            layoutId="city-creators-active-tab"
-                                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-neon-green"
-                                        />
-                                    )}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* ── CONTENT AREA ── */}
-                <div className="flex-1 overflow-y-auto min-h-0 bg-black/[0.01] dark:bg-white/[0.01]">
-                    <AnimatePresence mode="wait">
-                        
-                        {/* TAB 1: AUDIENCE */}
-                        {activeTab === 'audience' && (
-                            <motion.div
-                                key="audience"
-                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                                className="p-6 sm:p-8 space-y-6"
-                            >
-                                <div className="flex flex-col lg:flex-row gap-6">
-                                    {/* City Selector */}
-                                    <div className="lg:w-1/3 space-y-2 relative z-50">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-white/50 flex items-center gap-1.5">
-                                            <MapPin size={12} className="text-neon-blue" /> Target City Hub
-                                        </label>
-                                        <CustomDropdown 
-                                            value={selectedCity} 
-                                            options={availableCities} 
-                                            onChange={(c) => { setSelectedCity(c); setSelectedIds(null); setIsQueueActive(false); }} 
+                    {/* Message */}
+                    <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06]">
+                        <button type="button" onClick={() => setShowMessage(v => !v)} className="flex w-full items-center gap-3 p-4 text-left">
+                            <MessageCircle size={16} className="shrink-0 text-emerald-500" />
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[13px] font-bold">Message</p>
+                                <p className="truncate text-[12px] text-gray-500">{previewPerson ? fill(template, previewPerson.c, previewPerson.group).split('\n')[0] : 'Invite and follow-up messages'}</p>
+                            </div>
+                            <ChevronDown size={16} className={cn('shrink-0 text-gray-400 transition-transform', showMessage && 'rotate-180')} />
+                        </button>
+                        {showMessage && (
+                            <div className="space-y-4 border-t border-black/[0.06] p-4 dark:border-white/[0.06]">
+                                {[
+                                    { label: 'First invite', value: template, set: setTemplate, def: DEFAULT_INVITE },
+                                    { label: `Follow-up (after ${FOLLOW_UP_DAYS} days)`, value: followUp, set: setFollowUp, def: DEFAULT_FOLLOW_UP },
+                                ].map(t => (
+                                    <div key={t.label} className="space-y-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[12px] font-bold text-gray-600 dark:text-zinc-300">{t.label}</span>
+                                            {t.value !== t.def && <button type="button" onClick={() => t.set(t.def)} className="text-[11px] font-semibold text-gray-500 underline">Reset</button>}
+                                        </div>
+                                        <textarea
+                                            value={t.value}
+                                            onChange={(e) => t.set(e.target.value)}
+                                            rows={5}
+                                            className="w-full resize-y rounded-xl border border-black/10 bg-white p-3 text-[15px] leading-relaxed outline-none focus:border-neon-green/60 dark:border-white/10 dark:bg-white/[0.04] dark:text-white sm:text-[13px]"
                                         />
                                     </div>
-                                    
-                                    {/* Quick Stats */}
-                                    <div className="lg:flex-1 grid grid-cols-3 gap-3">
-                                        <div className="p-4 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.05] flex flex-col justify-center items-center">
-                                            <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-white/40">Total</span>
-                                            <div className="text-2xl font-black mt-1 text-gray-900 dark:text-white">{stats.total}</div>
-                                        </div>
-                                        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col justify-center items-center">
-                                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400/70">Joined</span>
-                                            <div className="text-2xl font-black text-emerald-400 mt-1">{stats.joined}</div>
-                                        </div>
-                                        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col justify-center items-center">
-                                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-400/70">Pending</span>
-                                            <div className="text-2xl font-black text-amber-400 mt-1">{stats.pending}</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 pt-4 border-t border-black/[0.06] dark:border-white/[0.05]">
-                                    {/* Filters & Search */}
-                                    <div className="flex flex-wrap items-center justify-between gap-4">
-                                        <div className="flex items-center bg-black/[0.04] dark:bg-white/[0.04] p-1 rounded-xl border border-black/[0.06] dark:border-white/[0.05] text-[10px] font-bold">
-                                            {['all', 'pending', 'sent', 'joined'].map(t => (
-                                                <button
-                                                    key={t}
-                                                    onClick={() => setStatusFilter(t)}
-                                                    className={cn("px-4 py-2 rounded-lg transition-all capitalize", statusFilter === t ? "bg-black/5 dark:bg-white/10 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-white/50 hover:text-gray-900 dark:text-white")}
-                                                >
-                                                    {t}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <div className="relative flex-1 max-w-sm">
-                                            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40" />
-                                            <input
-                                                type="text"
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                placeholder="Search by name, phone..."
-                                                className="w-full h-11 pl-10 pr-4 bg-white dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none focus:border-neon-green transition-colors"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Creators List */}
-                                    <div className="border border-black/[0.08] dark:border-white/[0.08] rounded-2xl overflow-hidden bg-white dark:bg-[#0c0e14]">
-                                        <div className="px-5 py-3 border-b border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02]">
-                                            <div className="flex items-center gap-3">
-                                                <button onClick={handleToggleSelectAll} className="w-5 h-5 rounded border border-black/20 dark:border-white/20 flex items-center justify-center bg-white dark:bg-black/40 text-neon-green hover:border-black/40 dark:hover:border-white/40 transition-colors">
-                                                    {isAllSelected && <Check size={12} strokeWidth={3} />}
-                                                </button>
-                                                <span className="text-xs font-bold text-gray-700 dark:text-white/70">Select All ({filteredCreators.length})</span>
-                                            </div>
-                                            <span className="text-[10px] font-black uppercase text-neon-green">{currentSelectedIds.size} Selected</span>
-                                        </div>
-                                        
-                                        <div className="max-h-[400px] overflow-y-auto p-2 space-y-1">
-                                            {filteredCreators.length === 0 ? (
-                                                <div className="py-16 text-center text-gray-400 dark:text-white/40 text-xs font-bold">No creators match your filters.</div>
-                                            ) : (
-                                                filteredCreators.map(c => {
-                                                    const isSel = currentSelectedIds.has(c.id || c.uid);
-                                                    const isJ = Boolean(c.hasJoinedCityGroup);
-                                                    const isSent = Boolean(c.inviteLinkSent) && !isJ;
-                                                    const isPending = !isJ && !isSent;
-                                                    
-                                                    return (
-                                                        <div key={c.id || c.uid} className={cn(
-                                                            "flex items-center justify-between p-3.5 rounded-xl transition-all cursor-pointer group",
-                                                            isSel ? "bg-black/[0.06] dark:bg-white/[0.06] border border-black/10 dark:border-white/10" : "hover:bg-black/[0.02] dark:bg-white/[0.02] border border-transparent"
-                                                        )} onClick={() => handleToggleCreator(c.id || c.uid)}>
-                                                            <div className="flex items-center gap-4">
-                                                                <div className={cn("w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors", isSel ? "bg-neon-green border-neon-green text-black" : "border-black/20 dark:border-white/20 bg-white dark:bg-black/40 text-transparent")}>
-                                                                    <Check size={12} strokeWidth={3} />
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">{c.name || 'Unknown'}</p>
-                                                                    <p className="text-[10px] font-mono text-gray-400 dark:text-white/40 mt-0.5">{formatPhoneForWhatsApp(c.phone) || 'No Phone'}</p>
-                                                                </div>
-                                                            </div>
-                                                            
-                                                            <div className="flex items-center gap-3">
-                                                                {/* Optional Undo Action */}
-                                                                {isSent && (
-                                                                    <button 
-                                                                        onClick={(e) => { e.stopPropagation(); handleUndoSent(c); }}
-                                                                        className="h-7 px-2 rounded-lg bg-black/5 dark:bg-white/5 hover:bg-black/5 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-gray-500 dark:text-white/50 hover:text-gray-900 dark:text-white flex items-center gap-1 text-[10px] font-bold transition-all opacity-0 group-hover:opacity-100"
-                                                                    >
-                                                                        <Undo2 size={10} /> Undo
-                                                                    </button>
-                                                                )}
-
-                                                                {/* Status Badge */}
-                                                                {isJ ? (
-                                                                    <span className="w-20 py-1 text-center rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Joined</span>
-                                                                ) : isSent ? (
-                                                                    <span className="w-20 py-1 text-center rounded-full text-[9px] font-black uppercase bg-sky-500/10 text-sky-400 border border-sky-500/20">Sent</span>
-                                                                ) : (
-                                                                    <span className="w-20 py-1 text-center rounded-full text-[9px] font-black uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">Pending</span>
-                                                                )}
-                                                                
-                                                                {/* Send WhatsApp action */}
-                                                                {!isJ && (
-                                                                    <button 
-                                                                        onClick={(e) => { e.stopPropagation(); handleSendIndividualWhatsApp(c); }}
-                                                                        className="h-7 px-3 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 text-[#25D366] flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider transition-all"
-                                                                    >
-                                                                        <Send size={10} /> {isSent ? 'Resend' : 'Send'}
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
+                                ))}
+                                <p className="text-[11px] text-gray-500">{'{name}'} is the first name, {'{city}'} their city and {'{groupLink}'} that city's group. Saved on this device.</p>
+                            </div>
                         )}
+                    </div>
 
-                        {/* TAB 2: MESSAGE */}
-                        {activeTab === 'message' && (
-                            <motion.div
-                                key="message"
-                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                                className="p-6 sm:p-8 space-y-8 max-w-3xl mx-auto"
-                            >
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-xs font-black uppercase tracking-widest text-gray-700 dark:text-white/70 flex items-center gap-2">
-                                            <MessageSquare size={14} className="text-neon-pink" /> 
-                                            Invite Message Template
-                                        </label>
-                                        <button onClick={() => setInviteTemplate(DEFAULT_INVITE_TEMPLATE)} className="text-[10px] font-bold text-gray-400 dark:text-white/40 hover:text-gray-900 dark:text-white underline">
-                                            Reset to Default
-                                        </button>
-                                    </div>
-                                    <textarea
-                                        value={inviteTemplate}
-                                        onChange={(e) => setInviteTemplate(e.target.value)}
-                                        rows={7}
-                                        className="w-full p-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/[0.1] rounded-2xl text-[13px] text-gray-900 dark:text-white outline-none focus:border-neon-pink transition-colors resize-none leading-relaxed shadow-inner"
-                                        placeholder="Type your message here... Emojis work perfectly!"
-                                    />
-                                    <p className="text-[10px] font-bold text-gray-500 dark:text-white/50 bg-black/[0.02] dark:bg-white/[0.02] inline-block px-3 py-1.5 rounded-lg border border-black/[0.06] dark:border-white/[0.05]">
-                                        Dynamic Tags: <span className="text-neon-pink ml-1">{"{name}"}</span>, <span className="text-neon-blue mx-1">{"{city}"}</span>, <span className="text-neon-green">{"{groupLink}"}</span>
-                                    </p>
-                                </div>
+                    {/* People */}
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div className="-mx-5 overflow-x-auto px-5 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+                            <SegmentedTabs value={stage} onChange={setStage} items={[
+                                { value: 'todo', label: 'Needs invite', count: counts.todo, highlight: counts.todo > 0 },
+                                { value: 'sent', label: 'Invited', count: counts.sent },
+                                { value: 'joined', label: 'In group', count: counts.joined },
+                                ...(counts.blocked ? [{ value: 'blocked', label: "Can't invite", count: counts.blocked }] : []),
+                                { value: 'all', label: 'All', count: counts.all },
+                            ]} />
+                        </div>
+                        <SearchInput value={search} onChange={setSearch} placeholder="Name, phone, city" className="sm:ml-auto sm:w-56" />
+                    </div>
 
-                                <div className="p-5 rounded-2xl bg-black/20 border border-black/[0.08] dark:border-white/[0.08] space-y-4">
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-white/50 flex items-center gap-2">
-                                        <Users size={12} className="text-neon-green" />
-                                        Active Group Link for {selectedCity}
-                                    </h4>
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex-1 bg-gray-100 dark:bg-black/60 px-4 py-3.5 rounded-xl border border-black/[0.06] dark:border-white/[0.05] font-mono text-xs text-neon-green truncate shadow-inner">
-                                            {currentGroup?.groupUrl || 'No group link configured yet. Check Group Settings.'}
-                                        </div>
-                                        {currentGroup?.groupUrl && (
-                                            <a href={currentGroup.groupUrl} target="_blank" rel="noopener noreferrer" className="h-11 px-5 rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 border border-black/[0.06] dark:border-white/[0.05] text-gray-900 dark:text-white font-bold text-[10px] uppercase tracking-wider flex items-center gap-2 transition-colors shrink-0 shadow-sm">
-                                                Test Link <ExternalLink size={12} />
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {/* TAB 3: DISPATCH */}
-                        {activeTab === 'dispatch' && (
-                            <motion.div
-                                key="dispatch"
-                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                                className="p-6 sm:p-8 space-y-8 max-w-4xl mx-auto"
-                            >
-                                <div className="text-center space-y-3 pb-4">
-                                    <h3 className="text-3xl font-black font-heading text-gray-900 dark:text-white italic tracking-tight">Ready to Dispatch!</h3>
-                                    <p className="text-sm text-gray-600 dark:text-white/60">You have carefully selected <strong className="text-neon-green px-1.5 py-0.5 bg-neon-green/10 rounded-md">{currentSelectedIds.size}</strong> creators in <strong className="text-neon-blue">{selectedCity}</strong>.</p>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {/* WhatsApp Queue Option */}
-                                    <div className="p-6 sm:p-8 rounded-[2rem] bg-white dark:bg-black/40 border border-black/[0.06] dark:border-white/[0.05] relative overflow-hidden group hover:border-neon-green/30 transition-colors">
-                                        <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity"><Play size={96} /></div>
-                                        <div className="relative z-10 space-y-5">
-                                            <div className="w-14 h-14 rounded-2xl bg-neon-green/10 border border-neon-green/20 text-neon-green flex items-center justify-center shadow-lg shadow-neon-green/10">
-                                                <Phone size={24} />
-                                            </div>
-                                            <div>
-                                                <h4 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">WhatsApp Queue</h4>
-                                                <p className="text-[11px] sm:text-xs text-gray-500 dark:text-white/50 mt-2 leading-relaxed">Opens WhatsApp Web 1-by-1 for each creator. 100% safe from bans, highly personal and ensures perfect delivery.</p>
-                                            </div>
-                                            
-                                            {isQueueActive ? (
-                                                <div className="pt-4 space-y-4">
-                                                    <div className="p-4 rounded-xl bg-neon-green/10 border border-neon-green/20 shadow-inner">
-                                                        <p className="text-[10px] font-black uppercase tracking-wider text-neon-green mb-1 flex items-center gap-2">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" /> Queue Active ({queueIndex + 1}/{queueCandidates.length})
-                                                        </p>
-                                                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{currentQueueCreator?.name}</p>
-                                                    </div>
-                                                    <div className="flex gap-3">
-                                                        <button onClick={handleQueueNext} className="flex-1 h-12 rounded-xl bg-neon-green text-black font-black text-xs uppercase hover:brightness-110 shadow-[0_0_20px_rgba(57,255,20,0.3)] flex items-center justify-center gap-2 transition-all">
-                                                            <Send size={14} /> Send & Next
-                                                        </button>
-                                                        <button onClick={handleQueueSkip} className="h-12 px-5 rounded-xl border border-black/10 dark:border-white/10 text-gray-700 dark:text-white/70 hover:text-gray-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center transition-colors" title="Skip Creator">
-                                                            <SkipForward size={14} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <button onClick={handleStartQueue} disabled={queueCandidates.length === 0} className="w-full h-12 mt-4 rounded-xl bg-neon-green/10 border border-neon-green/30 text-neon-green font-black text-xs uppercase tracking-wider hover:bg-neon-green/20 transition-all disabled:opacity-40">
-                                                    Start WA Queue ({queueCandidates.length})
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Email Blast Option */}
-                                    <div className="p-6 sm:p-8 rounded-[2rem] bg-white dark:bg-black/40 border border-black/[0.06] dark:border-white/[0.05] relative overflow-hidden group hover:border-neon-pink/30 transition-colors">
-                                        <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity"><Mail size={96} /></div>
-                                        <div className="relative z-10 space-y-5">
-                                            <div className="w-14 h-14 rounded-2xl bg-neon-pink/10 border border-neon-pink/20 text-neon-pink flex items-center justify-center shadow-lg shadow-neon-pink/10">
-                                                <Mail size={24} />
-                                            </div>
-                                            <div>
-                                                <h4 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Email Blast</h4>
-                                                <p className="text-[11px] sm:text-xs text-gray-500 dark:text-white/50 mt-2 leading-relaxed">Sends a professional branded HTML email containing the WhatsApp group link. Great for massive bulk dispatches.</p>
-                                            </div>
-                                            
-                                            <button onClick={handleBulkSendEmail} disabled={isEmailSending || currentSelectedIds.size === 0} className="w-full h-12 mt-4 rounded-xl bg-neon-pink/10 border border-neon-pink/30 text-neon-pink font-black text-xs uppercase tracking-wider hover:bg-neon-pink/20 transition-all disabled:opacity-40 flex items-center justify-center gap-2">
-                                                {isEmailSending ? 'Sending emails...' : `Dispatch Emails (${currentSelectedIds.size})`}
+                    {listed.length === 0 ? (
+                        <EmptyState
+                            icon={stage === 'todo' ? CheckCircle2 : Users}
+                            title={stage === 'todo' ? 'Everyone here is invited' : 'No one here'}
+                            description={stage === 'todo' ? `Nobody in ${city === 'all' ? 'these cities' : city} needs an invite right now.` : 'Try another city or tab.'}
+                        />
+                    ) : (
+                        <div className="overflow-hidden rounded-2xl border border-black/[0.06] dark:border-white/[0.06]">
+                            <button type="button" onClick={toggleAll} className="flex w-full items-center gap-3 border-b border-black/[0.06] bg-black/[0.02] px-4 py-2.5 text-left dark:border-white/[0.06] dark:bg-white/[0.02]">
+                                <span className={cn('flex h-5 w-5 items-center justify-center rounded-md border', allListedSelected ? 'border-emerald-600 bg-emerald-600 text-white dark:border-neon-green dark:bg-neon-green dark:text-black' : 'border-gray-300 dark:border-white/20')}>
+                                    {allListedSelected && <Check size={12} strokeWidth={3} />}
+                                </span>
+                                <span className="flex-1 text-[12px] font-bold">Select all {listed.length}</span>
+                                <span className="text-[11px] font-semibold text-gray-500">{selected.size} selected{picked ? '' : ' automatically'}</span>
+                            </button>
+                            <ul className="max-h-[48dvh] divide-y divide-black/[0.05] overflow-y-auto dark:divide-white/[0.05]">
+                                {listed.map(p => {
+                                    const isSel = selected.has(p.id);
+                                    const cfg = STAGE[p.stage];
+                                    const canWhatsApp = p.phone && p.group && p.stage !== 'joined';
+                                    return (
+                                        <li key={p.id} className={cn('flex items-center gap-3 px-4 py-3', isSel && 'bg-neon-green/[0.04]')}>
+                                            <button type="button" onClick={() => toggle(p.id)} aria-label={isSel ? 'Unselect' : 'Select'} className="-m-2 p-2">
+                                                <span className={cn('flex h-5 w-5 items-center justify-center rounded-md border', isSel ? 'border-emerald-600 bg-emerald-600 text-white dark:border-neon-green dark:bg-neon-green dark:text-black' : 'border-gray-300 dark:border-white/20')}>
+                                                    {isSel && <Check size={12} strokeWidth={3} />}
+                                                </span>
                                             </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-                
-                {/* ── STICKY FOOTER NAVIGATION ── */}
-                <div className="shrink-0 p-5 border-t border-black/[0.08] dark:border-white/[0.08] bg-white/95 dark:bg-[#0a0c12]/95 backdrop-blur-3xl flex items-center justify-between z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-                    <button 
-                        onClick={goToPrevTab} 
-                        disabled={activeTab === 'audience'}
-                        className="h-11 px-6 rounded-xl border border-black/[0.08] dark:border-white/[0.08] text-gray-700 dark:text-white/70 hover:text-gray-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/5 font-bold text-xs transition-colors disabled:opacity-0"
-                    >
-                        &larr; Back
-                    </button>
-                    
-                    <button 
-                        onClick={goToNextTab}
-                        disabled={activeTab === 'dispatch'}
-                        className="h-11 px-8 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-black font-black text-xs uppercase tracking-widest hover:bg-black dark:hover:bg-gray-200 transition-colors disabled:opacity-0 shadow-[0_4px_14px_rgba(0,0,0,0.1)] dark:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-                    >
-                        Next Step &rarr;
-                    </button>
-                </div>
-            </div>
-        </SharedLayoutModal>
+                                            <Avatar src={p.c.profileImage || p.c.photoURL} name={p.c.name} size={36} />
+                                            <button type="button" onClick={() => toggle(p.id)} className="min-w-0 flex-1 text-left">
+                                                <p className="truncate text-[14px] font-bold">{p.c.name || 'Creator'}</p>
+                                                <p className="truncate text-[12px] text-gray-500">
+                                                    {[p.cityName || 'No city', p.phone ? prettyPhone(p.phone) : p.email || 'No contact'].join(' · ')}
+                                                </p>
+                                                {(p.blockedWhy && p.stage === 'blocked') ? (
+                                                    <p className="truncate text-[11px] font-semibold text-amber-600">{p.blockedWhy}</p>
+                                                ) : p.sentDays !== null && p.stage !== 'joined' ? (
+                                                    <p className="truncate text-[11px] text-gray-400">Invited {ago(p.sentDays)}{p.c.inviteLinkChannel ? ` by ${p.c.inviteLinkChannel}` : ''}</p>
+                                                ) : null}
+                                            </button>
+                                            <Badge tone={cfg.tone} className="hidden sm:inline-flex">{cfg.label}</Badge>
+                                            {canWhatsApp && (
+                                                <Button size="sm" variant="secondary" onClick={() => openWhatsApp(p)} aria-label="Send on WhatsApp" className="w-9 px-0 text-emerald-600">
+                                                    <MessageCircle size={15} />
+                                                </Button>
+                                            )}
+                                            <Menu trigger={({ toggle: open }) => (
+                                                <Button size="sm" variant="ghost" onClick={open} aria-label="More" className="w-9 px-0"><MoreHorizontal size={15} /></Button>
+                                            )}>
+                                                {p.stage !== 'joined' && <MenuItem icon={Users} onClick={() => markJoined([p.id])}>Mark as in group</MenuItem>}
+                                                {p.stage === 'joined' && <MenuItem icon={Undo2} onClick={() => undoJoined(p)}>Not in group</MenuItem>}
+                                                {(p.stage === 'sent' || p.stage === 'follow_up') && <MenuItem icon={Repeat} onClick={() => undoSent(p)}>Move back to to-invite</MenuItem>}
+                                                {p.group?.groupUrl && <MenuItem as="a" href={p.group.groupUrl} target="_blank" rel="noopener noreferrer" icon={MessageCircle}>Open {p.group.city} group</MenuItem>}
+                                            </Menu>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    )}
+                </>
+            )}
+        </Sheet>
     );
 };
 

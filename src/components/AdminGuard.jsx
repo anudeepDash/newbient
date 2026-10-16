@@ -1,8 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../lib/store';
-import { ShieldAlert } from 'lucide-react';
-import { motion } from 'framer-motion';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import LogIn from 'lucide-react/dist/esm/icons/log-in';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import Send from 'lucide-react/dist/esm/icons/send';
+import Home from 'lucide-react/dist/esm/icons/home';
+import AccessNotice from './admin/workspace/AccessNotice';
+import { Button } from './admin/ui';
 import GlobalLoader from './ui/GlobalLoader';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 
@@ -27,9 +32,6 @@ const getAdminTitle = (pathname) => {
     if (path === '/admin/forms') return 'Forms';
     if (path === '/admin/forms/create') return 'Create Form';
     if (path.startsWith('/admin/forms/edit/')) return 'Edit Form';
-    if (path === '/admin/artists') return 'Artists';
-    if (path === '/admin/client-requests') return 'Client Requests';
-    if (path === '/admin/artistant') return 'Artistant Hub';
     if (path === '/admin/volunteer-gigs') return 'Volunteer Gigs';
     if (path === '/admin/guestlists') return 'Guestlist';
     if (path === '/admin/upcoming-events') return 'Upcoming Events';
@@ -88,41 +90,23 @@ const AdminGuard = ({ children }) => {
         user.role !== 'gate_manager' && 
         user.role !== 'blog_writer'
     )) {
+        const isPending = user?.role === 'pending';
+        const canRequest = user?.role === 'unauthorized';
         return (
-            <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center p-6">
-                <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="max-w-md w-full text-center space-y-8"
-                >
-                    <div className="flex justify-center mb-8">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 backdrop-blur-md">
-                            <ShieldAlert size={14} className="text-red-500" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-red-500">Restricted Access</span>
-                        </div>
-                    </div>
-
-                    <div className="w-24 h-24 bg-red-500/10 rounded-[2rem] border border-red-500/20 flex items-center justify-center mx-auto mb-8">
-                        <ShieldAlert className="text-red-500" size={48} />
-                    </div>
-                    
-                    <div className="space-y-4">
-                        <h1 className="text-4xl font-black font-heading text-gray-900 dark:text-white uppercase italic tracking-tighter">ACCESS DENIED.</h1>
-                        <p className="text-gray-500 text-sm font-bold uppercase tracking-widest leading-relaxed">
-                            Your credentials do not have the required authority to access the <span className="text-neon-green">Newbi Admin Dashboard</span>.
-                        </p>
-                    </div>
-
-                    <div className="pt-8 space-y-4">
+            <AccessNotice
+                icon={!user ? LogIn : isPending ? Clock : Lock}
+                tone={!user ? 'blue' : isPending ? 'amber' : 'gray'}
+                title={!user ? 'Sign in to open the admin' : isPending ? 'Your request is waiting for approval' : "You don't have admin access"}
+                note={user?.email ? `Signed in as ${user.email}` : undefined}
+                actions={(
+                    <>
                         {!user ? (
-                            <button 
-                                onClick={() => setAuthModal(true)}
-                                className="px-8 h-14 bg-neon-blue text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-105 active:scale-95 transition-all w-full shadow-[0_10px_30px_rgba(0,180,255,0.2)]"
-                            >
-                                AUTHENTICATE ACCESS
-                            </button>
-                        ) : (user.role === 'unauthorized') ? (
-                            <button 
+                            <Button variant="primary" onClick={() => setAuthModal(true)} className="h-12 w-full">
+                                <LogIn size={16} /> Sign in
+                            </Button>
+                        ) : canRequest ? (
+                            <Button
+                                variant="primary"
                                 disabled={requesting}
                                 onClick={async () => {
                                     try {
@@ -133,30 +117,25 @@ const AdminGuard = ({ children }) => {
                                         setRequesting(false);
                                     }
                                 }}
-                                className="px-8 h-14 bg-neon-green text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-105 active:scale-95 transition-all w-full shadow-[0_10px_30px_rgba(57,255,20,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="h-12 w-full"
                             >
-                                {requesting ? 'SENDING REQUEST...' : 'REQUEST ADMIN ACCESS'}
-                            </button>
-                        ) : user.role === 'pending' ? (
-                            <div className="p-6 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl text-center">
-                                <p className="text-yellow-500 text-[10px] font-black uppercase tracking-[0.2em]">AUTHORIZATION PENDING</p>
-                                <p className="text-gray-500 text-[10px] font-bold uppercase mt-2">AWAITING ADMIN APPROVAL</p>
-                            </div>
+                                <Send size={15} /> {requesting ? 'Sending request…' : 'Ask for admin access'}
+                            </Button>
                         ) : null}
-
-                        <button 
-                            onClick={() => navigate('/')}
-                            className="px-8 h-14 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 transition-all w-full"
-                        >
-                            Return to Safe Zone
-                        </button>
-                    </div>
-                    
-                    <p className="text-[8px] text-gray-700 font-bold uppercase tracking-[0.4em]">
-                        {user?.role === 'pending' ? 'Request Persistence Active' : 'Access Attempt Logged'}
-                    </p>
-                </motion.div>
-            </div>
+                        <Button variant="secondary" onClick={() => navigate('/')} className="h-12 w-full">
+                            <Home size={15} /> Go to the website
+                        </Button>
+                    </>
+                )}
+            >
+                {!user
+                    ? 'The admin is for the Newbi team. Sign in with the account your team added.'
+                    : isPending
+                        ? "A founder will review it soon. You'll get an email when you're in, then reload this page."
+                        : canRequest
+                            ? 'This account is not on the team yet. You can ask for access and a founder will review it.'
+                            : "This account can't open this part of the admin. Ask a founder if you need it."}
+            </AccessNotice>
         );
     }
 

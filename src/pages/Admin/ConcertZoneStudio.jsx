@@ -1,556 +1,468 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    Layout as LayoutIcon, 
-    Newspaper, 
-    Mail, 
-    Plus, 
-    Search, 
-    Settings, 
-    Eye, 
-    Star, 
-    Edit2, 
-    Trash2, 
-    Sparkles, 
-    ChevronRight,
-    Zap,
-    Clock,
-    User,
-    CheckCircle2,
-    Calendar,
-    ArrowUpRight,
-    MousePointer2,
-    Palette,
-    Radio,
-    Music,
-    Monitor,
-    Smartphone,
-    Globe,
-    ExternalLink,
-    Ticket
-} from 'lucide-react';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import PenSquare from 'lucide-react/dist/esm/icons/pen-square';
+import Newspaper from 'lucide-react/dist/esm/icons/newspaper';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import CalendarClock from 'lucide-react/dist/esm/icons/calendar-clock';
+import FileEdit from 'lucide-react/dist/esm/icons/file-edit';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import Star from 'lucide-react/dist/esm/icons/star';
+import Edit from 'lucide-react/dist/esm/icons/edit-3';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Link2 from 'lucide-react/dist/esm/icons/link-2';
+import Bell from 'lucide-react/dist/esm/icons/bell';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Copy from 'lucide-react/dist/esm/icons/copy';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Undo2 from 'lucide-react/dist/esm/icons/undo-2';
+import Send from 'lucide-react/dist/esm/icons/send';
+import Settings from 'lucide-react/dist/esm/icons/settings-2';
+import Ticket from 'lucide-react/dist/esm/icons/ticket';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import X from 'lucide-react/dist/esm/icons/x';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
+import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { cn } from '../../lib/utils';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import Sheet from '../../components/admin/Sheet';
+import { Card, Button, Badge, StatTile, SearchInput, Select, SegmentedTabs, EmptyState, Menu, MenuItem, ViewToggle, useViewMode } from '../../components/admin/ui';
+import ExportMenu from '../../components/admin/ExportMenu';
+import { fieldCls, Field } from '../../components/admin/uploads/UploadKit';
+import { CONTENT_TABS, ConfirmSheet } from '../../components/admin/content/ContentKit';
+import {
+    BLOG_CATEGORIES, blogCategoryTone, postState, POST_STATE_LABEL, postPath, toDate, formatDay, formatDayTime,
+    relativeTime, stripHtml, uniqueSlug, toDateInput,
+} from '../../components/admin/content/contentRules';
 
+const FILTERS = [
+    { value: 'all', label: 'All' },
+    { value: 'published', label: 'Published' },
+    { value: 'scheduled', label: 'Scheduled' },
+    { value: 'draft', label: 'Drafts' },
+    { value: 'featured', label: 'Featured' },
+    { value: 'sponsored', label: 'Tickets & sponsors' },
+];
+
+const PAGE = 30;
+
+/** Blog posts on the public Concert Zone (/admin/blog). */
 const ConcertZoneStudio = () => {
-    useStoreSubscription(['posts']);
-    const { posts, deletePost, updatePost, siteSettings, updateGeneralSettings, addToast } = useStore();
-    const [activeTab, setActiveTab] = useState('LAYOUT');
-    const [isSaving, setIsSaving] = useState(false);
-    const [viewMode, setViewMode] = useState('desktop');
+    useStoreSubscription(['posts', 'subscribers']);
+    const { posts, subscribers = [], updatePost, deletePost, addPost, addToast } = useStore();
     const navigate = useNavigate();
+    const [params, setParams] = useSearchParams();
+    const [search, setSearch] = useState('');
+    const [category, setCategory] = useState('all');
+    const [sort, setSort] = useState('newest');
+    const [view, setView] = useViewMode('blog', 'cards');
+    const [limit, setLimit] = useState(PAGE);
+    const [confirm, setConfirm] = useState(null);
+    const [busy, setBusy] = useState(false);
+    const [settingsOpen, setSettingsOpen] = useState(params.get('settings') === '1');
+    const busyRef = useRef(false);
 
-    // Layout State
-    const [layoutSettings, setLayoutSettings] = useState({
-        mastheadVol: 'VOL 01',
-        mastheadEst: 'EST. 2026',
-        heroSubtitle: 'MUSIC, LIFE & CULTURE.',
-        accentColor: '#00ffff'
+    const filter = FILTERS.some(f => f.value === params.get('filter')) ? params.get('filter') : 'all';
+    const setFilter = (v) => { const next = new URLSearchParams(params); if (v === 'all') next.delete('filter'); else next.set('filter', v); setParams(next, { replace: true }); setLimit(PAGE); };
+
+    const rows = useMemo(() => posts.map(p => ({
+        p,
+        state: postState(p),
+        when: toDate(p.publishAt || p.publishDate || p.createdAt),
+        updated: toDate(p.updatedAt || p.createdAt),
+    })), [posts]);
+
+    const counts = useMemo(() => ({
+        all: rows.length,
+        published: rows.filter(r => r.state === 'published').length,
+        scheduled: rows.filter(r => r.state === 'scheduled').length,
+        draft: rows.filter(r => r.state === 'draft').length,
+        featured: rows.filter(r => r.p.featured).length,
+        sponsored: rows.filter(r => r.p.ticketingLink || r.p.sponsorName).length,
+    }), [rows]);
+    const totalViews = useMemo(() => posts.reduce((sum, p) => sum + (Number(p.viewCount) || 0), 0), [posts]);
+    const nextScheduled = useMemo(() => rows.filter(r => r.state === 'scheduled').sort((a, b) => (a.when?.getTime() || 0) - (b.when?.getTime() || 0))[0], [rows]);
+
+    const shown = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        const list = rows.filter(({ p, state }) => {
+            if (filter === 'featured' && !p.featured) return false;
+            if (filter === 'sponsored' && !(p.ticketingLink || p.sponsorName)) return false;
+            if (['published', 'scheduled', 'draft'].includes(filter) && state !== filter) return false;
+            if (category !== 'all' && p.category !== category) return false;
+            if (!q) return true;
+            return [p.title, p.shortDescription, p.author, p.slug, ...(Array.isArray(p.tags) ? p.tags : [])].some(v => String(v || '').toLowerCase().includes(q));
+        });
+        const t = (d) => d?.getTime() || 0;
+        if (sort === 'views') list.sort((a, b) => (Number(b.p.viewCount) || 0) - (Number(a.p.viewCount) || 0));
+        else if (sort === 'updated') list.sort((a, b) => t(b.updated) - t(a.updated));
+        else if (sort === 'title') list.sort((a, b) => String(a.p.title || '').localeCompare(String(b.p.title || '')));
+        else list.sort((a, b) => t(b.when) - t(a.when));
+        return list;
+    }, [rows, filter, category, search, sort]);
+
+    const guard = async (fn) => {
+        if (busyRef.current) return;
+        busyRef.current = true;
+        setBusy(true);
+        try { await fn(); } finally { busyRef.current = false; setBusy(false); }
+    };
+
+    const publicUrl = (p) => `${window.location.origin}${postPath(p)}`;
+    const copyLink = async (p) => {
+        try { await navigator.clipboard.writeText(publicUrl(p)); addToast('Link copied.', 'success'); }
+        catch { addToast("Couldn't copy. The link is " + publicUrl(p), 'info'); }
+    };
+    const toggleFeatured = (p) => guard(async () => {
+        try {
+            await updatePost(p.id, { featured: !p.featured });
+            addToast(p.featured ? 'No longer featured.' : 'Featured on the blog and home page.', 'success');
+        } catch (err) { console.error(err); addToast("Couldn't update the post. Please try again.", 'error'); }
+    });
+    const unpublish = (p) => guard(async () => {
+        try {
+            await updatePost(p.id, { status: 'Draft' });
+            addToast('Moved to drafts. It is no longer on the site.', 'success');
+        } catch (err) { console.error(err); addToast("Couldn't update the post. Please try again.", 'error'); }
+    });
+    const duplicate = (p) => guard(async () => {
+        try {
+            // eslint-disable-next-line no-unused-vars
+            const { id, viewCount, shareCount, createdAt, updatedAt, notifiedAt, notifyCount, publishAt, ...rest } = p;
+            const slug = uniqueSlug(`${p.slug || p.title}-copy`, posts);
+            const ref = await addPost({ ...rest, title: `${p.title || 'Untitled'} (copy)`, slug, status: 'Draft', featured: false, publishDate: toDateInput(new Date()) });
+            addToast('Copied as a new draft.', 'success');
+            if (ref?.id) navigate(`/admin/blog/edit/${ref.id}`);
+        } catch (err) { console.error(err); addToast("Couldn't copy the post. Please try again.", 'error'); }
+    });
+    const emailViaMailing = (p) => {
+        const qs = new URLSearchParams({
+            subject: p.title || 'New on Concert Zone',
+            header: p.title || '',
+            body: p.shortDescription || `${stripHtml(p.content).slice(0, 200)}…`,
+            heroImage: p.coverImage || '',
+            ctaText: 'Read the story',
+            ctaUrl: publicUrl(p),
+        });
+        navigate(`/admin/mailing?${qs.toString()}`);
+    };
+
+    const runConfirm = () => guard(async () => {
+        const { kind, item, email } = confirm || {};
+        if (!item) return;
+        try {
+            if (kind === 'delete') {
+                await deletePost(item.id);
+                addToast('Post deleted.', 'success');
+            } else if (kind === 'publish') {
+                await updatePost(item.id, { status: 'Published', publishAt: new Date().toISOString(), publishDate: toDateInput(new Date()) });
+                addToast('Published. It is live on the blog.', 'success');
+            } else if (kind === 'notify') {
+                const claimed = await useStore.getState().claimContentNotification('posts', item.id, { force: !!item.notifiedAt });
+                if (!claimed) addToast('It was already sent a moment ago.', 'info');
+                else {
+                    await notifyAllUsers(`New article: ${item.title}`, item.shortDescription || 'Our latest blog post is up. Take a look.', postPath(item), item.coverImage || '', !!email);
+                    addToast(email ? 'Notification and email sent.' : 'Notification sent to everyone.', 'success');
+                }
+            }
+            setConfirm(null);
+        } catch (err) {
+            console.error(err);
+            addToast("That didn't work. Please try again.", 'error');
+        }
     });
 
-    useEffect(() => {
-        if (siteSettings?.concertzone) {
-            setLayoutSettings(siteSettings.concertzone);
-        }
-    }, [siteSettings]);
+    const exportSpec = () => ({
+        filename: `blog_posts_${filter}`,
+        sheetName: 'Posts',
+        title: 'Blog posts',
+        subtitle: `${shown.length} post${shown.length === 1 ? '' : 's'}`,
+        rows: shown,
+        totals: { views: true, shares: true },
+        columns: [
+            { header: 'Title', value: r => r.p.title || '' },
+            { header: 'Status', value: r => POST_STATE_LABEL[r.state].label },
+            { header: 'Category', value: r => r.p.category || '' },
+            { header: 'Author', value: r => r.p.author || '' },
+            { header: 'Publish date', type: 'datetime', value: r => r.when || null },
+            { header: 'Featured', value: r => (r.p.featured ? 'Yes' : '') },
+            { header: 'Views', key: 'views', type: 'number', value: r => Number(r.p.viewCount) || 0 },
+            { header: 'Shares', key: 'shares', type: 'number', value: r => Number(r.p.shareCount) || 0 },
+            { header: 'Tags', value: r => (Array.isArray(r.p.tags) ? r.p.tags.join(', ') : '') },
+            { header: 'Sponsor', value: r => r.p.sponsorName || '' },
+            { header: 'Ticket link', value: r => r.p.ticketingLink || '' },
+            { header: 'Link', value: r => (r.state === 'published' ? publicUrl(r.p) : '') },
+        ],
+    });
 
-    const handleSaveLayout = async () => {
-        setIsSaving(true);
-        try {
-            await updateGeneralSettings({
-                concertzone: layoutSettings
-            });
-            addToast("Layout saved.", "success");
-        } catch (error) {
-            addToast("Couldn't save the layout. Please try again.", "error");
-        } finally {
-            setIsSaving(false);
-        }
+    const actions = (p, state) => (
+        <Menu trigger={({ toggle }) => (
+            <Button size="sm" variant="ghost" onClick={toggle} aria-label="More actions" className="h-10 w-10 px-0"><MoreHorizontal size={16} /></Button>
+        )}>
+            <MenuItem icon={Edit} onClick={() => navigate(`/admin/blog/edit/${p.id}`)}>Edit</MenuItem>
+            {state === 'published'
+                ? <MenuItem as="a" href={postPath(p)} target="_blank" rel="noopener noreferrer" icon={ExternalLink}>View on the site</MenuItem>
+                : <MenuItem as="a" href={postPath(p)} target="_blank" rel="noopener noreferrer" icon={Eye} hint="Only the admin team can open it">Preview</MenuItem>}
+            {state === 'published' && <MenuItem icon={Link2} onClick={() => copyLink(p)}>Copy link</MenuItem>}
+            <MenuItem icon={Star} onClick={() => toggleFeatured(p)}>{p.featured ? 'Remove from featured' : 'Feature it'}</MenuItem>
+            {state !== 'published' && <MenuItem icon={Send} onClick={() => setConfirm({ kind: 'publish', item: p })}>Publish now</MenuItem>}
+            {state === 'published' && (
+                <MenuItem icon={Bell} onClick={() => setConfirm({ kind: 'notify', item: p, email: false })} hint={p.notifiedAt ? `Already sent ${relativeTime(p.notifiedAt)}` : 'In-app and phone notification'}>
+                    {p.notifiedAt ? 'Send notification again' : 'Send notification'}
+                </MenuItem>
+            )}
+            {state === 'published' && <MenuItem icon={Mail} onClick={() => emailViaMailing(p)} hint="Opens Mailing with this filled in">Email as a campaign</MenuItem>}
+            <MenuItem icon={Copy} onClick={() => duplicate(p)}>Duplicate as draft</MenuItem>
+            {state !== 'draft' && <MenuItem icon={Undo2} onClick={() => unpublish(p)} hint="Takes it off the site">Move to drafts</MenuItem>}
+            <MenuItem icon={Trash2} danger onClick={() => setConfirm({ kind: 'delete', item: p })}>Delete</MenuItem>
+        </Menu>
+    );
+
+    const meta = ({ p, state, when }) => {
+        if (state === 'scheduled') return `Goes live ${formatDayTime(when)}`;
+        if (state === 'draft') return `Draft · edited ${relativeTime(p.updatedAt || p.createdAt) || 'recently'}`;
+        return `${formatDay(when)} · ${Number(p.viewCount) || 0} views`;
     };
 
-    const recentPosts = useMemo(() => {
-        return [...posts]
-            .filter(p => p.status === 'Published')
-            .sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate))
-            .slice(0, 10);
-    }, [posts]);
-
-    const coreContentTabs = [
-        { name: 'Upcoming', path: '/admin/upcoming-events', icon: Calendar, color: 'text-neon-green' },
-        { name: 'Announcements', path: '/admin/announcements', icon: Radio, color: 'text-neon-pink' },
-        { name: 'Blog', path: '/admin/blog', icon: Newspaper, color: 'text-neon-blue' },
-        { name: 'Portfolio', path: '/admin/concertzone', icon: Music, color: 'text-neon-purple' },
-    ];
-
-    const categoryColors = {
-        'Live Events': '#00ffff',
-        'Artists': '#e11d48',
-        'Guides': '#a855f7',
-        'Buzz': '#facc15',
-        'Community': '#10b981'
-    };
+    const visible = shown.slice(0, limit);
 
     return (
         <AdminCommunityHubLayout
-            studioHeader={{
-                title: 'CONCERTZONE',
-                subtitle: 'STUDIO',
-                accentClass: 'text-neon-blue',
-                icon: Zap
-            }}
-            tabs={coreContentTabs}
-            accentColor="neon-blue"
+            studioHeader={{ title: 'Blog', icon: PenSquare, description: 'Stories on Concert Zone, from draft to published' }}
+            tabs={CONTENT_TABS}
+            action={(
+                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+                    <Button variant="accent" as={Link} to="/admin/blog/create" className="col-span-2 sm:order-last"><Plus size={15} /> New post</Button>
+                    <Button variant="secondary" onClick={() => setSettingsOpen(true)}><Settings size={14} /> Blog page</Button>
+                    <Button variant="secondary" as={Link} to="/admin/newsletter/studio"><Mail size={14} /> Newsletter</Button>
+                </div>
+            )}
         >
-            {/* Immersive Atmospheric Background */}
-            <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '80px 80px' }}></div>
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-neon-blue/5 blur-[150px] -mr-64 -mt-64 rounded-full" />
-                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-neon-pink/5 blur-[150px] -ml-64 -mb-64 rounded-full" />
-            </div>
-
-            <div className="relative z-10 space-y-12 pb-32">
-                {/* Visual Tab Switcher - Glass Pill Style */}
-                <div className="flex bg-white dark:bg-black/40 backdrop-blur-3xl p-2 rounded-[2.5rem] border border-black/10 dark:border-white/10 w-fit mx-auto shadow-2xl overflow-x-auto no-scrollbar max-w-full">
-                    {[
-                        { id: 'LAYOUT', label: 'HUB LAYOUT', icon: LayoutIcon },
-                        { id: 'EDITORIAL', label: 'CONTENT STACK', icon: Newspaper },
-                        { id: 'NEWSLETTER', label: 'NEWSLETTER', icon: Mail },
-                        { id: 'COMMERCIALS', label: 'SPONSORS', icon: Zap },
-                    ].map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={cn(
-                                "flex items-center gap-3 px-8 py-4 rounded-[1.8rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500",
-                                activeTab === tab.id 
-                                ? "bg-white text-black shadow-[0_10px_30px_rgba(255,255,255,0.2)] scale-105" 
-                                : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
-                            )}
-                        >
-                            <tab.icon size={14} className={cn(activeTab === tab.id ? "text-black" : "text-gray-500")} />
-                            {tab.label}
-                        </button>
-                    ))}
+            <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <StatTile icon={CheckCircle2} tone="green" label="Published" value={counts.published} hint={`${counts.featured} featured`} active={filter === 'published'} onClick={() => setFilter(filter === 'published' ? 'all' : 'published')} />
+                    <StatTile icon={CalendarClock} tone="blue" label="Scheduled" value={counts.scheduled} hint={nextScheduled ? `Next ${formatDay(nextScheduled.when, false)}` : 'Nothing queued'} active={filter === 'scheduled'} onClick={() => setFilter(filter === 'scheduled' ? 'all' : 'scheduled')} />
+                    <StatTile icon={FileEdit} tone="amber" label="Drafts" value={counts.draft} hint={counts.draft ? 'Waiting to go out' : 'All caught up'} active={filter === 'draft'} onClick={() => setFilter(filter === 'draft' ? 'all' : 'draft')} />
+                    <StatTile icon={Eye} tone="indigo" label="Total views" value={totalViews.toLocaleString('en-IN')} hint={`${subscribers.length} newsletter subscribers`} />
                 </div>
 
-                <AnimatePresence mode="wait">
-                    {activeTab === 'LAYOUT' && (
-                        <motion.div 
-                            key="layout"
-                            initial={{ opacity: 0, scale: 0.98 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.98 }}
-                            className="space-y-12"
-                        >
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-1">
-                                    <h3 className="text-xl font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white">Hub Visualization</h3>
-                                    <p className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-500">Live synchronization with public platform</p>
-                                </div>
-                                <div className="flex bg-white dark:bg-black/60 p-1.5 rounded-2xl border border-black/10 dark:border-white/10 shadow-xl">
-                                    <button 
-                                        onClick={() => setViewMode('desktop')}
-                                        className={cn("px-6 py-2 rounded-xl transition-all text-[9px] font-black uppercase tracking-widest", viewMode === 'desktop' ? "bg-white text-black" : "text-gray-500")}
-                                    >
-                                        <Monitor size={14} className="inline mr-2" /> Desktop
-                                    </button>
-                                    <button 
-                                        onClick={() => setViewMode('mobile')}
-                                        className={cn("px-6 py-2 rounded-xl transition-all text-[9px] font-black uppercase tracking-widest", viewMode === 'mobile' ? "bg-white text-black" : "text-gray-500")}
-                                    >
-                                        <Smartphone size={14} className="inline mr-2" /> Mobile
-                                    </button>
-                                </div>
-                            </div>
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                    <SearchInput value={search} onChange={(v) => { setSearch(v); setLimit(PAGE); }} placeholder="Title, author, tag or link" className="lg:w-80" />
+                    <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-1 lg:items-center">
+                        <Select value={category} onChange={(v) => { setCategory(v); setLimit(PAGE); }} label="Category" className="min-w-0 lg:w-44" options={[{ value: 'all', label: 'All categories' }, ...BLOG_CATEGORIES.map(c => ({ value: c.value, label: c.value }))]} />
+                        <Select value={sort} onChange={setSort} label="Sort" className="min-w-0 lg:w-44" options={[
+                            { value: 'newest', label: 'Newest first' },
+                            { value: 'updated', label: 'Recently edited' },
+                            { value: 'views', label: 'Most viewed' },
+                            { value: 'title', label: 'Title A–Z' },
+                        ]} />
+                        <div className="col-span-2 flex items-center justify-end gap-2 lg:ml-auto">
+                            <ExportMenu getSpec={exportSpec} />
+                            <ViewToggle value={view} onChange={setView} />
+                        </div>
+                    </div>
+                </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                                <div className="lg:col-span-8">
-                                    <div className={cn(
-                                        "mx-auto transition-all duration-700 rounded-[4rem] border border-black/10 dark:border-white/10 bg-[#050505] overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.8)] relative",
-                                        viewMode === 'mobile' ? "max-w-[400px] aspect-[9/19]" : "w-full min-h-[600px]"
-                                    )}>
-                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-neon-blue/10 via-transparent to-transparent pointer-events-none" />
-                                        
-                                        <div className="relative z-10 p-12 md:p-20 space-y-12 h-full flex flex-col justify-center items-start text-left">
-                                            <div className="space-y-8 w-full max-w-2xl">
-                                                    <div className="flex flex-col items-start gap-6">
-                                                        <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 backdrop-blur-3xl">
-                                                            <div 
-                                                                className="w-1.5 h-1.5 rounded-full shadow-[0_0_10px_rgba(0,255,255,0.5)]" 
-                                                                style={{ backgroundColor: layoutSettings.accentColor }}
-                                                            />
-                                                            <input 
-                                                                value={layoutSettings.heroSubtitle}
-                                                                onChange={(e) => setLayoutSettings({...layoutSettings, heroSubtitle: e.target.value})}
-                                                                className="bg-transparent border-none focus:ring-0 text-[10px] font-black uppercase tracking-[0.5em] text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white transition-colors text-left outline-none w-full"
-                                                                placeholder="SUBTITLE..."
-                                                            />
-                                                        </div>
-    
-                                                        <h1 className="text-5xl md:text-8xl font-black font-heading uppercase tracking-tighter italic leading-[0.8]">
-                                                            <span className="block text-gray-900 dark:text-white">CONCERT</span>
-                                                            <span 
-                                                                className="block text-transparent bg-clip-text"
-                                                                style={{ backgroundImage: `linear-gradient(to right, ${layoutSettings.accentColor}, #ffffff, ${layoutSettings.accentColor}dd)` }}
-                                                            >
-                                                                ZONE.
-                                                            </span>
-                                                        </h1>
-    
-                                                        <div className="flex items-center gap-8 px-10 py-5 bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-3xl backdrop-blur-2xl">
-                                                        <input 
-                                                            value={layoutSettings.mastheadEst}
-                                                            onChange={(e) => setLayoutSettings({...layoutSettings, mastheadEst: e.target.value})}
-                                                            className="bg-transparent border-none focus:ring-0 text-[10px] font-black uppercase tracking-[0.4em] text-gray-900 dark:text-white/20 hover:text-gray-900 dark:hover:text-white/60 transition-colors w-24 text-center outline-none"
-                                                        />
-                                                        <div className="w-[1px] h-4 bg-black/10 dark:bg-white/10" />
-                                                        <input 
-                                                            value={layoutSettings.mastheadVol}
-                                                            onChange={(e) => setLayoutSettings({...layoutSettings, mastheadVol: e.target.value})}
-                                                            className="bg-transparent border-none focus:ring-0 text-[10px] font-black uppercase tracking-[0.4em] text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white transition-colors w-24 text-center outline-none"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
+                <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+                    <SegmentedTabs value={filter} onChange={setFilter} items={FILTERS.filter(f => ['all', 'published', 'draft'].includes(f.value) || counts[f.value] > 0 || f.value === filter).map(f => ({ ...f, count: counts[f.value] }))} />
+                </div>
+
+                {visible.length === 0 ? (
+                    <Card className="rounded-2xl">
+                        <EmptyState
+                            icon={Newspaper}
+                            title={rows.length ? 'No posts match' : 'No posts yet'}
+                            description={rows.length ? 'Try another filter, category or search.' : 'Write your first story. You can save it as a draft and publish when it is ready.'}
+                            action={!rows.length && <Button variant="accent" as={Link} to="/admin/blog/create"><Plus size={14} /> New post</Button>}
+                        />
+                    </Card>
+                ) : view === 'cards' ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {visible.map((r) => {
+                            const { p, state } = r;
+                            const cfg = POST_STATE_LABEL[state];
+                            return (
+                                <Card key={p.id} className="relative flex flex-col overflow-hidden rounded-2xl transition-colors hover:border-black/15 dark:hover:border-white/15">
+                                    <Link to={`/admin/blog/edit/${p.id}`} className="relative block aspect-[16/9] overflow-hidden bg-indigo-500/[0.07] dark:bg-indigo-400/[0.07]">
+                                        {p.coverImage
+                                            ? <img src={p.coverImage} alt="" loading="lazy" className="h-full w-full object-cover" style={{ transform: `scale(${Math.max(0.5, Number(p.coverImageScale) || 1)})`, transformOrigin: `${p.coverImagePosX ?? 50}% ${p.coverImagePosY ?? 50}%` }} />
+                                            : <span className="flex h-full w-full items-center justify-center text-indigo-500/50 dark:text-indigo-300/40"><Newspaper size={32} /></span>}
+                                        {p.featured && <span className="absolute left-3 top-3"><Badge tone="amber" className="bg-white/90 dark:bg-black/70"><Star size={10} className="fill-current" /> Featured</Badge></span>}
+                                    </Link>
+                                    <div className="flex flex-1 flex-col p-4">
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            <Badge tone={cfg.tone}>{cfg.label}</Badge>
+                                            {p.category && <Badge tone={blogCategoryTone(p.category)}>{p.category}</Badge>}
+                                            {p.ticketingLink && <Badge tone="orange"><Ticket size={10} /> Tickets</Badge>}
+                                            {p.sponsorName && <Badge tone="fuchsia"><Sparkles size={10} /> {p.sponsorName}</Badge>}
                                         </div>
-                                    </div>
-                                </div>
-
-                                <div className="lg:col-span-4 space-y-8">
-                                    <Card className="p-10 bg-gray-100 dark:bg-zinc-950/50 backdrop-blur-3xl border-black/10 dark:border-white/10 rounded-[3rem] space-y-10">
-                                        <div className="space-y-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-2xl bg-neon-blue/10 flex items-center justify-center text-neon-blue border border-neon-blue/20">
-                                                    <Palette size={20} />
-                                                </div>
-                                                <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Global Aesthetic</h3>
-                                            </div>
-                                            
-                                            <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">Accent Signature</label>
-                                                <div className="flex flex-wrap gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/10 rounded-[2rem]">
-                                                    {['#00ffff', '#ff0055', '#bb00ff', '#00ff66', '#ffffff'].map(color => (
-                                                        <button 
-                                                            key={color}
-                                                            onClick={() => setLayoutSettings({...layoutSettings, accentColor: color})}
-                                                            className={cn(
-                                                                "w-12 h-12 rounded-2xl border-4 transition-all duration-500",
-                                                                layoutSettings.accentColor === color ? "border-white scale-110 shadow-2xl" : "border-transparent opacity-40 hover:opacity-100"
-                                                            )}
-                                                            style={{ backgroundColor: color }}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="pt-8 border-t border-black/10 dark:border-white/5">
-                                            <Button 
-                                                onClick={handleSaveLayout}
-                                                disabled={isSaving}
-                                                className="w-full h-20 text-black font-black uppercase tracking-[0.2em] rounded-3xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3"
-                                                style={{ 
-                                                    backgroundColor: layoutSettings.accentColor,
-                                                    boxShadow: `0 20px 50px ${layoutSettings.accentColor}33`
-                                                }}
-                                            >
-                                                {isSaving ? <LoadingSpinner size="xs" color="black" /> : 'SYNC REALITY'}
-                                            </Button>
-                                        </div>
-                                    </Card>
-
-                                    <div className="p-8 rounded-[2.5rem] bg-white/[0.02] border border-black/10 dark:border-white/5">
-                                        <div className="flex gap-4">
-                                            <Globe className="text-gray-600 shrink-0" size={18} />
-                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] leading-relaxed">
-                                                Changes made here update the core identity of the Concert Zone across all devices globally.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {activeTab === 'EDITORIAL' && (
-                        <motion.div 
-                            key="editorial"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="space-y-12"
-                        >
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-1">
-                                    <h3 className="text-xl font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white">Editorial Stack</h3>
-                                    <p className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-500">{posts.length} Narratives in production</p>
-                                </div>
-                                <Link to="/admin/blog/create">
-                                    <Button className="h-16 px-10 bg-white text-black font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl shadow-2xl hover:scale-105 active:scale-95 transition-all">
-                                        <Plus size={18} className="mr-3" /> Create Narrative
-                                    </Button>
-                                </Link>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                                {posts.map(post => (
-                                    <motion.div 
-                                        key={post.id}
-                                        whileHover={{ y: -10 }}
-                                        className="group relative flex flex-col bg-gray-100 dark:bg-zinc-950/50 border border-black/10 dark:border-white/10 rounded-[3rem] overflow-hidden backdrop-blur-3xl shadow-2xl transition-all duration-700"
-                                    >
-                                        <div className="relative aspect-[16/10] overflow-hidden">
-                                            <img 
-                                                src={post.coverImage} 
-                                                className="w-full h-full object-cover grayscale-[30%] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-[1500ms]" 
-                                                style={{ 
-                                                    objectFit: 'cover',
-                                                    transform: `scale(${post.coverImageScale || 1})`,
-                                                    transformOrigin: `${post.coverImagePosX ?? 50}% ${post.coverImagePosY ?? 50}%`
-                                                }}
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
-                                            
-                                            <div className="absolute top-6 left-6">
-                                                <span 
-                                                    className="px-5 py-2 text-black text-[9px] font-black uppercase tracking-[0.2em] rounded-xl italic"
-                                                    style={{ backgroundColor: post.accentColor || categoryColors[post.category] || '#00ffff' }}
-                                                >
-                                                    {post.category}
-                                                </span>
-                                            </div>
-
-                                            <div className="absolute top-6 right-6 flex gap-3">
-                                                <button 
-                                                    onClick={() => updatePost(post.id, { featured: !post.featured })}
-                                                    className={cn(
-                                                        "w-12 h-12 rounded-2xl backdrop-blur-3xl border flex items-center justify-center transition-all",
-                                                        post.featured 
-                                                            ? "bg-neon-pink/20 border-neon-pink/30 text-neon-pink" 
-                                                            : "bg-white dark:bg-black/40 border-black/10 dark:border-white/10 text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white"
-                                                    )}
-                                                >
-                                                    <Star size={18} fill={post.featured ? "currentColor" : "none"} />
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="p-10 flex-1 flex flex-col space-y-6">
-                                            <h4 
-                                                className="text-2xl font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white leading-tight line-clamp-2 transition-colors cursor-pointer"
-                                                style={{ '--hover-color': post.accentColor || '#00ffff' }}
-                                                onMouseEnter={(e) => e.currentTarget.style.color = post.accentColor || '#00ffff'}
-                                                onMouseLeave={(e) => e.currentTarget.style.color = 'white'}
-                                                onClick={() => navigate(`/admin/blog/edit/${post.id}`)}
-                                            >
-                                                {post.title}
-                                            </h4>
-                                            
-                                            <div className="flex items-center gap-5 text-[9px] font-black text-gray-500 uppercase tracking-widest">
-                                                <div className="flex items-center gap-2" style={{ color: post.accentColor || '#00ffff' }}>
-                                                    <Clock size={14} /> {post.readingTime || 5} MIN
-                                                </div>
-                                                <div className="w-[1px] h-3 bg-black/10 dark:bg-white/10" />
-                                                <div>{new Date(post.publishDate).toLocaleDateString()}</div>
-                                            </div>
-
-                                            <div className="pt-8 mt-auto border-t border-black/10 dark:border-white/5 flex items-center justify-between">
-                                                <div className="flex items-center gap-2 p-1 bg-white dark:bg-black/60 rounded-2xl border border-black/10 dark:border-white/10">
-                                                    {['#00ffff', '#ff0055', '#bb00ff', '#00ff66'].map(color => (
-                                                        <button 
-                                                            key={color}
-                                                            onClick={() => updatePost(post.id, { accentColor: color })}
-                                                            className={cn(
-                                                                "w-5 h-5 rounded-full transition-all",
-                                                                (post.accentColor || '#00ffff') === color ? "ring-2 ring-white scale-110 shadow-lg" : "opacity-30 hover:opacity-100"
-                                                            )}
-                                                            style={{ backgroundColor: color }}
-                                                        />
-                                                    ))}
-                                                </div>
-                                                <div className="flex gap-4">
-                                                    <button 
-                                                        onClick={() => navigate(`/admin/blog/edit/${post.id}`)}
-                                                        className="w-12 h-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 rounded-2xl flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all"
-                                                    >
-                                                        <Edit2 size={16} />
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => navigate(`/concertzone/${post.category?.toLowerCase()}/${post.slug}`)}
-                                                        className="w-12 h-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 rounded-2xl flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all"
-                                                    >
-                                                        <Eye size={16} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {activeTab === 'NEWSLETTER' && (
-                        <motion.div 
-                            key="newsletter"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="space-y-12"
-                        >
-                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                                <div className="lg:col-span-5">
-                                    <div className="p-12 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-[4rem] space-y-10 relative overflow-hidden shadow-2xl">
-                                        <div className="absolute top-0 right-0 w-64 h-64 bg-neon-pink/10 blur-[100px] -mr-32 -mt-32 rounded-full" />
-                                        
-                                        <div className="space-y-4 relative z-10">
-                                            <div className="w-16 h-16 rounded-3xl bg-neon-pink/10 flex items-center justify-center text-neon-pink border border-neon-pink/20 mb-8">
-                                                <Mail size={32} />
-                                            </div>
-                                            <h3 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white">Weekly Newsletter</h3>
-                                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 leading-relaxed">
-                                                Curate and send the official Weekly by Concert Zone newsletter to your audience.
-                                            </p>
-                                        </div>
-
-                                        <div className="space-y-6 relative z-10 pt-10 border-t border-black/10 dark:border-white/5">
-                                            <div className="flex justify-between items-center p-6 bg-white/[0.03] rounded-3xl border border-black/10 dark:border-white/5">
-                                                <div className="space-y-1">
-                                                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-500">Story Selection</span>
-                                                    <p className="text-sm font-black text-gray-900 dark:text-white">{recentPosts.length} Stories Available</p>
-                                                </div>
-                                                <div className="w-12 h-12 rounded-full bg-neon-blue/10 flex items-center justify-center text-neon-blue border border-neon-blue/20">
-                                                    <Zap size={20} />
-                                                </div>
-                                            </div>
-
-                                            <Link 
-                                                to="/admin/newsletter/studio"
-                                                className="w-full h-20 bg-neon-pink text-white font-black uppercase tracking-[0.2em] rounded-3xl shadow-[0_20px_50px_rgba(255,0,85,0.3)] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center"
-                                            >
-                                                Create Newsletter
-                                            </Link>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="lg:col-span-7">
-                                    <div className="h-full rounded-[4rem] border border-dashed border-black/10 dark:border-white/10 flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-black/20">
-                                        <div className="w-24 h-24 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-900 dark:text-white/10 mb-8">
-                                            <Radio size={40} />
-                                        </div>
-                                        <h4 className="text-2xl font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white/20 mb-4">Ready to Create</h4>
-                                        <p className="max-w-md text-[10px] font-black uppercase tracking-[0.4em] text-gray-600 leading-relaxed">
-                                            No newsletter is currently in progress. Click the button to start curating this week's highlights.
+                                        <Link to={`/admin/blog/edit/${p.id}`} className="mt-2.5 min-w-0">
+                                            <p className="line-clamp-2 text-[16px] font-extrabold leading-snug">{p.title || 'Untitled'}</p>
+                                            {p.shortDescription && <p className="mt-1 line-clamp-2 text-[13px] text-gray-500 dark:text-zinc-400">{p.shortDescription}</p>}
+                                        </Link>
+                                        <p className={cn('mt-3 flex items-center gap-1.5 text-[12px] text-gray-500', state === 'scheduled' && 'font-semibold text-sky-600 dark:text-neon-blue')}>
+                                            <Clock size={12} /> {meta(r)}
                                         </p>
-                                    </div>
-                                </div>
-                             </div>
-                        </motion.div>
-                    )}
-
-                    {activeTab === 'COMMERCIALS' && (
-                        <motion.div 
-                            key="commercials"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="space-y-12"
-                        >
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                                <div className="lg:col-span-8 space-y-10">
-                                    <div className="space-y-1">
-                                        <h3 className="text-xl font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white">Commercial Intelligence</h3>
-                                        <p className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-500">Managing ticketing & direct sponsorships</p>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="p-10 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-[3rem] space-y-8">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-2xl bg-neon-blue/10 flex items-center justify-center text-neon-blue border border-neon-blue/20">
-                                                    <Ticket size={24} />
-                                                </div>
-                                                <h4 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Active Ticketing</h4>
-                                            </div>
-                                            <div className="space-y-4">
-                                                {posts.filter(p => p.ticketingLink).length > 0 ? (
-                                                    posts.filter(p => p.ticketingLink).map(post => (
-                                                        <div key={post.id} className="flex items-center justify-between p-5 bg-white/[0.03] rounded-2xl border border-black/10 dark:border-white/5">
-                                                            <div className="min-w-0">
-                                                                <p className="text-[10px] font-black uppercase text-gray-900 dark:text-white truncate">{post.title}</p>
-                                                                <p className="text-[8px] font-bold text-gray-500 truncate">{post.ticketingLink}</p>
-                                                            </div>
-                                                            <button 
-                                                                onClick={() => window.open(post.ticketingLink, '_blank')}
-                                                                className="text-neon-blue hover:text-gray-900 dark:hover:text-white transition-colors"
-                                                            >
-                                                                <ExternalLink size={16} />
-                                                            </button>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <p className="text-[10px] font-black uppercase text-gray-600 text-center py-10 border border-dashed border-black/10 dark:border-white/10 rounded-2xl">No Active Ticket Links</p>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="p-10 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-[3rem] space-y-8">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-2xl bg-neon-pink/10 flex items-center justify-center text-neon-pink border border-neon-pink/20">
-                                                    <Sparkles size={24} />
-                                                </div>
-                                                <h4 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Direct Sponsors</h4>
-                                            </div>
-                                            <div className="space-y-4">
-                                                {posts.filter(p => p.sponsorName).length > 0 ? (
-                                                    posts.filter(p => p.sponsorName).map(post => (
-                                                        <div key={post.id} className="flex items-center gap-4 p-5 bg-white/[0.03] rounded-2xl border border-black/10 dark:border-white/5">
-                                                            {post.sponsorLogo && <img src={post.sponsorLogo} className="w-10 h-10 object-contain rounded-lg" />}
-                                                            <div className="min-w-0">
-                                                                <p className="text-[10px] font-black uppercase text-gray-900 dark:text-white truncate">{post.sponsorName}</p>
-                                                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">{post.title}</p>
-                                                            </div>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <p className="text-[10px] font-black uppercase text-gray-600 text-center py-10 border border-dashed border-black/10 dark:border-white/10 rounded-2xl">No Direct Sponsors Linked</p>
-                                                )}
-                                            </div>
+                                        <p className="mt-0.5 text-[12px] text-gray-500">{p.author ? `By ${p.author}` : ''}{p.author && p.readingTime ? ' · ' : ''}{p.readingTime ? `${p.readingTime} min read` : ''}</p>
+                                        <div className="flex-1" />
+                                        <div className="mt-4 flex items-center gap-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+                                            <Button size="sm" variant="secondary" as={Link} to={`/admin/blog/edit/${p.id}`} className="h-10 flex-1"><Edit size={13} /> Edit</Button>
+                                            {state === 'published'
+                                                ? <Button size="sm" variant="secondary" as="a" href={postPath(p)} target="_blank" rel="noopener noreferrer" className="h-10 flex-1"><ExternalLink size={13} /> View</Button>
+                                                : <Button size="sm" variant="accent" onClick={() => setConfirm({ kind: 'publish', item: p })} className="h-10 flex-1"><Send size={13} /> Publish</Button>}
+                                            {actions(p, state)}
                                         </div>
                                     </div>
-                                </div>
-
-                                <div className="lg:col-span-4">
-                                    <div className="p-10 bg-white/[0.02] border border-black/10 dark:border-white/10 rounded-[3rem] space-y-8">
-                                        <div className="w-16 h-16 rounded-3xl bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-600 dark:text-gray-400">
-                                            <Globe size={32} />
-                                        </div>
-                                        <h4 className="text-lg font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white">Commercial Strategy</h4>
-                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 leading-relaxed">
-                                            Management of non-AdSense revenue streams. Ticketing links and direct sponsor logos are integrated directly into article narratives for maximum conversion.
-                                        </p>
-                                        <div className="pt-8 border-t border-black/10 dark:border-white/5">
-                                            <Button 
-                                                onClick={() => navigate('/admin/blog')}
-                                                className="w-full h-16 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest rounded-2xl transition-all"
-                                            >
-                                                Review All Content
+                                </Card>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <Card className="overflow-hidden rounded-2xl">
+                        <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                            {visible.map((r) => {
+                                const { p, state } = r;
+                                const cfg = POST_STATE_LABEL[state];
+                                return (
+                                    <li key={p.id} className="flex items-center gap-3 px-4 py-3 sm:px-5">
+                                        <Link to={`/admin/blog/edit/${p.id}`} className="h-12 w-16 shrink-0 overflow-hidden rounded-lg bg-indigo-500/[0.08] dark:bg-indigo-400/[0.08]">
+                                            {p.coverImage ? <img src={p.coverImage} alt="" loading="lazy" className="h-full w-full object-cover" /> : <span className="flex h-full w-full items-center justify-center text-indigo-500 dark:text-indigo-300"><Newspaper size={16} /></span>}
+                                        </Link>
+                                        <Link to={`/admin/blog/edit/${p.id}`} className="min-w-0 flex-1">
+                                            <span className="flex flex-wrap items-center gap-2">
+                                                <span className="truncate text-[15px] font-bold">{p.title || 'Untitled'}</span>
+                                                <Badge tone={cfg.tone}>{cfg.label}</Badge>
+                                                {p.featured && <Badge tone="amber"><Star size={10} className="fill-current" /> Featured</Badge>}
+                                            </span>
+                                            <span className="mt-0.5 block truncate text-[12px] text-gray-500">{[p.category, p.author, meta(r)].filter(Boolean).join(' · ')}</span>
+                                        </Link>
+                                        <div className="flex shrink-0 items-center gap-1">
+                                            <Button size="sm" variant="ghost" onClick={() => toggleFeatured(p)} disabled={busy} aria-label={p.featured ? 'Remove from featured' : 'Feature it'} className={cn('hidden h-10 w-10 px-0 sm:inline-flex', p.featured && 'text-amber-500')}>
+                                                <Star size={15} className={p.featured ? 'fill-current' : ''} />
                                             </Button>
+                                            {actions(p, state)}
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </Card>
+                )}
+                {shown.length > limit && (
+                    <div className="text-center">
+                        <Button variant="ghost" onClick={() => setLimit(l => l + PAGE)}>Show {Math.min(PAGE, shown.length - limit)} more of {shown.length - limit}</Button>
+                    </div>
+                )}
             </div>
+
+            <ConfirmSheet open={confirm?.kind === 'delete'} onClose={() => setConfirm(null)} title="Delete this post?" confirmLabel="Delete" busy={busy} onConfirm={runConfirm}>
+                <p><span className="font-semibold text-gray-900 dark:text-white">{confirm?.item?.title}</span>{confirm?.item && postState(confirm.item) === 'published' ? ' is live. Its link will stop working and its view count will be lost.' : ' will be deleted.'} This can't be undone.</p>
+                <p>To take it off the site but keep it, use <span className="font-semibold">Move to drafts</span>.</p>
+            </ConfirmSheet>
+
+            <ConfirmSheet open={confirm?.kind === 'publish'} onClose={() => setConfirm(null)} title="Publish now?" confirmLabel="Publish" tone="accent" busy={busy} onConfirm={runConfirm}>
+                <p><span className="font-semibold text-gray-900 dark:text-white">{confirm?.item?.title}</span> goes live on the blog straight away{confirm?.item?.status === 'Scheduled' ? ', instead of at its scheduled time' : ''}.</p>
+                <p>You can send a notification about it from its menu afterwards.</p>
+            </ConfirmSheet>
+
+            <ConfirmSheet open={confirm?.kind === 'notify'} onClose={() => setConfirm(null)} title={confirm?.item?.notifiedAt ? 'Notify everyone again?' : 'Notify everyone?'} confirmLabel={confirm?.email ? 'Send notification and email' : 'Send notification'} tone="accent" busy={busy} onConfirm={runConfirm}>
+                <p>Everyone gets "New article: {confirm?.item?.title}" as an in-app and phone notification.</p>
+                {confirm?.item?.notifiedAt && <p className="font-semibold text-amber-600 dark:text-amber-400">It was already sent {formatDayTime(confirm.item.notifiedAt)}. People will get it twice.</p>}
+                <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-black/10 px-3 dark:border-white/10">
+                    <input type="checkbox" className="h-5 w-5 accent-indigo-500" checked={!!confirm?.email} onChange={(e) => setConfirm(c => ({ ...c, email: e.target.checked }))} />
+                    <span className="text-[13px] font-semibold text-gray-800 dark:text-zinc-200">Also email all registered users</span>
+                </label>
+            </ConfirmSheet>
+
+            <BlogPageSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         </AdminCommunityHubLayout>
+    );
+};
+
+const DEFAULT_TICKER = ["Welcome to ConcertZone — India's music culture hub", 'New artist spotlights every week', 'Submit your story → editorial@newbi.live'];
+const DEFAULT_LAYOUT = { mastheadVol: 'VOL 01', mastheadEst: 'EST. 2026', heroSubtitle: 'MUSIC, LIFE & CULTURE.', accentColor: '#00ffff' };
+
+/** The scrolling ticker on the blog page, plus the masthead text. */
+const BlogPageSettings = ({ open, onClose }) => {
+    const { siteSettings = {}, updateGeneralSettings, addToast } = useStore();
+    const [ticker, setTicker] = useState([]);
+    const [layout, setLayout] = useState(DEFAULT_LAYOUT);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        if (!open) return;
+        setTicker([...(Array.isArray(siteSettings.blogTicker) ? siteSettings.blogTicker : DEFAULT_TICKER)]);
+        setLayout({ ...DEFAULT_LAYOUT, ...(siteSettings.concertzone || {}) });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open]);
+
+    const save = async () => {
+        if (saving) return;
+        setSaving(true);
+        try {
+            await updateGeneralSettings({ blogTicker: ticker.map(t => t.trim()).filter(Boolean), concertzone: layout });
+            addToast('Blog page saved.', 'success');
+            onClose();
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't save. Please try again.", 'error');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <Sheet
+            open={open}
+            onClose={saving ? () => {} : onClose}
+            size="md"
+            title="Blog page"
+            subtitle="The ticker that scrolls across the top of Concert Zone"
+            footer={(
+                <div className="flex gap-2">
+                    <Button variant="secondary" onClick={onClose} disabled={saving} className="h-12 flex-1">Cancel</Button>
+                    <Button variant="accent" onClick={save} disabled={saving} className="h-12 flex-[2]">{saving ? 'Saving…' : 'Save'}</Button>
+                </div>
+            )}
+        >
+            <div className="space-y-6">
+                <section className="space-y-2">
+                    <h3 className="text-[15px] font-bold">Ticker lines</h3>
+                    {ticker.map((line, i) => (
+                        <div key={i} className="flex gap-2">
+                            <input className={fieldCls} value={line} onChange={(e) => setTicker(t => t.map((x, j) => (j === i ? e.target.value : x)))} placeholder="Short line of news" aria-label={`Ticker line ${i + 1}`} />
+                            <button type="button" onClick={() => setTicker(t => t.filter((_, j) => j !== i))} aria-label="Remove line" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-black/10 text-gray-500 hover:text-red-500 dark:border-white/10"><X size={16} /></button>
+                        </div>
+                    ))}
+                    <Button variant="secondary" onClick={() => setTicker(t => [...t, ''])} className="h-11 w-full"><Plus size={14} /> Add a line</Button>
+                    {ticker.filter(t => t.trim()).length === 0 && <p className="text-[12px] text-gray-500">With no lines, the page shows its default ticker.</p>}
+                </section>
+                <section className="space-y-3">
+                    <div>
+                        <h3 className="text-[15px] font-bold">Masthead</h3>
+                        <p className="text-[12px] text-gray-500">Saved for the blog header. The current blog design doesn't show these yet.</p>
+                    </div>
+                    <Field label="Subtitle"><input className={fieldCls} value={layout.heroSubtitle || ''} onChange={(e) => setLayout(l => ({ ...l, heroSubtitle: e.target.value }))} /></Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Volume"><input className={fieldCls} value={layout.mastheadVol || ''} onChange={(e) => setLayout(l => ({ ...l, mastheadVol: e.target.value }))} /></Field>
+                        <Field label="Established"><input className={fieldCls} value={layout.mastheadEst || ''} onChange={(e) => setLayout(l => ({ ...l, mastheadEst: e.target.value }))} /></Field>
+                    </div>
+                    <div>
+                        <span className="mb-1 block text-[12px] font-bold text-gray-500">Accent colour</span>
+                        <div className="flex flex-wrap items-center gap-2">
+                            {['#00ffff', '#ff0055', '#bb00ff', '#00ff66', '#facc15'].map(c => (
+                                <button key={c} type="button" onClick={() => setLayout(l => ({ ...l, accentColor: c }))} aria-label={`Accent ${c}`} aria-pressed={layout.accentColor === c}
+                                    className={cn('h-10 w-10 rounded-xl border-2', layout.accentColor === c ? 'border-gray-900 dark:border-white' : 'border-transparent')} style={{ backgroundColor: c }} />
+                            ))}
+                            <input type="color" value={layout.accentColor || '#00ffff'} onChange={(e) => setLayout(l => ({ ...l, accentColor: e.target.value }))} aria-label="Custom accent colour" className="h-10 w-12 cursor-pointer rounded-xl border border-black/10 bg-transparent dark:border-white/10" />
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </Sheet>
     );
 };
 

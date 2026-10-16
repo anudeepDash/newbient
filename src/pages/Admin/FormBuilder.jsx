@@ -1,508 +1,464 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
-import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
-import Save from 'lucide-react/dist/esm/icons/save';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
 import HelpCircle from 'lucide-react/dist/esm/icons/help-circle';
-import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Plus from 'lucide-react/dist/esm/icons/plus';
-import X from 'lucide-react/dist/esm/icons/x';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
-import Loader from 'lucide-react/dist/esm/icons/loader';
-import Star from 'lucide-react/dist/esm/icons/star';
-import Calendar from 'lucide-react/dist/esm/icons/calendar';
-import Link2 from 'lucide-react/dist/esm/icons/link-2';
-import ImageIcon from 'lucide-react/dist/esm/icons/image';
-import Move from 'lucide-react/dist/esm/icons/move';
-import { notifyAllUsers } from '../../lib/notificationTriggers';
+import FileSearch from 'lucide-react/dist/esm/icons/file-search';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import LivePreview from '../../components/admin/LivePreview';
-import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import { notifyAllUsers } from '../../lib/notificationTriggers';
+import { copyToClipboard } from '../../lib/clipboard';
 import { cn } from '../../lib/utils';
-import StudioSelect from '../../components/ui/StudioSelect';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import LivePreview from '../../components/admin/LivePreview';
+import { Button, EmptyState, SegmentedTabs } from '../../components/admin/ui';
+import { BuilderCard, ImageSlot, splitDateTime } from '../../components/admin/events/EditorParts';
+import { Field, Toggle, Choice, fieldCls, areaCls } from '../../components/admin/uploads/UploadKit';
+import FormRenderer from '../../components/admin/forms/FormRenderer';
+import { FieldPalette, QuestionCard } from '../../components/admin/forms/BuilderParts';
+import { builderProblems, copyField, newField, starterFields } from '../../components/admin/forms/formSchema';
+import { ColorDots, EditorBar, PhoneBar, useConfirm, useImageField, useUnsavedWarning } from '../../components/admin/forms/kit';
+
+const EMPTY = {
+    title: '',
+    description: '',
+    activeLabel: 'Live',
+    bottomText: '',
+    buttonText: '',
+    formUrl: '',
+    requiresExternal: false,
+    image: '',
+    highlightColor: '#FF4F8B',
+    isPinned: false,
+    imageTransform: { scale: 1.05, x: 0, y: 0 },
+    fields: [],
+    closesAt: '',
+    responseLimit: '',
+    onePerPerson: false,
+    requireSignIn: false,
+    confirmationMessage: '',
+    submitLabel: '',
+};
+
+const STATUS_OPTIONS = [
+    { value: 'Live', label: 'Live', hint: 'Taking responses' },
+    { value: 'Few Slots Remain', label: 'Filling fast', hint: 'Shows urgency' },
+    { value: 'Closed', label: 'Closed', hint: 'No new responses' },
+];
+
+const cleanUrl = (value) => {
+    const v = String(value || '').trim();
+    if (v.includes('<iframe')) return v.match(/src="([^"]+)"/)?.[1] || v;
+    return v;
+};
 
 const FormBuilder = () => {
     useStoreSubscription(['forms', 'upcomingEvents']);
-    const colorPresets = [
-        { name: 'Neon Pink', value: '#FF4F8B' },
-        { name: 'Neon Green', value: '#39FF14' },
-        { name: 'Electric Purple', value: '#BF00FF' },
-        { name: 'Cyber Blue', value: '#2ebfff' },
-    ];
-
     const { id } = useParams();
     const navigate = useNavigate();
-    const { forms, addForm, updateForm, uploadToCloudinary, upcomingEvents } = useStore();
+    const forms = useStore(s => s.forms) || [];
+    const upcomingEvents = useStore(s => s.upcomingEvents) || [];
+    const loaded = useStore(s => s.subscriptionsLoaded?.forms);
+    const addToast = useStore(s => s.addToast);
 
-    const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
-    const [activeLabel, setActiveLabel] = useState('Live');
-    const [bottomText, setBottomText] = useState('');
-    const [buttonText, setButtonText] = useState('');
-    const [formUrl, setFormUrl] = useState('');
-    const [requiresExternal, setRequiresExternal] = useState(false);
+    const [form, setForm] = useState(EMPTY);
+    const [mode, setMode] = useState('native');
+    const [homeCard, setHomeCard] = useState(false);
+    const [notify, setNotify] = useState(true);
+    const [notifyEmail, setNotifyEmail] = useState(false);
+    const [expanded, setExpanded] = useState(null);
+    const [dragFrom, setDragFrom] = useState(null);
+    const [dragOver, setDragOver] = useState(null);
     const [showHelp, setShowHelp] = useState(false);
-    const [previewType, setPreviewType] = useState('card');
-    const [image, setImage] = useState('');
-    const [isUploading, setIsUploading] = useState(false);
-    const [highlightColor, setHighlightColor] = useState('#FF4F8B');
-    const [isPinned, setIsPinned] = useState(false);
-    const [alsoPostToUpcomingEvents, setAlsoPostToUpcomingEvents] = useState(false);
-    const [imageTransform, setImageTransform] = useState({ scale: 1.05, x: 0, y: 0 });
+    const [previewTab, setPreviewTab] = useState('form');
+    const [showPreviewMobile, setShowPreviewMobile] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [dirty, setDirty] = useState(false);
+    const [showProblems, setShowProblems] = useState(false);
+    const [confirm, confirmEl] = useConfirm();
+    const loadedFor = useRef(null);
 
+    useUnsavedWarning(dirty);
+
+    const existing = id ? forms.find(f => f.id === id) : null;
+
+    // Load the saved form once (later snapshots must not wipe edits in progress).
     useEffect(() => {
-        if (id) {
-            const form = forms.find(f => f.id === id);
-            if (form) {
-                setTitle(form.title);
-                setDescription(form.description);
-                setActiveLabel(form.activeLabel || 'Live');
-                setBottomText(form.bottomText || '');
-                setButtonText(form.buttonText || '');
-                setFormUrl(form.formUrl || '');
-                setRequiresExternal(form.requiresExternal || false);
-                setImage(form.image || '');
-                setHighlightColor(form.highlightColor || '#FF4F8B');
-                setIsPinned(form.isPinned || false);
-                setImageTransform(form.imageTransform || { scale: 1.05, x: 0, y: 0 });
-                const isCurrentlyInUpcoming = (upcomingEvents || []).some(e => e.formId === id || e.link === `/forms/${id}`);
-                setAlsoPostToUpcomingEvents(isCurrentlyInUpcoming);
-            }
-        }
-    }, [id, forms, upcomingEvents]);
+        if (!id || !existing || loadedFor.current === id) return;
+        loadedFor.current = id;
+        const native = Array.isArray(existing.fields) && existing.fields.length > 0;
+        setForm({
+            ...EMPTY,
+            ...existing,
+            fields: existing.fields || [],
+            imageTransform: existing.imageTransform || EMPTY.imageTransform,
+            responseLimit: existing.responseLimit || '',
+        });
+        setMode(native || !existing.formUrl ? 'native' : 'google');
+        setPreviewTab(native || !existing.formUrl ? 'form' : 'card');
+        setHomeCard((upcomingEvents || []).some(e => e.formId === id || e.link === `/forms/${id}`));
+    }, [id, existing, upcomingEvents]);
 
-    const handleFileChange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    const set = (patch) => { setForm(prev => ({ ...prev, ...patch })); setDirty(true); };
+    const image = useImageField(form.image, (url) => set({ image: url }));
 
-        setIsUploading(true);
-        try {
-            const url = await uploadToCloudinary(file);
-            if (url) {
-                setImage(url);
-            }
-        } catch (error) {
-            console.error("Upload failed:", error);
-            useStore.getState().addToast("Couldn't upload the image. Please try again.", 'error');
-        } finally {
-            setIsUploading(false);
+    // ── questions ──
+    const fields = form.fields || [];
+    const setFields = (next) => set({ fields: next });
+    const addField = (type) => {
+        const f = newField(type);
+        setFields([...fields, f]);
+        setExpanded(f.id);
+        setTimeout(() => document.getElementById(`field_${f.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+    };
+    const updateField = (fid, patch) => setFields(fields.map(f => (f.id === fid ? { ...f, ...patch } : f)));
+    const moveField = (from, to) => {
+        if (from === to || to < 0 || to >= fields.length) return;
+        const next = [...fields];
+        const [item] = next.splice(from, 1);
+        next.splice(to, 0, item);
+        setFields(next);
+    };
+    const duplicateField = (i) => {
+        const copy = copyField(fields[i]);
+        const next = [...fields];
+        next.splice(i + 1, 0, copy);
+        setFields(next);
+        setExpanded(copy.id);
+    };
+    const deleteField = async (i) => {
+        const f = fields[i];
+        if (existing?.responseCount > 0 && existing.fields?.some(x => x.id === f.id)) {
+            const ok = await confirm({
+                title: 'Delete this question?',
+                body: 'Answers people already gave to it stay in their responses, but new responses won’t ask it.',
+                confirmLabel: 'Delete question',
+            });
+            if (!ok) return;
         }
+        setFields(fields.filter((_, j) => j !== i));
     };
 
-    const handleSubmit = async (e) => {
-        if (e) e.preventDefault();
-        setSaving(true);
+    const problems = useMemo(() => (mode === 'native' ? builderProblems(fields) : {}), [fields, mode]);
+    const answerable = fields.filter(f => f.type !== 'heading').length;
 
-        let cleanUrl = formUrl;
-        if (formUrl.includes('<iframe')) {
-            const srcMatch = formUrl.match(/src="([^"]+)"/);
-            if (srcMatch && srcMatch[1]) {
-                cleanUrl = srcMatch[1];
-            }
+    // ── preview data ──
+    const previewForm = { ...form, id: id || 'preview', fields };
+    const cardData = { ...form, formUrl: mode === 'google' ? cleanUrl(form.formUrl) : '' };
+
+    // ── save ──
+    const problemList = () => {
+        const list = [];
+        if (!form.title.trim()) list.push('Give the form a title.');
+        if (mode === 'native') {
+            if (!answerable) list.push('Add at least one question.');
+            if (Object.keys(problems).length) list.push('Some questions need a fix.');
+        } else {
+            const url = cleanUrl(form.formUrl);
+            if (!/^https?:\/\/\S+/i.test(url)) list.push('Paste the Google Form link.');
+        }
+        if (form.responseLimit !== '' && (!Number.isInteger(Number(form.responseLimit)) || Number(form.responseLimit) < 1)) list.push('The response limit must be a whole number above 0.');
+        return list;
+    };
+
+    const save = async (e) => {
+        e?.preventDefault();
+        if (saving) return;
+        setShowProblems(true);
+        const list = problemList();
+        if (list.length) {
+            addToast(list[0], 'error');
+            const firstBad = fields.find(f => problems[f.id]);
+            if (firstBad) { setExpanded(firstBad.id); document.getElementById(`field_${firstBad.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            return;
+        }
+        if (mode === 'google' && existing?.fields?.length && existing.responseCount > 0) {
+            const ok = await confirm({
+                title: 'Switch to the Google Form?',
+                body: 'People will fill the Google Form instead. Responses already collected here stay in the responses list.',
+                confirmLabel: 'Switch',
+                tone: 'accent',
+            });
+            if (!ok) return;
         }
 
-        const formData = {
-            title,
-            description,
-            activeLabel,
-            bottomText,
-            buttonText,
-            formUrl: cleanUrl,
-            requiresExternal,
-            image,
-            highlightColor,
-            isPinned,
-            alsoPostToUpcomingEvents,
-            imageTransform,
-            updatedAt: new Date().toISOString()
+        const { id: _id, createdAt, responseCount, lastResponseAt, ...rest } = form;
+        const payload = {
+            ...rest,
+            title: form.title.trim(),
+            formUrl: mode === 'google' ? cleanUrl(form.formUrl) : (form.formUrl || ''),
+            fields: mode === 'native' ? fields.map(f => ({ ...f, label: String(f.label || '').trim(), options: f.options ? f.options.map(o => String(o).trim()) : undefined })).map(f => JSON.parse(JSON.stringify(f))) : [],
+            responseLimit: form.responseLimit === '' ? null : Number(form.responseLimit),
+            closesAt: form.closesAt || null,
+            alsoPostToUpcomingEvents: homeCard,
+            updatedAt: new Date().toISOString(),
         };
 
+        setSaving(true);
         try {
+            let savedId = id;
             if (id) {
-                await updateForm(id, formData);
+                await useStore.getState().updateForm(id, payload);
             } else {
-                await addForm({
-                    ...formData,
-                    createdAt: new Date().toISOString()
-                });
-                await notifyAllUsers(
-                    `New form: ${formData.title}`,
-                    `We've shared a new form. Please take a moment to fill it out.`,
-                    '/forms',
-                    formData.image,
-                    true // sendEmail
-                );
+                savedId = await useStore.getState().addForm({ ...payload, responseCount: 0, createdAt: new Date().toISOString() });
+                if (notify && savedId) {
+                    notifyAllUsers(
+                        `New form: ${payload.title}`,
+                        payload.description || "We've shared a new form. Please take a moment to fill it out.",
+                        `/forms/${savedId}`,
+                        payload.image || '',
+                        notifyEmail
+                    ).catch(err => console.warn('Form notification failed:', err));
+                }
             }
+            setDirty(false);
+            const link = `${window.location.origin}/forms/${savedId}`;
+            addToast(id ? 'Form saved.' : 'Form published.', 'success', { action: { label: 'Copy link', onClick: () => copyToClipboard(link) } });
             navigate('/admin/forms');
-            useStore.getState().addToast(`Form ${id ? 'updated' : 'created'}.`, 'success');
-        } catch (error) {
-            console.error("Error saving form:", error);
-            useStore.getState().addToast("Couldn't save the form. Please try again.", 'error');
+        } catch (err) {
+            console.error('Error saving form:', err);
+            addToast("Couldn't save the form. Please try again.", 'error');
         } finally {
             setSaving(false);
         }
     };
 
-    // Section wrapper for visual grouping
-    const Section = ({ title, icon: Icon, children, accent = false }) => (
-        <div className={cn(
-            "rounded-[1.5rem] border p-6 md:p-8 space-y-6 transition-all duration-300",
-            accent 
-                ? "bg-neon-pink/[0.03] border-neon-pink/10 hover:border-neon-pink/20" 
-                : "bg-white dark:bg-black/30 border-black/5 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10"
-        )}>
-            <div className="flex items-center gap-3">
-                {Icon && (
-                    <div className={cn(
-                        "w-8 h-8 rounded-xl flex items-center justify-center",
-                        accent ? "bg-neon-pink/10 text-neon-pink" : "bg-black/5 dark:bg-white/5 text-gray-500"
-                    )}>
-                        <Icon size={14} />
-                    </div>
-                )}
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">{title}</h3>
-            </div>
-            {children}
-        </div>
-    );
+    const leave = async () => {
+        if (dirty && !(await confirm({ title: 'Leave without saving?', body: 'Your changes to this form will be lost.', confirmLabel: 'Leave', cancelLabel: 'Keep editing' }))) return;
+        setDirty(false);
+        navigate('/admin/forms');
+    };
+
+    const closes = splitDateTime(form.closesAt || '');
+    const setCloses = (date, time) => set({ closesAt: date ? new Date(`${date}T${time || '23:59'}`).toISOString() : '' });
+
+    if (id && loaded && !existing && loadedFor.current !== id) {
+        return (
+            <AdminCommunityHubLayout studioHeader={{ title: 'Forms', icon: ClipboardList, description: 'Questions, responses and sign-ups' }}>
+                <EmptyState icon={FileSearch} title="Form not found" description="It may have been deleted." action={<Button variant="accent" onClick={() => navigate('/admin/forms')}>Back to forms</Button>} />
+            </AdminCommunityHubLayout>
+        );
+    }
+
+    const saveLabel = saving ? 'Saving…' : id ? 'Save changes' : 'Publish form';
 
     return (
-        <AdminCommunityHubLayout 
-            hideTabs 
-            accentColor="neon-pink"
-            studioHeader={{
-                title: "FORM",
-                subtitle: id ? "EDITOR" : "CREATOR",
-                accentClass: "text-neon-pink"
-            }}
-        >
-            <div className="flex flex-col lg:grid lg:grid-cols-[1fr,420px] gap-8 lg:gap-12 items-start mb-20 relative z-10">
-                {/* Editor Column */}
-                <div className="w-full space-y-6">
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        
-                        {/* Basic Info */}
-                        <Section title="Basic Information" icon={FileText}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Title</label>
-                                    <Input 
-                                        value={title} 
-                                        onChange={e => setTitle(e.target.value)} 
-                                        required 
-                                        placeholder="e.g. Join The Tribe"
-                                        className="h-12 bg-gray-50 dark:bg-black/40 border-black/5 dark:border-white/5 rounded-xl px-4 text-sm font-semibold focus:border-neon-pink/40" 
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Status</label>
-                                    <StudioSelect
-                                        value={activeLabel}
-                                        options={[
-                                            { value: 'Live', label: 'LIVE' },
-                                            { value: 'Few Slots Remain', label: 'FILLING FAST' },
-                                            { value: 'Closed', label: 'CLOSED' }
-                                        ]}
-                                        onChange={val => setActiveLabel(val)}
-                                        className="h-12"
-                                        accentColor="neon-pink"
-                                    />
+        <AdminCommunityHubLayout studioHeader={{ title: id ? 'Edit form' : 'New form', icon: ClipboardList, description: 'Build the questions, preview, publish' }} hideTabs>
+            <div className="pb-28 sm:pb-10">
+                <EditorBar backLabel="Forms" onBack={leave} title={form.title || (id ? 'Edit form' : 'New form')}>
+                    <Button variant="secondary" onClick={() => setShowPreviewMobile(v => !v)} className="h-10 xl:hidden">
+                        {showPreviewMobile ? <EyeOff size={14} /> : <Eye size={14} />} {showPreviewMobile ? 'Edit' : 'Preview'}
+                    </Button>
+                    <Button variant="primary" type="submit" form="form-editor" disabled={saving || image.uploading} className="hidden h-10 sm:inline-flex">{saveLabel}</Button>
+                </EditorBar>
+
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
+                    <form id="form-editor" onSubmit={save} noValidate className={cn('space-y-5', showPreviewMobile && 'hidden xl:block')}>
+                        <BuilderCard title="Details" hint="What people see at the top of the form">
+                            <div className="space-y-3">
+                                <Field label="Title">
+                                    <input className={cn(fieldCls, showProblems && !form.title.trim() && 'border-red-500/60')} value={form.title} onChange={(e) => set({ title: e.target.value })} placeholder="e.g. Volunteer sign-up for Sunburn" />
+                                </Field>
+                                <Field label="Description" optional>
+                                    <textarea className={areaCls} rows={3} value={form.description || ''} onChange={(e) => set({ description: e.target.value })} placeholder="What this form is for and what happens next" />
+                                </Field>
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <Field label="Location label" optional hint="Shown on the card, e.g. Online or Bengaluru">
+                                        <input className={fieldCls} value={form.bottomText || ''} onChange={(e) => set({ bottomText: e.target.value })} placeholder="e.g. Online" />
+                                    </Field>
+                                    <Field label="Card button text" optional>
+                                        <input className={fieldCls} value={form.buttonText || ''} onChange={(e) => set({ buttonText: e.target.value })} placeholder="e.g. Fill form" />
+                                    </Field>
                                 </div>
                             </div>
+                        </BuilderCard>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Description</label>
-                                <textarea 
-                                    className="w-full bg-gray-50 dark:bg-black/40 border border-black/5 dark:border-white/5 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:border-neon-pink/30 min-h-[100px] resize-none text-sm font-medium placeholder:text-gray-400 dark:placeholder:text-gray-600 leading-relaxed transition-colors" 
-                                    value={description} 
-                                    onChange={e => setDescription(e.target.value)} 
-                                    placeholder="Brief description of this form..." 
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Location Label</label>
-                                    <Input 
-                                        value={bottomText} 
-                                        onChange={e => setBottomText(e.target.value)} 
-                                        placeholder="e.g. Global Access"
-                                        className="h-12 bg-gray-50 dark:bg-black/40 border-black/5 dark:border-white/5 rounded-xl px-4 text-sm font-semibold focus:border-neon-pink/40" 
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Button Text</label>
-                                    <Input 
-                                        value={buttonText} 
-                                        onChange={e => setButtonText(e.target.value)} 
-                                        placeholder="e.g. Fill Form"
-                                        className="h-12 bg-gray-50 dark:bg-black/40 border-black/5 dark:border-white/5 rounded-xl px-4 text-sm font-semibold focus:border-neon-pink/40" 
-                                    />
-                                </div>
-                            </div>
-                        </Section>
-
-                        {/* Form Link */}
-                        <Section title="Google Form Link" icon={Link2} accent>
-                            <div className="flex justify-between items-center -mt-2">
-                                <p className="text-[10px] font-medium text-gray-500 tracking-wide">Paste your Google Form URL or embed code</p>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowHelp(!showHelp)}
-                                    className="text-[9px] font-bold text-neon-pink hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors flex items-center gap-1.5"
-                                >
-                                    <HelpCircle size={12} /> How to get URL
-                                </button>
-                            </div>
-
-                            {showHelp && (
-                                <div className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-black/40 p-5 rounded-xl border border-black/5 dark:border-white/5 space-y-2">
-                                    <ol className="list-decimal pl-4 space-y-1.5">
-                                        <li>Open your Google Form in edit mode.</li>
-                                        <li>Click the <strong className="text-gray-900 dark:text-white">Send</strong> button.</li>
-                                        <li>Click the <strong className="text-gray-900 dark:text-white">&lt; &gt;</strong> (Embed) tab.</li>
-                                        <li>Copy the URL inside <code className="px-1.5 py-0.5 bg-black/5 dark:bg-white/5 rounded text-[10px]">src="..."</code> or paste the full embed code.</li>
-                                    </ol>
-                                </div>
-                            )}
-
-                            <Input
-                                value={formUrl}
-                                onChange={(e) => setFormUrl(e.target.value)}
-                                required
-                                placeholder="https://docs.google.com/forms/d/e/.../viewform"
-                                className="h-12 font-mono text-xs bg-gray-50 dark:bg-black/40 border-black/5 dark:border-white/5 rounded-xl px-4 focus:border-neon-pink/40"
+                        <BuilderCard title="How people answer">
+                            <Choice
+                                value={mode}
+                                onChange={(v) => { setMode(v); setDirty(true); setPreviewTab(v === 'native' ? 'form' : 'card'); }}
+                                options={[
+                                    { value: 'native', label: 'Build it here', hint: 'Responses, file uploads and limits in the admin' },
+                                    { value: 'google', label: 'Use a Google Form', hint: 'Embed a form you already have' },
+                                ]}
                             />
+                        </BuilderCard>
 
-                            <label className="flex items-center gap-4 p-4 rounded-xl border border-black/5 dark:border-white/5 bg-gray-50 dark:bg-black/20 cursor-pointer hover:border-black/10 dark:hover:border-white/10 transition-all group">
-                                <input
-                                    type="checkbox"
-                                    checked={requiresExternal}
-                                    onChange={(e) => setRequiresExternal(e.target.checked)}
-                                    className="w-4 h-4 rounded border-black/20 dark:border-white/20 text-neon-pink focus:ring-neon-pink bg-white dark:bg-black/60 cursor-pointer"
-                                />
-                                <div className="flex-1">
-                                    <span className="text-xs text-gray-900 dark:text-white font-bold flex items-center gap-2">
-                                        Open externally <ExternalLink className="h-3 w-3 text-gray-400" />
-                                    </span>
-                                    <p className="text-[10px] text-gray-500 mt-0.5">
-                                        Required for forms with file uploads or forced Google login.
-                                    </p>
-                                </div>
-                            </label>
-                        </Section>
-
-                        {/* Appearance */}
-                        <Section title="Appearance" icon={ImageIcon}>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Cover Image</label>
-                                <div className="flex gap-3">
-                                    <Input 
-                                        value={image} 
-                                        onChange={e => setImage(e.target.value)} 
-                                        placeholder="Paste image URL" 
-                                        className="flex-1 h-12 bg-gray-50 dark:bg-black/40 border-black/5 dark:border-white/5 rounded-xl px-4 text-sm focus:border-neon-pink/40" 
-                                    />
-                                    <div className="relative group w-12 h-12 shrink-0">
-                                        <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                        <div className={cn(
-                                            "h-full w-full rounded-xl flex items-center justify-center border-2 border-dashed transition-all", 
-                                            isUploading ? "border-neon-pink bg-neon-pink/10 text-neon-pink" : "border-black/10 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-gray-400 hover:border-black/20 dark:hover:border-white/20 hover:text-gray-600"
-                                        )}>
-                                            {isUploading ? <Loader className="animate-spin" size={16} /> : <Plus size={16} />}
-                                        </div>
-                                    </div>
-                                </div>
-                                {image && (
-                                    <div className="relative mt-2 h-32 rounded-xl overflow-hidden border border-black/5 dark:border-white/5">
-                                        <img src={image} alt="Preview" className="w-full h-full object-cover" />
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setImage('')}
-                                            className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
-                                        >
-                                            <X size={12} />
+                        {mode === 'native' ? (
+                            <BuilderCard
+                                title="Questions"
+                                hint={answerable ? `${answerable} question${answerable === 1 ? '' : 's'} · drag or use the arrows to reorder` : 'Pick a question type to add it'}
+                            >
+                                {fields.length === 0 ? (
+                                    <div className="space-y-4">
+                                        <button type="button" onClick={() => { setFields(starterFields()); }} className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-indigo-500/30 p-4 text-left transition-colors hover:border-indigo-500/60">
+                                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-300"><Sparkles size={18} /></span>
+                                            <span>
+                                                <span className="block text-[14px] font-bold">Start with name, email and phone</span>
+                                                <span className="block text-[12px] text-gray-500">The three questions almost every form needs</span>
+                                            </span>
                                         </button>
+                                        <FieldPalette onAdd={addField} />
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2.5">
+                                        {fields.map((f, i) => (
+                                            <div key={f.id} id={`field_${f.id}`} className="scroll-mt-32">
+                                                <QuestionCard
+                                                    field={f}
+                                                    index={fields.slice(0, i).filter(x => x.type !== 'heading').length}
+                                                    total={fields.length}
+                                                    expanded={expanded === f.id}
+                                                    onToggle={() => setExpanded(expanded === f.id ? null : f.id)}
+                                                    onChange={(patch) => updateField(f.id, patch)}
+                                                    onMove={(d) => moveField(i, i + d)}
+                                                    onDuplicate={() => duplicateField(i)}
+                                                    onDelete={() => deleteField(i)}
+                                                    problem={showProblems || expanded === f.id ? problems[f.id] : null}
+                                                    dragOver={dragOver === i && dragFrom !== null && dragFrom !== i}
+                                                    dragProps={{
+                                                        draggable: expanded !== f.id,
+                                                        onDragStart: (e) => { setDragFrom(i); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); },
+                                                        onDragOver: (e) => { if (dragFrom === null) return; e.preventDefault(); setDragOver(i); },
+                                                        onDrop: (e) => { e.preventDefault(); if (dragFrom !== null) moveField(dragFrom, i); setDragFrom(null); setDragOver(null); },
+                                                        onDragEnd: () => { setDragFrom(null); setDragOver(null); },
+                                                    }}
+                                                />
+                                            </div>
+                                        ))}
+                                        <div className="pt-3">
+                                            <p className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-gray-500"><Plus size={13} /> Add a question</p>
+                                            <FieldPalette onAdd={addField} compact />
+                                        </div>
                                     </div>
                                 )}
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Accent Color</label>
-                                <div className="flex items-center gap-3 h-12 bg-gray-50 dark:bg-black/40 border border-black/5 dark:border-white/5 rounded-xl px-4">
-                                    {colorPresets.map(color => (
-                                        <button 
-                                            key={color.value} 
-                                            type="button" 
-                                            onClick={() => setHighlightColor(color.value)} 
-                                            className={cn(
-                                                "w-7 h-7 rounded-full border-2 transition-all hover:scale-110", 
-                                                highlightColor === color.value 
-                                                    ? "border-gray-900 dark:border-white scale-110 shadow-lg" 
-                                                    : "border-transparent opacity-60 hover:opacity-100"
-                                            )} 
-                                            style={{ backgroundColor: color.value }}
-                                            title={color.name}
-                                        />
-                                    ))}
-                                    <div className="ml-auto flex items-center gap-2">
-                                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: highlightColor }} />
-                                        <span className="text-[10px] font-mono text-gray-500">{highlightColor}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </Section>
-
-                        {/* Image Position */}
-                        {image && (
-                            <Section title="Image Position" icon={Move}>
-                                <div className="flex items-center justify-end -mt-4">
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setImageTransform({ scale: 1.05, x: 0, y: 0 })} 
-                                        className="text-[9px] font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors flex items-center gap-1.5"
-                                    >
-                                        <X size={10} /> Reset
-                                    </button>
-                                </div>
-                                <div className="grid grid-cols-3 gap-6">
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between">
-                                            <label className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Zoom</label>
-                                            <span className="text-[9px] font-mono text-neon-pink">{imageTransform.scale.toFixed(2)}x</span>
-                                        </div>
-                                        <input type="range" min="-3" max="3" step="0.01" value={imageTransform.scale} onChange={e => setImageTransform({ ...imageTransform, scale: parseFloat(e.target.value) })} className="w-full accent-neon-pink" />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between">
-                                            <label className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">X</label>
-                                            <span className="text-[9px] font-mono text-neon-pink">{imageTransform.x}%</span>
-                                        </div>
-                                        <input type="range" min="-100" max="100" step="1" value={imageTransform.x} onChange={e => setImageTransform({ ...imageTransform, x: parseInt(e.target.value) })} className="w-full accent-neon-pink" />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between">
-                                            <label className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Y</label>
-                                            <span className="text-[9px] font-mono text-neon-pink">{imageTransform.y}%</span>
-                                        </div>
-                                        <input type="range" min="-100" max="100" step="1" value={imageTransform.y} onChange={e => setImageTransform({ ...imageTransform, y: parseInt(e.target.value) })} className="w-full accent-neon-pink" />
-                                    </div>
-                                </div>
-                            </Section>
-                        )}
-
-                        {/* Spotlight Toggle */}
-                        <div className={cn(
-                            "rounded-[1.5rem] border p-5 flex items-center justify-between transition-all duration-500", 
-                            isPinned ? "bg-neon-pink/[0.06] border-neon-pink/20" : "bg-white dark:bg-black/30 border-black/5 dark:border-white/5"
-                        )}>
-                            <div className="flex items-center gap-4">
-                                <div className={cn(
-                                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500", 
-                                    isPinned ? "bg-neon-pink text-black" : "bg-black/5 dark:bg-white/5 text-gray-500"
-                                )}>
-                                    <Star size={18} className={cn(isPinned && "fill-current")} />
-                                </div>
-                                <div>
-                                    <h4 className="text-xs font-bold text-gray-900 dark:text-white">Feature as Spotlight</h4>
-                                    <p className="text-[10px] text-gray-500 mt-0.5">Pin to the featured section at top of community</p>
-                                </div>
-                            </div>
-                            <button 
-                                type="button" 
-                                onClick={() => setIsPinned(!isPinned)} 
-                                className={cn("w-11 h-6 rounded-full relative transition-all", isPinned ? "bg-neon-pink" : "bg-black/10 dark:bg-white/10")}
-                            >
-                                <div className={cn("absolute top-1 w-4 h-4 rounded-full transition-all shadow", isPinned ? "right-1 bg-white" : "left-1 bg-gray-400 dark:bg-gray-600")} />
-                            </button>
-                        </div>
-
-                        {/* Home Upcoming Events Toggle */}
-                        <div className={cn(
-                            "rounded-[1.5rem] border p-5 flex items-center justify-between transition-all duration-500", 
-                            alsoPostToUpcomingEvents ? "bg-neon-pink/[0.06] border-neon-pink/20" : "bg-white dark:bg-black/30 border-black/5 dark:border-white/5"
-                        )}>
-                            <div className="flex items-center gap-4">
-                                <div className={cn(
-                                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500", 
-                                    alsoPostToUpcomingEvents ? "bg-neon-pink text-black" : "bg-black/5 dark:bg-white/5 text-gray-500"
-                                )}>
-                                    <Calendar size={18} />
-                                </div>
-                                <div>
-                                    <h4 className="text-xs font-bold text-gray-900 dark:text-white">Post to Home Upcoming Events</h4>
-                                    <p className="text-[10px] text-gray-500 mt-0.5">Feature this form in the Upcoming Events carousel on the Home page</p>
-                                </div>
-                            </div>
-                            <button 
-                                type="button" 
-                                onClick={() => setAlsoPostToUpcomingEvents(!alsoPostToUpcomingEvents)} 
-                                className={cn("w-11 h-6 rounded-full relative transition-all", alsoPostToUpcomingEvents ? "bg-neon-pink" : "bg-black/10 dark:bg-white/10")}
-                            >
-                                <div className={cn("absolute top-1 w-4 h-4 rounded-full transition-all shadow", alsoPostToUpcomingEvents ? "right-1 bg-white" : "left-1 bg-gray-400 dark:bg-gray-600")} />
-                            </button>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-black/5 dark:border-white/5">
-                            <Link to="/admin/forms">
-                                <Button type="button" variant="outline" className="h-12 rounded-xl px-8 text-[10px] font-bold uppercase tracking-widest border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 w-full sm:w-auto">Cancel</Button>
-                            </Link>
-                            <Button 
-                                onClick={handleSubmit} 
-                                disabled={saving}
-                                className="h-12 px-10 bg-neon-pink text-black font-bold uppercase tracking-widest text-xs rounded-xl shadow-[0_10px_30px_rgba(255,79,139,0.2)] hover:shadow-[0_15px_40px_rgba(255,79,139,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all border-none flex items-center justify-center gap-3"
-                            >
-                                {saving ? <Loader className="animate-spin" size={16} /> : <Save size={16} />}
-                                {id ? 'Update Form' : 'Create Form'}
-                            </Button>
-                        </div>
-                    </form>
-                </div>
-
-                {/* Preview Column */}
-                <div className="lg:sticky lg:top-32 space-y-4 w-full">
-                    <div className="flex bg-gray-100 dark:bg-white/5 border border-black/5 dark:border-white/5 p-1 rounded-xl w-fit">
-                        <button 
-                            onClick={() => setPreviewType('card')}
-                            className={cn(
-                                "px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
-                                previewType === 'card' ? "bg-neon-pink text-black shadow-sm" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                            )}
-                        >
-                            Card
-                        </button>
-                        <button 
-                            onClick={() => setPreviewType('embed')}
-                            className={cn(
-                                "px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
-                                previewType === 'embed' ? "bg-neon-pink text-black shadow-sm" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                            )}
-                        >
-                            Embed
-                        </button>
-                    </div>
-
-                    <div className="pt-2">
-                        {previewType === 'card' ? (
-                            <LivePreview 
-                                type="form" 
-                                data={{ title, description, activeLabel, bottomText, buttonText, image, highlightColor, isPinned, imageTransform }} 
-                                hideDecorations={false} 
-                            />
+                            </BuilderCard>
                         ) : (
-                            <LivePreview 
-                                type="form_embed" 
-                                data={{ formUrl, requiresExternal }} 
-                                hideDecorations={false} 
-                            />
+                            <BuilderCard
+                                title="Google Form"
+                                hint="Paste the link or the embed code"
+                                action={<button type="button" onClick={() => setShowHelp(v => !v)} className="flex h-9 items-center gap-1 text-[12px] font-semibold text-indigo-600 dark:text-indigo-300"><HelpCircle size={13} /> Where to find it</button>}
+                            >
+                                <div className="space-y-3">
+                                    {showHelp && (
+                                        <ol className="list-decimal space-y-1 rounded-xl bg-black/[0.03] p-4 pl-8 text-[13px] text-gray-600 dark:bg-white/[0.04] dark:text-zinc-300">
+                                            <li>Open the Google Form in edit mode and press Send.</li>
+                                            <li>Open the embed tab (the &lt; &gt; icon).</li>
+                                            <li>Copy the whole code, or just the link inside src="…", and paste it here.</li>
+                                        </ol>
+                                    )}
+                                    <Field label="Form link">
+                                        <input className={cn(fieldCls, 'font-mono text-[13px]', showProblems && !/^https?:\/\//i.test(cleanUrl(form.formUrl)) && 'border-red-500/60')} inputMode="url" autoCapitalize="off" value={form.formUrl || ''} onChange={(e) => set({ formUrl: e.target.value })} placeholder="https://docs.google.com/forms/d/e/…/viewform" />
+                                    </Field>
+                                    <Toggle label="Open in a new tab" hint="Needed when the Google Form has file uploads or asks people to sign in to Google" checked={Boolean(form.requiresExternal)} onChange={(v) => set({ requiresExternal: v })} />
+                                </div>
+                            </BuilderCard>
                         )}
-                    </div>
+
+                        <BuilderCard title="Responses" hint="When the form stops taking answers">
+                            <div className="space-y-4">
+                                <div>
+                                    <p className="mb-1.5 text-[12px] font-bold text-gray-500">Status</p>
+                                    <Choice value={form.activeLabel || 'Live'} onChange={(v) => set({ activeLabel: v })} options={STATUS_OPTIONS} />
+                                </div>
+                                {mode === 'native' && (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                            <Field label="Close on" optional>
+                                                <input className={fieldCls} type="date" value={closes.date} onChange={(e) => setCloses(e.target.value, closes.time)} />
+                                            </Field>
+                                            <Field label="at" optional>
+                                                <input className={fieldCls} type="time" value={closes.time} disabled={!closes.date} onChange={(e) => setCloses(closes.date, e.target.value)} />
+                                            </Field>
+                                            <Field label="Response limit" optional className="col-span-2 sm:col-span-1">
+                                                <input className={fieldCls} type="number" min="1" inputMode="numeric" value={form.responseLimit ?? ''} onChange={(e) => set({ responseLimit: e.target.value })} placeholder="No limit" />
+                                            </Field>
+                                        </div>
+                                        {form.closesAt && <button type="button" onClick={() => set({ closesAt: '' })} className="-mt-2 h-9 text-[12px] font-semibold text-red-500">Remove closing date</button>}
+                                        <Toggle label="One response per person" hint="People sign in and can only send it once" checked={Boolean(form.onePerPerson)} onChange={(v) => set({ onePerPerson: v })} />
+                                        <Toggle label="Require sign-in" hint="Responses are linked to people's Newbi accounts" checked={Boolean(form.requireSignIn || form.onePerPerson)} onChange={(v) => set({ requireSignIn: v, ...(v ? {} : { onePerPerson: false }) })} />
+                                        <Field label="Message after sending" optional>
+                                            <textarea className={areaCls} rows={2} value={form.confirmationMessage || ''} onChange={(e) => set({ confirmationMessage: e.target.value })} placeholder="We'll be in touch if we need anything else." />
+                                        </Field>
+                                        <Field label="Submit button" optional>
+                                            <input className={fieldCls} value={form.submitLabel || ''} onChange={(e) => set({ submitLabel: e.target.value })} placeholder="Submit" />
+                                        </Field>
+                                    </>
+                                )}
+                            </div>
+                        </BuilderCard>
+
+                        <BuilderCard title="Look" hint="Card image and colour on the community page">
+                            <div className="grid gap-5 sm:grid-cols-[220px_minmax(0,1fr)]">
+                                <ImageSlot
+                                    label={image.uploading ? 'Uploading…' : 'Cover image'}
+                                    hint="Paste works too"
+                                    aspect="aspect-[4/3]"
+                                    {...image.slotProps}
+                                    transform={form.imageTransform}
+                                    onTransform={(t) => set({ imageTransform: t })}
+                                />
+                                <div>
+                                    <p className="mb-2 text-[12px] font-bold text-gray-500">Highlight colour</p>
+                                    <ColorDots value={form.highlightColor} onChange={(v) => set({ highlightColor: v })} />
+                                </div>
+                            </div>
+                        </BuilderCard>
+
+                        <BuilderCard title="Where it shows">
+                            <div className="divide-y divide-black/[0.06] dark:divide-white/[0.06]">
+                                <div className="pb-3"><Toggle label="Spotlight on the community page" hint="Pinned to the featured row at the top" checked={Boolean(form.isPinned)} onChange={(v) => set({ isPinned: v })} /></div>
+                                <div className="py-3"><Toggle label="Show on the home page" hint="Adds a card to Upcoming events" checked={homeCard} onChange={(v) => { setHomeCard(v); setDirty(true); }} /></div>
+                                {!id && (
+                                    <>
+                                        <div className="py-3"><Toggle label="Notify everyone when it's published" hint="An in-app and push notification" checked={notify} onChange={setNotify} /></div>
+                                        {notify && <div className="pt-3"><Toggle label="Also email everyone" hint="Sends to the whole mailing list" checked={notifyEmail} onChange={setNotifyEmail} /></div>}
+                                    </>
+                                )}
+                            </div>
+                        </BuilderCard>
+                    </form>
+
+                    <aside className={cn('mx-auto w-full max-w-md space-y-3 xl:sticky xl:top-24 xl:max-w-none xl:self-start', !showPreviewMobile && 'hidden xl:block')}>
+                        <div className="flex items-center justify-between gap-2">
+                            <p className="text-[12px] font-bold text-gray-500">Live preview</p>
+                            <SegmentedTabs
+                                value={previewTab}
+                                onChange={setPreviewTab}
+                                items={mode === 'native'
+                                    ? [{ value: 'form', label: 'Form' }, { value: 'card', label: 'Card' }]
+                                    : [{ value: 'card', label: 'Card' }, { value: 'embed', label: 'Embed' }]}
+                            />
+                        </div>
+                        {previewTab === 'form' && mode === 'native' ? (
+                            <div className="max-h-[calc(100dvh-9rem)] overflow-y-auto rounded-2xl border border-black/[0.06] bg-white dark:border-white/[0.08] dark:bg-zinc-950">
+                                <div className="border-b border-black/[0.06] p-5 dark:border-white/[0.06]">
+                                    <p className="text-[20px] font-extrabold leading-tight">{form.title || 'Untitled form'}</p>
+                                    {form.description && <p className="mt-1 whitespace-pre-line text-[14px] text-gray-500">{form.description}</p>}
+                                </div>
+                                {answerable || fields.length ? (
+                                    <FormRenderer key={fields.map(f => f.id).join()} form={previewForm} preview className="p-5 sm:p-5" />
+                                ) : (
+                                    <p className="p-8 text-center text-[13px] text-gray-500">Add a question and it appears here. Try filling it in: required answers and checks work like the real thing.</p>
+                                )}
+                            </div>
+                        ) : previewTab === 'embed' ? (
+                            <LivePreview type="form_embed" data={{ formUrl: cleanUrl(form.formUrl), requiresExternal: form.requiresExternal }} />
+                        ) : (
+                            <LivePreview type="form" data={cardData} />
+                        )}
+                    </aside>
                 </div>
+
+                <PhoneBar>
+                    <Button variant="ghost" onClick={leave} className="h-12">Cancel</Button>
+                    <Button variant="primary" type="submit" form="form-editor" disabled={saving || image.uploading} className="h-12 flex-1">{saveLabel}</Button>
+                </PhoneBar>
             </div>
+            {confirmEl}
         </AdminCommunityHubLayout>
     );
 };

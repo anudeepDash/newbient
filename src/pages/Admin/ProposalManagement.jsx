@@ -1,876 +1,451 @@
-import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import Edit from 'lucide-react/dist/esm/icons/edit';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Copy from 'lucide-react/dist/esm/icons/copy';
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Upload from 'lucide-react/dist/esm/icons/upload';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
-import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
-import Calendar from 'lucide-react/dist/esm/icons/calendar';
-import Search from 'lucide-react/dist/esm/icons/search';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
-import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Send from 'lucide-react/dist/esm/icons/send';
-import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
-import Share2 from 'lucide-react/dist/esm/icons/share-2';
-import Activity from 'lucide-react/dist/esm/icons/activity';
-import History from 'lucide-react/dist/esm/icons/history';
-import X from 'lucide-react/dist/esm/icons/x';
-import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
-import Globe from 'lucide-react/dist/esm/icons/globe';
-import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import Percent from 'lucide-react/dist/esm/icons/percent';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Edit from 'lucide-react/dist/esm/icons/edit';
 import Mail from 'lucide-react/dist/esm/icons/mail';
-import FolderOpen from 'lucide-react/dist/esm/icons/folder-open';
+import Link2 from 'lucide-react/dist/esm/icons/link-2';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import CopyPlus from 'lucide-react/dist/esm/icons/copy-plus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Share2 from 'lucide-react/dist/esm/icons/share-2';
+import Receipt from 'lucide-react/dist/esm/icons/receipt';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import Inbox from 'lucide-react/dist/esm/icons/inbox';
+import { AnimatePresence } from 'framer-motion';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { sendProposalEmail } from '../../lib/email';
+import { copyToClipboard } from '../../lib/clipboard';
+import { cn } from '../../lib/utils';
+import { exportSubtitle, fileDate } from '../../lib/xlsx';
+import ExportMenu from '../../components/admin/ExportMenu';
+import { FINANCE_ROLES } from '../../constants/roles';
+import { proposalState, PROPOSAL_STATE_LABEL, proposalValue, proposalViews, lastViewedAt, proposalExpiry } from '../../lib/proposals';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import { Card, Button, Badge, SearchInput, SegmentedTabs, EmptyState, Select, Menu, MenuItem, ViewToggle, useViewMode } from '../../components/admin/ui';
 import ProposalEmailModal from '../../components/admin/ProposalEmailModal';
 import UploadProposalModal from '../../components/admin/UploadProposalModal';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { cn } from '../../lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
-import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import ProposalDetailPanel from '../../components/admin/proposals/ProposalDetailPanel';
+import { inr, toDate } from '../../components/admin/ticketing/format';
+
+const FILTERS = ['all', 'draft', 'sent', 'viewed', 'accepted', 'declined', 'expired'];
+const PAGE = 48;
+const LEGACY_STATUS = { Draft: 'draft', Sent: 'sent', Accepted: 'accepted', Rejected: 'declined' };
+
+const formatDay = (d) => (d ? d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+const relative = (d) => {
+    if (!d) return '';
+    const mins = Math.round((Date.now() - d.getTime()) / 60000);
+    if (mins < 60) return `${Math.max(1, mins)}m ago`;
+    const hours = Math.round(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.round(hours / 24);
+    return days < 30 ? `${days}d ago` : formatDay(d);
+};
+
+const Kpi = ({ icon: Icon, label, value, hint, tone, active, onClick }) => {
+    const tones = {
+        gray: 'bg-black/5 text-gray-700 dark:bg-white/5 dark:text-zinc-300',
+        blue: 'bg-neon-blue/10 text-sky-700 dark:text-neon-blue',
+        green: 'bg-neon-green/10 text-emerald-700 dark:text-neon-green',
+        violet: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
+    };
+    const Comp = onClick ? 'button' : 'div';
+    return (
+        <Comp type={onClick ? 'button' : undefined} onClick={onClick} className="text-left">
+            <Card className={cn('h-full rounded-2xl p-4', onClick && 'transition-colors hover:border-black/15 dark:hover:border-white/15', active && 'border-gray-900 dark:border-white/60')}>
+                <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', tones[tone])}><Icon size={17} /></span>
+                <p className="mt-3 truncate text-[20px] font-extrabold leading-none tracking-tight tabular-nums sm:text-[24px]">{value}</p>
+                <p className="mt-1.5 truncate text-[12px] font-bold text-gray-700 dark:text-zinc-300">{label}</p>
+                <p className="truncate text-[11px] text-gray-500">{hint}</p>
+            </Card>
+        </Comp>
+    );
+};
 
 const ProposalManagement = () => {
     useStoreSubscription(['proposals']);
     const navigate = useNavigate();
-    const location = useLocation();
-    const { proposals, deleteProposal, updateProposalStatus, duplicateProposal, user } = useStore();
-    
-    const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState('All');
-    const [viewMode, setViewMode] = useState('grid');
-    const [selectedAnalytics, setSelectedAnalytics] = useState(null);
-    const [activeAnalyticsTab, setActiveAnalyticsTab] = useState('email');
-    const [sharingProposal, setSharingProposal] = useState(null);
-    const [emailModalProposal, setEmailModalProposal] = useState(null);
-    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-    const [editingUploadedProposal, setEditingUploadedProposal] = useState(null);
+    const proposals = useStore(s => s.proposals) || [];
+    const user = useStore(s => s.user);
+    const addToast = useStore(s => s.addToast);
+    const [params, setParams] = useSearchParams();
 
-    // Deep link listeners for ?upload=true or ?edit=:id
+    const legacy = LEGACY_STATUS[params.get('status')];
+    const filter = FILTERS.includes(params.get('filter')) ? params.get('filter') : (legacy || 'all');
+    const openId = params.get('proposal');
+    const setParam = (key, value, push = false) => {
+        const next = new URLSearchParams(params);
+        if (value) next.set(key, value); else next.delete(key);
+        if (key === 'filter') next.delete('status');
+        setParams(next, { replace: !push });
+    };
+
+    const [view, setView] = useViewMode('proposals', 'cards');
+    const [search, setSearch] = useState('');
+    // ?sort=viewed (from the dashboard) puts the most recently opened first.
+    const [sort, setSort] = useState(() => (['newest', 'viewed', 'value', 'client'].includes(new URLSearchParams(window.location.search).get('sort')) ? new URLSearchParams(window.location.search).get('sort') : 'newest'));
+    const [limit, setLimit] = useState(PAGE);
+    const [emailProposal, setEmailProposal] = useState(null);
+    const [uploadOpen, setUploadOpen] = useState(false);
+    const [editingUpload, setEditingUpload] = useState(null);
+
+    const isEditor = user?.role === 'editor' || user?.role === 'content_admin';
+    const canManage = !isEditor;
+    const canInvoice = FINANCE_ROLES.includes(user?.role);
+
+    // Deep links: ?upload=true opens the upload form, ?edit=<id> edits an uploaded
+    // proposal. Both are cleared once handled so the form doesn't reopen.
     useEffect(() => {
-        const params = new URLSearchParams(location.search);
         if (params.get('upload') === 'true') {
-            setEditingUploadedProposal(null);
-            setIsUploadModalOpen(true);
-        }
-        const editId = params.get('edit');
-        if (editId && proposals.length > 0) {
-            const found = proposals.find(p => p.id === editId);
-            if (found && found.isUploaded) {
-                setEditingUploadedProposal(found);
-                setIsUploadModalOpen(true);
-            }
-        }
-    }, [location.search, proposals]);
-
-    const getDeviceDetails = (ua) => {
-        if (!ua) return { browser: 'Browser', os: 'OS', type: 'Device' };
-        
-        let browser = 'Browser';
-        if (ua.includes('Firefox/')) browser = 'Firefox';
-        else if (ua.includes('Edg/')) browser = 'Edge';
-        else if (ua.includes('Chrome/') || ua.includes('CriOS/')) browser = 'Chrome';
-        else if (ua.includes('Safari/')) browser = 'Safari';
-
-        let os = 'OS';
-        if (ua.includes('iPhone')) os = 'iOS';
-        else if (ua.includes('iPad')) os = 'iPadOS';
-        else if (ua.includes('Android')) os = 'Android';
-        else if (ua.includes('Windows')) os = 'Windows';
-        else if (ua.includes('Macintosh') || ua.includes('Mac OS X')) os = 'macOS';
-        else if (ua.includes('Linux')) os = 'Linux';
-
-        let type = 'Desktop';
-        if (os === 'iOS' || os === 'Android') type = 'Mobile';
-        else if (os === 'iPadOS') type = 'Tablet';
-
-        return { browser, os, type };
-    };
-
-    const vaultTabs = [
-        ...(['developer', 'founder'].includes(user?.role) ? [{ name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' }] : []),
-        { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet, color: 'text-neon-green' },
-        { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck, color: 'text-[#A855F7]' },
-    ];
-
-    const filteredProposals = proposals
-        .filter(p => {
-            if (user?.role === 'editor' || user?.role === 'content_admin') {
-                return p.createdBy === user?.uid;
-            }
-            return true;
-        })
-        .filter(p => {
-            const matchesSearch = p.clientName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                 p.proposalNumber?.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesStatus = statusFilter === 'All' || p.status === statusFilter;
-            return matchesSearch && matchesStatus;
-        });
-
-    const handleCopyLink = (id) => {
-        const link = `${window.location.origin}/proposal/${id}?via=link`;
-        navigator.clipboard.writeText(link);
-        useStore.getState().addToast(`Proposal link copied.`, 'success');
-    };
-
-    const handleDelete = (id) => {
-        if (user?.role === 'editor' || user?.role === 'content_admin') {
-            useStore.getState().addToast("Only admins can delete proposals.", 'error');
+            setEditingUpload(null);
+            setUploadOpen(true);
+            setParam('upload', null);
             return;
         }
-        if (window.confirm('Are you sure you want to delete this proposal?')) {
-            deleteProposal(id);
+        const editId = params.get('edit');
+        if (editId && proposals.length) {
+            const found = proposals.find(p => p.id === editId);
+            if (found?.isUploaded) { setEditingUpload(found); setUploadOpen(true); }
+            setParam('edit', null);
         }
-    };
+    }, [params, proposals.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleSendEmail = (proposal) => {
-        setEmailModalProposal(proposal);
-    };
+    const visible = useMemo(() => (isEditor ? proposals.filter(p => p.createdBy === user?.uid) : proposals), [proposals, isEditor, user?.uid]);
 
-    const handleDispatchEmail = async ({ to, cc, bcc, subject, html }) => {
-        try {
-            const { auth } = await import('../../lib/firebase');
-            const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
-            const response = await fetch('/api/mail', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token ? `Bearer ${token}` : '',
-                },
-                body: JSON.stringify({ 
-                    to, 
-                    cc,
-                    bcc,
-                    subject, 
-                    html,
-                    fromName: 'Newbi Partnerships',
-                    fromEmail: 'partnership@newbi.live'
-                }),
-            });
-            const result = await response.json();
-            if (result.success) {
-                useStore.getState().addToast('Proposal emailed.', 'success');
-                if (emailModalProposal) {
-                    updateProposalStatus(emailModalProposal.id, 'Sent');
-                }
-            } else {
-                throw new Error(result.error);
+    const enriched = useMemo(() => visible.map(p => ({
+        p,
+        state: proposalState(p),
+        value: proposalValue(p),
+        created: toDate(p.createdAt),
+        viewed: lastViewedAt(p),
+        views: proposalViews(p).length,
+    })), [visible]);
+
+    const counts = useMemo(() => {
+        const c = Object.fromEntries(FILTERS.map(f => [f, 0]));
+        enriched.forEach(e => { c.all += 1; c[e.state] += 1; });
+        return c;
+    }, [enriched]);
+
+    const kpis = useMemo(() => {
+        const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+        let pipeline = 0, waiting = 0, wonMonth = 0, decided = 0, won = 0;
+        enriched.forEach(e => {
+            if (e.state === 'sent' || e.state === 'viewed') { pipeline += e.value; waiting += 1; }
+            if (e.state === 'accepted' || e.state === 'declined') decided += 1;
+            if (e.state === 'accepted') {
+                won += 1;
+                const signed = toDate(e.p.approvalMetadata?.signedAt || e.p.respondedAt);
+                if (signed && signed >= monthStart) wonMonth += e.value;
             }
-        } catch (err) {
-            console.error(err);
-            useStore.getState().addToast("Couldn't send the email. Please try again.", 'error');
-            throw err;
-        }
-    };
+        });
+        return { pipeline, waiting, wonMonth, winRate: decided ? Math.round((won / decided) * 100) : null, decided };
+    }, [enriched]);
 
-    const handleWhatsAppShare = (proposal) => {
-        const url = `${window.location.origin}/proposal/${proposal.id}?via=whatsapp`;
-        const text = `Greetings from Newbi Entertainment. Here is your Strategic Proposal: ${url}`;
-        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-        window.open(whatsappUrl, '_blank');
-        updateProposalStatus(proposal.id, 'Sent');
-    };
+    const rows = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        const list = enriched.filter(e => {
+            if (filter !== 'all' && e.state !== filter) return false;
+            if (!q) return true;
+            return [e.p.clientName, e.p.proposalNumber, e.p.campaignName, e.p.clientEmail, e.p.fileName].some(v => String(v || '').toLowerCase().includes(q));
+        });
+        const by = {
+            newest: (a, b) => (b.created?.getTime() || 0) - (a.created?.getTime() || 0),
+            value: (a, b) => b.value - a.value,
+            viewed: (a, b) => (b.viewed?.getTime() || 0) - (a.viewed?.getTime() || 0),
+            client: (a, b) => String(a.p.clientName || '').localeCompare(String(b.p.clientName || '')),
+        }[sort];
+        return list.sort(by);
+    }, [enriched, filter, search, sort]);
 
-    const handleNativeShare = async (proposal) => {
-        const url = `${window.location.origin}/proposal/${proposal.id}?via=share`;
-        
-        // If native share is available and it's a mobile device, use it directly
-        if (navigator.share && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    // ── actions ──
+    const urlFor = (p, via) => `${window.location.origin}/proposal/${p.id}?via=${via}`;
+    const markShared = (p, via) => useStore.getState().markProposalShared(p.id, via).catch(err => console.warn('Share status not saved', err));
+
+    const copyLink = async (p) => {
+        const ok = await copyToClipboard(urlFor(p, 'link'));
+        addToast(ok ? 'Proposal link copied.' : "Couldn't copy the link.", ok ? 'success' : 'error');
+        if (ok) markShared(p, 'link');
+    };
+    const share = async (p) => {
+        if (navigator.share) {
             try {
-                await navigator.share({
-                    title: `Strategic Proposal - ${proposal.clientName}`,
-                    text: `View your Strategic Memorandum from Newbi Entertainment.`,
-                    url: url
-                });
-                updateProposalStatus(proposal.id, 'Sent');
+                await navigator.share({ title: `Proposal for ${p.clientName || 'you'}`, text: 'Your proposal from Newbi Entertainment.', url: urlFor(p, 'share') });
+                markShared(p, 'share');
                 return;
             } catch (err) {
-                console.error("Share failed:", err);
+                if (err?.name === 'AbortError') return;
             }
         }
-
-        // Open our custom high-fidelity share modal
-        setSharingProposal(proposal);
+        copyLink(p);
     };
-
-    const handleDuplicate = async (id) => {
-        if (window.confirm('Duplicate this proposal for a revision?')) {
-            try {
-                const newId = await duplicateProposal(id);
-                useStore.getState().addToast('Proposal duplicated as a draft.', 'success');
-            } catch (err) {
-                console.error(err);
-                useStore.getState().addToast("Couldn't duplicate the proposal. Please try again.", 'error');
-            }
+    const whatsapp = (p) => {
+        const text = `Hi${p.clientName ? ` ${p.clientName}` : ''}, here is your proposal from Newbi Entertainment: ${urlFor(p, 'whatsapp')}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+        markShared(p, 'whatsapp');
+    };
+    const edit = (p) => {
+        if (p.isUploaded) { setEditingUpload(p); setUploadOpen(true); }
+        else navigate(`/admin/edit-proposal/${p.id}`);
+    };
+    const duplicate = async (p) => {
+        if (!window.confirm(`Make a new draft copy of ${p.proposalNumber || 'this proposal'}?`)) return;
+        try {
+            const newId = await useStore.getState().duplicateProposal(p.id);
+            addToast('Copied as a new draft.', 'success');
+            if (newId) setParam('proposal', newId, true);
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't duplicate the proposal.", 'error');
         }
     };
-
-    const handleRevokeSignature = async (proposalId) => {
-        if (window.confirm('CRITICAL: Are you sure you want to revoke this signature? This will unlock the document and void the current authorization.')) {
-            try {
-                await useStore.getState().updateProposal(proposalId, {
-                    status: 'Sent',
-                    approvalMetadata: null,
-                    rejectionMetadata: null
-                });
-                useStore.getState().addToast('Signature revoked. The proposal is active again.', 'success');
-                setSelectedAnalytics(null);
-            } catch (err) {
-                console.error(err);
-                useStore.getState().addToast("Couldn't revoke the signature. Please try again.", 'error');
-            }
+    const remove = async (p) => {
+        if (!canManage) { addToast('Only admins can delete proposals.', 'info'); return; }
+        const signed = p.status === 'Accepted';
+        if (!window.confirm(`Delete ${p.proposalNumber || 'this proposal'} for ${p.clientName || 'this client'}?${signed ? ' It was signed by the client — the signed record will be lost.' : ''} The client's link will stop working. This can't be undone.`)) return;
+        try {
+            await useStore.getState().deleteProposal(p.id);
+            if (openId === p.id) setParam('proposal', null);
+            addToast('Proposal deleted.', 'success');
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't delete the proposal.", 'error');
         }
     };
+    const convert = async (p) => {
+        if (p.convertedInvoiceId) { navigate(`/admin/edit-invoice/${p.convertedInvoiceId}`); return; }
+        if (!window.confirm(`Create an invoice for ${p.clientName || 'this client'} from ${p.proposalNumber || 'this proposal'}? You can edit it before sending.`)) return;
+        try {
+            const invoiceId = await useStore.getState().convertProposalToInvoice(p.id);
+            addToast('Invoice drafted from the proposal.', 'success');
+            navigate(`/admin/edit-invoice/${invoiceId}`);
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't create the invoice.", 'error');
+        }
+    };
+    const sendEmail = async ({ to, cc, bcc, subject, html }) => {
+        const { auth } = await import('../../lib/firebase');
+        const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+        const res = await fetch('/api/mail', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
+            body: JSON.stringify({ to, cc, bcc, subject, html, fromName: 'Newbi Partnerships', fromEmail: 'partnership@newbi.live' }),
+        });
+        const result = await res.json().catch(() => ({}));
+        if (!result.success) throw new Error(result.error || 'Send failed');
+        if (emailProposal) markShared(emailProposal, 'email');
+    };
+
+    const exportSpec = () => ({
+        filename: `proposals_${filter}_${fileDate()}`,
+        sheetName: 'Proposals',
+        title: 'Proposals',
+        subtitle: exportSubtitle(rows.length, 'proposal', filter !== 'all' ? PROPOSAL_STATE_LABEL[filter]?.label : null),
+        rows,
+        totals: { value: true, views: true },
+        columns: [
+            { header: 'Proposal No', value: r => r.p.proposalNumber || '' },
+            { header: 'Client', value: r => r.p.clientName || '' },
+            { header: 'Campaign', value: r => r.p.campaignName || '' },
+            { header: 'Client Email', value: r => r.p.clientEmail || '' },
+            { header: 'Value', key: 'value', type: 'money', value: r => r.value },
+            { header: 'Status', value: r => PROPOSAL_STATE_LABEL[r.state].label },
+            { header: 'Created', type: 'date', value: r => r.created || null },
+            { header: 'Valid Until', type: 'date', value: r => r.p.validUntil || null },
+            { header: 'Views', key: 'views', type: 'number', value: r => r.views || 0 },
+            { header: 'Last Viewed', type: 'datetime', value: r => r.viewed || null },
+            { header: 'Signed By', value: r => r.p.approvalMetadata?.signedBy || '' },
+            { header: 'Decline Reason', value: r => r.p.rejectionMetadata?.reason || '' },
+            { header: 'Link', value: r => `${window.location.origin}/proposal/${r.p.id}` },
+        ],
+    });
+
+    const shown = rows.slice(0, limit);
+
+    const actionsMenu = (p) => (
+        <Menu trigger={({ toggle }) => (
+            <Button size="sm" variant="ghost" onClick={toggle} aria-label="More actions" className="w-9 px-0"><MoreHorizontal size={15} /></Button>
+        )}>
+            <MenuItem icon={FileText} onClick={() => setParam('proposal', p.id, true)}>Details & activity</MenuItem>
+            <MenuItem as="a" href={`/proposal/${p.id}`} target="_blank" rel="noopener noreferrer" icon={ExternalLink}>Open proposal</MenuItem>
+            {canManage && <MenuItem icon={Edit} onClick={() => edit(p)}>Edit</MenuItem>}
+            <MenuItem icon={Mail} onClick={() => setEmailProposal(p)}>Email to client</MenuItem>
+            <MenuItem icon={MessageCircle} onClick={() => whatsapp(p)}>Send on WhatsApp</MenuItem>
+            <MenuItem icon={Link2} onClick={() => copyLink(p)}>Copy link</MenuItem>
+            {canManage && <MenuItem icon={CopyPlus} onClick={() => duplicate(p)}>Duplicate as draft</MenuItem>}
+            {canInvoice && <MenuItem icon={Receipt} onClick={() => convert(p)}>{p.convertedInvoiceId ? 'View invoice' : 'Create invoice'}</MenuItem>}
+            {canManage && <MenuItem icon={Trash2} danger onClick={() => remove(p)}>Delete</MenuItem>}
+        </Menu>
+    );
 
     return (
         <AdminCommunityHubLayout
-            studioHeader={{
-                title: 'PROPOSAL',
-                subtitle: 'VAULT',
-                accentClass: 'text-neon-green',
-                icon: FileSpreadsheet
-            }}
-            tabs={vaultTabs}
-            accentColor="neon-green"
-            action={
-                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full md:w-auto">
-                    <button 
-                        onClick={() => {
-                            setEditingUploadedProposal(null);
-                            setIsUploadModalOpen(true);
-                        }}
-                        className="w-full sm:w-auto bg-white dark:bg-white/10 hover:bg-black/5 dark:hover:bg-neon-green/20 text-gray-900 dark:text-white hover:text-black dark:hover:text-neon-green border border-black/10 dark:border-white/15 hover:border-black/20 dark:hover:border-neon-green/40 font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-5 md:px-7 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-sm dark:shadow-lg flex items-center justify-center gap-2"
-                    >
-                        <Upload className="h-4 w-4 text-neon-green" /> Upload Proposal
-                    </button>
-                    <Link to="/admin/create-proposal" className="w-full sm:w-auto">
-                        <button className="w-full sm:w-auto bg-neon-green text-black font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-6 md:px-10 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_4px_12px_rgba(57,255,20,0.4)] hover:shadow-[0_8px_24px_rgba(57,255,20,0.6)] flex items-center justify-center">
-                            <Plus className="mr-2 h-4 w-4" /> New Quote
-                        </button>
-                    </Link>
+            studioHeader={{ title: 'Proposals', icon: FileSpreadsheet, accentClass: 'text-emerald-600 dark:text-neon-green', description: 'Quotes, client responses and who has opened what' }}
+            tabs={[
+                ...(canInvoice ? [{ name: 'Invoices', path: '/admin/invoices', icon: FileText }] : []),
+                { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet },
+                { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck },
+            ]}
+            action={(
+                // Phones: the main action gets its own full-width row, the other two share one.
+                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+                    <Button as={Link} to="/admin/create-proposal" variant="primary" className="col-span-2 sm:order-last"><Plus size={14} /> New proposal</Button>
+                    <Button variant="secondary" onClick={() => { setEditingUpload(null); setUploadOpen(true); }}><Upload size={14} /> Add PDF</Button>
+                    <Button as={Link} to="/admin/ai-studio?type=proposal" variant="secondary"><Sparkles size={14} /> Draft with AI</Button>
                 </div>
-            }
+            )}
         >
-            <div className="relative z-10">
-                {/* Combined Search & Filters Bar - Matching Invoice Style */}
-                <div className="bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-2xl md:rounded-[2.5rem] p-1.5 md:p-2 mb-8 md:mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4">
-                    <div className="relative flex-1 w-full group">
-                        <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-neon-green transition-colors" size={18} />
-                        <input 
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search proposals..."
-                            className="w-full bg-transparent h-14 md:h-16 pl-16 md:pl-20 pr-6 md:pr-8 rounded-2xl text-[9px] md:text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
-                        />
-                    </div>
-                    <div className="flex flex-col sm:flex-row items-center gap-2 w-full xl:w-auto">
-                        <div className="flex bg-white dark:bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-black/10 dark:border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
-                            <div className="flex flex-1">
-                                {['All', 'Draft', 'Sent', 'Accepted'].map((s) => (
-                                    <button
-                                        key={s}
-                                        onClick={() => setStatusFilter(s)}
-                                        className={cn(
-                                            "flex-1 px-3 sm:px-6 md:px-10 py-2.5 sm:py-3 rounded-lg md:rounded-xl text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[70px] sm:min-w-[100px] md:min-w-[120px]",
-                                            statusFilter === s 
-                                                ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.5)] scale-[1.02]" 
-                                                : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
-                                        )}
-                                    >
-                                        {s}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+            <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <Kpi icon={Send} tone="blue" label="Sent, not opened" value={counts.sent} hint={kpis.waiting ? `${inr(kpis.pipeline)} awaiting replies` : 'Nothing waiting'} active={filter === 'sent'} onClick={() => setParam('filter', filter === 'sent' ? null : 'sent')} />
+                    <Kpi icon={Eye} tone="violet" label="Viewed, no reply" value={counts.viewed} hint={counts.viewed ? 'Good time to follow up' : 'No open views'} active={filter === 'viewed'} onClick={() => setParam('filter', filter === 'viewed' ? null : 'viewed')} />
+                    <Kpi icon={TrendingUp} tone="green" label="Won this month" value={inr(kpis.wonMonth)} hint={`${counts.accepted} accepted in total`} active={filter === 'accepted'} onClick={() => setParam('filter', filter === 'accepted' ? null : 'accepted')} />
+                    <Kpi icon={Percent} tone="gray" label="Win rate" value={kpis.winRate === null ? '—' : `${kpis.winRate}%`} hint={kpis.decided ? `Of ${kpis.decided} answered` : 'No answers yet'} />
+                </div>
 
-                        {/* View Mode Toggle */}
-                        <div className="flex bg-white dark:bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-black/10 dark:border-white/5 w-full sm:w-auto justify-center">
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                className={cn(
-                                    "flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all duration-300 flex justify-center",
-                                    viewMode === 'grid' ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                )}
-                            >
-                                <LayoutGrid size={16} />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('table')}
-                                className={cn(
-                                    "flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all duration-300 flex justify-center",
-                                    viewMode === 'table' ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                )}
-                            >
-                                <FileText size={16} />
-                            </button>
-                        </div>
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                    <SearchInput value={search} onChange={(v) => { setSearch(v); setLimit(PAGE); }} placeholder="Client, number, campaign or email" className="lg:w-80" />
+                    <div className="flex flex-1 items-center gap-2">
+                        <Select value={sort} onChange={setSort} label="Sort" className="flex-1 lg:w-48 lg:flex-none" options={[
+                            { value: 'newest', label: 'Newest first' },
+                            { value: 'viewed', label: 'Recently viewed' },
+                            { value: 'value', label: 'Largest value' },
+                            { value: 'client', label: 'Client A–Z' },
+                        ]} />
+                        <ExportMenu getSpec={exportSpec} />
+                        <ViewToggle value={view} onChange={setView} />
                     </div>
                 </div>
 
-                {/* Main Content Area: Grid or Table */}
-                <AnimatePresence mode="wait">
-                    {viewMode === 'grid' ? (
-                        <motion.div 
-                            key="grid"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="flex overflow-x-auto lg:overflow-x-visible md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide snap-x snap-mandatory pb-8 md:pb-0"
-                        >
-                            {filteredProposals.map((proposal, i) => (
-                                <motion.div
-                                    key={proposal.id}
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    transition={{ delay: i * 0.05 }}
-                                    className="min-w-[85vw] md:min-w-0 snap-center h-full flex flex-col"
-                                >
-                                    <Card className="group relative p-6 md:p-8 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 transition-all rounded-[2.5rem] h-full flex flex-col justify-between overflow-hidden border">
-                                        <div className="absolute top-0 right-0 p-6 md:p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700 pointer-events-none">
-                                            <FileSpreadsheet size={100} />
-                                        </div>
+                <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+                    <SegmentedTabs
+                        value={filter}
+                        onChange={(v) => { setParam('filter', v === 'all' ? null : v); setLimit(PAGE); }}
+                        items={FILTERS.filter(f => f === 'all' || f === filter || counts[f] > 0).map(f => ({
+                            value: f, label: f === 'all' ? 'All' : PROPOSAL_STATE_LABEL[f].label, count: counts[f], highlight: f === 'viewed' && counts[f] > 0,
+                        }))}
+                    />
+                </div>
 
-                                        <div>
-                                            <div className="flex justify-between items-start mb-6">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-black font-mono tracking-widest text-neon-green bg-neon-green/10 px-3 py-1 rounded-full border border-neon-green/20">
-                                                        {proposal.proposalNumber || 'ID: ' + proposal.id.slice(0, 8)}
-                                                    </span>
-                                                    {proposal.isUploaded && (
-                                                        <span className="text-[9px] font-black tracking-wider text-neon-blue bg-neon-blue/10 px-2 py-0.5 rounded-full border border-neon-blue/20 flex items-center gap-1">
-                                                            <Upload size={10} /> PRE-MADE
-                                                        </span>
-                                                    )}
-                                                    <div className={cn(
-                                                        "w-2 h-2 rounded-full animate-pulse shadow-[0_0_10px_currentColor]",
-                                                        proposal.status === 'Accepted' ? 'text-neon-green bg-neon-green' : 
-                                                        (proposal.status === 'Rejected' ? 'text-red-500 bg-red-500' : 
-                                                        (proposal.status === 'Sent' ? 'text-neon-green bg-neon-green' : 'text-gray-600 bg-gray-600'))
-                                                    )} />
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <button 
-                                                        onClick={() => handleDuplicate(proposal.id)}
-                                                        className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5"
-                                                        title="Duplicate Proposal"
-                                                    >
-                                                        <History size={14} />
-                                                    </button>
-                                                    {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                        <>
-                                                            <button 
-                                                                onClick={() => setSelectedAnalytics(proposal)}
-                                                                className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5"
-                                                                title="View Analytics"
-                                                            >
-                                                                <Activity size={14} />
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => handleDelete(proposal.id)}
-                                                                className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5"
-                                                                title="Delete Proposal"
-                                                            >
-                                                                <Trash2 size={14} />
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <h3 className="text-xl md:text-2xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-1 leading-none">
-                                                {proposal.clientName}
-                                            </h3>
-                                            {proposal.campaignName && (
-                                                <p className="text-gray-500 text-xs font-semibold truncate mb-1">
-                                                    {proposal.campaignName}
-                                                </p>
-                                            )}
-                                            <div className="flex items-center justify-between text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-8">
-                                                <span className="flex items-center gap-1.5"><Calendar size={12} /> {new Date(proposal.createdAt).toLocaleDateString()}</span>
-                                                {(proposal.dealValue || proposal.totalOverride) && (
-                                                    <span className="text-neon-green font-mono font-black">
-                                                        ₹{Number(proposal.dealValue || proposal.totalOverride).toLocaleString('en-IN')}
-                                                    </span>
-                                                )}
-                                            </div>
+                {shown.length === 0 ? (
+                    <Card className="rounded-2xl">
+                        <EmptyState
+                            icon={Inbox}
+                            title={visible.length ? 'No matching proposals' : 'No proposals yet'}
+                            description={visible.length ? 'Try another filter or search.' : 'Build one, or add a PDF you made elsewhere.'}
+                            action={!visible.length && <Button as={Link} to="/admin/create-proposal" variant="primary"><Plus size={14} /> New proposal</Button>}
+                        />
+                    </Card>
+                ) : view === 'cards' ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {shown.map(({ p, state, value, created, viewed, views }) => {
+                            const cfg = PROPOSAL_STATE_LABEL[state];
+                            const expiry = proposalExpiry(p);
+                            return (
+                                <Card key={p.id} className="relative flex flex-col rounded-2xl p-4 transition-colors hover:border-black/15 dark:hover:border-white/15">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            <Badge tone={cfg.tone}>{cfg.label}</Badge>
+                                            {p.isUploaded && <Badge tone="gray">PDF</Badge>}
+                                            {p.convertedInvoiceId && <Badge tone="blue"><Receipt size={10} /> Invoiced</Badge>}
                                         </div>
-
-                                        <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-black/10 dark:border-white/5">
-                                             {proposal.isUploaded ? (
-                                                 <Link to={`/admin/edit-proposal/${proposal.id}`} className="flex-1 min-w-[25%]">
-                                                     <button className="w-full py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-black/10 dark:border-white/5">
-                                                         Edit
-                                                     </button>
-                                                 </Link>
-                                             ) : (
-                                                 <Link to={`/admin/edit-proposal/${proposal.id}`} className="flex-1 min-w-[25%]">
-                                                     <button className="w-full py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-black/10 dark:border-white/5">
-                                                         Edit
-                                                     </button>
-                                                 </Link>
-                                             )}
-                                             <button 
-                                                 onClick={() => handleNativeShare(proposal)}
-                                                 className="flex-1 min-w-[25%] py-3 bg-neon-green/10 hover:bg-neon-green/20 text-neon-green text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-neon-green/10 flex items-center justify-center gap-2"
-                                             >
-                                                 <Share2 size={12} /> Share
-                                             </button>
-                                             <button
-                                                 onClick={() => setEmailModalProposal(proposal)}
-                                                 className="h-12 w-12 bg-black/5 dark:bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5 flex items-center justify-center"
-                                                 title="Email Proposal"
-                                             >
-                                                 <Mail size={16} />
-                                             </button>
-                                             <Link 
-                                                 to={`/proposal/${proposal.id}`} 
-                                                 className="p-3 bg-black/5 dark:bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5 flex items-center justify-center"
-                                             >
-                                                 <Eye size={16} />
-                                             </Link>
-                                        </div>
-                                    </Card>
-                                </motion.div>
-                            ))}
-                            {filteredProposals.length === 0 && (
-                                <div className="col-span-full py-20 text-center border-2 border-dashed border-black/10 dark:border-white/5 rounded-[3rem] p-8 flex flex-col items-center justify-center">
-                                    <FileSpreadsheet className="mx-auto text-gray-800 mb-6" size={64} />
-                                    <h3 className="text-xl font-black font-heading text-gray-600 uppercase italic">No Proposals Found</h3>
-                                    <p className="text-gray-700 text-xs font-bold uppercase tracking-widest mt-2 mb-6">Start by generating your first quotation or host an existing proposal.</p>
-                                    <div className="flex flex-wrap items-center justify-center gap-3">
-                                        <button
-                                            onClick={() => {
-                                                setEditingUploadedProposal(null);
-                                                setIsUploadModalOpen(true);
-                                            }}
-                                            className="px-6 py-3 bg-white dark:bg-white/10 hover:bg-black/5 dark:hover:bg-neon-green/20 text-gray-900 dark:text-white hover:text-black dark:hover:text-neon-green border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-neon-green/40 font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-2"
-                                        >
-                                            <Upload size={14} className="text-neon-green" /> Upload Pre-Made Proposal
+                                        <span className="shrink-0 font-mono text-[11px] text-gray-500">{p.proposalNumber || ''}</span>
+                                    </div>
+                                    <button type="button" onClick={() => setParam('proposal', p.id, true)} className="mt-3 min-w-0 text-left after:absolute after:inset-0">
+                                        <p className="line-clamp-2 text-[17px] font-extrabold leading-snug">{p.clientName || 'Untitled'}</p>
+                                        <p className="mt-0.5 truncate text-[12px] text-gray-500">{p.campaignName || p.fileName || ' '}</p>
+                                    </button>
+                                    <p className="mt-3 text-[22px] font-extrabold tracking-tight tabular-nums">{value ? inr(value) : '—'}</p>
+                                    <div className="mt-1 space-y-0.5 text-[12px] text-gray-500">
+                                        <p>Created {formatDay(created)}</p>
+                                        <p className={cn(viewed && 'font-semibold text-purple-700 dark:text-purple-400')}>{viewed ? `Viewed ${relative(viewed)} · ${views} ${views === 1 ? 'view' : 'views'}` : 'Not opened yet'}</p>
+                                        {expiry && state !== 'accepted' && state !== 'declined' && <p className={cn(state === 'expired' && 'text-amber-600 dark:text-amber-400')}>{state === 'expired' ? 'Expired' : 'Valid until'} {formatDay(expiry)}</p>}
+                                        {state === 'accepted' && p.approvalMetadata?.signedBy && <p className="text-emerald-700 dark:text-neon-green">Signed by {p.approvalMetadata.signedBy}</p>}
+                                    </div>
+                                    <div className="relative z-10 mt-4 flex items-center gap-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+                                        {state === 'accepted' && canInvoice && !p.convertedInvoiceId ? (
+                                            <Button size="sm" variant="primary" onClick={() => convert(p)} className="flex-1"><Receipt size={13} /> Create invoice</Button>
+                                        ) : (
+                                            <Button size="sm" variant="secondary" onClick={() => share(p)} className="flex-1"><Share2 size={13} /> Share</Button>
+                                        )}
+                                        <Button size="sm" as="a" href={`/proposal/${p.id}`} target="_blank" rel="noopener noreferrer" variant="secondary" aria-label="Open proposal" className="w-9 px-0"><ExternalLink size={14} /></Button>
+                                        {actionsMenu(p)}
+                                    </div>
+                                </Card>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <Card className="overflow-hidden rounded-2xl">
+                        <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                            {shown.map(({ p, state, value, created, viewed }) => {
+                                const cfg = PROPOSAL_STATE_LABEL[state];
+                                return (
+                                    <li key={p.id} className="relative flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-black/[0.015] dark:hover:bg-white/[0.02] sm:px-5">
+                                        <button type="button" onClick={() => setParam('proposal', p.id, true)} className="min-w-0 flex-1 text-left after:absolute after:inset-0">
+                                            <span className="flex flex-wrap items-center gap-2">
+                                                <span className="truncate text-[15px] font-bold">{p.clientName || 'Untitled'}</span>
+                                                <Badge tone={cfg.tone}>{cfg.label}</Badge>
+                                                {p.isUploaded && <Badge tone="gray">PDF</Badge>}
+                                            </span>
+                                            <span className="mt-0.5 block truncate text-[12px] text-gray-500">
+                                                {[p.proposalNumber, p.campaignName, formatDay(created), viewed ? `viewed ${relative(viewed)}` : null].filter(Boolean).join(' · ')}
+                                            </span>
                                         </button>
-                                        <Link to="/admin/create-proposal">
-                                            <button className="px-6 py-3 bg-neon-green text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-2">
-                                                <Plus size={14} /> New Quote
-                                            </button>
-                                        </Link>
-                                    </div>
-                                </div>
-                            )}
-                        </motion.div>
-                    ) : (
-                        <motion.div 
-                            key="table"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0"
-                        >
-                            <Card className="md:min-w-[800px] bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border overflow-hidden">
-                                <table className="w-full text-left hidden md:table">
-                                    <thead>
-                                        <tr className="border-b border-black/10 dark:border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
-                                            <th className="p-6 md:p-8">Document</th>
-                                            <th className="p-6 md:p-8">Client</th>
-                                            <th className="p-6 md:p-8">Created</th>
-                                            <th className="p-6 md:p-8">Status</th>
-                                            <th className="p-6 md:p-8 text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {filteredProposals.map((proposal) => (
-                                            <tr key={proposal.id} className="group hover:bg-white/[0.02] transition-colors">
-                                                <td className="p-6 md:p-8">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green group-hover:scale-110 transition-transform">
-                                                            {proposal.isUploaded ? <Upload size={18} className="text-neon-blue" /> : <FileSpreadsheet size={20} />}
-                                                        </div>
-                                                        <div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{proposal.proposalNumber || 'NEWBI-PROP'}</span>
-                                                                {proposal.isUploaded && (
-                                                                    <span className="text-[8px] font-black text-neon-blue bg-neon-blue/10 px-1.5 py-0.5 rounded border border-neon-blue/20">PRE-MADE</span>
-                                                                )}
-                                                            </div>
-                                                            <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">
-                                                                {proposal.isUploaded ? (proposal.fileName || 'PRE-MADE PROPOSAL') : 'STRATEGIC QUOTE'}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="p-6 md:p-8">
-                                                    <div className="text-sm font-black uppercase tracking-tight text-gray-900 dark:text-white">{proposal.clientName}</div>
-                                                </td>
-                                                <td className="p-6 md:p-8">
-                                                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                                                        {new Date(proposal.createdAt).toLocaleDateString()}
-                                                    </div>
-                                                </td>
-                                                <td className="p-6 md:p-8">
-                                                    <div className={cn(
-                                                        "inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em]",
-                                                        proposal.status === 'Accepted' ? 'bg-neon-green/10 text-neon-green' : 
-                                                        (proposal.status === 'Rejected' ? 'bg-red-500/10 text-red-500' : 
-                                                        (proposal.status === 'Sent' ? 'bg-neon-green/10 text-neon-green' : 'bg-gray-600/10 text-gray-600'))
-                                                    )}>
-                                                        {proposal.status}
-                                                    </div>
-                                                </td>
-                                                <td className="p-6 md:p-8">
-                                                     <div className="flex justify-end gap-2">
-                                                         <Link to={`/proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><Eye size={18} /></Link>
-                                                         <button onClick={() => setEmailModalProposal(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors" title="Email Proposal"><Mail size={18} /></button>
-                                                         {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                             <>
-                                                                 <button onClick={() => setSelectedAnalytics(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><Activity size={18} /></button>
-                                                                 <button onClick={() => handleDelete(proposal.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
-                                                             </>
-                                                         )}
-                                                         <button onClick={() => handleDuplicate(proposal.id)} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><History size={18} /></button>
-                                                         <button onClick={() => handleNativeShare(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><Share2 size={18} /></button>
-                                                         {proposal.isUploaded ? (
-                                                             <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors" title="Edit Uploaded Proposal"><Edit size={18} /></Link>
-                                                         ) : (
-                                                             <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={18} /></Link>
-                                                         )}
-                                                     </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-
-                                {/* Mobile Stacked Cards */}
-                                <div className="flex md:hidden flex-col gap-4 p-4">
-                                    {filteredProposals.map((proposal) => (
-                                        <div key={proposal.id} className="bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl p-4 flex flex-col gap-4">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green">
-                                                        {proposal.isUploaded ? <Upload size={18} className="text-neon-blue" /> : <FileSpreadsheet size={20} />}
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{proposal.proposalNumber || 'NEWBI-PROP'}</span>
-                                                            {proposal.isUploaded && (
-                                                                <span className="text-[8px] font-black text-neon-blue bg-neon-blue/10 px-1.5 py-0.5 rounded border border-neon-blue/20">PRE-MADE</span>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">
-                                                            {proposal.isUploaded ? (proposal.fileName || 'PRE-MADE PROPOSAL') : 'STRATEGIC QUOTE'}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
-                                                        {new Date(proposal.createdAt).toLocaleDateString()}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="flex justify-between items-center bg-black/5 dark:bg-white/5 rounded-xl p-3">
-                                                <div className="text-xs font-black uppercase tracking-tight text-gray-900 dark:text-white">{proposal.clientName}</div>
-                                                <div className={cn(
-                                                    "inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em]",
-                                                    proposal.status === 'Accepted' ? 'bg-neon-green/10 text-neon-green' : 
-                                                    (proposal.status === 'Rejected' ? 'bg-red-500/10 text-red-500' : 
-                                                    (proposal.status === 'Sent' ? 'bg-neon-green/10 text-neon-green' : 'bg-gray-600/10 text-gray-600'))
-                                                )}>
-                                                    {proposal.status}
-                                                </div>
-                                            </div>
-
-                                            <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-black/10 dark:border-white/5">
-                                                <Link to={`/proposal/${proposal.id}`} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Eye size={16} /></Link>
-                                                <button onClick={() => setEmailModalProposal(proposal)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-green transition-colors" title="Email Proposal"><Mail size={16} /></button>
-                                                {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                    <>
-                                                        <button onClick={() => setSelectedAnalytics(proposal)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-green transition-colors"><Activity size={16} /></button>
-                                                        <button onClick={() => handleDelete(proposal.id)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                                                    </>
-                                                )}
-                                                <button onClick={() => handleDuplicate(proposal.id)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><History size={16} /></button>
-                                                <button onClick={() => handleNativeShare(proposal)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-green transition-colors"><Share2 size={16} /></button>
-                                                {proposal.isUploaded ? (
-                                                    <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" title="Edit Uploaded Proposal"><Edit size={16} /></Link>
-                                                ) : (
-                                                    <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={16} /></Link>
-                                                )}
-                                            </div>
+                                        <p className="shrink-0 text-right text-[15px] font-extrabold tabular-nums">{value ? inr(value) : '—'}</p>
+                                        <div className="relative z-10 flex shrink-0 items-center gap-1">
+                                            <Button size="sm" variant="secondary" onClick={() => share(p)} aria-label="Share proposal" className="hidden w-9 px-0 sm:inline-flex"><Share2 size={14} /></Button>
+                                            {actionsMenu(p)}
                                         </div>
-                                    ))}
-                                </div>
-                                {filteredProposals.length === 0 && (
-                                    <div className="py-20 text-center flex flex-col items-center gap-4">
-                                        <FileSpreadsheet className="text-gray-700" size={40} />
-                                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-600">No proposals found.</p>
-                                    </div>
-                                )}
-                            </Card>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* Analytics Modal */}
-                {createPortal(
-                    <AnimatePresence>
-                        {selectedAnalytics && (
-                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAnalytics(null)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
-                                <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative w-full max-w-2xl bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden max-h-[90vh] flex flex-col">
-                                <div className="p-6 md:p-8 border-b border-black/10 dark:border-white/5 flex justify-between items-center shrink-0">
-                                    <div>
-                                        <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic">Strategic Analytics.</h3>
-                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">{selectedAnalytics.clientName}</p>
-                                    </div>
-                                    <button onClick={() => setSelectedAnalytics(null)} className="p-2 md:p-3 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"><X size={18} /></button>
-                                </div>
-                                <div className="p-6 md:p-8 overflow-y-auto space-y-6 scrollbar-hide">
-                                    {selectedAnalytics.status === 'Accepted' && selectedAnalytics.approvalMetadata && (
-                                        <div className="space-y-3 md:space-y-4">
-                                            <div className="p-4 md:p-6 bg-neon-green/5 border border-neon-green/20 rounded-2xl flex items-start gap-3 md:gap-4">
-                                                <ShieldCheck className="text-neon-green shrink-0" size={20} />
-                                                <div>
-                                                    <p className="text-[9px] md:text-[10px] font-black text-neon-green uppercase tracking-widest mb-1">Authorization Details</p>
-                                                    <p className="text-[11px] md:text-sm font-bold text-gray-900 dark:text-white mb-2">Signed by {selectedAnalytics.approvalMetadata.signedBy}</p>
-                                                    <div className="flex flex-wrap gap-2 md:gap-4 text-[8px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest">
-                                                        <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(selectedAnalytics.approvalMetadata.signedAt).toLocaleString()}</span>
-                                                        <span className="flex items-center gap-1"><Globe size={10} /> {selectedAnalytics.approvalMetadata.ip}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <button 
-                                                onClick={() => handleRevokeSignature(selectedAnalytics.id)}
-                                                className="w-full py-3 md:py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl md:rounded-2xl border border-red-500/10 transition-all"
-                                            >
-                                                Revoke Authorization
-                                            </button>
-                                        </div>
-                                    )}
-                                    {selectedAnalytics.status === 'Rejected' && selectedAnalytics.rejectionMetadata && (
-                                        <div className="space-y-4">
-                                            <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-start gap-4">
-                                                <X className="text-red-500 shrink-0" size={24} />
-                                                <div>
-                                                    <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">Refusal Context</p>
-                                                    <p className="text-sm font-bold text-gray-900 dark:text-white mb-2">{selectedAnalytics.rejectionMetadata.reason}</p>
-                                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1">
-                                                        <Calendar size={10} /> {new Date(selectedAnalytics.rejectionMetadata.rejectedAt).toLocaleString()}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <button 
-                                                onClick={() => handleRevokeSignature(selectedAnalytics.id)}
-                                                className="w-full py-4 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-black/10 dark:border-white/5 transition-all"
-                                            >
-                                                Reset to Active
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    <div className="space-y-4">
-                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Recent Access Events</p>
-                                        
-                                        <div className="flex border-b border-black/10 dark:border-white/10">
-                                            <button 
-                                                onClick={() => setActiveAnalyticsTab('email')}
-                                                className={cn(
-                                                    "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2",
-                                                    activeAnalyticsTab === 'email' 
-                                                        ? "border-neon-green text-neon-green bg-neon-green/5" 
-                                                        : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                                )}
-                                            >
-                                                Email Opens (Personalized)
-                                            </button>
-                                            <button 
-                                                onClick={() => setActiveAnalyticsTab('general')}
-                                                className={cn(
-                                                    "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2",
-                                                    activeAnalyticsTab === 'general' 
-                                                        ? "border-neon-green text-neon-green bg-neon-green/5" 
-                                                        : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                                )}
-                                            >
-                                                Direct / Link Opens
-                                            </button>
-                                        </div>
-
-                                        {(() => {
-                                            const logs = selectedAnalytics.accessLogs || [];
-                                            const emailLogs = logs.filter(log => log.via === 'email');
-                                            const generalLogs = logs.filter(log => log.via !== 'email');
-                                            const activeLogs = activeAnalyticsTab === 'email' ? emailLogs : generalLogs;
-
-                                            if (activeLogs.length > 0) {
-                                                return (
-                                                    <div className="space-y-3">
-                                                        {[...activeLogs].reverse().map((log, i) => {
-                                                            const device = getDeviceDetails(log.userAgent);
-                                                            return (
-                                                                <div key={i} className="p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-xl space-y-3 group hover:bg-white/[0.05] transition-all">
-                                                                    <div className="flex items-start justify-between">
-                                                                        <div className="flex items-center gap-3">
-                                                                            <div className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400">
-                                                                                {activeAnalyticsTab === 'email' ? <Mail size={14} /> : <Globe size={14} />}
-                                                                            </div>
-                                                                            <div>
-                                                                                {activeAnalyticsTab === 'email' ? (
-                                                                                    <>
-                                                                                        <p className="text-[11px] font-bold text-gray-900 dark:text-white">
-                                                                                            {log.shareName || 'Anonymous Email Recipient'}
-                                                                                        </p>
-                                                                                        <p className="text-[9px] font-semibold text-gray-600 dark:text-gray-400 mt-0.5">
-                                                                                            {log.shareEmail || 'No email log'}
-                                                                                        </p>
-                                                                                    </>
-                                                                                ) : (
-                                                                                    <>
-                                                                                        <p className="text-[11px] font-bold text-gray-900 dark:text-white">
-                                                                                            {log.via === 'whatsapp' ? 'WhatsApp Link Share' : log.via === 'link' ? 'Direct Copy Link' : log.via === 'share' ? 'Native Device Share' : 'General Link Access'}
-                                                                                        </p>
-                                                                                        {log.shareEmail && (
-                                                                                            <p className="text-[9px] font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
-                                                                                                {log.shareEmail}
-                                                                                            </p>
-                                                                                        )}
-                                                                                    </>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="text-right">
-                                                                            <p className="text-[10px] font-black text-neon-green uppercase tracking-widest">
-                                                                                {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                            </p>
-                                                                            <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
-                                                                                {new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-black/10 dark:border-white/5 text-[9px] text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider">
-                                                                        <div>
-                                                                            <span className="text-gray-600 font-bold block text-[8px]">IP ADDRESS</span>
-                                                                            <span className="text-gray-900 dark:text-white font-mono">{log.ip || 'Protected'}</span>
-                                                                        </div>
-                                                                        <div>
-                                                                            <span className="text-gray-600 font-bold block text-[8px]">DEVICE / RESOLUTION</span>
-                                                                            <span>{device.type} ({device.os}) - {device.browser} - {log.screen || 'N/A'}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                );
-                                            } else {
-                                                return (
-                                                    <div className="py-12 text-center border border-dashed border-black/10 dark:border-white/10 rounded-2xl">
-                                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
-                                                            {activeAnalyticsTab === 'email' ? 'No email opens recorded.' : 'No general link views recorded.'}
-                                                        </p>
-                                                    </div>
-                                                );
-                                            }
-                                        })()}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        </div>
-                    )}
-                </AnimatePresence>,
-                document.body
-            )}
-
-            {/* Unified Share Modal */}
-            {createPortal(
-                <AnimatePresence>
-                    {sharingProposal && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSharingProposal(null)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
-                            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative w-full max-w-sm bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[3rem] overflow-hidden">
-                                <div className="p-8 text-center space-y-1 border-b border-black/10 dark:border-white/5">
-                                    <h3 className="text-2xl font-black uppercase tracking-[0.2em] italic">SHARE</h3>
-                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{sharingProposal.clientName}</p>
-                                </div>
-
-                                <div className="p-8 grid grid-cols-1 gap-3">
-                                    <button 
-                                        onClick={() => { handleCopyLink(sharingProposal.id); setSharingProposal(null); }}
-                                        className="p-4 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-4 transition-all group"
-                                    >
-                                        <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green group-hover:scale-110 transition-transform"><Copy size={16} /></div>
-                                        <div className="text-left">
-                                            <p className="text-[11px] font-black uppercase tracking-widest">Copy Link</p>
-                                        </div>
-                                    </button>
-
-                                    <button 
-                                        onClick={() => { handleWhatsAppShare(sharingProposal); setSharingProposal(null); }}
-                                        className="p-4 bg-black/5 dark:bg-white/5 hover:bg-[#25D366]/10 border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-4 transition-all group"
-                                    >
-                                        <div className="w-10 h-10 rounded-xl bg-[#25D366]/10 flex items-center justify-center text-[#25D366] group-hover:scale-110 transition-transform"><MessageCircle size={16} /></div>
-                                        <div className="text-left">
-                                            <p className="text-[11px] font-black uppercase tracking-widest">WhatsApp</p>
-                                        </div>
-                                    </button>
-
-                                    <button 
-                                        onClick={() => { handleSendEmail(sharingProposal); setSharingProposal(null); }}
-                                        className="p-4 bg-black/5 dark:bg-white/5 hover:bg-neon-green/10 border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-4 transition-all group"
-                                    >
-                                        <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green group-hover:scale-110 transition-transform"><Send size={16} /></div>
-                                        <div className="text-left">
-                                            <p className="text-[11px] font-black uppercase tracking-widest">Email</p>
-                                        </div>
-                                    </button>
-                                </div>
-
-                                <button onClick={() => setSharingProposal(null)} className="w-full py-5 text-[9px] font-black uppercase tracking-[0.4em] text-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors bg-white/[0.02]">
-                                    Cancel
-                                </button>
-                            </motion.div>
-                        </div>
-                    )}
-                </AnimatePresence>,
-                document.body
-            )}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </Card>
+                )}
+                {rows.length > limit && (
+                    <div className="text-center">
+                        <Button variant="ghost" onClick={() => setLimit(l => l + PAGE)}>Show {Math.min(PAGE, rows.length - limit)} more of {rows.length - limit}</Button>
+                    </div>
+                )}
             </div>
 
-            {/* Proposal Email Modal */}
+            <ProposalDetailPanel
+                proposalId={openId}
+                onClose={() => setParam('proposal', null)}
+                canManage={canManage}
+                canInvoice={canInvoice}
+                onEdit={edit}
+                onEmail={setEmailProposal}
+                onShare={share}
+                onWhatsApp={whatsapp}
+                onDuplicate={duplicate}
+                onDelete={remove}
+                onConvert={convert}
+            />
             <AnimatePresence>
-                {emailModalProposal && (
-                    <ProposalEmailModal
-                        isOpen={!!emailModalProposal}
-                        onClose={() => setEmailModalProposal(null)}
-                        proposal={emailModalProposal}
-                        onSend={handleDispatchEmail}
-                    />
+                {emailProposal && (
+                    <ProposalEmailModal isOpen={Boolean(emailProposal)} onClose={() => setEmailProposal(null)} proposal={emailProposal} onSend={sendEmail} />
                 )}
             </AnimatePresence>
-
-            {/* Upload Pre-Made Proposal Modal */}
-            <AnimatePresence>
-                {isUploadModalOpen && (
-                    <UploadProposalModal
-                        isOpen={isUploadModalOpen}
-                        onClose={() => {
-                            setIsUploadModalOpen(false);
-                            setEditingUploadedProposal(null);
-                        }}
-                        onSuccess={(id) => {
-                            navigate(`/proposal/${id}`);
-                        }}
-                        editingProposal={editingUploadedProposal}
-                    />
-                )}
-            </AnimatePresence>
+            <UploadProposalModal
+                isOpen={uploadOpen}
+                onClose={() => { setUploadOpen(false); setEditingUpload(null); }}
+                onSuccess={(id) => { setUploadOpen(false); setEditingUpload(null); if (id) setParam('proposal', id, true); }}
+                editingProposal={editingUpload}
+            />
         </AdminCommunityHubLayout>
     );
 };

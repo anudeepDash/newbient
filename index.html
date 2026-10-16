@@ -14,22 +14,25 @@
         } else {
           document.documentElement.classList.remove('dark');
         }
-        var metaThemes = document.querySelectorAll('meta[name="theme-color"]');
-        for (var i = 0; i < metaThemes.length; i++) {
-          metaThemes[i].setAttribute('content', isDark ? '#000000' : '#F8F9FA');
-        }
+        // First paint: match the page background (refined per page once the app runs).
+        var isAdmin = location.pathname.indexOf('/admin') === 0;
+        if (isAdmin) document.documentElement.classList.add('admin-route');
+        window.__nbFirstChrome = isAdmin ? (isDark ? '#07080b' : '#f6f7f9') : (isDark ? '#000000' : '#F8F9FA');
       } catch(e) {}
     })();
   </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
   
-  <!-- Safari & Mobile Browser Title Bar / Status Bar Color Integration -->
-  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
-  <meta name="theme-color" content="#F8F9FA" media="(prefers-color-scheme: light)" />
+  <!-- Browser chrome colour: one tag, set from the page's own top colour (src/hooks/useSafariChrome.js) -->
+  <meta name="theme-color" content="#F8F9FA" />
+  <script>try { document.querySelector('meta[name="theme-color"]').setAttribute('content', window.__nbFirstChrome || '#F8F9FA'); } catch (e) {}</script>
+  <meta name="color-scheme" content="light dark" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <!-- "default" keeps content below the status bar in the home-screen app; its colour follows theme-color -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="apple-mobile-web-app-title" content="Newbi" />
   <title>Newbi Entertainment &amp; Marketing</title>
   <meta name="description" content="Newbi Entertainment connects brands, colleges, and creators through talent management, live events, influencer marketing, and experiential campaigns." />

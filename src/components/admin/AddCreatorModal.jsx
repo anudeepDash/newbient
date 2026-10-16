@@ -1,45 +1,24 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { motion } from 'framer-motion';
-import { 
-    X, Phone, Mail, MapPin, Instagram, Youtube, Twitter, Linkedin,
-    Camera, Check, Loader2, Building2, IndianRupee, Layers, 
-    Banknote, Handshake, CheckCircle2, RefreshCw, 
-    Pencil, AlertCircle, Sparkles, User, GraduationCap, BookOpen, 
-    Shirt, Gamepad2, Compass, Heart, Dumbbell, Utensils, Smile, 
-    Home, Video, Car, Palette, Music, Users, Mic, Flame, Rocket, 
-    TrendingUp, ChevronRight, ChevronLeft
-} from 'lucide-react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import X from 'lucide-react/dist/esm/icons/x';
+import Check from 'lucide-react/dist/esm/icons/check';
+import Camera from 'lucide-react/dist/esm/icons/camera';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import User from 'lucide-react/dist/esm/icons/user';
 import { useStore } from '../../lib/store';
 import { cn, normalizePhoneNumber } from '../../lib/utils';
 import { extractSocialUsername, hasDisallowedLink } from '../../lib/socialUtils';
-import { PREDEFINED_CITIES, isCollegeNiche } from '../../lib/constants';
+import { PREDEFINED_CITIES, CREATOR_NICHE_OPTIONS, isCollegeNiche } from '../../lib/constants';
 import { requestAutoLocation } from '../../lib/location';
-
-// 21 Rich Niche Definitions with matching icons from Creator Registration
-const NICHE_OPTIONS = [
-    { id: 'City Pages', label: 'City Pages / Local Hubs', icon: Building2 },
-    { id: 'College Pages', label: 'College Pages / Hubs', icon: GraduationCap },
-    { id: 'Student/Campus Creator', label: 'Campus & College', icon: BookOpen },
-    { id: 'Fashion & Luxury', label: 'Fashion & Luxury', icon: Shirt },
-    { id: 'Tech & Gaming', label: 'Tech & Gaming', icon: Gamepad2 },
-    { id: 'Travel & Lifestyle', label: 'Travel & Lifestyle', icon: Compass },
-    { id: 'Beauty & Fitness', label: 'Beauty & Cosmetics', icon: Heart },
-    { id: 'Fitness & Sports', label: 'Fitness & Athletics', icon: Dumbbell },
-    { id: 'Food & Beverage', label: 'Food & Dining', icon: Utensils },
-    { id: 'Comedy & Entertainment', label: 'Comedy & Memes', icon: Smile },
-    { id: 'Real Estate', label: 'Real Estate & Living', icon: Home },
-    { id: 'Photography & Filmmaking', label: 'Photo & Filmmaking', icon: Video },
-    { id: 'Automotive & Moto', label: 'Auto & Motovlogging', icon: Car },
-    { id: 'Art & Design', label: 'Art, Design & DIY', icon: Palette },
-    { id: 'Music & Dance', label: 'Music & Dance', icon: Music },
-    { id: 'Parenting & Family', label: 'Parenting & Family', icon: Users },
-    { id: 'Podcasts & Media', label: 'Podcasts & Media', icon: Mic },
-    { id: 'Meme & Pop Culture', label: 'Meme & Pop Culture', icon: Flame },
-    { id: 'Startup & Entrepreneurship', label: 'Startup & Founder', icon: Rocket },
-    { id: 'Finance & Business', label: 'Finance & Career', icon: TrendingUp },
-    { id: 'Others', label: 'Other Specialization', icon: Layers }
-];
+import Sheet from './Sheet';
+import { Button } from './ui';
+import { Field, Section, Toggle, Choice, fieldCls, areaCls } from './uploads/UploadKit';
+import ThemedSelect from './ThemedSelect';
 
 const POPULAR_CITIES = [
     'Bengaluru',
@@ -60,11 +39,23 @@ const COUNTRY_OPTIONS = [
     { value: '+61', label: '+61 (AU)' }
 ];
 
-const TABS = [
-    { id: 'identity', label: '1. Identity & City' },
-    { id: 'niche', label: '2. Niche & Category' },
-    { id: 'socials', label: '3. Instagram & Socials' },
-    { id: 'rates', label: '4. Rates & Collab' },
+const COLLAB_OPTIONS = [
+    { value: 'both', label: 'Paid or barter', hint: 'Open to both' },
+    { value: 'paid', label: 'Paid only' },
+    { value: 'barter', label: 'Barter', hint: 'Barter and gigs' }
+];
+
+const RATE_PRESETS = [
+    { label: 'Flexible / barter', min: 0, max: 0, flex: true },
+    { label: '₹2K – ₹8K', min: 2000, max: 8000 },
+    { label: '₹8K – ₹20K', min: 8000, max: 20000 },
+    { label: '₹20K – ₹50K', min: 20000, max: 50000 },
+    { label: '₹50K – ₹1L+', min: 50000, max: 100000 }
+];
+
+const STATUS_OPTIONS = [
+    { value: 'approved', label: 'Verified', hint: 'Can join campaigns now' },
+    { value: 'pending', label: 'Pending review', hint: 'Check them first' }
 ];
 
 const formatINR = (amt) => {
@@ -79,10 +70,41 @@ const formatFollowerDisplay = (num) => {
     return val.toLocaleString('en-IN');
 };
 
+const rateLabel = (min, max) => `${formatINR(min)} – ${formatINR(max)}${max >= 100000 ? '+' : ''} / Deliverable`;
+
+const chipCls = (active) => cn(
+    'inline-flex min-h-10 items-center rounded-xl border px-3.5 py-1.5 text-left text-[13px] font-semibold transition-colors',
+    active
+        ? 'border-emerald-500/60 bg-neon-green/[0.08] text-gray-900 dark:border-neon-green/50 dark:text-white'
+        : 'border-black/10 text-gray-700 hover:border-black/20 dark:border-white/10 dark:text-zinc-300 dark:hover:border-white/20'
+);
+
+const linkBtnCls = 'inline-flex h-10 items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold text-emerald-700 hover:bg-black/5 disabled:opacity-50 dark:text-neon-green dark:hover:bg-white/5';
+
+const Label = ({ children, optional }) => (
+    <p className="mb-1 flex items-center gap-1.5 text-[12px] font-bold text-gray-500">
+        {children}
+        {optional && <span className="font-medium">(optional)</span>}
+    </p>
+);
+
+const Warning = ({ children }) => (
+    <p className="mt-1 flex items-start gap-1.5 text-[12px] font-semibold text-amber-600 dark:text-amber-400">
+        <AlertCircle size={13} className="mt-px shrink-0" /> <span>{children}</span>
+    </p>
+);
+
+// One titled block of the form. Sections are separated by a hairline and can be scrolled to.
+const Block = React.forwardRef(({ title, hint, children }, ref) => (
+    <div ref={ref} className="border-t border-black/[0.06] pt-6 first:border-t-0 first:pt-0 dark:border-white/[0.06]">
+        <Section title={title} hint={hint}>{children}</Section>
+    </div>
+));
+Block.displayName = 'Block';
+
 const AddCreatorModal = ({ onClose, onCreated }) => {
     const { addCreator, creators, uploadToCloudinary, addToast, siteSettings } = useStore();
 
-    const [activeTab, setActiveTab] = useState('identity');
     const [isSaving, setIsSaving] = useState(false);
     const [sendWelcomeMail, setSendWelcomeMail] = useState(false);
     const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -101,8 +123,10 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
     const [rateMax, setRateMax] = useState(25000);
     const [isRateFlexible, setIsRateFlexible] = useState(false);
 
-    const minInstagramFollowers = siteSettings?.minInstagramFollowersToJoin !== undefined 
-        ? Number(siteSettings.minInstagramFollowersToJoin) 
+    const sectionRefs = useRef({});
+
+    const minInstagramFollowers = siteSettings?.minInstagramFollowersToJoin !== undefined
+        ? Number(siteSettings.minInstagramFollowersToJoin)
         : 1000;
 
     const [form, setForm] = useState({
@@ -130,22 +154,17 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
         profileStatus: 'approved'
     });
 
-    // Close on Escape key
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (e.key === 'Escape') onClose?.();
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose]);
-
-    // Prevent body scrolling while modal is open
-    useEffect(() => {
-        const originalOverflow = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
-        return () => {
-            document.body.style.overflow = originalOverflow;
-        };
+    // Scroll the sheet body to a section (used when a check fails).
+    const goToSection = useCallback((id) => {
+        const el = sectionRefs.current[id];
+        if (!el) return;
+        const scroller = el.closest('.overflow-y-auto');
+        if (!scroller) {
+            el.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+            return;
+        }
+        const top = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+        scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
     }, []);
 
     // Real-time duplicate alerts matching CreatorJoin
@@ -214,7 +233,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
         setInstagramVerificationError('');
 
         try {
-            const isLocal = typeof window !== 'undefined' && 
+            const isLocal = typeof window !== 'undefined' &&
                 (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
             const res = await fetch(`/api/creator-join?action=verify-instagram&handle=${encodeURIComponent(cleanHandle)}`);
@@ -285,7 +304,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
             addToast(`Instagram verified: @${data.handle} has ${count.toLocaleString()} followers.`, 'success');
         } catch (err) {
             console.warn("Instagram verification error:", err);
-            const isLocal = typeof window !== 'undefined' && 
+            const isLocal = typeof window !== 'undefined' &&
                 (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
             if (isLocal) {
                 const mockFollowers = Math.max(minInstagramFollowers || 1000, 3200);
@@ -336,6 +355,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
 
     const handleImageUpload = async (e) => {
         const file = e.target.files?.[0];
+        e.target.value = '';
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             addToast("This image is too large. Please choose one under 10MB.", "error");
@@ -360,42 +380,54 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
         }
     };
 
+    const pickRatePreset = (preset) => {
+        if (preset.flex) {
+            setIsRateFlexible(true);
+            setForm(p => ({ ...p, commercials: 'Flexible / Barter' }));
+        } else {
+            setIsRateFlexible(false);
+            setRateMin(preset.min);
+            setRateMax(preset.max);
+            setForm(p => ({ ...p, commercials: rateLabel(preset.min, preset.max) }));
+        }
+    };
+
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
 
         if (!form.name.trim()) {
-            setActiveTab('identity');
+            goToSection('identity');
             addToast("Please enter the creator's full name.", "error");
             return;
         }
 
         if (!form.city) {
-            setActiveTab('identity');
+            goToSection('city');
             addToast("Please select the creator's city.", "error");
             return;
         }
 
         if (form.city === 'Others' && !form.customCity?.trim()) {
-            setActiveTab('identity');
+            goToSection('city');
             addToast("Please enter the city name.", "error");
             return;
         }
 
         if (!form.categories) {
-            setActiveTab('niche');
+            goToSection('niche');
             addToast("Please select the creator's main niche.", "error");
             return;
         }
 
         if (form.categories === 'Others' && !form.customNiche?.trim()) {
-            setActiveTab('niche');
+            goToSection('niche');
             addToast("Please enter the content niche.", "error");
             return;
         }
 
         const showCollege = isCollegeNiche(form.categories);
         if (showCollege && !form.collegeName?.trim()) {
-            setActiveTab('niche');
+            goToSection('niche');
             addToast("Please enter the college or university name.", "error");
             return;
         }
@@ -403,7 +435,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
         for (const field of ['instagram', 'linkedin', 'youtube', 'twitter']) {
             const val = form[field]?.trim();
             if (val && hasDisallowedLink(val)) {
-                setActiveTab('socials');
+                goToSection(field === 'instagram' ? 'socials' : 'platforms');
                 addToast(`Please enter just the ${field} username, not a link.`, 'error');
                 return;
             }
@@ -415,7 +447,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
             if (normPhone && creators?.length > 0) {
                 const existing = creators.find(c => normalizePhoneNumber(c.phone) === normPhone);
                 if (existing) {
-                    setActiveTab('identity');
+                    goToSection('contact');
                     addToast(`This phone number already belongs to ${existing.name || existing.displayName} (${existing.email || 'existing creator'}).`, 'error');
                     return;
                 }
@@ -424,9 +456,9 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
 
         if (form.email?.trim()) {
             const normEmail = form.email.trim().toLowerCase();
-            const existing = creators.find(c => c.email && c.email.trim().toLowerCase() === normEmail);
+            const existing = (creators || []).find(c => c.email && c.email.trim().toLowerCase() === normEmail);
             if (existing) {
-                setActiveTab('identity');
+                goToSection('contact');
                 addToast(`This email already belongs to ${existing.name || existing.displayName}.`, 'error');
                 return;
             }
@@ -434,23 +466,23 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
 
         if (form.instagram?.trim()) {
             const cleanInsta = form.instagram.trim().replace(/^@/, '').toLowerCase();
-            const existing = creators.find(c => c.instagram && c.instagram.trim().replace(/^@/, '').toLowerCase() === cleanInsta);
+            const existing = (creators || []).find(c => c.instagram && c.instagram.trim().replace(/^@/, '').toLowerCase() === cleanInsta);
             if (existing) {
-                setActiveTab('socials');
+                goToSection('socials');
                 addToast(`Instagram @${cleanInsta} already belongs to ${existing.name || existing.displayName}.`, 'error');
                 return;
             }
 
             const isVerified = Boolean(instagramVerifiedData && instagramVerifiedData.handle === cleanInsta);
             if (!isVerified && !form.instagramFollowers?.trim() && !isManualFollowerEntry) {
-                setActiveTab('socials');
+                goToSection('socials');
                 addToast("Please verify the Instagram handle or enter the follower count.", 'warning');
                 return;
             }
         }
 
         if (sendWelcomeMail && !form.email?.trim()) {
-            setActiveTab('rates');
+            goToSection('contact');
             addToast("Add an email address so we can send the welcome email.", 'error');
             return;
         }
@@ -474,7 +506,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
             const fullPhone = cleanPhoneDigits ? `${countryCode} ${cleanPhoneDigits}` : '';
 
             const isInstaVerified = Boolean(
-                instagramVerifiedData && 
+                instagramVerifiedData &&
                 instagramVerifiedData.handle === cleanInstagram.toLowerCase()
             );
             const finalFollowers = String(
@@ -531,972 +563,499 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
         }
     };
 
-    return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 md:p-8 bg-black/75 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-            {/* Backdrop click */}
-            <div className="fixed inset-0 bg-black/60 dark:bg-black/80" onClick={onClose} />
+    const igHandle = form.instagram?.trim().replace(/^@/, '').toLowerCase();
+    const igMatchesVerified = Boolean(instagramVerifiedData && instagramVerifiedData.handle === igHandle);
+    const hasEmail = Boolean(form.email?.trim());
+    const cityChoices = showAllCities ? PREDEFINED_CITIES.filter(c => c !== 'Others') : POPULAR_CITIES;
+    const setRef = (id) => (el) => { sectionRefs.current[id] = el; };
 
-            {/* Modal Dialog */}
-            <motion.div 
-                initial={{ scale: 0.96, opacity: 0, y: 10 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.96, opacity: 0, y: 10 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="relative bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl w-full max-w-3xl max-h-[92dvh] flex flex-col shadow-2xl z-10 overflow-hidden"
-            >
-                {/* ── Top Header Bar ── */}
-                <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-black/[0.06] dark:border-white/[0.08] bg-gray-50/50 dark:bg-white/[0.02]">
-                    <div className="min-w-0 pr-4">
-                        <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded-md bg-neon-green/10 text-emerald-600 dark:text-neon-green text-[10px] font-black uppercase tracking-wider border border-neon-green/20">
-                                Admin Onboarding
-                            </span>
-                            <span className="text-[10px] font-mono text-gray-400 dark:text-zinc-500 uppercase tracking-widest hidden sm:inline">
-                                Network Verification
+    const footer = (
+        <div className="flex gap-2">
+            <Button variant="ghost" onClick={onClose} className="h-12">Cancel</Button>
+            <Button variant="primary" onClick={handleSubmit} disabled={isSaving || isUploadingPhoto} className="h-12 flex-1">
+                {isSaving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
+                {isSaving ? 'Adding…' : isUploadingPhoto ? 'Uploading photo…' : 'Add creator'}
+            </Button>
+        </div>
+    );
+
+    return (
+        <Sheet
+            open
+            onClose={onClose}
+            size="lg"
+            title="Add creator"
+            subtitle="Add someone to the network yourself. Name, city and niche are required."
+            footer={footer}
+        >
+            <form id="add-creator-form" onSubmit={(e) => e.preventDefault()} noValidate className="space-y-6">
+
+                {/* Profile */}
+                <Block ref={setRef('identity')} title="Profile">
+                    <div className="flex items-center gap-4">
+                        <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-black/10 bg-black/[0.03] dark:border-white/10 dark:bg-white/[0.04]">
+                            {form.profilePicture ? (
+                                <img src={form.profilePicture} alt="" className="h-full w-full object-cover" />
+                            ) : form.name?.trim() ? (
+                                <span className="text-2xl font-extrabold text-emerald-700 dark:text-neon-green">{form.name.trim().charAt(0).toUpperCase()}</span>
+                            ) : (
+                                <User size={26} className="text-gray-400" />
+                            )}
+                            {isUploadingPhoto && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                                    <Loader2 size={18} className="animate-spin text-white" />
+                                </div>
+                            )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <label className={cn('inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-black/10 px-3.5 text-[13px] font-semibold hover:border-black/25 dark:border-white/10 dark:hover:border-white/25', isUploadingPhoto && 'pointer-events-none opacity-50')}>
+                                    <Camera size={15} /> {isUploadingPhoto ? 'Uploading…' : form.profilePicture ? 'Change photo' : 'Upload photo'}
+                                    <input type="file" accept="image/*" className="hidden" disabled={isUploadingPhoto} onChange={handleImageUpload} />
+                                </label>
+                                {form.profilePicture && !isUploadingPhoto && (
+                                    <button type="button" onClick={() => setForm(p => ({ ...p, profilePicture: '' }))} className="h-10 rounded-xl px-3 text-[13px] font-semibold text-red-500 hover:bg-red-500/10">
+                                        Remove
+                                    </button>
+                                )}
+                            </div>
+                            <p className="mt-1.5 text-[12px] text-gray-500">Optional. We use their Instagram photo once the handle is verified.</p>
+                        </div>
+                    </div>
+
+                    <Field label="Full name">
+                        <input
+                            type="text"
+                            name="name"
+                            value={form.name}
+                            onChange={handleChange}
+                            autoComplete="off"
+                            placeholder="e.g. Aisha Sharma"
+                            className={fieldCls}
+                        />
+                    </Field>
+                </Block>
+
+                {/* Contact */}
+                <Block ref={setRef('contact')} title="Contact" hint="Used for campaign updates and WhatsApp.">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="min-w-0">
+                            <Field label="Email" optional>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    inputMode="email"
+                                    autoCapitalize="off"
+                                    autoCorrect="off"
+                                    value={form.email}
+                                    onChange={handleChange}
+                                    placeholder="creator@email.com"
+                                    className={fieldCls}
+                                />
+                            </Field>
+                            {duplicateWarnings.email && <Warning>{duplicateWarnings.email}</Warning>}
+                        </div>
+                        <div className="min-w-0">
+                            <Label optional>WhatsApp / phone</Label>
+                            <div className="flex gap-2">
+                                <ThemedSelect
+                                    value={countryCode}
+                                    onChange={(e) => setCountryCode(e.target.value)}
+                                    aria-label="Country code"
+                                    className={cn(fieldCls, 'w-[84px] shrink-0 cursor-pointer px-2.5')}
+                                >
+                                    {COUNTRY_OPTIONS.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.value}</option>
+                                    ))}
+                                </ThemedSelect>
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    inputMode="tel"
+                                    value={form.phone}
+                                    onChange={handleChange}
+                                    placeholder="98765 43210"
+                                    aria-label="Phone number"
+                                    className={cn(fieldCls, 'min-w-0 flex-1')}
+                                />
+                            </div>
+                            {duplicateWarnings.phone && <Warning>{duplicateWarnings.phone}</Warning>}
+                        </div>
+                    </div>
+                </Block>
+
+                {/* City */}
+                <Block ref={setRef('city')} title="City" hint="The city they create content in.">
+                    <div className="flex flex-wrap gap-2">
+                        {cityChoices.map(city => (
+                            <button key={city} type="button" onClick={() => setForm(p => ({ ...p, city }))} className={chipCls(form.city === city)}>
+                                {city}
+                            </button>
+                        ))}
+                        {/* A detected city outside the visible chips still shows as selected. */}
+                        {form.city && form.city !== 'Others' && !cityChoices.includes(form.city) && (
+                            <button type="button" className={chipCls(true)}>{form.city}</button>
+                        )}
+                        <button type="button" onClick={() => setForm(p => ({ ...p, city: 'Others' }))} className={chipCls(form.city === 'Others')}>
+                            Other city
+                        </button>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1">
+                        <button type="button" onClick={() => setShowAllCities(v => !v)} className={linkBtnCls}>
+                            {showAllCities ? 'Show fewer cities' : 'Show all cities'}
+                        </button>
+                        <button type="button" onClick={handleAutoDetectLocation} disabled={isLocatingCity} className={linkBtnCls}>
+                            {isLocatingCity ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
+                            {isLocatingCity ? 'Finding location…' : 'Use my location'}
+                        </button>
+                    </div>
+                    {form.city === 'Others' && (
+                        <Field label="City name">
+                            <input
+                                type="text"
+                                name="customCity"
+                                value={form.customCity}
+                                onChange={handleChange}
+                                placeholder="e.g. Chandigarh, Bhopal, Surat"
+                                className={fieldCls}
+                            />
+                        </Field>
+                    )}
+                </Block>
+
+                {/* Niche */}
+                <Block ref={setRef('niche')} title="Niche" hint="Used to match them with brand campaigns.">
+                    <div className="flex flex-wrap gap-2">
+                        {CREATOR_NICHE_OPTIONS.map(niche => (
+                            <button
+                                key={niche.id}
+                                type="button"
+                                onClick={() => setForm(p => ({ ...p, categories: niche.id }))}
+                                aria-pressed={form.categories === niche.id}
+                                className={chipCls(form.categories === niche.id)}
+                            >
+                                {niche.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {form.categories === 'Others' && (
+                        <Field label="Niche name">
+                            <input
+                                type="text"
+                                name="customNiche"
+                                value={form.customNiche}
+                                onChange={handleChange}
+                                placeholder="e.g. Sustainable fashion, AI tools, DIY crafts"
+                                className={fieldCls}
+                            />
+                        </Field>
+                    )}
+
+                    {form.categories === 'City Pages' && (
+                        <Field label="Page focus" optional hint="The area or theme the page covers.">
+                            <input
+                                type="text"
+                                name="cityPageFocus"
+                                value={form.cityPageFocus}
+                                onChange={handleChange}
+                                placeholder="e.g. Bangalore nightlife, South Delhi food"
+                                className={fieldCls}
+                            />
+                        </Field>
+                    )}
+
+                    {isCollegeNiche(form.categories) && (
+                        <Field
+                            label={form.categories === 'College Pages' ? 'College this page represents' : 'College or university'}
+                            hint="Required for campus creators and college pages. Used for campus programs and fest passes."
+                        >
+                            <input
+                                id="admin-creator-college"
+                                type="text"
+                                name="collegeName"
+                                value={form.collegeName}
+                                onChange={handleChange}
+                                placeholder="e.g. Christ University, IIT Bombay"
+                                className={fieldCls}
+                            />
+                        </Field>
+                    )}
+                </Block>
+
+                {/* Instagram */}
+                <Block ref={setRef('socials')} title="Instagram" hint="Verify the handle to fetch the follower count and profile photo.">
+                    <div>
+                        <Label optional>Instagram handle</Label>
+                        <div className="flex gap-2">
+                            <div className="relative min-w-0 flex-1">
+                                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[15px] font-semibold text-gray-400">@</span>
+                                <input
+                                    type="text"
+                                    name="instagram"
+                                    value={form.instagram}
+                                    onChange={handleInstagramChange}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleVerifyInstagram();
+                                        }
+                                    }}
+                                    placeholder="handle"
+                                    aria-label="Instagram handle"
+                                    autoCapitalize="none"
+                                    autoCorrect="off"
+                                    spellCheck="false"
+                                    className={cn(
+                                        fieldCls,
+                                        'pl-8 pr-10',
+                                        igMatchesVerified
+                                            ? 'border-emerald-500/50 dark:border-emerald-500/50'
+                                            : instagramVerificationError ? 'border-red-500/50 dark:border-red-500/50' : ''
+                                    )}
+                                />
+                                {form.instagram && !isInstagramVerifying && !instagramVerifiedData && (
+                                    <button
+                                        type="button"
+                                        aria-label="Clear handle"
+                                        onClick={() => {
+                                            setForm(p => ({ ...p, instagram: '', instagramFollowers: '' }));
+                                            setInstagramVerifiedData(null);
+                                            setInstagramVerificationError('');
+                                        }}
+                                        className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                    >
+                                        <X size={15} />
+                                    </button>
+                                )}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => handleVerifyInstagram()}
+                                disabled={isInstagramVerifying || !form.instagram?.trim() || igMatchesVerified}
+                                className={cn(
+                                    'inline-flex h-12 shrink-0 items-center gap-1.5 rounded-xl px-4 text-[13px] font-bold transition-colors disabled:cursor-not-allowed',
+                                    igMatchesVerified
+                                        ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-neon-green'
+                                        : 'bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-40 dark:bg-white dark:text-black dark:hover:bg-zinc-200'
+                                )}
+                            >
+                                {isInstagramVerifying ? <Loader2 size={15} className="animate-spin" />
+                                    : igMatchesVerified ? <Check size={15} strokeWidth={3} /> : <Sparkles size={14} />}
+                                {igMatchesVerified ? 'Verified' : 'Verify'}
+                            </button>
+                        </div>
+                        {duplicateWarnings.instagram && <Warning>{duplicateWarnings.instagram}</Warning>}
+                    </div>
+
+                    {isInstagramVerifying && (
+                        <p className="flex items-center gap-2 text-[13px] font-semibold text-gray-600 dark:text-zinc-400">
+                            <Loader2 size={14} className="animate-spin" /> Fetching followers for @{form.instagram?.replace(/^@/, '')}…
+                        </p>
+                    )}
+
+                    {instagramVerificationError && !isInstagramVerifying && !isManualFollowerEntry && (
+                        <div className="rounded-2xl border border-red-500/25 bg-red-500/[0.05] p-3.5">
+                            <p className="flex items-start gap-2 text-[13px] font-semibold text-red-600 dark:text-red-400">
+                                <AlertCircle size={15} className="mt-px shrink-0" /> {instagramVerificationError}
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                <Button variant="secondary" size="sm" className="h-10" onClick={() => setIsManualFollowerEntry(true)}>
+                                    <Pencil size={12} /> Enter manually
+                                </Button>
+                                <Button variant="secondary" size="sm" className="h-10" onClick={() => handleVerifyInstagram()}>
+                                    <RefreshCw size={12} /> Try again
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {igMatchesVerified && !isManualFollowerEntry && (
+                        <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.05] p-3">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
+                                {instagramVerifiedData.profilePic ? (
+                                    <img
+                                        src={instagramVerifiedData.profilePic}
+                                        alt=""
+                                        referrerPolicy="no-referrer"
+                                        className="h-full w-full object-cover"
+                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                    />
+                                ) : (
+                                    <Instagram size={18} className="text-gray-500" />
+                                )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="flex items-center gap-1.5 truncate text-[14px] font-bold">
+                                    @{instagramVerifiedData.handle}
+                                    {instagramVerifiedData.isVerified && (
+                                        <span title="Verified on Instagram" className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-white"><Check size={10} strokeWidth={3} /></span>
+                                    )}
+                                </p>
+                                <p className="text-[12px] font-semibold tabular-nums text-emerald-700 dark:text-neon-green">
+                                    {Number(instagramVerifiedData.followers).toLocaleString('en-IN')} followers
+                                    <span className="ml-1 font-medium text-gray-500">({formatFollowerDisplay(instagramVerifiedData.followers)})</span>
+                                </p>
+                            </div>
+                            <Button variant="ghost" size="sm" className="h-10" onClick={() => setIsManualFollowerEntry(true)}>Edit count</Button>
+                        </div>
+                    )}
+
+                    {isManualFollowerEntry && (
+                        <Field label="Instagram followers" hint="Type the exact count from their profile.">
+                            <input
+                                type="number"
+                                name="instagramFollowers"
+                                inputMode="numeric"
+                                min="0"
+                                value={form.instagramFollowers}
+                                onChange={handleChange}
+                                placeholder="e.g. 15000"
+                                className={cn(fieldCls, 'tabular-nums')}
+                            />
+                        </Field>
+                    )}
+
+                    <div className="flex flex-wrap gap-1">
+                        {isManualFollowerEntry ? (
+                            <button type="button" onClick={() => { setIsManualFollowerEntry(false); if (form.instagram?.trim()) handleVerifyInstagram(); }} className={linkBtnCls}>
+                                <RefreshCw size={13} /> Verify automatically instead
+                            </button>
+                        ) : (
+                            <button type="button" onClick={() => setIsManualFollowerEntry(true)} className={linkBtnCls}>
+                                <Pencil size={13} /> Enter followers manually
+                            </button>
+                        )}
+                    </div>
+                </Block>
+
+                {/* Other platforms */}
+                <Block ref={setRef('platforms')} title="Other platforms" hint="Usernames only, not links.">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <Field label="LinkedIn" optional>
+                            <input type="text" name="linkedin" value={form.linkedin} onChange={handleChange} placeholder="in/username" autoCapitalize="none" autoCorrect="off" className={fieldCls} />
+                        </Field>
+                        <Field label="LinkedIn followers" optional>
+                            <input type="number" name="linkedinFollowers" inputMode="numeric" min="0" value={form.linkedinFollowers} onChange={handleChange} placeholder="e.g. 500" className={cn(fieldCls, 'tabular-nums')} />
+                        </Field>
+                        <Field label="YouTube" optional>
+                            <input type="text" name="youtube" value={form.youtube} onChange={handleChange} placeholder="@channel" autoCapitalize="none" autoCorrect="off" className={fieldCls} />
+                        </Field>
+                        <Field label="X (Twitter)" optional>
+                            <input type="text" name="twitter" value={form.twitter} onChange={handleChange} placeholder="@username" autoCapitalize="none" autoCorrect="off" className={fieldCls} />
+                        </Field>
+                    </div>
+                </Block>
+
+                {/* Rates & collaboration */}
+                <Block ref={setRef('rates')} title="Rates and collaboration">
+                    <div>
+                        <Label>Open to</Label>
+                        <Choice value={form.doBarter} onChange={(v) => setForm(p => ({ ...p, doBarter: v }))} options={COLLAB_OPTIONS} />
+                    </div>
+
+                    <div className="rounded-2xl border border-black/[0.06] p-4 dark:border-white/[0.06]">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-[12px] font-bold text-gray-500">Typical rate per deliverable</p>
+                            <span className="rounded-lg bg-black/[0.04] px-2.5 py-1 text-[13px] font-bold tabular-nums dark:bg-white/[0.06]">
+                                {isRateFlexible ? 'Flexible / barter' : `${formatINR(rateMin)} – ${formatINR(rateMax)}${rateMax >= 100000 ? '+' : ''}`}
                             </span>
                         </div>
-                        <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-gray-900 dark:text-white mt-1 truncate">
-                            Add Creator Profile
-                        </h2>
-                    </div>
-
-                    <button 
-                        type="button"
-                        onClick={onClose}
-                        className="w-9 h-9 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-500 hover:text-black dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all cursor-pointer shrink-0"
-                    >
-                        <X size={16} />
-                    </button>
-                </div>
-
-                {/* ── Section Tabs ── */}
-                <div className="flex border-b border-black/[0.06] dark:border-white/[0.08] px-6 sm:px-8 shrink-0 overflow-x-auto no-scrollbar gap-2 sm:gap-4 bg-gray-50/30 dark:bg-white/[0.01]">
-                    {TABS.map((tab) => {
-                        const isActive = activeTab === tab.id;
-                        return (
-                            <button
-                                key={tab.id}
-                                type="button"
-                                onClick={() => setActiveTab(tab.id)}
-                                className={cn(
-                                    "relative py-3.5 px-2.5 sm:px-3 text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all shrink-0 cursor-pointer select-none",
-                                    isActive 
-                                        ? "text-gray-950 dark:text-white" 
-                                        : "text-gray-400 dark:text-zinc-500 hover:text-gray-800 dark:hover:text-zinc-300"
-                                )}
-                            >
-                                <span>{tab.label}</span>
-                                {isActive && (
-                                    <motion.div
-                                        layoutId="add-creator-active-tab-line"
-                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-neon-green"
-                                        transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
-                                    />
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* ── Scrollable Body ── */}
-                <form id="add-creator-form" onSubmit={handleSubmit} className="overflow-y-auto p-6 sm:p-8 space-y-6 flex-1 custom-scrollbar">
-                    
-                    {/* ──────── TAB 1: IDENTITY & CITY ──────── */}
-                    {activeTab === 'identity' && (
-                        <motion.div 
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.15 }}
-                            className="space-y-6"
-                        >
-                            {/* Profile Picture Avatar & Cloudinary Upload */}
-                            <div className="flex items-center gap-4 sm:gap-5 p-4 sm:p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.08]">
-                                <div className="relative w-20 h-20 sm:w-22 sm:h-22 rounded-2xl bg-gray-100 dark:bg-zinc-800 border-2 border-black/[0.08] dark:border-white/[0.1] overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
-                                    {form.profilePicture ? (
-                                        <img src={form.profilePicture} alt={form.name || "Avatar"} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <span className="text-3xl font-black text-neon-green uppercase">
-                                            {form.name?.charAt(0) || <User size={28} className="text-gray-400" />}
-                                        </span>
-                                    )}
-                                    {isUploadingPhoto && (
-                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                            <Loader2 size={18} className="text-neon-green animate-spin" />
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400 block mb-1.5">
-                                        Creator Profile Avatar
-                                    </label>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white cursor-pointer hover:border-neon-green hover:shadow-xs transition-all active:scale-95">
-                                            <Camera size={14} className="text-neon-green" />
-                                            <span>{isUploadingPhoto ? "Uploading..." : "Upload Photo"}</span>
-                                            <input 
-                                                type="file" 
-                                                accept="image/*" 
-                                                className="hidden" 
-                                                disabled={isUploadingPhoto}
-                                                onChange={handleImageUpload} 
-                                            />
-                                        </label>
-                                        {form.profilePicture && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setForm(p => ({ ...p, profilePicture: '' }))}
-                                                className="px-3 py-2 rounded-xl text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors"
-                                            >
-                                                Remove
-                                            </button>
-                                        )}
-                                    </div>
-                                    <p className="text-[10px] text-gray-400 dark:text-zinc-500 mt-1.5 font-medium">
-                                        Will also auto-import from verified Instagram profile photo.
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Full Name */}
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">
-                                    Full Name / Display Name *
-                                </label>
-                                <input 
-                                    type="text"
-                                    name="name"
-                                    value={form.name}
-                                    onChange={handleChange}
-                                    required
-                                    placeholder="e.g. Aisha Sharma"
-                                    className="w-full h-12 px-4 rounded-xl bg-gray-50 dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] text-xs sm:text-sm font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all shadow-xs"
-                                />
-                            </div>
-
-                            {/* Operating City Selector with Popular Chips & Auto-Detect */}
-                            <div className="space-y-2.5 p-4 sm:p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.08]">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400 flex items-center gap-1.5">
-                                        <MapPin size={12} className="text-neon-green" /> Operating Hub (City) *
-                                    </label>
-                                    <button
-                                        type="button"
-                                        onClick={handleAutoDetectLocation}
-                                        disabled={isLocatingCity}
-                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-neon-green hover:underline cursor-pointer disabled:opacity-50"
-                                    >
-                                        <MapPin size={10} className={isLocatingCity ? "animate-pulse" : ""} />
-                                        <span>{isLocatingCity ? 'Locating...' : 'Auto-detect Location'}</span>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            {RATE_PRESETS.map(preset => {
+                                const isSelected = preset.flex ? isRateFlexible : (!isRateFlexible && rateMin === preset.min && rateMax === preset.max);
+                                return (
+                                    <button key={preset.label} type="button" onClick={() => pickRatePreset(preset)} className={chipCls(isSelected)}>
+                                        {preset.label}
                                     </button>
-                                </div>
-
-                                {/* Quick City Chips */}
-                                <div className="flex flex-wrap gap-1.5">
-                                    {(showAllCities 
-                                        ? PREDEFINED_CITIES.filter(c => c !== 'Others') 
-                                        : POPULAR_CITIES
-                                    ).map(city => {
-                                        const isSelected = form.city === city;
-                                        return (
-                                            <button
-                                                key={city}
-                                                type="button"
-                                                onClick={() => setForm(p => ({ ...p, city }))}
-                                                className={cn(
-                                                    "px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border cursor-pointer",
-                                                    isSelected
-                                                        ? "bg-neon-green text-black border-neon-green font-black shadow-xs"
-                                                        : "bg-white dark:bg-white/[0.04] text-gray-800 dark:text-white/60 border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20"
-                                                )}
-                                            >
-                                                {city}
-                                            </button>
-                                        );
-                                    })}
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setForm(p => ({ ...p, city: 'Others' }))}
-                                        className={cn(
-                                            "px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border cursor-pointer",
-                                            form.city === 'Others'
-                                                ? "bg-neon-green text-black border-neon-green font-black shadow-xs"
-                                                : "bg-white dark:bg-white/[0.04] text-gray-800 dark:text-white/60 border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20"
-                                        )}
-                                    >
-                                        Other City...
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowAllCities(!showAllCities)}
-                                        className="px-2.5 py-1.5 rounded-xl text-[10px] font-bold text-pink-500 bg-pink-500/10 border border-pink-500/20 hover:bg-pink-500/20 transition-all cursor-pointer"
-                                    >
-                                        {showAllCities ? 'Show Less' : '+ More Cities'}
-                                    </button>
-                                </div>
-
-                                {form.city === 'Others' && (
-                                    <div className="pt-1">
-                                        <input 
-                                            type="text"
-                                            name="customCity"
-                                            value={form.customCity}
-                                            onChange={handleChange}
-                                            placeholder="Enter exact city name (e.g. Chandigarh, Bhopal, Surat)"
-                                            className="w-full h-11 px-4 rounded-xl bg-white dark:bg-black/50 border border-black/[0.1] dark:border-white/[0.1] text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all shadow-xs"
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Contact Details: Email & Phone with Country Code */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400 flex items-center gap-1.5">
-                                        <Mail size={12} className="text-neon-green" /> Email Address
-                                    </label>
-                                    <input 
-                                        type="email"
-                                        name="email"
-                                        value={form.email}
-                                        onChange={handleChange}
-                                        placeholder="creator@domain.com"
-                                        className="w-full h-12 px-4 rounded-xl bg-gray-50 dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all shadow-xs"
-                                    />
-                                    {duplicateWarnings.email && (
-                                        <p className="text-[10px] font-bold text-amber-500 flex items-center gap-1 pt-0.5">
-                                            <AlertCircle size={10} /> {duplicateWarnings.email}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400 flex items-center gap-1.5">
-                                        <Phone size={12} className="text-neon-green" /> WhatsApp / Phone Number
-                                    </label>
-                                    <div className="flex gap-2">
-                                        <select
-                                            value={countryCode}
-                                            onChange={(e) => setCountryCode(e.target.value)}
-                                            className="h-12 px-3 rounded-xl bg-gray-50 dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all cursor-pointer shrink-0"
-                                        >
-                                            {COUNTRY_OPTIONS.map(opt => (
-                                                <option key={opt.value} value={opt.value} className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-white">
-                                                    {opt.value}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <input 
-                                            type="tel"
-                                            name="phone"
-                                            value={form.phone}
-                                            onChange={handleChange}
-                                            placeholder="98765 43210"
-                                            className="flex-1 h-12 px-4 rounded-xl bg-gray-50 dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all shadow-xs"
-                                        />
-                                    </div>
-                                    {duplicateWarnings.phone && (
-                                        <p className="text-[10px] font-bold text-amber-500 flex items-center gap-1 pt-0.5">
-                                            <AlertCircle size={10} /> {duplicateWarnings.phone}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {/* ──────── TAB 2: NICHE & CATEGORY ──────── */}
-                    {activeTab === 'niche' && (
-                        <motion.div 
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.15 }}
-                            className="space-y-6"
-                        >
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">
-                                        Primary Content Niche *
-                                    </label>
-                                    <span className="text-[10px] font-mono text-gray-400 dark:text-zinc-500">
-                                        Matched for brand campaigns
+                                );
+                            })}
+                        </div>
+                        {!isRateFlexible && (
+                            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                                <label className="block">
+                                    <span className="flex justify-between text-[12px] font-bold text-gray-500">
+                                        <span>Minimum</span>
+                                        <span className="tabular-nums text-gray-900 dark:text-white">{formatINR(rateMin)}</span>
                                     </span>
-                                </div>
-
-                                {/* Visual Niche Selector Cards */}
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5 max-h-72 overflow-y-auto p-1 custom-scrollbar">
-                                    {NICHE_OPTIONS.map(niche => {
-                                        const isSelected = form.categories === niche.id;
-                                        const IconComp = niche.icon;
-                                        return (
-                                            <button
-                                                key={niche.id}
-                                                type="button"
-                                                onClick={() => setForm(p => ({ ...p, categories: niche.id }))}
-                                                className={cn(
-                                                    "p-3 rounded-2xl text-left border transition-all flex flex-col justify-between gap-2.5 cursor-pointer active:scale-95 group",
-                                                    isSelected
-                                                        ? "bg-neon-pink/15 dark:bg-neon-pink/20 border-neon-pink shadow-md ring-1 ring-neon-pink text-gray-900 dark:text-white"
-                                                        : "bg-white dark:bg-white/[0.02] border-black/[0.08] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20 text-gray-700 dark:text-zinc-300"
-                                                )}
-                                            >
-                                                <div className={cn(
-                                                    "w-7 h-7 rounded-xl flex items-center justify-center transition-colors",
-                                                    isSelected 
-                                                        ? "bg-neon-pink text-black" 
-                                                        : "bg-black/5 dark:bg-white/5 text-gray-600 dark:text-zinc-400 group-hover:text-black dark:group-hover:text-white"
-                                                )}>
-                                                    <IconComp size={15} />
-                                                </div>
-                                                <p className={cn(
-                                                    "text-[11px] font-bold leading-tight",
-                                                    isSelected ? "text-neon-pink font-black" : "text-gray-900 dark:text-white"
-                                                )}>
-                                                    {niche.label}
-                                                </p>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Conditional Contextual Fields */}
-                            {form.categories === 'Others' && (
-                                <div className="space-y-1.5 p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.08]">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">
-                                        Specify Custom Niche *
-                                    </label>
-                                    <input 
-                                        type="text"
-                                        name="customNiche"
-                                        value={form.customNiche}
-                                        onChange={handleChange}
-                                        placeholder="e.g. Sustainable Fashion, Sneakerhead, AI Tools, DIY Crafts"
-                                        className="w-full h-11 px-4 rounded-xl bg-white dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all shadow-xs"
-                                    />
-                                </div>
-                            )}
-
-                            {form.categories === 'City Pages' && (
-                                <div className="space-y-1.5 p-4 rounded-2xl bg-sky-500/[0.04] border border-sky-500/20">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
-                                        <Building2 size={13} /> Locality / City Page Focus
-                                    </label>
-                                    <input 
-                                        type="text"
-                                        name="cityPageFocus"
-                                        value={form.cityPageFocus}
-                                        onChange={handleChange}
-                                        placeholder="e.g. Bangalore Nightlife, South Delhi Food, Koramangala Buzz"
-                                        className="w-full h-11 px-4 rounded-xl bg-white dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] text-xs font-bold text-gray-900 dark:text-white focus:border-sky-500 outline-none transition-all shadow-xs"
-                                    />
-                                </div>
-                            )}
-
-                            {isCollegeNiche(form.categories) && (
-                                <div className="space-y-1.5 p-4 rounded-2xl bg-teal-500/[0.04] border border-teal-500/20">
-                                    <label htmlFor="admin-creator-college" className="text-[10px] font-black uppercase tracking-widest text-teal-600 dark:text-teal-400 flex items-center gap-1.5">
-                                        <GraduationCap size={13} /> {form.categories === 'College Pages' ? 'College this page represents *' : 'College / University Name *'}
-                                    </label>
-                                    <input 
-                                        id="admin-creator-college"
-                                        type="text"
-                                        name="collegeName"
-                                        value={form.collegeName}
-                                        onChange={handleChange}
-                                        placeholder="e.g. Christ University, IIT Bombay, St. Xavier's"
-                                        className="w-full h-11 px-4 rounded-xl bg-white dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] text-xs font-bold text-gray-900 dark:text-white focus:border-teal-500 outline-none transition-all shadow-xs"
-                                    />
-                                    <p className="text-[9px] font-medium text-teal-600/80 dark:text-teal-400/80">
-                                        Enables participation in campus buzz programs, fest passes, and regional student briefs.
-                                    </p>
-                                </div>
-                            )}
-                        </motion.div>
-                    )}
-
-                    {/* ──────── TAB 3: INSTAGRAM & SOCIAL CHANNELS ──────── */}
-                    {activeTab === 'socials' && (
-                        <motion.div 
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.15 }}
-                            className="space-y-6"
-                        >
-                            {/* Instagram Profile & Auto-Verification Panel */}
-                            <div className="p-4 sm:p-5 rounded-3xl bg-pink-500/[0.03] border border-pink-500/20 space-y-4 shadow-xs">
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <div>
-                                        <label className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white flex items-center gap-1.5">
-                                            <Instagram size={14} className="text-pink-500" /> Instagram Handle & Auto-Sync
-                                        </label>
-                                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 font-mono mt-0.5">
-                                            Auto-fetches live follower count, verified badge & HD avatar.
-                                        </p>
-                                    </div>
-
-                                    {/* Manual Follower Toggle */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsManualFollowerEntry(!isManualFollowerEntry)}
-                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-pink-600 dark:text-pink-400 hover:underline uppercase tracking-wider cursor-pointer"
-                                    >
-                                        <Pencil size={11} />
-                                        <span>{isManualFollowerEntry ? "Switch to Auto-Verify" : "Manual Follower Count"}</span>
-                                    </button>
-                                </div>
-
-                                {/* Handle Input & Integrated Action */}
-                                <div className="relative flex items-center">
-                                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 font-black text-sm select-none font-mono">
-                                        @
-                                    </span>
-                                    <input 
-                                        type="text"
-                                        name="instagram"
-                                        value={form.instagram}
-                                        onChange={handleInstagramChange}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                handleVerifyInstagram();
-                                            }
+                                    <input
+                                        type="range"
+                                        min="1000"
+                                        max="60000"
+                                        step="1000"
+                                        value={rateMin}
+                                        onChange={(e) => {
+                                            const val = Number(e.target.value);
+                                            const newMin = Math.min(val, rateMax - 1000);
+                                            setRateMin(newMin);
+                                            setForm(p => ({ ...p, commercials: rateLabel(newMin, rateMax) }));
                                         }}
-                                        placeholder="instagram_handle"
-                                        autoCapitalize="none"
-                                        autoCorrect="off"
-                                        spellCheck="false"
-                                        className={cn(
-                                            "w-full h-12 pl-8 pr-28 rounded-xl bg-white dark:bg-black/50 border text-xs sm:text-sm font-bold text-gray-900 dark:text-white outline-none transition-all shadow-xs",
-                                            instagramVerifiedData && instagramVerifiedData.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase()
-                                                ? "border-emerald-500/40 focus:border-emerald-500"
-                                                : instagramVerificationError
-                                                ? "border-red-500/40 focus:border-red-500"
-                                                : "border-black/10 dark:border-white/10 focus:border-pink-500"
-                                        )}
+                                        className="mt-2 h-8 w-full cursor-pointer accent-emerald-500"
                                     />
-
-                                    {/* Clear Button */}
-                                    {form.instagram && !isInstagramVerifying && !instagramVerifiedData && (
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setForm(p => ({ ...p, instagram: '', instagramFollowers: '' }));
-                                                setInstagramVerifiedData(null);
-                                                setInstagramVerificationError('');
-                                            }}
-                                            className="absolute right-24 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 text-gray-500 flex items-center justify-center transition-colors"
-                                        >
-                                            <X size={11} />
-                                        </button>
-                                    )}
-
-                                    {/* Auto-Verify CTA */}
-                                    <button
-                                        type="button"
-                                        onClick={() => handleVerifyInstagram()}
-                                        disabled={isInstagramVerifying || !form.instagram?.trim()}
-                                        className={cn(
-                                            "absolute right-1.5 top-1/2 -translate-y-1/2 h-9 px-3.5 rounded-lg font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer",
-                                            instagramVerifiedData && instagramVerifiedData.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase()
-                                                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
-                                                : "bg-pink-600 hover:bg-pink-500 text-white shadow-xs disabled:opacity-40 disabled:cursor-not-allowed"
-                                        )}
-                                    >
-                                        {isInstagramVerifying ? (
-                                            <Loader2 size={13} className="animate-spin" />
-                                        ) : instagramVerifiedData && instagramVerifiedData.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase() ? (
-                                            <>
-                                                <Check size={12} className="stroke-[3]" />
-                                                <span>Verified</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Sparkles size={11} />
-                                                <span>Verify</span>
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-
-                                {duplicateWarnings.instagram && (
-                                    <p className="text-[10px] font-bold text-amber-500 flex items-center gap-1">
-                                        <AlertCircle size={11} /> {duplicateWarnings.instagram}
-                                    </p>
-                                )}
-
-                                {/* Progress Indicator */}
-                                {isInstagramVerifying && (
-                                    <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl flex items-center gap-2.5 text-xs text-pink-600 dark:text-pink-400">
-                                        <Loader2 size={14} className="animate-spin text-pink-500" />
-                                        <span className="font-bold">
-                                            Connecting to Instagram & fetching follower count for @{form.instagram?.replace(/^@/, '')}...
-                                        </span>
-                                    </div>
-                                )}
-
-                                {/* Error Notice */}
-                                {instagramVerificationError && !isInstagramVerifying && !isManualFollowerEntry && (
-                                    <div className="p-3 bg-red-500/[0.08] border border-red-500/25 rounded-xl space-y-2">
-                                        <div className="flex items-start gap-2">
-                                            <AlertCircle size={14} className="text-red-500 shrink-0 mt-0.5" />
-                                            <div className="flex-1 text-xs text-red-600 dark:text-red-300 font-semibold">
-                                                {instagramVerificationError}
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 pt-1 border-t border-red-500/15">
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsManualFollowerEntry(true)}
-                                                className="px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer"
-                                            >
-                                                Enter Manually
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleVerifyInstagram()}
-                                                className="px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-600 dark:text-red-400 font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer"
-                                            >
-                                                <RefreshCw size={10} />
-                                                <span>Retry</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Verified Account Card Display */}
-                                {instagramVerifiedData && instagramVerifiedData.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase() && !isManualFollowerEntry && (
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.98 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        className="p-3.5 rounded-2xl bg-emerald-500/[0.05] dark:bg-emerald-500/[0.04] border border-emerald-500/30 flex items-center justify-between gap-3 shadow-xs"
-                                    >
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <div className="w-11 h-11 rounded-full bg-black/10 dark:bg-white/10 border border-emerald-500/30 overflow-hidden flex items-center justify-center shrink-0">
-                                                {instagramVerifiedData.profilePic ? (
-                                                    <img 
-                                                        src={instagramVerifiedData.profilePic} 
-                                                        alt={instagramVerifiedData.handle} 
-                                                        className="w-full h-full object-cover" 
-                                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                                    />
-                                                ) : (
-                                                    <Instagram size={18} className="text-pink-500" />
-                                                )}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">
-                                                        @{instagramVerifiedData.handle}
-                                                    </span>
-                                                    {instagramVerifiedData.isVerified && (
-                                                        <span className="w-3.5 h-3.5 rounded-full bg-sky-500 text-white flex items-center justify-center text-[8px]" title="Meta Verified">
-                                                            ✓
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <p className="text-[11px] font-mono font-bold text-emerald-600 dark:text-neon-green mt-0.5">
-                                                    {Number(instagramVerifiedData.followers).toLocaleString()} followers
-                                                    <span className="text-gray-400 font-normal ml-1">({formatFollowerDisplay(instagramVerifiedData.followers)})</span>
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsManualFollowerEntry(true)}
-                                            className="px-2.5 py-1 rounded-lg bg-black/5 dark:bg-white/5 hover:bg-black/10 text-gray-600 dark:text-gray-300 font-bold text-[10px] uppercase tracking-wider shrink-0 transition-colors"
-                                        >
-                                            Edit Count
-                                        </button>
-                                    </motion.div>
-                                )}
-
-                                {/* Manual Follower Count Input */}
-                                {isManualFollowerEntry && (
-                                    <div className="space-y-1.5 pt-1">
-                                        <div className="flex items-center justify-between">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                                                <Users size={12} className="text-pink-500" /> Exact Instagram Followers
-                                            </label>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleVerifyInstagram()}
-                                                className="text-[10px] font-bold text-pink-600 dark:text-pink-400 hover:underline uppercase tracking-wider"
-                                            >
-                                                Retry Auto-Verify
-                                            </button>
-                                        </div>
-                                        <div className="relative">
-                                            <Users size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                                            <input 
-                                                type="number"
-                                                name="instagramFollowers"
-                                                value={form.instagramFollowers}
-                                                onChange={handleChange}
-                                                placeholder="e.g. 15000"
-                                                className="w-full h-11 pl-9 pr-4 rounded-xl bg-white dark:bg-black/50 border border-black/10 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-pink-500 outline-none transition-all shadow-xs font-mono"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Additional Social Channels */}
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400 block">
-                                    Additional Channels (Optional)
                                 </label>
-
-                                {/* LinkedIn */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-blue-500/[0.02] border border-blue-500/15">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                                            <Linkedin size={11} /> LinkedIn Handle
-                                        </label>
-                                        <input 
-                                            type="text"
-                                            name="linkedin"
-                                            value={form.linkedin}
-                                            onChange={handleChange}
-                                            placeholder="in/username"
-                                            className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] text-xs font-bold text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">
-                                            Connections / Followers
-                                        </label>
-                                        <input 
-                                            type="number"
-                                            name="linkedinFollowers"
-                                            value={form.linkedinFollowers}
-                                            onChange={handleChange}
-                                            placeholder="e.g. 500"
-                                            className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] text-xs font-bold text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all font-mono"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* YouTube & Twitter / X */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div className="space-y-1 p-3.5 rounded-2xl bg-red-500/[0.02] border border-red-500/15">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-400 flex items-center gap-1">
-                                            <Youtube size={12} /> YouTube Channel Handle
-                                        </label>
-                                        <input 
-                                            type="text"
-                                            name="youtube"
-                                            value={form.youtube}
-                                            onChange={handleChange}
-                                            placeholder="@channelhandle"
-                                            className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] text-xs font-bold text-gray-900 dark:text-white focus:border-red-500 outline-none transition-all"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-1 p-3.5 rounded-2xl bg-sky-500/[0.02] border border-sky-500/15">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-sky-600 dark:text-sky-400 flex items-center gap-1">
-                                            <Twitter size={12} /> X / Twitter Username
-                                        </label>
-                                        <input 
-                                            type="text"
-                                            name="twitter"
-                                            value={form.twitter}
-                                            onChange={handleChange}
-                                            placeholder="@username"
-                                            className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] text-xs font-bold text-gray-900 dark:text-white focus:border-sky-500 outline-none transition-all"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {/* ──────── TAB 4: RATES & COLLAB PREFERENCES ──────── */}
-                    {activeTab === 'rates' && (
-                        <motion.div 
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.15 }}
-                            className="space-y-6"
-                        >
-                            {/* Collaboration Style Preferences */}
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">
-                                    Collaboration Preferences
-                                </label>
-                                <div className="grid grid-cols-3 gap-2.5">
-                                    {[
-                                        { id: 'both', label: 'Open to Both', icon: Layers },
-                                        { id: 'paid', label: 'Paid Only', icon: Banknote },
-                                        { id: 'barter', label: 'Barter & Gigs', icon: Handshake }
-                                    ].map(opt => {
-                                        const isSelected = form.doBarter === opt.id;
-                                        const IconComp = opt.icon;
-                                        return (
-                                            <button
-                                                key={opt.id}
-                                                type="button"
-                                                onClick={() => setForm(p => ({ ...p, doBarter: opt.id }))}
-                                                className={cn(
-                                                    "p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer active:scale-95",
-                                                    isSelected
-                                                        ? "bg-neon-green text-black border-neon-green font-black shadow-sm"
-                                                        : "bg-white dark:bg-white/[0.02] text-gray-800 dark:text-white/60 border-black/[0.06] dark:border-white/[0.08] hover:border-black/20"
-                                                )}
-                                            >
-                                                <div className={cn(
-                                                    "w-7 h-7 rounded-xl flex items-center justify-center transition-colors",
-                                                    isSelected ? "bg-black text-neon-green" : "bg-black/5 dark:bg-white/5 text-gray-500 dark:text-zinc-400"
-                                                )}>
-                                                    <IconComp size={14} />
-                                                </div>
-                                                <span className="text-[11px] font-bold">{opt.label}</span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Typical Deliverable Rates with Presets & Range Sliders */}
-                            <div className="space-y-3.5 p-4 sm:p-5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.08] rounded-2xl">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                    <div>
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400 block">
-                                            Typical Rates per Deliverable
-                                        </label>
-                                        <p className="text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">
-                                            Commercial quote bracket for briefs and deliverables
-                                        </p>
-                                    </div>
-                                    <span className="text-xs sm:text-sm font-black font-mono text-neon-green bg-black px-3 py-1.5 rounded-xl border border-neon-green/30 shadow-[0_0_15px_rgba(57,255,20,0.15)] inline-flex items-center gap-1.5 shrink-0">
-                                        <IndianRupee size={13} className="text-neon-green" />
-                                        {isRateFlexible ? "Flexible / Barter" : `${formatINR(rateMin)} – ${formatINR(rateMax)}${rateMax >= 100000 ? '+' : ''}`}
+                                <label className="block">
+                                    <span className="flex justify-between text-[12px] font-bold text-gray-500">
+                                        <span>Maximum</span>
+                                        <span className="tabular-nums text-gray-900 dark:text-white">{formatINR(rateMax)}{rateMax >= 100000 ? '+' : ''}</span>
                                     </span>
-                                </div>
-
-                                {/* Quick Presets */}
-                                <div className="flex flex-wrap gap-1.5 pt-1">
-                                    {[
-                                        { label: 'Flexible / Barter', min: 0, max: 0, flex: true },
-                                        { label: '₹2K – ₹8K', min: 2000, max: 8000 },
-                                        { label: '₹8K – ₹20K', min: 8000, max: 20000 },
-                                        { label: '₹20K – ₹50K', min: 20000, max: 50000 },
-                                        { label: '₹50K – ₹1L+', min: 50000, max: 100000 }
-                                    ].map(preset => {
-                                        const isSelected = preset.flex ? isRateFlexible : (!isRateFlexible && rateMin === preset.min && rateMax === preset.max);
-                                        return (
-                                            <button
-                                                key={preset.label}
-                                                type="button"
-                                                onClick={() => {
-                                                    if (preset.flex) {
-                                                        setIsRateFlexible(true);
-                                                        setForm(p => ({ ...p, commercials: 'Flexible / Barter' }));
-                                                    } else {
-                                                        setIsRateFlexible(false);
-                                                        setRateMin(preset.min);
-                                                        setRateMax(preset.max);
-                                                        setForm(p => ({ ...p, commercials: `${formatINR(preset.min)} – ${formatINR(preset.max)}${preset.max >= 100000 ? '+' : ''} / Deliverable` }));
-                                                    }
-                                                }}
-                                                className={cn(
-                                                    "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border cursor-pointer",
-                                                    isSelected
-                                                        ? "bg-neon-green text-black border-neon-green shadow-xs"
-                                                        : "bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 border-black/10 dark:border-white/10 hover:border-black/20"
-                                                )}
-                                            >
-                                                {preset.label}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                {!isRateFlexible && (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                                        <div className="space-y-1">
-                                            <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                                                <span>Min Rate</span>
-                                                <span className="font-mono text-gray-900 dark:text-white font-black">{formatINR(rateMin)}</span>
-                                            </div>
-                                            <input 
-                                                type="range"
-                                                min="1000"
-                                                max="60000"
-                                                step="1000"
-                                                value={rateMin}
-                                                onChange={(e) => {
-                                                    const val = Number(e.target.value);
-                                                    const newMin = Math.min(val, rateMax - 1000);
-                                                    setRateMin(newMin);
-                                                    setForm(p => ({ ...p, commercials: `${formatINR(newMin)} – ${formatINR(rateMax)}${rateMax >= 100000 ? '+' : ''} / Deliverable` }));
-                                                }}
-                                                className="w-full accent-neon-green cursor-pointer h-2 bg-black/10 dark:bg-white/10 rounded-lg appearance-none"
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                                                <span>Max Rate</span>
-                                                <span className="font-mono text-gray-900 dark:text-white font-black">{formatINR(rateMax)}{rateMax >= 100000 ? '+' : ''}</span>
-                                            </div>
-                                            <input 
-                                                type="range"
-                                                min="2000"
-                                                max="100000"
-                                                step="2000"
-                                                value={rateMax}
-                                                onChange={(e) => {
-                                                    const val = Number(e.target.value);
-                                                    const newMax = Math.max(val, rateMin + 1000);
-                                                    setRateMax(newMax);
-                                                    setForm(p => ({ ...p, commercials: `${formatINR(rateMin)} – ${formatINR(newMax)}${rateMax >= 100000 ? '+' : ''} / Deliverable` }));
-                                                }}
-                                                className="w-full accent-neon-green cursor-pointer h-2 bg-black/10 dark:bg-white/10 rounded-lg appearance-none"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Strategic Bio */}
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">
-                                    Creator Bio & Creative Pitch
-                                </label>
-                                <textarea 
-                                    name="bio"
-                                    value={form.bio}
-                                    onChange={handleChange}
-                                    rows={2}
-                                    placeholder="e.g. Bangalore lifestyle creator focusing on nightlife, dining experiences and aesthetic reels."
-                                    className="w-full p-3.5 rounded-xl bg-gray-50 dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all resize-none shadow-xs"
-                                />
-                            </div>
-
-                            {/* Referral & Profile Status Controls */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">
-                                        Referred By (Optional)
-                                    </label>
-                                    <input 
-                                        type="text"
-                                        name="referredBy"
-                                        value={form.referredBy}
-                                        onChange={handleChange}
-                                        placeholder="Creator ID, code, or @handle"
-                                        className="w-full h-11 px-4 rounded-xl bg-gray-50 dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all shadow-xs"
+                                    <input
+                                        type="range"
+                                        min="2000"
+                                        max="100000"
+                                        step="2000"
+                                        value={rateMax}
+                                        onChange={(e) => {
+                                            const val = Number(e.target.value);
+                                            const newMax = Math.max(val, rateMin + 1000);
+                                            setRateMax(newMax);
+                                            setForm(p => ({ ...p, commercials: rateLabel(rateMin, newMax) }));
+                                        }}
+                                        className="mt-2 h-8 w-full cursor-pointer accent-emerald-500"
                                     />
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">
-                                        Initial Profile Status
-                                    </label>
-                                    <select
-                                        name="profileStatus"
-                                        value={form.profileStatus}
-                                        onChange={handleChange}
-                                        className="w-full h-11 px-3.5 rounded-xl bg-gray-50 dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all cursor-pointer"
-                                    >
-                                        <option value="approved" className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-white">
-                                            Verified & Approved
-                                        </option>
-                                        <option value="pending" className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-white">
-                                            Pending Review
-                                        </option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Send Welcome Email Checkbox */}
-                            <div className="flex items-center gap-3 p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.08]">
-                                <input 
-                                    type="checkbox"
-                                    id="add-creator-welcome-email"
-                                    checked={sendWelcomeMail}
-                                    onChange={(e) => setSendWelcomeMail(e.target.checked)}
-                                    disabled={!form.email?.trim()}
-                                    className="w-5 h-5 rounded border-black/15 text-neon-green focus:ring-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                                />
-                                <label 
-                                    htmlFor="add-creator-welcome-email" 
-                                    className={cn(
-                                        "text-xs font-bold uppercase tracking-wider cursor-pointer",
-                                        !form.email?.trim() ? "text-gray-400" : "text-gray-800 dark:text-zinc-200"
-                                    )}
-                                >
-                                    Send Onboarding Welcome Email {!form.email?.trim() && "(Requires Email Address)"}
                                 </label>
                             </div>
-                        </motion.div>
-                    )}
-                </form>
-
-                {/* ── Modal Footer Controls ── */}
-                <div className="flex items-center justify-between px-6 sm:px-8 py-4 border-t border-black/[0.06] dark:border-white/[0.08] bg-gray-50/50 dark:bg-white/[0.02] shrink-0">
-                    <div className="flex items-center gap-2">
-                        {activeTab !== 'identity' && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    const currentIndex = TABS.findIndex(t => t.id === activeTab);
-                                    if (currentIndex > 0) setActiveTab(TABS[currentIndex - 1].id);
-                                }}
-                                className="px-3.5 py-2.5 rounded-xl border border-black/10 dark:border-white/10 text-xs font-bold text-gray-700 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/5 transition-all flex items-center gap-1 cursor-pointer"
-                            >
-                                <ChevronLeft size={14} />
-                                <span className="hidden sm:inline">Previous</span>
-                            </button>
-                        )}
-                        {activeTab !== 'rates' && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    const currentIndex = TABS.findIndex(t => t.id === activeTab);
-                                    if (currentIndex < TABS.length - 1) setActiveTab(TABS[currentIndex + 1].id);
-                                }}
-                                className="px-3.5 py-2.5 rounded-xl bg-black/5 dark:bg-white/10 text-xs font-bold text-gray-900 dark:text-white hover:bg-black/10 transition-all flex items-center gap-1 cursor-pointer"
-                            >
-                                <span>Next</span>
-                                <ChevronRight size={14} />
-                            </button>
                         )}
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleSubmit}
-                            disabled={isSaving}
-                            className="px-5 sm:px-6 py-2.5 rounded-xl bg-neon-green text-black font-extrabold text-xs uppercase tracking-wider hover:bg-emerald-400 active:scale-95 transition-all shadow-[0_0_20px_rgba(57,255,20,0.25)] flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSaving ? (
-                                <>
-                                    <Loader2 size={14} className="animate-spin" />
-                                    <span>Saving...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <CheckCircle2 size={14} />
-                                    <span>Add Creator Profile</span>
-                                </>
-                            )}
-                        </button>
+                    <Field label="Bio" optional>
+                        <textarea
+                            name="bio"
+                            value={form.bio}
+                            onChange={handleChange}
+                            rows={3}
+                            placeholder="e.g. Bangalore lifestyle creator covering nightlife, dining and aesthetic reels."
+                            className={cn(areaCls, 'resize-none')}
+                        />
+                    </Field>
+                </Block>
+
+                {/* Status & onboarding */}
+                <Block ref={setRef('status')} title="Status and onboarding">
+                    <div>
+                        <Label>Profile status</Label>
+                        <Choice value={form.profileStatus} onChange={(v) => setForm(p => ({ ...p, profileStatus: v }))} options={STATUS_OPTIONS} />
                     </div>
-                </div>
-            </motion.div>
-        </div>,
-        document.body
+                    <Field label="Referred by" optional>
+                        <input type="text" name="referredBy" value={form.referredBy} onChange={handleChange} placeholder="Creator ID, code or @handle" className={fieldCls} />
+                    </Field>
+                    <div className="rounded-2xl border border-black/[0.06] p-4 dark:border-white/[0.06]">
+                        <Toggle
+                            label="Send welcome email"
+                            hint={hasEmail ? `Goes to ${form.email.trim()}` : 'Add an email address above to send one.'}
+                            checked={sendWelcomeMail}
+                            onChange={(v) => {
+                                if (v && !hasEmail) {
+                                    goToSection('contact');
+                                    addToast('Add an email address first.', 'info');
+                                    return;
+                                }
+                                setSendWelcomeMail(v);
+                            }}
+                        />
+                    </div>
+                </Block>
+            </form>
+        </Sheet>
     );
 };
 

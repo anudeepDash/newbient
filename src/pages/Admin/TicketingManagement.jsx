@@ -1,1786 +1,433 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
-import XCircle from 'lucide-react/dist/esm/icons/x-circle';
-import Search from 'lucide-react/dist/esm/icons/search';
-import Upload from 'lucide-react/dist/esm/icons/upload';
-import Download from 'lucide-react/dist/esm/icons/download';
-import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
-import Check from 'lucide-react/dist/esm/icons/check';
-import X from 'lucide-react/dist/esm/icons/x';
-import QrCode from 'lucide-react/dist/esm/icons/qr-code';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
-import Send from 'lucide-react/dist/esm/icons/send';
-import Users from 'lucide-react/dist/esm/icons/users';
-import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
-import Plus from 'lucide-react/dist/esm/icons/plus';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Percent from 'lucide-react/dist/esm/icons/percent';
-import Tag from 'lucide-react/dist/esm/icons/tag';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
-import FileUp from 'lucide-react/dist/esm/icons/file-up';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import GuestlistTaskReviewModal from '../../components/admin/GuestlistTaskReviewModal';
+import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
+import Receipt from 'lucide-react/dist/esm/icons/receipt';
+import Users from 'lucide-react/dist/esm/icons/users';
+import UserCheck from 'lucide-react/dist/esm/icons/user-check';
+import Tag from 'lucide-react/dist/esm/icons/tag';
+import Settings from 'lucide-react/dist/esm/icons/settings';
+import ScanLine from 'lucide-react/dist/esm/icons/scan-line';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
+import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import { Button, Badge, SearchInput, Select, SegmentedTabs, EmptyState, StatTile, ViewToggle, useViewMode } from '../../components/admin/ui';
+import ExportMenu from '../../components/admin/ExportMenu';
+import { useAccent } from '../../components/admin/theme';
+import EventOverview from '../../components/admin/ticketing/EventOverview';
+import OrdersPanel from '../../components/admin/ticketing/OrdersPanel';
+import GuestlistPanel from '../../components/admin/ticketing/GuestlistPanel';
+import CheckInDesk from '../../components/admin/ticketing/CheckInDesk';
+import CouponsPanel from '../../components/admin/ticketing/CouponsPanel';
+import SettingsPanel from '../../components/admin/ticketing/SettingsPanel';
+import { Panel, Meter } from '../../components/admin/ticketing/kit';
+import { attendeeSpec, ordersSpec } from '../../components/admin/ticketing/exports';
+import { formatEventDate, inr } from '../../components/admin/ticketing/format';
+import { useOperationalEvents, useGuestEntries, hasGuestlist } from '../../components/admin/ticketing/events';
+import GuestlistEditor from '../../components/admin/events/GuestlistEditor';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import { cn } from '../../lib/utils';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import EntryTerminal from '../../components/admin/EntryTerminal';
-import { db } from '../../lib/firebase';
-import { collection, query, orderBy, onSnapshot, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
+import { FINANCE_ROLES } from '../../constants/roles';
+import { computeAvailability, SOLD_STATUSES } from '../../lib/ticketing';
+
+/*
+ * Ticketing: every event that sells tickets or runs a guestlist, and for each
+ * one the work around it (orders, guestlist, check-in, coupons, payments).
+ * Events are created in Events; the door is the gate scanner.
+ */
+
+// Old deep links used these tab names.
+const LEGACY_TABS = { buyers: 'orders', dispatch: 'orders', attendance: 'checkin', sheets: 'overview', payments: 'settings', rsvps: 'guestlist' };
+
+const isPast = (e, now) => (e.when ? e.when.getTime() < now : false);
+
+const EventThumb = ({ event, className }) => {
+    const image = event.hubImage || event.image;
+    return (
+        <div className={cn('relative shrink-0 overflow-hidden bg-black/5 dark:bg-white/5', className)}>
+            {image ? <img src={image} alt="" loading="lazy" className="h-full w-full object-cover" />
+                : <span className="absolute inset-0 flex items-center justify-center text-gray-400">{event.isTicketed ? <Ticket size={22} /> : <ListChecks size={22} />}</span>}
+        </div>
+    );
+};
+
+const EventBadges = ({ event, availability, pending }) => (
+    <div className="flex flex-wrap items-center gap-1.5">
+        {availability && (
+            <Badge tone={availability.total.remaining === 0 ? 'red' : 'orange'}>
+                {availability.total.remaining === 0 ? 'Sold out' : `${availability.total.sold}${availability.total.capacity ? ` / ${availability.total.capacity}` : ''} sold`}
+            </Badge>
+        )}
+        {pending > 0 && <Badge tone="amber"><Clock size={10} /> {pending} to verify</Badge>}
+        {hasGuestlist(event) && <Badge tone="fuchsia">{event.guestlistMode === 'rsvp' ? 'RSVP' : 'Guestlist'}</Badge>}
+        {event.source === 'guestlist' && event.status === 'Closed' && <Badge tone="gray">Closed</Badge>}
+        {event.source === 'archive' && <Badge tone="gray">Archived</Badge>}
+    </div>
+);
+
+const EventList = ({ events, ordersByEvent, onOpen, canSeeMoney, onNewGuestlist, isScanner }) => {
+    const [params, setParams] = useSearchParams();
+    const [search, setSearch] = useState('');
+    const [view, setView] = useViewMode('ticketing_events', 'cards');
+    const when = params.get('when') || 'upcoming';
+    const kind = params.get('kind') || 'all';
+    const now = Date.now() - 12 * 3600000; // tonight's event stays under "upcoming"
+
+    const setParam = (key, value, fallback) => {
+        const next = new URLSearchParams(params);
+        if (value === fallback) next.delete(key); else next.set(key, value);
+        setParams(next, { replace: true });
+    };
+
+    const byKind = useMemo(() => events.filter(e => {
+        if (kind === 'tickets') return e.isTicketed;
+        if (kind === 'guestlist') return hasGuestlist(e);
+        return true;
+    }), [events, kind]);
+
+    const filtered = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        return byKind
+            .filter(e => {
+                if (q && ![e.title, e.location].some(v => String(v || '').toLowerCase().includes(q))) return false;
+                if (when === 'upcoming') return !isPast(e, now);
+                if (when === 'past') return isPast(e, now);
+                return true;
+            })
+            .sort((a, b) => {
+                const ta = a.when?.getTime() ?? Infinity;
+                const tb = b.when?.getTime() ?? Infinity;
+                return when === 'past' ? tb - ta : ta - tb;
+            });
+    }, [byKind, search, when, now]);
+
+    const counts = useMemo(() => ({
+        upcoming: byKind.filter(e => !isPast(e, now)).length,
+        past: byKind.filter(e => isPast(e, now)).length,
+        all: byKind.length,
+    }), [byKind, now]);
+
+    const stats = useMemo(() => {
+        const live = events.filter(e => !isPast(e, now));
+        const liveIds = new Set(live.map(e => e.id));
+        const all = Object.entries(ordersByEvent).flatMap(([id, list]) => (liveIds.has(id) ? list : []));
+        const sold = all.filter(o => SOLD_STATUSES.includes(o.status));
+        return {
+            live: live.length,
+            ticketed: live.filter(e => e.isTicketed).length,
+            guestlists: live.filter(hasGuestlist).length,
+            pending: Object.values(ordersByEvent).flat().filter(o => o.status === 'pending' && events.some(e => e.id === o.eventId)).length,
+            sold: live.filter(e => e.isTicketed).reduce((a, e) => a + computeAvailability(e, ordersByEvent[e.id] || []).total.sold, 0),
+            revenue: sold.reduce((a, o) => a + (Number(o.totalAmount) || 0), 0),
+        };
+    }, [events, ordersByEvent, now]);
+
+    const pendingFirst = () => {
+        const target = events.find(e => (ordersByEvent[e.id] || []).some(o => o.status === 'pending'));
+        if (target) onOpen(target.id, 'orders', 'pending');
+    };
+
+    return (
+        <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <StatTile icon={Calendar} tone="orange" label="Coming up" value={stats.live} hint={`${stats.ticketed} ticketed · ${stats.guestlists} with a guestlist`} />
+                {!isScanner && (
+                    <StatTile icon={Clock} tone="amber" label="Payments to verify" value={stats.pending}
+                        hint={stats.pending ? 'Tap to start with the first' : 'All caught up'} onClick={stats.pending ? pendingFirst : undefined} />
+                )}
+                <StatTile icon={Ticket} tone="green" label="Tickets sold" value={stats.sold.toLocaleString('en-IN')} hint="Upcoming events" />
+                {canSeeMoney && !isScanner
+                    ? <StatTile icon={IndianRupee} tone="blue" label="Ticket revenue" value={inr(stats.revenue)} hint="Verified, upcoming events" />
+                    : <StatTile icon={ListChecks} tone="fuchsia" label="Guestlists" value={stats.guestlists} hint="Open and upcoming" onClick={() => setParam('kind', 'guestlist', 'all')} active={kind === 'guestlist'} />}
+            </div>
+
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <SearchInput value={search} onChange={setSearch} placeholder="Search events or venues" className="lg:w-80" />
+                <div className="flex flex-1 items-center gap-2">
+                    <Select value={kind} onChange={(v) => setParam('kind', v, 'all')} label="Kind" className="min-w-0 flex-1 lg:w-52 lg:flex-none" options={[
+                        { value: 'all', label: 'Tickets and guestlists' },
+                        { value: 'tickets', label: 'Ticketed' },
+                        { value: 'guestlist', label: 'Guestlists' },
+                    ]} />
+                    {!isScanner && (
+                        <ExportMenu label="Export" getSpec={() => ordersSpec(filtered, Object.values(ordersByEvent).flat(), 'Ticket orders')} hint="Every order for the events shown" />
+                    )}
+                    <ViewToggle value={view} onChange={setView} />
+                </div>
+            </div>
+
+            <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+                <SegmentedTabs value={when} onChange={(v) => setParam('when', v, 'upcoming')} items={[
+                    { value: 'upcoming', label: 'Upcoming', count: counts.upcoming },
+                    { value: 'past', label: 'Past', count: counts.past },
+                    { value: 'all', label: 'All', count: counts.all },
+                ]} />
+            </div>
+
+            {filtered.length === 0 ? (
+                <Panel>
+                    <EmptyState
+                        icon={kind === 'guestlist' ? ListChecks : Ticket}
+                        title={events.length ? 'Nothing here' : 'No ticketed events yet'}
+                        description={events.length
+                            ? 'Try another filter or search.'
+                            : 'Turn on tickets or a guestlist when you create an event in Events, or start a standalone guestlist.'}
+                        action={!isScanner && (
+                            <div className="flex flex-wrap justify-center gap-2">
+                                <Button as={Link} to="/admin/upcoming-events?new=1" variant="secondary" className="h-11"><Calendar size={14} /> New event</Button>
+                                <Button variant="accent" className="h-11" onClick={onNewGuestlist}><Plus size={14} /> New guestlist</Button>
+                            </div>
+                        )}
+                    />
+                </Panel>
+            ) : view === 'cards' ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {filtered.map(event => {
+                        const orders = ordersByEvent[event.id] || [];
+                        const pending = orders.filter(o => o.status === 'pending').length;
+                        const availability = event.isTicketed ? computeAvailability(event, orders) : null;
+                        const cap = availability?.total.capacity;
+                        return (
+                            <button key={event.id} type="button" onClick={() => onOpen(event.id)}
+                                className="group flex flex-col overflow-hidden rounded-2xl border border-black/[0.06] bg-white text-left transition-all hover:-translate-y-0.5 hover:border-black/15 dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-white/20">
+                                <EventThumb event={event} className="aspect-[16/8] w-full" />
+                                <div className="flex flex-1 flex-col gap-2 p-4">
+                                    <p className="line-clamp-2 text-[15px] font-bold leading-snug">{event.title || 'Untitled event'}</p>
+                                    <p className="flex items-center gap-1.5 truncate text-[12px] text-gray-500 dark:text-zinc-400">
+                                        <Calendar size={12} className="shrink-0" /> {formatEventDate(event.when)}
+                                        {event.location && <><span aria-hidden>·</span><MapPin size={12} className="shrink-0" /><span className="truncate">{event.location}</span></>}
+                                    </p>
+                                    <EventBadges event={event} availability={availability} pending={pending} />
+                                    {cap ? (
+                                        <Meter className="mt-auto" max={cap} label="Seats sold and held" segments={[
+                                            { value: availability.total.sold, tone: 'orange' },
+                                            { value: availability.total.held - availability.total.sold, tone: 'amber' },
+                                        ]} />
+                                    ) : null}
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
+            ) : (
+                <Panel className="overflow-hidden">
+                    <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                        {filtered.map(event => {
+                            const orders = ordersByEvent[event.id] || [];
+                            const pending = orders.filter(o => o.status === 'pending').length;
+                            const availability = event.isTicketed ? computeAvailability(event, orders) : null;
+                            return (
+                                <li key={event.id}>
+                                    <button type="button" onClick={() => onOpen(event.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-black/[0.02] dark:hover:bg-white/[0.02] sm:px-5">
+                                        <EventThumb event={event} className="h-14 w-14 rounded-xl" />
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-[15px] font-bold">{event.title || 'Untitled event'}</p>
+                                            <p className="truncate text-[12px] text-gray-500 dark:text-zinc-400">{[formatEventDate(event.when), event.location].filter(Boolean).join(' · ')}</p>
+                                            <EventBadges event={event} availability={availability} pending={pending} />
+                                        </div>
+                                        <ChevronRight size={16} className="shrink-0 text-gray-300 dark:text-zinc-600" />
+                                    </button>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </Panel>
+            )}
+        </div>
+    );
+};
+
+const EventTabs = ({ tabs, active, onChange }) => {
+    const a = useAccent();
+    return (
+        <div className="-mx-4 overflow-x-auto border-b border-black/[0.07] px-4 [scrollbar-width:none] dark:border-white/[0.07] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+            <div className="flex gap-1" role="tablist">
+                {tabs.map(tab => {
+                    const Icon = tab.icon;
+                    const on = active === tab.value;
+                    return (
+                        <button
+                            key={tab.value}
+                            type="button"
+                            role="tab"
+                            aria-selected={on}
+                            onClick={() => onChange(tab.value)}
+                            className={cn('relative flex h-11 shrink-0 items-center gap-2 px-3 text-[13px] font-semibold transition-colors',
+                                on ? 'text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-zinc-500 dark:hover:text-white')}
+                        >
+                            <Icon size={15} className={on ? a.text : undefined} />
+                            {tab.label}
+                            {tab.count ? <Badge tone="amber" className="tabular-nums">{tab.count}</Badge> : null}
+                            {on && <span className={cn('absolute inset-x-2 -bottom-px h-0.5 rounded-full', a.dot)} />}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
 
 const TicketingManagement = () => {
-    useStoreSubscription(['upcomingEvents', 'portfolio', 'ticketOrders']);
-    const { upcomingEvents, portfolio = [], ticketOrders = [], updateTicketOrderStatus, updateGuestlistEntryStatus, user, coupons = [], volunteerGigs = [] } = useStore();
-    const storeGuestlists = useStore(state => state.guestlists) || [];
+    useStoreSubscription(['upcomingEvents', 'portfolio', 'ticketOrders', 'guestlists', 'coupons', 'volunteerGigs']);
+    const user = useStore(s => s.user);
+    const ticketOrders = useStore(s => s.ticketOrders);
+    const coupons = useStore(s => s.coupons);
+    // Only the scanner role is limited here (gate managers could always review orders).
     const isScanner = user?.role === 'scanner';
-    
-    const [searchParams] = useSearchParams();
-    const [selectedEventId, setSelectedEventId] = useState(null);
-    const [activeTab, setActiveTab] = useState(isScanner ? 'sheets' : 'buyers'); // buyers, guestlist, dispatch, attendance, coupons, sheets, settings
-    const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState('ALL');
-    const [glFilter, setGlFilter] = useState('all'); // all, pending, approved, tasks
-    const [selectedTaskEntry, setSelectedTaskEntry] = useState(null);
-    const [isUploading, setIsUploading] = useState(false);
-    const [selectedCategory, setSelectedCategory] = useState('');
-    const [guestlistEntries, setGuestlistEntries] = useState([]);
-    const [glLoading, setGlLoading] = useState(false);
-    const [showAddCoupon, setShowAddCoupon] = useState(false);
-    const [isSavingCoupon, setIsSavingCoupon] = useState(false);
+    const canSeeMoney = FINANCE_ROLES.includes(user?.role);
 
-    useEffect(() => {
-        const eventId = searchParams.get('eventId');
-        if (eventId) {
-            setSelectedEventId(eventId);
-            // Default to guestlist tab if requested
-            if (searchParams.get('tab') === 'guestlist') {
-                setActiveTab('guestlist');
-            }
-        }
-    }, [searchParams]);
+    const [params, setParams] = useSearchParams();
+    const selectedEventId = params.get('eventId');
+    const rawTab = params.get('tab');
+    const [editor, setEditor] = useState(null); // { guestlist } | { guestlist: null } for new
 
-    const operationalEvents = useMemo(() => {
-        const upcoming = upcomingEvents?.filter(e => e.isTicketed || e.isGuestlistEnabled || e.guestlistEnabled) || [];
-        const ports = portfolio?.filter(p => p.wasEvent && (p.isTicketed || p.isGuestlistEnabled || p.guestlistEnabled)) || [];
-        const gls = storeGuestlists.map(gl => ({ ...gl, isGuestlistEnabled: true }));
-        const gigs = volunteerGigs?.filter(g => g.guestlistEnabled || g.isGuestlistEnabled) || [];
+    const events = useOperationalEvents();
+    // A standalone list posted to the home page merges into that event; old links still land.
+    const event = events.find(e => e.id === selectedEventId)
+        || events.find(e => e.guestlistIds?.includes(selectedEventId))
+        || null;
 
-        const consolidated = new Map();
+    const ordersByEvent = useMemo(() => {
+        const map = {};
+        (ticketOrders || []).forEach(o => { (map[o.eventId] ||= []).push(o); });
+        return map;
+    }, [ticketOrders]);
+    const orders = useMemo(() => (event ? ordersByEvent[event.id] || [] : []), [ordersByEvent, event]);
 
-        // 1. Add all upcoming events first to preserve thumbnails and main event info
-        for (const ev of upcoming) {
-            consolidated.set(ev.id, { ...ev });
-        }
+    const { entries: guestEntries, loading: guestLoading, error: guestError } = useGuestEntries(event?.guestlistIds, Boolean(event && hasGuestlist(event)));
 
-        // 2. Add portfolio events
-        for (const ev of ports) {
-            if (consolidated.has(ev.id)) {
-                consolidated.set(ev.id, { ...consolidated.get(ev.id), ...ev });
-            } else {
-                consolidated.set(ev.id, { ...ev });
-            }
-        }
+    const tabs = useMemo(() => {
+        if (!event) return [];
+        const list = [{ value: 'overview', label: 'Overview', icon: LayoutDashboard }];
+        if (event.isTicketed && !isScanner) list.push({ value: 'orders', label: 'Orders', icon: Receipt, count: orders.filter(o => o.status === 'pending').length || undefined });
+        if (hasGuestlist(event) && !isScanner) list.push({ value: 'guestlist', label: event.guestlistMode === 'rsvp' ? 'RSVPs' : 'Guestlist', icon: Users, count: guestEntries.filter(e => e.status === 'pending' || (!e.status && e.hasTask)).length || undefined });
+        list.push({ value: 'checkin', label: 'Check-in', icon: UserCheck });
+        if (event.isTicketed && !isScanner) list.push({ value: 'coupons', label: 'Coupons', icon: Tag });
+        if (!isScanner) list.push({ value: 'settings', label: 'Settings', icon: Settings });
+        return list;
+    }, [event, isScanner, orders, guestEntries]);
 
-        // 3. Add volunteer gigs
-        for (const ev of gigs) {
-            if (consolidated.has(ev.id)) {
-                consolidated.set(ev.id, { ...consolidated.get(ev.id), ...ev });
-            } else {
-                consolidated.set(ev.id, { ...ev });
-            }
-        }
+    const requestedTab = LEGACY_TABS[rawTab] || rawTab;
+    const activeTab = tabs.some(t => t.value === requestedTab) ? requestedTab : (isScanner ? 'checkin' : 'overview');
+    const listFilter = params.get('filter') || undefined;
 
-        // 4. Merge guestlists (matching on eventId / linkedEventId / ID)
-        for (const gl of gls) {
-            const linkedId = gl.eventId || gl.linkedEventId;
-            let matchId = null;
+    const setTab = (tab, filter) => {
+        const next = new URLSearchParams(params);
+        next.set('tab', tab);
+        if (filter) next.set('filter', filter); else next.delete('filter');
+        setParams(next, { replace: true });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    const openEvent = (id, tab, filter) => {
+        const next = { eventId: id };
+        if (tab) next.tab = tab;
+        if (filter) next.filter = filter;
+        setParams(next);
+        window.scrollTo({ top: 0 });
+    };
+    const closeEvent = () => {
+        const next = new URLSearchParams();
+        ['when', 'kind'].forEach(k => params.get(k) && next.set(k, params.get(k)));
+        setParams(next);
+    };
 
-            if (linkedId && consolidated.has(linkedId)) {
-                matchId = linkedId;
-            } else if (consolidated.has(gl.id)) {
-                matchId = gl.id;
-            } else {
-                // Look for cross-referencing
-                for (const [id, ev] of consolidated.entries()) {
-                    if (ev.eventId === gl.id || ev.linkedEventId === gl.id || ev.id === gl.eventId || ev.id === gl.linkedEventId) {
-                        matchId = id;
-                        break;
-                    }
-                }
-            }
+    const header = { title: 'Ticketing', icon: Ticket, description: 'Orders, guestlists, check-in and coupons for every event' };
 
-            if (matchId) {
-                const existing = consolidated.get(matchId);
-                consolidated.set(matchId, {
-                    ...gl,
-                    ...existing,
-                    currentSpots: gl.currentSpots || existing.currentSpots || 0,
-                    id: existing.id || gl.id,
-                    guestlistId: gl.id, // Store the actual guestlist document ID
-                    isGuestlistEnabled: true
-                });
-            } else {
-                // Standalone guestlist
-                consolidated.set(gl.id, {
-                    ...gl,
-                    guestlistId: gl.id
-                });
-            }
-        }
+    const editorSheet = (
+        <GuestlistEditor
+            open={Boolean(editor)}
+            guestlist={editor?.guestlist || null}
+            onClose={() => setEditor(null)}
+            onSaved={(id) => { if (!editor?.guestlist && id) openEvent(id, 'guestlist'); }}
+        />
+    );
 
-        return Array.from(consolidated.values()).sort((a, b) => {
-            if (!a.date) return 1;
-            if (!b.date) return -1;
-            return new Date(b.date) - new Date(a.date);
-        });
-    }, [upcomingEvents, portfolio, storeGuestlists]);
-
-    // Find the selected event
-    const event = useMemo(() => {
-        if (!selectedEventId) return null;
-        return operationalEvents.find(e => e.id === selectedEventId);
-    }, [operationalEvents, selectedEventId]);
-
-    // Compute targetId reactively based on storeGuestlists & consolidated data
-    const gl = useMemo(() => {
-        if (!selectedEventId) return null;
-        return storeGuestlists.find(g => g.id === selectedEventId || g.eventId === selectedEventId || g.linkedEventId === selectedEventId);
-    }, [storeGuestlists, selectedEventId]);
-
-    const targetId = event?.guestlistId || gl?.id || selectedEventId;
-
-    // Load guestlist entries reactively
-    useEffect(() => {
-        if (!selectedEventId || !targetId) return;
-        
-        setGlLoading(true);
-
-        const q = query(collection(db, 'guestlists', targetId, 'entries'), orderBy('createdAt', 'desc'));
-        const unsub = onSnapshot(q, (snap) => {
-            const data = snap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-            setGuestlistEntries(data);
-            setGlLoading(false);
-        }, (err) => {
-            console.error(err);
-            setGlLoading(false);
-        });
-
-        return unsub;
-    }, [selectedEventId, targetId]);
-
-    // Auto-switch to guestlist tab if event is not ticketed (RSVP/Guestlist only)
-    useEffect(() => {
-        if (event && !event.isTicketed && (event.isGuestlistEnabled || event.guestlistEnabled)) {
-            setActiveTab('guestlist');
-        }
-    }, [selectedEventId, event]);
-
-    const eventOrders = useMemo(() => {
-        return ticketOrders.filter(o => o.eventId === selectedEventId);
-    }, [ticketOrders, selectedEventId]);
-
-    const pendingOrders = useMemo(() => {
-        return eventOrders.filter(o => o.status === 'pending');
-    }, [eventOrders]);
-
-    const approvedOrders = useMemo(() => {
-        return eventOrders.filter(o => o.status === 'approved' || o.status === 'dispatched');
-    }, [eventOrders]);
-
-    // Calculate Stats for Ticketing Operations
-    const totalTicketPeople = useMemo(() => {
-        return approvedOrders.reduce((acc, order) => {
-            const items = Array.isArray(order.items) ? order.items : Object.values(order.items || {});
-            const count = Array.isArray(order.items) 
-                ? items.reduce((a, b) => a + (b.count || 0), 0)
-                : items.reduce((a, b) => a + (b || 0), 0);
-            return acc + count;
-        }, 0);
-    }, [approvedOrders]);
-
-    const totalGuestlistPeople = useMemo(() => {
-        return guestlistEntries.reduce((acc, e) => acc + (e.guestsCount || 1), 0);
-    }, [guestlistEntries]);
-
-    const checkedInGuestlistPeople = useMemo(() => {
-        return guestlistEntries.filter(e => e.attended).reduce((acc, e) => acc + (e.guestsCount || 1), 0);
-    }, [guestlistEntries]);
-
-    const totalPeople = totalTicketPeople + totalGuestlistPeople;
-
-    // If no event selected, show event cards
     if (!selectedEventId) {
         return (
             <AdminCommunityHubLayout
-                studioHeader={{
-                    title: 'Ticket',
-                    subtitle: 'Operations',
-                    icon: Ticket,
-                    accentClass: 'text-neon-green'
-                }}
-                accentColor="neon-green"
-                hideTabs={true}
-                description="Select an event to manage ticketing operations."
+                studioHeader={header}
+                hideTabs
+                action={(
+                    <div className="flex w-full gap-2 sm:w-auto">
+                        <Button as={Link} to="/admin/scanner" variant="secondary" className="h-11 flex-1 sm:flex-none"><ScanLine size={15} /> Gate scanner</Button>
+                        {!isScanner && <Button variant="accent" className="h-11 flex-1 sm:flex-none" onClick={() => setEditor({ guestlist: null })}><Plus size={15} /> New guestlist</Button>}
+                    </div>
+                )}
             >
-                <div className="flex md:grid md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory no-scrollbar px-6 md:px-0">
-                    {operationalEvents.map(event => {
-                        const eventOrders = ticketOrders.filter(o => o.eventId === event.id);
-                        const pendingCount = eventOrders.filter(o => o.status === 'pending').length;
-                        const approvedCount = eventOrders.filter(o => o.status === 'approved' || o.status === 'dispatched').length;
-                        const isCompleted = event.date && new Date(event.date) < new Date();
-                        const isRsvpOnly = !event.isTicketed && (event.isGuestlistEnabled || event.guestlistEnabled);
-                        return (
-                            <motion.div
-                                key={event.id}
-                                layout
-                                initial={{ opacity: 0, scale: 0.92 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ duration: 0.4 }}
-                                onClick={() => setSelectedEventId(event.id)}
-                                className="group relative bg-[#0A0A0A] border border-black/10 dark:border-white/5 hover:border-neon-green/20 rounded-[2.5rem] p-5 flex flex-col h-auto min-h-[420px] shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-500 cursor-pointer shrink-0 w-[85vw] md:w-auto snap-center"
-                            >
-                                {/* 16:9 Thumbnail Header */}
-                                <div className="relative mb-6 shrink-0 group-hover:scale-[1.01] transition-transform duration-700">
-                                    <div className="aspect-video rounded-[1.5rem] overflow-hidden bg-white dark:bg-black border border-black/10 dark:border-white/5 relative flex items-center justify-center">
-                                        {(event.hubImage || event.image) ? (
-                                            <div
-                                                className="absolute inset-0 bg-cover transition-transform duration-700 group-hover:scale-110"
-                                                style={{
-                                                    backgroundImage: `url(${event.hubImage || event.image})`,
-                                                    transform: `scale(${event.hubImage ? (event.hubImageTransform?.scale || 1) : (event.imageTransform?.scale || 1)})`,
-                                                    backgroundPosition: event.hubImage 
-                                                        ? `calc(50% + ${(event.hubImageTransform?.x || 0)}%) calc(50% + ${(event.hubImageTransform?.y || 0)}%)`
-                                                        : `calc(50% + ${(event.imageTransform?.x || 0)}%) calc(50% + ${(event.imageTransform?.y || 0)}%)`
-                                                }}
-                                            />
-                                        ) : (
-                                            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-zinc-900/50">
-                                                <Ticket size={32} className="text-gray-900 dark:text-white/5" />
-                                            </div>
-                                        )}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10" />
-                                    </div>
-                                </div>
-
-                                {/* Status Badge — floats top-right */}
-                                {isCompleted && (
-                                    <div className="absolute top-8 right-8 z-30">
-                                        <div className="px-3 py-1.5 rounded-full bg-white dark:bg-black/60 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center gap-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                            <span className="text-[8px] font-black uppercase tracking-widest text-gray-900 dark:text-white/80">Completed</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Content Body */}
-                                <div className="flex-1 flex flex-col px-1">
-                                    {/* Badges Row */}
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        {event.isTicketed && (
-                                            <span className="px-2.5 h-5 flex items-center text-[7px] font-black uppercase tracking-widest border rounded-full backdrop-blur-md bg-neon-green/10 border-neon-green/30 text-neon-green">
-                                                TICKETED
-                                            </span>
-                                        )}
-                                        {(event.isGuestlistEnabled || event.guestlistEnabled) && (
-                                            <span className="px-2.5 h-5 flex items-center text-[7px] font-black uppercase tracking-widest border rounded-full backdrop-blur-md bg-neon-pink/10 border-neon-pink/30 text-neon-pink">
-                                                {event.guestlistMode === 'rsvp' ? 'RSVP' : 'GUESTLIST'}
-                                            </span>
-                                        )}
-                                        <span className="px-2.5 h-5 flex items-center bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white/50 text-[7px] font-black uppercase tracking-widest rounded-full backdrop-blur-md">
-                                            {event.date 
-                                                ? (typeof event.date === 'string' && event.date.includes('T') 
-                                                    ? event.date.split('T')[0] 
-                                                    : (event.date?.seconds ? new Date(event.date.seconds * 1000).toLocaleDateString() : new Date(event.date).toLocaleDateString()))
-                                                : 'TBD'}
-                                        </span>
-                                    </div>
-
-                                    {/* Title */}
-                                    <h3 className="text-xl font-black font-heading tracking-tight uppercase italic text-gray-900 dark:text-white group-hover:text-neon-green transition-colors duration-500 leading-tight line-clamp-2 mb-4">
-                                        {event.title}
-                                    </h3>
-
-                                    {/* Stats row */}
-                                    <div className="flex gap-3 mb-4">
-                                        {event.isTicketed && (
-                                            <>
-                                                <div className="px-4 py-2.5 rounded-xl bg-neon-green/5 border border-neon-green/10 flex items-center gap-2">
-                                                    <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">Sold</span>
-                                                    <span className="text-sm font-black text-neon-green">{approvedCount}</span>
-                                                </div>
-                                                {pendingCount > 0 && (
-                                                    <div className="px-4 py-2.5 rounded-xl bg-yellow-500/5 border border-yellow-500/10 flex items-center gap-2">
-                                                        <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">Pending</span>
-                                                        <span className="text-sm font-black text-yellow-500">{pendingCount}</span>
-                                                    </div>
-                                                )}
-                                            </>
-                                        )}
-                                        {isRsvpOnly && (
-                                            <div className="px-4 py-2.5 rounded-xl bg-neon-pink/5 border border-neon-pink/10 flex items-center gap-2">
-                                                <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">Entries</span>
-                                                <span className="text-sm font-black text-neon-pink">{event.currentSpots || 0}</span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Footer */}
-                                    <div className="mt-auto pt-4 border-t border-white/[0.06] flex items-center justify-between">
-                                        <div className="flex flex-col gap-1 min-w-0 pr-4">
-                                            <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest truncate">
-                                                {event.location || 'TBD'}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            {event.isTicketed && (
-                                                <div className="w-7 h-7 rounded-lg bg-neon-green/10 flex items-center justify-center text-neon-green border border-neon-green/20" title="Ticketing Enabled">
-                                                    <Ticket size={12} />
-                                                </div>
-                                            )}
-                                            {(event.isGuestlistEnabled || event.guestlistEnabled) && (
-                                                <div className="w-7 h-7 rounded-lg bg-neon-pink/10 flex items-center justify-center text-neon-pink border border-neon-pink/20" title="RSVP/Guestlist">
-                                                    <Users size={12} />
-                                                </div>
-                                            )}
-                                            <div className="w-7 h-7 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-900 dark:text-white/30 border border-black/10 dark:border-white/10 group-hover:bg-neon-green group-hover:text-black group-hover:border-neon-green transition-all" title="Open Operations">
-                                                <ChevronRight size={14} />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )
-                    })}
-
-                    {operationalEvents.length === 0 && (
-                        <div className="col-span-full py-32 flex flex-col items-center justify-center gap-6 bg-gray-100 dark:bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-black/10 dark:border-white/5">
-                            <div className="w-16 h-16 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-700 animate-pulse">
-                                <Ticket size={28} />
-                            </div>
-                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em]">No ticketing events found.</p>
-                        </div>
-                    )}
-                </div>
+                <EventList
+                    events={events}
+                    ordersByEvent={ordersByEvent}
+                    onOpen={openEvent}
+                    canSeeMoney={canSeeMoney}
+                    isScanner={isScanner}
+                    onNewGuestlist={() => setEditor({ guestlist: null })}
+                />
+                {editorSheet}
             </AdminCommunityHubLayout>
         );
     }
 
-    // Filtering logic
-    let filteredOrders = eventOrders.filter(order => {
-        let matchesSearch = true;
-        if (searchQuery) {
-            matchesSearch = (order.customerName || order.name)?.toLowerCase().includes(searchQuery.toLowerCase()) || order.paymentRef?.includes(searchQuery);
-        }
-        let matchesStatus = true;
-        if (statusFilter !== 'ALL') {
-            matchesStatus = order.status === statusFilter.toLowerCase();
-        }
-        return matchesSearch && matchesStatus;
-    });
-
-    const handleApprove = async (orderId) => {
-        if(window.confirm('Approve payment? User will be moved to verified queue awaiting dispatch.')) {
-            try {
-                await updateTicketOrderStatus(orderId, 'approved');
-            } catch (err) {
-                console.error(err);
-                useStore.getState().addToast("Couldn't approve the order. Please try again.", 'error');
-            }
-        }
-    };
-
-    const handleReject = async (orderId) => {
-        if(window.confirm('Reject payment?')) {
-            try {
-                await updateTicketOrderStatus(orderId, 'rejected');
-            } catch (err) {
-                console.error(err);
-                useStore.getState().addToast("Couldn't reject the order. Please try again.", 'error');
-            }
-        }
-    };
-
-    const handleBulkUpload = (e) => {
-        if (!selectedCategory) {
-            useStore.getState().addToast("Choose a ticket category first.", 'error');
-            return;
-        }
-        setIsUploading(true);
-        setTimeout(() => {
-            setIsUploading(false);
-            useStore.getState().addToast(`Ticket PDFs uploaded and matched to approved buyers in ${selectedCategory}.`, 'success');
-        }, 2000);
-    };
-
-    const handleDispatchAll = async () => {
-        if(window.confirm('Dispatch all assigned tickets via email?')) {
-            const readyOrders = eventOrders.filter(o => o.status === 'approved');
-            for (let order of readyOrders) {
-                try {
-                    await updateTicketOrderStatus(order.id, 'dispatched');
-                } catch (e) {
-                    console.error("Failed to dispatch order", order.id);
-                }
-            }
-            useStore.getState().addToast('Tickets sent to buyers.', 'success');
-        }
-    };
-
-    const escapeHTML = (val) => {
-        if (val === undefined || val === null) return '';
-        return String(val)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    };
-
-    const downloadSheets = () => {
-        const hasTickets = event?.isTicketed;
-        const hasGuestlist = event?.isGuestlistEnabled || event?.guestlistEnabled;
-
-        if (eventOrders.length === 0 && guestlistEntries.length === 0) {
-            useStore.getState().addToast("There's nothing to export yet.", 'info');
-            return;
-        }
-
-        let headers = [];
-        let rows = [];
-
-        // Formatting timestamps helper
-        const formatTime = (ts) => {
-            if (!ts) return '';
-            let d;
-            if (ts.seconds) {
-                d = new Date(ts.seconds * 1000);
-            } else {
-                d = new Date(ts);
-            }
-            if (isNaN(d.getTime())) return String(ts);
-            
-            const pad = (n) => String(n).padStart(2, '0');
-            const yyyy = d.getFullYear();
-            const mm = pad(d.getMonth() + 1);
-            const dd = pad(d.getDate());
-            const hh = pad(d.getHours());
-            const min = pad(d.getMinutes());
-            return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
-        };
-
-        if (hasTickets && !hasGuestlist) {
-            // Ticket-only event layout
-            headers = ["Booking Ref", "Name", "Email", "Phone", "Status", "UTR / Payment Ref", "Amount Paid", "Tickets Purchased", "Purchase Date"];
-            rows = eventOrders.map(o => {
-                const ticketDetails = Array.isArray(o.items) 
-                    ? o.items.map(i => `${i.count}x ${i.name}`).join(' | ')
-                    : Object.entries(o.items || {}).map(([k, v]) => `${v}x ${k}`).join(' | ');
-                return [
-                    o.bookingRef || o.id,
-                    o.customerName || o.name || '',
-                    o.customerEmail || o.email || '',
-                    o.customerPhone || o.phone || '',
-                    o.status ? o.status.toUpperCase() : 'PENDING',
-                    o.paymentRef || '',
-                    o.totalAmount !== undefined ? `₹${o.totalAmount}` : '₹0',
-                    ticketDetails,
-                    formatTime(o.createdAt)
-                ];
-            });
-        } else if (!hasTickets && hasGuestlist) {
-            // RSVP/Guestlist-only event layout
-            headers = ["Booking Ref", "Name", "Email", "Phone", "Total Guests", "Attendance Status", "Task Review Status", "Task File URL", "Task Link", "Task Pitch", "RSVP Date"];
-            rows = guestlistEntries.map(e => [
-                e.bookingRef || e.id,
-                e.customerName || e.name || '',
-                e.customerEmail || e.email || '',
-                e.customerPhone || e.phone || '',
-                e.guestsCount || 1,
-                e.attended ? "ATTENDED" : "REGISTERED",
-                e.hasTask ? (e.status || 'pending').toUpperCase() : 'STANDARD',
-                e.taskSubmission?.fileUrl || '',
-                e.taskSubmission?.link || '',
-                e.taskSubmission?.text || '',
-                formatTime(e.createdAt)
-            ]);
-        } else {
-            // Hybrid event layout
-            headers = ["Booking Ref", "Type", "Name", "Email", "Phone", "Status / Attendance", "UTR / Payment Ref", "Amount Paid", "Details", "Task Material", "Date"];
-            
-            const ticketRows = eventOrders.map(o => {
-                const ticketDetails = Array.isArray(o.items) 
-                    ? o.items.map(i => `${i.count}x ${i.name}`).join(' | ')
-                    : Object.entries(o.items || {}).map(([k, v]) => `${v}x ${k}`).join(' | ');
-                return [
-                    o.bookingRef || o.id,
-                    "TICKET",
-                    o.customerName || o.name || '',
-                    o.customerEmail || o.email || '',
-                    o.customerPhone || o.phone || '',
-                    o.status ? o.status.toUpperCase() : 'PENDING',
-                    o.paymentRef || '',
-                    o.totalAmount !== undefined ? `₹${o.totalAmount}` : '₹0',
-                    ticketDetails,
-                    '-',
-                    formatTime(o.createdAt)
-                ];
-            });
-
-            const guestlistRows = guestlistEntries.map(e => [
-                e.bookingRef || e.id,
-                "GUESTLIST / RSVP",
-                e.customerName || e.name || '',
-                e.customerEmail || e.email || '',
-                e.customerPhone || e.phone || '',
-                e.attended ? "ATTENDED" : (e.hasTask ? (e.status || 'pending').toUpperCase() : "REGISTERED"),
-                '-',
-                '-',
-                `${e.guestsCount || 1} Guest(s)`,
-                e.taskSubmission ? `${e.taskSubmission.fileUrl ? 'File: ' + e.taskSubmission.fileUrl : ''} ${e.taskSubmission.link ? 'Link: ' + e.taskSubmission.link : ''} ${e.taskSubmission.text ? 'Note: ' + e.taskSubmission.text : ''}`.trim() : '-',
-                formatTime(e.createdAt)
-            ]);
-
-            rows = [...ticketRows, ...guestlistRows];
-        }
-
-        const colCount = headers.length;
-        const eventTitle = event?.title || 'Event';
-        const formattedDate = new Date().toLocaleString();
-
-        const getColWidth = (header) => {
-            switch (header) {
-                case "Booking Ref": return "120";
-                case "Name": return "200";
-                case "Email": return "280";
-                case "Phone": return "160";
-                case "Status":
-                case "Attendance Status":
-                case "Status / Attendance": return "160";
-                case "UTR / Payment Ref": return "200";
-                case "Amount Paid": return "130";
-                case "Tickets Purchased":
-                case "Details": return "320";
-                case "Purchase Date":
-                case "RSVP Date":
-                case "Date": return "180";
-                default: return "120";
-            }
-        };
-
-        let html = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <!--[if gte mso 9]>
-        <xml>
-        <x:ExcelWorkbook>
-          <x:ExcelWorksheets>
-            <x:ExcelWorksheet>
-              <x:Name>Operations Report</x:Name>
-              <x:WorksheetOptions>
-                <x:DisplayGridlines/>
-              </x:WorksheetOptions>
-            </x:ExcelWorksheet>
-          </x:ExcelWorksheets>
-        </x:ExcelWorkbook>
-        </xml>
-        <![endif]-->
-        </head>
-        <body>
-        <table style="font-family: 'Segoe UI', Arial, sans-serif; border-collapse: collapse; width: 100%;">
-          <!-- Branded Banner Header (Flat layout with 20px margin column to prevent Excel column misalignment) -->
-          <!-- Top Banner Spacer Row -->
-          <tr>
-            <td style="background-color: #0B0F19; border-left: 4px solid #00FF66; border-right: none; border-top: none; border-bottom: none; height: 16px; line-height: 16px; font-size: 1px; width: 20px;" width="20">&nbsp;</td>
-            <td colspan="${colCount}" style="background-color: #0B0F19; border: none; height: 16px; line-height: 16px; font-size: 1px;">&nbsp;</td>
-          </tr>
-          <!-- Logo Row -->
-          <tr>
-            <td style="background-color: #0B0F19; border-left: 4px solid #00FF66; border-right: none; border-top: none; border-bottom: none; height: 35px; width: 20px;" width="20">&nbsp;</td>
-            <td colspan="${colCount}" style="background-color: #0B0F19; border: none; height: 35px; vertical-align: middle; text-align: left;">
-              <img src="https://newbi.live/logo_full.png" height="32" style="vertical-align: middle; border: none; display: block;">
-            </td>
-          </tr>
-          <!-- Middle Banner Spacer Row -->
-          <tr>
-            <td style="background-color: #0B0F19; border-left: 4px solid #00FF66; border-right: none; border-top: none; border-bottom: none; height: 16px; line-height: 16px; font-size: 1px; width: 20px;" width="20">&nbsp;</td>
-            <td colspan="${colCount}" style="background-color: #0B0F19; border: none; height: 16px; line-height: 16px; font-size: 1px;">&nbsp;</td>
-          </tr>
-          <!-- Report Label Row -->
-          <tr>
-            <td style="background-color: #0B0F19; border-left: 4px solid #00FF66; border-right: none; border-top: none; border-bottom: none; height: 18px; width: 20px;" width="20">&nbsp;</td>
-            <td colspan="${colCount}" style="background-color: #0B0F19; border: none; color: #94A3B8; font-size: 8.5pt; font-weight: bold; height: 18px; vertical-align: middle; text-transform: uppercase;">
-              OPERATIONS REPORT
-            </td>
-          </tr>
-          <!-- Event Title Row -->
-          <tr>
-            <td style="background-color: #0B0F19; border-left: 4px solid #00FF66; border-right: none; border-top: none; border-bottom: none; height: 28px; width: 20px;" width="20">&nbsp;</td>
-            <td colspan="${colCount}" style="background-color: #0B0F19; border: none; color: #00FF66; font-size: 14pt; font-weight: bold; height: 28px; vertical-align: middle;">
-              ${escapeHTML(eventTitle.toUpperCase())}
-            </td>
-          </tr>
-          <!-- Generation Metadata Row -->
-          <tr>
-            <td style="background-color: #0B0F19; border-left: 4px solid #00FF66; border-right: none; border-top: none; border-bottom: none; height: 20px; width: 20px;" width="20">&nbsp;</td>
-            <td colspan="${colCount}" style="background-color: #0B0F19; border: none; color: #64748B; font-size: 8.5pt; height: 20px; vertical-align: middle;">
-              Generated: <span style="color: #94A3B8;">${escapeHTML(formattedDate)}</span> &nbsp;|&nbsp; Total Footprint: <span style="color: #FFFFFF; font-weight: bold;">${totalPeople} People</span>
-            </td>
-          </tr>
-          <!-- Bottom Banner Spacer Row -->
-          <tr>
-            <td style="background-color: #0B0F19; border-left: 4px solid #00FF66; border-right: none; border-top: none; border-bottom: none; height: 16px; line-height: 16px; font-size: 1px; width: 20px;" width="20">&nbsp;</td>
-            <td colspan="${colCount}" style="background-color: #0B0F19; border: none; height: 16px; line-height: 16px; font-size: 1px;">&nbsp;</td>
-          </tr>
-          <!-- Neon Green Divider -->
-          <tr>
-            <td colspan="${colCount + 1}" style="background-color: #00FF66; height: 3px; border: none; font-size: 1px; line-height: 3px;">&nbsp;</td>
-          </tr>
-          <!-- Spacer Row -->
-          <tr style="height: 10px; border: none;">
-            <td colspan="${colCount + 1}" style="border: none; background-color: #FFFFFF; height: 10px;">&nbsp;</td>
-          </tr>
-          <!-- Table Headers -->
-          <tr>
-            <th style="background-color: #FFFFFF; border: none; width: 20px;" width="20">&nbsp;</th>
-            ${headers.map(h => `<th style="background-color: #1F2937; color: #FFFFFF; font-size: 9.5pt; font-weight: bold; border: 1px solid #374151; padding: 8px 10px; text-align: left; vertical-align: middle; width: ${getColWidth(h)}px;" width="${getColWidth(h)}">${escapeHTML(h)}</th>`).join('')}
-          </tr>
-          <!-- Table Data -->
-          ${rows.map((row, rIdx) => {
-              const isZebra = rIdx % 2 !== 0;
-              const bgCol = isZebra ? "#F9FAFB" : "#FFFFFF";
-              
-              return `<tr>
-                  <td style="background-color: ${bgCol}; border: none; width: 20px;">&nbsp;</td>
-                  ${row.map((cell, cIdx) => {
-                      const headerName = headers[cIdx];
-                      const valStr = String(cell);
-                      
-                      // Default styles
-                      let tdStyle = `background-color: ${bgCol}; border: 1px solid #E5E7EB; padding: 6px 10px; font-size: 9pt; color: #1F2937; vertical-align: middle;`;
-                      
-                      // Text number formatting (to prevent scientific notation)
-                      if (headerName === "Phone" || headerName === "Booking Ref" || headerName === "UTR / Payment Ref") {
-                          tdStyle += " mso-number-format:'\\@'; text-align: left;";
-                      } else if (headerName === "Amount Paid" || headerName === "Total Guests") {
-                          tdStyle += " text-align: right;";
-                      }
-
-                      // Badges formatting
-                      if (headerName === "Status" || headerName === "Status / Attendance" || headerName === "Attendance Status") {
-                          let badgeBg = "#F3F4F6";
-                          let badgeColor = "#374151";
-                          
-                          if (valStr === "APPROVED" || valStr === "VERIFIED" || valStr === "ATTENDED") {
-                              badgeBg = "#DEF7EC";
-                              badgeColor = "#03543F";
-                          } else if (valStr === "PENDING") {
-                              badgeBg = "#FEF3C7";
-                              badgeColor = "#92400E";
-                          } else if (valStr === "DISPATCHED") {
-                              badgeBg = "#E0F2FE";
-                              badgeColor = "#0369A1";
-                          }
-                          
-                          tdStyle += ` background-color: ${badgeBg}; color: ${badgeColor}; font-weight: bold; text-align: center;`;
-                      }
-
-                      return `<td style="${tdStyle}">${escapeHTML(cell)}</td>`;
-                  }).join('')}
-              </tr>`;
-          }).join('')}
-        </table>
-        </body>
-        </html>
-        `;
-
-        const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `${eventTitle.replace(/\s+/g, '_')}_Operations_Report.xls`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        useStore.getState().addToast("Spreadsheet downloaded.", 'success');
-    };
-
-    const handleUpdateEventPayment = async (e) => {
-        e.preventDefault();
-        const upiId = e.target.upiId.value;
-        const qrCodeUrl = e.target.qrCodeUrl.value;
-        const gatewayUrl = e.target.gatewayUrl.value;
-        
-        try {
-            const { updateUpcomingEvent } = useStore.getState();
-            await updateUpcomingEvent(selectedEventId, { upiId, qrCodeUrl, gatewayUrl });
-            useStore.getState().addToast("Payment settings saved.", 'success');
-        } catch (err) {
-            console.error(err);
-            useStore.getState().addToast("Couldn't save payment settings. Please try again.", 'error');
-        }
-    };
-
-    const handleQRUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        setIsUploading(true);
-        try {
-            // Reusing existing upload logic if available, or manual fetch to Cloudinary
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('upload_preset', 'ml_default'); 
-
-            const res = await fetch(`https://api.cloudinary.com/v1_1/dmod79hsz/image/upload`, {
-                method: 'POST',
-                body: formData
-            });
-            const data = await res.json();
-            
-            const { updateUpcomingEvent } = useStore.getState();
-            await updateUpcomingEvent(selectedEventId, { qrCodeUrl: data.secure_url });
-            useStore.getState().addToast("QR code uploaded.", 'success');
-        } catch (err) {
-            console.error(err);
-            useStore.getState().addToast("Couldn't upload the QR code. Please try again.", 'error');
-        } finally {
-            setIsUploading(false);
-        }
-    };
+    if (!event) {
+        return (
+            <AdminCommunityHubLayout studioHeader={header} hideTabs>
+                <Panel>
+                    <EmptyState icon={Ticket} title="Loading event…" description="If this doesn't load, the event may have been deleted or had tickets and guestlist turned off."
+                        action={<Button variant="secondary" className="h-11" onClick={closeEvent}><ArrowLeft size={14} /> All events</Button>} />
+                </Panel>
+            </AdminCommunityHubLayout>
+        );
+    }
 
     return (
         <AdminCommunityHubLayout
             studioHeader={{
-                title: event?.title || 'Event',
-                subtitle: 'Operations',
-                icon: Ticket,
-                accentClass: 'text-neon-green'
+                title: event.title || 'Event',
+                icon: event.isTicketed ? Ticket : ListChecks,
+                description: [formatEventDate(event.when), event.location].filter(Boolean).join(' · '),
             }}
-            accentColor="neon-green"
-            hideTabs={true}
-            description="Event Operations Dashboard"
-            action={
-                <Button 
-                    onClick={() => setSelectedEventId(null)} 
-                    variant="outline" 
-                    className="gap-2 border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-2xl uppercase tracking-widest text-[9px] font-black px-6 py-3"
-                >
-                    <ArrowLeft size={14} /> Back to Events
-                </Button>
-            }
+            hideTabs
         >
-            <div className="bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/5 rounded-[3rem] p-6 mb-8 flex flex-col md:flex-row gap-6 justify-between items-center shadow-2xl">
-                    <div className="flex flex-wrap gap-2 w-full md:w-auto bg-white dark:bg-black/60 p-2 rounded-[2rem] border border-black/10 dark:border-white/5">
-                        {['buyers', 'guestlist', 'dispatch', 'attendance', 'coupons', 'sheets', 'settings'].map((tab) => {
-                            if (isScanner && (tab === 'buyers' || tab === 'dispatch' || tab === 'guestlist' || tab === 'settings')) return null; 
-                            if (!event?.isTicketed && (tab === 'buyers' || tab === 'dispatch' || tab === 'settings' || tab === 'coupons')) return null;
-                            if (!(event?.isGuestlistEnabled || event?.guestlistEnabled) && tab === 'guestlist') return null;
-                            return (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={cn(
-                                        "px-8 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all",
-                                        activeTab === tab 
-                                            ? "bg-gradient-to-r from-neon-green/20 to-neon-blue/20 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 shadow-[0_0_20px_rgba(0,255,100,0.1)]" 
-                                            : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
-                                    )}
-                                >
-                                    {tab === 'buyers' ? 'Buyers' : tab === 'guestlist' ? (event?.guestlistMode === 'rsvp' ? 'RSVP' : 'Guestlist') : tab === 'dispatch' ? 'Dispatch' : tab === 'attendance' ? 'Attendance' : tab === 'settings' ? 'Settings' : tab === 'coupons' ? 'Coupons' : 'Sheets'}
-                                </button>
-                            );
-                        })}
+            <div className="mb-5 space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button variant="ghost" onClick={closeEvent} className="-ml-2 h-10"><ArrowLeft size={15} /> All events</Button>
+                    <div className="ml-auto flex items-center gap-2">
+                        {!isScanner && (
+                            <ExportMenu
+                                label="Export"
+                                size="md"
+                                hint="Every order and guest, with payment refs and check-in"
+                                getSpec={() => attendeeSpec(event, orders, guestEntries)}
+                            />
+                        )}
+                        <Button as={Link} to={`/admin/scanner?eventId=${encodeURIComponent(event.id)}`} variant="accent" className="h-11"><ScanLine size={15} /> Scan</Button>
                     </div>
                 </div>
+                <EventTabs tabs={tabs} active={activeTab} onChange={(t) => setTab(t)} />
+            </div>
 
-                <AnimatePresence mode="wait">
-                    {/* COUPONS TAB */}
-                    {activeTab === 'coupons' && !isScanner && (
-                        <motion.div key="coupons" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                {/* Coupon Form */}
-                                <Card className="lg:col-span-1 p-8 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] h-fit sticky top-48">
-                                    <div className="space-y-6">
-                                        <div className="flex items-center gap-4 mb-8">
-                                            <div className="w-12 h-12 rounded-2xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue">
-                                                <Tag size={20} />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white">Create Code</h3>
-                                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Add new discount code.</p>
-                                            </div>
-                                        </div>
-
-                                        <form onSubmit={async (e) => {
-                                            e.preventDefault();
-                                            setIsSavingCoupon(true);
-                                            try {
-                                                const formData = new FormData(e.target);
-                                                const coupon = {
-                                                    code: formData.get('code').toUpperCase(),
-                                                    discountType: formData.get('type'),
-                                                    discountValue: Number(formData.get('value')),
-                                                    usageLimit: formData.get('limit') ? Number(formData.get('limit')) : null,
-                                                    expiryDate: formData.get('expiry') || null,
-                                                    eventId: selectedEventId,
-                                                    usedCount: 0,
-                                                    isActive: true
-                                                };
-                                                await useStore.getState().addCoupon(coupon);
-                                                useStore.getState().addToast("Coupon created.", 'success');
-                                                e.target.reset();
-                                            } catch (err) {
-                                                useStore.getState().addToast("Couldn't create the coupon. Please try again.", 'error');
-                                            } finally {
-                                                setIsSavingCoupon(false);
-                                            }
-                                        }} className="space-y-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">COUPON CODE</label>
-                                                <Input name="code" placeholder="e.g. NEWBI20" required className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black tracking-[0.2em]" />
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">TYPE</label>
-                                                    <select name="type" className="w-full h-14 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest px-4 outline-none">
-                                                        <option value="percentage" className="bg-gray-100 dark:bg-zinc-900">PERCENTAGE %</option>
-                                                        <option value="flat" className="bg-gray-100 dark:bg-zinc-900">FLAT ₹</option>
-                                                    </select>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">VALUE</label>
-                                                    <Input name="value" type="number" placeholder="20" required className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black" />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">USAGE LIMIT (OPTIONAL)</label>
-                                                <Input name="limit" type="number" placeholder="e.g. 100" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">EXPIRY DATE (OPTIONAL)</label>
-                                                <Input name="expiry" type="date" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black uppercase" />
-                                            </div>
-                                            <Button type="submit" disabled={isSavingCoupon} className="w-full h-16 bg-neon-blue text-black font-black uppercase tracking-widest text-[10px] rounded-2xl mt-4">
-                                                {isSavingCoupon ? <LoadingSpinner size="sm" /> : 'CREATE COUPON'}
-                                            </Button>
-                                        </form>
-                                    </div>
-                                </Card>
-
-                                {/* Coupon List */}
-                                <Card className="lg:col-span-2 p-0 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] overflow-hidden shadow-2xl h-fit">
-                                    <div className="p-8 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/40 flex justify-between items-center">
-                                        <h3 className="text-xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white">Active Coupons</h3>
-                                        <div className="px-6 py-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-full text-[9px] font-black uppercase tracking-[0.2em] text-gray-600 dark:text-gray-400">
-                                            {coupons.filter(c => c.eventId === selectedEventId).length} Active
-                                        </div>
-                                    </div>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left border-collapse">
-                                            <thead>
-                                                <tr className="bg-white dark:bg-black/80 border-b border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                                                    <th className="p-8">Code</th>
-                                                    <th className="p-8">Benefit</th>
-                                                    <th className="p-8">Usage</th>
-                                                    <th className="p-8 text-right">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="text-sm">
-                                                {(() => {
-                                                    const eventCoupons = coupons.filter(c => c.eventId === selectedEventId);
-                                                    if (eventCoupons.length === 0) return (
-                                                        <tr>
-                                                            <td colSpan="4" className="p-20 text-center text-gray-500 bg-white dark:bg-black/20">
-                                                                <Percent size={48} className="mx-auto mb-6 opacity-20" />
-                                                                <p className="text-[10px] font-black uppercase tracking-[0.4em]">No coupons active for this event.</p>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                    return eventCoupons.map((coupon) => (
-                                                        <tr key={coupon.id} className="border-b border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
-                                                            <td className="p-8">
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-black text-gray-900 dark:text-white text-base tracking-[0.1em]">{coupon.code}</span>
-                                                                    {coupon.expiryDate && <span className="text-[8px] text-gray-500 font-bold uppercase mt-1">Exp: {new Date(coupon.expiryDate).toLocaleDateString()}</span>}
-                                                                </div>
-                                                            </td>
-                                                            <td className="p-8">
-                                                                <span className={cn(
-                                                                    "px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest border",
-                                                                    coupon.discountType === 'percentage' ? "text-neon-green bg-neon-green/10 border-neon-green/20" : "text-neon-blue bg-neon-blue/10 border-neon-blue/20"
-                                                                )}>
-                                                                    {coupon.discountType === 'percentage' ? `${coupon.discountValue}% OFF` : `₹${coupon.discountValue} OFF`}
-                                                                </span>
-                                                            </td>
-                                                            <td className="p-8">
-                                                                <div className="flex flex-col gap-2">
-                                                                    <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
-                                                                        <span className="text-gray-500">Usage</span>
-                                                                        <span className="text-gray-900 dark:text-white">{coupon.usedCount || 0} / {coupon.usageLimit || '∞'}</span>
-                                                                    </div>
-                                                                    {coupon.usageLimit && (
-                                                                        <div className="w-32 h-1 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
-                                                                            <div 
-                                                                                className="h-full bg-neon-blue" 
-                                                                                style={{ width: `${Math.min(100, ((coupon.usedCount || 0) / coupon.usageLimit) * 100)}%` }} 
-                                                                            />
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </td>
-                                                            <td className="p-8 text-right">
-                                                                <button 
-                                                                    onClick={async () => {
-                                                                        if (window.confirm('Delete this coupon?')) {
-                                                                            await useStore.getState().deleteCoupon(coupon.id);
-                                                                            useStore.getState().addToast("Coupon deleted.", 'success');
-                                                                        }
-                                                                    }}
-                                                                    className="p-3 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                                                                >
-                                                                    <Trash2 size={16} />
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    ));
-                                                })()}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </Card>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {/* GUESTLIST TAB */}
-                    {activeTab === 'guestlist' && !isScanner && (
-                        <motion.div key="guestlist" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                            <Card className="p-0 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] overflow-hidden shadow-2xl">
-                                <div className="p-8 border-b border-black/10 dark:border-white/5 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between bg-white dark:bg-black/40">
-                                    <div className="flex flex-wrap gap-4 items-center w-full md:w-auto">
-                                        <div className="relative">
-                                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                            <Input 
-                                                placeholder="SEARCH GUESTS..." 
-                                                value={searchQuery}
-                                                onChange={e => setSearchQuery(e.target.value)}
-                                                className="h-14 pl-14 w-64 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest"
-                                            />
-                                        </div>
-
-                                        {/* Status / Task Filter Chips */}
-                                        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/10 dark:border-white/10">
-                                            <button
-                                                type="button"
-                                                onClick={() => setGlFilter('all')}
-                                                className={cn(
-                                                    "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
-                                                    glFilter === 'all'
-                                                        ? "bg-black text-white dark:bg-white dark:text-black shadow-sm"
-                                                        : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                                )}
-                                            >
-                                                All ({guestlistEntries.length})
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setGlFilter('pending')}
-                                                className={cn(
-                                                    "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5",
-                                                    glFilter === 'pending'
-                                                        ? "bg-amber-500 text-black shadow-sm font-black"
-                                                        : "text-amber-500 hover:text-amber-400"
-                                                )}
-                                            >
-                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                                                Pending ({guestlistEntries.filter(e => e.status === 'pending').length})
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setGlFilter('approved')}
-                                                className={cn(
-                                                    "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
-                                                    glFilter === 'approved'
-                                                        ? "bg-neon-green text-black shadow-sm"
-                                                        : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                                )}
-                                            >
-                                                Approved ({guestlistEntries.filter(e => e.status === 'approved' || (!e.status && !e.hasTask)).length})
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setGlFilter('tasks')}
-                                                className={cn(
-                                                    "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5",
-                                                    glFilter === 'tasks'
-                                                        ? "bg-neon-blue text-black shadow-sm"
-                                                        : "text-neon-blue hover:underline"
-                                                )}
-                                            >
-                                                <FileUp size={12} />
-                                                With Tasks ({guestlistEntries.filter(e => e.hasTask || e.taskSubmission).length})
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="px-6 py-3 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white rounded-2xl text-[11px] font-black tracking-widest uppercase border border-black/10 dark:border-white/10">
-                                        {guestlistEntries.length} Entries
-                                    </div>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse hidden md:table">
-                                        <thead>
-                                            <tr className="bg-white dark:bg-black/80 border-b border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                                                <th className="p-8 font-medium">Guest Details</th>
-                                                <th className="p-8 font-medium">Guests</th>
-                                                <th className="p-8 font-medium">Booking Ref</th>
-                                                <th className="p-8 font-medium">Task & Submission</th>
-                                                <th className="p-8 font-medium">Review Status</th>
-                                                <th className="p-8 font-medium">Attendance</th>
-                                                <th className="p-8 font-medium text-right">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="text-sm">
-                                            {(() => {
-                                                const filtered = guestlistEntries.filter(entry => {
-                                                    if (searchQuery) {
-                                                        const q = searchQuery.toLowerCase();
-                                                        const matchesName = (entry.customerName || entry.name || '')?.toLowerCase().includes(q);
-                                                        const matchesEmail = (entry.customerEmail || entry.email || '')?.toLowerCase().includes(q);
-                                                        const matchesRef = (entry.bookingRef || '')?.toLowerCase().includes(q);
-                                                        if (!matchesName && !matchesEmail && !matchesRef) return false;
-                                                    }
-                                                    if (glFilter === 'pending') return entry.status === 'pending';
-                                                    if (glFilter === 'approved') return entry.status === 'approved' || (!entry.status && !entry.hasTask);
-                                                    if (glFilter === 'rejected') return entry.status === 'rejected';
-                                                    if (glFilter === 'tasks') return !!(entry.hasTask || entry.taskSubmission);
-                                                    return true;
-                                                });
-
-                                                if (filtered.length === 0) {
-                                                    return (
-                                                        <tr>
-                                                            <td colSpan="7" className="p-20 text-center text-gray-500 bg-white dark:bg-black/20">
-                                                                <Users size={64} className="mx-auto mb-6 opacity-20" />
-                                                                <p className="text-xs font-black uppercase tracking-[0.4em]">No guestlist entries match filter.</p>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                }
-
-                                                return filtered.map((entry) => (
-                                                    <tr key={entry.id} className="border-b border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
-                                                        <td className="p-8">
-                                                            <p className="font-black text-gray-900 dark:text-white text-base tracking-tight">{entry.customerName || entry.name}</p>
-                                                            <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1 italic">{entry.customerEmail || entry.email}</p>
-                                                            {(entry.customerPhone || entry.phone) && (
-                                                                <p className="text-[10px] font-mono text-gray-400 mt-0.5">{entry.customerPhone || entry.phone}</p>
-                                                            )}
-                                                        </td>
-                                                        <td className="p-8">
-                                                            <span className="text-[11px] font-black text-neon-blue bg-neon-blue/10 px-4 py-2 rounded-xl border border-neon-blue/20">
-                                                                {entry.guestsCount || 1} GUEST(S)
-                                                            </span>
-                                                        </td>
-                                                        <td className="p-8 font-mono text-[11px] text-gray-600 dark:text-gray-400 bg-white dark:bg-black/20">{entry.bookingRef}</td>
-                                                        <td className="p-8">
-                                                            {(entry.hasTask || entry.taskSubmission) ? (
-                                                                <div className="flex flex-col gap-2 items-start">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setSelectedTaskEntry(entry)}
-                                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neon-blue/15 hover:bg-neon-blue/30 text-neon-blue border border-neon-blue/30 text-[10px] font-black uppercase tracking-wider transition-all"
-                                                                    >
-                                                                        <Eye size={12} />
-                                                                        Review Submission
-                                                                    </button>
-                                                                    <div className="flex items-center gap-2 text-[10px] text-gray-500 font-mono">
-                                                                        {entry.taskSubmission?.fileUrl && <span className="flex items-center gap-1 text-neon-blue font-bold"><FileUp size={11} /> File</span>}
-                                                                        {entry.taskSubmission?.link && <span className="text-purple-400 font-bold">Link</span>}
-                                                                        {entry.taskSubmission?.text && <span className="text-gray-300 font-bold">Pitch</span>}
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Direct RSVP</span>
-                                                            )}
-                                                        </td>
-                                                        <td className="p-8">
-                                                            {entry.status === 'pending' ? (
-                                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-xl text-[10px] font-black uppercase tracking-wider">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                                                                    Pending Review
-                                                                </span>
-                                                            ) : entry.status === 'rejected' ? (
-                                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-[10px] font-black uppercase tracking-wider">
-                                                                    <X size={11} />
-                                                                    Rejected
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-xl text-[10px] font-black uppercase tracking-wider">
-                                                                    <Check size={11} />
-                                                                    Approved
-                                                                </span>
-                                                            )}
-                                                        </td>
-                                                        <td className="p-8">
-                                                            {entry.attended ? (
-                                                                <div className="flex items-center gap-2 text-neon-green">
-                                                                    <CheckCircle2 size={14} />
-                                                                    <span className="text-[9px] font-black uppercase tracking-widest">Attended</span>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex items-center gap-2 text-gray-600">
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-                                                                    <span className="text-[9px] font-black uppercase tracking-widest">Not Yet</span>
-                                                                </div>
-                                                            )}
-                                                        </td>
-                                                        <td className="p-8 text-right">
-                                                            <div className="flex items-center justify-end gap-2">
-                                                                {(entry.hasTask || entry.taskSubmission) && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setSelectedTaskEntry(entry)}
-                                                                        className="p-2.5 rounded-xl bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-black transition-all"
-                                                                        title="Review submission details"
-                                                                    >
-                                                                        <Eye size={14} />
-                                                                    </button>
-                                                                )}
-                                                                {entry.status === 'pending' && (
-                                                                    <>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={async () => {
-                                                                                try {
-                                                                                    await updateGuestlistEntryStatus(targetId, entry.id, 'approved');
-                                                                                    setGuestlistEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'approved' } : e));
-                                                                                    useStore.getState().addToast(`${entry.customerName || entry.name} approved.`, 'success');
-                                                                                } catch (err) {
-                                                                                    console.error(err);
-                                                                                    useStore.getState().addToast("Couldn't approve the application. Please try again.", 'error');
-                                                                                }
-                                                                            }}
-                                                                            className="p-2.5 rounded-xl bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black transition-all"
-                                                                            title="Quick approve"
-                                                                        >
-                                                                            <Check size={14} />
-                                                                        </button>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={async () => {
-                                                                                if (window.confirm(`Reject application for ${entry.customerName || entry.name}?`)) {
-                                                                                    try {
-                                                                                        await updateGuestlistEntryStatus(targetId, entry.id, 'rejected');
-                                                                                        setGuestlistEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'rejected' } : e));
-                                                                                        useStore.getState().addToast(`Application from ${entry.customerName || entry.name} rejected.`, 'info');
-                                                                                    } catch (err) {
-                                                                                        console.error(err);
-                                                                                        useStore.getState().addToast("Couldn't reject the application. Please try again.", 'error');
-                                                                                    }
-                                                                                }
-                                                                            }}
-                                                                            className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
-                                                                            title="Quick reject"
-                                                                        >
-                                                                            <X size={14} />
-                                                                        </button>
-                                                                    </>
-                                                                )}
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={async () => {
-                                                                        if (window.confirm(`Remove ${entry.customerName || entry.name} from the guestlist?`)) {
-                                                                            try {
-                                                                                await deleteDoc(doc(db, 'guestlists', targetId, 'entries', entry.id));
-                                                                                // Decrement parent currentSpots
-                                                                                try {
-                                                                                    await updateDoc(doc(db, 'guestlists', targetId), {
-                                                                                        currentSpots: increment(-(entry.guestsCount || 1))
-                                                                                    });
-                                                                                } catch (e) { }
-                                                                                useStore.getState().addToast('Entry removed.', 'success');
-                                                                            } catch (err) {
-                                                                                console.error(err);
-                                                                                useStore.getState().addToast("Couldn't remove the entry. Please try again.", 'error');
-                                                                            }
-                                                                        }
-                                                                    }}
-                                                                    className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                                                                    title="Remove entry"
-                                                                >
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ));
-                                            })()}
-                                        </tbody>
-                                    </table>
-
-                                    {/* Mobile Stacked Cards for Guestlist */}
-                                    <div className="flex md:hidden flex-col gap-4 p-4">
-                                        {(() => {
-                                            const filtered = guestlistEntries.filter(entry => {
-                                                if (searchQuery) {
-                                                    const q = searchQuery.toLowerCase();
-                                                    const matchesName = (entry.customerName || entry.name || '')?.toLowerCase().includes(q);
-                                                    const matchesEmail = (entry.customerEmail || entry.email || '')?.toLowerCase().includes(q);
-                                                    const matchesRef = (entry.bookingRef || '')?.toLowerCase().includes(q);
-                                                    if (!matchesName && !matchesEmail && !matchesRef) return false;
-                                                }
-                                                if (glFilter === 'pending') return entry.status === 'pending';
-                                                if (glFilter === 'approved') return entry.status === 'approved' || (!entry.status && !entry.hasTask);
-                                                if (glFilter === 'rejected') return entry.status === 'rejected';
-                                                if (glFilter === 'tasks') return !!(entry.hasTask || entry.taskSubmission);
-                                                return true;
-                                            });
-
-                                            if (filtered.length === 0) {
-                                                return (
-                                                    <div className="p-10 text-center text-gray-500 bg-white dark:bg-black/20 rounded-2xl">
-                                                        <Users size={40} className="mx-auto mb-4 opacity-20" />
-                                                        <p className="text-xs font-black uppercase tracking-[0.4em]">No guestlist entries match filter.</p>
-                                                    </div>
-                                                );
-                                            }
-
-                                            return filtered.map((entry) => (
-                                                <div key={entry.id} className="bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl p-4 flex flex-col gap-4">
-                                                    <div className="flex justify-between items-start">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
-                                                                <Users size={20} />
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-black text-gray-900 dark:text-white text-base tracking-tight">{entry.customerName || entry.name}</p>
-                                                                <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1 italic">{entry.customerEmail || entry.email}</p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <span className="font-mono text-[11px] text-gray-600 dark:text-gray-400 bg-white dark:bg-black/20 px-2 py-1 rounded">{entry.bookingRef}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex flex-wrap justify-between items-center bg-black/5 dark:bg-white/5 rounded-xl p-3 gap-2">
-                                                        <span className="text-[11px] font-black text-neon-blue bg-neon-blue/10 px-4 py-2 rounded-xl border border-neon-blue/20">
-                                                            {entry.guestsCount || 1} GUEST(S)
-                                                        </span>
-                                                        <div>
-                                                            {entry.status === 'pending' ? (
-                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-lg text-[9px] font-black uppercase">
-                                                                    Pending
-                                                                </span>
-                                                            ) : entry.status === 'rejected' ? (
-                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-[9px] font-black uppercase">
-                                                                    Rejected
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-lg text-[9px] font-black uppercase">
-                                                                    Approved
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    {(entry.hasTask || entry.taskSubmission) && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setSelectedTaskEntry(entry)}
-                                                            className="w-full flex items-center justify-center gap-2 py-2.5 bg-neon-blue/10 hover:bg-neon-blue/20 text-neon-blue border border-neon-blue/20 rounded-xl text-xs font-black uppercase tracking-wider"
-                                                        >
-                                                            <Eye size={14} />
-                                                            Review Task Submission
-                                                        </button>
-                                                    )}
-
-                                                    <div className="flex flex-wrap justify-between items-center gap-2 pt-2 border-t border-black/10 dark:border-white/5">
-                                                        <div className="flex items-center gap-2">
-                                                            {entry.status === 'pending' && (
-                                                                <>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={async () => {
-                                                                            try {
-                                                                                await updateGuestlistEntryStatus(targetId, entry.id, 'approved');
-                                                                                setGuestlistEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'approved' } : e));
-                                                                                useStore.getState().addToast(`Entry approved.`, 'success');
-                                                                            } catch (err) {
-                                                                                useStore.getState().addToast("Couldn't approve the entry. Please try again.", 'error');
-                                                                            }
-                                                                        }}
-                                                                        className="px-3 py-1.5 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/20 text-[10px] font-black uppercase"
-                                                                    >
-                                                                        Approve
-                                                                    </button>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={async () => {
-                                                                            if (window.confirm('Reject entry?')) {
-                                                                                try {
-                                                                                    await updateGuestlistEntryStatus(targetId, entry.id, 'rejected');
-                                                                                    setGuestlistEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'rejected' } : e));
-                                                                                    useStore.getState().addToast(`Entry rejected.`, 'info');
-                                                                                } catch (err) {
-                                                                                    useStore.getState().addToast("Couldn't reject the entry. Please try again.", 'error');
-                                                                                }
-                                                                            }
-                                                                        }}
-                                                                        className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-black uppercase"
-                                                                    >
-                                                                        Reject
-                                                                    </button>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={async () => {
-                                                                if (window.confirm(`Remove ${entry.customerName || entry.name} from the guestlist?`)) {
-                                                                    try {
-                                                                        await deleteDoc(doc(db, 'guestlists', targetId, 'entries', entry.id));
-                                                                        try {
-                                                                            await updateDoc(doc(db, 'guestlists', targetId), {
-                                                                                currentSpots: increment(-(entry.guestsCount || 1))
-                                                                            });
-                                                                        } catch (e) { }
-                                                                        useStore.getState().addToast('Entry removed.', 'success');
-                                                                    } catch (err) {
-                                                                        console.error(err);
-                                                                        useStore.getState().addToast("Couldn't remove the entry. Please try again.", 'error');
-                                                                    }
-                                                                }
-                                                            }}
-                                                            className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all ml-auto"
-                                                            title="Remove entry"
-                                                        >
-                                                            <Trash2 size={13} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ));
-                                        })()}
-                                    </div>
-                                </div>
-                            </Card>
-
-                            {/* Task Review Modal */}
-                            {selectedTaskEntry && (
-                                <GuestlistTaskReviewModal
-                                    isOpen={!!selectedTaskEntry}
-                                    onClose={() => setSelectedTaskEntry(null)}
-                                    entry={selectedTaskEntry}
-                                    event={event}
-                                    onStatusChange={async (entryId, newStatus) => {
-                                        await updateGuestlistEntryStatus(targetId, entryId, newStatus);
-                                        setGuestlistEntries(prev => prev.map(e => e.id === entryId ? { ...e, status: newStatus } : e));
-                                        setSelectedTaskEntry(prev => prev && prev.id === entryId ? { ...prev, status: newStatus } : null);
-                                    }}
-                                />
-                            )}
-                        </motion.div>
-                    )}
-
-                    {/* BUYERS LIST TAB */}
-                    {activeTab === 'buyers' && !isScanner && (
-                        <motion.div key="buyers" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                            <Card className="p-0 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] overflow-hidden shadow-2xl">
-                                <div className="p-8 border-b border-black/10 dark:border-white/5 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between bg-white dark:bg-black/40">
-                                    <div className="flex gap-4 items-center">
-                                        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-14 bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 outline-none focus:border-neon-green">
-                                            <option value="ALL">ALL STATUSES</option>
-                                            <option value="PENDING">PENDING PAYMENT</option>
-                                            <option value="APPROVED">PAYMENT VERIFIED</option>
-                                            <option value="DISPATCHED">TICKETS DISPATCHED</option>
-                                        </select>
-                                        <div className="relative">
-                                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                            <Input 
-                                                placeholder="SEARCH..." 
-                                                value={searchQuery}
-                                                onChange={e => setSearchQuery(e.target.value)}
-                                                className="h-14 pl-14 w-64 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="px-6 py-3 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white rounded-2xl text-[11px] font-black tracking-widest uppercase border border-black/10 dark:border-white/10">
-                                        {filteredOrders.length} Records
-                                    </div>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse hidden md:table">
-                                        <thead>
-                                            <tr className="bg-white dark:bg-black/80 border-b border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                                                <th className="p-8 font-medium">Customer Details</th>
-                                                <th className="p-8 font-medium">Tickets</th>
-                                                <th className="p-8 font-medium">UTR / Ref</th>
-                                                <th className="p-8 font-medium">Status</th>
-                                                <th className="p-8 font-medium text-right">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="text-sm">
-                                            {filteredOrders.length > 0 ? filteredOrders.map((order) => (
-                                                <tr key={order.id} className="border-b border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
-                                                    <td className="p-8">
-                                                        <p className="font-black text-gray-900 dark:text-white text-base tracking-tight">{order.customerName || order.name}</p>
-                                                        <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1">{order.customerPhone || order.phone}</p>
-                                                    </td>
-                                                    <td className="p-8">
-                                                        <div className="flex flex-wrap gap-2">
-                                                        {(Array.isArray(order.items) ? order.items : Object.entries(order.items || {}).map(([k, v]) => ({ name: k, count: v }))).map((item, i) => (
-                                                            <div key={i} className="text-[9px] font-black uppercase tracking-widest bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-1.5 rounded-lg inline-block">
-                                                                {item.count}x <span className="text-gray-900 dark:text-white">{item.name}</span>
-                                                            </div>
-                                                        ))}
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-8 font-mono text-[11px] text-gray-600 dark:text-gray-400 bg-white dark:bg-black/20">{order.paymentRef}</td>
-                                                    <td className="p-8">
-                                                        {order.status === 'pending' && <span className="px-3 py-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded-md text-[9px] font-black uppercase tracking-widest">Pending</span>}
-                                                        {order.status === 'approved' && <span className="px-3 py-1 bg-neon-blue/10 text-neon-blue border border-neon-blue/20 rounded-md text-[9px] font-black uppercase tracking-widest">Verified</span>}
-                                                        {order.status === 'dispatched' && <span className="px-3 py-1 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-md text-[9px] font-black uppercase tracking-widest">Dispatched</span>}
-                                                    </td>
-                                                    <td className="p-8 text-right space-x-3">
-                                                        {order.status === 'pending' && (
-                                                            <>
-                                                                <button onClick={() => handleApprove(order.id)} className="w-12 h-12 rounded-2xl bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black inline-flex items-center justify-center transition-all border border-neon-green/20 hover:scale-110" title="Verify Payment">
-                                                                    <Check size={24} />
-                                                                </button>
-                                                                <button onClick={() => handleReject(order.id)} className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white inline-flex items-center justify-center transition-all border border-red-500/20 hover:scale-110" title="Reject Payment">
-                                                                    <X size={24} />
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            )) : (
-                                                <tr>
-                                                    <td colSpan="5" className="p-20 text-center text-gray-500 bg-white dark:bg-black/20">
-                                                        <Search size={64} className="mx-auto mb-6 opacity-20" />
-                                                        <p className="text-xs font-black uppercase tracking-[0.4em]">No records found.</p>
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                    
-                                    {/* Mobile Stacked Cards for Buyers */}
-                                    <div className="flex md:hidden flex-col gap-4 p-4">
-                                        {filteredOrders.length > 0 ? filteredOrders.map((order) => (
-                                            <div key={order.id} className="bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl p-4 flex flex-col gap-4">
-                                                <div className="flex justify-between items-start">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
-                                                            <Users size={20} />
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-black text-gray-900 dark:text-white text-base tracking-tight">{order.customerName || order.name}</p>
-                                                            <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1">{order.customerPhone || order.phone}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <span className="font-mono text-[11px] text-gray-600 dark:text-gray-400 bg-white dark:bg-black/20 px-2 py-1 rounded">{order.paymentRef}</span>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="flex justify-between items-center bg-black/5 dark:bg-white/5 rounded-xl p-3">
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {(Array.isArray(order.items) ? order.items : Object.entries(order.items || {}).map(([k, v]) => ({ name: k, count: v }))).map((item, i) => (
-                                                            <div key={i} className="text-[9px] font-black uppercase tracking-widest bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-1.5 rounded-lg inline-block">
-                                                                {item.count}x <span className="text-gray-900 dark:text-white">{item.name}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                    <div>
-                                                        {order.status === 'pending' && <span className="px-3 py-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded-md text-[9px] font-black uppercase tracking-widest">Pending</span>}
-                                                        {order.status === 'approved' && <span className="px-3 py-1 bg-neon-blue/10 text-neon-blue border border-neon-blue/20 rounded-md text-[9px] font-black uppercase tracking-widest">Verified</span>}
-                                                        {order.status === 'dispatched' && <span className="px-3 py-1 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-md text-[9px] font-black uppercase tracking-widest">Dispatched</span>}
-                                                    </div>
-                                                </div>
-
-                                                {order.status === 'pending' && (
-                                                    <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-black/10 dark:border-white/5">
-                                                        <button onClick={() => handleApprove(order.id)} className="w-10 h-10 rounded-xl bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black inline-flex items-center justify-center transition-all border border-neon-green/20" title="Verify Payment">
-                                                            <Check size={20} />
-                                                        </button>
-                                                        <button onClick={() => handleReject(order.id)} className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white inline-flex items-center justify-center transition-all border border-red-500/20" title="Reject Payment">
-                                                            <X size={20} />
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )) : (
-                                            <div className="p-10 text-center text-gray-500 bg-white dark:bg-black/20 rounded-2xl">
-                                                <Search size={40} className="mx-auto mb-4 opacity-20" />
-                                                <p className="text-xs font-black uppercase tracking-[0.4em]">No records found.</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </Card>
-                        </motion.div>
-                    )}
-
-                    {/* DISPATCH CENTER */}
-                    {activeTab === 'dispatch' && !isScanner && (
-                        <motion.div key="dispatch" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <Card className="p-10 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] shadow-2xl">
-                                    <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-8">Bulk PDF Upload</h3>
-                                    <p className="text-[11px] font-bold tracking-widest uppercase text-gray-500 mb-8">Select a ticket category, then upload PDFs. The system will auto-assign them to verified buyers in this category.</p>
-                                    
-                                    <div className="space-y-8">
-                                        {event?.ticketMode === 'pdf' ? (
-                                            <>
-                                                <div>
-                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mb-3 block">Target Category</label>
-                                                    <select 
-                                                        value={selectedCategory}
-                                                        onChange={(e) => setSelectedCategory(e.target.value)}
-                                                        className="w-full h-16 bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 rounded-3xl px-6 text-[11px] font-black uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-neon-blue"
-                                                    >
-                                                        <option value="">SELECT A CATEGORY...</option>
-                                                        {event?.ticketCategories?.map(cat => (
-                                                            <option key={cat.id} value={cat.name}>{cat.name}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                <div className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-3xl p-12 flex flex-col items-center justify-center text-center group hover:border-neon-blue/50 transition-colors relative mt-8">
-                                                    <input type="file" multiple onChange={handleBulkUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                                                    {isUploading ? (
-                                                        <>
-                                                            <LoadingSpinner size="md" color="#0ff" className="mb-4" />
-                                                            <p className="text-xs font-black uppercase tracking-widest text-neon-blue">Processing PDFs & Mapping...</p>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <div className="w-20 h-20 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-neon-blue/10 transition-all">
-                                                                <Upload size={32} className="text-gray-500 group-hover:text-neon-blue" />
-                                                            </div>
-                                                            <h4 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white mb-2">Drop PDFs Here</h4>
-                                                            <p className="text-[10px] text-gray-500 max-w-[200px]">Only verified buyers without tickets will be assigned.</p>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-neon-green/5 border border-neon-green/10 rounded-3xl">
-                                                <QrCode size={48} className="text-neon-green mb-6" />
-                                                <h4 className="text-lg font-black italic uppercase tracking-widest text-gray-900 dark:text-white mb-2">Automated QR Generation</h4>
-                                                <p className="text-xs text-gray-600 dark:text-gray-400 font-bold tracking-widest uppercase">
-                                                    No uploads required. Unique QR passes are automatically generated and attached to dispatch emails.
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </Card>
-
-                                <Card className="p-10 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] shadow-2xl flex flex-col justify-between">
-                                    <div>
-                                        <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-8">Dispatch Queue</h3>
-                                        <div className="space-y-4 mb-8">
-                                            <div className="p-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl flex justify-between items-center">
-                                                <div>
-                                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">{event?.ticketMode === 'pdf' ? 'Tickets Ready to Send' : 'QR Passes Ready to Send'}</p>
-                                                    <p className="text-3xl font-black text-gray-900 dark:text-white">{eventOrders.filter(o => o.status === 'approved').length}</p>
-                                                </div>
-                                                <div className="w-12 h-12 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center">
-                                                    <Ticket size={24} className="text-gray-600 dark:text-gray-400" />
-                                                </div>
-                                            </div>
-                                            <div className="p-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl flex justify-between items-center">
-                                                <div>
-                                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Dispatched</p>
-                                                    <p className="text-3xl font-black text-neon-green">{eventOrders.filter(o => o.status === 'dispatched').length}</p>
-                                                </div>
-                                                <div className="w-12 h-12 bg-neon-green/10 rounded-full flex items-center justify-center">
-                                                    <CheckCircle2 size={24} className="text-neon-green" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <Button onClick={handleDispatchAll} className="w-full h-16 bg-neon-blue text-black font-black uppercase text-xs tracking-[0.2em] rounded-3xl hover:scale-105 transition-all">
-                                        <Send size={22} className="mr-3" /> {event?.ticketMode === 'pdf' ? 'DISPATCH MAPPED PDFs' : 'DISPATCH QR PASSES'}
-                                    </Button>
-                                </Card>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {/* ATTENDANCE TAB */}
-                    {activeTab === 'attendance' && (
-                        <motion.div key="attendance" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                            <EntryTerminal eventId={selectedEventId} />
-                        </motion.div>
-                    )}
-
-                    {/* SHEETS TAB */}
-                    {activeTab === 'sheets' && (
-                        <motion.div key="sheets" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                            <Card className="p-10 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] shadow-2xl">
-                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
-                                    <div>
-                                        <h3 className="text-2xl font-black italic uppercase tracking-tighter">Sheets & Capacity</h3>
-                                        <p className="text-[11px] font-bold tracking-widest uppercase text-gray-500 mt-2">Download raw CSV sheets of verified buyers and scanned tickets.</p>
-                                    </div>
-                                    <Button onClick={downloadSheets} className="bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-gray-900 dark:text-white text-[11px] font-black uppercase tracking-widest h-14 px-8 rounded-2xl border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20">
-                                        <Download size={20} className="mr-2" /> Download Master CSV
-                                    </Button>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                                    {/* Total People Card (Always Shown) */}
-                                    <div className="bg-white dark:bg-black/60 p-8 rounded-3xl border border-black/10 dark:border-white/5 relative overflow-hidden group hover:border-black/10 dark:hover:border-white/10 transition-all duration-300">
-                                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-neon-green/10 to-neon-blue/10 rounded-full blur-2xl" />
-                                        <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Total People</p>
-                                        <p className="text-4xl font-black text-gray-900 dark:text-white italic tracking-tighter">
-                                            {totalPeople}
-                                        </p>
-                                        {(event?.isTicketed && (event?.isGuestlistEnabled || event?.guestlistEnabled)) && (
-                                            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
-                                                Tickets: <span className="text-gray-900 dark:text-white">{totalTicketPeople}</span> | RSVPs: <span className="text-gray-900 dark:text-white">{totalGuestlistPeople}</span>
-                                            </p>
-                                        )}
-                                        {(!event?.isTicketed && (event?.isGuestlistEnabled || event?.guestlistEnabled)) && (
-                                            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
-                                                All from Guestlist / RSVP entries
-                                            </p>
-                                        )}
-                                        {(event?.isTicketed && !(event?.isGuestlistEnabled || event?.guestlistEnabled)) && (
-                                            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
-                                                All from Ticket purchases
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    {/* Ticketed Stats */}
-                                    {event?.isTicketed && (
-                                        <>
-                                            {!isScanner && (user?.role === 'developer' || user?.role === 'founder') && (
-                                                <div className="bg-white dark:bg-black/60 p-8 rounded-3xl border border-black/10 dark:border-white/5 relative overflow-hidden group hover:border-black/10 dark:hover:border-white/10 transition-all duration-300">
-                                                    <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Total Revenue</p>
-                                                    <p className="text-4xl font-black text-neon-green italic tracking-tighter">
-                                                        ₹{approvedOrders.reduce((acc, order) => acc + (order.totalAmount || 0), 0).toLocaleString()}
-                                                    </p>
-                                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
-                                                        From Verified Payments
-                                                    </p>
-                                                </div>
-                                            )}
-                                            <div className="bg-white dark:bg-black/60 p-8 rounded-3xl border border-black/10 dark:border-white/5 relative overflow-hidden group hover:border-black/10 dark:hover:border-white/10 transition-all duration-300">
-                                                <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Tickets Sold</p>
-                                                <p className="text-4xl font-black text-gray-900 dark:text-white italic tracking-tighter">
-                                                    {totalTicketPeople}
-                                                </p>
-                                                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
-                                                    Across {approvedOrders.length} Approved Orders
-                                                </p>
-                                            </div>
-                                            {!isScanner && (
-                                                <div className="bg-white dark:bg-black/60 p-8 rounded-3xl border border-black/10 dark:border-white/5 relative overflow-hidden group hover:border-black/10 dark:hover:border-white/10 transition-all duration-300">
-                                                    <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Pending Verification</p>
-                                                    <p className="text-4xl font-black text-yellow-500 italic tracking-tighter">
-                                                        {pendingOrders.length}
-                                                    </p>
-                                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
-                                                        Awaiting Admin Approval
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-
-                                    {/* Guestlist/RSVP Stats */}
-                                    {(event?.isGuestlistEnabled || event?.guestlistEnabled) && (
-                                        <>
-                                            <div className="bg-white dark:bg-black/60 p-8 rounded-3xl border border-black/10 dark:border-white/5 relative overflow-hidden group hover:border-black/10 dark:hover:border-white/10 transition-all duration-300">
-                                                <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">
-                                                    {event.guestlistMode === 'rsvp' ? 'RSVP' : 'Guestlist'} Entries
-                                                </p>
-                                                <p className="text-4xl font-black text-neon-pink italic tracking-tighter">
-                                                    {guestlistEntries.length}
-                                                </p>
-                                                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
-                                                    Total registered submissions
-                                                </p>
-                                            </div>
-                                            <div className="bg-white dark:bg-black/60 p-8 rounded-3xl border border-black/10 dark:border-white/5 relative overflow-hidden group hover:border-black/10 dark:hover:border-white/10 transition-all duration-300">
-                                                <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Checked In</p>
-                                                <p className="text-4xl font-black text-neon-blue italic tracking-tighter">
-                                                    {checkedInGuestlistPeople}
-                                                </p>
-                                                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
-                                                    Out of {totalGuestlistPeople} registered guests
-                                                </p>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            </Card>
-                        </motion.div>
-                    )}
-                    {/* SETTINGS TAB */}
-                    {activeTab === 'settings' && !isScanner && (
-                        <motion.div key="settings" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <Card className="p-10 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] shadow-2xl">
-                                    <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-8">Event Payment Config</h3>
-                                        <form onSubmit={handleUpdateEventPayment} className="space-y-8">
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Event UPI ID</label>
-                                                <Input name="upiId" defaultValue={event?.upiId || ''} placeholder="merchant@upi" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/5 rounded-2xl" />
-                                            </div>
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Direct QR Link (Optional)</label>
-                                                <Input name="qrCodeUrl" defaultValue={event?.qrCodeUrl || ''} placeholder="https://..." className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/5 rounded-2xl" />
-                                            </div>
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Payment Gateway / Checkout URL (Optional)</label>
-                                                <Input name="gatewayUrl" defaultValue={event?.gatewayUrl || ''} placeholder="https://checkout.payulink.in/..." className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/5 rounded-2xl" />
-                                            </div>
-                                            <Button type="submit" className="w-full h-14 bg-neon-green text-black font-black uppercase text-xs tracking-widest rounded-2xl">
-                                                Update Configuration
-                                            </Button>
-                                        </form>
-                                </Card>
-
-                                <Card className="p-10 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] shadow-2xl flex flex-col items-center justify-center text-center group">
-                                    <div className="relative w-full">
-                                        {event?.qrCodeUrl ? (
-                                            <div className="relative group/qr">
-                                                <img src={event.qrCodeUrl} alt="Event QR" className="w-48 h-48 mx-auto object-contain rounded-2xl border border-black/10 dark:border-white/10 p-2 bg-white" />
-                                                <div className="absolute inset-0 bg-white dark:bg-black/60 opacity-0 group-hover/qr:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
-                                                    <label className="cursor-pointer p-4 bg-white text-black rounded-xl font-black uppercase text-[10px]">
-                                                        {isUploading ? <LoadingSpinner size="sm" /> : 'Change QR'}
-                                                        <input type="file" onChange={handleQRUpload} className="hidden" accept="image/*" />
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <label className="cursor-pointer border-2 border-dashed border-black/10 dark:border-white/10 rounded-[2rem] p-12 flex flex-col items-center justify-center hover:border-neon-blue transition-colors w-full h-64">
-                                                <QrCode size={48} className="text-gray-600 mb-4" />
-                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Upload Custom QR</p>
-                                                <input type="file" onChange={handleQRUpload} className="hidden" accept="image/*" />
-                                            </label>
-                                        )}
-                                    </div>
-                                    <p className="mt-6 text-[9px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
-                                        This QR will be displayed to buyers during the payment step of the ticketing modal for <span className="text-gray-900 dark:text-white italic">{event?.title}</span>.
-                                    </p>
-                                </Card>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+            {activeTab === 'overview' && (
+                <EventOverview
+                    event={event}
+                    orders={orders}
+                    guestEntries={guestEntries}
+                    coupons={(coupons || []).filter(c => c.eventId === event.id)}
+                    canSeeMoney={canSeeMoney && !isScanner}
+                    onJump={isScanner ? () => setTab('checkin') : setTab}
+                />
+            )}
+            {activeTab === 'orders' && <OrdersPanel key={`orders-${listFilter}`} event={event} orders={orders} initialFilter={listFilter} />}
+            {activeTab === 'guestlist' && <GuestlistPanel key={`gl-${listFilter}`} event={event} entries={guestEntries} loading={guestLoading} error={guestError} initialFilter={listFilter} />}
+            {activeTab === 'checkin' && <CheckInDesk eventId={event.id} orders={orders} guestEntries={guestEntries} />}
+            {activeTab === 'coupons' && <CouponsPanel eventId={event.id} coupons={coupons || []} orders={orders} canSeeMoney={canSeeMoney} />}
+            {activeTab === 'settings' && <SettingsPanel event={event} onEditGuestlist={(gl) => setEditor({ guestlist: gl })} onDeleted={closeEvent} />}
+            {editorSheet}
         </AdminCommunityHubLayout>
     );
 };

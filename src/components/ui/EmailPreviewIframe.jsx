@@ -42,11 +42,18 @@ const EmailPreviewIframe = ({ html, className = '' }) => {
             }
         };
 
-        // Resize after content loads
+        // Resize after content loads, after late images/fonts, and whenever the
+        // content or the frame's width changes (e.g. a preview first drawn hidden).
         iframe.onload = resize;
-        // Also resize after a short delay to catch late-rendering images/fonts
         const timer = setTimeout(resize, 300);
-        return () => clearTimeout(timer);
+        let observer = null;
+        if (typeof ResizeObserver !== 'undefined') {
+            observer = new ResizeObserver(() => resize());
+            if (doc.body) observer.observe(doc.body);
+            observer.observe(iframe);
+        }
+        doc.querySelectorAll?.('img').forEach(img => { if (!img.complete) img.addEventListener('load', resize, { once: true }); });
+        return () => { clearTimeout(timer); observer?.disconnect(); };
     }, [html]);
 
     return (
