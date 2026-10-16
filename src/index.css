@@ -1447,3 +1447,70 @@
 /* Section titles: the same idea, quieter. */
 .nb-sticker-sm { -webkit-text-stroke-width: 0.03em; text-shadow: 0.03em 0.04em 0 #000; }
 .dark .nb-sticker-sm::before { -webkit-text-stroke-width: 0.05em; text-shadow: 0.03em 0.04em 0 rgba(255, 255, 255, 0.9); }
+
+/* ── App campaign brief and deliverable notes (rich text from the admin editor) ──
+   Inter body at a comfortable measure; lines that are only bold text read as
+   small headings; bullets are small neon dots; links are underlined in green. */
+.nb-brief {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #3f3f46;
+  overflow-wrap: anywhere;
+}
+.dark .nb-brief { color: #c4c4cc; }
+.nb-brief > *:first-child { margin-top: 0; }
+.nb-brief > *:last-child { margin-bottom: 0; }
+.nb-brief p { margin: 0 0 0.75rem; }
+.nb-brief p:empty, .nb-brief p:has(> br:only-child) { display: none; }
+.nb-brief strong, .nb-brief b { font-weight: 650; color: #18181b; }
+.dark .nb-brief strong, .dark .nb-brief b { color: #fafafa; }
+.nb-brief h1, .nb-brief h2, .nb-brief h3, .nb-brief h4,
+.nb-brief p:has(> strong:only-child), .nb-brief p:has(> b:only-child) {
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #18181b;
+  margin: 1.4rem 0 0.4rem;
+}
+.dark .nb-brief h1, .dark .nb-brief h2, .dark .nb-brief h3, .dark .nb-brief h4,
+.dark .nb-brief p:has(> strong:only-child), .dark .nb-brief p:has(> b:only-child) { color: #fafafa; }
+.nb-brief > :is(h1, h2, h3, h4, p):first-child { margin-top: 0; }
+.nb-brief ul, .nb-brief ol { margin: 0.25rem 0 1rem; padding: 0; list-style: none; }
+.nb-brief li { position: relative; padding-left: 1.1rem; margin: 0.3rem 0; }
+.nb-brief li > p { margin: 0; }
+.nb-brief ul > li::before {
+  content: '';
+  position: absolute;
+  left: 0.15rem;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: #10b981;
+}
+.dark .nb-brief ul > li::before { background: #39FF14; box-shadow: 0 0 6px rgba(57, 255, 20, 0.6); }
+.nb-brief ol { counter-reset: nb-brief; }
+.nb-brief ol > li { counter-increment: nb-brief; padding-left: 1.5rem; }
+.nb-brief ol > li::before {
+  content: counter(nb-brief);
+  position: absolute;
+  left: 0;
+  top: 0.1em;
+  font-size: 12px;
+  font-weight: 800;
+  color: #059669;
+}
+.dark .nb-brief ol > li::before { color: #39FF14; }
+.nb-brief a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: #39FF14;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+.nb-brief img { max-width: 100%; height: auto; border-radius: 1rem; margin: 0.75rem 0; }
+.nb-brief-sm { font-size: 14px; line-height: 1.6; }
+.nb-brief-sm p:has(> strong:only-child), .nb-brief-sm p:has(> b:only-child) { font-size: 14px; margin-top: 1rem; }

@@ -3,8 +3,6 @@ import Camera from 'lucide-react/dist/esm/icons/camera';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import Video from 'lucide-react/dist/esm/icons/video';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
-import Layers from 'lucide-react/dist/esm/icons/layers';
-import CalendarClock from 'lucide-react/dist/esm/icons/calendar-clock';
 import Upload from 'lucide-react/dist/esm/icons/upload';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import { cn } from '../../../lib/utils';
@@ -53,36 +51,36 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, highli
     const meta = STATUS[status];
     const due = dueLabel(task.deadline);
 
+    // One quiet line: what it is and when. "Required" is the norm, so only "Optional" is said.
+    const line = [type?.label, due, required ? null : 'Optional'].filter(Boolean).join(' · ');
+
     return (
         <li
             id={`task-${task.id}`}
             className={cn(
-                'scroll-mt-24 space-y-3 rounded-3xl border bg-white p-4 dark:bg-white/[0.02]',
-                highlight ? 'border-emerald-500/50 ring-2 ring-emerald-500/20 dark:border-neon-green/50' : 'border-black/[0.06] dark:border-white/[0.07]'
+                'scroll-mt-24 space-y-3 rounded-2xl bg-white/60 p-3.5 ring-1 ring-inset dark:bg-white/[0.04]',
+                highlight ? 'ring-2 ring-emerald-500/50 dark:ring-neon-green/50' : 'ring-black/[0.06] dark:ring-white/[0.08]'
             )}
         >
-            <div className="flex items-start gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-black/[0.04] text-[14px] font-black text-gray-600 dark:bg-white/[0.06] dark:text-zinc-300">
-                    {type ? <type.icon size={16} /> : (index + 1)}
+            {/* Icon · what and when · status · links, on one row (the links wrap under on phones). */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:bg-neon-green/10 dark:text-neon-green">
+                    {type ? <type.icon size={18} /> : <span className="text-[14px] font-black">{index + 1}</span>}
                 </span>
-                <div className="min-w-0 flex-1 space-y-1.5">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                        <ToneChip tone={required ? 'gray' : 'blue'}>{required ? 'Required' : 'Optional'}</ToneChip>
-                        {type && <ToneChip tone="gray" icon={Layers}>{type.label}</ToneChip>}
-                        {due && <ToneChip tone="gray" icon={CalendarClock}>{due}</ToneChip>}
-                        {meta && <ToneChip tone={meta.tone}>{meta.label}</ToneChip>}
-                    </div>
-                    {isPresent(task.title) && <h3 className="text-[16px] font-bold leading-snug">{task.title}</h3>}
+                <div className="min-w-0 flex-1">
+                    <h3 className="text-[15px] font-bold leading-snug">{isPresent(task.title) ? task.title : `Deliverable ${index + 1}`}</h3>
+                    {line && <p className="mt-0.5 text-[13px] text-gray-500 dark:text-zinc-400">{line}</p>}
                 </div>
+                {meta && <ToneChip tone={meta.tone} className="shrink-0">{meta.label}</ToneChip>}
+                <TaskLinks links={links} className="max-sm:basis-full max-sm:pl-[3.25rem] sm:ml-auto" />
             </div>
 
             {description && (
-                <div className="campaign-briefing-content break-words text-[14px] leading-relaxed text-gray-700 dark:text-zinc-300" dangerouslySetInnerHTML={{ __html: description }} />
+                <div className="nb-brief nb-brief-sm break-words" dangerouslySetInnerHTML={{ __html: description }} />
             )}
-            <TaskLinks links={links} />
 
             {status === 'rejected' && isPresent(submission?.rejectionReason) && (
-                <p className="rounded-2xl bg-amber-500/10 px-3 py-2 text-[13px] text-amber-900 dark:text-amber-200">{submission.rejectionReason}</p>
+                <p className="rounded-xl bg-amber-500/10 px-3 py-2 text-[13px] text-amber-900 dark:text-amber-200">{submission.rejectionReason}</p>
             )}
             {isPresent(submission?.contentLink) && /^https?:/.test(submission.contentLink) && (
                 <a href={submission.contentLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 truncate text-[13px] font-semibold text-emerald-700 dark:text-neon-green">

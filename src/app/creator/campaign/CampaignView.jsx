@@ -11,7 +11,7 @@ import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import Hourglass from 'lucide-react/dist/esm/icons/hourglass';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
-import { BrandLayers, BRAND_GLASS, Button, CARD_TYPES, GlassChip, MetaPill, Sheet, Stat, StatRow } from '../../../components/app';
+import { AmbientBackdrop, BrandLayers, BRAND_GLASS, Button, CARD_TYPES, GlassChip, MetaPill, Sheet, Stat, StatRow } from '../../../components/app';
 import { useAppStore } from '../../../lib/store/appStore';
 import { useStore as useLegacyStore } from '../../../lib/store.js';
 import { isPresent } from '../../../lib/present';
@@ -59,6 +59,27 @@ const spotsLabel = (c) => {
 };
 const isFull = (c) => c.spotsLeft !== null && c.spotsLeft !== undefined && c.spotsLeft !== '' && Number(c.spotsLeft) <= 0;
 const isOpen = (c) => ['open', 'active', 'live', 'published'].includes(String(c.status || 'open').toLowerCase()) && c.websiteApplyEnabled !== false;
+
+/* The brief in the app's type style; a long one shows its start with "Read the full brief". */
+const BriefText = ({ html }) => {
+    const [open, setOpen] = useState(false);
+    const long = String(html || '').replace(/<[^>]+>/g, '').length > 600;
+    const fade = 'linear-gradient(to bottom, #000 60%, transparent)';
+    return (
+        <div>
+            <div
+                className={cn('nb-brief', long && !open && 'max-h-[17rem] overflow-hidden')}
+                style={long && !open ? { WebkitMaskImage: fade, maskImage: fade } : undefined}
+                dangerouslySetInnerHTML={{ __html: html }}
+            />
+            {long && (
+                <button type="button" onClick={() => setOpen(v => !v)} className="mt-2 text-[14px] font-bold text-gray-900 underline decoration-neon-green decoration-2 underline-offset-4 dark:text-white">
+                    {open ? 'Show less' : 'Read the full brief'}
+                </button>
+            )}
+        </div>
+    );
+};
 
 export const campaignShareUrl = (id) => {
     const url = appUrl(`/c/${encodeURIComponent(id)}`);
@@ -211,9 +232,19 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
         { icon: CalendarClock, label: dueLabel(campaign.deadline || campaign.endDate) },
     ].filter(m => isPresent(m.label));
 
-    /* The campaign card, expanded: the 16:9 poster bleeds to the edges and fades into the body. */
+    /* The campaign card, expanded: the 16:9 poster starts at the very top, bleeds to the edges, and
+       its colours (a blurred copy behind it) spill down and fade into the popup. */
     const hero = (
-        <div className="relative aspect-video w-full shrink-0 overflow-hidden">
+        <div className="relative aspect-video w-full shrink-0">
+            {campaign.thumbnail && (
+                <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[170%]"
+                    style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 45%, transparent 100%)', maskImage: 'linear-gradient(to bottom, #000 45%, transparent 100%)' }}
+                >
+                    <AmbientBackdrop image={campaign.thumbnail} intensity={0.6} fade={false} />
+                </div>
+            )}
             <div className="absolute inset-0" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 55%, transparent 100%)', maskImage: 'linear-gradient(to bottom, #000 55%, transparent 100%)' }}>
                 {campaign.thumbnail ? (
                     <>
@@ -276,7 +307,7 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
             {brief && (
                 <section className="space-y-3">
                     <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-400">The brief</h2>
-                    <div className="campaign-briefing-content break-words text-[15px] leading-relaxed text-gray-800 dark:text-zinc-200" dangerouslySetInnerHTML={{ __html: brief }} />
+                    <BriefText html={brief} />
                 </section>
             )}
 

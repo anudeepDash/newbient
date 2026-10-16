@@ -20,7 +20,7 @@ import BrandLayers from './BrandLayers';
  *
  * size: 'auto' (fits content, up to 92dvh) or 'full' (full height on phones).
  * bleed: no header row; the body starts at the very top (for a full-width
- * image) and the close button floats over it.
+ * image) and the close button (and the phone drag handle) float over it.
  * Every sheet sits on the Newbi surface (BrandLayers: corner glow and dot
  * grid; the N. mark stays on the Home notice panels only). backdrop: an element painted instead, behind the header and body.
  */
@@ -123,10 +123,10 @@ const Sheet = ({
                         {phone && (
                             // The handle is the only drag target.
                             <div
-                                className="relative flex h-6 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
+                                className={cn('flex h-6 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing', bleed ? 'absolute inset-x-0 top-0 z-30' : 'relative')}
                                 onPointerDown={(e) => dismissible && drag.start(e)}
                             >
-                                <span className="h-1 w-10 rounded-full bg-black/15 dark:bg-white/20" />
+                                <span className={cn('h-1 w-10 rounded-full', bleed ? 'bg-white/80 shadow-[0_1px_4px_rgba(0,0,0,0.4)]' : 'bg-black/15 dark:bg-white/20')} />
                             </div>
                         )}
                         {bleed && dismissible && (
@@ -134,7 +134,7 @@ const Sheet = ({
                                 type="button"
                                 onClick={onClose}
                                 aria-label="Close"
-                                className={cn('absolute right-3 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white ring-1 ring-inset ring-white/20 backdrop-blur-md transition-colors hover:bg-black/75', phone ? 'top-9' : 'top-3')}
+                                className="absolute right-3 top-3 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white ring-1 ring-inset ring-white/20 backdrop-blur-md transition-colors hover:bg-black/75"
                             >
                                 <X size={18} />
                             </button>
