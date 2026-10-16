@@ -299,7 +299,7 @@ export const InvoicePage = ({ data, columns = [], pageItems, pageIndex, pageCoun
                                             <img
                                                 src={data.qrType === 'custom' && data.customQrImage
                                                     ? data.customQrImage
-                                                    : `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(upiLink)}`}
+                                                    : `/api/qr?size=200&margin=1&text=${encodeURIComponent(upiLink)}`}
                                                 alt="Payment QR"
                                                 className="w-[65px] h-[65px] grayscale contrast-125 mx-auto"
                                                 crossOrigin="anonymous"

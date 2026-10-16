@@ -3,7 +3,8 @@ import Users from 'lucide-react/dist/esm/icons/users';
 import Send from 'lucide-react/dist/esm/icons/send';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import { useStore } from '../../../lib/store';
-import { sendCreatorDirectEmail, generateOfficialHTML } from '../../../lib/email';
+import { sendTemplateEmail } from '../../../lib/mailApi';
+import { previewEmailHtml } from '../../../lib/emailTemplates';
 import Sheet from '../Sheet';
 import RichEditor from '../RichEditor';
 import EmailPreviewIframe from '../../ui/EmailPreviewIframe';
@@ -25,17 +26,11 @@ const BulkEmailModal = ({ recipients, onClose }) => {
     // The editor leaves "<br>" behind when cleared, so check the visible text.
     const hasBody = /<img/i.test(body) || body.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim().length > 0;
 
-    // Same template sendCreatorDirectEmail uses, addressed to the first person.
-    const previewHtml = useMemo(() => (tab === 'preview' ? generateOfficialHTML({
-        headerText: subject,
-        messageBody: `
-                <p>Hi <strong>${withEmail[0]?.name || 'Creator'}</strong>,</p>
-                <div style="line-height: 1.8; font-size: 15px; margin-top: 15px; color: #444444;">
-                    ${(hasBody ? body : '<span style="color:#9ca3af">Your message will appear here.</span>').replace(/\n/g, '<br />')}
-                </div>
-            `,
-        category: 'DIRECT MESSAGE',
-        theme: 'light'
+    // The same server template the send uses, addressed to the first person.
+    const previewHtml = useMemo(() => (tab === 'preview' ? previewEmailHtml('creator-message', {
+        name: withEmail[0]?.name || 'Creator',
+        subject,
+        messageHtml: hasBody ? body : '<p style="color:#9ca3af">Your message will appear here.</p>',
     }) : ''), [tab, subject, body, hasBody, withEmail[0]?.name]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const close = (sent) => { if (!isSending) onClose(sent); };
@@ -56,8 +51,8 @@ const BulkEmailModal = ({ recipients, onClose }) => {
             const c = withEmail[i];
             setProgress({ current: i + 1, total: withEmail.length });
             try {
-                const res = await sendCreatorDirectEmail(c.email, subject, body, c.name);
-                if (res?.success) sent++; else failed++;
+                await sendTemplateEmail({ template: 'creator-message', to: c.email, data: { name: c.name || 'Creator', subject, messageHtml: body } });
+                sent++;
             } catch {
                 failed++;
             }

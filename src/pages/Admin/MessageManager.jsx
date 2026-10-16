@@ -16,6 +16,7 @@ import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { cn } from '../../lib/utils';
 import { generateOfficialHTML } from '../../lib/email';
+import { sendStaffMail } from '../../lib/mailApi';
 import { exportSubtitle } from '../../lib/xlsx';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import {
@@ -41,17 +42,7 @@ const FILTERS = [
     { value: 'archived', label: 'Archived' },
 ];
 
-const sendEmail = async ({ to, cc, bcc, subject, html }) => {
-    const { auth } = await import('../../lib/firebase');
-    const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
-    const res = await fetch('/api/mail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
-        body: JSON.stringify({ to, cc, bcc, subject, html, fromName: 'Newbi Entertainment' }),
-    });
-    const result = await res.json().catch(() => ({}));
-    if (!result.success) throw new Error(result.error || 'Send failed');
-};
+const sendEmail = ({ to, cc, bcc, subject, html }) => sendStaffMail({ to, cc, bcc, subject, html, fromName: 'Newbi Entertainment' });
 
 const MessageManager = () => {
     useStoreSubscription(['messages']);

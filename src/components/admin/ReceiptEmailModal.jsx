@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo } from 'react';
-import { generateReceiptEmailHTML } from '../../lib/email';
 import EmailComposer from './EmailComposer';
 
 /** Email a payout receipt (with its verification link) to the payee. */
@@ -20,17 +19,16 @@ const ReceiptEmailModal = ({ isOpen, onClose, receipt, onSend }) => {
         theme: 'dark',
     }), [receipt, amount, payee]);
 
-    const buildHtml = useCallback(({ headerText, messageBody, theme, preview }) => generateReceiptEmailHTML({
+    const buildData = useCallback(({ headerText, messageBody }) => ({
         headerText,
         messageBody,
-        reference: receipt?.reference || 'N/A',
+        reference: receipt?.reference || '',
         receiverName: payee,
         amount,
         date: receipt?.date || '',
-        paymentMode: receipt?.paymentMode || 'UPI',
+        paymentMode: receipt?.paymentMode || '',
         verifyUrl,
-        theme,
-        ...(preview ? { isPreview: true } : {}),
+        company: receipt?.selectedLogo || 'entertainment',
     }), [receipt, payee, amount, verifyUrl]);
 
     return (
@@ -41,7 +39,8 @@ const ReceiptEmailModal = ({ isOpen, onClose, receipt, onSend }) => {
             subtitle={`₹${amount} · ${payee}`}
             initial={initial}
             resetKey={`${receipt?.reference}-${receipt?.amount}`}
-            buildHtml={buildHtml}
+            template="receipt"
+            buildData={buildData}
             onSend={onSend}
             successText="Receipt sent."
         />

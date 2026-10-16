@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { notifyEvent } from '../../lib/mailApi';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -644,24 +645,11 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                 appliedAt: new Date().toISOString()
             };
             
-            await useStore.getState().addGuestlistEntry(event.id, entryData);
+            const entryId = await useStore.getState().addGuestlistEntry(event.id, entryData);
 
-            if (!reviewRequired) {
-                try {
-                    const { sendGuestlistConfirmation } = await import('../../lib/email');
-                    await sendGuestlistConfirmation({
-                        toName: formData.name,
-                        toEmail: normalizedEmail,
-                        eventName: event?.title || 'Event',
-                        bookingRef: ref,
-                        guestCount: guestCount,
-                        date: event?.date,
-                        location: event?.location,
-                        guestlistMode: event?.guestlistMode || 'qr'
-                    });
-                } catch (mailErr) {
-                    console.error("Failed to send guestlist confirmation email:", mailErr);
-                }
+            // Confirmed straight away: the server sends the pass (email, WhatsApp, push).
+            if (!reviewRequired && entryId) {
+                await notifyEvent('pass-confirmed', { guestlistId: event.id, entryId });
             }
 
             setBookingRef(ref);
@@ -710,7 +698,6 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             const pricedItems = priceCart(event, hasCategories ? cart : { [BASE_TIER_ID]: ticketCount }).lines
                 .map(l => ({ id: l.id, name: l.name, count: l.count, price: l.price }));
             let ref;
-            let finalTotal = totalAmount;
 
             // Preferred path: the ticket API checks seats and the coupon and saves
             // the order in one transaction.
@@ -724,7 +711,6 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
 
             if (apiRes.ok) {
                 ref = apiRes.data.bookingRef;
-                finalTotal = apiRes.data.totalAmount;
             } else if (!apiRes.unavailable) {
                 useStore.getState().addToast(apiRes.error || "We couldn't complete your booking.", 'error', 'TKT-PAY-03');
                 if (apiRes.code === 'SOLD_OUT') { refreshAvailability(); setStep('selection'); }
@@ -770,30 +756,8 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                 }
             }
 
-            const orderData = { customerName: formData.name, customerEmail: formData.email, items: pricedItems };
-
-            if (finalTotal === 0) {
-                try {
-                    const { sendBookingConfirmation } = await import('../../lib/email');
-                    const ticketsHtml = orderData.items.map(item => `
-                        <div style="padding: 10px 0; border-bottom: 1px solid #eee;">
-                            <strong>${item.name}</strong> x ${item.count}
-                        </div>
-                    `).join('');
-                    await sendBookingConfirmation({
-                        to_name: orderData.customerName,
-                        to_email: orderData.customerEmail,
-                        event_name: event?.title || 'Event',
-                        booking_ref: ref,
-                        tickets_html: ticketsHtml,
-                        total_amount: 0,
-                        payment_ref: 'FREE',
-                        items: orderData.items
-                    });
-                } catch (mailErr) {
-                    console.error("Failed to send booking confirmation email for free ticket:", mailErr);
-                }
-            }
+            // The ticket API emails the buyer itself (pass for free tickets,
+            // "order received" for paid ones).
 
             setBookingRef(ref);
             setStep('success');

@@ -267,7 +267,7 @@ const AnnouncementComposer = ({ open, onClose, record, onSaved }) => {
                             ) : (
                                 <>
                                     <Toggle label={editing ? 'Send a notification when I save' : 'Notify everyone'} hint="In-app and phone notification" checked={form.notifyPush} onChange={(v) => set({ notifyPush: v, notifyEmail: v ? form.notifyEmail : false })} />
-                                    <Toggle label="Also email all registered users" hint="Use for big news only" checked={form.notifyEmail} onChange={(v) => set({ notifyEmail: v, notifyPush: v ? true : form.notifyPush })} />
+                                    <Toggle label="Also write an email" hint="Opens Mailing with this filled in, so you pick who gets it" checked={form.notifyEmail} onChange={(v) => set({ notifyEmail: v, notifyPush: v ? true : form.notifyPush })} />
                                     {form.forceNotify && <p className="text-[12px] font-semibold text-amber-600 dark:text-amber-400">This will notify everyone again.</p>}
                                 </>
                             )}

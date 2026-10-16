@@ -165,7 +165,7 @@ const ConcertZoneStudio = () => {
                 if (!claimed) addToast('It was already sent a moment ago.', 'info');
                 else {
                     await notifyAllUsers(`New article: ${item.title}`, item.shortDescription || 'Our latest blog post is up. Take a look.', postPath(item), item.coverImage || '', !!email);
-                    addToast(email ? 'Notification and email sent.' : 'Notification sent to everyone.', 'success');
+                    addToast(email ? 'Notification sent. Opening Mailing for the email…' : 'Notification sent to everyone.', 'success');
                 }
             }
             setConfirm(null);
@@ -368,12 +368,12 @@ const ConcertZoneStudio = () => {
                 <p>You can send a notification about it from its menu afterwards.</p>
             </ConfirmSheet>
 
-            <ConfirmSheet open={confirm?.kind === 'notify'} onClose={() => setConfirm(null)} title={confirm?.item?.notifiedAt ? 'Notify everyone again?' : 'Notify everyone?'} confirmLabel={confirm?.email ? 'Send notification and email' : 'Send notification'} tone="accent" busy={busy} onConfirm={runConfirm}>
+            <ConfirmSheet open={confirm?.kind === 'notify'} onClose={() => setConfirm(null)} title={confirm?.item?.notifiedAt ? 'Notify everyone again?' : 'Notify everyone?'} confirmLabel={confirm?.email ? 'Send and write email' : 'Send notification'} tone="accent" busy={busy} onConfirm={runConfirm}>
                 <p>Everyone gets "New article: {confirm?.item?.title}" as an in-app and phone notification.</p>
                 {confirm?.item?.notifiedAt && <p className="font-semibold text-amber-600 dark:text-amber-400">It was already sent {formatDayTime(confirm.item.notifiedAt)}. People will get it twice.</p>}
                 <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-black/10 px-3 dark:border-white/10">
                     <input type="checkbox" className="h-5 w-5 accent-indigo-500" checked={!!confirm?.email} onChange={(e) => setConfirm(c => ({ ...c, email: e.target.checked }))} />
-                    <span className="text-[13px] font-semibold text-gray-800 dark:text-zinc-200">Also email all registered users</span>
+                    <span className="text-[13px] font-semibold text-gray-800 dark:text-zinc-200">Also write an email (opens Mailing to pick who gets it)</span>
                 </label>
             </ConfirmSheet>
 

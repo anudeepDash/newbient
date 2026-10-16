@@ -134,8 +134,7 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
                             `Guestlist open: ${data.title}`,
                             `Grab your spot for ${data.title} at ${data.location}. Spots are limited.`,
                             '/guestlists',
-                            data.image,
-                            true
+                            data.image
                         );
                     } catch (err) {
                         console.error(err);

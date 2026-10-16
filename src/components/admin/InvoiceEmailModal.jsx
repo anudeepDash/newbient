@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo } from 'react';
-import { generateInvoiceEmailHTML } from '../../lib/email';
 import { invoiceTotal, invoiceBalance } from '../../lib/invoicing';
 import EmailComposer from './EmailComposer';
 
@@ -22,17 +21,18 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
         theme: 'light',
     }), [invoice, total, balance, partlyPaid]);
 
-    const buildHtml = useCallback(({ headerText, messageBody, theme, preview }) => generateInvoiceEmailHTML({
+    // The server template (api/_lib/mail/templates/invoice.js) renders this; the preview uses the same one.
+    const buildData = useCallback(({ headerText, messageBody }) => ({
         headerText,
         messageBody,
-        invoiceNumber: invoice?.invoiceNumber || 'INV-0000',
-        clientName: invoice?.clientName || 'Client',
+        invoiceNumber: invoice?.invoiceNumber || '',
+        clientName: invoice?.clientName || '',
         amount: money(total),
-        dueDate: invoice?.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-GB') : '',
+        balance: partlyPaid ? money(balance) : '',
+        dueDate: invoice?.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
         invoiceUrl: `${window.location.origin}/invoice/${invoice?.id}`,
-        theme,
-        ...(preview ? { isPreview: true } : {}),
-    }), [invoice, total]);
+        company: invoice?.selectedLogo || 'entertainment',
+    }), [invoice, total, balance, partlyPaid]);
 
     return (
         <EmailComposer
@@ -42,7 +42,8 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
             subtitle={[invoice?.invoiceNumber, invoice?.clientName, invoice ? `₹${money(total)}` : null].filter(Boolean).join(' · ')}
             initial={initial}
             resetKey={invoice?.id}
-            buildHtml={buildHtml}
+            template="invoice"
+            buildData={buildData}
             onSend={onSend}
             successText="Invoice sent."
         />

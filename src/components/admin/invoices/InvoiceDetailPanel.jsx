@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { notifyEvent } from '../../../lib/mailApi';
 import { Link } from 'react-router-dom';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Edit from 'lucide-react/dist/esm/icons/edit';
@@ -103,18 +104,12 @@ const InvoiceDetailPanel = ({ invoiceId, onClose, canManage, onRecordPayment, on
                             invoice={invoice}
                             onApprove={async () => {
                                 await useStore.getState().approveInvoiceClaim(invoice.id);
-                                const { sendPaymentApprovedEmail } = await import('../../../lib/email');
-                                if (invoice.paymentClaim?.email) {
-                                    try { await sendPaymentApprovedEmail(invoice.paymentClaim.email, invoice.paymentClaim.name || invoice.clientName, invoice.invoiceNumber, `${window.location.origin}/invoice/${invoice.id}`); } catch (e) { console.warn('Approval email failed', e); }
-                                }
+                                if (invoice.paymentClaim?.email) await notifyEvent('payment-approved', { invoiceId: invoice.id });
                                 addToast('Payment confirmed. The invoice is marked paid.', 'success');
                             }}
                             onDecline={async () => {
                                 await useStore.getState().declineInvoiceClaim(invoice.id);
-                                const { sendPaymentDeclinedEmail } = await import('../../../lib/email');
-                                if (invoice.paymentClaim?.email) {
-                                    try { await sendPaymentDeclinedEmail(invoice.paymentClaim.email, invoice.paymentClaim.name || invoice.clientName, invoice.invoiceNumber, `${window.location.origin}/invoice/${invoice.id}`); } catch (e) { console.warn('Decline email failed', e); }
-                                }
+                                if (invoice.paymentClaim?.email) await notifyEvent('payment-declined', { invoiceId: invoice.id });
                                 addToast('Claim declined. The invoice is back to unpaid.', 'info');
                             }}
                         />

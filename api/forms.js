@@ -1,6 +1,7 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { verifyToken } from './_lib/auth.js';
+import { handleEnquiry, handleSubscribe } from './_lib/publicMail.js';
 
 let adminDb = null;
 
@@ -83,6 +84,18 @@ export default async function handler(req, res) {
     const action = String(req.query?.action || '');
     if (action) {
         return handleResponseAction(action, req, res);
+    }
+
+    // Contact form and newsletter sign-up (mail is sent from the server).
+    if (req.method === 'POST' && (req.query.type === 'enquiry' || req.query.type === 'subscribe')) {
+        try {
+            const body = await readBody(req);
+            if (req.query.type === 'enquiry') return await handleEnquiry(req, res, body);
+            return await handleSubscribe(req, res, body, await verifyToken(req));
+        } catch (err) {
+            console.error(`[API/FORMS] ${req.query.type} failed:`, err);
+            return res.status(500).json({ success: false, error: "Couldn't send that just now. Please try again." });
+        }
     }
 
     if (req.method !== 'GET') {

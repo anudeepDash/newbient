@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { notifyEvent } from '../../lib/mailApi';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -142,24 +143,11 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                 taskSubmission: taskSubmission || null
             };
 
-            await addGuestlistEntry(guestlist.id, entryData);
+            const entryId = await addGuestlistEntry(guestlist.id, entryData);
 
-            if (!reviewRequired) {
-                try {
-                    const { sendGuestlistConfirmation } = await import('../../lib/email');
-                    await sendGuestlistConfirmation({
-                        toName: formData.name,
-                        toEmail: normalizedEmail,
-                        eventName: guestlist.title,
-                        bookingRef: ref,
-                        guestCount: guestsCount,
-                        date: guestlist.date,
-                        location: guestlist.location,
-                        guestlistMode: guestlist.guestlistMode || 'qr'
-                    });
-                } catch (mailErr) {
-                    console.error("Failed to send guestlist confirmation email:", mailErr);
-                }
+            // Confirmed straight away: the server sends the pass (email, WhatsApp, push).
+            if (!reviewRequired && entryId) {
+                await notifyEvent('pass-confirmed', { guestlistId: guestlist.id, entryId });
             }
 
             setIsPendingTaskReview(reviewRequired);
@@ -523,7 +511,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                                         <div className="relative">
                                                             <div className="bg-white p-4 rounded-2xl shadow-xl scale-90">
                                                                 <img 
-                                                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(bookingRef)}`} 
+                                                                    src={`/api/qr?size=300&text=${encodeURIComponent(bookingRef)}`} 
                                                                     alt="Access QR" 
                                                                     crossOrigin="anonymous"
                                                                     className="w-24 h-24 mix-blend-multiply" 
@@ -589,7 +577,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                                                 <div className="flex items-center gap-16 p-12 bg-gray-100 dark:bg-zinc-900/50 rounded-3xl border border-black/10 dark:border-white/5">
                                                                     <div className="bg-white p-8 rounded-2xl">
                                                                         <img 
-                                                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(bookingRef)}`} 
+                                                                            src={`/api/qr?size=400&text=${encodeURIComponent(bookingRef)}`} 
                                                                             alt="QR" 
                                                                             crossOrigin="anonymous"
                                                                             className="w-48 h-48 mix-blend-multiply" 

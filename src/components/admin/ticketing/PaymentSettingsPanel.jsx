@@ -66,7 +66,7 @@ const PaymentSettingsPanel = ({ event }) => {
 
     const upi = form.upiId.trim();
     const preview = form.qrCodeUrl.trim()
-        || (upi ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(`upi://pay?pa=${upi}&pn=NEWBI&cu=INR`)}` : '');
+        || (upi ? `/api/qr?size=480&margin=1&text=${encodeURIComponent(`upi://pay?pa=${upi}&pn=NEWBI&cu=INR`)}` : '');
 
     return (
         <Panel className="p-4 sm:p-5">
