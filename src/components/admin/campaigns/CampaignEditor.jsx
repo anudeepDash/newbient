@@ -46,6 +46,7 @@ const blankForm = (uid) => ({
     targetCity: 'Any', targetCollege: '', minInstagramFollowers: '', preferredNiches: [],
     reward: '', payoutPerCreator: '', totalSpots: '', spotsLeft: '',
     thumbnail: '', websiteApplyEnabled: true, autoShortlistEligible: true, isPinned: false,
+    applyMethod: 'newbi', applyFormUrl: '', applyFormNeedsSignIn: false,
     eventId: '', ticketsPerCreator: '', ticketAutoIssue: '',
     status: 'Open', tasks: [], createdBy: uid || '',
 });
@@ -71,6 +72,9 @@ const toForm = (c, { copy = false } = {}) => ({
     ticketsPerCreator: toStr(c.ticketsPerCreator),
     ticketAutoIssue: ['selected', 'completed'].includes(c.ticketAutoIssue) ? c.ticketAutoIssue : '',
     websiteApplyEnabled: c.websiteApplyEnabled !== false,
+    applyMethod: ['newbi', 'form', 'both'].includes(c.applyMethod) ? c.applyMethod : 'newbi',
+    applyFormUrl: c.applyFormUrl || '',
+    applyFormNeedsSignIn: Boolean(c.applyFormNeedsSignIn),
     // Stored truthiness: an old campaign without the flag never auto-selected.
     autoShortlistEligible: Boolean(c.autoShortlistEligible),
     isPinned: copy ? false : Boolean(c.isPinned),
@@ -112,6 +116,10 @@ const toPayload = (f) => ({
     ticketsPerCreator: f.eventId ? (num(f.ticketsPerCreator) || 1) : null,
     ticketAutoIssue: f.eventId && f.ticketAutoIssue ? f.ticketAutoIssue : null,
     websiteApplyEnabled: f.websiteApplyEnabled,
+    // How creators apply: one tap with their Newbi ID, a Google Form, or either.
+    applyMethod: f.applyFormUrl.trim() ? f.applyMethod : 'newbi',
+    applyFormUrl: f.applyFormUrl.trim(),
+    applyFormNeedsSignIn: Boolean(f.applyFormUrl.trim() && f.applyFormNeedsSignIn),
     autoShortlistEligible: f.autoShortlistEligible,
     isPinned: f.isPinned,
     status: f.status,
@@ -244,6 +252,10 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
         const total = num(form.totalSpots);
         const left = num(form.spotsLeft);
         if (total !== null && left !== null && left > total) e.spotsLeft = "Spots left can't be more than total spots.";
+        if (form.applyMethod !== 'newbi') {
+            if (!form.applyFormUrl.trim()) e.applyFormUrl = 'Paste the Google Form link.';
+            else if (!/^https:\/\/(docs\.google\.com\/forms\/|forms\.gle\/)/i.test(form.applyFormUrl.trim())) e.applyFormUrl = 'Use a Google Form link (docs.google.com/forms/… or forms.gle/…).';
+        }
         return e;
     };
 
@@ -599,6 +611,38 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                     <BuilderCard id="cm-visibility" title="Visibility" hint="Who sees it and what happens when people apply">
                         <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
                             <div className="py-2"><Toggle label="Apply from the website" hint="Creators can apply from the public campaign page" checked={form.websiteApplyEnabled} onChange={(v) => set({ websiteApplyEnabled: v })} /></div>
+                            {form.websiteApplyEnabled && (
+                                <div className="space-y-3 py-3">
+                                    <Field label="How creators apply">
+                                        <Choice
+                                            value={form.applyMethod}
+                                            onChange={(v) => set({ applyMethod: v })}
+                                            options={[
+                                                { value: 'newbi', label: 'Newbi ID', hint: '1-click apply' },
+                                                { value: 'form', label: 'Google Form', hint: 'Opens in the app' },
+                                                { value: 'both', label: 'Either', hint: '1-click or the form' },
+                                            ]}
+                                        />
+                                    </Field>
+                                    {form.applyMethod !== 'newbi' && (
+                                        <Field
+                                            label="Google Form link"
+                                            hint="Tip: in Google Forms, use “Get pre-filled link” and type {name}, {email}, {phone}, {instagram}, {followers}, {city} or {newbiId} as answers. We fill them in for each creator."
+                                        >
+                                            <input id="cm-field-applyFormUrl" className={cn(fieldCls, errors.applyFormUrl && 'border-rose-500/60')} value={form.applyFormUrl} onChange={(e) => set({ applyFormUrl: e.target.value })} placeholder="https://forms.gle/…" inputMode="url" autoCapitalize="off" />
+                                            {err('applyFormUrl')}
+                                        </Field>
+                                    )}
+                                    {form.applyMethod !== 'newbi' && (
+                                        <Toggle
+                                            label="The form asks for a Google sign-in"
+                                            hint="Turn on for forms with file uploads. Google won't show those inside the app, so it opens in a new tab."
+                                            checked={form.applyFormNeedsSignIn}
+                                            onChange={(v) => set({ applyFormNeedsSignIn: v })}
+                                        />
+                                    )}
+                                </div>
+                            )}
                             <div className="py-2"><Toggle label="Auto-select creators who qualify" hint="Applicants who meet the city and follower rules are selected straight away" checked={form.autoShortlistEligible} onChange={(v) => set({ autoShortlistEligible: v })} /></div>
                             <div className="py-2"><Toggle label="Pin to the top" hint="Shows first in lists" checked={form.isPinned} onChange={(v) => set({ isPinned: v })} /></div>
                             {goingLive && (

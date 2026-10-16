@@ -9,7 +9,7 @@ import newbiIcon from '../../assets/logo/newbi-icon.svg';
 /* Section title with an optional "See all" link. */
 export const SectionHeader = ({ title, to, linkLabel = 'See all' }) => (
     <div className="flex items-end justify-between gap-3">
-        <h2 className="font-heading text-[22px] font-extrabold tracking-[-0.03em]">{title}</h2>
+        <h2 className="font-heading text-[22px] font-extrabold tracking-[-0.03em] lg:text-[28px]">{title}</h2>
         {to && (
             <Link to={to} className="-mr-1 flex h-9 items-center gap-0.5 rounded-full px-2 text-[14px] font-semibold text-gray-800 underline decoration-neon-green decoration-2 underline-offset-4 dark:text-zinc-200">
                 {linkLabel} <ChevronRight size={16} />
@@ -22,7 +22,7 @@ export const SectionHeader = ({ title, to, linkLabel = 'See all' }) => (
 export const Rail = ({ children, className }) => (
     <div className={cn(
         '-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto overscroll-x-contain px-4 pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-        'sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0',
+        'sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3 lg:gap-6',
         className
     )}>
         {React.Children.map(children, child => child && (
@@ -32,7 +32,7 @@ export const Rail = ({ children, className }) => (
 );
 
 export const CardGrid = ({ children, className }) => (
-    <div className={cn('grid gap-4 sm:grid-cols-2', className)}>{children}</div>
+    <div className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6', className)}>{children}</div>
 );
 
 export const CardSkeleton = () => (
@@ -73,7 +73,7 @@ export const GLASS = 'relative overflow-hidden backdrop-blur-2xl backdrop-satura
 export const HeroPanel = ({ eyebrow, title, children, className }) => (
     <section className={cn(
         // Liquid glass, like the landing site's path cards.
-        'relative isolate overflow-hidden rounded-[2rem] p-6 sm:p-8 backdrop-blur-2xl backdrop-saturate-[1.8]',
+        'relative isolate overflow-hidden rounded-[2rem] p-6 sm:p-8 lg:p-10 backdrop-blur-2xl backdrop-saturate-[1.8]',
         'bg-white/55 text-gray-900 ring-1 ring-inset ring-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_24px_60px_-28px_rgba(0,0,0,0.3)]',
         'dark:bg-white/[0.05] dark:text-white dark:ring-white/[0.12] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_24px_60px_-28px_rgba(0,0,0,0.8)]',
         className
@@ -88,13 +88,13 @@ export const HeroPanel = ({ eyebrow, title, children, className }) => (
             style={{ backgroundImage: DOTS, backgroundSize: '16px 16px', WebkitMaskImage: FADE_RIGHT, maskImage: FADE_RIGHT }} />
         {/* The brand mark, large and faded, off the bottom-right corner */}
         <img aria-hidden="true" src={newbiIcon} alt="" className="pointer-events-none absolute -bottom-10 -right-8 -z-10 w-52 rotate-[-8deg] opacity-[0.10] sm:w-72 dark:opacity-[0.12]" />
-        <div className="relative max-w-xl space-y-3">
+        <div className="relative max-w-xl space-y-3 lg:space-y-4">
             {eyebrow && (
                 <p className="inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-gray-600 dark:text-zinc-400">
                     <span className="h-1.5 w-1.5 rounded-full bg-neon-green shadow-[0_0_8px_rgba(57,255,20,0.9)]" aria-hidden="true" />{eyebrow}
                 </p>
             )}
-            <h2 className="font-heading text-[26px] font-extrabold leading-[1.08] tracking-[-0.035em] sm:text-[32px]">{title}</h2>
+            <h2 className="font-heading text-[26px] font-extrabold leading-[1.08] tracking-[-0.035em] sm:text-[32px] lg:text-[36px]">{title}</h2>
             {children}
         </div>
     </section>

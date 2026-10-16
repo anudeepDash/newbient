@@ -36,24 +36,27 @@ export const Button = forwardRef(({ variant = 'primary', size = 'md', loading, d
 });
 Button.displayName = 'Button';
 
+/* Glass fields, like the landing site's panels: a soft fill, a hairline ring, and a neon ring on focus. */
+export const INPUT = cn(
+    'w-full rounded-2xl bg-white/70 text-[16px] font-medium text-gray-900 outline-none transition-shadow placeholder:font-normal placeholder:text-gray-400',
+    'ring-1 ring-inset ring-black/[0.08] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus:ring-2 focus:ring-emerald-500/70',
+    'dark:bg-white/[0.05] dark:text-white dark:ring-white/[0.1] dark:placeholder:text-zinc-600 dark:focus:ring-neon-green/70'
+);
+export const ERROR_RING = 'ring-2 ring-red-500/60 dark:ring-red-500/60';
+
 export const TextInput = forwardRef(({ label, hint, error, className, inputClassName, id, ...props }, ref) => {
     const inputId = id || (label ? `in-${String(label).toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : undefined);
     return (
         <label htmlFor={inputId} className={cn('block space-y-1.5', className)}>
-            {label && <span className="block text-[13px] font-semibold text-gray-600 dark:text-zinc-400">{label}</span>}
+            {label && <span className="block px-1 text-[13px] font-bold text-gray-700 dark:text-zinc-300">{label}</span>}
             <input
                 ref={ref}
                 id={inputId}
-                className={cn(
-                    'h-12 w-full rounded-2xl border bg-white px-4 text-[16px] text-gray-900 outline-none transition-colors placeholder:text-gray-400',
-                    'border-black/[0.1] focus:border-gray-900 dark:border-white/[0.1] dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-600 dark:focus:border-neon-green/60',
-                    error && 'border-red-500/60 dark:border-red-500/60',
-                    inputClassName
-                )}
+                className={cn(INPUT, 'h-[52px] px-4', error && ERROR_RING, inputClassName)}
                 {...props}
             />
-            {error ? <span className="block text-[13px] font-medium text-red-600 dark:text-red-400">{error}</span>
-                : hint && <span className="block text-[12px] text-gray-500 dark:text-zinc-500">{hint}</span>}
+            {error ? <span className="block px-1 text-[13px] font-medium text-red-600 dark:text-red-400">{error}</span>
+                : hint && <span className="block px-1 text-[12px] text-gray-500 dark:text-zinc-500">{hint}</span>}
         </label>
     );
 });

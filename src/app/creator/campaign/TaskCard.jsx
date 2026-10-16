@@ -11,7 +11,7 @@ import { cn } from '../../../lib/utils';
 import { isPresent } from '../../../lib/present';
 import { isRequiredTask } from '../../../lib/creator/tasks';
 import { cleanTaskDescription, extractTaskActionLinks, linkifyContent } from '../../../lib/taskLinks';
-import TaskActionLinks from '../../../components/creator/TaskActionLinks';
+import TaskLinks from './TaskLinks';
 import { Button } from '../../../components/app';
 import { dueLabel } from '../format';
 import { ToneChip } from '../ui';
@@ -79,7 +79,7 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, highli
             {description && (
                 <div className="campaign-briefing-content break-words text-[14px] leading-relaxed text-gray-700 dark:text-zinc-300" dangerouslySetInnerHTML={{ __html: description }} />
             )}
-            <TaskActionLinks task={task} links={links} />
+            <TaskLinks links={links} />
 
             {status === 'rejected' && isPresent(submission?.rejectionReason) && (
                 <p className="rounded-2xl bg-amber-500/10 px-3 py-2 text-[13px] text-amber-900 dark:text-amber-200">{submission.rejectionReason}</p>

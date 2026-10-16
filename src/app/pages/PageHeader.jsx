@@ -16,18 +16,18 @@ const PageHeader = ({ eyebrow, title, highlight, subtitle, action }) => (
                     {eyebrow}
                 </p>
             )}
-            <h1 className="font-heading text-[32px] font-extrabold leading-[1.02] tracking-[-0.035em] sm:text-[38px]">
+            <h1 className="font-heading text-[32px] font-extrabold leading-[1.02] tracking-[-0.035em] sm:text-[38px] lg:text-[52px]">
                 {title}{isPresent(highlight) && <> <Sticker subtle>{highlight}</Sticker></>}
             </h1>
-            {isPresent(subtitle) && <p className="mt-2 text-[15px] text-gray-600 dark:text-zinc-400">{subtitle}</p>}
+            {isPresent(subtitle) && <p className="mt-2 max-w-2xl text-[15px] text-gray-600 dark:text-zinc-400 lg:mt-3 lg:text-[17px]">{subtitle}</p>}
         </div>
         {action}
     </header>
 );
 
-/* Standard page width and padding: the phone layout, centred on bigger screens. */
+/* Standard page width and padding: one column on phones, wide on desktop. */
 export const PageBody = ({ children }) => (
-    <div className="mx-auto w-full max-w-3xl space-y-7 px-4 py-6 sm:px-6 sm:py-8">{children}</div>
+    <div className="mx-auto w-full max-w-6xl space-y-7 px-4 py-6 sm:px-6 sm:py-8 lg:space-y-10 lg:px-8 lg:py-12">{children}</div>
 );
 
 export default PageHeader;

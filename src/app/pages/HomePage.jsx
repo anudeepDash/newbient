@@ -53,7 +53,7 @@ const HomePage = () => {
             {authUser ? (
                 <header>
                     <p className="text-[14px] font-semibold text-gray-500 dark:text-zinc-400">{greeting()}</p>
-                    <h1 className="font-heading text-[30px] font-black leading-tight tracking-tight sm:text-[34px]">{firstName ? `Hi, ${firstName}` : 'Welcome back'}</h1>
+                    <h1 className="font-heading text-[30px] font-extrabold leading-tight tracking-[-0.035em] sm:text-[34px] lg:text-[48px]">{firstName ? `Hi, ${firstName}` : 'Welcome back'}</h1>
                 </header>
             ) : (
                 <HeroPanel eyebrow="Newbi" title="Concerts, campaigns and the community, in one app.">

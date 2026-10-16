@@ -72,8 +72,8 @@ const JoinPaths = () => {
     if (!tiles.length) return null;
 
     return (
-        // One column on every screen, like the phone layout.
-        <section aria-label="Ways in" className="grid gap-3">
+        // One column on phones; side by side on desktop.
+        <section aria-label="Ways in" className={`grid gap-3 lg:gap-6 ${tiles.length > 1 ? 'lg:grid-cols-2' : ''}`}>
             {tiles.map(({ key, ...t }) => <Tile key={key} {...t} />)}
         </section>
     );

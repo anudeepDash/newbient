@@ -1,4 +1,6 @@
 import React, { useRef, useState } from 'react';
+import { cn } from '../../lib/utils';
+import { INPUT } from '../../components/app/controls';
 import Paperclip from 'lucide-react/dist/esm/icons/paperclip';
 import X from 'lucide-react/dist/esm/icons/x';
 import { TextInput } from '../../components/app';
@@ -100,7 +102,7 @@ const GuestlistTaskFields = ({ task, value, onChange, onUploading }) => {
                         rows={4}
                         value={value.text || ''}
                         onChange={(e) => set({ text: e.target.value })}
-                        className="w-full rounded-2xl border border-black/[0.1] bg-white px-4 py-3 text-[16px] text-gray-900 outline-none focus:border-gray-900 dark:border-white/[0.1] dark:bg-white/[0.04] dark:text-white dark:focus:border-neon-green/60"
+                        className={cn(INPUT, 'px-4 py-3.5')}
                     />
                 </label>
             )}

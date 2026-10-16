@@ -74,7 +74,7 @@ const CampaignPage = ({ overlay = false }) => {
 
     return (
         <PageBody>
-            <div className="mx-auto max-w-2xl">
+            <div>
                 <Button variant="ghost" size="sm" icon={ArrowLeft} to={appPath('/creator')} className="-ml-2 mb-3">Campaigns</Button>
                 {campaign ? <CampaignView campaign={campaign} variant="page" initialTaskId={taskId} /> : campaign === null ? <Missing /> : <Loading />}
             </div>
