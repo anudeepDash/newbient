@@ -25,7 +25,7 @@ import { appPath, appUrl, APP_ORIGIN } from '../../host';
 import { callCreatorApi } from '../api';
 import { compactCount, dueLabel } from '../format';
 import { creatorWho, isShortlisted, matchesCollege } from '../useCreatorData';
-import { Notice } from '../ui';
+import { Notice, STICKY_DOCK } from '../ui';
 import TaskCard from './TaskCard';
 import SubmitTaskSheet from './SubmitTaskSheet';
 import TicketSlot from './TicketSlot';
@@ -313,8 +313,8 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
     return (
         <>
             {body}
-            {/* Full page: the bar sits above the app's tab bar on phones. */}
-            <div className="sticky bottom-[calc(6.25rem+env(safe-area-inset-bottom))] z-30 -mx-4 mt-6 border-t border-black/[0.06] bg-[#f6f7f9]/95 px-4 py-3 dark:border-white/[0.06] dark:bg-[#050608]/95 sm:mx-0 sm:rounded-3xl sm:border lg:bottom-4">
+            {/* Full page: a solid dock under the app's tab pill. */}
+            <div className={cn(STICKY_DOCK, 'mt-6')}>
                 {bar}
             </div>
             {submitSheet}

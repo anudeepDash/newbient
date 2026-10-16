@@ -301,69 +301,84 @@ const settlePendingCreator = async (db, creator, { followers, ownershipVerified 
 
 /* ── creator-apply ────────────────────────────────────────────────────── */
 
-const PROFILE_FIELDS_MISSING = (id, campusNiche) => {
+const PROFILE_FIELDS_MISSING = (id, needsCollege) => {
     const missing = [];
     if (!id.name) missing.push('name');
     if (!id.email) missing.push('email');
     if (!id.phoneVerified) missing.push('phoneVerified');
     if (!id.city) missing.push('city');
-    if (campusNiche && !id.college) missing.push('college');
+    if (needsCollege) missing.push('college');
     return missing;
 };
 
+/* Up to three valid niche ids, in the order picked. */
+const MAX_NICHES = 3;
+const cleanNiches = (value) => {
+    const list = Array.isArray(value) ? value : (value ? [value] : []);
+    return Array.from(new Set(list.map(v => str(v, 80)).filter(v => NICHE_IDS.has(v)))).slice(0, MAX_NICHES);
+};
+const has = (body, key) => Object.prototype.hasOwnProperty.call(body, key);
+const socialHandle = (v) => str(v, 120).replace(/^https?:\/\/(www\.)?[^/]+\//i, '').replace(/^@+/, '').split(/[/?#\s]/)[0].slice(0, 60);
+
+/*
+ * The application, and later edits from the creator's profile.
+ *
+ * The form sends: handle, city, niches (1-3), collegeName for campus niches,
+ * whatsappOptIn. The profile's "add later" fields (collaboration, commercials,
+ * bio, cityPageFocus, linkedin, youtube, twitter) are saved only when sent.
+ * Name, email and verified phone come from users/{uid}; a missing name or
+ * photo is filled from Instagram.
+ */
 const handleApply = async (req, res, { db, token }) => {
     if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
     const body = req.body || {};
     const uid = token.uid;
 
-    const niche = str(body.niche, 80);
-    if (!NICHE_IDS.has(niche)) return send(res, 400, { success: false, field: 'niche', error: 'Pick the niche that fits you best.' });
-    const customNiche = niche === 'Others' ? str(body.customNiche, 60) : '';
-    if (niche === 'Others' && !customNiche) return send(res, 400, { success: false, field: 'customNiche', error: 'Tell us your niche.' });
-    const collab = COLLAB_IDS.has(body.collaboration) ? body.collaboration : 'both';
-    const commercials = str(body.commercials, 80);
-    const bio = str(body.bio, BIO_MAX);
-    const campusNiche = isCollegeNiche(niche);
-
-    const id = await loadIdentity(db, token);
-    // A campus niche can name the college on the form; it's saved to the profile too.
-    const collegeName = campusNiche ? (str(body.collegeName, 160) || id.college) : '';
-    if (campusNiche && collegeName) id.college = collegeName;
-
     const settings = await readCreatorSettings(db);
     const existingSnap = await findOwnCreator(db, uid);
     const existing = existingSnap?.exists ? existingSnap.data() : null;
+    const isNew = !existing;
     if (existing?.profileStatus === 'rejected' || existing?.profileStatus === 'suspended') {
         return send(res, 403, { success: false, error: "Your creator profile can't be changed right now. Contact creators@newbi.live." });
     }
-    if (!existing && !settings.allowSignups) {
+    if (isNew && !settings.allowSignups) {
         return send(res, 403, { success: false, code: 'paused', error: 'New creator applications are paused right now.' });
     }
-    // New applicants need the full profile. Existing creators editing their details
-    // keep what's on their creator record for anything the profile doesn't have yet.
+
+    // ── What you make ──
+    const sentNiches = has(body, 'niches') || has(body, 'niche');
+    const niches = sentNiches ? cleanNiches(body.niches ?? body.niche) : null;
+    if ((isNew || sentNiches) && !niches?.length) return send(res, 400, { success: false, field: 'niches', error: 'Pick at least one niche.' });
+    const customNiche = niches?.includes('Others') ? str(body.customNiche, 60) : '';
+    if (niches?.includes('Others') && !customNiche) return send(res, 400, { success: false, field: 'customNiche', error: 'Tell us your niche.' });
+    const allNiches = niches || (Array.isArray(existing?.specializations) ? existing.specializations : [existing?.categories].filter(Boolean));
+    const campusNiche = allNiches.some(isCollegeNiche);
+
+    const id = await loadIdentity(db, token);
+    const formCity = str(body.city, 80);
+    if (formCity) id.city = formCity;
+    const collegeName = campusNiche ? (str(body.collegeName, 160) || str(existing?.collegeName, 160) || id.college) : '';
     if (existing) {
         id.name = id.name || str(existing.name || existing.displayName, 120);
         id.email = id.email || str(existing.email, 200).toLowerCase();
         if (!id.phoneVerified && existing.isPhoneVerified) { id.phone = toE164(existing.phone); id.phoneVerified = Boolean(id.phone); }
         id.city = id.city || str(existing.city, 80);
-    } else {
-        const missing = PROFILE_FIELDS_MISSING(id, campusNiche);
-        if (missing.length) return send(res, 400, { success: false, missing, error: 'Complete your profile first.' });
     }
 
     // ── Instagram ──
-    let handle = cleanHandle(body.handle) || cleanHandle(existing?.instagram);
-    let ig = { handle, igUserId: existing?.igUserId || null, followers: Number(existing?.instagramFollowers) || 0, ownershipVerified: false, via: null, pending: false, profilePic: '' };
-    // An existing creator editing their details (same handle) keeps their Instagram record as it is.
+    const handle = cleanHandle(body.handle) || cleanHandle(existing?.instagram);
+    let ig = { handle, igUserId: existing?.igUserId || null, followers: Number(existing?.instagramFollowers) || 0, ownershipVerified: false, via: null, pending: false, profilePic: '', name: '' };
+    // An existing creator editing their profile (same handle) keeps their Instagram record as it is.
     const detailsOnly = Boolean(existing && existing.profileStatus !== 'pending_verification'
         && (!cleanHandle(body.handle) || cleanHandle(body.handle) === cleanHandle(existing.instagram)));
 
     if (detailsOnly) {
         ig = { ...ig, ownershipVerified: existing.instagramVerifiedVia === 'oauth', via: existing.instagramVerifiedVia || null };
-    } else if (settings.metaVerification) {
-        const tokenSnap = await tokenRef(uid, db).get().catch(() => null);
+    } else {
+        if (!handle) return send(res, 400, { success: false, field: 'handle', error: 'Add your Instagram username.' });
+        const tokenSnap = settings.metaVerification ? await tokenRef(uid, db).get().catch(() => null) : null;
         const t = tokenSnap?.exists ? tokenSnap.data() : null;
-        if (t?.igUserId && (!handle || handle === t.username)) {
+        if (t?.igUserId && handle === t.username) {
             let followers = Number(t.followers) || 0;
             // Refresh the count if the stored one is more than a day old.
             if (Date.now() - new Date(t.refreshedAt || 0).getTime() > 24 * 60 * 60 * 1000) {
@@ -373,22 +388,24 @@ const handleApply = async (req, res, { db, token }) => {
                     await tokenSnap.ref.set({ followers, refreshedAt: nowIso() }, { merge: true });
                 }
             }
-            ig = { handle: t.username, igUserId: t.igUserId, followers, ownershipVerified: true, via: 'oauth', pending: false, profilePic: t.profilePic || '' };
-        } else {
-            if (!handle) return send(res, 400, { success: false, field: 'handle', error: 'Add your Instagram username.' });
+            ig = { handle: t.username, igUserId: t.igUserId, followers, ownershipVerified: true, via: 'oauth', pending: false, profilePic: t.profilePic || '', name: t.name || '' };
+        } else if (settings.metaVerification) {
             const lookup = await lookupInstagram(handle, { db });
             if (lookup.ok && isOauthConfigured()) {
                 return send(res, 409, { success: false, code: 'connect_required', error: 'Connect your Instagram account to finish.' });
             }
             if (lookup.ok) {
-                // Found through Meta but ownership can't be proven yet (Instagram Login not set up): review.
-                ig = { ...ig, handle: lookup.profile.username, igUserId: lookup.profile.igUserId, followers: lookup.profile.followers, profilePic: lookup.profile.profilePic || '' };
+                // Found through Meta, but ownership can't be proven yet (Instagram Login not set up): review.
+                ig = { ...ig, handle: lookup.profile.username, igUserId: lookup.profile.igUserId, followers: lookup.profile.followers, profilePic: lookup.profile.profilePic || '', name: lookup.profile.name || '' };
             } else if (lookup.reason === 'not_professional' || lookup.reason === 'invalid') {
                 return send(res, 400, { success: false, code: lookup.reason, field: 'handle', error: lookup.message });
             } else {
-                // Meta is down or not reachable: save it and let the cron confirm.
+                // Meta is down or not set up: save it and let the cron confirm.
                 ig = { ...ig, handle, pending: true };
             }
+        } else {
+            // Meta verification is off: the handle is saved and checked once it's on (or by an admin).
+            ig = { ...ig, handle, pending: true };
         }
         if (ig.ownershipVerified && settings.requireVerification && settings.minFollowers > 0 && ig.followers < settings.minFollowers) {
             return send(res, 400, {
@@ -397,11 +414,19 @@ const handleApply = async (req, res, { db, token }) => {
                 error: `Newbi Creators needs at least ${settings.minFollowers.toLocaleString('en-IN')} Instagram followers. @${ig.handle} has ${ig.followers.toLocaleString('en-IN')}.`,
             });
         }
-    } else {
-        if (!handle) return send(res, 400, { success: false, field: 'handle', error: 'Add your Instagram username.' });
-        const claimed = Math.max(0, Math.min(Number(body.followers) || 0, 500_000_000));
-        ig = { ...ig, handle, followers: claimed || ig.followers };
     }
+
+    // Instagram fills in what the profile doesn't have yet.
+    const nameFromInstagram = !id.name && ig.name ? str(ig.name, 120) : '';
+    if (nameFromInstagram) id.name = nameFromInstagram;
+    const photoFromInstagram = !id.photoURL && ig.profilePic ? ig.profilePic : '';
+
+    if (campusNiche && !collegeName) return send(res, 400, { success: false, field: 'collegeName', error: 'Add your college.' });
+    if (isNew) {
+        const missing = PROFILE_FIELDS_MISSING(id, false);
+        if (missing.length) return send(res, 400, { success: false, missing, error: 'Complete your profile first.' });
+    }
+
     const instagramFields = detailsOnly ? {} : {
         instagram: ig.handle,
         instagramFollowers: String(ig.followers || 0),
@@ -431,11 +456,17 @@ const handleApply = async (req, res, { db, token }) => {
     if (existing?.profileStatus && existing.profileStatus !== 'pending_verification') profileStatus = existing.profileStatus;
     else if (ig.pending) profileStatus = 'pending_verification';
     else profileStatus = decideStatus({ ownershipVerified: ig.ownershipVerified, followers: ig.followers, settings });
-    const isNew = !existing;
     const now = nowIso();
     const docId = existingSnap?.id || uid;
     const creatorId = (existing?.creatorId || uid.slice(0, 8)).toUpperCase();
     const referredBy = isNew ? str(body.referredBy, 40) : '';
+
+    const optional = {};
+    if (has(body, 'collaboration')) optional.doBarter = COLLAB_IDS.has(body.collaboration) ? body.collaboration : 'both';
+    if (has(body, 'commercials')) optional.commercials = str(body.commercials, 80);
+    if (has(body, 'bio')) optional.bio = str(body.bio, BIO_MAX);
+    if (has(body, 'cityPageFocus')) optional.cityPageFocus = str(body.cityPageFocus, 80);
+    ['linkedin', 'youtube', 'twitter'].forEach((k) => { if (has(body, k)) optional[k] = socialHandle(body[k]); });
 
     const creator = {
         uid,
@@ -452,14 +483,9 @@ const handleApply = async (req, res, { db, token }) => {
         city: id.city,
         profilePicture: existing?.profilePicture || id.photoURL || ig.profilePic || '',
         ...instagramFields,
-        categories: niche,
-        specializations: [niche],
-        customNiche,
-        cityPageFocus: niche === 'City Pages' ? str(body.cityPageFocus, 80) : '',
-        collegeName,
-        doBarter: collab,
-        commercials,
-        bio,
+        ...(niches ? { categories: niches[0], specializations: niches, niches, customNiche } : {}),
+        ...(campusNiche ? { collegeName } : (niches ? { collegeName: '' } : {})),
+        ...optional,
         profileStatus,
         isVerified: profileStatus === 'approved',
         ...(isNew ? {
@@ -487,6 +513,9 @@ const handleApply = async (req, res, { db, token }) => {
     };
     if (typeof body.whatsappOptIn === 'boolean') userPatch.channelPrefs = { whatsapp: body.whatsappOptIn };
     if (campusNiche && collegeName && !id.user.college) userPatch.college = collegeName;
+    if (formCity && formCity !== id.user.city) userPatch.city = formCity;
+    if (nameFromInstagram) { userPatch.name = nameFromInstagram; userPatch.displayName = nameFromInstagram; }
+    if (photoFromInstagram) userPatch.photoURL = photoFromInstagram;
     if (detailsOnly) {
         // Nothing about Instagram changes.
     } else if (ig.ownershipVerified) {
@@ -514,7 +543,12 @@ const handleApply = async (req, res, { db, token }) => {
         success: true,
         status: profileStatus,
         isNew,
-        creator: { id: docId, uid, creatorId, profileStatus, instagram: ig.handle, instagramFollowers: creator.instagramFollowers, instagramVerified: ig.ownershipVerified },
+        creator: {
+            id: docId, uid, creatorId, profileStatus,
+            name: id.name, city: id.city, niches: creator.niches || allNiches,
+            instagram: ig.handle, instagramFollowers: creator.instagramFollowers ?? existing?.instagramFollowers,
+            instagramVerified: ig.ownershipVerified, profilePicture: creator.profilePicture,
+        },
     });
 };
 

@@ -1,22 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { callCreatorApi } from '../api';
 import { appPath } from '../../host';
+import { isCollegeNiche } from '../../../lib/creator/options';
 
 /*
- * State for the two-step creator application.
+ * State for the one-screen creator application.
  *
- *   step 1  Instagram: the handle, checked against Meta while typing (when
- *           instagramMetaVerification is on), then "Connect Instagram".
- *           With the flag off: the handle and a follower count for review.
- *   step 2  niche, college (campus niches), collaboration, rates, bio.
+ *   Instagram username   checked against Meta while typing (when
+ *                        instagramMetaVerification is on); the result fills
+ *                        the live creator pass (picture, name, followers)
+ *   city                 one pick, prefilled from the profile
+ *   niches               up to three
+ *   college              only for campus niches
  *
- * The draft survives the Instagram login round trip in sessionStorage.
- * Name, email, phone, city and photo are never part of it: they come from the
- * profile on the server.
+ * Name, email, phone and photo are never asked here: they come from the
+ * account (or Instagram). The draft survives the Instagram login round trip
+ * in sessionStorage, and `autoSubmit` sends the application on the way back.
  */
 
-const DRAFT_KEY = 'nb_creator_apply';
+const DRAFT_KEY = 'nb_creator_apply_v2';
 const HANDLE_RE = /^[a-z0-9._]{1,30}$/;
+export const MAX_NICHES = 3;
 
 export const cleanHandleInput = (raw = '') => {
     let v = String(raw || '').trim();
@@ -36,41 +40,42 @@ export const clearDraft = () => {
     try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* private mode */ }
 };
 
-export const EMPTY_DETAILS = {
-    niche: '',
-    customNiche: '',
-    cityPageFocus: '',
-    collegeName: '',
-    collaboration: 'both',
-    commercials: '',
-    bio: '',
-    whatsappOptIn: true,
-};
-
-export function useCreatorApplication({ referredBy = '' } = {}) {
+export function useCreatorApplication({ referredBy = '', initialCity = '' } = {}) {
     const draft = useRef(readDraft()).current;
-    const [step, setStep] = useState(draft?.step === 2 ? 2 : 1);
     const [handle, setHandleState] = useState(draft?.handle || '');
-    const [followers, setFollowers] = useState(draft?.followers || '');
-    const [details, setDetails] = useState({ ...EMPTY_DETAILS, ...(draft?.details || {}) });
-    // lookup: { state: 'idle'|'checking'|'found'|'not_professional'|'invalid'|'unavailable'|'disabled', profile, connected, ... }
+    const [city, setCity] = useState(draft?.city || initialCity || '');
+    const [niches, setNiches] = useState(Array.isArray(draft?.niches) ? draft.niches.slice(0, MAX_NICHES) : []);
+    const [customNiche, setCustomNiche] = useState(draft?.customNiche || '');
+    const [collegeName, setCollegeName] = useState(draft?.collegeName || '');
+    const [whatsappOptIn, setWhatsappOptIn] = useState(draft?.whatsappOptIn !== false);
+    // lookup.state: idle | checking | found | not_professional | invalid | unavailable | disabled
     const [lookup, setLookup] = useState({ state: 'idle' });
     const [connecting, setConnecting] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
     const [result, setResult] = useState(null);
+    const autoSubmit = useRef(Boolean(draft?.autoSubmit));
     const seq = useRef(0);
 
+    // The profile's city arrives after the first render.
+    useEffect(() => { if (!city && initialCity) setCity(initialCity); }, [initialCity]); // eslint-disable-line
+
     useEffect(() => {
-        writeDraft({ step, handle, followers, details });
-    }, [step, handle, followers, details]);
+        writeDraft({ handle, city, niches, customNiche, collegeName, whatsappOptIn, autoSubmit: autoSubmit.current });
+    }, [handle, city, niches, customNiche, collegeName, whatsappOptIn]);
 
     const setHandle = (raw) => {
         setHandleState(cleanHandleInput(raw));
         setError(null);
     };
 
-    /* One Business Discovery check (the server caches for 24 hours). */
+    const toggleNiche = (id) => setNiches((list) => {
+        if (list.includes(id)) return list.filter(n => n !== id);
+        if (list.length >= MAX_NICHES) return [...list.slice(1), id];
+        return [...list, id];
+    });
+
+    /* One Business Discovery check (the server caches it for 24 hours). */
     const check = useCallback(async (value = handle) => {
         const h = cleanHandleInput(value);
         if (!isValidHandle(h)) {
@@ -78,24 +83,16 @@ export function useCreatorApplication({ referredBy = '' } = {}) {
             return;
         }
         const mine = ++seq.current;
-        setLookup(prev => ({ ...prev, state: 'checking' }));
+        setLookup(prev => ({ ...prev, state: 'checking', handle: h }));
         const res = await callCreatorApi('ig-lookup', { handle: h }, { timeoutMs: 8000 });
         if (mine !== seq.current) return;
-        if (!res.ok) {
-            setLookup({ state: 'unavailable', message: res.error });
-            return;
-        }
+        if (!res.ok) return setLookup({ state: 'unavailable', handle: h });
         const d = res.data;
-        if (!d.enabled) {
-            setLookup({ state: 'disabled', minFollowers: d.minFollowers });
-            return;
-        }
-        if (!d.ok) {
-            setLookup({ state: d.reason === 'not_configured' ? 'unavailable' : d.reason, message: d.message, minFollowers: d.minFollowers });
-            return;
-        }
+        if (!d.enabled) return setLookup({ state: 'disabled', handle: h, minFollowers: d.minFollowers });
+        if (!d.ok) return setLookup({ state: d.reason === 'not_configured' ? 'unavailable' : d.reason, handle: h, minFollowers: d.minFollowers });
         setLookup({
             state: 'found',
+            handle: h,
             profile: d.profile,
             connected: d.connected,
             alreadyRegistered: d.alreadyRegistered,
@@ -103,55 +100,75 @@ export function useCreatorApplication({ referredBy = '' } = {}) {
             minFollowers: d.minFollowers,
             oauthReady: d.oauthReady,
         });
+        return undefined;
     }, [handle]);
 
-    /* Starts the Instagram login. The page leaves; the draft is already saved. */
+    const campus = niches.some(isCollegeNiche);
+    const steps = [
+        { key: 'instagram', done: isValidHandle(handle) && !['invalid', 'not_professional', 'checking'].includes(lookup.state) && !lookup.alreadyRegistered && lookup.meetsMinimum !== false },
+        { key: 'city', done: Boolean(String(city).trim()) },
+        { key: 'niche', done: niches.length > 0 && (!niches.includes('Others') || Boolean(customNiche.trim())) && (!campus || Boolean(collegeName.trim())) },
+    ];
+    const ready = steps.every(s => s.done);
+    const found = lookup.state === 'found' ? lookup : null;
+    const needsConnect = Boolean(found && !found.connected && found.oauthReady);
+
+    /* Instagram login. The page leaves; the draft is saved and submits on the way back. */
     const connect = useCallback(async () => {
         setConnecting(true);
         setError(null);
+        autoSubmit.current = true;
+        writeDraft({ handle, city, niches, customNiche, collegeName, whatsappOptIn, autoSubmit: true });
         const res = await callCreatorApi('ig-connect', {
             handle,
-            // Back to this same page (keeps ?next= and the base path).
             returnTo: `${window.location.pathname}${window.location.search}` || appPath('/creator/apply'),
             origin: window.location.origin,
         });
         if (!res.ok || !res.data?.url) {
+            autoSubmit.current = false;
             setConnecting(false);
-            setError(res.error || 'We couldn’t start the Instagram login.');
+            setError({ error: res.error || 'We couldn’t start the Instagram login.' });
             return;
         }
         window.location.assign(res.data.url);
-    }, [handle]);
+    }, [handle, city, niches, customNiche, collegeName, whatsappOptIn]);
 
     const submit = useCallback(async () => {
+        autoSubmit.current = false;
         setSubmitting(true);
         setError(null);
         const res = await callCreatorApi('creator-apply', {
             handle,
-            followers: Number(String(followers).replace(/[^\d]/g, '')) || 0,
-            ...details,
+            city: city.trim(),
+            niches,
+            customNiche: niches.includes('Others') ? customNiche.trim() : '',
+            collegeName: campus ? collegeName.trim() : '',
+            whatsappOptIn,
             referredBy,
         });
         setSubmitting(false);
         if (res.ok) {
             clearDraft();
             setResult(res.data);
-            return res;
+        } else {
+            setError(res);
         }
-        setError(res);
-        if (res.code === 'connect_required' || res.field === 'handle' || res.code === 'below_minimum' || res.code === 'not_professional') setStep(1);
         return res;
-    }, [handle, followers, details, referredBy]);
+    }, [handle, city, niches, customNiche, collegeName, campus, whatsappOptIn, referredBy]);
 
     return {
-        step, setStep,
         handle, setHandle,
-        followers, setFollowers,
-        details, setDetails,
-        lookup, check,
+        city, setCity,
+        niches, toggleNiche,
+        customNiche, setCustomNiche,
+        collegeName, setCollegeName,
+        whatsappOptIn, setWhatsappOptIn,
+        campus, steps, ready,
+        lookup, check, found, needsConnect,
         connect, connecting,
         submit, submitting,
         error, setError,
         result,
+        wantsAutoSubmit: () => autoSubmit.current,
     };
 }

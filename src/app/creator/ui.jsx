@@ -9,6 +9,13 @@ import { CREATOR_STATUS, TONES } from './format';
 
 /* UI pieces shared by the creator pages. Every one renders nothing when empty. */
 
+/*
+ * A sticky action dock for pages (apply, campaign page): solid down to the
+ * screen edge, so the app's floating tab pill sits over its lower part and
+ * nothing scrolls between the button and the tabs. Safe-area padded.
+ */
+export const STICKY_DOCK = 'sticky bottom-0 z-30 -mx-4 space-y-2 border-t border-black/[0.06] bg-[#f6f7f9] px-4 pt-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] dark:border-white/[0.06] dark:bg-[#050608] sm:-mx-6 sm:px-6';
+
 export const StatusChip = ({ status, className }) => {
     const meta = CREATOR_STATUS[status];
     if (!meta) return null;

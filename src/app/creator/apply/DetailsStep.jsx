@@ -4,38 +4,50 @@ import { CREATOR_NICHE_OPTIONS, COLLAB_OPTIONS, RATE_OPTIONS, BIO_MAX, isCollege
 import { ChoiceChip, FormBlock, TextArea } from '../ui';
 
 /*
- * Step 2: what you make and how you work. Also used on its own (in a Sheet)
- * to edit these fields from the creator profile.
+ * The creator details edited from the profile ("add later" after applying):
+ * niches (up to 3), college for campus niches, how you work, rates, a bio
+ * and other socials. Saved through the server, which keeps the status.
  *
- *   details: { niche, customNiche, cityPageFocus, collegeName, collaboration, commercials, bio, whatsappOptIn }
- *   profileCollege: the college already on the profile (asked only when missing)
+ *   details: { niches, customNiche, cityPageFocus, collegeName, collaboration, commercials, bio, linkedin, youtube, twitter }
  */
 
+const MAX_NICHES = 3;
+const hasOthers = (d) => (d.niches || []).includes('Others');
+const isCampus = (d) => (d.niches || []).some(isCollegeNiche);
+
 export const validateDetails = (details, profileCollege) => {
-    if (!details.niche) return { field: 'niche', error: 'Pick the niche that fits you best.' };
-    if (details.niche === 'Others' && !String(details.customNiche || '').trim()) return { field: 'customNiche', error: 'Tell us your niche.' };
-    if (isCollegeNiche(details.niche) && !String(details.collegeName || profileCollege || '').trim()) {
+    if (!(details.niches || []).length) return { field: 'niches', error: 'Pick at least one niche.' };
+    if (hasOthers(details) && !String(details.customNiche || '').trim()) return { field: 'customNiche', error: 'Tell us your niche.' };
+    if (isCampus(details) && !String(details.collegeName || profileCollege || '').trim()) {
         return { field: 'collegeName', error: 'Add your college.' };
     }
     return null;
 };
 
-const DetailsStep = ({ details, setDetails, profileCollege, fieldError, showWhatsapp = true }) => {
+const SOCIALS = [
+    { key: 'youtube', label: 'YouTube', placeholder: '@yourchannel' },
+    { key: 'linkedin', label: 'LinkedIn', placeholder: 'your-name' },
+    { key: 'twitter', label: 'X (Twitter)', placeholder: '@you' },
+];
+
+const DetailsStep = ({ details, setDetails, profileCollege, fieldError }) => {
     const set = (patch) => setDetails(d => ({ ...d, ...patch }));
-    const campus = isCollegeNiche(details.niche);
+    const campus = isCampus(details);
+    const niches = details.niches || [];
+    const toggle = (id) => set({ niches: niches.includes(id) ? niches.filter(n => n !== id) : [...(niches.length >= MAX_NICHES ? niches.slice(1) : niches), id] });
 
     return (
         <div className="space-y-6">
-            <FormBlock label="Your niche">
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <FormBlock label={`What you post (up to ${MAX_NICHES})`}>
+                <div className="flex flex-wrap gap-2">
                     {CREATOR_NICHE_OPTIONS.map(n => (
-                        <ChoiceChip key={n.id} selected={details.niche === n.id} onClick={() => set({ niche: n.id })}>{n.label}</ChoiceChip>
+                        <ChoiceChip key={n.id} selected={niches.includes(n.id)} onClick={() => toggle(n.id)} className="py-2">{n.label}</ChoiceChip>
                     ))}
                 </div>
-                {fieldError?.field === 'niche' && <p className="text-[13px] font-medium text-red-600 dark:text-red-400">{fieldError.error}</p>}
+                {fieldError?.field === 'niches' && <p className="text-[13px] font-medium text-red-600 dark:text-red-400">{fieldError.error}</p>}
             </FormBlock>
 
-            {details.niche === 'Others' && (
+            {hasOthers(details) && (
                 <TextInput
                     label="Your niche"
                     value={details.customNiche}
@@ -46,7 +58,7 @@ const DetailsStep = ({ details, setDetails, profileCollege, fieldError, showWhat
                 />
             )}
 
-            {details.niche === 'City Pages' && (
+            {niches.includes('City Pages') && (
                 <TextInput
                     label="What your page covers (optional)"
                     value={details.cityPageFocus}
@@ -58,7 +70,7 @@ const DetailsStep = ({ details, setDetails, profileCollege, fieldError, showWhat
 
             {campus && (
                 <TextInput
-                    label={details.niche === 'College Pages' ? 'College this page represents' : 'Your college'}
+                    label={niches.includes('College Pages') ? 'College this page represents' : 'Your college'}
                     value={details.collegeName || ''}
                     onChange={(e) => set({ collegeName: e.target.value })}
                     placeholder={profileCollege || 'e.g. Christ University'}
@@ -101,17 +113,22 @@ const DetailsStep = ({ details, setDetails, profileCollege, fieldError, showWhat
                 />
             </FormBlock>
 
-            {showWhatsapp && (
-                <label className="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-2xl border border-black/[0.06] px-4 py-3 dark:border-white/[0.08]">
-                    <input
-                        type="checkbox"
-                        checked={details.whatsappOptIn !== false}
-                        onChange={(e) => set({ whatsappOptIn: e.target.checked })}
-                        className="mt-0.5 h-5 w-5 shrink-0 accent-emerald-600"
-                    />
-                    <span className="text-[14px] text-gray-700 dark:text-zinc-300">Send my tickets and updates on WhatsApp</span>
-                </label>
-            )}
+            <FormBlock label="Other socials" hint="Optional. Just the username.">
+                <div className="space-y-3">
+                    {SOCIALS.map(x => (
+                        <TextInput
+                            key={x.key}
+                            label={x.label}
+                            value={details[x.key] || ''}
+                            onChange={(e) => set({ [x.key]: e.target.value })}
+                            placeholder={x.placeholder}
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            maxLength={80}
+                        />
+                    ))}
+                </div>
+            </FormBlock>
         </div>
     );
 };

@@ -21,7 +21,8 @@ export const creatorNiche = (c) => {
     return first === 'Student Creator/ Campus Creator' ? 'Student/ Campus Creator' : first;
 };
 
-export const isPendingCreator = (c) => !c?.profileStatus || c.profileStatus === 'pending';
+// pending_verification: applied in the app while Instagram couldn't be checked yet; reviewable by hand.
+export const isPendingCreator = (c) => !c?.profileStatus || c.profileStatus === 'pending' || c.profileStatus === 'pending_verification';
 
 export const isManualFollowerEntry = (c) =>
     Boolean(c?.manualFollowerEntry || c?.isManualFollowerEntry || c?.requiresManualVerification);

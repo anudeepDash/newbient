@@ -18,7 +18,7 @@ import { callCreatorApi } from '../api';
 import { compactCount, handleOf } from '../format';
 import { Notice } from '../ui';
 import DetailsStep, { validateDetails } from '../apply/DetailsStep';
-import { oauthErrorMessage } from '../apply/InstagramStep';
+import { oauthErrorMessage } from '../apply/instagramCopy';
 
 /*
  * Profile: contact details come from /profile (one place to edit them); the
@@ -33,19 +33,26 @@ const FieldCard = ({ title, action, children }) => (
     </Section>
 );
 
+const nichesOf = (c) => {
+    const list = Array.isArray(c.niches) && c.niches.length ? c.niches : Array.isArray(c.specializations) && c.specializations.length ? c.specializations : [c.categories].filter(Boolean);
+    return list.filter(id => CREATOR_NICHE_OPTIONS.some(n => n.id === id)).slice(0, 3);
+};
 const nicheLabel = (c) => {
-    if (c.categories === 'Others' && c.customNiche) return c.customNiche;
-    return CREATOR_NICHE_OPTIONS.find(n => n.id === c.categories)?.label || c.categories || (c.specializations || [])[0] || null;
+    const labels = nichesOf(c).map(id => (id === 'Others' ? c.customNiche : CREATOR_NICHE_OPTIONS.find(n => n.id === id)?.label)).filter(Boolean);
+    return labels.length ? labels.join(', ') : (c.categories || null);
 };
 
 const detailsFrom = (c) => ({
-    niche: CREATOR_NICHE_OPTIONS.some(n => n.id === c.categories) ? c.categories : '',
+    niches: nichesOf(c),
     customNiche: c.customNiche || '',
     cityPageFocus: c.cityPageFocus || '',
     collegeName: c.collegeName || '',
     collaboration: COLLAB_OPTIONS.some(o => o.id === c.doBarter) ? c.doBarter : 'both',
     commercials: c.commercials || '',
     bio: c.bio || '',
+    linkedin: c.linkedin || '',
+    youtube: c.youtube || '',
+    twitter: c.twitter || '',
 });
 
 const InstagramSection = ({ creator, settings }) => {
@@ -142,9 +149,18 @@ const ProfileTab = ({ creator, profile, settings }) => {
                 <Field label="Works on" icon={Handshake} value={collab} />
                 <Field label="Rate" icon={IndianRupee} value={creator.commercials} />
                 <Field label="About" value={creator.bio} valueClassName="font-medium" />
+                <Field label="YouTube" value={creator.youtube ? `@${String(creator.youtube).replace(/^@/, '')}` : null} href={creator.youtube ? `https://youtube.com/@${String(creator.youtube).replace(/^@/, '')}` : undefined} />
+                <Field label="LinkedIn" value={creator.linkedin || null} href={creator.linkedin ? `https://www.linkedin.com/in/${creator.linkedin}` : undefined} />
+                <Field label="X" value={creator.twitter ? `@${String(creator.twitter).replace(/^@/, '')}` : null} href={creator.twitter ? `https://x.com/${String(creator.twitter).replace(/^@/, '')}` : undefined} />
             </FieldCard>
-            {!nicheLabel(creator) && !creator.bio && (
-                <Button variant="secondary" onClick={openEdit}>Add your creator details</Button>
+            {(!creator.bio || !creator.commercials) && (
+                <button type="button" onClick={openEdit} className="flex w-full items-center justify-between gap-3 rounded-3xl border border-dashed border-black/[0.12] px-5 py-4 text-left dark:border-white/[0.12]">
+                    <span>
+                        <span className="block text-[15px] font-bold">Add your rates and bio</span>
+                        <span className="block text-[13px] text-gray-500 dark:text-zinc-400">Brands use them to pick creators. Takes a minute.</span>
+                    </span>
+                    <span className="shrink-0 text-[14px] font-bold text-emerald-700 dark:text-neon-green">Add</span>
+                </button>
             )}
 
             <Sheet
@@ -159,7 +175,7 @@ const ProfileTab = ({ creator, profile, settings }) => {
                     </div>
                 )}
             >
-                <DetailsStep details={details} setDetails={setDetails} profileCollege={profile?.college} fieldError={fieldError} showWhatsapp={false} />
+                <DetailsStep details={details} setDetails={setDetails} profileCollege={profile?.college} fieldError={fieldError} />
             </Sheet>
         </div>
     );

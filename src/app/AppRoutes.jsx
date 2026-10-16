@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import AppLayout from './AppLayout';
 import { appRoutes } from './modules';
@@ -17,8 +17,16 @@ import LegacyRedirect from './redirects';
  */
 const OVERLAY_PATHS = ['c/:id'];
 
+// The campaign sheet's code loads while the browser is idle, so a tap opens it at once.
+const prefetchCampaignPage = () => import('./creator/campaign/CampaignPage');
+
 const AppRoutes = () => {
     const location = useLocation();
+    useEffect(() => {
+        const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
+        const id = idle(() => { prefetchCampaignPage().catch(() => {}); });
+        return () => (window.cancelIdleCallback ? window.cancelIdleCallback(id) : clearTimeout(id));
+    }, []);
     const background = location.state?.backgroundLocation || null;
     const routes = appRoutes();
     return (
