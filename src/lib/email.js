@@ -87,7 +87,8 @@ export const generateOfficialHTML = (data) => {
     // Header background is always dark to avoid a mismatched logo/header in dark mode
     const headerBg = '#0a0a0a';
     const headerBorder = '#1a1a1a';
-    const logoUrl = `${baseUrl}/logo_full.png`;
+    // The unified newbi.live logo (public/brand), same as the server's email layout.
+    const logoUrl = `${baseUrl}/brand/newbi-logo-email.png`;
 
     const mediaQueries = (isPreview || isDark) ? '' : `
         @media (prefers-color-scheme: dark) {
@@ -146,7 +147,7 @@ export const generateOfficialHTML = (data) => {
             <div class="container" style="width: 100%; max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); color: ${textColor};">
                 <div class="header" style="padding: 40px; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder}; text-align: left;">
                     <!-- Brand Logo -->
-                    <img src="${logoUrl}" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${logoUrl}" alt="newbi.live" width="120" style="display: block; margin: 0; width: 120px; height: auto; max-width: 100%; border: 0;">
                 </div>
                 <div class="content" style="padding: 50px; text-align: left;">
                     <div class="category-badge" style="display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase;">${category}</div>

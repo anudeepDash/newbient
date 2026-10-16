@@ -28,6 +28,7 @@ const ReceiptEmailModal = ({ isOpen, onClose, receipt, onSend }) => {
         date: receipt?.date || '',
         paymentMode: receipt?.paymentMode || '',
         verifyUrl,
+        company: receipt?.selectedLogo || 'entertainment',
     }), [receipt, payee, amount, verifyUrl]);
 
     return (

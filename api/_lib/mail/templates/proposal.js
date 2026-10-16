@@ -1,7 +1,10 @@
-/** data: { subject, headerText, messageBody, proposalNumber, clientName, projectName, proposalUrl } */
+/** data: { company (entertainment|media|marketing), subject, headerText, messageBody, proposalNumber, clientName, projectName, proposalUrl } */
 export default (data = {}) => ({
     sender: 'partnerships',
     kind: 'transactional',
+    // The logo with the company name the document is issued under.
+    brand: 'company',
+    company: data.company,
     subject: data.subject || `Proposal${data.projectName ? `: ${data.projectName}` : ''} from Newbi`,
     preheader: [data.proposalNumber, data.projectName].filter(Boolean).join(' · ') || 'Your proposal is ready to review.',
     eyebrow: 'Proposal',

@@ -27,6 +27,7 @@ const AgreementEmailModal = ({ isOpen, onClose, agreement, onSend }) => {
             projectName: agreement?.details?.projectName || '',
             effectiveDate: agreement?.effectiveDate ? new Date(agreement.effectiveDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
             agreementUrl: `${window.location.origin}/agreement/${agreement?.id}?${query}`,
+            company: agreement?.selectedLogo || 'entertainment',
         };
     }, [agreement]);
 

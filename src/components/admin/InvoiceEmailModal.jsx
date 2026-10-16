@@ -31,6 +31,7 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
         balance: partlyPaid ? money(balance) : '',
         dueDate: invoice?.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
         invoiceUrl: `${window.location.origin}/invoice/${invoice?.id}`,
+        company: invoice?.selectedLogo || 'entertainment',
     }), [invoice, total, balance, partlyPaid]);
 
     return (

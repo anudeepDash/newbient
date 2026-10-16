@@ -12,6 +12,43 @@
  */
 
 export const BRAND_GREEN = '#39FF14';
+
+/*
+ * Brand variants (model.brand):
+ *   'newbi'       main newbi.live logo on a dark band (default)
+ *   'company'     the logo with the company name (model.company: entertainment |
+ *                 media | marketing) on a light band, for invoices, proposals,
+ *                 contracts and receipts
+ *   'concertzone' ConcertZone is its own brand: the Weekly logo, cyan accent
+ * Logos are served from the site (public/brand, public/weekly_logo_dark.png).
+ */
+const COMPANY_ACCENT = { entertainment: '#39FF14', media: '#00D1FF', marketing: '#FF0055' };
+
+export const brandFor = (model = {}, origin = DEFAULT_ORIGIN) => {
+    if (model.brand === 'concertzone') {
+        return {
+            accent: '#00F2FF', onAccent: '#000000', headerBg: '#000000', headerClass: 'hdr-dark',
+            logo: `${origin}/weekly_logo_dark.png`, logoAlt: 'Weekly by Concert Zone', logoWidth: 220, logoHeight: 65, align: 'center',
+            footer: `Weekly by Concert Zone · a Newbi Entertainment &amp; Marketing LLP publication · <a href="${esc(origin)}/concertzone" style="color:#71717a">newbi.live/concertzone</a>`,
+            footerText: 'Weekly by Concert Zone · a Newbi Entertainment & Marketing LLP publication · newbi.live/concertzone',
+        };
+    }
+    if (model.brand === 'company') {
+        const company = COMPANY_ACCENT[model.company] ? model.company : 'entertainment';
+        return {
+            accent: COMPANY_ACCENT[company], onAccent: company === 'marketing' ? '#FFFFFF' : '#000000', headerBg: '#FFFFFF', headerClass: 'hdr-light',
+            logo: `${origin}/brand/newbi-logo-${company}-email.png`, logoAlt: `Newbi ${company.charAt(0).toUpperCase()}${company.slice(1)}`, logoWidth: 190, logoHeight: 107, align: 'left',
+            footer: `Newbi Entertainment &amp; Marketing LLP · <a href="${esc(origin)}" style="color:#71717a">newbi.live</a>`,
+            footerText: 'Newbi Entertainment & Marketing LLP · newbi.live',
+        };
+    }
+    return {
+        accent: BRAND_GREEN, onAccent: '#000000', headerBg: '#0A0A0A', headerClass: 'hdr-dark',
+        logo: `${origin}/brand/newbi-logo-email.png`, logoAlt: 'newbi.live', logoWidth: 120, logoHeight: 58, align: 'left',
+        footer: `Newbi Entertainment &amp; Marketing LLP · <a href="${esc(origin)}" style="color:#71717a">newbi.live</a>`,
+        footerText: 'Newbi Entertainment & Marketing LLP · newbi.live',
+    };
+};
 const DEFAULT_ORIGIN = 'https://www.newbi.live';
 
 export const esc = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
@@ -63,7 +100,7 @@ const renderBlock = (block, ctx) => {
     if (block.p !== undefined) return isPresent(block.p) ? `<p class="txt" style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#3f3f46">${para(block.p)}</p>` : '';
     if (block.lead !== undefined) return isPresent(block.lead) ? `<p class="txt" style="margin:0 0 20px;font-size:17px;line-height:1.55;color:#18181b">${para(block.lead)}</p>` : '';
     if (block.note !== undefined) return isPresent(block.note) ? `<p class="muted" style="margin:0 0 14px;font-size:13px;line-height:1.55;color:#71717a">${para(block.note)}</p>` : '';
-    if (block.quote !== undefined) return isPresent(block.quote) ? `<div class="card" style="margin:0 0 20px;padding:14px 16px;border-left:3px solid ${BRAND_GREEN};background:#f6f6f7;border-radius:10px;font-size:14px;line-height:1.6;color:#3f3f46">${para(block.quote)}</div>` : '';
+    if (block.quote !== undefined) return isPresent(block.quote) ? `<div class="card" style="margin:0 0 20px;padding:14px 16px;border-left:3px solid ${ctx.accent || BRAND_GREEN};background:#f6f6f7;border-radius:10px;font-size:14px;line-height:1.6;color:#3f3f46">${para(block.quote)}</div>` : '';
     if (block.html !== undefined) return isPresent(block.html) ? `<div class="txt" style="margin:0 0 18px;font-size:15px;line-height:1.65;color:#3f3f46">${sanitizeHtml(block.html)}</div>` : '';
     if (block.list) {
         const items = block.list.filter(isPresent);
@@ -133,12 +170,13 @@ const blockText = (block, ctx) => {
 
 /**
  * renderEmail(model, { origin, unsubscribeUrl, preferencesUrl })
- * model = { subject, preheader, eyebrow, title, blocks, cta: {label,url}, kind, reason }
+ * model = { subject, preheader, eyebrow, title, blocks, cta: {label,url}, kind, reason, brand, company }
  * → { subject, html, text }
  */
 export const renderEmail = (model, opts = {}) => {
     const origin = String(opts.origin || DEFAULT_ORIGIN).replace(/\/+$/, '');
-    const ctx = { origin };
+    const brand = brandFor(model, origin);
+    const ctx = { origin, accent: brand.accent };
     const kind = model.kind === 'marketing' ? 'marketing' : 'transactional';
     const blocks = (model.blocks || []).filter(Boolean);
     const ctaHref = model.cta ? safeUrl(model.cta.url, origin) : '';
@@ -168,8 +206,10 @@ body,.bg{background:#09090b!important}
 .card,.code{background:#1c1c1f!important;color:#fafafa!important}
 .btn2{color:#fafafa!important;border-color:#3f3f46!important}
 .foot{background:#0d0d0f!important;border-color:#27272a!important}
-a{color:${BRAND_GREEN}!important}
-.cta{color:#000000!important}
+a{color:${brand.accent}!important}
+.cta{color:${brand.onAccent}!important}
+.hdr-light{background:#FFFFFF!important}
+.hdr-dark{background:${brand.headerBg}!important}
 }
 </style>
 </head>
@@ -178,16 +218,16 @@ a{color:${BRAND_GREEN}!important}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="bg" style="background:#f4f4f5">
 <tr><td align="center" class="wrap" style="padding:32px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="box" style="max-width:600px;background:#ffffff;border:1px solid #e4e4e7;border-radius:20px;overflow:hidden">
-<tr><td style="padding:24px 32px;background:#0a0a0a"><img src="${esc(origin)}/logo_full.png" alt="Newbi" height="24" style="display:block;height:24px;width:auto;max-width:170px;border:0" /></td></tr>
+<tr><td class="${brand.headerClass}" align="${brand.align}" style="padding:22px 32px;background:${brand.headerBg};${brand.headerClass === 'hdr-light' ? 'border-bottom:1px solid #E4E4E7;' : ''}text-align:${brand.align}"><img src="${esc(brand.logo)}" alt="${esc(brand.logoAlt)}" width="${brand.logoWidth}" height="${brand.logoHeight}" style="display:${brand.align === 'center' ? 'inline-block' : 'block'};width:${brand.logoWidth}px;height:auto;max-width:100%;border:0" /></td></tr>
 <tr><td class="pad" style="padding:36px 32px 12px">
-${isPresent(model.eyebrow) ? `<p style="margin:0 0 14px"><span style="display:inline-block;padding:5px 10px;border-radius:8px;background:${BRAND_GREEN};color:#000000;font-size:11px;font-weight:800">${esc(model.eyebrow)}</span></p>` : ''}
+${isPresent(model.eyebrow) ? `<p style="margin:0 0 14px"><span style="display:inline-block;padding:5px 10px;border-radius:8px;background:${brand.accent};color:${brand.onAccent};font-size:11px;font-weight:800">${esc(model.eyebrow)}</span></p>` : ''}
 ${isPresent(model.title) ? `<h1 class="title" style="margin:0 0 18px;font-size:26px;line-height:1.25;font-weight:800;color:#09090b">${esc(model.title)}</h1>` : ''}
 ${blocks.map(b => renderBlock(b, ctx)).join('\n')}
-${hasCta ? `<p style="margin:8px 0 28px"><a href="${esc(ctaHref)}" class="cta" style="display:inline-block;padding:15px 26px;border-radius:12px;background:${BRAND_GREEN};color:#000000;font-size:15px;font-weight:800;text-decoration:none">${esc(model.cta.label)}</a></p>` : ''}
+${hasCta ? `<p style="margin:8px 0 28px"><a href="${esc(ctaHref)}" class="cta" style="display:inline-block;padding:15px 26px;border-radius:12px;background:${brand.accent};color:${brand.onAccent};font-size:15px;font-weight:800;text-decoration:none">${esc(model.cta.label)}</a></p>` : ''}
 </td></tr>
 <tr><td class="foot" style="padding:22px 32px;background:#fafafa;border-top:1px solid #e4e4e7">
 ${isPresent(model.reason) ? `<p class="muted" style="margin:0 0 8px;font-size:12px;line-height:1.5;color:#71717a">${esc(model.reason)}</p>` : ''}
-<p class="muted" style="margin:0;font-size:12px;line-height:1.5;color:#71717a">Newbi Entertainment &amp; Marketing LLP · <a href="${esc(origin)}" style="color:#71717a">newbi.live</a></p>
+<p class="muted" style="margin:0;font-size:12px;line-height:1.5;color:#71717a">${brand.footer}</p>
 ${kind === 'marketing' ? `<p class="muted" style="margin:8px 0 0;font-size:12px;line-height:1.5;color:#71717a"><a href="${esc(unsubscribeUrl)}" style="color:#71717a">Unsubscribe</a>${preferencesUrl ? ` · <a href="${esc(preferencesUrl)}" style="color:#71717a">Email preferences</a>` : ''}</p>` : ''}
 </td></tr>
 </table>
@@ -202,7 +242,7 @@ ${kind === 'marketing' ? `<p class="muted" style="margin:8px 0 0;font-size:12px;
         hasCta ? `${model.cta.label}: ${ctaHref}` : '',
         '—',
         model.reason || '',
-        'Newbi Entertainment & Marketing LLP · newbi.live',
+        brand.footerText,
         kind === 'marketing' ? `Unsubscribe: ${unsubscribeUrl}` : '',
     ].filter(isPresent);
 
