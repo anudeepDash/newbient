@@ -1,16 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import { useParams } from 'react-router-dom';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Mic2 from 'lucide-react/dist/esm/icons/mic-vocal';
-import Share2 from 'lucide-react/dist/esm/icons/share-2';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import Hourglass from 'lucide-react/dist/esm/icons/hourglass';
 import Minus from 'lucide-react/dist/esm/icons/minus';
 import Plus from 'lucide-react/dist/esm/icons/plus';
-import { AmbientBackdrop, Button, Field, GlassChip, Section, Sheet } from '../../components/app';
+import { Button, Field, GlassChip, Section, Sheet } from '../../components/app';
 import { useAppStore } from '../../lib/store/appStore';
 import { passesGet, passesPost } from '../../lib/passesApi';
 import { isPresent } from '../../lib/present';
@@ -20,6 +18,7 @@ import CompleteProfileSheet from '../profile/CompleteProfileSheet';
 import { missingFields, requirementsFor } from '../profile/requirements';
 import { appPath } from '../host';
 import { PageBody } from '../pages/PageHeader';
+import DetailLayout, { BackLink, DetailSkeleton, Panel, ROW } from '../pages/DetailLayout';
 import { passWhen } from '../passes/passParts';
 import GuestlistTaskFields, { validateTask } from './GuestlistTaskFields';
 import { plainText, shareLink } from './communityParts';
@@ -132,17 +131,7 @@ const GuestlistPage = () => {
         );
     }
 
-    if (!gl) {
-        return (
-            <PageBody>
-                <div className="mx-auto max-w-2xl space-y-4">
-                    <div className="aspect-video animate-pulse rounded-3xl bg-black/[0.05] dark:bg-white/[0.05]" />
-                    <div className="h-7 w-2/3 animate-pulse rounded-full bg-black/[0.06] dark:bg-white/[0.06]" />
-                    <div className="h-24 animate-pulse rounded-3xl bg-black/[0.04] dark:bg-white/[0.04]" />
-                </div>
-            </PageBody>
-        );
-    }
+    if (!gl) return <DetailSkeleton />;
 
     const statusChip = gl.past ? 'Ended' : gl.closed ? 'Closed' : gl.full ? 'Full' : gl.spotsLeft !== null && gl.spotsLeft <= 20 ? `${gl.spotsLeft} spots left` : null;
 
@@ -182,61 +171,45 @@ const GuestlistPage = () => {
         );
     })();
 
+    const badges = (
+        <>
+            <GlassChip icon={Ticket} label={gl.mode === 'rsvp' ? 'RSVP' : 'Guestlist'} />
+            {statusChip && <GlassChip label={statusChip} tone={gl.open ? 'warn' : 'default'} />}
+        </>
+    );
+
     return (
-        <PageBody>
-            <div className="mx-auto max-w-2xl space-y-5">
-                <Link to={appPath('/community')} className="-ml-2 inline-flex h-10 items-center gap-1 rounded-full px-2 text-[14px] font-bold text-gray-600 dark:text-zinc-400">
-                    <ChevronLeft size={18} /> Community
-                </Link>
-
-                <article className="relative overflow-hidden rounded-[2rem] border border-black/[0.06] bg-white dark:border-white/[0.08] dark:bg-[#0c0e14]">
-                    <AmbientBackdrop image={gl.image} />
-                    {isPresent(gl.image) && (
-                        <div className="relative aspect-video w-full overflow-hidden" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 55%, transparent)', maskImage: 'linear-gradient(to bottom, #000 55%, transparent)' }}>
-                            <img src={gl.image} alt="" className="h-full w-full object-cover" decoding="async" />
-                            <div className="absolute left-4 top-4 flex gap-2">
-                                <GlassChip icon={Ticket} label={gl.mode === 'rsvp' ? 'RSVP' : 'Guestlist'} />
-                                {statusChip && <GlassChip label={statusChip} tone={gl.open ? 'warn' : 'default'} />}
-                            </div>
-                        </div>
-                    )}
-                    <div className={isPresent(gl.image) ? 'relative -mt-4 space-y-5 px-5 pb-6 sm:px-7' : 'relative space-y-5 px-5 py-6 sm:px-7'}>
-                        <div className="flex items-start justify-between gap-3">
-                            <h1 className="font-heading text-[28px] font-black leading-tight tracking-tight sm:text-[34px]">{gl.title}</h1>
-                            <button
-                                type="button"
-                                aria-label="Share"
-                                onClick={() => shareLink({ title: gl.title, url: window.location.href })}
-                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-black/[0.08] text-gray-600 dark:border-white/[0.1] dark:text-zinc-300"
-                            >
-                                <Share2 size={17} />
-                            </button>
-                        </div>
-
-                        <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
-                            <Field icon={CalendarDays} label="When" value={when} />
-                            <Field icon={MapPin} label="Venue" value={venue} />
-                            <Field icon={Users} label="Spots left" value={gl.open && gl.spotsLeft !== null ? gl.spotsLeft : null} />
-                            <Field icon={Mic2} label="Line-up" value={(gl.artists || []).join(', ')} />
-                        </div>
-
-                        {action}
+        <>
+            <DetailLayout
+                back={<BackLink to={appPath('/community')}>Community</BackLink>}
+                image={gl.image}
+                badges={badges}
+                title={gl.title}
+                onShare={() => shareLink({ title: gl.title, url: window.location.href })}
+            >
+                <Panel>
+                    <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
+                        <Field icon={CalendarDays} label="When" value={when} />
+                        <Field icon={MapPin} label="Venue" value={venue} />
+                        <Field icon={Users} label="Spots left" value={gl.open && gl.spotsLeft !== null ? gl.spotsLeft : null} />
+                        <Field icon={Mic2} label="Line-up" value={(gl.artists || []).join(', ')} />
                     </div>
-                </article>
+                    <div className="pt-1">{action}</div>
+                </Panel>
 
                 <Section title="About">
-                    {description && <p className="whitespace-pre-line px-1 text-[15px] leading-relaxed text-gray-700 dark:text-zinc-300">{description}</p>}
+                    {description && <p className="whitespace-pre-line px-1 text-[15px] leading-relaxed text-gray-700 dark:text-zinc-300 lg:text-[16px]">{description}</p>}
                 </Section>
 
                 <Section title="To get on the list">
                     {gl.task && !me && (
-                        <div className="rounded-2xl border border-black/[0.06] px-4 py-3 dark:border-white/[0.08]">
+                        <div className={`${ROW} px-4 py-3.5`}>
                             <p className="text-[15px] font-bold">{gl.task.title || 'A quick task'}</p>
                             {isPresent(gl.task.description) && <p className="mt-1 whitespace-pre-line text-[14px] text-gray-600 dark:text-zinc-400">{gl.task.description}</p>}
                         </div>
                     )}
                 </Section>
-            </div>
+            </DetailLayout>
 
             <CompleteProfileSheet
                 open={step === 'profile'}
@@ -271,7 +244,7 @@ const GuestlistPage = () => {
                     {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
                 </div>
             </Sheet>
-        </PageBody>
+        </>
     );
 };
 

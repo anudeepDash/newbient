@@ -8,9 +8,18 @@ import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import LogOut from 'lucide-react/dist/esm/icons/log-out';
 import Sun from 'lucide-react/dist/esm/icons/sun';
 import Moon from 'lucide-react/dist/esm/icons/moon';
-import { useAppStore } from '../../lib/store/appStore';
+import Ticket from 'lucide-react/dist/esm/icons/ticket';
+import Camera from 'lucide-react/dist/esm/icons/camera';
+import Users from 'lucide-react/dist/esm/icons/users';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import IdCard from 'lucide-react/dist/esm/icons/id-card';
+import { Link } from 'react-router-dom';
+import { useAppStore, hasCapability } from '../../lib/store/appStore';
 import { useTheme } from '../../hooks/useTheme';
-import { Section, Field, Button, AmbientBackdrop } from '../../components/app';
+import { Field, Button, AmbientBackdrop } from '../../components/app';
+import { appPath } from '../host';
+import { creatorPassId } from '../creator/format';
+import { Panel, ROW } from './DetailLayout';
 import AuthGate from '../auth/AuthGate';
 import { missingFields } from '../profile/requirements';
 import CompleteProfileSheet from '../profile/CompleteProfileSheet';
@@ -34,44 +43,90 @@ const ProfileDetails = () => {
     const name = profile?.name || authUser?.displayName;
     const missing = missingFields(profile, EDITABLE);
     const handle = profile?.instagram?.handle ? `@${profile.instagram.handle}` : null;
+    const isCreator = useAppStore(st => hasCapability(st, 'creator'));
+    const creator = useAppStore(st => st.creatorProfile);
+    const newbiId = creatorPassId(creator);
+
+    const shortcuts = [
+        { to: appPath('/community'), icon: Users, label: 'My guestlists', hint: 'Passes for guestlists you joined' },
+        { to: appPath('/tickets'), icon: Ticket, label: 'Tickets', hint: 'Shows on sale' },
+        isCreator
+            ? { to: appPath('/creator/profile'), icon: Camera, label: 'Creator profile', hint: 'Rates, bio and your Newbi ID' }
+            : { to: appPath('/creator/apply'), icon: Camera, label: 'Become a creator', hint: 'Get your Newbi ID in 30 seconds' },
+    ];
 
     return (
-        <div className="space-y-6">
-            <div className="relative flex items-center gap-4 overflow-hidden rounded-3xl border border-black/[0.06] bg-white p-5 dark:border-white/[0.07] dark:bg-[#0c0e14]">
-                <AmbientBackdrop image={photo} intensity={0.35} />
-                <span className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-neon-green/15 text-2xl font-black text-emerald-700 dark:text-neon-green">
-                    {photo ? <img src={photo} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : (name || '?').charAt(0).toUpperCase()}
-                </span>
-                <div className="relative min-w-0">
-                    {name && <p className="truncate text-xl font-black tracking-tight">{name}</p>}
-                    {(profile?.email || authUser?.email) && <p className="truncate text-[14px] text-gray-600 dark:text-zinc-400">{profile?.email || authUser?.email}</p>}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-10">
+            {/* You, and what you can do */}
+            <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+                <section className="relative overflow-hidden rounded-[1.75rem] bg-[#0b0d12] p-6 text-white ring-1 ring-inset ring-white/10 lg:p-7">
+                    <AmbientBackdrop image={photo} intensity={0.35} />
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(90% 120% at 100% 0%, rgba(57,255,20,0.22), transparent 60%)' }} />
+                    <div className="relative flex items-center gap-4 lg:flex-col lg:items-start">
+                        <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-neon-green/15 text-2xl font-black text-neon-green ring-2 ring-neon-green/60 lg:h-20 lg:w-20">
+                            {photo ? <img src={photo} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : (name || '?').charAt(0).toUpperCase()}
+                        </span>
+                        <div className="min-w-0">
+                            {name && <p className="truncate font-heading text-[22px] font-extrabold tracking-[-0.02em] lg:text-[26px]">{name}</p>}
+                            {(profile?.email || authUser?.email) && <p className="truncate text-[14px] text-zinc-400">{profile?.email || authUser?.email}</p>}
+                        </div>
+                    </div>
+                    {newbiId && (
+                        <p className="relative mt-4 flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-neon-green">
+                            <IdCard size={13} /> Newbi ID · {newbiId}
+                        </p>
+                    )}
+                </section>
+
+                <div className="grid gap-2">
+                    {missing.length > 0 && (
+                        <Button className="w-full" onClick={() => setSheet({ required: missing, title: 'Complete your profile' })}>Complete profile</Button>
+                    )}
+                    <Button className="w-full" variant="secondary" onClick={() => setSheet({ required: ['name', 'city', 'college'], title: 'Edit details', force: true })}>Edit details</Button>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button variant="secondary" icon={isDark ? Sun : Moon} onClick={() => toggleTheme()}>
+                            {isDark ? 'Light' : 'Dark'}
+                        </Button>
+                        <Button variant="danger" icon={LogOut} onClick={() => signOut()}>Sign out</Button>
+                    </div>
                 </div>
             </div>
 
-            <Section title="Details" bodyClassName="divide-y divide-black/[0.05] rounded-3xl border border-black/[0.06] bg-white px-4 dark:divide-white/[0.06] dark:border-white/[0.07] dark:bg-[#0c0e14]">
-                <Field label="Phone" icon={Phone} value={profile?.phone}>
-                    {profile?.phone && (
-                        <span className="flex items-center gap-2">
-                            {profile.phone}
-                            {profile.phoneVerified && <ShieldCheck size={15} className="text-emerald-600 dark:text-neon-green" aria-label="Verified" />}
-                        </span>
-                    )}
-                </Field>
-                <Field label="Email" icon={Mail} value={profile?.email} />
-                <Field label="City" icon={MapPin} value={profile?.city} />
-                <Field label="College" icon={GraduationCap} value={profile?.college} />
-                <Field label="Instagram" icon={Instagram} value={handle} />
-            </Section>
+            {/* Your details, and shortcuts */}
+            <div className="space-y-6">
+                <Panel label="Details">
+                    <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
+                        <Field label="Phone" icon={Phone} value={profile?.phone}>
+                            {profile?.phone && (
+                                <span className="flex items-center gap-2">
+                                    {profile.phone}
+                                    {profile.phoneVerified && <ShieldCheck size={15} className="text-emerald-600 dark:text-neon-green" aria-label="Verified" />}
+                                </span>
+                            )}
+                        </Field>
+                        <Field label="Email" icon={Mail} value={profile?.email} />
+                        <Field label="City" icon={MapPin} value={profile?.city} />
+                        <Field label="College" icon={GraduationCap} value={profile?.college} />
+                        <Field label="Instagram" icon={Instagram} value={handle} />
+                    </div>
+                </Panel>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
-                {missing.length > 0 && (
-                    <Button onClick={() => setSheet({ required: missing, title: 'Complete your profile' })}>Complete profile</Button>
-                )}
-                <Button variant="secondary" onClick={() => setSheet({ required: ['name', 'city', 'college'], title: 'Edit details', force: true })}>Edit details</Button>
-                <Button variant="secondary" icon={isDark ? Sun : Moon} onClick={() => toggleTheme()}>
-                    {isDark ? 'Light mode' : 'Dark mode'}
-                </Button>
-                <Button variant="danger" icon={LogOut} onClick={() => signOut()}>Sign out</Button>
+                <Panel label="Shortcuts">
+                    <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                        {shortcuts.map(({ to, icon: Icon, label, hint }) => (
+                            <li key={label}>
+                                <Link to={to} className={`flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-white dark:hover:bg-white/[0.08] ${ROW}`}>
+                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black/[0.05] text-gray-700 dark:bg-white/[0.08] dark:text-zinc-300"><Icon size={18} /></span>
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block text-[15px] font-bold">{label}</span>
+                                        <span className="block truncate text-[13px] text-gray-500 dark:text-zinc-400">{hint}</span>
+                                    </span>
+                                    <ChevronRight size={17} className="shrink-0 text-gray-400" />
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </Panel>
             </div>
 
             <CompleteProfileSheet

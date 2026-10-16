@@ -69,10 +69,10 @@ export const hasContent = (children) => React.Children.toArray(children).some((c
 export const Section = ({ title, action, when, children, className, bodyClassName }) => {
     if (when === false || !hasContent(children)) return null;
     return (
-        <section className={cn('space-y-2', className)}>
+        <section className={cn('space-y-3', className)}>
             {(title || action) && (
                 <div className="flex items-center justify-between gap-3 px-1">
-                    {title && <h2 className="text-[13px] font-bold text-gray-500 dark:text-zinc-400">{title}</h2>}
+                    {title && <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-400">{title}</h2>}
                     {action}
                 </div>
             )}
