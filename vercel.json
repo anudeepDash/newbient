@@ -15,38 +15,281 @@
         },
         {
             "source": "/artistant",
-            "has": [{ "type": "host", "value": "newbi.live" }],
+            "has": [
+                {
+                    "type": "host",
+                    "value": "newbi.live"
+                }
+            ],
             "destination": "https://artistant.in",
             "permanent": false
         },
         {
             "source": "/artistant",
-            "has": [{ "type": "host", "value": "www.newbi.live" }],
+            "has": [
+                {
+                    "type": "host",
+                    "value": "www.newbi.live"
+                }
+            ],
             "destination": "https://artistant.in",
             "permanent": false
         },
         {
             "source": "/admin",
-            "has": [{ "type": "host", "value": "artistant.in" }],
+            "has": [
+                {
+                    "type": "host",
+                    "value": "artistant.in"
+                }
+            ],
             "destination": "/",
             "permanent": false
         },
         {
             "source": "/admin",
-            "has": [{ "type": "host", "value": "www.artistant.in" }],
+            "has": [
+                {
+                    "type": "host",
+                    "value": "www.artistant.in"
+                }
+            ],
             "destination": "/",
             "permanent": false
         },
         {
             "source": "/admin/:path*",
-            "has": [{ "type": "host", "value": "artistant.in" }],
+            "has": [
+                {
+                    "type": "host",
+                    "value": "artistant.in"
+                }
+            ],
             "destination": "/",
             "permanent": false
         },
         {
             "source": "/admin/:path*",
-            "has": [{ "type": "host", "value": "www.artistant.in" }],
+            "has": [
+                {
+                    "type": "host",
+                    "value": "www.artistant.in"
+                }
+            ],
             "destination": "/",
+            "permanent": false
+        },
+        {
+            "source": "/",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                },
+                {
+                    "type": "query",
+                    "key": "event",
+                    "value": "(?<eventId>[^&]+)"
+                }
+            ],
+            "destination": "https://app.newbi.live/community/g/:eventId",
+            "permanent": true
+        },
+        {
+            "source": "/community",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                },
+                {
+                    "type": "query",
+                    "key": "gl",
+                    "value": "(?<glId>[^&]+)"
+                }
+            ],
+            "destination": "https://app.newbi.live/community/g/:glId",
+            "permanent": true
+        },
+        {
+            "source": "/community-join",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                },
+                {
+                    "type": "query",
+                    "key": "gl",
+                    "value": "(?<glId>[^&]+)"
+                }
+            ],
+            "destination": "https://app.newbi.live/community/g/:glId",
+            "permanent": true
+        },
+        {
+            "source": "/community",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                }
+            ],
+            "destination": "https://app.newbi.live/community",
+            "permanent": true
+        },
+        {
+            "source": "/community-join",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                }
+            ],
+            "destination": "https://app.newbi.live/community",
+            "permanent": true
+        },
+        {
+            "source": "/:prefix(campaign|campaigns|creator/campaign|creator/campaigns|creator-dashboard/campaign)/:id",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                }
+            ],
+            "destination": "https://app.newbi.live/c/:id",
+            "permanent": true
+        },
+        {
+            "source": "/creator-dashboard",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                }
+            ],
+            "destination": "https://app.newbi.live/creator",
+            "permanent": true
+        },
+        {
+            "source": "/creator-dashboard/:path*",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                }
+            ],
+            "destination": "https://app.newbi.live/creator",
+            "permanent": true
+        },
+        {
+            "source": "/:alias(creator/dashboard|creator/hub|creator/studio|creator/campaigns|creator-hub|creator-studio|campaigns)",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                }
+            ],
+            "destination": "https://app.newbi.live/creator",
+            "permanent": true
+        },
+        {
+            "source": "/:alias(creator/join|creator-join|creator/apply|creator/register|creator/signup)",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                }
+            ],
+            "destination": "https://app.newbi.live/creator/apply",
+            "permanent": true
+        },
+        {
+            "source": "/:alias(creators|creator/landing)",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                }
+            ],
+            "destination": "/creator",
+            "permanent": true
+        },
+        {
+            "source": "/ticket/:id",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                }
+            ],
+            "destination": "https://app.newbi.live/p/:id",
+            "permanent": true
+        },
+        {
+            "source": "/giveaway/:slug",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                }
+            ],
+            "destination": "https://app.newbi.live/community/giveaways/:slug",
+            "permanent": true
+        },
+        {
+            "source": "/admin",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^app\\.newbi\\.live$"
+                }
+            ],
+            "destination": "https://www.newbi.live/admin",
+            "permanent": false
+        },
+        {
+            "source": "/admin/:path*",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^app\\.newbi\\.live$"
+                }
+            ],
+            "destination": "https://www.newbi.live/admin/:path*",
+            "permanent": false
+        },
+        {
+            "source": "/concertzone",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^app\\.newbi\\.live$"
+                }
+            ],
+            "destination": "https://www.newbi.live/concertzone",
+            "permanent": false
+        },
+        {
+            "source": "/concertzone/:path*",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^app\\.newbi\\.live$"
+                }
+            ],
+            "destination": "https://www.newbi.live/concertzone/:path*",
+            "permanent": false
+        },
+        {
+            "source": "/:page(contact|terms|privacy|artistant)",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^app\\.newbi\\.live$"
+                }
+            ],
+            "destination": "https://www.newbi.live/:page",
             "permanent": false
         }
     ],
@@ -54,13 +297,34 @@
         {
             "source": "/(.*)",
             "headers": [
-                { "key": "X-Content-Type-Options", "value": "nosniff" },
-                { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-                { "key": "X-XSS-Protection", "value": "1; mode=block" },
-                { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-                { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
-                { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains; preload" },
-                { "key": "Content-Security-Policy", "value": "default-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googletagmanager.com https://*.google.com https://*.gstatic.com https://*.googleapis.com https://*.firebaseapp.com https://pagead2.googlesyndication.com; worker-src 'self' blob: https://*.gstatic.com; child-src 'self' blob: https://*.firebaseapp.com https://*.google.com https://*.recaptcha.net; connect-src 'self' data: blob: https: wss: https://*.firebaseio.com https://*.firebasestorage.app https://firestore.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; frame-src 'self' https://*.firebaseapp.com https://*.google.com https://*.recaptcha.net" }
+                {
+                    "key": "X-Content-Type-Options",
+                    "value": "nosniff"
+                },
+                {
+                    "key": "X-Frame-Options",
+                    "value": "SAMEORIGIN"
+                },
+                {
+                    "key": "X-XSS-Protection",
+                    "value": "1; mode=block"
+                },
+                {
+                    "key": "Referrer-Policy",
+                    "value": "strict-origin-when-cross-origin"
+                },
+                {
+                    "key": "Permissions-Policy",
+                    "value": "camera=(), microphone=(), geolocation=()"
+                },
+                {
+                    "key": "Strict-Transport-Security",
+                    "value": "max-age=31536000; includeSubDomains; preload"
+                },
+                {
+                    "key": "Content-Security-Policy",
+                    "value": "default-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googletagmanager.com https://*.google.com https://*.gstatic.com https://*.googleapis.com https://*.firebaseapp.com https://pagead2.googlesyndication.com; worker-src 'self' blob: https://*.gstatic.com; child-src 'self' blob: https://*.firebaseapp.com https://*.google.com https://*.recaptcha.net; connect-src 'self' data: blob: https: wss: https://*.firebaseio.com https://*.firebasestorage.app https://firestore.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; frame-src 'self' https://*.firebaseapp.com https://*.google.com https://*.recaptcha.net"
+                }
             ]
         }
     ],
@@ -86,166 +350,146 @@
             "destination": "/api/creator-join.js?action=whatsapp-verify"
         },
         {
-            "source": "/",
-            "has": [{ "type": "host", "value": "artistant.in" }],
-            "destination": "/artistant"
-        },
-        {
-            "source": "/",
-            "has": [{ "type": "host", "value": "www.artistant.in" }],
-            "destination": "/artistant"
-        },
-        {
-            "source": "/giveaway/:slug",
-            "destination": "/api/og?giveaway=:slug"
-        },
-        {
-            "source": "/forms/:id",
-            "destination": "/api/og?formId=:id"
-        },
-        {
-            "source": "/form/:id",
-            "destination": "/api/og?formId=:id"
-        },
-        {
-            "source": "/proposal/:id",
-            "destination": "/api/og?proposalId=:id"
-        },
-        {
-            "source": "/invoice/:id",
-            "destination": "/api/og?invoiceId=:id"
-        },
-        {
-            "source": "/agreement/:id",
-            "destination": "/api/og?agreementId=:id"
-        },
-        {
-            "source": "/concertzone/:category/:slug",
-            "destination": "/api/og?blogSlug=:slug"
-        },
-        {
-            "source": "/community",
-            "has": [{ "type": "query", "key": "gig" }],
-            "destination": "/api/og"
-        },
-        {
-            "source": "/community",
-            "has": [{ "type": "query", "key": "gl" }],
-            "destination": "/api/og"
-        },
-        {
-            "source": "/community",
-            "has": [{ "type": "query", "key": "form" }],
-            "destination": "/api/og"
-        },
-        {
-            "source": "/community-join",
-            "has": [{ "type": "query", "key": "gig" }],
-            "destination": "/api/og"
-        },
-        {
-            "source": "/community-join",
-            "has": [{ "type": "query", "key": "gl" }],
-            "destination": "/api/og"
-        },
-        {
-            "source": "/community-join",
-            "has": [{ "type": "query", "key": "form" }],
-            "destination": "/api/og"
-        },
-        {
-            "source": "/",
+            "source": "/creator",
             "has": [
                 {
-                    "type": "query",
-                    "key": "event"
+                    "type": "host",
+                    "value": "^app\\.newbi\\.live$"
                 }
             ],
-            "destination": "/api/og"
+            "destination": "/api/og?route=app-creator"
+        },
+        {
+            "source": "/community/g/:id",
+            "destination": "/api/og?route=guestlist&id=:id"
+        },
+        {
+            "source": "/community/giveaways/:slug",
+            "destination": "/api/og?route=giveaway&id=:slug"
+        },
+        {
+            "source": "/c/:id",
+            "destination": "/api/og?route=campaign&id=:id"
+        },
+        {
+            "source": "/p/:ref",
+            "destination": "/api/og?route=pass&id=:ref"
+        },
+        {
+            "source": "/creator/apply",
+            "destination": "/api/og?route=creator-apply"
+        },
+        {
+            "source": "/campus",
+            "destination": "/api/og?route=campus"
+        },
+        {
+            "source": "/campus/:path*",
+            "destination": "/api/og?route=campus"
+        },
+        {
+            "source": "/:page(community|community-join)",
+            "destination": "/api/og?route=community"
         },
         {
             "source": "/creator",
-            "destination": "/api/og?page=creator"
-        },
-        {
-            "source": "/creator/join",
-            "destination": "/api/og?page=creator-join"
-        },
-        {
-            "source": "/creator-dashboard",
-            "destination": "/api/og?page=creator-dashboard"
-        },
-        {
-            "source": "/creator-dashboard/:path*",
-            "destination": "/api/og?page=creator-dashboard"
-        },
-        {
-            "source": "/verify-creator",
-            "destination": "/api/og?page=verify-creator"
-        },
-        {
-            "source": "/campaigns",
-            "destination": "/api/og?page=campaigns"
-        },
-        {
-            "source": "/campaign/:id",
-            "destination": "/api/og?campaignId=:id"
+            "destination": "/api/og?route=creator"
         },
         {
             "source": "/concertzone",
-            "destination": "/api/og?page=concertzone"
+            "destination": "/api/og?route=concertzone"
         },
         {
             "source": "/concertzone/:category",
-            "destination": "/api/og?category=:category"
+            "destination": "/api/og?route=concertzone-category&category=:category"
         },
         {
-            "source": "/community",
-            "destination": "/api/og?page=community"
+            "source": "/concertzone/:category/:slug",
+            "destination": "/api/og?route=post&id=:slug&category=:category"
         },
         {
-            "source": "/community-join",
-            "destination": "/api/og?page=community"
+            "source": "/:page(forms|form)",
+            "destination": "/api/og?route=forms"
         },
         {
-            "source": "/forms",
-            "destination": "/api/og?page=forms"
+            "source": "/:page(forms|form)/:id",
+            "destination": "/api/og?route=form&id=:id"
         },
         {
-            "source": "/form",
-            "destination": "/api/og?page=forms"
+            "source": "/proposal/:id",
+            "destination": "/api/og?route=proposal&id=:id"
+        },
+        {
+            "source": "/invoice/:id",
+            "destination": "/api/og?route=invoice&id=:id"
+        },
+        {
+            "source": "/agreement/:id",
+            "destination": "/api/og?route=agreement&id=:id"
         },
         {
             "source": "/doc/:id",
-            "destination": "/api/og?docId=:id"
-        },
-        {
-            "source": "/ticket/:id",
-            "destination": "/api/og?ticketId=:id"
+            "destination": "/api/og?route=doc&id=:id"
         },
         {
             "source": "/artistant",
-            "destination": "/api/og?page=artistant"
+            "destination": "/api/og?route=artistant"
         },
         {
             "source": "/contact",
-            "destination": "/api/og?page=contact"
+            "destination": "/api/og?route=contact"
         },
         {
             "source": "/terms",
-            "destination": "/api/og?page=terms"
+            "destination": "/api/og?route=terms"
         },
         {
             "source": "/privacy",
-            "destination": "/api/og?page=privacy"
+            "destination": "/api/og?route=privacy"
+        },
+        {
+            "source": "/verify-creator",
+            "destination": "/api/og?route=verify-creator"
         },
         {
             "source": "/verify-payout",
-            "destination": "/api/og?page=verify-payout"
+            "destination": "/api/og?route=verify-payout"
         },
         {
             "source": "/register-payment",
-            "destination": "/api/og?page=register-payment"
+            "destination": "/api/og?route=register-payment"
+        },
+        {
+            "source": "/:alias(creators|creator/landing)",
+            "destination": "/api/og?route=creator"
+        },
+        {
+            "source": "/:alias(creator/join|creator-join|creator/apply|creator/register|creator/signup)",
+            "destination": "/api/og?route=creator-apply"
+        },
+        {
+            "source": "/creator-dashboard",
+            "destination": "/api/og?route=app-creator"
+        },
+        {
+            "source": "/:prefix(campaign|campaigns|creator/campaign|creator/campaigns|creator-dashboard/campaign)/:id",
+            "destination": "/api/og?route=campaign&id=:id"
+        },
+        {
+            "source": "/creator-dashboard/:path*",
+            "destination": "/api/og?route=app-creator"
+        },
+        {
+            "source": "/:alias(creator/dashboard|creator/hub|creator/studio|creator/campaigns|creator-hub|creator-studio|campaigns)",
+            "destination": "/api/og?route=app-creator"
+        },
+        {
+            "source": "/giveaway/:slug",
+            "destination": "/api/og?route=giveaway&id=:slug"
+        },
+        {
+            "source": "/ticket/:id",
+            "destination": "/api/og?route=pass&id=:id"
         },
         {
             "source": "/(.*)",

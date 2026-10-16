@@ -116,8 +116,9 @@ const BlogPostDetail = () => {
     useDynamicMeta({
         title: post ? (post.seoTitle || post.title) : "Newbi Article",
         description: post ? post.shortDescription : "Read this article on Concert Zone.",
-        image: post?.coverImage || "/og-image.png",
-        url: window.location.href
+        image: post?.coverImage,
+        url: window.location.href,
+        type: 'article'
     });
 
     const relatedPosts = useMemo(() => {
