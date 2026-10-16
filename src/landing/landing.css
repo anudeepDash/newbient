@@ -175,13 +175,15 @@ details[open] > summary .nb-plus { transform: rotate(45deg); }
     .nb-film-pin { position: sticky; top: 0; height: 100svh; display: flex; flex-direction: column; }
     .nb-film-track { overflow: visible; flex: 1; width: max-content; scroll-snap-type: none; animation: nb-pan linear both; animation-timeline: --nb-film; animation-range: contain 0% contain 100%; }
     /* Each poster is an Instagram post (4:5); the caption sits under it. Sized by the image's height. */
-    .nb-film-frame { --nb-poster-h: min(calc(44svh - 4.5rem), 340px); width: calc(var(--nb-poster-h) * 0.8); }
-    .nb-film-low { margin-top: 4svh; }
+    /* Sized from the space left under the title (about 19rem with the caption and the lower posters' offset),
+       so captions always fit in the pinned screen. `.nb-film` raises specificity over Tailwind's width classes. */
+    .nb-film .nb-film-frame { --nb-poster-h: max(150px, min(calc(96svh - 19rem), calc(44svh - 4.5rem), 340px)); width: calc(var(--nb-poster-h) * 0.8); }
+    .nb-film .nb-film-low { margin-top: 4svh; }
     .nb-film-progress { display: block; }
     .nb-film-bar { transform-origin: left; animation: nb-grow-x linear both; animation-timeline: --nb-film; animation-range: contain 0% contain 100%; }
     @media (min-width: 1024px) {
-      .nb-film-frame { --nb-poster-h: min(calc(46vh - 4.5rem), 400px); }
-      .nb-film-low { margin-top: 5vh; }
+      .nb-film .nb-film-frame { --nb-poster-h: max(170px, min(calc(95svh - 22rem), calc(46svh - 4.5rem), 400px)); }
+      .nb-film .nb-film-low { margin-top: 5svh; }
     }
 
     /* Horizontal track: the section pins and the slides move sideways with the scroll. */
