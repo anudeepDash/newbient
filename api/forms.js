@@ -4,6 +4,11 @@ import { verifyToken } from './_lib/auth.js';
 import { handleSubscribe } from './_lib/publicMail.js';
 import { handlePublicFeed, handlePublicArchive } from './_lib/publicFeed.js';
 import { handleEnquiry } from './_lib/enquiry.js';
+import { handlePasses } from './_lib/passes.js';
+import { handleCommunity } from './_lib/community.js';
+
+// Ticket sends (several creators per call) need more than the default time.
+export const maxDuration = 60;
 
 let adminDb = null;
 
@@ -68,7 +73,7 @@ export default async function handler(req, res) {
         };
     }
 
-    const allowedOrigins = ['https://www.newbi.live', 'https://newbi.live', 'https://newbi-ent.vercel.app', 'http://localhost:5173'];
+    const allowedOrigins = ['https://www.newbi.live', 'https://newbi.live', 'https://app.newbi.live', 'https://newbi-ent.vercel.app', 'http://localhost:5173'];
     const origin = req.headers.origin;
     if (allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
@@ -86,6 +91,8 @@ export default async function handler(req, res) {
     if (req.query?.type === 'public-feed') return handlePublicFeed(adminDb, req, res);
     if (req.query?.type === 'public-archive') return handlePublicArchive(adminDb, req, res);
     if (req.query?.type === 'enquiry') return handleEnquiry(adminDb, req, res);
+    if (req.query?.type === 'passes') return handlePasses(req, res);
+    if (req.query?.type === 'community') return handleCommunity(req, res);
 
     // Native (built-in) form responses: submit, and the admin's read/update/delete.
     const action = String(req.query?.action || '');
