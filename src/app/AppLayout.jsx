@@ -187,7 +187,7 @@ const AppLayout = () => {
                         'dark:supports-[backdrop-filter]:bg-[#15171d]/55'
                     )}
                 >
-                    {tabs.map(({ module, locked, label }) => {
+                    {tabs.map(({ module, label }) => {
                         const Icon = module.tab.icon;
                         const active = activeModule?.id === module.id;
                         return (
@@ -211,7 +211,6 @@ const AppLayout = () => {
                                 )}
                                 <span className="relative">
                                     <Icon size={21} strokeWidth={active ? 2.3 : 1.9} className={active ? 'text-emerald-600 dark:text-neon-green' : undefined} />
-                                    {locked && !active && <span className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-neon-green ring-2 ring-white dark:ring-[#15171d]" />}
                                 </span>
                                 {active && <span className="relative whitespace-nowrap text-[14px] font-bold">{module.tab.label}</span>}
                             </Link>
