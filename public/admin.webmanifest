@@ -10,6 +10,6 @@
   "theme_color": "#07080b",
   "icons": [
     { "src": "/brand/newbi-icon-app-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
-    { "src": "/brand/newbi-icon-app-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
+    { "src": "/brand/newbi-icon-app-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any maskable" }
   ]
 }

@@ -208,3 +208,9 @@ details[open] > summary .nb-plus { transform: rotate(45deg); }
     }
   }
 }
+
+/* Hero brand art: the tags drift up and down a little. */
+@keyframes nb-float { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -10px, 0); } }
+@media (prefers-reduced-motion: no-preference) {
+  .nb-float { animation: nb-float 6s ease-in-out infinite; }
+}

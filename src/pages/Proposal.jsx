@@ -34,6 +34,8 @@ import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
 import { motion, AnimatePresence } from 'framer-motion';
 import DocumentSeal from '../components/ui/DocumentSeal';
 import SharedDocumentViewer from '../components/ui/SharedDocumentViewer';
+import Sheet from '../components/admin/Sheet';
+import { PanelCard, SignForm, SignedRecord, TextField, DocButton, docTheme, fmtDate } from '../components/ui/docviewer/DocKit';
 import SignaturePad from '../components/ui/SignaturePad';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -371,19 +373,8 @@ const Proposal = () => {
     const [isAttachmentDrawerOpen, setIsAttachmentDrawerOpen] = useState(false);
     const [previewingAttachment, setPreviewingAttachment] = useState(null);
 
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth < 850) {
-                const newScale = (window.innerWidth - 32) / 850;
-                setScale(newScale);
-            } else {
-                setScale(1);
-            }
-        };
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    // The viewer reports how wide the paper can be; fit the A4 pages to it.
+    const fitToStage = React.useCallback((w) => setScale(Math.min(1, w / 794)), []);
 
     const isAdmin = ['super_admin', 'developer', 'founder'].includes(user?.role);
 
@@ -1124,200 +1115,73 @@ const Proposal = () => {
         fileUrl: displayProposal.fileUrl
     };
 
-    const actionPanel = displayProposal.showSignatures ? (
-        <div className="bg-zinc-900/60 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 shadow-xl">
-            {displayProposal.status === 'Accepted' ? (
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 bg-neon-green/10 border border-neon-green/30 rounded-xl">
-                        <div className="w-10 h-10 rounded-xl bg-neon-green/20 flex items-center justify-center text-neon-green shrink-0">
-                            <ShieldCheck size={22} />
-                        </div>
-                        <div>
-                            <h4 className="text-sm font-black uppercase italic tracking-tight text-white">
-                                Authorized & Locked
-                            </h4>
-                            <p className="text-[9px] text-gray-300 font-bold uppercase tracking-widest">
-                                Acceptance Recorded
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="p-4 bg-black/40 border border-white/10 rounded-xl space-y-3">
-                        <div>
-                            <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 block mb-0.5">
-                                Signatory
-                            </span>
-                            <p className="text-sm font-black text-white">
-                                {displayProposal.approvalMetadata?.signedBy || displayProposal.clientName}
-                            </p>
-                        </div>
-
-                        <div className="h-20 border border-dashed border-white/10 rounded-lg bg-white/[0.02] flex items-center justify-center p-2">
-                            {displayProposal.approvalMetadata?.clientSignature ? (
-                                <img
-                                    src={displayProposal.approvalMetadata?.clientSignature}
-                                    alt="Client Signature"
-                                    className="max-h-full object-contain filter invert"
-                                />
-                            ) : (
-                                <p className="text-2xl font-signature text-neon-green">
-                                    {displayProposal.approvalMetadata?.signedBy || displayProposal.clientName}
-                                </p>
-                            )}
-                        </div>
-
-                        {displayProposal.approvalMetadata?.signedAt && (
-                            <div className="text-[9px] font-mono text-gray-400 pt-2 border-t border-white/5 flex justify-between">
-                                <span className="text-gray-500">SIGNED</span>
-                                <span>{new Date(displayProposal.approvalMetadata.signedAt).toLocaleDateString()}</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    <div className="border-b border-white/10 pb-3">
-                        <h3 className="text-sm font-black uppercase italic tracking-tight font-heading text-white">
-                            Authorization & Sign-Off
-                        </h3>
-                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                            Digital Acceptance
-                        </p>
-                    </div>
-
-                    <div className="space-y-3">
-                        <div>
-                            <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-1">
-                                Full Name <span className="text-neon-green">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                value={signatureName}
-                                onChange={(e) => setSignatureName(e.target.value)}
-                                placeholder="Authorized name..."
-                                className="w-full h-10 bg-white/5 border border-white/10 rounded-xl px-3 text-xs font-bold text-white placeholder:text-gray-600 outline-none focus:border-neon-green/50 transition-colors"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-1">
-                                Business Email <span className="text-neon-green">*</span>
-                            </label>
-                            <input
-                                type="email"
-                                value={verificationEmail}
-                                onChange={(e) => setVerificationEmail(e.target.value)}
-                                placeholder="name@company.com"
-                                className="w-full h-10 bg-white/5 border border-white/10 rounded-xl px-3 text-xs font-bold text-white placeholder:text-gray-600 outline-none focus:border-neon-green/50 transition-colors"
-                            />
-                        </div>
-
-                        <div>
-                            <div className="flex items-center justify-between mb-1">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400">
-                                    Signature
-                                </label>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsSignatureModalOpen(true)}
-                                    className="text-[8px] font-black uppercase tracking-wider text-neon-green hover:underline flex items-center gap-1"
-                                >
-                                    <PenTool size={10} /> {clientSignature ? 'Redraw' : 'Draw'}
-                                </button>
-                            </div>
-
-                            <div 
-                                onClick={() => setIsSignatureModalOpen(true)}
-                                className="h-16 border-2 border-dashed border-white/15 hover:border-neon-green/40 bg-white/[0.02] rounded-xl flex items-center justify-center cursor-pointer transition-all p-2"
-                            >
-                                {clientSignature ? (
-                                    <img src={clientSignature} alt="Signature" className="max-h-full object-contain filter invert" />
-                                ) : signatureName.trim() ? (
-                                    <p className="text-2xl font-signature text-neon-green select-none">
-                                        {signatureName}
-                                    </p>
-                                ) : (
-                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                                        Click to Draw
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2 pt-2">
-                        <Button
-                            onClick={handleApproveProposal}
-                            disabled={isSubmitting || !signatureName.trim()}
-                            className="w-full h-11 bg-neon-green hover:bg-neon-green/90 text-black font-black uppercase tracking-widest text-[10px] rounded-xl shadow-[0_0_15px_rgba(57,255,20,0.3)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <RefreshCw size={14} className="animate-spin" />
-                                    <span>Recording...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <ShieldCheck size={14} />
-                                    <span>Authorize Proposal</span>
-                                </>
-                            )}
-                        </Button>
-
-                        <button
-                            type="button"
-                            onClick={handleRefuseProposal}
-                            disabled={isSubmitting}
-                            className="w-full h-9 bg-white/5 hover:bg-red-500/10 text-gray-400 hover:text-red-400 border border-white/10 hover:border-red-500/20 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all disabled:opacity-50"
-                        >
-                            Decline Proposal
-                        </button>
-                    </div>
-                </div>
-            )}
-        </div>
-    ) : null;
+    const theme = docTheme('proposal');
+    const meta = displayProposal.approvalMetadata || {};
+    const expiryLabel = proposalExpiry(displayProposal)?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    let actionPanel = null;
+    if (displayProposal.status === 'Accepted') {
+        actionPanel = (
+            <SignedRecord theme={theme} title="Accepted" subtitle="This proposal was signed and accepted."
+                signedBy={meta.signedBy || displayProposal.clientName}
+                signature={meta.clientSignature || displayProposal.clientSignature}
+                signedAt={meta.signedAt} email={meta.email} ip={isAdmin ? meta.ip : undefined} />
+        );
+    } else if (displayProposal.status === 'Rejected') {
+        const rej = displayProposal.rejectionMetadata || {};
+        actionPanel = (
+            <PanelCard theme={theme} icon={X} title="Declined"
+                subtitle={`${rej.rejectedAt ? `Declined on ${fmtDate(rej.rejectedAt)}. ` : ''}Want changes? Reply to the email it came with and we’ll send a new one.`}>
+                {rej.reason && rej.reason !== 'No reason provided' && (
+                    <p className="rounded-xl bg-black/[0.03] px-3 py-2.5 text-[13px] leading-relaxed text-gray-700 dark:bg-white/[0.05] dark:text-zinc-300">“{rej.reason}”</p>
+                )}
+            </PanelCard>
+        );
+    } else if (proposalExpired) {
+        actionPanel = (
+            <PanelCard theme={theme} icon={Calendar} title="This proposal has expired"
+                subtitle={`It was valid until ${expiryLabel}. Contact us and we’ll send an updated one.`}>
+                <a href={`mailto:partnership@newbi.live?subject=${encodeURIComponent(`Updated proposal ${displayProposal.proposalNumber || ''}`.trim())}`}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gray-900 text-[14px] font-semibold text-white dark:bg-white dark:text-black">
+                    <Mail size={16} /> Ask for an update
+                </a>
+            </PanelCard>
+        );
+    } else if (displayProposal.showSignatures) {
+        actionPanel = (
+            <SignForm
+                theme={theme}
+                title="Accept this proposal"
+                subtitle={displayProposal.validUntil ? `Open until ${expiryLabel}.` : 'Sign below to go ahead.'}
+                name={signatureName} onName={setSignatureName}
+                email={verificationEmail} onEmail={setVerificationEmail} emailLabel="Work email"
+                signature={clientSignature} onOpenPad={() => setIsSignatureModalOpen(true)} onClearSignature={() => setClientSignature(null)}
+                submitLabel="Accept and sign" onSubmit={handleApproveProposal} submitting={isSubmitting}
+                onDecline={handleRefuseProposal} declineLabel="Decline proposal"
+                note={isAdmin ? 'You’re signed in as an admin. Signing here records acceptance on the client’s behalf.' : undefined}
+                consent="By accepting you agree to the scope and commercials in this proposal. We record your name, email, time and device with the signature."
+            />
+        );
+    }
 
     return (
         <>
-            {proposalExpired && (
-                <div role="status" className="fixed inset-x-0 top-0 z-[120] bg-amber-400 px-4 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))] text-center text-[13px] font-semibold text-black">
-                    This proposal expired on {proposalExpiry(displayProposal)?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Please contact us for an updated one.
-                </div>
-            )}
-            <AnimatePresence>
-                {declineOpen && (
-                    <div className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center sm:p-6">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !isSubmitting && setDeclineOpen(false)} className="absolute inset-0 bg-black/60" />
-                        <motion.div
-                            role="dialog"
-                            aria-modal="true"
-                            aria-label="Decline proposal"
-                            initial={{ y: 40, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: 40, opacity: 0 }}
-                            className="relative w-full max-w-md rounded-t-3xl bg-white p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-gray-900 shadow-2xl dark:bg-zinc-950 dark:text-white sm:rounded-3xl sm:pb-6"
-                        >
-                            <h2 className="text-lg font-extrabold">Decline this proposal?</h2>
-                            <p className="mt-1 text-sm text-gray-500">Telling us why helps us send a better one. This is optional.</p>
-                            <textarea
-                                value={declineReason}
-                                onChange={(e) => setDeclineReason(e.target.value)}
-                                rows={4}
-                                maxLength={1000}
-                                placeholder="e.g. Budget is lower this quarter"
-                                className="mt-4 w-full resize-none rounded-2xl border border-black/10 bg-transparent p-3 text-base outline-none focus:border-red-400 dark:border-white/10"
-                            />
-                            <div className="mt-4 flex gap-2">
-                                <button type="button" onClick={() => setDeclineOpen(false)} disabled={isSubmitting} className="h-12 flex-1 rounded-xl border border-black/10 text-sm font-bold dark:border-white/10">Cancel</button>
-                                <button type="button" onClick={confirmDecline} disabled={isSubmitting} className="h-12 flex-1 rounded-xl bg-red-600 text-sm font-bold text-white disabled:opacity-60">
-                                    {isSubmitting ? 'Declining…' : 'Decline proposal'}
-                                </button>
-                            </div>
-                        </motion.div>
+            <Sheet open={declineOpen} onClose={() => !isSubmitting && setDeclineOpen(false)} variant="dialog" size="sm" zIndex={1000}
+                title="Decline this proposal?" subtitle="Telling us why helps us send a better one. This is optional."
+                footer={(
+                    <div className="flex gap-2">
+                        <DocButton variant="secondary" onClick={() => setDeclineOpen(false)} disabled={isSubmitting} className="flex-1">Keep it open</DocButton>
+                        <DocButton onClick={confirmDecline} busy={isSubmitting} className="flex-1 !bg-red-600 !text-white hover:!bg-red-700">{isSubmitting ? 'Declining…' : 'Decline'}</DocButton>
                     </div>
-                )}
-            </AnimatePresence>
+                )}>
+                <textarea
+                    value={declineReason}
+                    onChange={(e) => setDeclineReason(e.target.value)}
+                    rows={4}
+                    maxLength={1000}
+                    placeholder="e.g. Budget is lower this quarter"
+                    className="w-full resize-none rounded-xl border border-black/10 bg-white p-3 text-[16px] text-gray-900 outline-none focus:border-red-400 dark:border-white/10 dark:bg-white/[0.04] dark:text-white sm:text-[14px]"
+                />
+            </Sheet>
             <SharedDocumentViewer
                 documentData={viewerData}
                 type="proposal"
@@ -1327,6 +1191,13 @@ const Proposal = () => {
                 pdfBlobUrl={pdfBlobUrl}
                 onOpenAttachments={displayProposal.attachments?.length > 0 ? () => setIsAttachmentDrawerOpen(true) : null}
                 actionPanel={actionPanel}
+                actionLabel="Review and accept"
+                onStageWidth={fitToStage}
+                banner={proposalExpired && !isAdmin ? (
+                    <div role="status" className="border-b border-amber-500/20 bg-amber-400/90 px-4 py-2.5 text-center text-[13px] font-semibold text-black">
+                        This proposal expired on {expiryLabel}. Contact us for an updated one.
+                    </div>
+                ) : null}
             >
                 {!displayProposal.isUploaded && (
                 <div ref={proposalRef} className="flex flex-col gap-8 sm:gap-16 origin-top transition-transform duration-500" style={{ transform: `scale(${scale})`, marginBottom: `${(scale - 1) * 1123 * paginatedPages.length}px` }}>
@@ -2430,169 +2301,53 @@ const Proposal = () => {
                 initialName={signatureName}
             />
 
-            {/* Identity Verification Modal */}
-            <AnimatePresence>
-                {isVerifying && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white dark:bg-black/80 backdrop-blur-md no-print">
-                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-md bg-white rounded-[2.5rem] p-10 text-black shadow-2xl relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-8 opacity-5"><ShieldCheck size={120} /></div>
-                            
-                            <div className="space-y-6 relative z-10">
-                                <div className="space-y-2">
-                                    <h3 className="text-3xl font-black uppercase tracking-tighter italic">Verify Identity.</h3>
-                                    <p className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">Digital Non-Repudiation Handshake</p>
-                                </div>
-
-                                <div className="space-y-4 pt-4">
-                                    <div className="space-y-2">
-                                        <label className="text-[9px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 ml-2">Professional Authorization Email</label>
-                                        <input 
-                                            type="email" 
-                                            value={verificationEmail}
-                                            onChange={e => setVerificationEmail(e.target.value)}
-                                            placeholder="you@company.com"
-                                            className="w-full h-14 bg-gray-50 border border-gray-100 rounded-xl px-6 text-sm font-bold outline-none focus:border-neon-green transition-all"
-                                        />
-                                    </div>
-
-                                    <div className="p-5 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
-                                        <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">
-                                            <span>Security Marker</span>
-                                            <span>Active</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-white dark:bg-black flex items-center justify-center text-neon-green"><Globe size={14} /></div>
-                                            <div>
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-black">{ipAddress}</p>
-                                                <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">Network Signature Captured</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4 pt-4">
-                                    <button onClick={() => setIsVerifying(false)} className="h-14 rounded-xl border-2 border-gray-100 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all">Cancel</button>
-                                    <Button 
-                                        onClick={handleApproveProposal}
-                                        disabled={isSubmitting || !verificationEmail.includes('@')}
-                                        className="h-14 bg-white dark:bg-black text-gray-900 dark:text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-neon-green hover:text-black transition-all"
-                                    >
-                                        {isSubmitting ? 'Securing...' : 'Verify & Sign'}
-                                    </Button>
-                                </div>
-
-                                <p className="text-[8px] font-bold text-gray-700 dark:text-gray-300 text-center uppercase tracking-widest mt-4">This digital signature is binding and non-repudiable.</p>
-                            </div>
-                        </motion.div>
+            {/* Email needed before the signature is recorded */}
+            <Sheet open={isVerifying} onClose={() => !isSubmitting && setIsVerifying(false)} variant="dialog" size="sm" zIndex={1000}
+                title="Confirm your email" subtitle="We send the signed copy here and record it with your signature."
+                footer={(
+                    <div className="flex gap-2">
+                        <DocButton variant="secondary" onClick={() => setIsVerifying(false)} disabled={isSubmitting} className="flex-1">Cancel</DocButton>
+                        <DocButton theme={theme} onClick={handleApproveProposal} busy={isSubmitting} disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(verificationEmail.trim())} className="flex-1">Accept and sign</DocButton>
                     </div>
-                )}
-            </AnimatePresence>
+                )}>
+                <div className="space-y-3">
+                    <TextField theme={theme} label="Work email" required type="email" inputMode="email" value={verificationEmail} onChange={(e) => setVerificationEmail(e.target.value)} placeholder="you@company.com" autoComplete="email" />
+                    <p className="flex items-center gap-2 text-[12.5px] text-gray-500 dark:text-zinc-400"><Globe size={14} /> Signing from {/\d/.test(String(ipAddress)) ? ipAddress : 'this device'}</p>
+                </div>
+            </Sheet>
 
-            {/* Attachments Drawer */}
-            <AnimatePresence>
-                {isAttachmentDrawerOpen && (
-                    <>
-                        {/* Backdrop */}
-                        <div 
-                            className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[80] no-print"
-                            onClick={() => setIsAttachmentDrawerOpen(false)}
-                        />
-                        
-                        {/* Drawer */}
-                        <motion.div 
-                            initial={{ x: '100%' }}
-                            animate={{ x: 0 }}
-                            exit={{ x: '100%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-                            className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 z-[90] p-8 flex flex-col justify-between shadow-[0_0_50px_rgba(0,0,0,0.8)] no-print"
-                        >
-                            <div className="space-y-8 flex-1 overflow-y-auto scrollbar-hide">
-                                {/* Header */}
-                                <div className="flex items-center justify-between border-b border-black/10 dark:border-white/5 pb-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-2xl bg-neon-green/10 flex items-center justify-center border border-neon-green/20">
-                                            <Paperclip className="text-neon-green" size={18} />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-black uppercase tracking-tight italic">Attachments.</h3>
-                                            <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Supporting Documentation</p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        onClick={() => setIsAttachmentDrawerOpen(false)}
-                                        className="p-2.5 bg-black/5 dark:bg-white/5 rounded-xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 transition-all"
-                                    >
-                                        <X size={14} />
-                                    </button>
-                                </div>
-
-                                {/* List */}
-                                <div className="space-y-4">
-                                    {(displayProposal.attachments || []).map((attachment, idx) => {
-                                        const isSpreadsheet = attachment.fileType === 'spreadsheet';
-                                        const isPdf = attachment.fileType === 'pdf';
-                                        
-                                        return (
-                                            <div 
-                                                key={attachment.id || idx} 
-                                                className="p-4 rounded-3xl bg-white/[0.02] border border-black/10 dark:border-white/5 hover:border-neon-green/30 transition-all flex items-center justify-between group"
-                                            >
-                                                <div className="flex items-center gap-4 min-w-0 flex-1">
-                                                    <div className={cn(
-                                                        "w-10 h-10 rounded-xl flex items-center justify-center border shrink-0",
-                                                        isSpreadsheet && "bg-[#107C41]/10 border-[#107C41]/20 text-[#107C41]",
-                                                        isPdf && "bg-red-500/10 border-red-500/20 text-red-500",
-                                                        (!isSpreadsheet && !isPdf) && "bg-blue-500/10 border-blue-500/20 text-blue-500"
-                                                    )}>
-                                                        {isSpreadsheet ? (
-                                                            <FileSpreadsheet size={16} />
-                                                        ) : isPdf ? (
-                                                            <FileText size={16} />
-                                                        ) : (
-                                                            <LinkIcon size={16} />
-                                                        )}
-                                                    </div>
-                                                    <div className="min-w-0 flex-1">
-                                                        <h4 className="text-xs font-black text-gray-900 dark:text-white truncate">{attachment.name}</h4>
-                                                        <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
-                                                            {attachment.type === 'file' ? 'Uploaded Storage File' : 'External Web URL'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="flex items-center gap-2 pl-3">
-                                                    <button 
-                                                        onClick={() => {
-                                                            setPreviewingAttachment(attachment);
-                                                            setIsAttachmentDrawerOpen(false);
-                                                        }}
-                                                        className="px-3 py-1.5 bg-neon-green text-black font-black uppercase tracking-widest text-[8px] rounded-xl hover:scale-105 transition-all"
-                                                    >
-                                                        Preview
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                            
-                            <div className="pt-6 border-t border-black/10 dark:border-white/5">
-                                <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest text-center">
-                                    Newbi Document Verification System
-                                </p>
-                            </div>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
+            {/* Attachments */}
+            <Sheet open={isAttachmentDrawerOpen} onClose={() => setIsAttachmentDrawerOpen(false)} title="Attachments" subtitle="Supporting files shared with this proposal.">
+                <div className="space-y-2">
+                    {(displayProposal.attachments || []).map((attachment, idx) => {
+                        const isSpreadsheet = attachment.fileType === 'spreadsheet';
+                        const isPdf = attachment.fileType === 'pdf';
+                        const Icon = isSpreadsheet ? FileSpreadsheet : isPdf ? FileText : LinkIcon;
+                        return (
+                            <button key={attachment.id || idx} type="button"
+                                onClick={() => { setPreviewingAttachment(attachment); setIsAttachmentDrawerOpen(false); }}
+                                className="flex min-h-16 w-full items-center gap-3 rounded-2xl border border-black/[0.07] bg-white px-3.5 text-left transition-colors hover:bg-gray-50 dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:bg-white/[0.06]">
+                                <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+                                    isSpreadsheet ? 'bg-emerald-500/10 text-emerald-600' : isPdf ? 'bg-red-500/10 text-red-500' : 'bg-sky-500/10 text-sky-600')}>
+                                    <Icon size={17} />
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-[14px] font-semibold text-gray-900 dark:text-white">{attachment.name || `Attachment ${idx + 1}`}</span>
+                                    <span className="block text-[12px] text-gray-500 dark:text-zinc-400">{isSpreadsheet ? 'Spreadsheet' : isPdf ? 'PDF' : attachment.type === 'file' ? 'File' : 'Link'}</span>
+                                </span>
+                                <span className="shrink-0 text-[13px] font-semibold text-emerald-600 dark:text-neon-green">Open</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </Sheet>
 
             {/* Inline Preview Modal */}
             <AnimatePresence>
                 {previewingAttachment && (
-                    <div className="fixed inset-0 bg-white dark:bg-black/95 z-[100] flex flex-col p-6 no-print">
+                    <div className="fixed inset-0 z-[1000] flex flex-col bg-[#eef0f3] px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-[calc(0.75rem+env(safe-area-inset-top))] dark:bg-[#07080b] sm:p-6 no-print">
                         {/* Header */}
-                        <div className="flex items-center justify-between pb-4 border-b border-black/10 dark:border-white/10 mb-6 shrink-0">
+                        <div className="mb-3 flex shrink-0 items-center justify-between gap-3 sm:mb-5">
                             <div className="flex items-center gap-3">
                                 <span className={cn(
                                     "text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border",
@@ -2602,7 +2357,7 @@ const Proposal = () => {
                                 )}>
                                     {previewingAttachment.fileType?.toUpperCase() || 'Attachment'}
                                 </span>
-                                <h3 className="text-sm font-black text-gray-900 dark:text-white truncate max-w-md sm:max-w-xl">{previewingAttachment.name}</h3>
+                                <h3 className="min-w-0 truncate text-[15px] font-bold text-gray-900 dark:text-white">{previewingAttachment.name}</h3>
                             </div>
                             <div className="flex items-center gap-3">
                                 <a 
@@ -2610,15 +2365,16 @@ const Proposal = () => {
                                     download 
                                     target="_blank" 
                                     rel="noopener noreferrer" 
-                                    className="px-4 py-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+                                    className="flex h-10 items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3.5 text-[13px] font-semibold text-gray-800 dark:border-white/10 dark:bg-white/[0.05] dark:text-zinc-100"
                                 >
-                                    Open Direct Link
+                                    <ExternalLink size={15} /> <span className="hidden sm:inline">Open in new tab</span>
                                 </a>
                                 <button 
                                     onClick={() => setPreviewingAttachment(null)}
-                                    className="p-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 rounded-xl transition-all"
+                                    aria-label="Close preview"
+                                    className="flex h-10 w-10 items-center justify-center rounded-full bg-black/5 text-gray-600 dark:bg-white/10 dark:text-zinc-200"
                                 >
-                                    <X size={14} />
+                                    <X size={18} />
                                 </button>
                             </div>
                         </div>
