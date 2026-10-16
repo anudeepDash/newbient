@@ -3,6 +3,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import nodemailer from 'nodemailer';
 import { isTicketAction, handleTicketAction } from './_lib/tickets.js';
+import { safeSiteOrigin } from './_lib/linkSign.js';
 
 export const maxDuration = 60;
 let adminDb = null;
@@ -2166,9 +2167,9 @@ export default async function handler(req, res) {
         }
 
         // Generate verification link
-        const host = req.headers.host || 'newbi.live';
-        const protocol = host.includes('localhost') ? 'http' : 'https';
-        const verificationUrl = `${protocol}://${host}/verify-creator?id=${targetUid}&token=${verificationToken}`;
+        const host = req.headers.host || '';
+        const siteOrigin = safeSiteOrigin(host.includes('localhost') ? `http://${host}` : `https://${host}`);
+        const verificationUrl = `${siteOrigin}/verify-creator?id=${targetUid}&token=${verificationToken}`;
 
         // Trigger WhatsApp and Email async in background
         if (finalCreator.phone) {

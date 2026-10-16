@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { auth } from './_lib/auth.js';
+import { safeSiteOrigin } from './_lib/linkSign.js';
 
 const rateLimitCache = new Map();
 const RATE_LIMIT_MAX_REQUESTS = 3;
@@ -63,7 +64,8 @@ export default async function handler(req, res) {
         }
 
         // 1. Generate the Firebase Password Reset Link
-        const requestOrigin = req.headers.origin || `https://${req.headers.host}` || 'https://newbi.live';
+        // The reset link carries a one-time code, so it may only point at our own sites.
+        const requestOrigin = safeSiteOrigin(req.headers.origin);
         const actionCodeSettings = {
             url: `${requestOrigin}/login`,
         };
