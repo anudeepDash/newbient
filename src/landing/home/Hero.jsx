@@ -127,9 +127,6 @@ export default function Hero({ onChooseAudience }) {
                 {/* Phones: headline, then the ways in, then the brand art. Desktop: headline | brand art, ways in below. */}
                 <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-x-10 lg:gap-y-16">
                     <div className="order-1">
-                        <p className="nb-exit-fade mb-6 inline-flex items-center gap-2 rounded-full bg-white/60 px-3.5 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-700 ring-1 ring-inset ring-black/[0.06] backdrop-blur-md dark:bg-white/[0.06] dark:text-zinc-300 dark:ring-white/10">
-                            <span className="h-2 w-2 rounded-full bg-neon-green shadow-[0_0_10px_rgba(57,255,20,0.9)]" aria-hidden="true" /> Youth marketing · India
-                        </p>
                         <h1 className="font-heading font-extrabold leading-[0.92] tracking-[-0.045em] text-gray-950 dark:text-white text-[15vw] sm:text-[11vw] lg:text-[6.6vw] 2xl:text-[7.6rem]">
                             <span className="nb-exit-l block">We make</span>{' '}
                             <span className="nb-exit-r block">young India</span>{' '}
