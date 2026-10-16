@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Mail, Phone, MessageSquare, CalendarCheck, FileText } from 'lucide-react';
 import Hero from '../home/Hero';
+import Ticker from '../home/Ticker';
+import WhyNewbi from '../home/WhyNewbi';
+import Formats from '../home/Formats';
+import Faq from '../home/Faq';
+import CtaBand from '../home/CtaBand';
 import Proof from '../home/Proof';
 import Services from '../home/Services';
 import CaseStudies from '../home/CaseStudies';
@@ -40,11 +45,16 @@ export default function HomePage() {
     return (
         <div>
             <Hero onChooseAudience={setAudience} />
+            <Ticker />
             {!off('home_clients') && <Proof clients={feed?.clients} stats={feed?.settings?.stats} />}
             <Services />
+            <WhyNewbi />
+            <Formats />
             {!off('home_portfolio') && <CaseStudies items={feed?.caseStudies} />}
             {!off('home_creators') && <JoinIn welcomePoints={feed?.settings?.creatorWelcomePoints} />}
             {!off('home_upcoming') && <Upcoming events={feed?.events} />}
+            <Faq />
+            <CtaBand />
 
             <section id="enquire" aria-labelledby="enquire-title" className="scroll-mt-20 py-20 md:py-28 border-t border-black/[0.06] dark:border-white/[0.06]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid gap-10 lg:gap-16 lg:grid-cols-[0.9fr_1.3fr]">
