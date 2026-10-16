@@ -11,8 +11,7 @@ import { visibleTabs, moduleForPath } from './modules';
 import { appPath, stripAppBase } from './host';
 import { AuthResumer } from './auth/AuthGate';
 import NotificationsSheet from './NotificationsSheet';
-import logoDark from '../assets/logo.png';
-import logoLight from '../assets/logo_light.png';
+import newbiLogo from '../assets/logo/newbi-logo.svg';
 
 /*
  * The app shell (app.newbi.live, or /app on localhost).
@@ -23,11 +22,9 @@ import logoLight from '../assets/logo_light.png';
  * live blur on the fixed bars (costly on iPhone Safari).
  */
 
+// The unified newbi.live logo (outlined, so one file works on light and dark).
 const Logo = ({ className }) => (
-    <>
-        <img src={logoDark} alt="Newbi" className={cn('hidden w-auto dark:block', className)} />
-        <img src={logoLight} alt="Newbi" className={cn('block w-auto dark:hidden', className)} />
-    </>
+    <img src={newbiLogo} alt="Newbi" width="1433" height="697" className={cn('w-auto', className)} />
 );
 
 const BellButton = ({ count, onClick, className }) => (
@@ -77,16 +74,24 @@ const AppLayout = () => {
     useAppSession();
     useSafariChrome(location.pathname);
 
-    // Page colour behind everything (Safari overscroll, the status bar) and the app manifest.
+    // Page colour behind everything (Safari overscroll, the status bar), and the
+    // app's manifest and home-screen icon, so "Add to Home Screen" installs the app.
     useEffect(() => {
         const root = document.documentElement;
         root.classList.add('app-route');
-        const title = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-        const previousTitle = title?.getAttribute('content');
-        if (title) title.setAttribute('content', 'Newbi');
+        const swaps = [
+            ['meta[name="apple-mobile-web-app-title"]', 'content', 'Newbi'],
+            ['link[rel="manifest"]', 'href', '/app.webmanifest'],
+            ['link[rel="apple-touch-icon"]', 'href', '/brand/newbi-icon-app-180.png'],
+        ].map(([selector, attr, value]) => {
+            const el = document.querySelector(selector);
+            const previous = el?.getAttribute(attr);
+            if (el) el.setAttribute(attr, value);
+            return () => { if (el && previous != null) el.setAttribute(attr, previous); };
+        });
         return () => {
             root.classList.remove('app-route');
-            if (title && previousTitle) title.setAttribute('content', previousTitle);
+            swaps.forEach(restore => restore());
         };
     }, []);
 
@@ -102,7 +107,7 @@ const AppLayout = () => {
             {/* ── Desktop left rail ── */}
             <aside className="fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col border-r border-black/[0.06] bg-white dark:border-white/[0.06] dark:bg-[#0a0b10] lg:flex">
                 <div className="flex h-16 shrink-0 items-center justify-between px-5">
-                    <Link to={appPath('/')} aria-label="Newbi home"><Logo className="h-5" /></Link>
+                    <Link to={appPath('/')} aria-label="Newbi home"><Logo className="h-8" /></Link>
                     <BellButton count={unreadCount} onClick={() => setBellOpen(true)} className="h-10 w-10" />
                 </div>
                 <nav aria-label="App" className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
@@ -152,7 +157,7 @@ const AppLayout = () => {
             {/* ── Phone top bar ── */}
             <header className="fixed inset-x-0 top-0 z-40 border-b border-black/[0.05] bg-[#f6f7f9]/95 pt-[env(safe-area-inset-top)] dark:border-white/[0.05] dark:bg-[#050608]/95 lg:hidden">
                 <div className="flex h-14 items-center justify-between pl-4 pr-1.5">
-                    <Link to={appPath('/')} aria-label="Newbi home" className="flex h-11 items-center"><Logo className="h-[18px]" /></Link>
+                    <Link to={appPath('/')} aria-label="Newbi home" className="flex h-11 items-center"><Logo className="h-7" /></Link>
                     <BellButton count={unreadCount} onClick={() => setBellOpen(true)} />
                 </div>
             </header>

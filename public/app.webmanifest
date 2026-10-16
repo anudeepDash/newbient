@@ -1,0 +1,15 @@
+{
+  "name": "Newbi",
+  "short_name": "Newbi",
+  "description": "Guestlists, gigs, giveaways and creator campaigns.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050608",
+  "theme_color": "#050608",
+  "icons": [
+    { "src": "/brand/newbi-icon-app-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "/brand/newbi-icon-app-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
+  ]
+}
