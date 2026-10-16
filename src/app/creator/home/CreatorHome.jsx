@@ -105,7 +105,7 @@ const BecomeCreator = () => {
             <PageHeader eyebrow="Creators" title="Become a Newbi creator" />
             <HeroPanel title="Get passes, products and paid work for posting about the shows you love.">
                 <p className="text-[15px] text-gray-600 dark:text-zinc-300">Add your Instagram, niche and rates. Approved creators get invited to campaigns from brands and events.</p>
-                <div className="pt-1"><Button to={appPath('/creator/apply')}>Apply as a creator</Button></div>
+                <div className="pt-1"><Button to={appPath('/creator/apply')} state={{ backgroundLocation: location }}>Apply as a creator</Button></div>
             </HeroPanel>
             <section className="space-y-3">
                 <SectionHeader title="Open campaigns" />

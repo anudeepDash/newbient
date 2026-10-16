@@ -10,12 +10,13 @@ import LegacyRedirect from './redirects';
  * under /app (VITE_APP_BASE) on the landing host in dev and previews, so paths
  * here are relative.
  *
- * Pages that open over a list (the campaign page, /c/:id) are linked with
+ * Pages that open over a list (the campaign page /c/:id, the creator
+ * application /creator/apply) are linked with
  * state { backgroundLocation }: the list keeps rendering underneath and the
  * page shows as a sheet. Opened from a shared link, the same page renders
  * over its own default background.
  */
-const OVERLAY_PATHS = ['c/:id'];
+const OVERLAY_PATHS = ['c/:id', 'creator/apply'];
 
 // The campaign sheet's code loads while the browser is idle, so a tap opens it at once.
 const prefetchCampaignPage = () => import('./creator/campaign/CampaignPage');

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import Award from 'lucide-react/dist/esm/icons/award';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Users from 'lucide-react/dist/esm/icons/users';
@@ -90,6 +91,7 @@ const blockerFor = (campaign, creator) => {
 };
 
 const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) => {
+    const location = useLocation();
     const gate = useAuthGate();
     const authUser = useAppStore(s => s.authUser);
     const creator = useAppStore(s => s.creatorProfile);
@@ -161,7 +163,8 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
     } else if (!creatorLoaded) {
         action = <Button className="flex-1" size="lg" loading disabled>Loading</Button>;
     } else if (!creator) {
-        action = <Button className="flex-1" size="lg" to={`${appPath('/creator/apply')}?next=${encodeURIComponent(`/c/${id}`)}`}>Apply as a creator</Button>;
+        // The application opens in place, over whatever this campaign is open over.
+        action = <Button className="flex-1" size="lg" to={`${appPath('/creator/apply')}?next=${encodeURIComponent(`/c/${id}`)}`} state={{ backgroundLocation: location.state?.backgroundLocation || location }}>Apply as a creator</Button>;
     } else if (!inCampaign) {
         action = blocker
             ? <p className="flex min-h-[48px] flex-1 items-center text-[14px] font-semibold text-gray-600 dark:text-zinc-400">{blocker}</p>
