@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import Bell from 'lucide-react/dist/esm/icons/bell';
 import Sun from 'lucide-react/dist/esm/icons/sun';
 import Moon from 'lucide-react/dist/esm/icons/moon';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import { isAdminRole } from '../constants/roles';
 import { cn } from '../lib/utils';
 import { useTheme } from '../hooks/useTheme';
 import { useSafariChrome } from '../hooks/useSafariChrome';
@@ -71,6 +73,8 @@ const AppLayout = () => {
     const unreadCount = useAppStore(s => (s.authUser ? s.unreadCount : 0));
     const isCreator = useAppStore(s => hasCapability(s, 'creator'));
     const isCampus = useAppStore(s => hasCapability(s, 'campus'));
+    // Staff get a way into the admin (served on this same host, so no second sign-in).
+    const isStaff = isAdminRole(authUser?.role);
     const { isDark, toggleTheme } = useTheme();
     const [bellOpen, setBellOpen] = useState(false);
 
@@ -138,6 +142,14 @@ const AppLayout = () => {
                     })}
                 </nav>
                 <div className="shrink-0 space-y-2 border-t border-black/[0.06] p-3 dark:border-white/[0.06]">
+                    {isStaff && (
+                        <Link
+                            to="/admin"
+                            className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-[13px] font-semibold text-gray-600 hover:bg-black/[0.03] dark:text-zinc-400 dark:hover:bg-white/[0.04]"
+                        >
+                            <ShieldCheck size={16} /> Admin
+                        </Link>
+                    )}
                     <button
                         type="button"
                         onClick={() => toggleTheme()}
@@ -161,7 +173,18 @@ const AppLayout = () => {
             <header className="fixed inset-x-0 top-0 z-40 border-b border-black/[0.05] bg-[#f6f7f9]/95 pt-[env(safe-area-inset-top)] dark:border-white/[0.05] dark:bg-[#050608]/95 lg:hidden">
                 <div className="flex h-14 items-center justify-between pl-4 pr-1.5">
                     <Link to={appPath('/')} aria-label="Newbi home" className="flex h-11 items-center"><Logo className="h-7" /></Link>
-                    <BellButton count={unreadCount} onClick={() => setBellOpen(true)} />
+                    <div className="flex items-center">
+                        {isStaff && (
+                            <Link
+                                to="/admin"
+                                aria-label="Open admin"
+                                className="flex h-11 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-gray-700 dark:text-zinc-300"
+                            >
+                                <ShieldCheck size={17} /> Admin
+                            </Link>
+                        )}
+                        <BellButton count={unreadCount} onClick={() => setBellOpen(true)} />
+                    </div>
                 </div>
             </header>
 
