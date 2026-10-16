@@ -10,6 +10,7 @@ import Sun from 'lucide-react/dist/esm/icons/sun';
 import Moon from 'lucide-react/dist/esm/icons/moon';
 import { useAppStore } from '../../lib/store/appStore';
 import { useTheme } from '../../hooks/useTheme';
+import { isAdminRole } from '../../constants/roles';
 import { Section, Field, Button, AmbientBackdrop } from '../../components/app';
 import AuthGate from '../auth/AuthGate';
 import { missingFields } from '../profile/requirements';
@@ -27,6 +28,8 @@ const ProfileDetails = () => {
     const authUser = useAppStore(s => s.authUser);
     const profile = useAppStore(s => s.profile);
     const signOut = useAppStore(s => s.signOut);
+    // Staff: a second way into the admin besides the top bar (same host, no second sign-in).
+    const isStaff = isAdminRole(authUser?.role);
     const { isDark, toggleTheme } = useTheme();
     const [sheet, setSheet] = useState(null); // null | { required, title }
 
@@ -47,6 +50,19 @@ const ProfileDetails = () => {
                     {(profile?.email || authUser?.email) && <p className="truncate text-[14px] text-gray-600 dark:text-zinc-400">{profile?.email || authUser?.email}</p>}
                 </div>
             </div>
+
+            {isStaff && (
+                <a
+                    href="/admin"
+                    className="flex min-h-[56px] items-center gap-3 rounded-3xl border border-emerald-900/10 bg-emerald-500/[0.06] px-5 py-3 dark:border-neon-green/20 dark:bg-neon-green/[0.05]"
+                >
+                    <ShieldCheck size={20} className="shrink-0 text-emerald-700 dark:text-neon-green" />
+                    <span className="min-w-0 flex-1">
+                        <span className="block text-[15px] font-bold">Open admin</span>
+                        <span className="block text-[13px] text-gray-600 dark:text-zinc-400">You’re signed in as {authUser.role.replace(/_/g, ' ')}.</span>
+                    </span>
+                </a>
+            )}
 
             <Section title="Details" bodyClassName="divide-y divide-black/[0.05] rounded-3xl border border-black/[0.06] bg-white px-4 dark:divide-white/[0.06] dark:border-white/[0.07] dark:bg-[#0c0e14]">
                 <Field label="Phone" icon={Phone} value={profile?.phone}>

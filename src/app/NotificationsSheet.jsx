@@ -60,7 +60,7 @@ const NotificationsSheet = ({ open, onClose }) => {
                 </div>
             )}
         >
-            <AuthGate title="Your notifications" message="Sign in to see updates about your passes, campaigns and giveaways.">
+            <AuthGate plain title="Your notifications" message="Sign in to see updates about your passes, campaigns and giveaways.">
                 {notifications.length === 0 ? (
                     <div className="flex flex-col items-center gap-3 py-12 text-center text-gray-500 dark:text-zinc-500">
                         <Bell size={28} />
