@@ -1,5 +1,5 @@
 /* Landing site only (newbi.live marketing pages), built with its own Tailwind config. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&family=Outfit:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap');
 @config "../../tailwind.landing.config.js";
 
 @tailwind base;
@@ -68,15 +68,14 @@
 
 ::selection { background: #39FF14; color: #050505; }
 
-/* Display face for the landing shell (the /creator page keeps Outfit). */
-.nb-landing .font-heading { font-family: 'Inter Tight', 'Inter', system-ui, sans-serif; }
+/* Type for the landing shell: Manrope for display, Inter for everything else (labels included). */
+.nb-landing .font-heading { font-family: 'Manrope', 'Inter', system-ui, sans-serif; }
+.nb-landing .font-mono { font-family: 'Inter', system-ui, sans-serif; }
 
-/* Outlined display text. The stroke colour is a variable, since the fill is transparent. */
-:root { --nb-stroke: #0a0a0a; --nb-stroke-soft: rgba(10, 10, 10, 0.45); }
-.dark { --nb-stroke: #ffffff; --nb-stroke-soft: rgba(255, 255, 255, 0.4); }
-.nb-outline { -webkit-text-stroke: 1.5px var(--nb-stroke); color: transparent; }
-.nb-outline-soft { -webkit-text-stroke: 1.5px var(--nb-stroke-soft); color: transparent; }
-@media (min-width: 768px) { .nb-outline, .nb-outline-soft { -webkit-text-stroke-width: 2px; } }
+/* Secondary display lines: a muted fill instead of an outline (outlines expose glyph overlaps). */
+:root { --nb-ghost: rgba(10, 10, 10, 0.32); }
+.dark { --nb-ghost: rgba(255, 255, 255, 0.34); }
+.nb-ghost { color: var(--nb-ghost); }
 
 /* Film grain (desktop only: a fixed full-screen layer is costly on phones) */
 @media (min-width: 768px) {
@@ -140,15 +139,18 @@ details[open] > summary .nb-plus { transform: rotate(45deg); }
     .nb-parallax { animation: nb-parallax linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
 
     /* The giant wordmark inks in as it arrives. */
-    @keyframes nb-ink { from { color: transparent; } to { color: #39FF14; } }
+    @keyframes nb-ink { from { color: var(--nb-ghost); } to { color: #39FF14; } }
     .nb-ink { animation: nb-ink linear both; animation-timeline: view(); animation-range: entry 25% entry 100%; }
 
     /* Horizontal track (desktop): the section pins and the panels slide sideways with the scroll. */
     @media (min-width: 1024px) {
-      .nb-story { height: 560vh; view-timeline-name: --nb-story; view-timeline-axis: block; }
+      .nb-story { height: 520vh; view-timeline-name: --nb-story; view-timeline-axis: block; }
       .nb-story-pin { position: sticky; top: 0; height: 100vh; overflow: hidden; }
       .nb-story-track { display: flex; flex-direction: row; height: 100%; width: max-content; animation: nb-pan linear both; animation-timeline: --nb-story; animation-range: contain 0% contain 100%; }
-      .nb-story-panel { width: 100vw; height: 100%; flex: none; }
+      .nb-story-panel { width: 82vw; height: 100%; flex: none; padding-left: 7vw; padding-right: 7vw; }
+      .nb-story-panel + .nb-story-panel { border-left: 1px solid rgba(127, 127, 127, 0.18); }
+      .nb-story-panel:first-child { width: 64vw; }
+      .nb-story-panel:last-child { width: 100vw; padding-right: 25vw; }
       @keyframes nb-pan { to { transform: translate3d(calc(-100% + 100vw), 0, 0); } }
       @keyframes nb-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
       .nb-story-bar { display: block; transform-origin: left; animation: nb-grow-x linear both; animation-timeline: --nb-story; animation-range: contain 0% contain 100%; }

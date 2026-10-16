@@ -65,7 +65,7 @@ export default function Hero({ onChooseAudience, nextEvent }) {
                 <div className="flex-1 flex flex-col justify-center py-10 md:py-14">
                     <h1 className="font-heading font-extrabold tracking-[-0.045em] leading-[0.9] text-gray-950 dark:text-white text-[15vw] sm:text-[12vw] lg:text-[10vw] xl:text-[9vw]">
                         <span className="nb-exit-l block">We make</span>{' '}
-                        <span className="nb-exit-r nb-outline block">young India</span>{' '}
+                        <span className="nb-exit-r nb-ghost block">young India</span>{' '}
                         <span className="nb-exit-l block text-emerald-600 dark:text-neon-green">show up.</span>
                     </h1>
 
