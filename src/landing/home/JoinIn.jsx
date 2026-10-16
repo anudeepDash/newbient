@@ -1,61 +1,57 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, Check } from 'lucide-react';
-import SectionHeading from '../components/SectionHeading';
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import { APP_LINKS } from '../links';
 
-function Points({ items, tone }) {
+function Panel({ index, word, lead, points, cta, dark }) {
+    const Arrow = cta.href ? ArrowUpRight : ArrowRight;
+    const btn = `mt-10 inline-flex h-14 px-8 items-center gap-2 rounded-full font-heading font-extrabold uppercase tracking-[0.06em] text-base transition hover:scale-[1.03] active:scale-[0.98] ${dark ? 'bg-neon-green text-black' : 'bg-gray-950 text-white dark:bg-white dark:text-black'}`;
     return (
-        <ul className="mt-6 space-y-3">
-            {items.map((t) => (
-                <li key={t} className={`flex items-start gap-3 text-[15px] ${tone === 'dark' ? 'text-zinc-200' : 'text-gray-700 dark:text-zinc-300'}`}>
-                    <span className={`mt-0.5 w-5 h-5 shrink-0 rounded-full flex items-center justify-center ${tone === 'dark' ? 'bg-neon-green text-black' : 'bg-gray-950 text-white dark:bg-neon-green dark:text-black'}`}>
-                        <Check size={12} strokeWidth={3} aria-hidden="true" />
-                    </span>
-                    {t}
-                </li>
-            ))}
-        </ul>
+        <div className={`nb-reveal group relative overflow-hidden flex flex-col p-7 sm:p-10 lg:p-14 min-h-[520px] ${dark ? '[--nb-stroke:#fff] bg-gray-950 text-white dark:bg-[#0a0a0a]' : 'bg-white/60 dark:bg-white/[0.03] text-gray-950 dark:text-white'}`}>
+            {dark && <div aria-hidden="true" className="absolute -top-40 -right-40 w-[34rem] h-[34rem] rounded-full" style={{ background: 'radial-gradient(closest-side, rgba(57,255,20,0.22), transparent)' }} />}
+            <p className={`relative font-mono text-[11px] font-bold uppercase tracking-[0.28em] ${dark ? 'text-zinc-500' : 'text-gray-500 dark:text-zinc-500'}`}><span className="text-neon-green">{index}</span> — {lead}</p>
+            <h3 className="relative mt-6 font-heading font-black uppercase tracking-[-0.04em] leading-[0.86] text-[20vw] sm:text-[14vw] lg:text-[8.5vw]">
+                <span className="nb-outline group-hover:text-current transition-colors duration-500">{word}</span>
+            </h3>
+            <ul className="relative mt-8 space-y-3 max-w-md">
+                {points.map((p) => (
+                    <li key={p} className={`flex items-start gap-3 text-base md:text-lg ${dark ? 'text-zinc-300' : 'text-gray-700 dark:text-zinc-300'}`}>
+                        <span aria-hidden="true" className="mt-2.5 w-2 h-2 shrink-0 rounded-full bg-neon-green" />{p}
+                    </li>
+                ))}
+            </ul>
+            <div className="relative mt-auto">
+                {cta.href
+                    ? <a href={cta.href} className={btn}>{cta.label} <Arrow size={18} aria-hidden="true" /></a>
+                    : <Link to={cta.to} className={btn}>{cta.label} <Arrow size={18} aria-hidden="true" /></Link>}
+            </div>
+        </div>
     );
 }
 
-// The pitch to creators and to students and fans: what they get, then one clear next step.
+// The two halves of the crowd: creators, and the students and fans who show up.
 export default function JoinIn({ welcomePoints }) {
-    const creatorPoints = [
-        'Brand campaigns matched to your city and niche',
-        'Access to concerts, fests and live events',
-        'One profile and one dashboard for every campaign',
-        welcomePoints ? `${welcomePoints.toLocaleString('en-IN')} Newbi points when you join` : 'Free to join',
-    ];
     return (
-        <section aria-labelledby="join-title" className="py-20 md:py-28 border-t border-black/[0.06] dark:border-white/[0.06]">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <SectionHeading
-                    id="join-title"
-                    eyebrow="Community"
-                    title="Built for the people"
-                    highlight="who show up."
-                    text="Newbi isn't only for brands. Creators and students are the ones who make every show and campaign work, and there's a place for both."
-                />
-                <div className="mt-12 md:mt-14 grid gap-4 md:gap-5 lg:grid-cols-2">
-                    <div className="nb-reveal relative overflow-hidden flex flex-col p-7 sm:p-10 rounded-[2rem] bg-gray-950 text-white border border-neon-green/25">
-                        <div aria-hidden="true" className="absolute -top-28 -right-28 w-72 h-72 rounded-full" style={{ background: 'radial-gradient(closest-side, rgba(57,255,20,0.22), transparent)' }} />
-                        <p className="relative text-[11px] font-black uppercase tracking-[0.3em] text-neon-green">For creators</p>
-                        <h3 className="relative mt-4 font-heading text-3xl md:text-4xl font-extrabold tracking-tight leading-tight">Get paid to create with brands you like.</h3>
-                        <div className="relative"><Points items={creatorPoints} tone="dark" /></div>
-                        <Link to="/creator" className="relative mt-9 self-start h-12 px-6 inline-flex items-center gap-2 rounded-xl bg-neon-green text-black font-bold hover:brightness-95 transition">
-                            Explore the creator program <ArrowRight size={17} aria-hidden="true" />
-                        </Link>
-                    </div>
-                    <div className="nb-reveal flex flex-col p-7 sm:p-10 rounded-[2rem] bg-white dark:bg-[#0b0e14] border border-black/[0.07] dark:border-white/[0.07]">
-                        <p className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-500 dark:text-zinc-400">For students and fans</p>
-                        <h3 className="mt-4 font-heading text-3xl md:text-4xl font-extrabold tracking-tight leading-tight text-gray-950 dark:text-white">Be on the list for what's next.</h3>
-                        <Points items={['Guestlists for shows in your city', 'Volunteer gigs at live events', 'Giveaways and passes, all in one app']} />
-                        <a href={APP_LINKS.home} className="mt-9 self-start h-12 px-6 inline-flex items-center gap-2 rounded-xl bg-gray-950 text-white dark:bg-white dark:text-black font-bold hover:opacity-90 transition-opacity">
-                            Open the Newbi app <ArrowUpRight size={17} aria-hidden="true" />
-                        </a>
-                    </div>
-                </div>
-            </div>
+        <section aria-label="For creators, students and fans" className="border-t border-gray-950/10 dark:border-white/10 grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-950/10 dark:divide-white/10">
+            <Panel
+                index="05"
+                lead="For creators"
+                word="Creators"
+                points={[
+                    'Brand campaigns matched to your city and niche',
+                    'Access to concerts, fests and live events',
+                    'One profile, one dashboard, every campaign',
+                    welcomePoints ? `${welcomePoints.toLocaleString('en-IN')} Newbi points the day you join` : 'Free to join',
+                ]}
+                cta={{ label: 'Join the network', to: '/creator' }}
+                dark
+            />
+            <Panel
+                index="05"
+                lead="For students & fans"
+                word="Fans"
+                points={['Guestlists for shows in your city', 'Volunteer gigs at live events', 'Giveaways and passes, all in one app']}
+                cta={{ label: 'Open the app', href: APP_LINKS.home }}
+            />
         </section>
     );
 }
