@@ -11,7 +11,7 @@ import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import Hourglass from 'lucide-react/dist/esm/icons/hourglass';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
-import { Button, Sheet, useIsPhone } from '../../../components/app';
+import { BrandLayers, BRAND_GLASS, Button, CARD_TYPES, GlassChip, MetaPill, Sheet, Stat, StatRow } from '../../../components/app';
 import { useAppStore } from '../../../lib/store/appStore';
 import { useStore as useLegacyStore } from '../../../lib/store.js';
 import { isPresent } from '../../../lib/present';
@@ -25,7 +25,7 @@ import { appPath, appUrl, APP_ORIGIN } from '../../host';
 import { callCreatorApi } from '../api';
 import { compactCount, dueLabel } from '../format';
 import { creatorWho, isShortlisted, matchesCollege } from '../useCreatorData';
-import { Notice, STICKY_DOCK } from '../ui';
+import { Notice } from '../ui';
 import TaskCard from './TaskCard';
 import SubmitTaskSheet from './SubmitTaskSheet';
 import TicketSlot from './TicketSlot';
@@ -46,21 +46,6 @@ import { applyMethodOf, formValuesFor, googleFormUrl } from './applyMethod';
  * No fallback strings: an unset city, reward, follower minimum or brief is
  * simply not shown.
  */
-
-const Chip = ({ icon: Icon, label, tone }) => {
-    if (!isPresent(label)) return null;
-    return (
-        <span className={cn(
-            'inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-bold',
-            tone === 'accent'
-                ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-800 dark:border-neon-green/25 dark:bg-neon-green/10 dark:text-neon-green'
-                : 'border-black/[0.06] bg-white/80 text-gray-800 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-zinc-200'
-        )}>
-            {Icon && <Icon size={14} className="shrink-0" />}
-            {label}
-        </span>
-    );
-};
 
 
 const spotsLabel = (c) => {
@@ -95,7 +80,6 @@ const blockerFor = (campaign, creator) => {
 const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) => {
     const location = useLocation();
     const navigate = useNavigate();
-    const phone = useIsPhone();
     const gate = useAuthGate();
     const authUser = useAppStore(s => s.authUser);
     const profile = useAppStore(s => s.profile);
@@ -218,37 +202,59 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
         },
         onShare: share,
     };
+    // The apply bar: Newbi ID line, the apply button and share, and the Google Form link when there is one.
     const bar = <ApplyPanel {...panelProps} compact />;
 
-    const poster = campaign.thumbnail ? (
-        <div className="overflow-hidden rounded-[1.5rem] bg-black/[0.04] ring-1 ring-inset ring-black/[0.08] shadow-[0_30px_80px_-40px_rgba(0,0,0,0.6)] dark:bg-white/[0.04] dark:ring-white/[0.12]">
-            <img src={campaign.thumbnail} alt="" className="aspect-video w-full object-cover md:aspect-auto md:max-h-[70dvh] md:object-contain" />
-        </div>
-    ) : null;
+    const KindIcon = CARD_TYPES.campaign.icon;
+    const shownMeta = [
+        { icon: Users, label: min > 0 ? `${compactCount(min)}+ followers` : null },
+        { icon: CalendarClock, label: dueLabel(campaign.deadline || campaign.endDate) },
+    ].filter(m => isPresent(m.label));
 
-    const details = (
-        <div className="space-y-6">
+    /* The campaign card, expanded: the 16:9 poster bleeds to the edges and fades into the body. */
+    const hero = (
+        <div className="relative aspect-video w-full shrink-0 overflow-hidden">
+            <div className="absolute inset-0" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 55%, transparent 100%)', maskImage: 'linear-gradient(to bottom, #000 55%, transparent 100%)' }}>
+                {campaign.thumbnail ? (
+                    <>
+                        <div className="absolute inset-0 bg-gray-200 dark:bg-zinc-900" />
+                        <img src={campaign.thumbnail} alt="" className="relative h-full w-full object-cover" />
+                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_50%,_rgba(0,0,0,0.35)_100%)]" />
+                    </>
+                ) : (
+                    <div className="flex h-full w-full items-center justify-center"><KindIcon size={64} strokeWidth={1.25} className="text-emerald-600/25 dark:text-neon-green/20" /></div>
+                )}
+            </div>
+            <div className="absolute left-4 top-4 z-10 flex max-w-[75%] flex-wrap items-center gap-2">
+                <GlassChip icon={KindIcon} />
+                {isPresent(city) && <GlassChip icon={MapPin} label={city} />}
+                {isPresent(campaign.targetCollege) && <GlassChip icon={GraduationCap} label={campaign.targetCollege} />}
+            </div>
+        </div>
+    );
+
+    const content = (
+        <div className="relative space-y-6 px-5 pb-6 sm:px-7">
             <div className="space-y-3">
-                {(isPresent(campaign.brand) || campaign.brandLogo) && (
-                    <div className="flex items-center gap-2">
-                        {campaign.brandLogo && <img src={campaign.brandLogo} alt="" className="h-7 w-7 rounded-lg border border-black/10 bg-white object-contain p-0.5 dark:border-white/10" />}
-                        {isPresent(campaign.brand) && <span className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-700 dark:text-neon-green">{campaign.brand}</span>}
+                {shownMeta.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2">
+                        {shownMeta.map(m => <MetaPill key={m.label} {...m} />)}
                     </div>
                 )}
-                <h1 className="font-heading text-[28px] font-extrabold leading-[1.05] tracking-[-0.035em] sm:text-[32px] md:text-[36px]">{campaign.title}</h1>
-                <div className="flex flex-wrap gap-2">
-                    <Chip icon={Award} label={reward} tone="accent" />
-                    <Chip icon={MapPin} label={city} />
-                    <Chip icon={GraduationCap} label={isPresent(campaign.targetCollege) ? campaign.targetCollege : null} />
-                    <Chip icon={Users} label={min > 0 ? `${compactCount(min)}+ followers` : null} />
-                    <Chip icon={ListChecks} label={tasks.length ? `${tasks.length} ${tasks.length === 1 ? 'deliverable' : 'deliverables'}` : null} />
-                    <Chip icon={Flame} label={spotsLabel(campaign)} />
-                    <Chip icon={CalendarClock} label={dueLabel(campaign.deadline || campaign.endDate)} />
-                </div>
+                {(isPresent(campaign.brand) || campaign.brandLogo) && (
+                    <div className="flex items-center gap-2">
+                        {campaign.brandLogo && <img src={campaign.brandLogo} alt="" className="h-5 w-5 rounded-md border border-black/10 bg-white object-contain p-0.5 dark:border-white/10" />}
+                        {isPresent(campaign.brand) && <span className="text-[11px] font-black uppercase tracking-widest text-emerald-700 dark:text-neon-green">{campaign.brand}</span>}
+                    </div>
+                )}
+                <h1 className="font-heading text-[26px] font-extrabold leading-[1.1] tracking-[-0.03em] sm:text-[30px]">{campaign.title}</h1>
+                <StatRow className="flex-wrap sm:flex-nowrap">
+                    {/* A long reward gets the whole row on phones instead of being cut off. */}
+                    <Stat label="Reward" value={reward} icon={Award} tone="accent" className={String(reward || '').length > 14 ? 'basis-full sm:basis-0' : undefined} />
+                    <Stat label="Tasks" value={tasks.length || null} icon={ListChecks} />
+                    <Stat label="Spots" value={spotsLabel(campaign) ? spotsLabel(campaign).replace(/ (spots?|left)/g, '').trim() : null} icon={Flame} />
+                </StatRow>
             </div>
-
-            {/* Desktop: the apply panel sits here. Phones get it as the bottom bar. */}
-            {!phone && <ApplyPanel {...panelProps} />}
 
             {inCampaign && (
                 <Notice tone={progress.requiredDone ? 'success' : shortlisted ? 'success' : 'info'} title={progress.requiredDone ? 'Completed' : shortlisted ? 'You’re in' : 'Applied'}>
@@ -270,7 +276,7 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
             {brief && (
                 <section className="space-y-3">
                     <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-400">The brief</h2>
-                    <div className="campaign-briefing-content break-words text-[15px] leading-relaxed text-gray-800 dark:text-zinc-200 md:text-[16px]" dangerouslySetInnerHTML={{ __html: brief }} />
+                    <div className="campaign-briefing-content break-words text-[15px] leading-relaxed text-gray-800 dark:text-zinc-200" dangerouslySetInnerHTML={{ __html: brief }} />
                 </section>
             )}
 
@@ -308,15 +314,6 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
         </div>
     );
 
-    const body = (
-        <div className="relative isolate">
-            <div className={cn('relative grid gap-6', poster && 'md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:gap-10')}>
-                {poster && <div className="md:sticky md:top-0 md:self-start">{poster}</div>}
-                {details}
-            </div>
-        </div>
-    );
-
     const sheets = (
         <>
             <SubmitTaskSheet
@@ -350,23 +347,31 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
                     open
                     onClose={onClose}
                     size="full"
-                    width={poster ? '2xl' : 'lg'}
+                    width="lg"
+                    bleed
                     header={<span className="sr-only">{campaign.title}</span>}
-                    footer={phone ? bar : null}
-                    bodyClassName="pt-0"
+                    footer={bar}
+                    bodyClassName="px-0 pb-0 pt-0 sm:px-0"
                 >
-                    {body}
+                    {hero}
+                    {content}
                 </Sheet>
                 {sheets}
             </>
         );
     }
 
+    // Opened from a shared link: the same expanded card, centred on the page, with the apply bar pinned.
     return (
         <>
-            {body}
-            {/* Phones: a solid dock under the app's tab pill. */}
-            {phone && <div className={cn(STICKY_DOCK, 'mt-6')}>{bar}</div>}
+            <article className={cn('mx-auto max-w-2xl rounded-[2rem]', BRAND_GLASS)}>
+                <BrandLayers soft mark={false} />
+                {hero}
+                {content}
+                <div className="sticky bottom-0 z-20 border-t border-black/[0.06] bg-[#f7f7f3]/85 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0b0d12]/85 sm:px-7 max-lg:mb-[5.5rem]">
+                    {bar}
+                </div>
+            </article>
             {sheets}
         </>
     );

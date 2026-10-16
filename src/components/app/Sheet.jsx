@@ -19,8 +19,10 @@ import BrandLayers from './BrandLayers';
  *   </Sheet>
  *
  * size: 'auto' (fits content, up to 92dvh) or 'full' (full height on phones).
- * Every sheet sits on the Newbi surface (BrandLayers: corner glow, dot grid,
- * faded N. mark). backdrop: an element painted instead, behind the header and body.
+ * bleed: no header row; the body starts at the very top (for a full-width
+ * image) and the close button floats over it.
+ * Every sheet sits on the Newbi surface (BrandLayers: corner glow and dot
+ * grid; the N. mark stays on the Home notice panels only). backdrop: an element painted instead, behind the header and body.
  */
 
 const MOBILE_QUERY = '(max-width: 767px)';
@@ -53,6 +55,7 @@ const Sheet = ({
     bodyClassName,
     zIndex,
     backdrop,
+    bleed = false,
 }) => {
     const phone = useIsPhone();
     const drag = useDragControls();
@@ -116,7 +119,7 @@ const Sheet = ({
                             className
                         )}
                     >
-                        {backdrop ? <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">{backdrop}</div> : <BrandLayers soft mark="large" />}
+                        {backdrop ? <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">{backdrop}</div> : <BrandLayers soft mark={false} />}
                         {phone && (
                             // The handle is the only drag target.
                             <div
@@ -126,7 +129,17 @@ const Sheet = ({
                                 <span className="h-1 w-10 rounded-full bg-black/15 dark:bg-white/20" />
                             </div>
                         )}
-                        {(header || title || dismissible) && (
+                        {bleed && dismissible && (
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                aria-label="Close"
+                                className={cn('absolute right-3 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white ring-1 ring-inset ring-white/20 backdrop-blur-md transition-colors hover:bg-black/75', phone ? 'top-9' : 'top-3')}
+                            >
+                                <X size={18} />
+                            </button>
+                        )}
+                        {!bleed && (header || title || dismissible) && (
                             <div className={cn('relative flex shrink-0 items-start justify-between gap-4 px-5 pb-3', phone ? 'pt-1' : 'px-7 pt-6')}>
                                 {header ? <div className="min-w-0 flex-1">{header}</div> : (
                                     <div className="min-w-0">

@@ -15,8 +15,8 @@ import BrandLayers, { BRAND_GLASS } from './BrandLayers';
 /*
  * The one card for the app: an aspect-video hero that fades into the body,
  * glass chips over the image, stat tiles and the CTA pill, on the Newbi
- * surface (liquid glass, a neon corner glow, the dot grid and a small faded
- * N. mark), the same as the app's notice panels.
+ * surface (liquid glass, a neon corner glow and the dot grid), like the app's notice
+ * panels but without the N. mark.
  *
  *   <Card
  *     type="guestlist"
@@ -139,7 +139,7 @@ const Card = ({
             )}
         >
             {/* The Newbi surface, behind everything; the glow rises from the bottom corner, under the body. */}
-            <BrandLayers mark="small" from="bottom" />
+            <BrandLayers mark={false} from="bottom" />
 
             {/* Progress strip */}
             {hasProgress && (
