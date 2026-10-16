@@ -1,5 +1,5 @@
 import { getFirestore } from 'firebase-admin/firestore';
-import { verifyToken } from './_lib/auth.js';
+import { verifyToken, auth } from './_lib/auth.js';
 
 const CORS_HEADERS = {
     'Access-Control-Allow-Methods': 'GET,OPTIONS,POST',
@@ -13,6 +13,21 @@ const allowedOrigins = [
     'https://newbi-ent.vercel.app',
     'http://localhost:5173',
 ];
+
+// Same staff roles as api/creator-join.js, from the caller's admins entry or user doc.
+const STAFF_ROLES = ['founder', 'super_admin', 'developer', 'admin', 'editor', 'content_admin'];
+const isStaff = async (db, decoded) => {
+    const email = decoded.email ? decoded.email.toLowerCase().trim() : null;
+    if (email) {
+        const snap = await db.collection('admins').where('email', '==', email).limit(1).get();
+        if (!snap.empty && STAFF_ROLES.includes(snap.docs[0].data()?.role)) return true;
+    }
+    if (decoded.uid) {
+        const userDoc = await db.collection('users').doc(decoded.uid).get();
+        if (STAFF_ROLES.includes(userDoc.data()?.role)) return true;
+    }
+    return false;
+};
 
 export default async function handler(req, res) {
     // Shim for Vercel edge
@@ -45,25 +60,43 @@ export default async function handler(req, res) {
         }
     }
 
+    // Member data (emails, phones) is for staff only, not any signed-in user.
+    let staff = false;
+    try { staff = await isStaff(getFirestore(), decodedToken); } catch (e) { console.error('[get-members] Staff check failed:', e); }
+    if (!staff) return res.status(403).json({ error: 'Forbidden' });
+
     try {
         const db = getFirestore();
         const { pageSize = 24, startAfterDocId = null, countOnly = false } = body || {};
 
-        // Count-only mode — return total authenticated users
+        // Count-only mode: the live number of Firebase Auth accounts. Counted at
+        // most once a minute and kept in system_stats so every admin sees the same.
         if (countOnly) {
-            let count = 1387;
-            try {
-                const statsDoc = await db.collection('system_stats').doc('auth_users').get();
-                if (statsDoc.exists && statsDoc.data()?.totalCount) {
-                    count = Math.max(1387, statsDoc.data().totalCount);
-                } else {
-                    const snapshot = await db.collection('users').count().get();
-                    count = Math.max(1387, snapshot.data().count);
-                }
-            } catch (e) {
-                count = 1387;
+            const statsRef = db.collection('system_stats').doc('auth_users');
+            const stats = (await statsRef.get().catch(() => null))?.data() || {};
+            const fresh = stats.countedAt && Date.now() - new Date(stats.countedAt).getTime() < 60 * 1000;
+            if (fresh && Number.isFinite(stats.totalCount)) {
+                return res.status(200).json({ success: true, count: stats.totalCount, countedAt: stats.countedAt });
             }
-            return res.status(200).json({ success: true, count });
+            try {
+                if (!auth) throw new Error('Admin auth unavailable');
+                let count = 0;
+                let pageToken;
+                do {
+                    const page = await auth.listUsers(1000, pageToken);
+                    count += page.users.length;
+                    pageToken = page.pageToken;
+                } while (pageToken);
+                const countedAt = new Date().toISOString();
+                await statsRef.set({ totalCount: count, countedAt }, { merge: true }).catch(() => {});
+                return res.status(200).json({ success: true, count, countedAt });
+            } catch (e) {
+                console.error('[get-members] Auth count failed:', e);
+                // Last known number, else the synced users collection.
+                if (Number.isFinite(stats.totalCount)) return res.status(200).json({ success: true, count: stats.totalCount, countedAt: stats.countedAt || stats.lastSyncedAt || null, stale: true });
+                const snapshot = await db.collection('users').count().get();
+                return res.status(200).json({ success: true, count: snapshot.data().count, stale: true });
+            }
         }
 
         // Paginated fetch
@@ -91,8 +124,8 @@ export default async function handler(req, res) {
             const { pageSize = 24, startAfterDocId = null, countOnly = false } = body || {};
 
             if (countOnly) {
-                const snap = await db.collection('users').get();
-                return res.status(200).json({ success: true, count: snap.size });
+                const snap = await db.collection('users').count().get();
+                return res.status(200).json({ success: true, count: snap.data().count, stale: true });
             }
 
             let query = db.collection('users').limit(pageSize);
