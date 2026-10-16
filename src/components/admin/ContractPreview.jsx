@@ -3,7 +3,7 @@ import { cn } from '../../lib/utils';
 import DocumentSeal from '../ui/DocumentSeal';
 import { formatContractDate, partyIds, termSentence, deliverablesOf, milestoneRows, gstNote, formatMoney } from './contracts/contractRules';
 
-const LOGOS = { entertainment: '/logo_document.png', media: '/logo_media.png', marketing: '/logo_marketing.png' };
+const LOGOS = { entertainment: '/brand/newbi-logo-entertainment-800w.png', media: '/brand/newbi-logo-media-800w.png', marketing: '/brand/newbi-logo-marketing-800w.png' };
 
 const inlineFmt = (t) => t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
 
@@ -108,7 +108,7 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
         <img 
           src={LOGOS[formData.selectedLogo] || LOGOS.entertainment} 
           alt="Logo" 
-          className="h-8 w-auto object-contain grayscale opacity-80" 
+          className="h-12 w-auto object-contain grayscale opacity-80" 
           crossOrigin="anonymous" 
         />
         <div className="flex items-center gap-6 text-right">

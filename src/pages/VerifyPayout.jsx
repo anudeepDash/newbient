@@ -195,9 +195,9 @@ const VerifyPayout = () => {
                     <div className="text-center relative pb-6 border-b border-gray-200 dark:border-white/10">
                         <div className="inline-block px-3 py-1 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full mb-4">
                             <img 
-                                src="/logo_full.png" 
+                                src="/brand/newbi-logo-800w.png" 
                                 alt="Newbi Logo" 
-                                className="h-4 object-contain filter brightness-100"
+                                className="h-7 object-contain"
                             />
                         </div>
                         <p className="text-[8px] font-black uppercase tracking-[0.4em] text-[#39ff14] mb-2">Disbursement Voucher</p>

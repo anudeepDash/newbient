@@ -7,7 +7,7 @@ export default function ProposalDocumentRenderer({
     pageIdx, 
     totalPages, 
     formData = {}, 
-    currentLogo = { path: '/logo_document.png' }, 
+    currentLogo = { path: '/brand/newbi-logo-entertainment-800w.png' }, 
     isHidden = () => false, 
     renderContent = (t) => t, 
     isExporting = false,
@@ -65,9 +65,9 @@ export default function ProposalDocumentRenderer({
                 <div className="flex justify-between items-start mb-6 border-b border-black/10 pb-4 relative z-10 shrink-0">
                     <div className="flex flex-col items-start">
                         <img 
-                            src={currentLogo?.path || '/logo_document.png'} 
+                            src={currentLogo?.path || '/brand/newbi-logo-entertainment-800w.png'} 
                             alt="Newbi Entertainment" 
-                            className="h-10 w-auto object-contain" 
+                            className="h-14 w-auto object-contain" 
                             crossOrigin="anonymous" 
                         />
                     </div>
@@ -536,7 +536,7 @@ export default function ProposalDocumentRenderer({
                 )}
                 
                 <div className={cn("flex flex-col gap-6 items-start", isFirstPage && "mt-10")}>
-                    <img src={currentLogo?.path || '/logo_document.png'} alt="Logo" className="h-10 w-auto object-contain" crossOrigin="anonymous" />
+                    <img src={currentLogo?.path || '/brand/newbi-logo-entertainment-800w.png'} alt="Logo" className="h-14 w-auto object-contain" crossOrigin="anonymous" />
                 </div>
                 
                 <div className={cn("text-right space-y-1", isFirstPage && "mt-10")}>
