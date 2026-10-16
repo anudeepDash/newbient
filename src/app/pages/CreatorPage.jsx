@@ -39,8 +39,9 @@ const CreatorStatus = ({ creator }) => {
     const status = STATUS[creator?.profileStatus];
     const followers = compact(creator?.instagramFollowers);
     return (
-        <HeroPanel image={photo} eyebrow="Creator" title={name || 'Your creator profile'}>
+        <HeroPanel eyebrow="Creator" title={name || 'Your creator profile'}>
             <div className="flex flex-wrap items-center gap-2">
+                {photo && <img src={photo} alt="" referrerPolicy="no-referrer" className="h-8 w-8 rounded-full object-cover ring-2 ring-white/70 dark:ring-white/10" />}
                 {status && <span className={`rounded-full px-3 py-1 text-[13px] font-bold ${status.tone}`}>{status.label}</span>}
                 {isPresent(username) && (
                     <span className="flex items-center gap-1.5 rounded-full bg-black/[0.04] px-3 py-1 text-[13px] font-semibold text-gray-700 dark:bg-white/[0.07] dark:text-zinc-300">
@@ -73,7 +74,7 @@ const CreatorPage = () => {
             ) : (
                 <>
                     <PageHeader eyebrow="Creators" title="Become a Newbi creator" />
-                    <HeroPanel image={campaigns[0]?.thumbnail} title="Get passes, products and paid work for posting about the shows you love.">
+                    <HeroPanel title="Get passes, products and paid work for posting about the shows you love.">
                         <p className="text-[15px] text-gray-600 dark:text-zinc-300">Share your Instagram, niche and rates. Approved creators get invited to campaigns from brands and events.</p>
                         <div className="pt-1">
                             <Button href={landingUrl('/creator/join')}>Apply as a creator</Button>

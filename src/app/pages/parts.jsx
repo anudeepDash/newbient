@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import { cn } from '../../lib/utils';
-import { AmbientBackdrop } from '../../components/app';
+import newbiIcon from '../../assets/logo/newbi-icon.svg';
 
 /* Layout pieces shared by the app pages. */
 
@@ -59,10 +59,31 @@ export const EmptyState = ({ icon: Icon, title, message, action }) => (
     </div>
 );
 
-/* A big panel with the ambient glow of an image behind it. */
-export const HeroPanel = ({ image, eyebrow, title, children, className }) => (
-    <section className={cn('relative isolate overflow-hidden rounded-[2rem] border border-black/[0.06] bg-white p-6 sm:p-8 dark:border-white/[0.08] dark:bg-[#0b0d12]', className)}>
-        <AmbientBackdrop image={image} intensity={image ? 0.5 : 0.55} />
+/*
+ * A big branded panel: a dark base with a neon-green glow, a faint dot grid
+ * and a large faded "N." mark. All gradients, so there's no live blur and it
+ * stays light on iPhone Safari. Light mode gets the same composition in white.
+ */
+const DOTS = 'radial-gradient(currentColor 1px, transparent 1.2px)';
+const FADE_RIGHT = 'linear-gradient(to left, black 0%, black 35%, transparent 85%)';
+
+export const HeroPanel = ({ eyebrow, title, children, className }) => (
+    <section className={cn(
+        'relative isolate overflow-hidden rounded-[2rem] border p-6 sm:p-8',
+        'border-emerald-900/10 bg-white text-gray-900 shadow-[0_20px_60px_-30px_rgba(16,185,129,0.45)]',
+        'dark:border-white/[0.08] dark:bg-[#06080a] dark:text-white dark:shadow-[0_20px_60px_-30px_rgba(57,255,20,0.35)]',
+        className
+    )}>
+        {/* Glow: neon in dark mode, a soft mint wash in light mode */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 dark:hidden"
+            style={{ background: 'radial-gradient(110% 90% at 100% 0%, rgba(57,255,20,0.30) 0%, rgba(16,185,129,0.12) 38%, transparent 65%), radial-gradient(80% 70% at 0% 100%, rgba(16,185,129,0.10), transparent 60%)' }} />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 hidden dark:block"
+            style={{ background: 'radial-gradient(110% 90% at 100% 0%, rgba(57,255,20,0.32) 0%, rgba(57,255,20,0.08) 38%, transparent 65%), radial-gradient(80% 70% at 0% 100%, rgba(16,185,129,0.16), transparent 60%)' }} />
+        {/* Dot grid, fading out towards the text */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 text-emerald-900/[0.12] dark:text-white/[0.07]"
+            style={{ backgroundImage: DOTS, backgroundSize: '16px 16px', WebkitMaskImage: FADE_RIGHT, maskImage: FADE_RIGHT }} />
+        {/* The brand mark, large and faded, off the bottom-right corner */}
+        <img aria-hidden="true" src={newbiIcon} alt="" className="pointer-events-none absolute -bottom-10 -right-8 -z-10 w-52 rotate-[-8deg] opacity-[0.10] sm:w-72 dark:opacity-[0.12]" />
         <div className="relative max-w-xl space-y-3">
             {eyebrow && <p className="text-[12px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-neon-green">{eyebrow}</p>}
             <h2 className="font-heading text-[26px] font-black leading-[1.1] tracking-tight sm:text-[32px]">{title}</h2>
