@@ -13,7 +13,7 @@ import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import Info from 'lucide-react/dist/esm/icons/info';
 import PdfDocumentViewer from './PdfDocumentViewer';
-import logo from '../../assets/logo.png';
+import NewbiLogo from '../brand/NewbiLogo';
 import DocumentShareModal from './DocumentShareModal';
 import Sheet from '../admin/Sheet';
 import { docTheme, StatusChip, fmtDate, fmtMoney, Row, DocButton } from './docviewer/DocKit';
@@ -379,7 +379,7 @@ export default function SharedDocumentViewer({
                                 </Link>
                             ) : (
                                 <Link to="/" className="flex h-10 shrink-0 items-center rounded-xl px-1.5" aria-label="Newbi home">
-                                    <img src={logo} alt="newbi.live" className="h-8 w-auto" />
+                                    <NewbiLogo className="h-8 w-auto" />
                                 </Link>
                             )}
 

@@ -23,7 +23,7 @@ import {
 } from '../../../constants/adminNavigation';
 import CommandPalette from './CommandPalette';
 import { AccentContext, accent } from '../theme';
-import newbiLogo from '../../../assets/logo/newbi-logo.svg';
+import NewbiLogo from '../../brand/NewbiLogo';
 import newbiIcon from '../../../assets/logo/newbi-icon.svg';
 
 const COLLAPSE_KEY = 'nb_admin_sidebar_collapsed';
@@ -36,7 +36,7 @@ const roleLabel = (role) => String(role || '').replace(/_/g, ' ');
 
 // White letters with a black outline, so one file reads on light and dark.
 const Logo = ({ className }) => (
-    <img src={newbiLogo} alt="Newbi" className={cn('w-auto', className)} />
+    <NewbiLogo className={cn('w-auto', className)} />
 );
 
 const Badge = ({ count, compact }) => {
