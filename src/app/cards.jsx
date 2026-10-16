@@ -10,6 +10,7 @@ import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import { GlassChip } from '../components/app';
 import { getCampaignSpotsInfo } from '../lib/utils';
 import { appPath } from './host';
+import { TicketReadyBadge } from './creator/YourTicket';
 
 /*
  * Card props for the app's data, so every list renders the same Card.
@@ -42,11 +43,17 @@ export function campaignCard(c, { applied = false, from = null, progress = null 
         eyebrowLogo: c.brandLogo || null,
         description: c.description,
         chips: [{ icon: MapPin, label: c.targetCity }],
-        badges: progress?.requiredDone
-            ? <GlassChip icon={CircleCheck} label="Completed" tone="accent" />
-            : applied
-            ? <GlassChip icon={CircleCheck} label="Applied" tone="accent" />
-            : fewLeft ? <GlassChip icon={Flame} label={`${spots.spotsLeft} left`} tone="warn" /> : null,
+        // "Ticket ready" (Phase 5) shows ahead of the status; it renders nothing without a ticket.
+        badges: (
+            <>
+                <TicketReadyBadge campaignId={c.id} />
+                {progress?.requiredDone
+                    ? <GlassChip icon={CircleCheck} label="Completed" tone="accent" />
+                    : applied
+                        ? <GlassChip icon={CircleCheck} label="Applied" tone="accent" />
+                        : fewLeft ? <GlassChip icon={Flame} label={`${spots.spotsLeft} left`} tone="warn" /> : null}
+            </>
+        ),
         meta: [
             { icon: Users, label: followers ? `${followers}+ followers` : null },
             { icon: Flame, label: spots.hasSpots ? `${spots.spotsLeft} ${spots.spotsLeft === 1 ? 'spot' : 'spots'} left` : null, tone: fewLeft ? 'warn' : 'default' },
