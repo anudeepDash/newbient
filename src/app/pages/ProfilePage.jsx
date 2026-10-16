@@ -68,7 +68,7 @@ const ProfileDetails = () => {
                     <Button onClick={() => setSheet({ required: missing, title: 'Complete your profile' })}>Complete profile</Button>
                 )}
                 <Button variant="secondary" onClick={() => setSheet({ required: ['name', 'city', 'college'], title: 'Edit details', force: true })}>Edit details</Button>
-                <Button variant="secondary" icon={isDark ? Sun : Moon} onClick={() => toggleTheme()} className="lg:hidden">
+                <Button variant="secondary" icon={isDark ? Sun : Moon} onClick={() => toggleTheme()}>
                     {isDark ? 'Light mode' : 'Dark mode'}
                 </Button>
                 <Button variant="danger" icon={LogOut} onClick={() => signOut()}>Sign out</Button>

@@ -22,7 +22,7 @@ export const SectionHeader = ({ title, to, linkLabel = 'See all' }) => (
 export const Rail = ({ children, className }) => (
     <div className={cn(
         '-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto overscroll-x-contain px-4 pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-        'sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 xl:grid-cols-3',
+        'sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0',
         className
     )}>
         {React.Children.map(children, child => child && (
@@ -32,7 +32,7 @@ export const Rail = ({ children, className }) => (
 );
 
 export const CardGrid = ({ children, className }) => (
-    <div className={cn('grid gap-4 sm:grid-cols-2 xl:grid-cols-3', className)}>{children}</div>
+    <div className={cn('grid gap-4 sm:grid-cols-2', className)}>{children}</div>
 );
 
 export const CardSkeleton = () => (
