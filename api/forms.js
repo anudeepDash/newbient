@@ -1,7 +1,9 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { verifyToken } from './_lib/auth.js';
-import { handleEnquiry, handleSubscribe } from './_lib/publicMail.js';
+import { handleSubscribe } from './_lib/publicMail.js';
+import { handlePublicFeed, handlePublicArchive } from './_lib/publicFeed.js';
+import { handleEnquiry } from './_lib/enquiry.js';
 
 let adminDb = null;
 
@@ -80,17 +82,21 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
+    // Landing site (newbi.live): the cached public feed and the enquiry form.
+    if (req.query?.type === 'public-feed') return handlePublicFeed(adminDb, req, res);
+    if (req.query?.type === 'public-archive') return handlePublicArchive(adminDb, req, res);
+    if (req.query?.type === 'enquiry') return handleEnquiry(adminDb, req, res);
+
     // Native (built-in) form responses: submit, and the admin's read/update/delete.
     const action = String(req.query?.action || '');
     if (action) {
         return handleResponseAction(action, req, res);
     }
 
-    // Contact form and newsletter sign-up (mail is sent from the server).
-    if (req.method === 'POST' && (req.query.type === 'enquiry' || req.query.type === 'subscribe')) {
+    // Newsletter sign-up (mail is sent from the server). Enquiries are handled above.
+    if (req.method === 'POST' && req.query.type === 'subscribe') {
         try {
             const body = await readBody(req);
-            if (req.query.type === 'enquiry') return await handleEnquiry(req, res, body);
             return await handleSubscribe(req, res, body, await verifyToken(req));
         } catch (err) {
             console.error(`[API/FORMS] ${req.query.type} failed:`, err);

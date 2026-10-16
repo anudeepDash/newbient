@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { GoogleGenAI } from "@google/genai"
+import { landingPrerender } from './scripts/prerender.mjs'
 
 // ── Dynamic Model Discovery (Local Dev) ─────────────────────────────────
 // Mirrors the production api/ai.js logic so local dev never breaks on
@@ -90,6 +91,63 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react(),
+      landingPrerender(),
+      {
+        // newbi.live landing pages are their own entry (landing.html); in production they are
+        // prerendered (scripts/prerender.mjs) and routed by vercel.json.
+        name: 'landing-dev-routes',
+        configureServer(server) {
+          const LANDING = new Set(['/', '/work', '/creator', '/community', '/contact', '/terms', '/privacy']);
+          server.middlewares.use((req, res, next) => {
+            const [pathname] = (req.url || '').split('?');
+            const clean = pathname.replace(/\/+$/, '') || '/';
+            if (req.method === 'GET' && LANDING.has(clean) && (req.headers.accept || '').includes('text/html')) {
+              req.url = '/landing.html' + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '');
+            }
+            next();
+          });
+        }
+      },
+      {
+        // Local dev: the landing feed reads Firestore as an anonymous visitor (no keys needed),
+        // and enquiries are validated but never written.
+        name: 'api-landing-middleware',
+        configureServer(server) {
+          server.middlewares.use(async (req, res, next) => {
+            if (!req.url.startsWith('/api/forms')) return next();
+            const url = new URL(req.url, 'http://localhost');
+            const type = url.searchParams.get('type');
+            if (type !== 'public-feed' && type !== 'public-archive' && type !== 'enquiry') return next();
+            res.status = (c) => { res.statusCode = c; return res; };
+            res.json = (d) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(d)); return res; };
+            try {
+              if (type === 'public-archive') {
+                const { getPublicArchive } = await import('./api/_lib/publicFeed.js');
+                const { firestoreRest } = await import('./scripts/dev/firestoreRest.mjs');
+                const archive = await getPublicArchive(firestoreRest(env.VITE_FIREBASE_PROJECT_ID || 'newbi-ent-v2'));
+                return res.status(200).json({ success: true, ...archive });
+              }
+              if (type === 'public-feed') {
+                const { getPublicFeed } = await import('./api/_lib/publicFeed.js');
+                const { firestoreRest } = await import('./scripts/dev/firestoreRest.mjs');
+                const projectId = env.VITE_FIREBASE_PROJECT_ID || 'newbi-ent-v2';
+                const feed = await getPublicFeed(firestoreRest(projectId), { maintenanceDoc: 'maintenance_local' });
+                return res.status(200).json({ success: true, ...feed });
+              }
+              let body = '';
+              req.on('data', (c) => { body += c; });
+              req.on('end', async () => {
+                try { req.body = body ? JSON.parse(body) : {}; } catch { req.body = {}; }
+                req.devDryRun = true;
+                const { handleEnquiry } = await import('./api/_lib/enquiry.js');
+                await handleEnquiry(null, req, res);
+              });
+            } catch (err) {
+              res.status(500).json({ success: false, error: err.message });
+            }
+          });
+        }
+      },
       {
         // Local dev only: QR images (passes, invoices) use /api/qr like production.
         name: 'api-qr-dev',
@@ -393,9 +451,21 @@ export default defineConfig(({ mode }) => {
       drop: ['console', 'debugger'],
     },
     build: {
+      // Read by scripts/prerender.mjs (to preload each landing page's chunk), then deleted.
+      manifest: true,
       rollupOptions: {
+        input: {
+          main: 'index.html',
+          landing: 'landing.html',
+        },
         output: {
           manualChunks(id) {
+            // Vite's own runtime helpers get a chunk of their own; otherwise Rollup can hoist
+            // them into a vendor chunk (it put them in vendor-pdf), and every page that lazy-loads
+            // anything would download that vendor chunk.
+            if (id.includes('vite/preload-helper') || id.includes('commonjsHelpers')) {
+              return 'vite-helpers';
+            }
             if (id.includes('node_modules/jspdf') || id.includes('node_modules/html2canvas') || id.includes('node_modules/jspdf-autotable')) {
               return 'vendor-pdf';
             }
@@ -405,12 +475,13 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules/framer-motion')) {
               return 'vendor-motion';
             }
-            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom')) {
+            // Only React itself and the router: the landing pages share this chunk with the app,
+            // so it must not pull in other react-* packages.
+            if (/node_modules\/(react|react-dom|react-router|react-router-dom|scheduler)\//.test(id)) {
               return 'vendor-react';
             }
-            if (id.includes('node_modules/lucide-react')) {
-              return 'vendor-icons';
-            }
+            // lucide icons are left to Rollup, so each page only loads the icons it uses
+            // (one shared icon chunk made the landing page download every admin icon).
           }
         }
       },

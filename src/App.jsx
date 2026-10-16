@@ -10,10 +10,10 @@ import Layout from './components/Layout';
 import GlobalLoader from './components/ui/GlobalLoader';
 import { isAppHost, landingAppBase } from './app/host';
 
-import Home from './pages/Home';
-import CreatorLanding from './pages/CreatorLanding';
-import CreatorJoin from './pages/CreatorJoin';
-import Contact from './pages/Contact';
+const Home = lazy(() => import('./pages/Home'));
+const CreatorLanding = lazy(() => import('./pages/CreatorLanding'));
+const CreatorJoin = lazy(() => import('./pages/CreatorJoin'));
+const Contact = lazy(() => import('./pages/Contact'));
 
 // Lazy-loaded Public Pages
 const ConcertZone = lazy(() => import('./pages/ConcertZone'));

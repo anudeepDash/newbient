@@ -107,7 +107,10 @@ const isBuiltIndex = (html) => html && html.length > 50 && html.includes('<div i
 
 async function getBaseHtml() {
     if (cachedBaseHtml) return cachedBaseHtml;
+    // The app page is dist/app-shell.html now that the prerendered landing owns dist/index.html.
     const candidates = [
+        path.join(process.cwd(), 'dist', 'app-shell.html'),
+        path.join(__dirname, '..', 'dist', 'app-shell.html'),
         path.join(process.cwd(), 'dist', 'index.html'),
         path.join(__dirname, '..', 'dist', 'index.html'),
         path.join('/var/task', 'dist', 'index.html'),
@@ -125,7 +128,7 @@ async function getBaseHtml() {
     }
     console.error('[og] dist/index.html is missing from the function bundle; fetching the live copy');
     try {
-        const res = await fetch(`${LANDING_ORIGIN}/index.html`);
+        const res = await fetch(`${LANDING_ORIGIN}/app-shell.html`);
         const fetched = res.ok ? await res.text() : '';
         if (isBuiltIndex(fetched)) {
             cachedBaseHtml = fetched;

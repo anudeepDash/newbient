@@ -1,13 +1,24 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
 import { 
     Eye, Lock, Database, Bell, Shield, Info, 
     ArrowRight, MessageSquare, Fingerprint, Award, CreditCard
 } from 'lucide-react';
-import { Button } from '../components/ui/Button';
 
 const Privacy = () => {
     const [activeSection, setActiveSection] = useState(null);
+
+    useEffect(() => {
+        if (typeof IntersectionObserver === 'undefined') return undefined;
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach((e) => {
+                if (!e.isIntersecting) return;
+                const v = e.target.dataset.section;
+                setActiveSection(/^\d+$/.test(v) ? Number(v) : v);
+            });
+        }, { rootMargin: '-100px 0px -60% 0px' });
+        document.querySelectorAll('[data-section]').forEach((el) => io.observe(el));
+        return () => io.disconnect();
+    }, []);
 
     const sections = [
         {
@@ -130,14 +141,12 @@ const Privacy = () => {
     return (
         <div className="min-h-screen bg-white dark:bg-black pt-32 pb-24 px-6 md:px-12 relative overflow-hidden">
             {/* Background Ambient Glows */}
-            <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-neon-pink/5 blur-[150px] pointer-events-none rounded-full" />
-            <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-neon-blue/5 blur-[180px] pointer-events-none rounded-full" />
+            <div className="hidden md:block absolute top-0 left-1/4 w-[500px] h-[500px] bg-neon-pink/5 blur-[150px] pointer-events-none rounded-full" />
+            <div className="hidden md:block absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-neon-blue/5 blur-[180px] pointer-events-none rounded-full" />
 
             <div className="max-w-4xl mx-auto space-y-16 relative z-10">
                 {/* Hero Header */}
-                <motion.div 
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
+                <div 
                     className="text-center space-y-6"
                 >
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-widest text-zinc-400">
@@ -153,13 +162,13 @@ const Privacy = () => {
                         Last Updated: June 10, 2026
                     </p>
 
-                    <div className="mt-8 p-6 bg-gray-100 dark:bg-zinc-950/50 border border-black/10 dark:border-white/[0.08] backdrop-blur-3xl rounded-[2rem] max-w-2xl mx-auto text-left shadow-2xl relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-neon-pink/5 blur-2xl" />
+                    <div className="mt-8 p-6 bg-gray-100 dark:bg-zinc-950/50 border border-black/10 dark:border-white/[0.08] md:backdrop-blur-3xl rounded-[2rem] max-w-2xl mx-auto text-left shadow-2xl relative overflow-hidden group">
+                        <div className="hidden md:block absolute top-0 right-0 w-24 h-24 bg-neon-pink/5 blur-2xl" />
                         <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm leading-relaxed">
                             Welcome to <span className="text-gray-900 dark:text-white font-bold">Newbi Entertainment & Marketing LLP</span>. This privacy notice describes how we collect, process, and protect your information across our website portal, ticketing systems, and creator dashboard.
                         </p>
                     </div>
-                </motion.div>
+                </div>
 
                 {/* Quick Navigation Pills */}
                 <div className="flex flex-wrap justify-center gap-2.5 pb-4 border-b border-black/10 dark:border-white/5 select-none">
@@ -181,19 +190,15 @@ const Privacy = () => {
                 {/* Main Content Cards */}
                 <div className="space-y-8">
                     {sections.map((section, idx) => (
-                        <motion.section
+                        <section
                             id={section.id}
                             key={section.id}
-                            initial={{ opacity: 0, y: 40 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, margin: '-100px' }}
-                            transition={{ duration: 0.6, delay: idx * 0.05 }}
-                            onViewportEnter={() => setActiveSection(section.id)}
-                            className="bg-gray-100 dark:bg-zinc-950/45 border border-black/10 dark:border-white/[0.08] backdrop-blur-3xl rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden group hover:border-black/20 dark:hover:border-white/15 transition-all duration-500"
+                            data-section={section.id}
+                            className="bg-gray-100 dark:bg-zinc-950/45 border border-black/10 dark:border-white/[0.08] md:backdrop-blur-3xl rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden group hover:border-black/20 dark:hover:border-white/15 transition-all duration-500"
                         >
                             {/* Decorative Radial Glow */}
                             <div 
-                                className="absolute top-0 right-0 w-48 h-48 blur-[80px] -mr-24 -mt-24 pointer-events-none group-hover:scale-110 transition-transform duration-700" 
+                                className="hidden md:block absolute top-0 right-0 w-48 h-48 blur-[80px] -mr-24 -mt-24 pointer-events-none group-hover:scale-110 transition-transform duration-700" 
                                 style={{ backgroundColor: section.bgGlow }}
                             />
                             
@@ -209,14 +214,12 @@ const Privacy = () => {
                             <div className="relative z-10 text-gray-600 dark:text-gray-400 font-medium">
                                 {section.content}
                             </div>
-                        </motion.section>
+                        </section>
                     ))}
                 </div>
 
                 {/* Footer Section */}
-                <motion.div 
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
+                <div 
                     className="mt-20 text-center border-t border-black/10 dark:border-white/5 pt-12"
                 >
                     <div className="inline-flex flex-col items-center gap-4">
@@ -230,7 +233,7 @@ const Privacy = () => {
                             privacy@newbi.live
                         </a>
                     </div>
-                </motion.div>
+                </div>
             </div>
         </div>
     );

@@ -398,6 +398,36 @@
             "destination": "/api/og?route=community"
         },
         {
+            "source": "/",
+            "missing": [{ "type": "host", "value": "app.newbi.live" }],
+            "destination": "/_landing/index.html"
+        },
+        {
+            "source": "/work",
+            "missing": [{ "type": "host", "value": "app.newbi.live" }],
+            "destination": "/_landing/work/index.html"
+        },
+        {
+            "source": "/creator",
+            "missing": [{ "type": "host", "value": "app.newbi.live" }],
+            "destination": "/_landing/creator/index.html"
+        },
+        {
+            "source": "/contact",
+            "missing": [{ "type": "host", "value": "app.newbi.live" }],
+            "destination": "/_landing/contact/index.html"
+        },
+        {
+            "source": "/terms",
+            "missing": [{ "type": "host", "value": "app.newbi.live" }],
+            "destination": "/_landing/terms/index.html"
+        },
+        {
+            "source": "/privacy",
+            "missing": [{ "type": "host", "value": "app.newbi.live" }],
+            "destination": "/_landing/privacy/index.html"
+        },
+        {
             "source": "/creator",
             "destination": "/api/og?route=creator"
         },
@@ -499,7 +529,7 @@
         },
         {
             "source": "/(.*)",
-            "destination": "/index.html"
+            "destination": "/app-shell.html"
         }
     ]
 }
