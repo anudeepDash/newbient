@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { db, storage } from './firebase';
+import { db, storage, auth } from './firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch, runTransaction } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail, sendCreatorApprovedEmail, sendWhatsAppVerification } from './email';
@@ -14,20 +14,40 @@ import { safeLocalStorage } from './storage';
 import { DEFAULT_CREATOR_GROUPS, isCampaignCityMatch } from './constants';
 import { TOAST_TYPES, toFriendlyMessage, getSupportHint, getToastDuration } from './toastCopy';
 
-// Sign-in token for our own API calls that change creator data, so the server
-// can check who is asking (staff, or the creator themselves).
-const authJsonHeaders = async () => {
-    try {
-        const { auth } = await import('./firebase');
-        const token = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
-        return token ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } : { 'Content-Type': 'application/json' };
-    } catch {
-        return { 'Content-Type': 'application/json' };
-    }
-};
-
 const MAX_TOASTS = 4;
 let toastSeq = 0;
+
+// JSON headers plus the signed-in user's ID token, for /api routes that check who is calling.
+const authJsonHeaders = async (forceRefresh = false) => {
+    const headers = { 'Content-Type': 'application/json' };
+    try {
+        const token = auth?.currentUser ? await auth.currentUser.getIdToken(forceRefresh) : null;
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+    } catch (e) {
+        // Fall through without a token; the API answers 401 if it needs one.
+    }
+    return headers;
+};
+
+// Read state for global notifications, kept per user in this browser so one person
+// reading a broadcast doesn't mark it read for everyone.
+const readGlobalsKey = (uid) => `nb_read_global_notifications_${uid}`;
+const getReadGlobalNotificationIds = (uid) => {
+    if (!uid) return new Set();
+    try {
+        return new Set(JSON.parse(safeLocalStorage.getItem(readGlobalsKey(uid)) || '[]'));
+    } catch (e) {
+        return new Set();
+    }
+};
+const markGlobalNotificationsRead = (uid, ids = []) => {
+    if (!uid || !ids.length) return;
+    const next = getReadGlobalNotificationIds(uid);
+    ids.forEach(id => next.add(id));
+    try {
+        safeLocalStorage.setItem(readGlobalsKey(uid), JSON.stringify(Array.from(next).slice(-500)));
+    } catch (e) { /* storage unavailable */ }
+};
 
 const AUTH_CACHE_KEY = 'nb_auth_session';
 const getCachedSession = () => {
@@ -216,6 +236,7 @@ const notifyMatchingCreatorsOfCampaign = async (campaignData, creatorsList) => {
         // 3. Broadcast in-app notification if campaign is open to all cities
         if (isUniversal) {
             await addDoc(collection(db, 'notifications'), {
+                userId: null,
                 title: `🔥 New Campaign Live: ${campaignData.title}`,
                 message: `${campaignData.reward ? `Reward: ${campaignData.reward}. ` : ''}New creator brief is now open for applications.`,
                 type: 'campaign',
@@ -1096,13 +1117,16 @@ export const useStore = create((set, get) => ({
         // Announcements
         const unsubAnnouncements = get().subscribeToAnnouncements();
 
-        // Check loaded state when announcements list updates
-        const unsubAnnouncementsCheck = onSnapshot(query(collection(db, 'announcements')), () => {
+        // Mark announcements loaded once the shared listener above reports in,
+        // instead of opening a second listener on the same collection.
+        const markAnnouncementsLoaded = () => {
+            if (loadedKeys.has('announcements')) return;
             loadedKeys.add('announcements');
             if (criticalKeys.every(key => loadedKeys.has(key))) set({ loading: false });
-        }, () => {
-            loadedKeys.add('announcements');
-            if (criticalKeys.every(key => loadedKeys.has(key))) set({ loading: false });
+        };
+        if (get().subscriptionsLoaded?.announcements) markAnnouncementsLoaded();
+        const unsubAnnouncementsCheck = useStore.subscribe((state) => {
+            if (state.subscriptionsLoaded?.announcements) markAnnouncementsLoaded();
         });
 
         // Site Settings Subscription (Single Doc)
@@ -1135,12 +1159,13 @@ export const useStore = create((set, get) => ({
             }
         }, (error) => console.error("Error fetching payment details:", error));
         
-        // AI Config Subscription
-        const unsubAI = onSnapshot(doc(db, 'site_settings', 'ai_config'), (docSnap) => {
+        // AI Config Subscription (admins only: this doc holds API settings that visitors must never receive)
+        const unsubAI = isAdmin ? onSnapshot(doc(db, 'site_settings', 'ai_config'), (docSnap) => {
             if (docSnap.exists()) {
                 set({ aiConfig: docSnap.data() });
             }
-        }, (error) => console.error("Error fetching AI config:", error));
+        }, (error) => console.error("Error fetching AI config:", error)) : () => {};
+        if (!isAdmin) set({ aiConfig: { geminiKey: '', defaultModel: 'gemini-3.5-flash' } });
 
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const maintenanceDocId = isLocal ? 'maintenance_local' : 'maintenance';
@@ -1170,15 +1195,15 @@ export const useStore = create((set, get) => ({
             }
         }, (error) => console.error(`Error fetching maintenance state (${maintenanceDocId}):`, error));
 
-        // Dashboard Widget Config Subscription
-        const unsubDashConfig = onSnapshot(doc(db, 'app_state', 'dashboard_config'), (docSnap) => {
+        // Dashboard Widget Config Subscription (admin dashboard only)
+        const unsubDashConfig = isAdmin ? onSnapshot(doc(db, 'app_state', 'dashboard_config'), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 if (Array.isArray(data.widgets) && data.widgets.length === 4) {
                     set({ dashboardWidgets: data.widgets });
                 }
             }
-        }, (error) => console.error('Error fetching dashboard config:', error));
+        }, (error) => console.error('Error fetching dashboard config:', error)) : () => {};
 
         return () => {
             clearTimeout(loadingTimeout);
@@ -1278,23 +1303,45 @@ export const useStore = create((set, get) => ({
         }));
     },
 
-    // Notifications Subscription
+    // Notifications Subscription: the user's own notifications plus global ones (userId: null).
+    // Two equality queries, so no composite index is needed; they are merged and sorted here.
     subscribeToNotifications: (uid) => {
-        const q = query(
-            collection(db, 'notifications'), 
-            orderBy('createdAt', 'desc'),
-            limit(50)
+        if (!uid) {
+            set({ notifications: [], unreadNotificationsCount: 0 });
+            return () => {};
+        }
+
+        let own = [];
+        let globals = [];
+        const publish = () => {
+            const readGlobals = getReadGlobalNotificationIds(uid);
+            const merged = [...own, ...globals.map(n => ({ ...n, isRead: n.isRead === true || readGlobals.has(n.id) }))]
+                .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+                .slice(0, 50);
+            set({ notifications: merged, unreadNotificationsCount: merged.filter(n => !n.isRead).length });
+        };
+
+        const unsubOwn = onSnapshot(
+            query(collection(db, 'notifications'), where('userId', '==', uid)),
+            (snapshot) => {
+                own = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+                publish();
+            },
+            (error) => console.error("Error fetching notifications:", error)
+        );
+        const unsubGlobal = onSnapshot(
+            query(collection(db, 'notifications'), where('userId', '==', null)),
+            (snapshot) => {
+                globals = snapshot.docs.map(d => ({ ...d.data(), id: d.id, isGlobal: true }));
+                publish();
+            },
+            (error) => console.error("Error fetching global notifications:", error)
         );
 
-        return onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-            
-            // Filter: Target UID, or global (userId: null)
-            const filtered = data.filter(n => !n.userId || n.userId === uid);
-            const unreadCount = filtered.filter(n => !n.isRead).length;
-            
-            set({ notifications: filtered, unreadNotificationsCount: unreadCount });
-        }, (error) => console.error("Error fetching notifications:", error));
+        return () => {
+            unsubOwn();
+            unsubGlobal();
+        };
     },
 
     // --- Actions (Write to DB) ---
@@ -1304,6 +1351,8 @@ export const useStore = create((set, get) => ({
         try {
             await addDoc(collection(db, 'notifications'), {
                 ...notificationData,
+                // Always store the field: null marks a global notification, so it can be queried.
+                userId: notificationData?.userId ?? null,
                 isRead: false,
                 createdAt: new Date().toISOString()
             });
@@ -1313,6 +1362,17 @@ export const useStore = create((set, get) => ({
     },
     markNotificationRead: async (id) => {
         try {
+            const { notifications, user } = get();
+            const target = (notifications || []).find(n => n.id === id);
+            // Global notifications are shared, so their read state is kept per user on this device.
+            if (target && !target.userId) {
+                markGlobalNotificationsRead(user?.uid, [id]);
+                set(state => {
+                    const next = (state.notifications || []).map(n => n.id === id ? { ...n, isRead: true } : n);
+                    return { notifications: next, unreadNotificationsCount: next.filter(n => !n.isRead).length };
+                });
+                return;
+            }
             await updateDoc(doc(db, 'notifications', id), { isRead: true });
         } catch (error) {
             console.error("Failed to mark notification as read:", error);
@@ -1323,10 +1383,20 @@ export const useStore = create((set, get) => ({
             const user = get().user;
             const { notifications } = get();
             
-            // Only update notifications that belong to the user or are global, and are unread
-            const unread = notifications.filter(n => !n.isRead && (!n.userId || n.userId === user?.uid));
+            const unread = notifications.filter(n => !n.isRead);
+            const unreadGlobal = unread.filter(n => !n.userId);
+            const unreadOwn = unread.filter(n => n.userId && n.userId === user?.uid);
+
+            if (unreadGlobal.length) {
+                markGlobalNotificationsRead(user?.uid, unreadGlobal.map(n => n.id));
+                set(state => {
+                    const ids = new Set(unreadGlobal.map(n => n.id));
+                    const next = (state.notifications || []).map(n => ids.has(n.id) ? { ...n, isRead: true } : n);
+                    return { notifications: next, unreadNotificationsCount: next.filter(n => !n.isRead).length };
+                });
+            }
             
-            const updates = unread.map(n => 
+            const updates = unreadOwn.map(n => 
                 updateDoc(doc(db, 'notifications', n.id), { isRead: true })
             );
             
@@ -1695,7 +1765,7 @@ export const useStore = create((set, get) => ({
         try {
             await fetch('/api/creator-join?action=creator-group-add', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await authJsonHeaders(),
                 body: JSON.stringify(newGroup)
             });
         } catch (apiErr) {
@@ -1734,7 +1804,7 @@ export const useStore = create((set, get) => ({
         try {
             await fetch('/api/creator-join?action=creator-group-update', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await authJsonHeaders(),
                 body: JSON.stringify({ id, updates })
             });
         } catch (e) {}
@@ -1766,7 +1836,7 @@ export const useStore = create((set, get) => ({
         try {
             await fetch('/api/creator-join?action=creator-group-delete', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await authJsonHeaders(),
                 body: JSON.stringify({ id })
             });
         } catch (e) {}
@@ -1775,7 +1845,7 @@ export const useStore = create((set, get) => ({
         try {
             const res = await fetch('/api/creator-join?action=creator-groups-sync', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await authJsonHeaders(),
                 body: JSON.stringify({ groups: DEFAULT_CREATOR_GROUPS })
             });
             if (!res.ok) {
@@ -1865,7 +1935,7 @@ export const useStore = create((set, get) => ({
         try {
             const res = await fetch('/api/creator-join?action=creator-group-bulk-invite-sent', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await authJsonHeaders(),
                 body: JSON.stringify({ creatorIds, channel })
             });
             if (res.ok) {
@@ -1927,7 +1997,7 @@ export const useStore = create((set, get) => ({
         try {
             const res = await fetch('/api/creator-join?action=creator-group-bulk-add', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await authJsonHeaders(),
                 body: JSON.stringify({ city, creatorIds })
             });
             if (res.ok) {
@@ -3287,14 +3357,8 @@ export const useStore = create((set, get) => ({
 
         // 4. Primary: Route submission through serverless API (Firebase Admin bypasses client Firestore rules)
         try {
-            const { auth } = await import('./firebase');
-            let idToken = null;
-            if (auth?.currentUser) {
-                idToken = await auth.currentUser.getIdToken().catch(() => null);
-            }
-
-            const headers = { 'Content-Type': 'application/json' };
-            if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+            // Fresh token so a just-verified phone number is included; the server only trusts the token.
+            const headers = await authJsonHeaders(true);
 
             const isManualFollowers = Boolean(
                 creator.manualFollowerEntry || 
@@ -3550,15 +3614,13 @@ export const useStore = create((set, get) => ({
             }
         }
 
-        // 3. Robust fallback: Serverless API (bypasses restrictive client rules)
-        if (!foundProfile && (searchUid || searchEmail || searchPhone)) {
+        // 3. Robust fallback: Serverless API (bypasses restrictive client rules).
+        // The server resolves the profile from the signed-in user's token, so this only runs for them.
+        if (!foundProfile && auth?.currentUser && auth.currentUser.uid === searchUid) {
             try {
-                const params = new URLSearchParams({ action: 'get-profile' });
-                if (searchUid) params.append('uid', searchUid);
-                if (searchEmail) params.append('email', searchEmail);
-                if (searchPhone) params.append('phone', searchPhone);
-
-                const res = await fetch(`/api/creator-join?${params.toString()}`);
+                const res = await fetch('/api/creator-join?action=get-profile', {
+                    headers: await authJsonHeaders()
+                });
                 const data = await res.json();
                 if (data.success && data.creator) {
                     foundProfile = data.creator;
@@ -3675,7 +3737,7 @@ export const useStore = create((set, get) => ({
             try {
                 const res = await fetch('/api/creator-join?action=creator-update', {
                     method: 'POST',
-                    headers: await authJsonHeaders(),
+                    headers: await authJsonHeaders(true),
                     body: JSON.stringify({ id: docId, uid, updates: sanitizedUpdates })
                 });
                 if (res.ok) {
@@ -3733,15 +3795,9 @@ export const useStore = create((set, get) => ({
         if (!deleteSuccess) {
             try {
                 // The server only deletes for signed-in admins.
-                const headers = { 'Content-Type': 'application/json' };
-                try {
-                    const { auth } = await import('./firebase');
-                    const idToken = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
-                    if (idToken) headers.Authorization = `Bearer ${idToken}`;
-                } catch { /* no session: the server will refuse */ }
                 const res = await fetch('/api/creator-join?action=creator-delete', {
                     method: 'POST',
-                    headers,
+                    headers: await authJsonHeaders(),
                     body: JSON.stringify({ id: docId, uid })
                 });
                 if (!res.ok) {

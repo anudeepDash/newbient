@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -18,20 +18,52 @@ import {
 const VerifyPayout = () => {
     const [searchParams] = useSearchParams();
 
-    const ref = searchParams.get('ref') || '';
-    const amt = searchParams.get('amt') || '';
-    const payee = searchParams.get('payee') || '';
-    const proof = searchParams.get('proof') || '';
-    const dateParam = searchParams.get('date') || '';
-    const modeParam = searchParams.get('mode') || 'ONLINE TRANSFER';
+    // The link only says which payment to look up. Everything shown as verified
+    // comes from the spends record the server found, never from the URL.
+    const queryRef = searchParams.get('ref') || '';
+    const queryAmt = searchParams.get('amt') || '';
+    const queryPayee = searchParams.get('payee') || '';
+    const hasLookupParams = Boolean(queryRef && queryAmt && queryPayee);
 
-    const isValid = ref && amt && payee;
+    const [check, setCheck] = useState({ status: hasLookupParams ? 'checking' : 'invalid', payout: null });
+
+    useEffect(() => {
+        if (!hasLookupParams) {
+            setCheck({ status: 'invalid', payout: null });
+            return;
+        }
+        let cancelled = false;
+        setCheck({ status: 'checking', payout: null });
+        const params = new URLSearchParams({ type: 'payout-verify', ref: queryRef, amt: queryAmt, payee: queryPayee });
+        fetch(`/api/forms?${params.toString()}`)
+            .then(res => res.json())
+            .then(json => {
+                if (cancelled) return;
+                setCheck(json?.verified && json.payout
+                    ? { status: 'verified', payout: json.payout }
+                    : { status: 'unverified', payout: null });
+            })
+            .catch(() => {
+                if (!cancelled) setCheck({ status: 'error', payout: null });
+            });
+        return () => { cancelled = true; };
+    }, [hasLookupParams, queryRef, queryAmt, queryPayee]);
+
+    const record = check.payout;
+    const ref = String(record?.reference || '');
+    const amt = record ? String(record.amount) : '';
+    const payee = String(record?.payee || '');
+    const proof = String(record?.receiptUrl || '');
+    const dateParam = String(record?.date || '');
+    const modeParam = String(record?.paymentMode || 'ONLINE TRANSFER');
+
+    const isValid = check.status === 'verified';
 
     useEffect(() => {
         document.title = isValid
             ? `Payment Verified — ₹${Number(amt).toLocaleString('en-IN')} to ${payee} | Newbi`
-            : 'Invalid Verification | Newbi';
-    }, [isValid, amt, payee]);
+            : check.status === 'checking' ? 'Checking Payment | Newbi' : 'Unverified Payment | Newbi';
+    }, [isValid, amt, payee, check.status]);
 
     const formattedAmount = useMemo(() => {
         const num = Number(amt);
@@ -40,16 +72,25 @@ const VerifyPayout = () => {
     }, [amt]);
 
     const verifiedDate = useMemo(() => {
-        if (dateParam) return decodeURIComponent(dateParam);
-        return new Date().toLocaleString('en-IN', {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-        });
+        if (!dateParam) return '—';
+        const parsed = new Date(dateParam);
+        if (isNaN(parsed.getTime())) return dateParam;
+        return parsed.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
     }, [dateParam]);
 
     const isImageProof = proof && /\.(jpg|jpeg|png|webp)$/i.test(proof);
 
-    // ── Invalid State ──────────────────────────────────────────────
+    // ── Checking State ─────────────────────────────────────────────
+    if (check.status === 'checking') {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-[#060807] text-gray-900 dark:text-white flex flex-col items-center justify-center p-6 transition-colors duration-300">
+                <div className="w-12 h-12 rounded-full border-2 border-gray-300 dark:border-zinc-700 border-t-[#39ff14] animate-spin mb-6" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Checking this payment against our records…</p>
+            </div>
+        );
+    }
+
+    // ── Invalid / Unverified State ─────────────────────────────────
     if (!isValid) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-[#060807] text-gray-900 dark:text-white flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
@@ -79,10 +120,12 @@ const VerifyPayout = () => {
                         </div>
                     </div>
                     <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight italic text-gray-900 dark:text-white mb-3">
-                        Verification <span className="text-red-500">Failed</span>
+                        {check.status === 'error' ? <>Couldn't <span className="text-red-500">Check</span></> : <>Not <span className="text-red-500">Verified</span></>}
                     </h1>
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 leading-relaxed max-w-xs mb-8">
-                        This voucher link is corrupted, invalid, or belongs to an unregistered transaction. Please check the reference parameter.
+                        {check.status === 'error'
+                            ? "We couldn't reach our records right now. Please try again in a moment. Until then, treat this receipt as unverified."
+                            : "We couldn't find a Newbi payment matching this receipt. Treat it as unverified, and contact us if you think this is a mistake."}
                     </p>
                     <a
                         href="https://newbi.live"
@@ -183,13 +226,13 @@ const VerifyPayout = () => {
                                 <span className="text-gray-500 font-extrabold text-[8px] tracking-wider flex items-center gap-1.5">
                                     <User size={10} className="text-gray-600" /> PAYEE
                                 </span>
-                                <span className="text-[#39ff14] font-black tracking-wide truncate max-w-[170px]" title={decodeURIComponent(payee)}>{decodeURIComponent(payee)}</span>
+                                <span className="text-[#39ff14] font-black tracking-wide truncate max-w-[170px]" title={payee}>{payee}</span>
                             </div>
                             <div className="flex justify-between items-end pb-1 border-b border-gray-200 dark:border-white/5">
                                 <span className="text-gray-500 font-extrabold text-[8px] tracking-wider flex items-center gap-1.5">
                                     <CreditCard size={10} className="text-gray-600" /> METHOD
                                 </span>
-                                <span className="text-gray-900 dark:text-white font-bold tracking-wide truncate max-w-[170px]" title={decodeURIComponent(modeParam)}>{decodeURIComponent(modeParam)}</span>
+                                <span className="text-gray-900 dark:text-white font-bold tracking-wide truncate max-w-[170px]" title={modeParam}>{modeParam}</span>
                             </div>
                             <div className="flex justify-between items-end pb-1 border-b border-gray-200 dark:border-white/5">
                                 <span className="text-gray-500 font-extrabold text-[8px] tracking-wider flex items-center gap-1.5">
@@ -245,8 +288,8 @@ const VerifyPayout = () => {
                         <div className="py-4 space-y-3.5">
                             {[
                                 { title: "Secure Record Located", desc: `Matched Transaction ID ${ref}` },
-                                { title: "Beneficiary Credentials Confirmed", desc: `Payee matched to authorized account: ${decodeURIComponent(payee)}` },
-                                { title: "Settlement Confirmed", desc: `Verified payment clearance via ${decodeURIComponent(modeParam)}` },
+                                { title: "Beneficiary Credentials Confirmed", desc: `Payee matched to authorized account: ${payee}` },
+                                { title: "Settlement Confirmed", desc: `Verified payment clearance via ${modeParam}` },
                                 { title: "ledger fingerprint signed", desc: "Hash matched against Newbi registry nodes" }
                             ].map((step, idx) => (
                                 <motion.div 
@@ -279,7 +322,7 @@ const VerifyPayout = () => {
                             {isImageProof ? (
                                 <div className="rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 bg-white dark:bg-black/50 relative group cursor-pointer aspect-[16/9]">
                                     <img
-                                        src={decodeURIComponent(proof)}
+                                        src={proof}
                                         alt="Payment proof"
                                         className="w-full h-full object-cover object-top opacity-60 group-hover:opacity-85 transition-all duration-500 group-hover:scale-105"
                                         onError={(e) => { e.target.style.display = 'none'; }}
@@ -303,7 +346,7 @@ const VerifyPayout = () => {
                             )}
 
                             <a
-                                href={decodeURIComponent(proof)}
+                                href={proof}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="group flex items-center justify-center gap-3 w-full h-14 rounded-2xl bg-[#00F0FF]/10 border border-[#00F0FF]/20 text-[#00F0FF] hover:bg-[#00F0FF] hover:text-black hover:shadow-[0_10px_25px_rgba(0,240,255,0.2)] transition-all font-black text-[10px] uppercase tracking-widest"
