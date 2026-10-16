@@ -8,6 +8,8 @@ const RATIO = 1433 / 697;
  * The newbi.live logo, themed: solid black letters in light mode, the
  * white-lettered outlined version in dark mode. Both files share one shape
  * (src/assets/logo), so swapping them never shifts the layout.
+ * The light/dark switch is a small style block in index.html and landing.html
+ * (nb-logo-on-light / nb-logo-on-dark), so it never depends on Tailwind output.
  * ConcertZone keeps its own brand and never uses this.
  */
 export default function NewbiLogo({ height, className = '', alt = 'newbi.live', priority = false }) {
@@ -15,8 +17,8 @@ export default function NewbiLogo({ height, className = '', alt = 'newbi.live', 
     const common = { alt, decoding: 'async', fetchPriority: priority ? 'high' : undefined, ...size };
     return (
         <>
-            <img src={logoOnLight} {...common} className={`${className} inline-block dark:hidden`} />
-            <img src={logoOnDark} {...common} alt="" aria-hidden="true" className={`${className} hidden dark:inline-block`} />
+            <img src={logoOnLight} {...common} className={`${className} nb-logo-on-light`} />
+            <img src={logoOnDark} {...common} alt="" aria-hidden="true" className={`${className} nb-logo-on-dark`} />
         </>
     );
 }
