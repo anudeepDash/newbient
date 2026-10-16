@@ -353,7 +353,7 @@ export const buildReferralLeaderboard = (creators, { since = 0, city = 'all' } =
                 referrals: list.sort((a, b) => creatorJoinedAt(b) - creatorJoinedAt(a)),
                 count: list.length,
                 verified,
-                pending: list.filter(r => !r.profileStatus || r.profileStatus === 'pending').length,
+                pending: list.filter(r => !r.profileStatus || r.profileStatus === 'pending' || r.profileStatus === 'pending_verification').length,
                 reach: list.reduce((sum, r) => sum + creatorReach(r), 0),
                 latest,
             };

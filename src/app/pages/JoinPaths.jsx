@@ -78,7 +78,7 @@ const JoinPaths = () => {
             title: 'Become a Newbi creator',
             text: 'Paid and barter campaigns, concert access and tickets for the shows you post about.',
             cta: 'Apply with your Instagram',
-            to: appPath('/creator'),
+            to: appPath('/creator/apply'),
         },
         !isMember && {
             key: 'community',
