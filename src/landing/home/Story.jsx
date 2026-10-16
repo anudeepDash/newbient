@@ -63,7 +63,7 @@ export default function Story() {
 
                     {PANELS.map((p) => (
                         <article key={p.n} className="nb-story-panel flex items-center px-4 sm:px-6 lg:px-10">
-                            <div className="w-full grid gap-6 lg:grid-cols-[auto_minmax(0,26rem)] lg:gap-14 lg:items-center">
+                            <div className="w-full grid gap-6 lg:grid-cols-[auto_minmax(0,26rem)] lg:gap-12 lg:items-center lg:justify-start">
                                 <div>
                                     <span className="block font-heading font-extrabold text-[18vw] sm:text-[12vw] lg:text-[8vw] leading-[0.8] tracking-[-0.05em] nb-ghost">{p.n}</span>
                                     <h3 className="mt-2 font-heading font-extrabold tracking-[-0.04em] leading-[0.92] text-[10.5vw] sm:text-[8vw] lg:text-[5.2vw] text-gray-950 dark:text-white lg:whitespace-nowrap">
