@@ -1,136 +1,68 @@
-import { useState, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import X from 'lucide-react/dist/esm/icons/x';
-import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
-import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import { useState, useEffect } from 'react';
+import CheckCircle from 'lucide-react/dist/esm/icons/check-circle-2';
+import Sheet from '../admin/Sheet';
 import { cn } from '../../lib/utils';
+import { invoiceBalance } from '../../lib/invoicing';
+import { DOC_THEMES, TextField, DocButton, fmtMoney } from '../ui/docviewer/DocKit';
 
-const overlayVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-};
+const METHODS = [
+  { id: 'upi', label: 'UPI' },
+  { id: 'bank', label: 'Bank transfer' },
+  { id: 'gateway', label: 'Online link' },
+  { id: 'other', label: 'Other' },
+];
 
-const modalVariants = {
-  hidden: { opacity: 0, scale: 0.9, y: 30 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    y: 0,
-    transition: { type: 'spring', damping: 25, stiffness: 350 },
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.92,
-    y: 20,
-    transition: { duration: 0.2 },
-  },
-};
-
-const confettiColors = ['#39FF14', '#00D1FF', '#FFD700', '#FF6B6B', '#A78BFA'];
-
-function ConfettiParticle({ index }) {
-  const color = confettiColors[index % confettiColors.length];
-  const xStart = Math.random() * 300 - 150;
-  const xEnd = xStart + (Math.random() * 80 - 40);
-  const yEnd = -(Math.random() * 250 + 100);
-  const rotation = Math.random() * 720 - 360;
-  const size = Math.random() * 6 + 4;
-  const delay = Math.random() * 0.3;
-
-  return (
-    <motion.div
-      className="absolute rounded-full"
-      style={{
-        width: size,
-        height: size,
-        backgroundColor: color,
-        left: '50%',
-        bottom: '40%',
-      }}
-      initial={{ opacity: 1, x: 0, y: 0, rotate: 0, scale: 1 }}
-      animate={{
-        opacity: [1, 1, 0],
-        x: [0, xStart, xEnd],
-        y: [0, yEnd * 0.6, yEnd],
-        rotate: [0, rotation],
-        scale: [1, 1.2, 0.5],
-      }}
-      transition={{
-        duration: 1.4,
-        delay,
-        ease: 'easeOut',
-      }}
-    />
-  );
-}
-
-export default function MarkAsPaidModal({ isOpen, onClose, invoice, onSubmit }) {
+/*
+ * "I've paid" from the public invoice page. Sends a claim for the team to
+ * check; nothing is marked paid until an admin approves it.
+ * amountDue: the balance the page shows. onSubmit({ name, email, method, transactionId, amount, ip, userAgent, claimedAt }).
+ */
+export default function MarkAsPaidModal({ isOpen, onClose, invoice, amountDue, onSubmit }) {
+  const theme = DOC_THEMES.invoice;
+  // The page passes what it shows as due; fall back to the stored totals.
+  const due = Number(amountDue ?? (invoiceBalance(invoice) || invoice?.total || invoice?.amount)) || 0;
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [method, setMethod] = useState('upi');
+  const [reference, setReference] = useState('');
   const [ip, setIp] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [error, setError] = useState('');
 
-  // Auto-fetch client IP
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) return undefined;
+    setName('');
+    setEmail(invoice?.clientEmail || '');
+    setMethod(invoice?.upiId ? 'upi' : 'bank');
+    setReference('');
+    setIsSubmitting(false);
+    setIsSuccess(false);
+    setError('');
     let cancelled = false;
     fetch('https://api.ipify.org?format=json')
       .then((res) => res.json())
-      .then((data) => {
-        if (!cancelled && data?.ip) setIp(data.ip);
-      })
-      .catch(() => {
-        // IP is optional, fail silently
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen]);
+      .then((data) => { if (!cancelled && data?.ip) setIp(data.ip); })
+      .catch(() => { /* IP is optional */ });
+    return () => { cancelled = true; };
+  }, [isOpen, invoice?.clientEmail, invoice?.upiId]);
 
-  // Reset state when modal opens/closes
-  useEffect(() => {
-    if (isOpen) {
-      setName('');
-      setEmail('');
-      setIsSubmitting(false);
-      setIsSuccess(false);
-      setErrors({});
-    }
-  }, [isOpen]);
-
-  // Auto-close after success
-  useEffect(() => {
-    if (!isSuccess) return;
-    const timer = setTimeout(() => {
-      onClose();
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [isSuccess, onClose]);
-
-  const validate = useCallback(() => {
-    const newErrors = {};
-    if (!name.trim()) newErrors.name = 'Full name is required';
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Enter a valid email address';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [name, email]);
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const ready = name.trim() && emailOk;
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-
+    e?.preventDefault();
+    if (!name.trim()) { setError('Enter your name.'); return; }
+    if (!emailOk) { setError('Enter a valid email so we can confirm.'); return; }
     setIsSubmitting(true);
+    setError('');
     try {
       await onSubmit({
         name: name.trim(),
         email: email.trim(),
+        method,
+        transactionId: reference.trim() || null,
+        amount: due,
         ip,
         userAgent: navigator.userAgent,
         claimedAt: new Date().toISOString(),
@@ -138,250 +70,63 @@ export default function MarkAsPaidModal({ isOpen, onClose, invoice, onSubmit }) 
       setIsSuccess(true);
     } catch {
       setIsSubmitting(false);
-      setErrors((prev) => ({ ...prev, submit: "We couldn't send that. Check your connection and try again." }));
+      setError("We couldn't send that. Check your connection and try again.");
     }
   };
 
-  const formatCurrency = (amount) =>
-    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(Number(amount) || 0);
-
-  return createPortal(
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-          variants={overlayVariants}
-          initial="hidden"
-          animate="visible"
-          exit="hidden"
-          transition={{ duration: 0.25 }}
-        >
-          {/* Backdrop */}
-          <motion.div
-            className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm"
-            onClick={!isSubmitting && !isSuccess ? onClose : undefined}
-          />
-
-          {/* Modal card */}
-          <motion.div
-            className={cn(
-              'relative w-full max-w-lg',
-              'bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[3rem] shadow-2xl',
-              'overflow-hidden'
-            )}
-            variants={modalVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-          >
-            {/* Close button */}
-            {!isSubmitting && !isSuccess && (
-              <button
-                onClick={onClose}
-                className={cn(
-                  'absolute -top-3 -right-3 z-10',
-                  'w-10 h-10 rounded-full',
-                  'bg-zinc-800 border border-black/10 dark:border-white/10',
-                  'flex items-center justify-center',
-                  'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-zinc-700',
-                  'transition-colors duration-200'
-                )}
-              >
-                <X size={16} />
-              </button>
-            )}
-
-            <AnimatePresence mode="wait">
-              {isSuccess ? (
-                /* ─── Success State ─── */
-                <motion.div
-                  key="success"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="relative flex flex-col items-center justify-center px-10 py-16 text-center"
-                >
-                  {/* Confetti particles */}
-                  <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                    {Array.from({ length: 24 }).map((_, i) => (
-                      <ConfettiParticle key={i} index={i} />
-                    ))}
-                  </div>
-
-                  {/* Checkmark */}
-                  <motion.div
-                    initial={{ scale: 0, rotate: -45 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{
-                      type: 'spring',
-                      damping: 12,
-                      stiffness: 200,
-                      delay: 0.1,
-                    }}
-                    className="mb-6"
-                  >
-                    <div className="w-20 h-20 rounded-full bg-[#39FF14]/10 border border-[#39FF14]/30 flex items-center justify-center">
-                      <CheckCircle size={40} className="text-[#39FF14]" />
-                    </div>
-                  </motion.div>
-
-                  <motion.h3
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.25 }}
-                    className="text-2xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-2"
-                  >
-                    Verification Request Sent
-                  </motion.h3>
-
-                  <motion.p
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.35 }}
-                    className="text-sm text-gray-600 dark:text-gray-400"
-                  >
-                    Our team will verify and update shortly
-                  </motion.p>
-                </motion.div>
-              ) : (
-                /* ─── Form State ─── */
-                <motion.div
-                  key="form"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="px-10 py-10"
-                >
-                  {/* Header */}
-                  <div className="mb-8">
-                    <div className="flex items-center gap-2 mb-3">
-                      <CheckCircle size={16} className="text-[#39FF14]" />
-                      <span className="text-[10px] font-black text-[#39FF14] uppercase tracking-widest">
-                        Payment Confirmation
-                      </span>
-                    </div>
-
-                    <h2 className="text-4xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-3">
-                      Confirm Payment
-                    </h2>
-
-                    <div className="flex items-baseline gap-3 flex-wrap">
-                      <span className="text-sm text-gray-500 font-medium">
-                        {invoice?.invoiceNumber || 'Invoice'}
-                      </span>
-                      <span className="text-lg font-black text-[#39FF14]">
-                        {formatCurrency(invoice?.total ?? invoice?.amount)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Form */}
-                  <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Full Name */}
-                    <div>
-                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">
-                        Full Name
-                      </label>
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => {
-                          setName(e.target.value);
-                          if (errors.name) setErrors((prev) => ({ ...prev, name: '' }));
-                        }}
-                        placeholder="Enter your full name"
-                        disabled={isSubmitting}
-                        className={cn(
-                          'w-full h-14 px-5',
-                          'bg-white dark:bg-black/50 border rounded-2xl',
-                          'text-gray-900 dark:text-white text-sm placeholder:text-gray-600',
-                          'outline-none transition-colors duration-200',
-                          'focus:border-[#39FF14]/30 focus:ring-1 focus:ring-[#39FF14]/10',
-                          'disabled:opacity-50 disabled:cursor-not-allowed',
-                          errors.name ? 'border-red-500/50' : 'border-black/10 dark:border-white/5'
-                        )}
-                      />
-                      {errors.name && (
-                        <p className="mt-1.5 text-[10px] font-bold text-red-400 uppercase tracking-wider">
-                          {errors.name}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Email Address */}
-                    <div>
-                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => {
-                          setEmail(e.target.value);
-                          if (errors.email) setErrors((prev) => ({ ...prev, email: '' }));
-                        }}
-                        placeholder="you@example.com"
-                        disabled={isSubmitting}
-                        className={cn(
-                          'w-full h-14 px-5',
-                          'bg-white dark:bg-black/50 border rounded-2xl',
-                          'text-gray-900 dark:text-white text-sm placeholder:text-gray-600',
-                          'outline-none transition-colors duration-200',
-                          'focus:border-[#39FF14]/30 focus:ring-1 focus:ring-[#39FF14]/10',
-                          'disabled:opacity-50 disabled:cursor-not-allowed',
-                          errors.email ? 'border-red-500/50' : 'border-black/10 dark:border-white/5'
-                        )}
-                      />
-                      {errors.email && (
-                        <p className="mt-1.5 text-[10px] font-bold text-red-400 uppercase tracking-wider">
-                          {errors.email}
-                        </p>
-                      )}
-                    </div>
-
-                    {errors.submit && (
-                      <p role="alert" className="text-[11px] font-bold text-red-400">{errors.submit}</p>
-                    )}
-
-                    {/* Submit Button */}
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className={cn(
-                        'w-full h-16 mt-3 rounded-2xl',
-                        'bg-[#39FF14] text-black',
-                        'font-black uppercase tracking-[0.2em] text-sm',
-                        'shadow-[0_10px_30px_rgba(57,255,20,0.2)]',
-                        'hover:shadow-[0_15px_40px_rgba(57,255,20,0.3)]',
-                        'active:scale-[0.98]',
-                        'transition-all duration-200',
-                        'flex items-center justify-center gap-2',
-                        'disabled:opacity-60 disabled:cursor-not-allowed'
-                      )}
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 size={18} className="animate-spin" />
-                          <span>Verifying...</span>
-                        </>
-                      ) : (
-                        'Confirm Payment'
-                      )}
-                    </button>
-                  </form>
-
-                  {/* Disclaimer */}
-                  <p className="mt-6 text-[10px] text-gray-600 text-center leading-relaxed">
-                    By confirming, you declare that payment has been made for this
-                    invoice. Our team will verify the transaction.
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        </motion.div>
+  return (
+    <Sheet
+      open={isOpen}
+      onClose={() => !isSubmitting && onClose()}
+      variant="dialog"
+      size="sm"
+      zIndex={1000}
+      title={isSuccess ? 'Thanks — we’ve got it' : 'Tell us you’ve paid'}
+      subtitle={isSuccess ? undefined : `${invoice?.invoiceNumber ? `Invoice ${invoice.invoiceNumber} · ` : ''}${fmtMoney(due)}`}
+      footer={isSuccess ? (
+        <DocButton variant="dark" onClick={onClose} className="w-full">Done</DocButton>
+      ) : (
+        <div className="flex gap-2">
+          <DocButton variant="secondary" onClick={onClose} disabled={isSubmitting} className="flex-1">Cancel</DocButton>
+          <DocButton theme={theme} onClick={handleSubmit} busy={isSubmitting} disabled={!ready} className="flex-[2]">
+            {isSubmitting ? 'Sending…' : 'Send for verification'}
+          </DocButton>
+        </div>
       )}
-    </AnimatePresence>,
-    document.body
+    >
+      {isSuccess ? (
+        <div className="flex flex-col items-center py-6 text-center">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <CheckCircle size={34} />
+          </span>
+          <p className="mt-4 max-w-xs text-[14px] leading-relaxed text-gray-600 dark:text-zinc-300">
+            Our team will check the payment and mark this invoice paid. We’ll email <span className="font-semibold text-gray-900 dark:text-white">{email.trim()}</span> once it’s confirmed.
+          </p>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <TextField theme={theme} label="Your name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" autoComplete="name" />
+          <TextField theme={theme} label="Email" required type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" autoComplete="email" />
+          <div>
+            <span className="mb-1.5 block text-[12.5px] font-semibold text-gray-600 dark:text-zinc-300">How did you pay?</span>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {METHODS.map(m => (
+                <button key={m.id} type="button" onClick={() => setMethod(m.id)}
+                  className={cn('h-10 rounded-xl border text-[13px] font-semibold transition-colors',
+                    method === m.id ? cn(theme.soft, theme.border, theme.text) : 'border-black/10 text-gray-600 hover:bg-black/[0.03] dark:border-white/10 dark:text-zinc-300 dark:hover:bg-white/[0.05]')}>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <TextField theme={theme} label={method === 'upi' ? 'UPI reference (UTR)' : 'Transaction reference'} value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Optional, but it speeds things up" />
+          {error && <p role="alert" className="text-[13px] font-medium text-red-600 dark:text-red-400">{error}</p>}
+          <p className="text-[12px] leading-relaxed text-gray-500 dark:text-zinc-400">
+            This doesn’t mark the invoice paid by itself — the team confirms it against the payment first.
+          </p>
+          <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
+        </form>
+      )}
+    </Sheet>
   );
 }
