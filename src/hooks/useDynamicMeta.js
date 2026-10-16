@@ -1,11 +1,10 @@
 import { useEffect } from 'react';
 import {
     PAGES,
-    SITE_NAME,
-    TWITTER_SITE,
+    BRANDS,
     DEFAULT_TITLE,
     DEFAULT_DESCRIPTION,
-    DEFAULT_IMAGE,
+    brandOf,
     defaultOgImage,
     formatTitle,
     originFor,
@@ -45,13 +44,13 @@ const setCanonical = (href) => {
     el.setAttribute('href', href);
 };
 
-const applyMeta = ({ title, description, url, image, type, noindex }) => {
+const applyMeta = ({ title, description, url, image, type, noindex, brand }) => {
     document.title = title;
     setTag('name', 'description', description);
     setCanonical(url);
     setTag('name', 'robots', noindex ? 'noindex' : '');
 
-    setTag('property', 'og:site_name', SITE_NAME);
+    setTag('property', 'og:site_name', brand.siteName);
     setTag('property', 'og:type', type);
     setTag('property', 'og:title', title);
     setTag('property', 'og:description', description);
@@ -64,7 +63,7 @@ const applyMeta = ({ title, description, url, image, type, noindex }) => {
     setTag('property', 'og:image:alt', image.alt);
 
     setTag('name', 'twitter:card', 'summary_large_image');
-    setTag('name', 'twitter:site', TWITTER_SITE);
+    setTag('name', 'twitter:site', brand.twitterSite);
     setTag('name', 'twitter:url', url);
     setTag('name', 'twitter:title', title);
     setTag('name', 'twitter:description', description);
@@ -75,27 +74,30 @@ const applyMeta = ({ title, description, url, image, type, noindex }) => {
 /**
  * Sets the page's title, description and share tags while the page is mounted.
  * `page` is a key of PAGES in src/app/seo.js; title/description/url fall back to
- * that entry. Server-side previews come from api/og.js, which uses the same table.
+ * that entry, and the entry's brand (Newbi or Concert Zone) picks the site name,
+ * title suffix and default image. Server-side previews come from api/og.js,
+ * which uses the same table.
  */
 const useDynamicMeta = ({ page, title, description, image, imageAlt, url, type, noindex } = {}) => {
     useEffect(() => {
         const host = window.location.host;
         const entry = PAGES[page];
-        const pageTitle = title ? formatTitle(title) : (entry?.title || DEFAULT_TITLE);
+        const brand = brandOf(page);
+        const pageTitle = title ? formatTitle(title, brand) : formatTitle(entry?.title || DEFAULT_TITLE, brand);
         const pageDesc = toDescription(description) || entry?.description || DEFAULT_DESCRIPTION;
         // Pages with an id in their path (/c/:id…) use the address they're on.
         const pageLink = url || (entry && !entry.path.includes(':') ? pageUrl(page, {}, host) : window.location.href);
-        const fallbackImage = defaultOgImage(originFor('landing', host));
+        const fallbackImage = defaultOgImage(originFor('landing', host), brand.image);
         const resolved = (!LEGACY_DEFAULT_IMAGE.test(image || '') && toOgImage(image, window.location.origin)) || fallbackImage;
-        const isDefault = resolved.url.endsWith(DEFAULT_IMAGE.path);
 
         applyMeta({
             title: pageTitle,
             description: pageDesc,
             url: pageLink.split('#')[0],
-            image: { ...resolved, alt: imageAlt || (isDefault ? DEFAULT_IMAGE.alt : pageTitle) },
+            image: { ...resolved, alt: imageAlt || resolved.alt || pageTitle },
             type: type || entry?.type || 'website',
             noindex: noindex ?? entry?.noindex,
+            brand,
         });
 
         return () => {
@@ -103,9 +105,10 @@ const useDynamicMeta = ({ page, title, description, image, imageAlt, url, type, 
                 title: DEFAULT_TITLE,
                 description: DEFAULT_DESCRIPTION,
                 url: '',
-                image: { ...fallbackImage, alt: DEFAULT_IMAGE.alt },
+                image: defaultOgImage(originFor('landing', host)),
                 type: 'website',
                 noindex: false,
+                brand: BRANDS.newbi,
             });
         };
     }, [page, title, description, image, imageAlt, url, type, noindex]);

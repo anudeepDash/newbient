@@ -12,9 +12,7 @@ import { fileURLToPath } from 'url';
 import {
     PAGES,
     LANDING_ORIGIN,
-    SITE_NAME,
-    TWITTER_SITE,
-    DEFAULT_IMAGE,
+    brandOf,
     defaultOgImage,
     originFor,
     pageUrl,
@@ -391,7 +389,7 @@ const loaders = {
         const data = live.data();
         const published = new Date(data.publishAt || data.publishDate || data.createdAt || 0);
         return {
-            title: `${stripHtml(data.seoTitle || data.title)} | Concert Zone | Newbi Ent.`,
+            title: `${stripHtml(data.seoTitle || data.title)} | Concert Zone`,
             description: stripHtml(data.seoDescription || data.shortDescription || data.excerpt) || stripHtml(data.content),
             image: firstImage(data.coverImage, data.image),
             alt: stripHtml(data.title),
@@ -479,13 +477,14 @@ export async function buildPreview({ host, query = {}, url = '/', userAgent = ''
     if (route === 'concertzone-category' && resolved.category) {
         const label = stripHtml(resolved.category).replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
         result = {
-            title: `${label} • Concert Zone | Newbi Ent.`,
-            description: `The latest ${label.toLowerCase()} stories, concert updates and live music guides on Newbi.`,
+            title: `${label} | Concert Zone`,
+            description: `The latest ${label.toLowerCase()} stories, concert updates and live music guides on Concert Zone.`,
         };
     }
 
+    const brand = brandOf(route);
     const title = stripHtml(result?.title) || page.title;
-    const image = toOgImage(result?.image, originFor(page.site, host)) || defaultOgImage(originFor('landing', host));
+    const image = toOgImage(result?.image, originFor(page.site, host)) || defaultOgImage(originFor('landing', host), brand.image);
 
     return {
         route,
@@ -494,7 +493,9 @@ export async function buildPreview({ host, query = {}, url = '/', userAgent = ''
         description: toDescription(result?.description || page.description),
         url: pageUrl(route, { ...params, ...(result?.params || {}) }, host),
         type: page.type || 'website',
-        image: { ...image, alt: stripHtml(result?.alt) || (image.url.endsWith(DEFAULT_IMAGE.path) ? DEFAULT_IMAGE.alt : title) },
+        siteName: brand.siteName,
+        twitterSite: brand.twitterSite,
+        image: { ...image, alt: stripHtml(result?.alt) || image.alt || title },
         noindex: Boolean(page.noindex),
         extra: result?.extra || [],
         initialData: result?.initialData || null,
@@ -508,7 +509,7 @@ export const renderHead = (meta) => {
         tag('name', 'description', meta.description),
         `<link rel="canonical" href="${escapeHtml(meta.url)}" />`,
         meta.noindex ? tag('name', 'robots', 'noindex') : '',
-        tag('property', 'og:site_name', SITE_NAME),
+        tag('property', 'og:site_name', meta.siteName),
         tag('property', 'og:type', meta.type),
         tag('property', 'og:url', meta.url),
         tag('property', 'og:title', meta.title),
@@ -521,7 +522,7 @@ export const renderHead = (meta) => {
         tag('property', 'og:image:alt', meta.image.alt),
         ...meta.extra.map(([key, value]) => tag('property', key, value)),
         tag('name', 'twitter:card', 'summary_large_image'),
-        tag('name', 'twitter:site', TWITTER_SITE),
+        tag('name', 'twitter:site', meta.twitterSite),
         tag('name', 'twitter:url', meta.url),
         tag('name', 'twitter:title', meta.title),
         tag('name', 'twitter:description', meta.description),

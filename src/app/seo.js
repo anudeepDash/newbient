@@ -12,14 +12,31 @@ export const TWITTER_SITE = '@newbi_live';
 export const DEFAULT_TITLE = 'Newbi Entertainment & Marketing';
 export const DEFAULT_DESCRIPTION = 'Newbi Entertainment connects brands, colleges, and creators through talent management, live events, influencer marketing, and experiential campaigns.';
 
-// public/og-default.jpg: the one default share image (1200×630 JPEG).
+// public/og-default.jpg: the default share image for every Newbi page (1200×630
+// JPEG, the newbi.live logo on #0B0B0B; source src/assets/logo/newbi-logo-2000w.png).
 export const DEFAULT_IMAGE = {
     path: '/og-default.jpg',
     width: 1200,
     height: 630,
     type: 'image/jpeg',
-    alt: 'Newbi Entertainment',
+    alt: 'newbi.live',
 };
+
+// Concert Zone is a separate brand: its pages keep their own name and share image.
+export const CONCERTZONE_IMAGE = {
+    path: '/brand/concertzone-og.jpg',
+    width: 1200,
+    height: 630,
+    type: 'image/jpeg',
+    alt: 'Concert Zone',
+};
+
+export const BRANDS = {
+    newbi: { siteName: SITE_NAME, twitterSite: TWITTER_SITE, titleSuffix: ' | Newbi Ent.', image: DEFAULT_IMAGE },
+    concertzone: { siteName: 'Concert Zone', twitterSite: '', titleSuffix: ' | Concert Zone', image: CONCERTZONE_IMAGE },
+};
+
+export const brandOf = (pageKey) => BRANDS[PAGES[pageKey]?.brand] || BRANDS.newbi;
 
 const PRODUCTION_HOSTS = {
     'newbi.live': 'landing',
@@ -83,19 +100,19 @@ export const PAGES = {
         description: "Join India's premier creator collective. Collaborate with iconic brands, access front-row concerts, and unlock real-world perks. 100% free to join.",
     },
     concertzone: {
-        site: 'landing', path: '/concertzone',
-        title: 'Concert Zone • Music, Live Events & Tour Guides | Newbi Ent.',
+        site: 'landing', path: '/concertzone', brand: 'concertzone',
+        title: 'Concert Zone • Music, Live Events & Tour Guides',
         description: 'Your backstage pass to concerts, live music festivals, artist spotlights, and gig guides across India.',
     },
     'concertzone-category': {
-        site: 'landing', path: '/concertzone/:category',
-        title: 'Concert Zone | Newbi Ent.',
-        description: 'Concert updates, live music guides and artist stories on Newbi.',
+        site: 'landing', path: '/concertzone/:category', brand: 'concertzone',
+        title: 'Concert Zone',
+        description: 'Concert updates, live music guides and artist stories on Concert Zone.',
     },
     post: {
-        site: 'landing', path: '/concertzone/:category/:id', type: 'article',
-        title: 'Concert Zone | Newbi Ent.',
-        description: 'Read this article on Concert Zone by Newbi.',
+        site: 'landing', path: '/concertzone/:category/:id', type: 'article', brand: 'concertzone',
+        title: 'Concert Zone',
+        description: 'Read this article on Concert Zone.',
     },
     contact: {
         site: 'landing', path: '/contact',
@@ -282,10 +299,11 @@ export const toDescription = (input, max = 160) => {
 };
 
 /** Adds the brand to a bare page title ("Contact Us" → "Contact Us | Newbi Ent."). */
-export const formatTitle = (title) => {
+export const formatTitle = (title, brand = BRANDS.newbi) => {
     const clean = stripHtml(title);
-    if (!clean) return DEFAULT_TITLE;
-    return /newbi|artistant/i.test(clean) ? clean : `${clean} | Newbi Ent.`;
+    if (!clean) return brand === BRANDS.concertzone ? 'Concert Zone' : DEFAULT_TITLE;
+    if (brand === BRANDS.concertzone) return /concert ?zone/i.test(clean) ? clean : `${clean}${brand.titleSuffix}`;
+    return /newbi|artistant/i.test(clean) ? clean : `${clean}${brand.titleSuffix}`;
 };
 
 const IMAGE_TYPES = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' };
@@ -293,12 +311,15 @@ const CLOUDINARY_OG = 'w_1200,h_630,c_fill,f_jpg,q_auto';
 // A Cloudinary transformation segment, e.g. "c_fill,w_500" or "q_auto".
 const CLOUDINARY_TRANSFORM = /^[a-z]{1,3}_[^/]*$/;
 
-export const defaultOgImage = (origin = LANDING_ORIGIN) => ({
-    url: `${origin}${DEFAULT_IMAGE.path}`,
-    width: DEFAULT_IMAGE.width,
-    height: DEFAULT_IMAGE.height,
-    type: DEFAULT_IMAGE.type,
+export const defaultOgImage = (origin = LANDING_ORIGIN, image = DEFAULT_IMAGE) => ({
+    url: `${origin}${image.path}`,
+    width: image.width,
+    height: image.height,
+    type: image.type,
+    alt: image.alt,
 });
+
+const KNOWN_DEFAULTS = [DEFAULT_IMAGE, CONCERTZONE_IMAGE];
 
 /**
  * Turns any stored image reference into something a link-preview crawler can show.
@@ -322,9 +343,8 @@ export const toOgImage = (input, base = LANDING_ORIGIN) => {
     const ext = (url.pathname.match(/\.([a-z0-9]+)$/i)?.[1] || '').toLowerCase();
     if (ext === 'svg' || /(^|[,/])f_svg([,/]|$)/.test(url.pathname)) return null;
 
-    if (url.pathname === DEFAULT_IMAGE.path) {
-        return { url: url.href, width: DEFAULT_IMAGE.width, height: DEFAULT_IMAGE.height, type: DEFAULT_IMAGE.type };
-    }
+    const known = KNOWN_DEFAULTS.find((img) => img.path === url.pathname);
+    if (known) return { url: url.href, width: known.width, height: known.height, type: known.type };
 
     const isCloudinary = url.hostname === 'res.cloudinary.com' || url.hostname.endsWith('.cloudinary.com');
     if (isCloudinary) {
