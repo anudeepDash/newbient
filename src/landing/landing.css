@@ -223,3 +223,21 @@ details[open] > summary .nb-plus { transform: rotate(45deg); }
   text-shadow: 0.05em 0.06em 0 #000;
   padding-right: 0.08em;
 }
+/* Dark mode: a thin white edge behind the word (a copy from data-text with a
+   white stroke just wider than the black one), so the outline and shadow still read. */
+.nb-sticker { position: relative; isolation: isolate; }
+.dark .nb-sticker::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  color: #fff;
+  -webkit-text-stroke: 0.075em rgba(255, 255, 255, 0.9);
+  paint-order: stroke fill;
+  text-shadow: 0.05em 0.06em 0 rgba(255, 255, 255, 0.9);
+  padding-right: 0.08em;
+  pointer-events: none;
+}
+/* Section titles: the same idea, quieter. */
+.nb-sticker-sm { -webkit-text-stroke-width: 0.03em; text-shadow: 0.03em 0.04em 0 #000; }
+.dark .nb-sticker-sm::before { -webkit-text-stroke-width: 0.05em; text-shadow: 0.03em 0.04em 0 rgba(255, 255, 255, 0.9); }

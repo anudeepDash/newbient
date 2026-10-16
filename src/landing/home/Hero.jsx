@@ -1,3 +1,4 @@
+import Sticker from '../components/Sticker';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight, Building2, Megaphone, Ticket, Music2 } from 'lucide-react';
 import { APP_LINKS } from '../links';
@@ -132,7 +133,7 @@ export default function Hero({ onChooseAudience }) {
                         <h1 className="font-heading font-extrabold leading-[0.92] tracking-[-0.045em] text-gray-950 dark:text-white text-[15vw] sm:text-[11vw] lg:text-[6.6vw] 2xl:text-[7.6rem]">
                             <span className="nb-exit-l block">We make</span>{' '}
                             <span className="nb-exit-r block">young India</span>{' '}
-                            <span className="nb-exit-l block"><span className="nb-sticker inline-block -rotate-[2deg]">show up.</span></span>
+                            <span className="nb-exit-l block"><Sticker tilt="-rotate-[2deg]">show up.</Sticker></span>
                         </h1>
                         <p className="nb-exit-fade mt-6 max-w-md text-lg leading-snug text-gray-700 dark:text-zinc-300 md:text-xl">
                             Campus activations, live shows and creator campaigns across India.
