@@ -8,6 +8,7 @@ import { isPresent } from '../lib/present';
 import { useAppStore } from '../lib/store/appStore';
 import { Sheet, Button } from '../components/app';
 import { appPath, isAppHost, landingUrl } from './host';
+import { legacyAppPath } from './redirects';
 import AuthGate from './auth/AuthGate';
 
 /* The bell's list: your notifications plus global announcements. */
@@ -30,12 +31,16 @@ const NotificationsSheet = ({ open, onClose }) => {
         const link = n.link || n.url;
         if (!isPresent(link)) return;
         onClose();
+        const [linkPath, linkQuery = ''] = link.split('#')[0].split('?');
+        const legacy = legacyAppPath(linkPath, linkQuery ? `?${linkQuery}` : '');
         // Links to app.newbi.live (passes, tickets, campaigns) open inside this app, also on previews.
         const appLink = link.match(/^https?:\/\/app\.newbi\.live(\/[^#]*)?/i);
         if (appLink) navigate(appPath(appLink[1] || '/'));
         else if (/^https?:\/\//.test(link)) window.location.href = link;
         // In-app links stay in the app; everything else still lives on the landing site.
         else if (link.startsWith('/app/') || link === '/app') navigate(appPath(link.replace(/^\/app/, '') || '/'));
+        // Old creator links (/creator-dashboard?campaignId=…, /campaign/:id) open their app page.
+        else if (legacy) navigate(appPath(legacy));
         else if (/^\/(p|t|c|forms|community)(\/|$)/.test(link)) navigate(appPath(link));
         else if (isAppHost()) window.location.href = landingUrl(link);
         else navigate(link);

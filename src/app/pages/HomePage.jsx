@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import UserRoundPen from 'lucide-react/dist/esm/icons/user-round-pen';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 import { useAppStore } from '../../lib/store/appStore';
@@ -29,6 +30,7 @@ const greeting = () => {
 
 const HomePage = () => {
     useAppContent();
+    const location = useLocation();
     const authUser = useAppStore(s => s.authUser);
     const profile = useAppStore(s => s.profile);
     const profileLoaded = useAppStore(s => s.profileLoaded);
@@ -96,7 +98,7 @@ const HomePage = () => {
                     <Rail><CardSkeleton /><CardSkeleton /></Rail>
                 ) : campaigns.length ? (
                     <Rail>
-                        {campaigns.slice(0, 6).map(c => <Card key={c.id} {...campaignCard(c, { applied: joined.has(c.id) })} />)}
+                        {campaigns.slice(0, 6).map(c => <Card key={c.id} {...campaignCard(c, { applied: joined.has(c.id), from: location })} />)}
                     </Rail>
                 ) : (
                     <EmptyState icon={Megaphone} title="No open campaigns right now" message="New brand and event campaigns show up here first." />

@@ -11,7 +11,6 @@ import { isAppHost, landingAppBase } from './app/host';
 
 const Home = lazy(() => import('./pages/Home'));
 const CreatorLanding = lazy(() => import('./pages/CreatorLanding'));
-const CreatorJoin = lazy(() => import('./pages/CreatorJoin'));
 const Contact = lazy(() => import('./pages/Contact'));
 
 // Lazy-loaded Public Pages
@@ -21,11 +20,9 @@ const Proposal = lazy(() => import('./pages/Proposal'));
 const Agreement = lazy(() => import('./pages/Agreement'));
 const FormViewer = lazy(() => import('./pages/FormViewer'));
 const CommunityJoin = lazy(() => import('./pages/CommunityJoin'));
-const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard'));
 const ActionHandler = lazy(() => import('./pages/Auth/ActionHandler'));
 const ConcertZoneBlog = lazy(() => import('./pages/ConcertZoneBlog'));
 const BlogPostDetail = lazy(() => import('./pages/BlogPostDetail'));
-const CampaignPublicView = lazy(() => import('./pages/CampaignPublicView'));
 const ArtistAnt = lazy(() => import('./pages/ArtistAnt'));
 const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
@@ -37,6 +34,7 @@ const DocumentViewer = lazy(() => import('./pages/DocumentViewer'));
 
 // The app (app.newbi.live): its own shell and route tree, loaded only when visited.
 const AppRoutes = lazy(() => import('./app/AppRoutes'));
+const ToAppRedirect = lazy(() => import('./app/redirects').then(m => ({ default: m.ToAppRedirect })));
 
 // Lazy-loaded Admin Pages & Heavy Tools
 const Dashboard = lazy(() => import('./pages/Admin/Dashboard'));
@@ -264,29 +262,13 @@ function AppContent() {
             <Route path="community-join" element={<MaintenanceGuard isPage featureId="community"><CommunityJoin /></MaintenanceGuard>} />
 
             <Route path="creator" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorLanding /></MaintenanceGuard>} />
-            <Route path="creator/join" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorJoin /></MaintenanceGuard>} />
-            <Route path="creator-dashboard" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorDashboard /></MaintenanceGuard>} />
-            <Route path="creator-dashboard/settings" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorDashboard /></MaintenanceGuard>} />
-
-            {/* Creator link aliases: legacy URLs, typos and old share links */}
-            <Route path="campaigns" element={<RedirectKeepQuery to="/creator-dashboard" />} />
-            <Route path="campaigns/:id" element={<RedirectKeepQuery to="/campaign/:id" />} />
-            <Route path="creator/campaign/:id" element={<RedirectKeepQuery to="/campaign/:id" />} />
-            <Route path="creator/campaigns/:id" element={<RedirectKeepQuery to="/campaign/:id" />} />
-            <Route path="creator-dashboard/campaign/:id" element={<RedirectKeepQuery to="/campaign/:id" />} />
-            <Route path="creator-dashboard/*" element={<RedirectKeepQuery to="/creator-dashboard" />} />
-            <Route path="creator/dashboard" element={<RedirectKeepQuery to="/creator-dashboard" />} />
-            <Route path="creator/hub" element={<RedirectKeepQuery to="/creator-dashboard" />} />
-            <Route path="creator/studio" element={<RedirectKeepQuery to="/creator-dashboard" />} />
-            <Route path="creator/campaigns" element={<RedirectKeepQuery to="/creator-dashboard" />} />
-            <Route path="creators" element={<RedirectKeepQuery to="/creator" />} />
-            <Route path="creator-hub" element={<RedirectKeepQuery to="/creator-dashboard" />} />
-            <Route path="creator-studio" element={<RedirectKeepQuery to="/creator-dashboard" />} />
-            <Route path="creator-join" element={<RedirectKeepQuery to="/creator/join" />} />
-            <Route path="creator/apply" element={<RedirectKeepQuery to="/creator/join" />} />
-            <Route path="creator/register" element={<RedirectKeepQuery to="/creator/join" />} />
-            <Route path="creator/signup" element={<RedirectKeepQuery to="/creator/join" />} />
-            <Route path="creator/landing" element={<RedirectKeepQuery to="/creator" />} />
+            {/* Retired creator pages and their aliases: they live in the app now (src/app/redirects.jsx). */}
+            {['creator/join', 'creator-dashboard', 'creator-dashboard/*', 'campaigns', 'campaigns/:id', 'campaign/:id',
+              'creator/campaign/:id', 'creator/campaigns/:id', 'creator/dashboard', 'creator/hub', 'creator/studio',
+              'creator/campaigns', 'creators', 'creator-hub', 'creator-studio', 'creator-join', 'creator/apply',
+              'creator/register', 'creator/signup', 'creator/landing'].map(path => (
+              <Route key={path} path={path} element={<ToAppRedirect />} />
+            ))}
             <Route path="forms" element={<MaintenanceGuard isPage featureId="forms_public"><FormViewer /></MaintenanceGuard>} />
             <Route path="forms/:id" element={<MaintenanceGuard isPage featureId="forms_public"><FormViewer /></MaintenanceGuard>} />
             <Route path="form/:id" element={<MaintenanceGuard isPage featureId="forms_public"><FormViewer /></MaintenanceGuard>} />
@@ -307,7 +289,6 @@ function AppContent() {
 
             {adminRoutes}
 
-            <Route path="campaign/:id" element={<CampaignPublicView />} />
             <Route path="doc/:id" element={<DocumentViewer />} />
             <Route path="auth/action" element={<ActionHandler />} />
 

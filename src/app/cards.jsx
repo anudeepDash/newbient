@@ -9,7 +9,7 @@ import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import { GlassChip } from '../components/app';
 import { getCampaignSpotsInfo } from '../lib/utils';
-import { appPath, landingUrl } from './host';
+import { appPath } from './host';
 
 /*
  * Card props for the app's data, so every list renders the same Card.
@@ -25,7 +25,11 @@ const compact = (n) => {
 
 export const dateLabel = (date) => (date ? format(date, 'EEE d MMM') : null);
 
-export function campaignCard(c, { applied = false } = {}) {
+/*
+ * from: the current location, so the campaign opens as a sheet over the list.
+ * progress: taskProgress() for a campaign you're in (Deliverables).
+ */
+export function campaignCard(c, { applied = false, from = null, progress = null } = {}) {
     const spots = getCampaignSpotsInfo(c, []);
     const followers = compact(c.minInstagramFollowers);
     const tasks = (c.tasks || []).length;
@@ -38,7 +42,9 @@ export function campaignCard(c, { applied = false } = {}) {
         eyebrowLogo: c.brandLogo || null,
         description: c.description,
         chips: [{ icon: MapPin, label: c.targetCity }],
-        badges: applied
+        badges: progress?.requiredDone
+            ? <GlassChip icon={CircleCheck} label="Completed" tone="accent" />
+            : applied
             ? <GlassChip icon={CircleCheck} label="Applied" tone="accent" />
             : fewLeft ? <GlassChip icon={Flame} label={`${spots.spotsLeft} left`} tone="warn" /> : null,
         meta: [
@@ -49,8 +55,10 @@ export function campaignCard(c, { applied = false } = {}) {
             { label: 'Reward', value: c.reward, icon: Award, tone: 'accent' },
             { label: 'Tasks', value: tasks || null, icon: FileText },
         ],
+        progress: progress && progress.total ? Math.round((progress.approved / progress.total) * 100) : null,
         cta: { label: applied ? 'Open campaign' : 'View brief' },
-        href: landingUrl(`/campaign/${c.id}`),
+        to: appPath(`/c/${c.id}`),
+        linkState: from ? { backgroundLocation: from } : undefined,
     };
 }
 

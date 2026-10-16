@@ -66,7 +66,9 @@ const AmbientBackdrop = ({
     /* Fade the glow out towards the bottom. */
     fade = true,
 }) => {
-    const ios = useMemo(() => isIOS(), []);
+    // Phones (and every iPhone) get the pre-blurred image instead of a live blur:
+    // big live blurs are what made iPhone Safari paint the campaign page blank.
+    const ios = useMemo(() => isIOS() || (typeof window !== 'undefined' && Boolean(window.matchMedia?.('(max-width: 767px)').matches)), []);
     const tiny = useMemo(() => tinyBlurredUrl(image), [image]);
     const mask = fade ? { WebkitMaskImage: FADE, maskImage: FADE } : undefined;
     const layer = 'absolute -inset-[10%] h-[120%] w-[120%] transform-gpu';

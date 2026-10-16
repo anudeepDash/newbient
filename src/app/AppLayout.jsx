@@ -20,10 +20,11 @@ import NewbiLogo from '../components/brand/NewbiLogo';
 /*
  * The app shell (app.newbi.live, or /app on localhost).
  *
- * Phones: a top bar (logo, notification bell) and a floating glass pill of
+ * Every screen size gets the phone layout: a top bar (logo, admin for staff,
+ * theme on larger screens, notification bell) and a floating glass pill of
  * tabs, both clear of the notch and home bar; only the active tab shows its
- * label. Desktop: a left rail. Tabs come from the module registry
- * (modules.js). The pill is the one live blur in the shell; the top bar is
+ * label. On desktop the same layout is centred (the owner prefers it to a
+ * side rail). Tabs come from the module registry (modules.js). The pill is the one live blur in the shell; the top bar is
  * solid, so iPhone Safari never stacks blur layers.
  */
 
@@ -48,18 +49,8 @@ const BellButton = ({ count, onClick, className }) => (
     </button>
 );
 
-const Avatar = ({ profile, authUser, size = 'h-9 w-9' }) => {
-    const photo = profile?.photoURL || authUser?.photoURL;
-    const initial = (profile?.name || authUser?.displayName || authUser?.email || '?').charAt(0).toUpperCase();
-    return (
-        <span className={cn('flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neon-green/15 text-sm font-black text-emerald-700 dark:text-neon-green', size)}>
-            {photo ? <img src={photo} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : initial}
-        </span>
-    );
-};
-
 const PageFallback = () => (
-    <div className="mx-auto max-w-3xl space-y-4 px-4 py-6 lg:px-8">
+    <div className="mx-auto max-w-3xl space-y-4 px-4 py-6 sm:px-6">
         <div className="h-8 w-40 animate-pulse rounded-xl bg-black/[0.05] dark:bg-white/[0.05]" />
         <div className="aspect-video animate-pulse rounded-3xl bg-black/[0.04] dark:bg-white/[0.04]" />
     </div>
@@ -69,7 +60,6 @@ const AppLayout = () => {
     const location = useLocation();
     const path = stripAppBase(location.pathname);
     const authUser = useAppStore(s => s.authUser);
-    const profile = useAppStore(s => s.profile);
     const unreadCount = useAppStore(s => (s.authUser ? s.unreadCount : 0));
     const isCreator = useAppStore(s => hasCapability(s, 'creator'));
     const isCampus = useAppStore(s => hasCapability(s, 'campus'));
@@ -111,67 +101,9 @@ const AppLayout = () => {
         <div className="min-h-dvh bg-[#f6f7f9] text-gray-900 dark:bg-[#050608] dark:text-white">
             <AuthResumer />
 
-            {/* ── Desktop left rail ── */}
-            <aside className="fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col border-r border-black/[0.06] bg-white dark:border-white/[0.06] dark:bg-[#0a0b10] lg:flex">
-                <div className="flex h-16 shrink-0 items-center justify-between px-5">
-                    <Link to={appPath('/')} aria-label="Newbi home"><Logo className="h-8" /></Link>
-                    <BellButton count={unreadCount} onClick={() => setBellOpen(true)} className="h-10 w-10" />
-                </div>
-                <nav aria-label="App" className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
-                    {tabs.map(({ module, locked, label }) => {
-                        const Icon = module.tab.icon;
-                        const active = activeModule?.id === module.id;
-                        return (
-                            <Link
-                                key={module.id}
-                                to={appPath(module.path)}
-                                aria-current={active ? 'page' : undefined}
-                                className={cn(
-                                    'relative flex h-11 items-center gap-3 rounded-xl px-3 text-[14px] font-semibold transition-colors',
-                                    active
-                                        ? 'bg-black/[0.05] text-gray-900 dark:bg-white/[0.07] dark:text-white'
-                                        : 'text-gray-600 hover:bg-black/[0.03] hover:text-gray-900 dark:text-zinc-400 dark:hover:bg-white/[0.04] dark:hover:text-white'
-                                )}
-                            >
-                                {active && <span className="absolute -left-3 bottom-2 top-2 w-1 rounded-r-full bg-neon-green" />}
-                                <Icon size={18} strokeWidth={active ? 2.3 : 1.9} className={active ? 'text-emerald-600 dark:text-neon-green' : undefined} />
-                                <span className="truncate">{label}</span>
-                                {locked && <span className="ml-auto rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-neon-green/10 dark:text-neon-green">New</span>}
-                            </Link>
-                        );
-                    })}
-                </nav>
-                <div className="shrink-0 space-y-2 border-t border-black/[0.06] p-3 dark:border-white/[0.06]">
-                    {isStaff && (
-                        <Link
-                            to="/admin"
-                            className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-[13px] font-semibold text-gray-600 hover:bg-black/[0.03] dark:text-zinc-400 dark:hover:bg-white/[0.04]"
-                        >
-                            <ShieldCheck size={16} /> Admin
-                        </Link>
-                    )}
-                    <button
-                        type="button"
-                        onClick={() => toggleTheme()}
-                        className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-[13px] font-semibold text-gray-600 hover:bg-black/[0.03] dark:text-zinc-400 dark:hover:bg-white/[0.04]"
-                    >
-                        {isDark ? <Sun size={16} /> : <Moon size={16} />} {isDark ? 'Light mode' : 'Dark mode'}
-                    </button>
-                    {authUser && (
-                        <Link to={appPath('/profile')} className="flex items-center gap-3 rounded-xl p-2 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]">
-                            <Avatar profile={profile} authUser={authUser} />
-                            <div className="min-w-0">
-                                <p className="truncate text-[13px] font-bold">{profile?.name || authUser.displayName || 'Your profile'}</p>
-                                {(profile?.email || authUser.email) && <p className="truncate text-[12px] text-gray-500">{profile?.email || authUser.email}</p>}
-                            </div>
-                        </Link>
-                    )}
-                </div>
-            </aside>
-
-            {/* ── Phone top bar ── */}
-            <header className="fixed inset-x-0 top-0 z-40 border-b border-black/[0.05] bg-[#f6f7f9]/95 pt-[env(safe-area-inset-top)] dark:border-white/[0.05] dark:bg-[#050608]/95 lg:hidden">
-                <div className="flex h-14 items-center justify-between pl-4 pr-1.5">
+            {/* ── Top bar (every screen size: desktop is the phone layout, centred) ── */}
+            <header className="fixed inset-x-0 top-0 z-40 border-b border-black/[0.05] bg-[#f6f7f9]/95 pt-[env(safe-area-inset-top)] dark:border-white/[0.05] dark:bg-[#050608]/95">
+                <div className="mx-auto flex h-14 max-w-3xl items-center justify-between pl-4 pr-1.5 sm:px-4">
                     <Link to={appPath('/')} aria-label="Newbi home" className="flex h-11 items-center"><Logo className="h-7" /></Link>
                     <div className="flex items-center">
                         {isStaff && (
@@ -183,22 +115,30 @@ const AppLayout = () => {
                                 <ShieldCheck size={17} /> Admin
                             </Link>
                         )}
+                        <button
+                            type="button"
+                            onClick={() => toggleTheme()}
+                            aria-label={isDark ? 'Light mode' : 'Dark mode'}
+                            className="hidden h-11 w-11 items-center justify-center rounded-xl text-gray-700 transition-colors hover:bg-black/[0.04] dark:text-zinc-300 dark:hover:bg-white/[0.06] sm:flex"
+                        >
+                            {isDark ? <Sun size={19} /> : <Moon size={19} />}
+                        </button>
                         <BellButton count={unreadCount} onClick={() => setBellOpen(true)} />
                     </div>
                 </div>
             </header>
 
             {/* ── Page ── */}
-            <main className="min-w-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-[calc(3.5rem+env(safe-area-inset-top))] lg:pb-0 lg:pl-[248px] lg:pt-0">
+            <main className="min-w-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-[calc(3.5rem+env(safe-area-inset-top))]">
                 <Suspense fallback={<PageFallback />}>
                     <Outlet />
                 </Suspense>
             </main>
 
-            {/* ── Phone tab bar: a floating glass pill; only the active tab shows its label ── */}
+            {/* ── Tab bar: a floating glass pill on every screen; only the active tab shows its label ── */}
             <nav
                 aria-label="App sections"
-                className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:hidden"
+                className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-5"
             >
                 <div
                     className={cn(
