@@ -34,11 +34,11 @@ export default function CaseStudies({ items = [] }) {
 
                 <ol className="nb-film-track relative flex items-start gap-6 md:gap-10 px-4 sm:px-6 lg:px-10 pt-10 md:pt-12 pb-16 overflow-x-auto snap-x snap-mandatory carousel-scrollbar">
                     {items.map((item, i) => (
-                        <li key={item.id} className={`nb-film-frame shrink-0 snap-start w-[72vw] sm:w-[44vw] lg:w-[min(30vw,420px)] ${i % 2 ? 'nb-film-low' : ''}`}>
+                        <li key={item.id} className={`nb-film-frame shrink-0 snap-start w-[60vw] sm:w-[36vw] lg:w-[min(24vw,320px)] ${i % 2 ? 'nb-film-low' : ''}`}>
                             <WorkPoster item={item} index={i} eager={i < 2} />
                         </li>
                     ))}
-                    <li className={`nb-film-frame shrink-0 snap-start w-[72vw] sm:w-[44vw] lg:w-[min(30vw,420px)] ${items.length % 2 ? 'nb-film-low' : ''}`}>
+                    <li className={`nb-film-frame shrink-0 snap-start w-[60vw] sm:w-[36vw] lg:w-[min(24vw,320px)] ${items.length % 2 ? 'nb-film-low' : ''}`}>
                         <Link to="/work" className="group flex flex-col justify-between aspect-[4/5] rounded-[1.5rem] border border-dashed border-white/25 p-7 md:p-9 hover:border-neon-green hover:bg-white/[0.03] transition-colors">
                             <span className="font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-zinc-500">The archive</span>
                             <span>
