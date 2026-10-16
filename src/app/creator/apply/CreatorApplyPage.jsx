@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
 import Check from 'lucide-react/dist/esm/icons/check';
 import Loader2 from 'lucide-react/dist/esm/icons/loader-circle';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import { Button, TextInput } from '../../../components/app';
+import { Button, Sheet, TextInput } from '../../../components/app';
 import { useAppStore } from '../../../lib/store/appStore';
 import { cn } from '../../../lib/utils';
 import { CREATOR_NICHE_OPTIONS } from '../../../lib/creator/options';
@@ -25,6 +25,10 @@ import { SwitchGuide, oauthErrorMessage } from './instagramCopy';
  *   Instagram username → the live creator pass fills in from Instagram
  *   City (one tap) → Niches (up to 3) → College only for campus niches
  *   Sticky "Apply" (or "Connect Instagram & apply" when Meta can prove it)
+ *
+ * Opened from a card or button (link state { backgroundLocation }) it's a
+ * sheet over the current page, with Apply in the sheet's footer; opened by
+ * URL it's a page with a sticky dock.
  *
  * Phone and email come from the account; CompleteProfileSheet asks only if
  * one is missing, at the moment you tap Apply. Rates, bio and other socials
@@ -103,7 +107,20 @@ const Success = ({ app, profile, next, welcomePoints }) => {
     );
 };
 
-const ApplyFlow = () => {
+/* The same flow as a page (sticky dock under the tab pill) or a sheet (Apply in its footer). */
+const PageFrame = ({ children, footer }) => (
+    <PageBody>
+        {children}
+        {footer && <div className="mx-auto max-w-xl"><div className={STICKY_DOCK}>{footer}</div></div>}
+    </PageBody>
+);
+const SheetFrame = ({ children, footer, onClose }) => (
+    <Sheet open onClose={onClose} size="full" width="lg" header={<span className="sr-only">Apply as a creator</span>} footer={footer} bodyClassName="pt-0">
+        {children}
+    </Sheet>
+);
+
+const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
     const [params, setParams] = useSearchParams();
     const profile = useAppStore(s => s.profile);
     const profileLoaded = useAppStore(s => s.profileLoaded);
@@ -167,12 +184,12 @@ const ApplyFlow = () => {
     }, [params]);
 
     if (creatorLoaded && creator && !app.result) return <Navigate to={appPath(next || '/creator')} replace />;
-    if (app.result) return <PageBody><Success app={app} profile={profile} next={next} welcomePoints={settings?.welcomePoints || 0} /></PageBody>;
+    if (app.result) return <Frame onClose={onClose}><Success app={app} profile={profile} next={next} welcomePoints={settings?.welcomePoints || 0} /></Frame>;
     if (settings && !settings.allowSignups) {
         return (
-            <PageBody>
+            <Frame onClose={onClose}>
                 <div className="mx-auto max-w-xl"><Notice tone="warn" title="Applications are paused">We’re not taking new creator applications right now. Check back soon.</Notice></div>
-            </PageBody>
+            </Frame>
         );
     }
 
@@ -182,8 +199,29 @@ const ApplyFlow = () => {
     const cityChoices = app.city && !CITIES.includes(app.city) && !otherCity ? [app.city, ...CITIES] : CITIES;
     const err = app.error && !app.error.missing ? app.error : null;
 
+    const dock = (
+        <div className="space-y-2">
+            {err && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{err.error}</p>}
+            <div className="flex items-center gap-3">
+                <div className="flex gap-1" aria-label={`${doneCount} of 3 done`}>
+                    {app.steps.map(s => <span key={s.key} className={cn('h-1.5 w-5 rounded-full transition-colors', s.done ? 'bg-neon-green' : 'bg-black/[0.1] dark:bg-white/[0.12]')} />)}
+                </div>
+                <Button
+                    className="flex-1"
+                    size="lg"
+                    icon={app.needsConnect ? Instagram : undefined}
+                    disabled={!app.ready || !isValidHandle(app.handle) || belowMin || found?.alreadyRegistered}
+                    loading={app.submitting || app.connecting}
+                    onClick={apply}
+                >
+                    {app.needsConnect ? 'Verify & apply' : 'Apply'}
+                </Button>
+            </div>
+        </div>
+    );
+
     return (
-        <PageBody>
+        <Frame footer={dock} onClose={onClose}>
             <div className="mx-auto max-w-xl space-y-7">
                 <header className="space-y-1">
                     <p className="text-[12px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-neon-green">Newbi Creators</p>
@@ -276,25 +314,6 @@ const ApplyFlow = () => {
                     {referredBy && <p className="text-[13px] text-gray-500 dark:text-zinc-500">Invite code <span className="font-bold text-gray-800 dark:text-zinc-200">{referredBy}</span> applied.</p>}
                 </div>
 
-                {/* Sticky dock: solid down to the screen edge, with the tab pill floating over its lower part. */}
-                <div className={STICKY_DOCK}>
-                    {err && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{err.error}</p>}
-                    <div className="flex items-center gap-3">
-                        <div className="flex gap-1" aria-label={`${doneCount} of 3 done`}>
-                            {app.steps.map(s => <span key={s.key} className={cn('h-1.5 w-5 rounded-full transition-colors', s.done ? 'bg-neon-green' : 'bg-black/[0.1] dark:bg-white/[0.12]')} />)}
-                        </div>
-                        <Button
-                            className="flex-1"
-                            size="lg"
-                            icon={app.needsConnect ? Instagram : undefined}
-                            disabled={!app.ready || !isValidHandle(app.handle) || belowMin || found?.alreadyRegistered}
-                            loading={app.submitting || app.connecting}
-                            onClick={apply}
-                        >
-                            {app.needsConnect ? 'Verify & apply' : 'Apply'}
-                        </Button>
-                    </div>
-                </div>
             </div>
 
             <CompleteProfileSheet
@@ -304,21 +323,29 @@ const ApplyFlow = () => {
                 onComplete={() => { const fn = afterSheet.current; afterSheet.current = null; setSheet({ open: false, fields: [] }); fn?.(); }}
                 onClose={() => { afterSheet.current = null; setSheet({ open: false, fields: [] }); }}
             />
-        </PageBody>
+        </Frame>
     );
 };
 
-const CreatorApplyPage = () => {
+const CreatorApplyPage = ({ overlay = false }) => {
     const authUser = useAppStore(s => s.authUser);
-    if (authUser) return <ApplyFlow />;
+    const navigate = useNavigate();
+    const location = useLocation();
+    const close = useCallback(() => {
+        if (location.state?.backgroundLocation) navigate(-1);
+        else navigate(appPath('/creator'), { replace: true });
+    }, [location.state, navigate]);
+    const Frame = overlay ? SheetFrame : PageFrame;
+
+    if (authUser) return <ApplyFlow Frame={Frame} onClose={close} />;
     return (
-        <PageBody>
+        <Frame onClose={close}>
             <AuthGate
                 title="Apply as a creator"
                 message="Sign in to apply. It takes about 30 seconds."
                 intent={{ type: INTENTS.creatorApply }}
             />
-        </PageBody>
+        </Frame>
     );
 };
 

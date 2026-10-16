@@ -1,48 +1,30 @@
 import React, { useState } from 'react';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Ticket from 'lucide-react/dist/esm/icons/ticket';
-import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
-import { Link } from 'react-router-dom';
-import { cn } from '../../lib/utils';
+import { useLocation } from 'react-router-dom';
 import { useAppStore, useCapability } from '../../lib/store/appStore';
 import { useStore as useLegacyStore } from '../../lib/store.js';
+import { Button } from '../../components/app';
 import { appPath } from '../host';
 import { useAuthGate, useResumeIntent, INTENTS } from '../auth/AuthGate';
+import { HeroPanel } from './parts';
 
 /*
  * The two ways into the app, shown on Home until you've taken them:
  * become a creator (campaigns) and join the community (guestlists, gigs,
- * giveaways). Joining the community is one tap; signed-out visitors sign in
- * first and the join finishes when they come back.
+ * giveaways). Both use the hero card from creator home: dark with the green
+ * corner glow, dot texture and the faded "N." mark, one headline, one line
+ * and one button.
+ *
+ * Applying opens the application in place (a sheet over Home). Joining the
+ * community is one tap; signed-out visitors sign in first and the join
+ * finishes when they come back.
  */
 
-const Tile = ({ featured, icon: Icon, label, title, text, cta, to, onClick, busy }) => {
-    const cls = cn(
-        'group flex h-full gap-4 rounded-3xl p-5 text-left transition-transform active:scale-[0.99]',
-        featured
-            ? 'bg-neon-green text-black shadow-[0_18px_40px_-22px_rgba(57,255,20,0.8)]'
-            : 'border border-black/[0.07] bg-white text-gray-900 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white'
-    );
-    const body = (
-        <>
-            <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
-                featured ? 'bg-black/10' : 'bg-emerald-500/10 text-emerald-700 dark:bg-neon-green/10 dark:text-neon-green')}>
-                <Icon size={20} />
-            </span>
-            <span className="min-w-0 flex-1">
-                <span className={cn('block text-[11px] font-black uppercase tracking-[0.18em]', featured ? 'text-black/60' : 'text-gray-500 dark:text-zinc-500')}>{label}</span>
-                <span className="mt-0.5 block font-heading text-[19px] font-black leading-tight tracking-tight">{title}</span>
-                <span className={cn('mt-1 block text-[14px] leading-snug', featured ? 'text-black/70' : 'text-gray-600 dark:text-zinc-400')}>{text}</span>
-                <span className="mt-3 inline-flex items-center gap-1 text-[15px] font-bold">
-                    {busy ? 'Joining…' : cta} <ArrowUpRight size={16} />
-                </span>
-            </span>
-        </>
-    );
-    return to
-        ? <Link to={to} className={cls}>{body}</Link>
-        : <button type="button" onClick={onClick} disabled={busy} className={cls}>{body}</button>;
-};
+const Tile = ({ eyebrow, title, text, action }) => (
+    <HeroPanel eyebrow={eyebrow} title={title} className="h-full">
+        <p className="text-[15px] text-gray-600 dark:text-zinc-300">{text}</p>
+        <div className="pt-1">{action}</div>
+    </HeroPanel>
+);
 
 const JoinPaths = () => {
     const authUser = useAppStore(s => s.authUser);
@@ -51,6 +33,7 @@ const JoinPaths = () => {
     const isCreator = useCapability('creator');
     const isMember = useCapability('member');
     const { run } = useAuthGate();
+    const location = useLocation();
     const [busy, setBusy] = useState(false);
 
     const join = async () => {
@@ -72,30 +55,26 @@ const JoinPaths = () => {
     const tiles = [
         !isCreator && {
             key: 'creator',
-            featured: true,
-            icon: Sparkles,
-            label: 'Creators',
-            title: 'Become a Newbi creator',
-            text: 'Paid and barter campaigns, concert access and tickets for the shows you post about.',
-            cta: 'Apply with your Instagram',
-            to: appPath('/creator/apply'),
+            eyebrow: 'Creators',
+            title: 'Get passes, products and paid work for posting about the shows you love.',
+            text: 'Add your Instagram and you’re done. Approved creators get invited to brand and event campaigns.',
+            action: <Button to={appPath('/creator/apply')} state={{ backgroundLocation: location }}>Apply as a creator</Button>,
         },
         !isMember && {
             key: 'community',
-            icon: Ticket,
-            label: 'Fans & students',
-            title: 'Join the community',
-            text: 'Guestlists, volunteer gigs and giveaways for shows near you. Free.',
-            cta: authUser ? 'Join in one tap' : 'Sign in and join',
-            onClick: () => run({ type: INTENTS.joinCommunity }, join),
+            eyebrow: 'Fans & students',
+            title: 'Guestlists, gigs and giveaways for shows near you.',
+            text: 'Join the Newbi community. It’s free and takes one tap.',
+            action: <Button loading={busy} onClick={() => run({ type: INTENTS.joinCommunity }, join)}>{authUser ? 'Join the community' : 'Sign in and join'}</Button>,
         },
     ].filter(Boolean);
 
     if (!tiles.length) return null;
 
     return (
-        <section aria-label="Ways in" className={cn('grid gap-3', tiles.length > 1 && 'sm:grid-cols-2')}>
-            {tiles.map(({ key, ...t }) => <Tile key={key} {...t} busy={key === 'community' && busy} />)}
+        // One column on every screen, like the phone layout.
+        <section aria-label="Ways in" className="grid gap-3">
+            {tiles.map(({ key, ...t }) => <Tile key={key} {...t} />)}
         </section>
     );
 };
