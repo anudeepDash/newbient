@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { useStore } from '../../../lib/store';
 import { toDate } from './format';
@@ -115,4 +115,40 @@ export const useGuestEntries = (guestlistIds, enabled = true) => {
     }, [key, enabled]);
 
     return state;
+};
+
+/**
+ * Live passes (passes/{ref}) for an event: guestlist passes, creator campaign
+ * tickets and confirmed orders, so the gate scanner can check them offline.
+ * Matches the event id and the event's guestlist ids (staff can read passes).
+ */
+export const useEventPasses = (eventId, guestlistIds = [], enabled = true) => {
+    const key = [eventId, ...(guestlistIds || [])].filter(Boolean).join('|');
+    const [passes, setPasses] = useState([]);
+    useEffect(() => {
+        const ids = key ? [...new Set(key.split('|'))].slice(0, 30) : [];
+        if (!enabled || !ids.length) {
+            setPasses([]);
+            return undefined;
+        }
+        const byQuery = {};
+        const publish = () => {
+            const seen = new Map();
+            Object.values(byQuery).flat().forEach(p => seen.set(p.ref, p));
+            setPasses([...seen.values()]);
+        };
+        const listen = (name, q) => onSnapshot(q, snap => {
+            byQuery[name] = snap.docs.map(d => ({ ...d.data(), ref: d.id }));
+            publish();
+        }, err => {
+            // Until the passes rules are deployed this is denied; the scanner still checks online.
+            if (err?.code !== 'permission-denied') console.warn('Passes failed to load:', err);
+        });
+        const unsubs = [
+            listen('event', query(collection(db, 'passes'), where('eventId', 'in', ids))),
+            listen('source', query(collection(db, 'passes'), where('sourceId', 'in', ids))),
+        ];
+        return () => unsubs.forEach(u => u());
+    }, [key, enabled]);
+    return passes;
 };

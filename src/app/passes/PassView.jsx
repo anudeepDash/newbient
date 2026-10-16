@@ -1,0 +1,97 @@
+import React from 'react';
+import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
+import Ban from 'lucide-react/dist/esm/icons/ban';
+import { AmbientBackdrop, Field, Stat, StatRow } from '../../components/app';
+import { isPresent } from '../../lib/present';
+import { cn } from '../../lib/utils';
+import { ExternalTicketButton, PassQr, passWhen } from './passParts';
+
+/*
+ * One pass, as the holder shows it at the gate: poster, event details, the QR
+ * code and the code under it. Every detail is shown only when it exists.
+ * Used by /p/:ref and the /t/:token ticket link.
+ */
+
+const SOURCE_LABEL = { guestlist: 'Guestlist pass', campaign: 'Creator ticket', order: 'Ticket' };
+
+const PassView = ({ pass, token, offline = false }) => {
+    const event = pass.event || {};
+    const title = event.title || pass.campaignTitle || 'Your pass';
+    const when = passWhen(event);
+    const revoked = pass.status === 'revoked';
+    const checkedIn = pass.status === 'checked_in';
+    const pending = pass.status === 'pending';
+    const showQr = pass.qr !== false && pass.mode !== 'rsvp' && !revoked && !pending;
+    const qty = Number(pass.qty) > 1 ? Number(pass.qty) : null;
+
+    return (
+        <article className="relative mx-auto w-full max-w-md overflow-hidden rounded-[2rem] border border-black/[0.06] bg-white shadow-[0_20px_60px_-20px_rgba(0,0,0,0.25)] dark:border-white/[0.08] dark:bg-[#0c0e14]">
+            <AmbientBackdrop image={event.image} />
+            {isPresent(event.image) && (
+                <div className="relative aspect-video w-full overflow-hidden" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 55%, transparent)', maskImage: 'linear-gradient(to bottom, #000 55%, transparent)' }}>
+                    <img src={event.image} alt="" className="h-full w-full object-cover" decoding="async" />
+                </div>
+            )}
+            <div className={cn('relative space-y-5 px-5 pb-6 sm:px-6', isPresent(event.image) ? '-mt-6' : 'pt-6')}>
+                <div className="space-y-1.5 text-center">
+                    <p className="text-[12px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-neon-green">
+                        {pass.mode === 'rsvp' ? 'RSVP' : SOURCE_LABEL[pass.source] || 'Pass'}
+                    </p>
+                    <h1 className="font-heading text-[26px] font-black leading-tight tracking-tight">{title}</h1>
+                    {isPresent(pass.campaignTitle) && pass.campaignTitle !== title && (
+                        <p className="text-[14px] text-gray-600 dark:text-zinc-400">{pass.campaignTitle}</p>
+                    )}
+                </div>
+
+                {revoked && (
+                    <p className="flex items-center justify-center gap-2 rounded-2xl bg-red-500/10 px-4 py-3 text-[15px] font-bold text-red-700 dark:text-red-300">
+                        <Ban size={17} /> This pass was cancelled.
+                    </p>
+                )}
+                {pending && (
+                    <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-center text-[15px] font-semibold text-amber-800 dark:text-amber-300">
+                        Waiting for approval. We’ll send your pass as soon as you’re in.
+                    </p>
+                )}
+
+                {showQr && (
+                    <div className="relative">
+                        <PassQr value={pass.ref} dimmed={checkedIn} />
+                        {checkedIn && (
+                            <span className="absolute inset-0 flex items-center justify-center">
+                                <span className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-[15px] font-black text-white shadow-lg">
+                                    <CircleCheck size={18} /> Checked in
+                                </span>
+                            </span>
+                        )}
+                        <p className="mt-3 text-center font-mono text-[20px] font-black tracking-[0.25em]">{pass.ref}</p>
+                        {!checkedIn && <p className="text-center text-[13px] text-gray-500 dark:text-zinc-400">Show this at the gate. Turn your brightness up.</p>}
+                    </div>
+                )}
+
+                <ExternalTicketButton pass={pass} token={token} />
+
+                <div className="divide-y divide-black/[0.05] rounded-2xl border border-black/[0.05] px-4 dark:divide-white/[0.06] dark:border-white/[0.07]">
+                    <Field icon={CalendarDays} label="When" value={when} />
+                    <Field icon={MapPin} label="Venue" value={[event.venue, event.city && !String(event.venue || '').includes(event.city) ? event.city : null].filter(Boolean).join(', ') || null} />
+                </div>
+
+                <StatRow>
+                    <Stat label={pass.source === 'guestlist' ? 'Guests' : 'Tickets'} value={qty} />
+                    <Stat label="Tier" value={pass.tier || pass.externalTicket?.tier} tone="accent" />
+                    <Stat label="Name" value={pass.holderName} />
+                </StatRow>
+
+                {isPresent(pass.note || pass.externalTicket?.note) && (
+                    <p className="rounded-2xl bg-black/[0.03] px-4 py-3 text-[15px] text-gray-700 dark:bg-white/[0.04] dark:text-zinc-300">{pass.note || pass.externalTicket?.note}</p>
+                )}
+
+                {offline && <p className="text-center text-[13px] text-gray-500 dark:text-zinc-500">Offline copy saved on this phone.</p>}
+            </div>
+        </article>
+    );
+};
+
+export default PassView;

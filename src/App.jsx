@@ -20,14 +20,13 @@ const Proposal = lazy(() => import('./pages/Proposal'));
 const Agreement = lazy(() => import('./pages/Agreement'));
 const FormViewer = lazy(() => import('./pages/FormViewer'));
 const CommunityJoin = lazy(() => import('./pages/CommunityJoin'));
-const GiveawayPage = lazy(() => import('./pages/GiveawayPage'));
 const ActionHandler = lazy(() => import('./pages/Auth/ActionHandler'));
 const ConcertZoneBlog = lazy(() => import('./pages/ConcertZoneBlog'));
 const BlogPostDetail = lazy(() => import('./pages/BlogPostDetail'));
 const ArtistAnt = lazy(() => import('./pages/ArtistAnt'));
 const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
-const DigitalTicket = lazy(() => import('./pages/DigitalTicket'));
+const ToApp = lazy(() => import('./app/ToApp'));
 const PayeeRegistration = lazy(() => import('./pages/PayeeRegistration'));
 const VerifyPayout = lazy(() => import('./pages/VerifyPayout'));
 const VerifyCreator = lazy(() => import('./pages/VerifyCreator'));
@@ -274,8 +273,9 @@ function AppContent() {
             <Route path="forms/:id" element={<MaintenanceGuard isPage featureId="forms_public"><FormViewer /></MaintenanceGuard>} />
             <Route path="form/:id" element={<MaintenanceGuard isPage featureId="forms_public"><FormViewer /></MaintenanceGuard>} />
             <Route path="form" element={<MaintenanceGuard isPage featureId="forms_public"><FormViewer /></MaintenanceGuard>} />
-            <Route path="giveaway/:slug" element={<MaintenanceGuard isPage featureId="giveaways_public"><GiveawayPage /></MaintenanceGuard>} />
-            <Route path="ticket/:id" element={<MaintenanceGuard isPage featureId="ticketing"><DigitalTicket /></MaintenanceGuard>} />
+            {/* Passes and giveaways live in the app now (Phase 5). */}
+            <Route path="giveaway/:slug" element={<ToApp to="/community/giveaways/:slug" />} />
+            <Route path="ticket/:id" element={<ToApp to="/p/:id" />} />
             
             <Route path="concertzone" element={<MaintenanceGuard isPage featureId="concerts"><ConcertZoneBlog /></MaintenanceGuard>} />
             <Route path="concertzone/:category" element={<MaintenanceGuard isPage featureId="concerts"><ConcertZoneBlog /></MaintenanceGuard>} />

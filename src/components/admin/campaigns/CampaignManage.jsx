@@ -50,6 +50,11 @@ import ExportMenu from '../ExportMenu';
 import CreatorDetailModal from '../CreatorDetailModal';
 import ApplicantSheet from './ApplicantSheet';
 import { MessageSheet, PayoutSheet, ChangesSheet } from './ActionSheets';
+import TicketsSheet from './TicketsSheet';
+import CampaignTickets from './CampaignTickets';
+import { canGetTicket, passFor, passesByCreator, useCampaignPasses } from './ticketModel';
+import { passesPost } from '../../../lib/passesApi';
+import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import { BrandMark, CampaignStatusPill, CampaignThumb, CheckBox, ConfirmSheet, Spinner, StageBadge } from './parts';
 import {
     STAGES, applicantsFor, campaignStatus, creatorHandle, creatorPhotoOf, creatorKeys, creatorRef, formatCount, formatDay,
@@ -74,7 +79,7 @@ const CampaignManage = ({
     const campaign = findCampaignById(campaigns, campaignId);
 
     const [searchParams, setSearchParams] = useSearchParams();
-    const tab = ['applicants', 'deliverables', 'brief'].includes(searchParams.get('tab')) ? searchParams.get('tab') : 'applicants';
+    const tab = ['applicants', 'deliverables', 'tickets', 'brief'].includes(searchParams.get('tab')) ? searchParams.get('tab') : 'applicants';
     const stageFilter = ['all', ...STAGES.map(s => s.value)].includes(searchParams.get('stage')) ? searchParams.get('stage') : 'all';
     const openKey = searchParams.get('creator') || '';
     const setParams = (patch, push = false) => {
@@ -101,6 +106,9 @@ const CampaignManage = ({
     const [confirmToggle, setConfirmToggle] = useState(true);
     const [taskFilter, setTaskFilter] = useState('review');
     const [showBrief, setShowBrief] = useState(false);
+    const [ticketsFor, setTicketsFor] = useState(null); // entries for the Send tickets sheet
+    const { passes, loaded: passesLoaded, error: passesError } = useCampaignPasses(campaign?.id);
+    const passMap = useMemo(() => passesByCreator(passes), [passes]);
 
     const applicants = useMemo(() => (campaign ? applicantsFor(campaign, creators) : []), [campaign, creators]);
     const byKey = useMemo(() => new Map(applicants.map(a => [a.key, a])), [applicants]);
@@ -170,6 +178,17 @@ const CampaignManage = ({
         else addToast(okText, 'success');
     };
 
+    // The campaign's auto-send rule (editor → Event tickets): Newbi passes go out on selection or when the work is done.
+    const autoIssue = async (entries, rule) => {
+        if (!campaign.eventId || campaign.ticketAutoIssue !== rule) return;
+        const ids = entries.filter(e => { const p = passFor(passMap, e.creator); return !p || p.qr === false; }).map(e => e.creator.id);
+        if (!ids.length) return;
+        const res = await passesPost('issue-campaign', { campaignId: campaign.id, creatorIds: ids.slice(0, 25) }, { timeoutMs: 60000 });
+        if (!res.ok) { addToast(`Tickets weren't sent: ${res.error}`, 'warning'); return; }
+        const sent = res.data.results.filter(r => ['issued', 'updated'].includes(r.outcome)).length;
+        if (sent) addToast(`${sent === 1 ? 'Ticket' : `${sent} tickets`} sent automatically.`, 'success');
+    };
+
     const selectEntries = (entries, notify = true) => guard(async () => {
         try {
             const keys = entries.map(e => e.key);
@@ -181,6 +200,7 @@ const CampaignManage = ({
             }
             reportPartial(result, result.done.length === 1 ? 'Creator selected.' : `${result.done.length} creators selected.`);
             setChecked(new Set());
+            await autoIssue(entries.filter(e => result.done.includes(e.key)), 'selected');
         } catch {
             addToast("Couldn't select those creators. Please try again.", 'error');
         }
@@ -262,6 +282,19 @@ const CampaignManage = ({
                 )));
             }
             addToast(statusValue === 'approved' ? (items.length === 1 ? 'Approved.' : `${items.length} submissions approved.`) : 'Feedback sent.', 'success');
+            if (statusValue === 'approved') {
+                // Creators whose required tasks are now all approved (counting the ones just approved).
+                const justApproved = new Map();
+                items.forEach(({ entry, task }) => {
+                    if (!justApproved.has(entry.key)) justApproved.set(entry.key, { entry, tasks: new Set() });
+                    justApproved.get(entry.key).tasks.add(task.id);
+                });
+                const done = [...justApproved.values()].filter(({ entry, tasks }) => {
+                    const required = entry.progress.items.filter(i => i.task.priority !== 'optional');
+                    return required.length > 0 && required.every(i => i.status === 'approved' || tasks.has(i.task.id));
+                }).map(x => x.entry);
+                await autoIssue(done, 'completed');
+            }
         } catch {
             addToast("Couldn't save your review. Please try again.", 'error');
             throw new Error('review failed');
@@ -678,6 +711,9 @@ const CampaignManage = ({
                                 <Button size="sm" variant="success" onClick={() => setPayTo(checkedEntries.filter(a => SELECTED_STAGES.includes(a.stage) && a.stage !== 'paid'))} disabled={busy} className="hidden h-10 sm:inline-flex"><Wallet size={13} /> Mark paid</Button>
                             )}
                             <Button size="sm" variant="secondary" onClick={() => setMessageTo(checkedEntries)} className="h-10"><Send size={13} /> Message</Button>
+                            {checkedEntries.some(canGetTicket) && (
+                                <Button size="sm" variant="secondary" onClick={() => setTicketsFor(checkedEntries.filter(canGetTicket))} className="h-10"><Ticket size={13} /> Tickets</Button>
+                            )}
                             <Menu trigger={({ toggle }) => (
                                 <Button size="sm" variant="secondary" onClick={toggle} aria-label="More bulk actions" className="h-10 w-10 px-0"><MoreHorizontal size={15} /></Button>
                             )}>
@@ -721,6 +757,7 @@ const CampaignManage = ({
                         <Button variant="secondary" onClick={toggle} aria-label="More campaign actions" className="h-10 w-10 px-0"><MoreHorizontal size={16} /></Button>
                     )}>
                         <MenuItem as={Link} to={`/campaign/${encodeURIComponent(campaign.id)}`} target="_blank" rel="noopener noreferrer" icon={ExternalLink}>Open public page</MenuItem>
+                        <MenuItem icon={Ticket} onClick={() => setTicketsFor([])} hint="Newbi passes or official tickets (CSV)">Send tickets</MenuItem>
                         <MenuItem icon={Copy} onClick={() => onDuplicate(campaign)} hint="Opens a copy as a draft">Duplicate</MenuItem>
                         <MenuItem icon={Pin} disabled={busyId === campaign.id} onClick={() => onTogglePin(campaign)}>{campaign.isPinned ? 'Unpin' : 'Pin to top'}</MenuItem>
                         {status === 'open' && <MenuItem icon={Megaphone} disabled={busyId === campaign.id} onClick={() => onAnnounce(campaign)} hint="Email + app notification">Tell matching creators again</MenuItem>}
@@ -778,12 +815,15 @@ const CampaignManage = ({
                     items={[
                         { value: 'applicants', label: 'Applicants', count: applicants.length },
                         { value: 'deliverables', label: 'Deliverables', count: totalToReview || undefined, highlight: totalToReview > 0 },
+                        ...(campaign.eventId || passes.length ? [{ value: 'tickets', label: 'Tickets', count: passes.filter(p => p.status !== 'revoked').length || undefined }] : []),
                         { value: 'brief', label: 'Brief and settings' },
                     ]}
                 />
             </div>
 
-            {tab === 'applicants' ? applicantsTab : tab === 'deliverables' ? tasksTab : briefTab}
+            {tab === 'applicants' ? applicantsTab : tab === 'deliverables' ? tasksTab : tab === 'tickets' ? (
+                <CampaignTickets campaign={campaign} applicants={applicants} passes={passes} loaded={passesLoaded} error={passesError} onSend={() => setTicketsFor([])} />
+            ) : briefTab}
 
             <ApplicantSheet
                 open={Boolean(openEntry)}
@@ -800,6 +840,17 @@ const CampaignManage = ({
                 onRequestChanges={(entry, task) => setChanges({ entry, task })}
                 onMessage={(e) => setMessageTo([e])}
                 onOpenProfile={(c) => setProfile(c)}
+                ticket={openEntry ? passFor(passMap, openEntry.creator) : null}
+                onSendTicket={(e) => setTicketsFor([e])}
+            />
+
+            <TicketsSheet
+                open={Boolean(ticketsFor)}
+                onClose={() => setTicketsFor(null)}
+                campaign={campaign}
+                applicants={applicants}
+                preselected={ticketsFor || []}
+                passes={passes}
             />
 
             <MessageSheet open={Boolean(messageTo)} onClose={() => setMessageTo(null)} campaign={campaign} entries={messageTo || []} />
