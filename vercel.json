@@ -11,6 +11,10 @@
         {
             "path": "/api/mail",
             "schedule": "30 3 * * *"
+        },
+        {
+            "path": "/api/cron/refresh-instagram",
+            "schedule": "0 4 * * *"
         }
     ],
     "redirects": [
@@ -354,6 +358,18 @@
         {
             "source": "/api/whatsapp-verify",
             "destination": "/api/creator-join.js?action=whatsapp-verify"
+        },
+        {
+            "source": "/api/instagram/connect",
+            "destination": "/api/creator-join.js?action=ig-connect"
+        },
+        {
+            "source": "/api/instagram/callback",
+            "destination": "/api/creator-join.js?action=ig-callback"
+        },
+        {
+            "source": "/api/cron/refresh-instagram",
+            "destination": "/api/creator-join.js?action=instagram-cron"
         },
         {
             "source": "/creator",
