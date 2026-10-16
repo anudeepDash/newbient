@@ -25,20 +25,23 @@ const Shimmer = ({ className }) => <span className={cn('block animate-pulse roun
 const STATUS = {
     checking: { icon: Loader2, spin: true, label: 'Checking Instagram…', tone: 'text-zinc-300' },
     found: { icon: Instagram, label: 'Found on Instagram', tone: 'text-zinc-200' },
+    estimated: { icon: Instagram, label: 'From your public Instagram · we’ll confirm it', tone: 'text-zinc-300' },
     connected: { icon: BadgeCheck, label: 'Verified with Instagram', tone: 'text-neon-green' },
     later: { icon: Hourglass, label: 'We’ll verify your followers shortly', tone: 'text-zinc-300' },
+    manual: { icon: Hourglass, label: 'Your count · we’ll confirm it on Instagram', tone: 'text-zinc-300' },
     approved: { icon: BadgeCheck, label: 'Approved', tone: 'text-neon-green' },
     review: { icon: Hourglass, label: 'In review', tone: 'text-amber-300' },
 };
 
-const CreatorPass = ({ handle, lookup, profile, city, niches = [], customNiche, status, passId, className }) => {
+const CreatorPass = ({ handle, lookup, profile, city, niches = [], customNiche, manualFollowers = 0, status, passId, className }) => {
     const found = lookup?.state === 'found' ? lookup.profile : null;
     const picture = found?.profilePic || profile?.photoURL || null;
     const name = found?.name || profile?.name || null;
-    const followers = compactCount(found?.followers);
+    const followers = compactCount(found?.followers || (!found && manualFollowers) || 0);
     const statusKey = status || (lookup?.state === 'checking' ? 'checking'
-        : found ? (lookup.connected ? 'connected' : 'found')
-            : handle && ['unavailable', 'disabled'].includes(lookup?.state) ? 'later' : null);
+        : found ? (lookup.connected ? 'connected' : found.estimated ? 'estimated' : 'found')
+            : handle && manualFollowers ? 'manual'
+                : handle && ['unavailable', 'disabled'].includes(lookup?.state) ? 'later' : null);
     const s = STATUS[statusKey];
     const shownNiches = niches.map(n => nicheLabel(n, customNiche)).filter(Boolean);
 

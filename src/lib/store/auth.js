@@ -29,9 +29,24 @@ export const createAuthSlice = (set) => ({
         set({ authUser: pickAuthUser(legacyState.user), authReady: Boolean(legacyState.authInitialized) });
     },
 
-    /* Opens the sign-in sheet (AuthOverlay). */
-    openSignIn: () => useLegacyStore.getState().setAuthModal(true),
+    /*
+     * The one account sheet (src/app/auth/SignInSheet). `require` lists the
+     * profile fields the next action needs (requirements.js); after sign-in the
+     * same sheet asks for any that are missing. `action` runs when a signed-in
+     * user finishes those details (signed-out flows resume through their intent).
+     */
+    accountRequire: ['name'],
+    accountAction: null,
+    openSignIn: ({ require = [], action = null } = {}) => {
+        set({ accountRequire: Array.from(new Set(['name', ...require])), accountAction: action });
+        useLegacyStore.getState().setAuthModal(true);
+    },
     closeSignIn: () => useLegacyStore.getState().setAuthModal(false),
+    takeAccountAction: () => {
+        let action = null;
+        set((state) => { action = state.accountAction; return { accountAction: null, accountRequire: ['name'] }; });
+        return action;
+    },
 
     signInWithGoogle,
     finishRedirectSignIn,

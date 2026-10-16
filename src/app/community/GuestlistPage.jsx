@@ -112,7 +112,8 @@ const GuestlistPage = () => {
         }
     }, [wantStart, uid, profileLoaded, gl]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const register = () => gate.run({ type: INTENTS.guestlistRegister, payload: { id } }, () => setWantStart(true));
+    // One account sheet: sign in and any missing details (name, verified phone), then register.
+    const register = () => gate.run({ type: INTENTS.guestlistRegister, payload: { id } }, () => setWantStart(true), { require: requirementsFor('guestlist') });
     useResumeIntent(INTENTS.guestlistRegister, () => setWantStart(true));
 
     const when = gl ? passWhen({ date: gl.date, time: gl.time }) : null;

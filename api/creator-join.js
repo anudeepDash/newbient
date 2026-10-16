@@ -511,7 +511,7 @@ export default async function handler(req, res) {
                 console.warn('[API/CREATOR-JOIN] Deduplication check notice:', snapErr.message);
             }
 
-            const lookup = settings.metaVerification ? await lookupInstagram(cleanHandle, { db: adminDb }) : { ok: false, reason: 'not_configured' };
+            const lookup = await lookupInstagram(cleanHandle, { db: adminDb, useMeta: settings.metaVerification });
             if (!lookup.ok) {
                 return res.status(200).json({
                     success: false,

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
 import Check from 'lucide-react/dist/esm/icons/check';
@@ -8,11 +8,11 @@ import { Button, Sheet, TextInput } from '../../../components/app';
 import { useAppStore } from '../../../lib/store/appStore';
 import { cn } from '../../../lib/utils';
 import { CREATOR_NICHE_OPTIONS } from '../../../lib/creator/options';
-import AuthGate, { INTENTS } from '../../auth/AuthGate';
-import CompleteProfileSheet from '../../profile/CompleteProfileSheet';
-import { missingFields } from '../../profile/requirements';
+import { INTENTS, useAuthGate, useResumeIntent } from '../../auth/AuthGate';
 import { appPath } from '../../host';
 import { PageBody } from '../../pages/PageHeader';
+import { GLASS } from '../../pages/parts';
+import Sticker from '../../../components/brand/Sticker';
 import { creatorPassId } from '../format';
 import { ChoiceChip, Notice, STICKY_DOCK } from '../ui';
 import { useCreatorApplication, MAX_NICHES, isValidHandle } from './useCreatorApplication';
@@ -30,8 +30,9 @@ import { SwitchGuide, oauthErrorMessage } from './instagramCopy';
  * sheet over the current page, with Apply in the sheet's footer; opened by
  * URL it's a page with a sticky dock.
  *
- * Phone and email come from the account; CompleteProfileSheet asks only if
- * one is missing, at the moment you tap Apply. Rates, bio and other socials
+ * Anyone can fill it in; the Instagram lookup works before sign-in. Tapping
+ * Apply goes through the one account sheet (sign in, then any missing name,
+ * email or verified phone) and then sends it. Rates, bio and other socials
  * are added later from the creator profile. The server decides the status.
  */
 
@@ -47,20 +48,42 @@ const safeNext = (value) => (typeof value === 'string' && /^\/c\/[^/?#]+$/.test(
 
 const CITIES = ['Bengaluru', 'Mumbai', 'Delhi NCR', 'Pune', 'Hyderabad', 'Chennai', 'Kolkata', 'Ahmedabad', 'Goa', 'Jaipur', 'Chandigarh', 'Kochi'];
 
-const Step = ({ n, title, done, hint, children }) => (
-    <section className="space-y-3">
-        <div className="flex items-center gap-3">
-            <span className={cn(
-                'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[13px] font-black transition-colors',
-                done ? 'bg-neon-green text-black' : 'bg-black/[0.06] text-gray-500 dark:bg-white/[0.08] dark:text-zinc-400'
-            )}>
-                {done ? <Check size={15} strokeWidth={3} /> : n}
-            </span>
-            <h2 className="text-[17px] font-black tracking-tight">{title}</h2>
-            {hint && <span className="ml-auto text-[12px] font-bold text-gray-500 dark:text-zinc-500">{hint}</span>}
+/* A glass section with a small label, like the landing site's panels. */
+const Block = ({ label, done, hint, children }) => (
+    <section className={cn('space-y-3 rounded-[1.75rem] p-5', GLASS)}>
+        <div className="flex items-center gap-2">
+            <span className={cn('h-2 w-2 rounded-full transition-colors', done ? 'bg-neon-green shadow-[0_0_8px_rgba(57,255,20,0.9)]' : 'bg-black/20 dark:bg-white/25')} aria-hidden="true" />
+            <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-600 dark:text-zinc-400">{label}</h2>
+            {hint && <span className="ml-auto text-[12px] font-semibold text-gray-500 dark:text-zinc-500">{hint}</span>}
         </div>
-        <div className="sm:pl-10">{children}</div>
+        {children}
     </section>
+);
+
+/* When Instagram can't be read automatically: the creator types their count, and the team confirms it. */
+const ManualFollowers = ({ app }) => (
+    <div className={cn('space-y-2 rounded-[1.25rem] p-4', GLASS)}>
+        <label htmlFor="manual-followers" className="block text-[14px] font-bold">
+            {app.lookup.state === 'not_found' ? 'Sure it’s right? Add your followers' : 'We couldn’t read your Instagram. Add your followers'}
+        </label>
+        <input
+            id="manual-followers"
+            value={app.manualFollowers}
+            onChange={(e) => app.setManualFollowers(e.target.value.replace(/[^\d.,kKmM\s]/g, '').slice(0, 12))}
+            inputMode="decimal"
+            autoComplete="off"
+            placeholder="e.g. 12.5k or 12500"
+            className="h-12 w-full rounded-xl bg-white/70 px-4 text-[16px] font-bold text-gray-900 outline-none ring-1 ring-inset ring-black/[0.08] placeholder:font-medium placeholder:text-gray-400 focus:ring-2 focus:ring-neon-green/70 dark:bg-white/[0.06] dark:text-white dark:ring-white/[0.12] dark:placeholder:text-zinc-600"
+        />
+        {app.manualBelowMin ? (
+            <p className="text-[13px] font-medium text-amber-700 dark:text-amber-300">Newbi Creators starts at {app.lookup.minFollowers.toLocaleString('en-IN')} followers.</p>
+        ) : app.manualFollowers && !app.manualCount ? (
+            <p className="text-[13px] font-medium text-red-600 dark:text-red-400">Enter a number, like 12500 or 12.5k.</p>
+        ) : (
+            <p className="text-[13px] text-gray-500 dark:text-zinc-400">We’ll check it on your profile before you’re approved.</p>
+        )}
+        <button type="button" onClick={() => app.check(app.handle)} className="text-[13px] font-bold text-gray-700 underline underline-offset-2 dark:text-zinc-300">Try the automatic check again</button>
+    </div>
 );
 
 const confetti = () => {
@@ -131,40 +154,26 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
     const referredBy = useMemo(() => readRef(params), [params]);
     const next = safeNext(params.get('next'));
     const app = useCreatorApplication({ referredBy, initialCity: profile?.city || '' });
-    const [sheet, setSheet] = useState({ open: false, fields: [] });
     const [otherCity, setOtherCity] = useState(false);
     const [oauthError, setOauthError] = useState(null);
-    const afterSheet = useRef(null);
+    const gate = useAuthGate();
 
     useEffect(() => { loadCreatorSettings(); }, [loadCreatorSettings]);
-    const metaOn = Boolean(settings?.metaVerification);
     const { check, handle } = app;
 
-    // Look the handle up while typing (debounced), when Meta verification is on.
+    // Look the handle up while typing (debounced): Meta when it's on, else the public profile.
     useEffect(() => {
-        if (!metaOn) return undefined;
         const t = setTimeout(() => check(handle), 500);
         return () => clearTimeout(t);
-    }, [handle, metaOn, check]);
-
-    // What the account still needs. A name from Instagram counts.
-    const missing = useMemo(() => {
-        if (!profileLoaded) return [];
-        const list = missingFields(profile, ['email', 'phoneVerified']);
-        if (!profile?.name && !app.found?.profile?.name) list.unshift('name');
-        return list;
-    }, [profileLoaded, profile, app.found]);
+    }, [handle, check]);
 
     const go = () => (app.needsConnect ? app.connect() : app.submit());
+    // One account sheet: sign in, then any missing name, email or verified phone, then send.
     const apply = () => {
         if (!app.ready) return;
-        if (missing.length) {
-            afterSheet.current = go;
-            setSheet({ open: true, fields: missing });
-            return;
-        }
-        go();
+        gate.run({ type: INTENTS.creatorApply }, go, { require: ['name', 'email', 'phoneVerified'] });
     };
+    useResumeIntent(INTENTS.creatorApply, () => { if (app.ready) go(); });
 
     // Back from the Instagram login: show the result, and send the application if that's what was asked.
     useEffect(() => {
@@ -202,77 +211,72 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
     const dock = (
         <div className="space-y-2">
             {err && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{err.error}</p>}
-            <div className="flex items-center gap-3">
-                <div className="flex gap-1" aria-label={`${doneCount} of 3 done`}>
-                    {app.steps.map(s => <span key={s.key} className={cn('h-1.5 w-5 rounded-full transition-colors', s.done ? 'bg-neon-green' : 'bg-black/[0.1] dark:bg-white/[0.12]')} />)}
-                </div>
-                <Button
-                    className="flex-1"
-                    size="lg"
-                    icon={app.needsConnect ? Instagram : undefined}
-                    disabled={!app.ready || !isValidHandle(app.handle) || belowMin || found?.alreadyRegistered}
-                    loading={app.submitting || app.connecting}
-                    onClick={apply}
-                >
-                    {app.needsConnect ? 'Verify & apply' : 'Apply'}
-                </Button>
-            </div>
+            <Button
+                className="w-full"
+                size="lg"
+                icon={app.needsConnect ? Instagram : undefined}
+                disabled={!app.ready || !isValidHandle(app.handle) || belowMin || found?.alreadyRegistered}
+                loading={app.submitting || app.connecting}
+                onClick={apply}
+            >
+                {app.needsConnect ? 'Verify & apply' : app.ready ? 'Apply' : `Apply · ${doneCount} of 3`}
+            </Button>
         </div>
     );
 
     return (
         <Frame footer={dock} onClose={onClose}>
-            <div className="mx-auto max-w-xl space-y-7">
-                <header className="space-y-1">
-                    <p className="text-[12px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-neon-green">Newbi Creators</p>
-                    <h1 className="font-heading text-[30px] font-black leading-[1.1] tracking-tight sm:text-[36px]">Apply in 30 seconds</h1>
-                    <p className="text-[15px] text-gray-600 dark:text-zinc-400">Your Instagram builds your creator profile.</p>
+            <div className="mx-auto max-w-xl space-y-5">
+                <header className="pb-1">
+                    <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-gray-700 ring-1 ring-inset ring-black/[0.06] backdrop-blur-md dark:bg-white/[0.06] dark:text-zinc-300 dark:ring-white/10">
+                        <span className="h-1.5 w-1.5 rounded-full bg-neon-green shadow-[0_0_8px_rgba(57,255,20,0.9)]" aria-hidden="true" /> Newbi creators
+                    </p>
+                    <h1 className="font-heading text-[34px] font-extrabold leading-[1.02] tracking-[-0.035em] sm:text-[40px]">Apply in <Sticker subtle>30 seconds.</Sticker></h1>
+                    <p className="mt-2 text-[15px] text-gray-600 dark:text-zinc-400">Type your Instagram. We fill in your profile from it.</p>
                 </header>
 
                 {settings?.announcement && <Notice tone="info">{settings.announcement}</Notice>}
 
-                <CreatorPass handle={app.handle} lookup={lookup} profile={profile} city={app.city} niches={app.niches} customNiche={app.customNiche} />
+                {/* The Instagram field: big, first, and it does the work */}
+                <div className="space-y-3">
+                    <label className={cn('relative flex h-16 items-center rounded-[1.25rem] pl-4 pr-3', GLASS, lookup.state === 'invalid' || lookup.state === 'not_found' ? 'ring-red-500/60 dark:ring-red-500/60' : 'focus-within:ring-2 focus-within:ring-neon-green/70')}>
+                        <span className="sr-only">Instagram username</span>
+                        <Instagram size={20} className="mr-2 shrink-0 text-gray-500 dark:text-zinc-400" />
+                        <span className="text-[18px] font-bold text-gray-400 dark:text-zinc-500">@</span>
+                        <input
+                            value={app.handle}
+                            onChange={(e) => app.setHandle(e.target.value)}
+                            placeholder="yourhandle"
+                            autoComplete="off"
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            spellCheck={false}
+                            enterKeyHint="next"
+                            className="h-full min-w-0 flex-1 bg-transparent pl-0.5 text-[18px] font-bold text-gray-900 outline-none placeholder:font-medium placeholder:text-gray-400 dark:text-white dark:placeholder:text-zinc-600"
+                        />
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center">
+                            {lookup.state === 'checking' ? <Loader2 size={18} className="animate-spin text-gray-400" />
+                                : found && !found.alreadyRegistered && !belowMin ? <span className="flex h-8 w-8 items-center justify-center rounded-full bg-neon-green text-black"><Check size={16} strokeWidth={3} /></span>
+                                    : null}
+                        </span>
+                    </label>
+                    {lookup.state === 'invalid' && <p className="px-1 text-[13px] font-medium text-red-600 dark:text-red-400">Use letters, numbers, dots and underscores. No links.</p>}
+                    {lookup.state === 'not_found' && <p className="px-1 text-[13px] font-medium text-red-600 dark:text-red-400">We couldn’t find @{lookup.handle} on Instagram. Check the spelling, or add your followers below.</p>}
+                    {app.manualAllowed && <ManualFollowers app={app} />}
+                    {lookup.state === 'not_professional' && <SwitchGuide onRetry={() => check(handle)} checking={false} />}
+                    {found?.alreadyRegistered && <Notice tone="error">This Instagram account is already linked to another Newbi creator profile.</Notice>}
+                    {belowMin && !found.alreadyRegistered && (
+                        <Notice tone="warn" title={`Newbi Creators starts at ${(found.minFollowers || 0).toLocaleString('en-IN')} followers`}>Keep growing and apply again when you get there.</Notice>
+                    )}
+                    {app.needsConnect && !belowMin && !found.alreadyRegistered && (
+                        <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-400">When you apply, you’ll confirm it’s yours on Instagram and come straight back.</p>
+                    )}
+                    {oauthError && <Notice tone="error">{oauthError}</Notice>}
+                </div>
 
-                <Step n={1} title="Your Instagram" done={app.steps[0].done}>
-                    <div className="space-y-3">
-                        <label className="relative block">
-                            <span className="sr-only">Instagram username</span>
-                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[16px] font-bold text-gray-400 dark:text-zinc-500">@</span>
-                            <input
-                                value={app.handle}
-                                onChange={(e) => app.setHandle(e.target.value)}
-                                placeholder="yourhandle"
-                                autoComplete="off"
-                                autoCapitalize="none"
-                                autoCorrect="off"
-                                spellCheck={false}
-                                enterKeyHint="next"
-                                className={cn(
-                                    'h-14 w-full rounded-2xl border bg-white pl-9 pr-12 text-[17px] font-semibold text-gray-900 outline-none transition-colors placeholder:font-normal placeholder:text-gray-400',
-                                    'border-black/[0.1] focus:border-gray-900 dark:border-white/[0.1] dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-600 dark:focus:border-neon-green/60',
-                                    lookup.state === 'invalid' && 'border-red-500/60'
-                                )}
-                            />
-                            <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-                                {lookup.state === 'checking' ? <Loader2 size={18} className="animate-spin text-gray-400" />
-                                    : found && !found.alreadyRegistered && !belowMin ? <Check size={18} strokeWidth={3} className="text-emerald-600 dark:text-neon-green" />
-                                        : <Instagram size={18} className="text-gray-400" />}
-                            </span>
-                        </label>
-                        {lookup.state === 'invalid' && <p className="text-[13px] font-medium text-red-600 dark:text-red-400">Use letters, numbers, dots and underscores. No links.</p>}
-                        {lookup.state === 'not_professional' && <SwitchGuide onRetry={() => check(handle)} checking={false} />}
-                        {found?.alreadyRegistered && <Notice tone="error">This Instagram account is already linked to another Newbi creator profile.</Notice>}
-                        {belowMin && !found.alreadyRegistered && (
-                            <Notice tone="warn" title={`Newbi Creators starts at ${(found.minFollowers || 0).toLocaleString('en-IN')} followers`}>Keep growing and apply again when you get there.</Notice>
-                        )}
-                        {app.needsConnect && !belowMin && !found.alreadyRegistered && (
-                            <p className="text-[13px] text-gray-500 dark:text-zinc-400">When you apply, you’ll confirm it’s yours on Instagram and come straight back.</p>
-                        )}
-                        {oauthError && <Notice tone="error">{oauthError}</Notice>}
-                    </div>
-                </Step>
+                <CreatorPass handle={app.handle} lookup={lookup} profile={profile} city={app.city} niches={app.niches} customNiche={app.customNiche} manualFollowers={app.manualBelowMin ? 0 : app.manualCount} />
 
-                <Step n={2} title="Your city" done={app.steps[1].done}>
+                <Block label="Your city" done={app.steps[1].done}>
                     <div className="flex flex-wrap gap-2">
                         {cityChoices.map(c => (
                             <ChoiceChip key={c} selected={app.city === c && !otherCity} onClick={() => { setOtherCity(false); app.setCity(c); }} className="py-2">{c}</ChoiceChip>
@@ -280,22 +284,21 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
                         <ChoiceChip selected={otherCity} onClick={() => { setOtherCity(true); app.setCity(''); }} className="py-2">Other</ChoiceChip>
                     </div>
                     {otherCity && (
-                        <TextInput className="mt-3" label="City" value={app.city} onChange={(e) => app.setCity(e.target.value)} placeholder="e.g. Mysuru" autoComplete="address-level2" autoFocus />
+                        <TextInput label="City" value={app.city} onChange={(e) => app.setCity(e.target.value)} placeholder="e.g. Mysuru" autoComplete="address-level2" autoFocus />
                     )}
-                </Step>
+                </Block>
 
-                <Step n={3} title="What you post" done={app.steps[2].done} hint={app.niches.length ? `${app.niches.length} of ${MAX_NICHES}` : `Up to ${MAX_NICHES}`}>
+                <Block label="What you post" done={app.steps[2].done} hint={app.niches.length ? `${app.niches.length} of ${MAX_NICHES}` : `Up to ${MAX_NICHES}`}>
                     <div className="flex flex-wrap gap-2">
                         {CREATOR_NICHE_OPTIONS.map(n => (
                             <ChoiceChip key={n.id} selected={app.niches.includes(n.id)} onClick={() => app.toggleNiche(n.id)} className="py-2">{n.label}</ChoiceChip>
                         ))}
                     </div>
                     {app.niches.includes('Others') && (
-                        <TextInput className="mt-3" label="Your niche" value={app.customNiche} onChange={(e) => app.setCustomNiche(e.target.value)} placeholder="e.g. Sneakers" maxLength={60} />
+                        <TextInput label="Your niche" value={app.customNiche} onChange={(e) => app.setCustomNiche(e.target.value)} placeholder="e.g. Sneakers" maxLength={60} />
                     )}
                     {app.campus && (
                         <TextInput
-                            className="mt-3"
                             label={app.niches.includes('College Pages') ? 'College this page represents' : 'Your college'}
                             value={app.collegeName}
                             onChange={(e) => app.setCollegeName(e.target.value)}
@@ -304,31 +307,19 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
                             maxLength={160}
                         />
                     )}
-                </Step>
+                </Block>
 
-                <div className="space-y-1 sm:pl-10">
-                    <label className="flex min-h-[44px] cursor-pointer items-center gap-3 text-[14px] text-gray-700 dark:text-zinc-300">
-                        <input type="checkbox" checked={app.whatsappOptIn} onChange={(e) => app.setWhatsappOptIn(e.target.checked)} className="h-5 w-5 shrink-0 accent-emerald-600" />
-                        Send my tickets and updates on WhatsApp
-                    </label>
-                    {referredBy && <p className="text-[13px] text-gray-500 dark:text-zinc-500">Invite code <span className="font-bold text-gray-800 dark:text-zinc-200">{referredBy}</span> applied.</p>}
-                </div>
-
+                <label className={cn('flex min-h-[56px] cursor-pointer items-center gap-3 rounded-[1.25rem] px-5 text-[14px] font-semibold text-gray-800 dark:text-zinc-200', GLASS)}>
+                    <input type="checkbox" checked={app.whatsappOptIn} onChange={(e) => app.setWhatsappOptIn(e.target.checked)} className="h-5 w-5 shrink-0 accent-[#39FF14]" />
+                    Send my tickets and updates on WhatsApp
+                </label>
+                {referredBy && <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-500">Invite code <span className="font-bold text-gray-800 dark:text-zinc-200">{referredBy}</span> applied.</p>}
             </div>
-
-            <CompleteProfileSheet
-                open={sheet.open}
-                required={sheet.fields}
-                reason="to apply as a creator"
-                onComplete={() => { const fn = afterSheet.current; afterSheet.current = null; setSheet({ open: false, fields: [] }); fn?.(); }}
-                onClose={() => { afterSheet.current = null; setSheet({ open: false, fields: [] }); }}
-            />
         </Frame>
     );
 };
 
 const CreatorApplyPage = ({ overlay = false }) => {
-    const authUser = useAppStore(s => s.authUser);
     const navigate = useNavigate();
     const location = useLocation();
     const close = useCallback(() => {
@@ -337,16 +328,8 @@ const CreatorApplyPage = ({ overlay = false }) => {
     }, [location.state, navigate]);
     const Frame = overlay ? SheetFrame : PageFrame;
 
-    if (authUser) return <ApplyFlow Frame={Frame} onClose={close} />;
-    return (
-        <Frame onClose={close}>
-            <AuthGate
-                title="Apply as a creator"
-                message="Sign in to apply. It takes about 30 seconds."
-                intent={{ type: INTENTS.creatorApply }}
-            />
-        </Frame>
-    );
+    // Open to everyone: signing in happens when you tap Apply (one account sheet).
+    return <ApplyFlow Frame={Frame} onClose={close} />;
 };
 
 export default CreatorApplyPage;

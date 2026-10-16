@@ -82,19 +82,30 @@ const findOwnCreator = async (db, uid) => {
 
 /* ── Step A: ig-lookup ─────────────────────────────────────────────────── */
 
+/* Signed-out Instagram checks: 12 per minute per IP on a warm instance. */
+const lookupHits = new Map();
+const lookupLimited = (req) => {
+    const ip = String(req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+    const now = Date.now();
+    const rec = lookupHits.get(ip) || { count: 0, reset: now + 60_000 };
+    if (now > rec.reset) { rec.count = 0; rec.reset = now + 60_000; }
+    rec.count += 1;
+    if (lookupHits.size > 5000) lookupHits.clear();
+    lookupHits.set(ip, rec);
+    return rec.count > 12;
+};
+
 const handleLookup = async (req, res, { db, token }) => {
     const settings = await readCreatorSettings(db);
-    if (!settings.metaVerification) {
-        return send(res, 200, { success: true, enabled: false, minFollowers: settings.minFollowers });
-    }
-    const result = await lookupInstagram(req.body?.handle || req.query?.handle, { db });
-    const base = { success: true, enabled: true, oauthReady: isOauthConfigured(), minFollowers: settings.minFollowers };
+    // Meta when it's switched on; otherwise (or if Meta is down) the public-profile estimate.
+    const result = await lookupInstagram(req.body?.handle || req.query?.handle, { db, useMeta: settings.metaVerification });
+    const base = { success: true, enabled: true, metaVerification: settings.metaVerification, oauthReady: settings.metaVerification && isOauthConfigured(), minFollowers: settings.minFollowers };
     if (!result.ok) return send(res, 200, { ...base, ok: false, reason: result.reason, message: result.message });
 
     const { profile } = result;
     const [taken, tokenSnap] = await Promise.all([
-        otherOwnerOf(profile.igUserId, token.uid, db),
-        tokenRef(token.uid, db).get().catch(() => null),
+        profile.igUserId && token ? otherOwnerOf(profile.igUserId, token.uid, db) : null,
+        token ? tokenRef(token.uid, db).get().catch(() => null) : null,
     ]);
     const connected = Boolean(tokenSnap?.exists && tokenSnap.data()?.igUserId === profile.igUserId);
     return send(res, 200, {
@@ -367,6 +378,9 @@ const handleApply = async (req, res, { db, token }) => {
 
     // ── Instagram ──
     const handle = cleanHandle(body.handle) || cleanHandle(existing?.instagram);
+    // Typed by the creator when the automatic check couldn't read their profile. Always reviewed.
+    const manualFollowers = Math.min(1e9, Math.max(0, Math.floor(Number(body.manualFollowers) || 0)));
+    const selfReported = (base) => ({ ...base, handle, followers: manualFollowers, via: 'self_reported', pending: true });
     let ig = { handle, igUserId: existing?.igUserId || null, followers: Number(existing?.instagramFollowers) || 0, ownershipVerified: false, via: null, pending: false, profilePic: '', name: '' };
     // An existing creator editing their profile (same handle) keeps their Instagram record as it is.
     const detailsOnly = Boolean(existing && existing.profileStatus !== 'pending_verification'
@@ -400,12 +414,30 @@ const handleApply = async (req, res, { db, token }) => {
             } else if (lookup.reason === 'not_professional' || lookup.reason === 'invalid') {
                 return send(res, 400, { success: false, code: lookup.reason, field: 'handle', error: lookup.message });
             } else {
-                // Meta is down or not set up: save it and let the cron confirm.
-                ig = { ...ig, handle, pending: true };
+                // Meta is down or not set up: save it (with the creator's own count, if given) and let the cron confirm.
+                ig = manualFollowers ? selfReported(ig) : { ...ig, handle, pending: true };
             }
         } else {
-            // Meta verification is off: the handle is saved and checked once it's on (or by an admin).
-            ig = { ...ig, handle, pending: true };
+            // Meta verification is off: fill in followers, name and picture from the public profile
+            // (an estimate), and leave ownership for an admin to review.
+            const lookup = await lookupInstagram(handle, { db, useMeta: false });
+            if (!lookup.ok && lookup.reason === 'not_found' && !manualFollowers) {
+                return send(res, 400, { success: false, code: 'not_found', field: 'handle', error: `${lookup.message} Check the spelling, or enter your followers yourself.` });
+            }
+            if (lookup.ok) {
+                ig = { ...ig, handle: lookup.profile.username || handle, followers: lookup.profile.followers, profilePic: lookup.profile.profilePic || '', name: lookup.profile.name || '', via: lookup.profile.source, pending: true };
+            } else {
+                ig = manualFollowers ? selfReported(ig) : { ...ig, handle, pending: true };
+            }
+        }
+        // A count the creator typed still has to meet the minimum.
+        if (ig.via === 'self_reported' && settings.requireVerification && settings.minFollowers > 0 && ig.followers < settings.minFollowers) {
+            return send(res, 400, {
+                success: false,
+                code: 'below_minimum',
+                field: 'manualFollowers',
+                error: `Newbi Creators starts at ${settings.minFollowers.toLocaleString('en-IN')} Instagram followers.`,
+            });
         }
         if (ig.ownershipVerified && settings.requireVerification && settings.minFollowers > 0 && ig.followers < settings.minFollowers) {
             return send(res, 400, {
@@ -752,9 +784,13 @@ export const handleCreatorAppAction = async (action, req, res, { decodedToken })
     try {
         if (action === 'ig-callback') return await handleCallback(req, res, { db });
         if (action === 'instagram-cron') return await handleCron(req, res, { db });
+        // The Instagram check works before sign-in (it only reads public data), rate-limited per visitor.
+        if (action === 'ig-lookup') {
+            if (!decodedToken && lookupLimited(req)) return send(res, 429, { success: false, error: 'Too many checks. Try again in a minute.' });
+            return await handleLookup(req, res, { db, token: decodedToken || null });
+        }
         if (!decodedToken) return send(res, 401, { success: false, error: 'Please sign in to continue.' });
         const ctx = { db, token: decodedToken };
-        if (action === 'ig-lookup') return await handleLookup(req, res, ctx);
         if (action === 'ig-connect') return await handleConnect(req, res, ctx);
         if (action === 'creator-apply') return await handleApply(req, res, ctx);
         if (action === 'campaign-apply') return await handleCampaignApply(req, res, ctx);

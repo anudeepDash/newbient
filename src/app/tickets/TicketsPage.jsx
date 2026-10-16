@@ -64,7 +64,7 @@ const TicketsPage = () => {
         setParams(next);
     };
     // Buying needs an account: sign in first, then the sheet opens where you left off.
-    const openEvent = (id) => gate.run({ type: TICKET_INTENT, payload: { id } }, () => showEvent(id));
+    const openEvent = (id) => gate.run({ type: TICKET_INTENT, payload: { id } }, () => showEvent(id), { require: ['name'] });
     useResumeIntent(TICKET_INTENT, (payload) => payload?.id && showEvent(payload.id));
     const close = () => {
         const next = new URLSearchParams(params);
