@@ -46,12 +46,6 @@ export default function CreatorPage() {
             : { icon: Star, t: 'A verified creator pass', d: 'Your Newbi profile, campaign history and status, visible to the brands we brief.' },
     ];
 
-    const stats = [
-        campaigns.length > 0 && { v: String(campaigns.length), l: campaigns.length === 1 ? 'Open campaign' : 'Open campaigns' },
-        clients.length > 0 && { v: String(clients.length), l: 'Brands worked with' },
-        points && { v: points.toLocaleString('en-IN'), l: 'Welcome points' },
-        { v: '₹0', l: 'To join' },
-    ].filter(Boolean);
 
     return (
         <div>
@@ -66,7 +60,7 @@ export default function CreatorPage() {
                         <span className="nb-exit-l block">Create with brands.</span>{' '}
                         <span className="nb-exit-r block"><span className="nb-ghost">Get into</span> <span className="text-emerald-600 dark:text-neon-green">the shows.</span></span>
                     </h1>
-                    <div className="nb-exit-fade mt-8 md:mt-10 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
+                    <div className="nb-exit-fade mt-8 md:mt-10">
                         <div className="max-w-xl">
                             <p className="text-lg md:text-2xl leading-snug text-gray-700 dark:text-zinc-300">
                                 Apply once. We match you to brand campaigns by city, niche and audience, and you work every campaign from one dashboard.
@@ -80,14 +74,6 @@ export default function CreatorPage() {
                                 </a>
                             </div>
                         </div>
-                        <dl className="grid grid-cols-2 gap-x-10 gap-y-5 lg:text-right">
-                            {stats.map((s) => (
-                                <div key={s.l}>
-                                    <dd className="font-heading font-extrabold tracking-[-0.04em] text-4xl md:text-5xl text-gray-950 dark:text-white tabular-nums">{s.v}</dd>
-                                    <dt className="mt-1 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500">{s.l}</dt>
-                                </div>
-                            ))}
-                        </dl>
                     </div>
                 </div>
             </section>

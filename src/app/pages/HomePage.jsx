@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import UserRoundPen from 'lucide-react/dist/esm/icons/user-round-pen';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
-import { useAppStore, useCapability } from '../../lib/store/appStore';
+import { useAppStore } from '../../lib/store/appStore';
 import { Card, Button } from '../../components/app';
 import { appPath } from '../host';
 import { useAuthGate } from '../auth/AuthGate';
 import { missingFields, fieldLabel } from '../profile/requirements';
 import CompleteProfileSheet from '../profile/CompleteProfileSheet';
+import JoinPaths from './JoinPaths';
 import { useAppContent } from '../useAppContent';
 import { campaignCard, feedCard } from '../cards';
 import { bySoonest, isUpcomingPass, passCard } from '../passes/passCards';
@@ -36,7 +37,6 @@ const HomePage = () => {
     const feed = useAppStore(s => s.communityFeed);
     const feedLoaded = useAppStore(s => s.communityFeedLoaded);
     const creator = useAppStore(s => s.creatorProfile);
-    const isCreator = useCapability('creator');
     const { requestSignIn } = useAuthGate();
     const [completeOpen, setCompleteOpen] = useState(false);
     const passes = useAppStore(s => s.passes);
@@ -62,6 +62,8 @@ const HomePage = () => {
                     </div>
                 </HeroPanel>
             )}
+
+            <JoinPaths />
 
             {missing.length > 0 && (
                 <button
@@ -98,9 +100,6 @@ const HomePage = () => {
                     </Rail>
                 ) : (
                     <EmptyState icon={Megaphone} title="No open campaigns right now" message="New brand and event campaigns show up here first." />
-                )}
-                {campaignsLoaded && campaigns.length > 0 && !isCreator && (
-                    <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-400">Apply as a creator from the Creator tab to join these.</p>
                 )}
             </section>
 

@@ -733,14 +733,16 @@ export const useStore = create((set, get) => ({
     posts: [], // Blog Posts
     subscribers: [], // Newsletter Subscribers
     allUsers: [], // All Registered Users (Admin only context)
+    // Firebase Auth account count; last known value until fetchMembersCount refreshes it.
     totalAuthUsers: (() => {
         try {
-            const cached = localStorage.getItem('newbi_total_auth_users');
-            return cached ? Math.max(1387, parseInt(cached, 10)) : 1387;
+            const cached = parseInt(localStorage.getItem('newbi_total_auth_users'), 10);
+            return Number.isFinite(cached) ? cached : null;
         } catch (e) {
-            return 1387;
+            return null;
         }
     })(),
+    membersCountedAt: 0,
     isSyncingUsers: false,
     lastAuthUsersSyncedAt: (() => {
         try {
@@ -5250,7 +5252,10 @@ export const useStore = create((set, get) => ({
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Count failed');
-            console.log('[Store] fetchMembersCount (API):', data.count);
+            if (Number.isFinite(data.count)) {
+                set({ totalAuthUsers: data.count, membersCountedAt: Date.now() });
+                try { localStorage.setItem('newbi_total_auth_users', String(data.count)); } catch (e) { /* private mode */ }
+            }
             return data.count;
         } catch (error) {
             console.error('[Store] fetchMembersCount error:', error);

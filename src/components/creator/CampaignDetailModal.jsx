@@ -705,20 +705,21 @@ const CampaignDetailModal = ({
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[9990] flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8"
         >
-            {/* Ambient Dark Backdrop with Blur */}
+            {/* Ambient Dark Backdrop with Blur. Phones skip the big blur layers: iPhone Safari
+                takes seconds to paint them, which left the page looking blank. */}
             <div 
-                className="absolute inset-0 bg-black/85 backdrop-blur-2xl transition-opacity"
+                className="absolute inset-0 bg-black/90 sm:bg-black/85 sm:backdrop-blur-2xl transition-opacity"
                 onClick={onClose}
             />
 
             {/* Ambient Color Glow Behind Modal (Dynamic ambient backlight sampled from campaign thumbnail) */}
             {campaign.thumbnail ? (
                 <div 
-                    className="absolute w-[1000px] h-[700px] -top-20 left-1/2 -translate-x-1/2 bg-cover bg-center filter blur-[160px] opacity-30 dark:opacity-60 pointer-events-none rounded-full transform-gpu"
+                    className="hidden sm:block absolute w-[1000px] h-[700px] -top-20 left-1/2 -translate-x-1/2 bg-cover bg-center filter blur-[160px] opacity-30 dark:opacity-60 pointer-events-none rounded-full transform-gpu"
                     style={{ backgroundImage: `url(${campaign.thumbnail})` }}
                 />
             ) : (
-                <div className="absolute w-[600px] h-[600px] bg-emerald-500/10 dark:bg-neon-green/5 rounded-full blur-[160px] pointer-events-none" />
+                <div className="hidden sm:block absolute w-[600px] h-[600px] bg-emerald-500/10 dark:bg-neon-green/5 rounded-full blur-[160px] pointer-events-none" />
             )}
 
             {/* Ultra-Premium Modal Window */}
@@ -773,7 +774,7 @@ const CampaignDetailModal = ({
                     {/* Ambient Image Color Spill into Modal Content (Image's authentic hues bleed down into the body) */}
                     {campaign.thumbnail && (
                         <div 
-                            className="absolute top-0 inset-x-0 h-[650px] bg-cover bg-center filter blur-[70px] opacity-25 dark:opacity-55 pointer-events-none transform-gpu -z-0"
+                            className="hidden sm:block absolute top-0 inset-x-0 h-[650px] bg-cover bg-center filter blur-[70px] opacity-25 dark:opacity-55 pointer-events-none transform-gpu -z-0"
                             style={{ 
                                 backgroundImage: `url(${campaign.thumbnail})`,
                                 WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 35%, rgba(0,0,0,0.5) 75%, rgba(0,0,0,0) 100%)',
