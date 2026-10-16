@@ -12,13 +12,13 @@ const parts = (iso) => {
 const cta = (e) => (e.isTicketed ? 'Get tickets' : e.hasGuestlist ? 'Get on the list' : 'See event');
 
 // The next three public events, laid out like a tour-date list. Each row opens the event page.
-export default function Upcoming({ events = [] }) {
+export default function Upcoming({ events = [], index = '07' }) {
     if (!events.length) return null;
     return (
         <section id="upcoming" aria-labelledby="upcoming-title" className="scroll-mt-20 py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <SectionHeading id="upcoming-title" index="07" eyebrow="Coming up" title="Next on" highlight="stage." />
+                    <SectionHeading id="upcoming-title" index={index} eyebrow="Coming up" title="Next on" highlight="stage." />
                     <a href={APP_LINKS.home} className="nb-reveal inline-flex items-center gap-2 min-h-[44px] font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-700 dark:text-zinc-300 hover:text-emerald-700 dark:hover:text-neon-green">
                         All events <ArrowUpRight size={14} aria-hidden="true" />
                     </a>

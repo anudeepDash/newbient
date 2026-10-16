@@ -14,7 +14,7 @@ import { firestoreRest } from './firestoreRest.mjs';
 
 const port = Number(process.argv[2] || 4173);
 const dist = path.resolve('dist');
-const LANDING = { '/': '_landing/index.html', '/creator': '_landing/creator/index.html', '/contact': '_landing/contact/index.html', '/terms': '_landing/terms/index.html', '/privacy': '_landing/privacy/index.html' };
+const LANDING = { '/': '_landing/index.html', '/creator': '_landing/creator/index.html', '/community': '_landing/community/index.html', '/contact': '_landing/contact/index.html', '/terms': '_landing/terms/index.html', '/privacy': '_landing/privacy/index.html' };
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.ico': 'image/x-icon' };
 
 const send = (req, res, status, body, type) => {

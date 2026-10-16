@@ -226,6 +226,11 @@
         },
         {
             "source": "/community",
+            "missing": [{ "type": "host", "value": "app.newbi.live" }],
+            "destination": "/_landing/community/index.html"
+        },
+        {
+            "source": "/community",
             "destination": "/api/og?page=community"
         },
         {

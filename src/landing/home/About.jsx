@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import SectionHeading from '../components/SectionHeading';
-import { APP_LINKS } from '../links';
 
 // The company behind the shows: Newbi Entertainment & Marketing LLP and its three arms.
 const ARMS = [
@@ -60,7 +59,7 @@ export default function About({ recentStages = [], openCampaigns = 0, upcomingCo
                         );
                     })}
                     <li className="nb-reveal-late px-2 pt-2 text-sm text-gray-500 dark:text-zinc-500">
-                        Creators and the community have their own side of Newbi too: <a href={APP_LINKS.home} className="underline underline-offset-4 decoration-neon-green text-gray-950 dark:text-white">see how that works</a>.
+                        Creators and the community have their own side of Newbi too: <Link to="/creator" className="inline-flex items-center min-h-[44px] -my-3 underline underline-offset-4 decoration-neon-green text-gray-950 dark:text-white">creators</Link> and <Link to="/community" className="inline-flex items-center min-h-[44px] -my-3 underline underline-offset-4 decoration-neon-green text-gray-950 dark:text-white">community</Link>.
                     </li>
                 </ul>
             </div>

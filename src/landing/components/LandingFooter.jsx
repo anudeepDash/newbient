@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { Instagram, Linkedin, Mail } from 'lucide-react';
 import Logo from './Logo';
 import { usePublicFeed } from '../feed';
-import { APP_LINKS } from '../links';
 
 const col = 'flex flex-col';
 const item = 'inline-flex items-center min-h-[44px] text-sm text-gray-600 dark:text-zinc-400 hover:text-gray-950 dark:hover:text-white transition-colors';
@@ -49,8 +48,8 @@ export default function LandingFooter() {
 
                 <nav aria-label="Join in" className={col}>
                     <p className={heading}>Join in</p>
-                    <Link to="/creator" className={item}>For creators</Link>
-                    <a href={APP_LINKS.home} className={item}>Community</a>
+                    <Link to="/creator" className={item}>Creators</Link>
+                    <Link to="/community" className={item}>Community</Link>
                     <a href="/concertzone" className={item}>ConcertZone</a>
                     <a href="https://artistant.in" target="_blank" rel="noopener noreferrer" className={item}>Artistant</a>
                 </nav>

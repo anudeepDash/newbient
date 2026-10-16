@@ -11,6 +11,7 @@ export const appUrl = (path = '/') => `${APP_BASE}${path === '/' ? '' : path}` |
 export const APP_LINKS = {
     home: appUrl('/'),
     creatorApply: appUrl('/creator/apply'),
+    community: appUrl('/community'),
     campaign: (id) => appUrl(`/c/${encodeURIComponent(id)}`),
     event: (id) => appUrl(`/community/g/${encodeURIComponent(id)}`),
 };

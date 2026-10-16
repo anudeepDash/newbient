@@ -35,11 +35,19 @@ export const LANDING_ROUTES = [
     {
         path: '/creator',
         featureId: 'influencer_public',
-        ownHeader: true,
-        Page: lazyPage(() => import('../pages/CreatorLanding.jsx')),
+        Page: lazyPage(() => import('./pages/CreatorPage.jsx')),
         meta: {
             title: 'Newbi Creators | Brand campaigns and live event access',
-            description: 'Join the Newbi creator network: brand campaigns matched to your audience, plus access to concerts and live events. Free to join.',
+            description: 'Join the Newbi creator network: brand campaigns matched to your city, niche and audience, plus access to the shows we run. Free to join.',
+        },
+    },
+    {
+        path: '/community',
+        featureId: 'community',
+        Page: lazyPage(() => import('./pages/CommunityPage.jsx')),
+        meta: {
+            title: 'Newbi Community | Guestlists, gigs and giveaways',
+            description: 'One account for guestlists, volunteer gigs, giveaways and passes at the shows Newbi runs. Sign in once; your QR code does the rest at the gate.',
         },
     },
     {
