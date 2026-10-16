@@ -1,6 +1,9 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { recordUnsubscribe, unsubscribePage, isValidEmail, normalizeEmail } from './_lib/mailing.js';
+import { isValidSignature, isOwnHost } from './_lib/linkSign.js';
+
+const escapeHtml = (v) => String(v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
 let adminDb = null;
 
@@ -86,7 +89,8 @@ export default async function handler(req, res) {
         url, 
         target, 
         destination: customDest,
-        code 
+        code,
+        sig
     } = { ...req.query, ...req.body };
 
     const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
@@ -138,9 +142,17 @@ export default async function handler(req, res) {
         } catch (e) {}
 
         // Fallback for empty / invalid destinations
-        if (!destination || destination === '#' || destination.startsWith('javascript:')) {
+        if (!destination || destination === '#' || /^\s*(javascript|data|vbscript):/i.test(destination)) {
             destination = 'https://newbi.live';
         }
+
+        // Only our own sites, or links we signed when the email was sent, redirect
+        // straight away. Anything else gets a "you're leaving" page (no open redirect).
+        let trusted = destination.startsWith('/') && !destination.startsWith('//');
+        try {
+            const parsed = new URL(/^https?:\/\//i.test(destination) ? destination : `https://${destination}`);
+            trusted = trusted || isOwnHost(parsed.hostname) || isValidSignature(String(rawTargetUrl), sig);
+        } catch { /* unparseable: treated as untrusted */ }
 
         // Ensure proper scheme for external URLs
         if (!destination.startsWith('http://') && !destination.startsWith('https://') && !destination.startsWith('/')) {
@@ -222,6 +234,16 @@ export default async function handler(req, res) {
             } catch (err) {
                 console.error('[TRACK API] Click log error:', err);
             }
+        }
+
+        if (!trusted) {
+            const safeHref = escapeHtml(destination);
+            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+            return res.end(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Leaving Newbi</title></head>
+<body style="margin:0;font-family:-apple-system,system-ui,sans-serif;background:#0b0c10;color:#f2f2f2;display:flex;min-height:100dvh;align-items:center;justify-content:center;padding:24px">
+<div style="max-width:420px;text-align:center"><p style="font-size:18px;font-weight:700;margin:0 0 8px">You're leaving newbi.live</p>
+<p style="font-size:14px;color:#a0a0a8;margin:0 0 20px;word-break:break-all">${safeHref}</p>
+<a href="${safeHref}" rel="noopener noreferrer" style="display:inline-block;background:#39FF14;color:#000;font-weight:700;padding:12px 22px;border-radius:12px;text-decoration:none">Continue</a></div></body></html>`);
         }
 
         res.writeHead(302, {

@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { verifyToken } from './_lib/auth.js';
+import { signTrackedLinks } from './_lib/linkSign.js';
 import { isStaffCaller, findSuppressed, listSuppressed, recordResubscribe, normalizeEmail, isValidEmail } from './_lib/mailing.js';
 
 if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
@@ -13,6 +14,8 @@ const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 // Staff sending campaigns make one request per batch (or per person for
 // personalised mail), so they get a much larger allowance keyed by account.
 const STAFF_RATE_LIMIT_MAX_REQUESTS = 3000;
+// Everyone else only triggers their own confirmation mail.
+const USER_RATE_LIMIT_MAX_REQUESTS = 5;
 
 function checkRateLimit(ip, max = RATE_LIMIT_MAX_REQUESTS) {
     if (!ip || ip === 'unknown') return true;
@@ -141,17 +144,38 @@ export default async function handler(req, res) {
     const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
     const allowed = isStaff
         ? checkRateLimit(`uid:${decodedToken.uid || decodedToken.email}`, STAFF_RATE_LIMIT_MAX_REQUESTS)
-        : checkRateLimit(clientIp);
+        : checkRateLimit(clientIp) && checkRateLimit(`user:${decodedToken.uid}`, USER_RATE_LIMIT_MAX_REQUESTS);
     if (!allowed) {
         return res.status(429).json({ error: 'Too many requests. Please try again later.' });
     }
 
     let { to, cc, bcc } = body;
-    const { subject, text, html, attachments, accountType = 'official', fromName, fromEmail, bulk = false, campaignId = '' } = body;
+    const { subject, text, html, attachments, accountType = 'official', fromEmail, bulk = false, campaignId = '' } = body;
+    let { fromName } = body;
 
     if (!to || !subject || (!text && !html)) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
+
+    // Non-staff only trigger their own confirmation mail (ticket, guestlist, creator
+    // welcome): one recipient, a fixed Newbi sender, no copies, no files.
+    // Phase 6 moves these to server-built templates.
+    if (!isStaff) {
+        const recipients = (Array.isArray(to) ? to : String(to).split(',')).map(normalizeEmail).filter(Boolean);
+        if (recipients.length !== 1 || !isValidEmail(recipients[0]) || cc || bcc || bulk || (attachments && attachments.length)) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+        const allowedAccounts = ['official', 'creators', 'creator'];
+        if (!allowedAccounts.includes(accountType) || (fromEmail && !/^(booking|tickets|creators|noreply)@newbi\.live$/i.test(String(fromEmail).trim()))) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+        fromName = null; // the server picks the display name for these senders
+    }
+
+    // Attachments are inline content only: never a server file path or a URL to fetch.
+    const safeAttachments = (Array.isArray(attachments) ? attachments : [])
+        .filter(a => a && typeof a === 'object' && typeof a.content === 'string')
+        .map(({ filename, content, contentType, encoding, cid }) => ({ filename, content, contentType, encoding, cid }));
 
     // Campaign mail never goes to people who unsubscribed. Transactional mail
     // (tickets, invoices) doesn't set `bulk` and is unaffected.
@@ -277,8 +301,11 @@ export default async function handler(req, res) {
             to,
             subject,
             text,
-            html,
-            attachments: attachments || [],
+            // Staff mail: sign tracked links so /api/track redirects them directly.
+            html: isStaff ? signTrackedLinks(html) : html,
+            attachments: safeAttachments,
+            disableFileAccess: true,
+            disableUrlAccess: true,
         };
         if (Object.keys(extraHeaders).length) mailOptions.headers = extraHeaders;
 

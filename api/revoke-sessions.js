@@ -1,6 +1,7 @@
 import { getFirestore } from 'firebase-admin/firestore';
 import nodemailer from 'nodemailer';
 import { verifyToken, auth } from './_lib/auth.js';
+import { safeSiteOrigin } from './_lib/linkSign.js';
 
 const rateLimitCache = new Map();
 const RATE_LIMIT_MAX_REQUESTS = 3;
@@ -172,7 +173,7 @@ export default async function handler(req, res) {
 
                     const primaryGreen = '#39FF14';
                     const logoUrl = 'https://newbi.live/logo_full.png';
-                    const requestOrigin = req.headers.origin || `https://${req.headers.host}` || 'https://newbi.live';
+                    const requestOrigin = safeSiteOrigin(req.headers.origin);
 
                     const html = `
                         <!DOCTYPE html>
