@@ -15,7 +15,7 @@ export default function Faq() {
     return (
         <section aria-labelledby="faq-title" className="py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
-                <SectionHeading id="faq-title" index="08" eyebrow="Questions" title="Before you" highlight="ask." className="lg:sticky lg:top-28 self-start" />
+                <SectionHeading id="faq-title" index="07" eyebrow="Questions" title="Before you" highlight="ask." className="lg:sticky lg:top-28 self-start" />
                 <div className="nb-reveal border-t border-gray-950/10 dark:border-white/10">
                     {FAQS.map((f, i) => (
                         <details key={f.q} className="group border-b border-gray-950/10 dark:border-white/10">

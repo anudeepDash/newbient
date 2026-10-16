@@ -6,7 +6,6 @@ import { useTheme } from '../../hooks/useTheme';
 import { APP_LINKS } from '../links';
 
 const LINKS = [
-    { label: 'What we run', to: '/#services' },
     { label: 'Work', to: '/#work' },
     { label: 'About', to: '/#about' },
     { label: 'Creators', to: '/creator' },

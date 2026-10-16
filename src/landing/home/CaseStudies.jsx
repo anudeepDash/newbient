@@ -54,7 +54,7 @@ export default function CaseStudies({ items = [] }) {
         <section id="work" aria-labelledby="work-title" className="scroll-mt-20 py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10 overflow-hidden">
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <SectionHeading id="work-title" index="05" eyebrow="Selected work" title="Nights we" highlight="built." />
+                    <SectionHeading id="work-title" index="04" eyebrow="Selected work" title="Nights we" highlight="built." />
                     <p className="nb-reveal font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500 md:pb-3">{items.length} of many · swipe</p>
                 </div>
                 <ul className="mt-12 md:mt-16 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0 flex gap-4 md:gap-6 overflow-x-auto snap-x snap-mandatory pb-4 carousel-scrollbar lg:grid lg:grid-cols-4 lg:overflow-visible" style={{ scrollPaddingLeft: '1rem' }}>

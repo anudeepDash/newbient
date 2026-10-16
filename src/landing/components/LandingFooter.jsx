@@ -40,7 +40,6 @@ export default function LandingFooter() {
                 <nav aria-label="Newbi" className={col}>
                     <p className={heading}>Newbi</p>
                     <Link to="/#about" className={item}>About</Link>
-                    <Link to="/#services" className={item}>What we run</Link>
                     <Link to="/#work" className={item}>Work</Link>
                     <Link to="/#enquire" className={item}>Work with us</Link>
                     <Link to="/contact" className={item}>Contact</Link>
