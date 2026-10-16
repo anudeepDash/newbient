@@ -29,6 +29,8 @@ export const FLOW_REQUIREMENTS = {
     creatorApply: ['name', 'email', 'phoneVerified', 'city'],
     creatorApplyCampus: ['name', 'email', 'phoneVerified', 'city', 'college'],
     gig: ['name', 'phoneVerified'],
+    // Email comes from the account; the ticket sheet asks for one itself when it's missing.
+    tickets: ['name', 'phoneVerified'],
     community: ['name'],
 };
 
