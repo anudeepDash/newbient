@@ -4,7 +4,7 @@ import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAppStore } from '../../lib/store/appStore';
-import { AmbientBackdrop, Button } from '../../components/app';
+import { Button } from '../../components/app';
 import { isPresent } from '../../lib/present';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
 import { appPath } from '../host';
@@ -93,11 +93,6 @@ const FormPage = () => {
     return (
         <PageBody>
             <div className="relative isolate">
-                {isPresent(form.image) && (
-                    <div aria-hidden="true" className="pointer-events-none absolute -inset-x-4 -top-24 -z-10 h-[520px] sm:-inset-x-24" style={{ WebkitMaskImage: 'radial-gradient(closest-side at 50% 50%, #000 35%, transparent 100%)', maskImage: 'radial-gradient(closest-side at 50% 50%, #000 35%, transparent 100%)' }}>
-                        <AmbientBackdrop image={form.image} fade={false} />
-                    </div>
-                )}
                 <div className="mb-3 lg:mb-5"><BackLink to={appPath('/community')}>Community</BackLink></div>
 
                 {/* Phones: one column. Desktop: what it is on the left (stays put), the form on the right. */}

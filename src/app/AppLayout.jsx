@@ -118,7 +118,7 @@ const AppLayout = () => {
                                     to={appPath(module.path)}
                                     aria-current={active ? 'page' : undefined}
                                     className={cn(
-                                        'relative flex h-10 items-center gap-2 rounded-full px-4 text-[14px] font-bold transition-colors',
+                                        'relative flex h-10 items-center gap-2 whitespace-nowrap rounded-full px-4 text-[14px] font-bold transition-colors',
                                         active ? 'text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white'
                                     )}
                                 >

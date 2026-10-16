@@ -10,12 +10,13 @@ import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
 import { cn } from '../../lib/utils';
 import { isPresent } from '../../lib/present';
 import { Stat, StatRow } from './Field';
+import BrandLayers, { BRAND_GLASS } from './BrandLayers';
 
 /*
- * The one card for the app, generalised from the creator CampaignCard so every
- * card keeps its look: an aspect-video hero that fades into the body, the
- * blurred thumbnail aura and colour spill (desktop only, too heavy for iPhone
- * Safari), glass chips over the image, stat tiles and the CTA pill.
+ * The one card for the app: an aspect-video hero that fades into the body,
+ * glass chips over the image, stat tiles and the CTA pill, on the Newbi
+ * surface (liquid glass, a neon corner glow, the dot grid and a small faded
+ * N. mark), the same as the app's notice panels.
  *
  *   <Card
  *     type="guestlist"
@@ -128,13 +129,18 @@ const Card = ({
             {...rootProps}
             style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
             className={cn(
-                'group relative flex h-full w-full select-none flex-col overflow-hidden rounded-3xl border text-left transition-all duration-500 active:scale-[0.985]',
-                'border-gray-200 bg-white shadow-[0_8px_40px_rgba(0,0,0,0.08)] hover:border-neon-green/40 hover:shadow-[0_16px_60px_rgba(0,0,0,0.12)]',
-                'dark:border-white/[0.07] dark:bg-[#0c0e14] dark:shadow-[0_8px_40px_rgba(0,0,0,0.6)] dark:hover:border-white/[0.15] dark:hover:shadow-[0_16px_60px_rgba(0,0,0,0.8)]',
+                'group flex h-full w-full select-none flex-col rounded-[1.75rem] text-left transition-[transform,box-shadow] duration-300 active:scale-[0.985]',
+                BRAND_GLASS,
+                // Phones: no live blur per card (lists of them are heavy on iPhone Safari); a near-solid tint instead.
+                'max-sm:backdrop-blur-none max-sm:backdrop-saturate-100 max-sm:bg-white/85 dark:max-sm:bg-[#101219]',
+                'hover:-translate-y-0.5 hover:ring-emerald-500/40 dark:hover:ring-neon-green/40',
                 (to || href || onClick) && 'cursor-pointer',
                 className
             )}
         >
+            {/* The Newbi surface, behind everything; the glow rises from the bottom corner, under the body. */}
+            <BrandLayers mark="small" from="bottom" />
+
             {/* Progress strip */}
             {hasProgress && (
                 <div className="absolute left-0 top-0 z-30 h-[3px] w-full overflow-hidden bg-black/5 dark:bg-white/5">
@@ -158,8 +164,6 @@ const Card = ({
                         <>
                             {/* Neutral backing while the photo loads, so the vignette doesn't read as a white haze */}
                             <div className="absolute inset-0 bg-gray-200 dark:bg-zinc-900" />
-                            {/* Aura: desktop only, iPhone Safari runs out of GPU memory with it */}
-                            <div className="absolute -inset-8 hidden scale-110 bg-cover bg-center opacity-80 blur-xl transform-gpu sm:block" style={{ backgroundImage: `url("${image}")` }} />
                             <img
                                 src={image}
                                 alt={imageAlt || title || ''}
@@ -170,7 +174,7 @@ const Card = ({
                             <div className="absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_center,_transparent_50%,_rgba(0,0,0,0.4)_100%)]" />
                         </>
                     ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-tr from-gray-100 via-gray-50 to-white dark:from-zinc-950 dark:via-[#121620] dark:to-[#0c0e14]">
+                        <div className="flex h-full w-full items-center justify-center">
                             {/* No poster: the card type's mark, so the hero isn't a blank box */}
                             <kind.icon size={56} strokeWidth={1.25} className="text-emerald-600/25 dark:text-neon-green/20" />
                         </div>
@@ -186,10 +190,6 @@ const Card = ({
 
             {/* Body */}
             <div className="relative z-10 flex flex-1 flex-col px-5 pb-5 pt-4">
-                {/* Colour spill from the image into the body (desktop only) */}
-                {image && (
-                    <div className="pointer-events-none absolute inset-x-0 top-0 -z-0 hidden h-32 bg-cover bg-center opacity-20 blur-2xl transform-gpu sm:block" style={{ backgroundImage: `url("${image}")` }} />
-                )}
 
                 {shownMeta.length > 0 && (
                     <div className="relative z-10 mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -205,11 +205,11 @@ const Card = ({
                         </div>
                     )}
                     {isPresent(title) && (
-                        <h3 className="mb-2 font-heading text-lg font-black leading-snug tracking-tight text-gray-900 transition-colors duration-300 group-hover:text-emerald-600 dark:text-white dark:group-hover:text-neon-green">
+                        <h3 className="mb-2 font-heading text-[19px] font-extrabold leading-snug tracking-[-0.025em] text-gray-900 transition-colors duration-300 group-hover:text-emerald-700 dark:text-white dark:group-hover:text-neon-green">
                             {title}
                         </h3>
                     )}
-                    {isPresent(text) && <p className="line-clamp-2 text-[12px] font-medium leading-relaxed text-gray-600 dark:text-zinc-500">{text}</p>}
+                    {isPresent(text) && <p className="line-clamp-2 text-[13px] leading-relaxed text-gray-600 dark:text-zinc-400">{text}</p>}
                     {children}
                 </div>
 
@@ -220,11 +220,15 @@ const Card = ({
                 )}
 
                 {ctaNode || (ctaConfig && (
-                    <div className="relative z-10 flex items-center justify-between rounded-2xl border border-black/[0.05] bg-black/[0.02] px-4 py-2.5 transition-all duration-300 group-hover:border-emerald-200 group-hover:bg-emerald-50 dark:border-white/[0.07] dark:bg-white/[0.03] dark:group-hover:border-neon-green dark:group-hover:bg-neon-green">
-                        <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-gray-500 transition-colors duration-300 group-hover:text-emerald-700 dark:text-zinc-400 dark:group-hover:text-black">
+                    <div className="relative z-10 flex items-center justify-between rounded-full bg-white/60 py-2 pl-4 pr-2 ring-1 ring-inset ring-black/[0.06] transition-colors duration-300 group-hover:bg-neon-green group-hover:ring-black dark:bg-white/[0.05] dark:ring-white/[0.1] dark:group-hover:ring-black">
+                        <span className="font-heading text-[13px] font-bold text-gray-800 transition-colors duration-300 group-hover:text-black dark:text-zinc-200 dark:group-hover:text-black">
                             {ctaConfig.label}
                         </span>
-                        {ctaConfig.icon && <ctaConfig.icon size={13} className="text-gray-400 transition-all duration-300 group-hover:translate-x-1 group-hover:text-emerald-700 dark:text-zinc-500 dark:group-hover:text-black" />}
+                        {ctaConfig.icon && (
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/[0.05] transition-colors duration-300 group-hover:bg-black dark:bg-white/[0.08] dark:group-hover:bg-black">
+                                <ctaConfig.icon size={14} className="text-gray-600 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-neon-green dark:text-zinc-300" />
+                            </span>
+                        )}
                     </div>
                 ))}
             </div>
