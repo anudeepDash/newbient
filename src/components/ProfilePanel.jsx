@@ -13,6 +13,7 @@ import { cn, normalizePhoneNumber } from '../lib/utils';
 import { extractSocialUsername, hasDisallowedLink, buildSocialUrl } from '../lib/socialUtils';
 import { PREDEFINED_CITIES, CREATOR_NICHES, CREATOR_NICHE_OPTIONS, isCollegeNiche } from '../lib/constants';
 import { useNavigate } from 'react-router-dom';
+import { appUrl } from '../app/host';
 import { db, auth } from '../lib/firebase';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
@@ -23,7 +24,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
     const { 
         user, logout, addNotification, addToast,
         resetPassword, updateDisplayName, 
-        notifications, upcomingEvents, portfolio, guestlists,
+        notifications,
         revokeSessions, deleteAccount, deleteCreator, updateCreator,
         isProfilePanelOpen, profilePanelTab, closeProfilePanel, resolveCreatorProfile,
         campaigns
@@ -55,16 +56,13 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         }
     };
 
-    const [activeTab, setActiveTab] = useState(profilePanelTab || 'overview'); // 'overview', 'creator', 'tickets', 'settings', 'security'
+    // Passes moved out of the panel (Phase 5): guestlist passes are in Community → My guestlists, campaign tickets inside each campaign.
+    const [activeTab, setActiveTab] = useState(profilePanelTab && profilePanelTab !== 'tickets' ? profilePanelTab : 'overview'); // 'overview', 'creator', 'settings', 'security'
     const [isUpdating, setIsUpdating] = useState(false);
     const [newDisplayName, setNewDisplayName] = useState(user?.displayName || '');
     const [newPhone, setNewPhone] = useState(user?.phoneNumber || '');
     const [isEditingName, setIsEditingName] = useState(false);
     const [isEditingPhone, setIsEditingPhone] = useState(false);
-    const [ticketSort, setTicketSort] = useState('booking'); // 'booking' or 'event'
-    const [ticketFilter, setTicketFilter] = useState('upcoming'); // 'upcoming' or 'past'
-    const [guestlistEntries, setGuestlistEntries] = useState([]);
-    const [loadingEntries, setLoadingEntries] = useState(false);
     const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showDeleteCreatorConfirm, setShowDeleteCreatorConfirm] = useState(false);
@@ -78,13 +76,12 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
 
     useEffect(() => {
         if (profilePanelTab) {
-            setActiveTab(profilePanelTab);
+            setActiveTab(profilePanelTab === 'tickets' ? 'overview' : profilePanelTab);
         }
     }, [profilePanelTab]);
 
     const [resolvedCreator, setResolvedCreator] = useState(null);
-    // Only this user's own ticket orders and creator profiles are loaded, never the whole collections.
-    const [ticketOrders, setTicketOrders] = useState([]);
+    // Only this user's own creator profiles are loaded, never the whole collection.
     const [ownCreatorsByUid, setOwnCreatorsByUid] = useState([]);
     const [ownCreatorsByEmail, setOwnCreatorsByEmail] = useState([]);
 
@@ -93,16 +90,8 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         
         // On-demand subscriptions when profile panel is open
         const store = useStore.getState();
-        const unsub2 = store.subscribeToUpcomingEvents ? store.subscribeToUpcomingEvents() : null;
-        const unsub3 = store.subscribeToPortfolio ? store.subscribeToPortfolio() : null;
-        const unsub4 = store.subscribeToGuestlists ? store.subscribeToGuestlists() : null;
         const unsub6 = store.subscribeToCampaigns ? store.subscribeToCampaigns() : null;
 
-        const unsub1 = onSnapshot(
-            query(collection(db, 'ticket_orders'), where('userId', '==', user.uid)),
-            (snap) => setTicketOrders(snap.docs.map(d => ({ ...d.data(), id: d.id }))),
-            (err) => console.warn('[ProfilePanel] Ticket orders listener notice:', err.message)
-        );
         const toCreator = (d) => {
             const data = { ...d.data(), id: d.id };
             if (!data.uid) data.uid = d.id;
@@ -126,69 +115,8 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
             }).catch(() => {});
         }
         
-        setLoadingEntries(true);
-        const fetchEntries = async () => {
-            try {
-                const { collectionGroup, query, where, getDocs } = await import('firebase/firestore');
-
-                const qUser = query(
-                    collectionGroup(db, 'entries'),
-                    where('userId', '==', user.uid)
-                );
-                
-                const cleanEmail = user.email ? user.email.trim().toLowerCase() : null;
-
-                const qCustEmail = cleanEmail ? query(
-                    collectionGroup(db, 'entries'),
-                    where('customerEmail', '==', cleanEmail)
-                ) : null;
-
-                const qEmail = cleanEmail ? query(
-                    collectionGroup(db, 'entries'),
-                    where('email', '==', cleanEmail)
-                ) : null;
-
-                const [snapUser, snapCustEmail, snapEmail] = await Promise.all([
-                    getDocs(qUser),
-                    qCustEmail ? getDocs(qCustEmail) : Promise.resolve({ docs: [] }),
-                    qEmail ? getDocs(qEmail) : Promise.resolve({ docs: [] })
-                ]);
-
-                const docsMap = {};
-                
-                const addDocs = (snap) => {
-                    snap.docs.forEach(docSnap => {
-                        const data = docSnap.data();
-                        const guestlistId = docSnap.ref.parent.parent?.id || data.guestlistId || data.eventId;
-                        if (guestlistId) {
-                            docsMap[docSnap.id] = { 
-                                id: docSnap.id, 
-                                guestlistId, 
-                                ...data 
-                            };
-                        }
-                    });
-                };
-
-                addDocs(snapUser);
-                addDocs(snapCustEmail);
-                addDocs(snapEmail);
-
-                const allEntries = Object.values(docsMap);
-                setGuestlistEntries(allEntries);
-            } catch (err) {
-                console.error("Failed to fetch guestlist/RSVP entries for profile:", err);
-            } finally {
-                setLoadingEntries(false);
-            }
-        };
-        fetchEntries();
 
         return () => {
-            if (unsub1) unsub1();
-            if (unsub2) unsub2();
-            if (unsub3) unsub3();
-            if (unsub4) unsub4();
             if (unsub5) unsub5();
             if (unsub6) unsub6();
             if (unsub7) unsub7();
@@ -216,67 +144,6 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
     const creatorProfile = creatorFromCache || resolvedCreator;
     const isCreator = !!creatorProfile;
     const isApprovedCreator = creatorProfile?.profileStatus === 'approved';
-
-    const allPossibleEvents = [...(upcomingEvents || []), ...(portfolio || [])];
-
-    const mappedGuestlistTickets = guestlistEntries.map(entry => {
-        const event = allPossibleEvents.find(e => e.id === entry.guestlistId);
-        const guestlistDoc = guestlists?.find(g => g.id === entry.guestlistId);
-        return {
-            ...entry,
-            isGuestlist: true,
-            eventId: entry.guestlistId,
-            eventTitle: event?.title || guestlistDoc?.title || entry.title || 'Guestlist Pass',
-            eventDate: event?.date || guestlistDoc?.date || entry.date || null,
-            status: entry.status || 'confirmed'
-        };
-    });
-
-    const mappedTicketOrders = (ticketOrders?.filter(order => user && order.userId === user.uid) || [])
-        .map(order => {
-            const event = allPossibleEvents.find(e => e.id === order.eventId);
-            return {
-                ...order,
-                isGuestlist: false,
-                eventTitle: order.eventTitle || event?.title || 'Event Pass',
-                eventDate: order.eventDate || event?.date || null
-            };
-        });
-
-    const userTickets = [...mappedTicketOrders, ...mappedGuestlistTickets]
-        .filter(ticket => {
-            if (ticket.isGuestlist) return true;
-            const title = (ticket.eventTitle || '').toLowerCase();
-            return title.includes('jazba') || title.includes('terminal');
-        })
-        .filter(ticket => {
-            if (!ticket.eventDate) return ticketFilter === 'upcoming';
-            const eventDate = new Date(ticket.eventDate);
-            const now = new Date();
-            now.setHours(0, 0, 0, 0);
-            
-            if (ticketFilter === 'upcoming') {
-                return eventDate >= now;
-            } else {
-                return eventDate < now;
-            }
-        })
-        .sort((a, b) => {
-            if (ticketSort === 'event') {
-                const dateA = a.eventDate ? new Date(a.eventDate) : new Date(0);
-                const dateB = b.eventDate ? new Date(b.eventDate) : new Date(0);
-                return ticketFilter === 'upcoming' ? dateA - dateB : dateB - dateA;
-            } else {
-                const parseDate = (d) => {
-                    if (!d) return new Date(0);
-                    if (d.seconds) return new Date(d.seconds * 1000);
-                    return new Date(d);
-                };
-                const dateA = parseDate(a.createdAt);
-                const dateB = parseDate(b.createdAt);
-                return dateB - dateA;
-            }
-        });
 
     // Participated campaigns computation for both Creator and Non-Creator views
     const participatedCampaigns = useMemo(() => {
@@ -395,7 +262,6 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
     const tabs = [
         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
         { id: 'creator', label: 'Creator', icon: Zap },
-        { id: 'tickets', label: 'Tickets', icon: Ticket },
         { id: 'settings', label: 'Settings', icon: User },
         { id: 'security', label: 'Security', icon: Shield },
     ];
@@ -809,9 +675,10 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
                                                     </div>
                                                 </div>
 
-                                                {/* Ticket Vault Card */}
-                                                <div 
-                                                    onClick={() => setActiveTab('tickets')}
+                                                {/* Passes now live in the app: Community → My guestlists, and inside each campaign */}
+                                                <a
+                                                    href={appUrl('/community')}
+                                                    onClick={() => onClose()}
                                                     className="p-5 rounded-[1.8rem] bg-gradient-to-br from-gray-50 to-gray-100/90 dark:from-zinc-900/90 dark:to-zinc-950 border border-gray-200 dark:border-white/10 hover:border-neon-pink/50 transition-all cursor-pointer group shadow-sm dark:shadow-md relative overflow-hidden flex flex-col justify-between min-h-[140px]"
                                                 >
                                                     <div className="absolute top-0 right-0 w-28 h-28 bg-neon-pink/10 blur-2xl pointer-events-none" />
@@ -820,19 +687,15 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
                                                             <Ticket size={18} />
                                                         </div>
                                                         <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-neon-pink">
-                                                            <span>{userTickets.length} Passes</span>
+                                                            <span>Open</span>
                                                             <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                                         </div>
                                                     </div>
                                                     <div className="pt-4">
-                                                        <h4 className="text-lg font-black font-heading uppercase italic text-gray-900 dark:text-white leading-tight">Ticket Vault</h4>
-                                                        <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium mt-0.5">
-                                                            {userTickets.length > 0 
-                                                                ? `${userTickets.length} Secured passes ready for entry` 
-                                                                : 'Explore upcoming live shows & concerts'}
-                                                        </p>
+                                                        <h4 className="text-lg font-black font-heading uppercase italic text-gray-900 dark:text-white leading-tight">My passes</h4>
+                                                        <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium mt-0.5">Guestlist passes are in Community; campaign tickets are inside each campaign.</p>
                                                     </div>
-                                                </div>
+                                                </a>
                                             </div>
 
                                             {/* Studio Workspace Direct Launcher for Creators */}
@@ -926,117 +789,6 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
                                                 onOpenCampaign={(camp) => setSelectedCampaignForModal(camp)}
                                             />
                                         )
-                                    )}
-
-                                    {/* 3. TICKET VAULT TAB */}
-                                    {activeTab === 'tickets' && (
-                                        <div className="space-y-6">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <h3 className="text-xl font-black font-heading text-gray-900 dark:text-white uppercase italic tracking-tight">Ticket Vault</h3>
-                                                    <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">Your secured concert entries & guestlist passes</p>
-                                                </div>
-                                                <div className="px-3.5 py-1.5 rounded-xl bg-neon-pink/10 border border-neon-pink/20 text-neon-pink text-xs font-black">
-                                                    {userTickets.length} Passes
-                                                </div>
-                                            </div>
-
-                                            {/* Filters & Sort */}
-                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-gray-100 dark:bg-white/5 p-1.5 rounded-2xl border border-gray-200 dark:border-white/5">
-                                                <div className="flex flex-1 gap-1">
-                                                    <button 
-                                                        onClick={() => setTicketFilter('upcoming')}
-                                                        className={cn(
-                                                            "flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
-                                                            ticketFilter === 'upcoming' 
-                                                                ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm" 
-                                                                : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                                        )}
-                                                    >
-                                                        Upcoming ({userTickets.filter(t => !t.eventDate || new Date(t.eventDate) >= new Date().setHours(0,0,0,0)).length})
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => setTicketFilter('past')}
-                                                        className={cn(
-                                                            "flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
-                                                            ticketFilter === 'past' 
-                                                                ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm" 
-                                                                : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                                        )}
-                                                    >
-                                                        Past Passes
-                                                    </button>
-                                                </div>
-                                                <div className="flex items-center gap-1.5 px-2">
-                                                    <span className="text-[9px] font-bold text-gray-500 uppercase">Sort:</span>
-                                                    <button 
-                                                        onClick={() => setTicketSort(ticketSort === 'booking' ? 'event' : 'booking')}
-                                                        className="text-[9px] font-black text-neon-pink uppercase hover:underline"
-                                                    >
-                                                        {ticketSort === 'booking' ? 'By Booking' : 'By Date'}
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Passes Listing */}
-                                            {loadingEntries ? (
-                                                <div className="flex flex-col items-center justify-center py-16">
-                                                    <Loader2 className="w-7 h-7 text-neon-pink animate-spin" />
-                                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-3">Loading Tickets...</p>
-                                                </div>
-                                            ) : userTickets.length > 0 ? (
-                                                <div className="space-y-3.5">
-                                                    {userTickets.map((ticket, i) => (
-                                                        <div 
-                                                            key={i}
-                                                            onClick={() => { navigate(`/ticket/${ticket.bookingRef || ticket.id}`); onClose(); }}
-                                                            className="p-4 md:p-5 rounded-2xl bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-white/10 hover:border-neon-pink/40 transition-all cursor-pointer group shadow-sm flex items-center gap-4 relative overflow-hidden"
-                                                        >
-                                                            <div className="w-12 h-12 rounded-xl bg-white dark:bg-zinc-800 border border-gray-200 dark:border-white/10 flex items-center justify-center shrink-0 text-neon-pink shadow-sm">
-                                                                <Ticket size={22} />
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-2">
-                                                                    <h4 className="text-sm font-black font-heading text-gray-900 dark:text-white uppercase italic truncate">
-                                                                        {ticket.eventTitle}
-                                                                    </h4>
-                                                                    <span className="px-2 py-0.5 rounded-full bg-neon-green/10 text-neon-green border border-neon-green/20 text-[8px] font-black uppercase shrink-0">
-                                                                        {ticket.status || 'Active'}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="flex items-center gap-3 text-[10px] text-gray-500 dark:text-zinc-400 mt-1">
-                                                                    <span className="font-bold flex items-center gap-1">
-                                                                        <Calendar size={10} />
-                                                                        {ticket.eventDate ? new Date(ticket.eventDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Confirmed Pass'}
-                                                                    </span>
-                                                                    <span>•</span>
-                                                                    <span className="font-mono text-neon-pink font-bold">
-                                                                        #{ticket.bookingRef?.slice(0, 10) || 'PASS'}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            <ChevronRight size={18} className="text-gray-400 group-hover:text-neon-pink group-hover:translate-x-1 transition-all shrink-0" />
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div className="p-10 rounded-2xl bg-gray-50 dark:bg-white/[0.02] border border-dashed border-gray-200 dark:border-white/10 text-center space-y-4">
-                                                    <div className="w-14 h-14 rounded-2xl bg-neon-pink/10 text-neon-pink flex items-center justify-center mx-auto">
-                                                        <Ticket size={24} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-black uppercase text-gray-900 dark:text-white">No Tickets Found</p>
-                                                        <p className="text-[11px] text-gray-500 dark:text-zinc-400 mt-1">You do not have any tickets in this category.</p>
-                                                    </div>
-                                                    <button 
-                                                        onClick={() => { navigate('/concertzone'); onClose(); }}
-                                                        className="px-5 py-2.5 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-black text-xs font-black uppercase tracking-wider hover:bg-neon-pink hover:text-white transition-all shadow-md"
-                                                    >
-                                                        Browse Concert Zone
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
                                     )}
 
                                     {/* 4. SETTINGS TAB */}

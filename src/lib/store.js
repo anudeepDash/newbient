@@ -4278,69 +4278,7 @@ export const useStore = create((set, get) => ({
     },
     // One entry per person per giveaway. New entries use a fixed id
     // (campaign_user) inside a transaction, so a double tap can't create two.
-    enterGiveaway: async (campaignId, userData) => {
-        const { user } = get();
-        if (!user) throw new Error("Authentication required");
-
-        const giveawaySnap = await getDoc(doc(db, 'giveaways', campaignId));
-        if (!giveawaySnap.exists()) throw new Error("This giveaway no longer exists");
-        const giveaway = giveawaySnap.data();
-        if (giveawayHasEnded(giveaway)) throw new Error("This giveaway has ended");
-
-        // Entries made before fixed ids were used.
-        const legacy = await getDocs(query(
-            collection(db, 'giveaway_entries'),
-            where('campaignId', '==', campaignId),
-            where('userId', '==', user.uid)
-        ));
-        if (!legacy.empty) throw new Error("Already participated in this giveaway");
-
-        const ownCode = user.uid.substring(0, 8);
-        const referredBy = userData.referredBy && userData.referredBy !== ownCode ? userData.referredBy : null;
-        const entryRef = doc(db, 'giveaway_entries', `${campaignId}_${user.uid}`);
-
-        await runTransaction(db, async (tx) => {
-            const existing = await tx.get(entryRef);
-            if (existing.exists()) throw new Error("Already participated in this giveaway");
-            tx.set(entryRef, {
-                campaignId,
-                userId: user.uid,
-                email: user.email,
-                ...userData,
-                entryScore: 1, // Initial entry
-                completedTasks: {},
-                hasFollowedInsta: false,
-                referralCount: 0,
-                hasSpunWheel: false,
-                referralCode: ownCode,
-                referredBy,
-                createdAt: new Date().toISOString()
-            });
-        });
-
-        // Credit the person who shared the link (atomic, so two sign-ups at
-        // once both count).
-        if (referredBy) {
-            try {
-                const refSnapshot = await getDocs(query(
-                    collection(db, 'giveaway_entries'),
-                    where('campaignId', '==', campaignId),
-                    where('referralCode', '==', referredBy)
-                ));
-                if (!refSnapshot.empty) {
-                    await updateDoc(doc(db, 'giveaway_entries', refSnapshot.docs[0].id), {
-                        referralCount: increment(1),
-                        entryScore: increment(3)
-                    });
-                }
-            } catch (err) {
-                console.warn('[enterGiveaway] Referral credit failed:', err);
-            }
-        }
-    },
-    updateGiveawayEntry: async (id, updates) => {
-        await updateDoc(doc(db, 'giveaway_entries', id), updates);
-    },
+    // Giveaway entries, tasks and the spin are written by the server (api/_lib/community.js), which also scores them.
     deleteGiveawayEntry: async (id) => {
         await deleteDoc(doc(db, 'giveaway_entries', id));
     },
