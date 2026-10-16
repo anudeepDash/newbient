@@ -11,7 +11,7 @@ export default function SectionHeading({ id, index, eyebrow, title, highlight, t
                     {eyebrow}
                 </p>
             )}
-            <h2 id={id} className="mt-4 font-heading font-black uppercase tracking-[-0.03em] leading-[0.9] text-[2.6rem] sm:text-6xl lg:text-7xl xl:text-[5.5rem] text-gray-950 dark:text-white">
+            <h2 id={id} className="mt-4 font-heading font-extrabold tracking-[-0.03em] leading-[0.9] text-[2.6rem] sm:text-6xl lg:text-7xl xl:text-[5.5rem] text-gray-950 dark:text-white">
                 {title}{highlight && <> <span className="text-emerald-600 dark:text-neon-green">{highlight}</span></>}
             </h2>
             {text && <p className={`mt-5 text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400 max-w-xl ${center ? 'mx-auto' : ''}`}>{text}</p>}

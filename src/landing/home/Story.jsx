@@ -5,27 +5,33 @@ import { ArrowRight } from 'lucide-react';
 const PANELS = [
     {
         n: '01',
-        title: ['College', 'fests'],
-        text: 'Stalls, sampling, contests and stage moments inside the fests young India actually goes to. We handle the permissions, the crew on the day and the report after.',
-        chips: ['Fest partnerships', 'On-ground crew', 'Contests & stage time', 'Post-event report'],
+        title: ['Event marketing', '& production'],
+        text: 'Concerts, launches, fests, club nights and corporate events, produced end to end: artist booking, stage, sound and lights, venue and permits, ticketing and QR entry.',
+        chips: ['Artist booking', 'Technical production', 'Venue & permits', 'Ticketing & QR entry'],
     },
     {
         n: '02',
-        title: ['Live', 'shows'],
-        text: 'Concerts, college nights and club shows, from booking the artist to the last guest out. Production, ticketing and QR entry are ours too.',
-        chips: ['Artist booking', 'Stage, sound & lights', 'Ticketing & QR entry', 'Promotion'],
+        title: ['Brand', 'activations'],
+        text: 'Experiential zones, sampling, pop-ups and in-store experiences that move people from seeing a brand to trying it, in the city or on campus.',
+        chips: ['Experiential zones', 'Fabrication & AV', 'Sampling & pop-ups', 'Footfall & conversion report'],
     },
     {
         n: '03',
-        title: ['Creator', 'campaigns'],
-        text: 'Creators from our own network, matched by city, niche and audience, briefed by us and checked before any post counts.',
-        chips: ['City shortlists', 'Briefs & approvals', 'Reels, stories, coverage', 'Links, proof & results'],
+        title: ['Influencer', 'campaigns'],
+        text: 'Creators and ambassadors from our own network, matched by city, niche and audience, plus hyper-local seeding through city pages, community pages and WhatsApp groups.',
+        chips: ['Creator shortlists', 'Campus ambassadors', 'Local page seeding', 'Approvals & proof'],
     },
     {
         n: '04',
-        title: ['Brand', 'experiences'],
-        text: 'Launches and pop-ups people queue for and post about, planned around the one thing your brand needs to show.',
-        chips: ['Concept & plan', 'Venue, build & staff', 'Creator & community invites', 'Content on the day'],
+        title: ['Digital', '& social'],
+        text: 'Launch campaigns, social media management and content from every night we run, with an analytics and growth report at the end.',
+        chips: ['Launch campaigns', 'Social media management', 'Event content', 'Analytics report'],
+    },
+    {
+        n: '05',
+        title: ['Crews', '& staffing'],
+        text: 'Trained volunteer crews for registrations, crowd, backstage, hospitality and guest support, recruited, briefed and managed by us.',
+        chips: ['Recruitment & training', 'On-site coordination', 'Hospitality & backstage', 'Performance report'],
     },
 ];
 
@@ -38,10 +44,10 @@ export default function Story() {
                     <div className="nb-story-panel flex items-center">
                         <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-10">
                             <p className="nb-reveal font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500"><span className="text-emerald-700 dark:text-neon-green">01</span> — What we run</p>
-                            <h2 id="story-title" className="nb-reveal mt-5 font-heading font-black uppercase tracking-[-0.04em] leading-[0.88] text-[16vw] sm:text-[11vw] lg:text-[8.5vw] text-gray-950 dark:text-white">
-                                Four<br />things.<br /><span className="nb-outline">One crew.</span>
+                            <h2 id="story-title" className="nb-reveal mt-5 font-heading font-extrabold tracking-[-0.04em] leading-[0.88] text-[16vw] sm:text-[11vw] lg:text-[8.5vw] text-gray-950 dark:text-white">
+                                Five<br />things.<br /><span className="nb-outline">One crew.</span>
                             </h2>
-                            <p className="nb-reveal mt-6 max-w-md text-lg text-gray-600 dark:text-zinc-400">Most projects mix two or three of these. One team runs all of it, so nothing falls between agencies.</p>
+                            <p className="nb-reveal mt-6 max-w-md text-lg text-gray-600 dark:text-zinc-400">Event marketing, activations, influencers, digital and crews. Most projects mix two or three; one team runs all of it, so nothing falls between vendors.</p>
                             <p className="nb-reveal mt-8 hidden lg:flex items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">Keep scrolling <ArrowRight size={14} aria-hidden="true" /></p>
                         </div>
                     </div>
@@ -50,8 +56,8 @@ export default function Story() {
                         <article key={p.n} className="nb-story-panel flex items-center">
                             <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-10 grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
                                 <div className="nb-reveal lg:[animation:none]">
-                                    <span className="block font-heading font-black text-[22vw] sm:text-[14vw] lg:text-[11vw] leading-[0.8] tracking-[-0.05em] nb-outline-soft">{p.n}</span>
-                                    <h3 className="mt-2 font-heading font-black uppercase tracking-[-0.04em] leading-[0.88] text-[14vw] sm:text-[10vw] lg:text-[6.5vw] text-gray-950 dark:text-white">
+                                    <span className="block font-heading font-extrabold text-[22vw] sm:text-[14vw] lg:text-[11vw] leading-[0.8] tracking-[-0.05em] nb-outline-soft">{p.n}</span>
+                                    <h3 className="mt-2 font-heading font-extrabold tracking-[-0.04em] leading-[0.88] text-[14vw] sm:text-[10vw] lg:text-[6.5vw] text-gray-950 dark:text-white">
                                         {p.title[0]}<br /><span className="text-emerald-600 dark:text-neon-green">{p.title[1]}</span>
                                     </h3>
                                 </div>

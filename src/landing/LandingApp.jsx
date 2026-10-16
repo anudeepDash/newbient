@@ -73,7 +73,7 @@ function NotFound() {
 function Shell({ route }) {
     if (route.ownHeader) return <RoutePage route={route} />;
     return (
-        <div className="nb-grain min-h-dvh flex flex-col bg-[#F4F2EC] dark:bg-[#050505] text-gray-950 dark:text-white">
+        <div className="nb-landing nb-grain min-h-dvh flex flex-col bg-[#F4F2EC] dark:bg-[#050505] text-gray-950 dark:text-white">
             <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:px-4 focus:py-3 focus:rounded-xl focus:bg-white focus:text-black">Skip to content</a>
             <LandingNav />
             <main id="main" className="flex-1">
@@ -94,7 +94,7 @@ export default function LandingApp() {
                     {LANDING_ROUTES.map((r) => (
                         <Route key={r.path} path={r.path} element={<Shell route={r} />} />
                     ))}
-                    <Route path="*" element={<div className="min-h-dvh flex flex-col bg-[#F4F2EC] dark:bg-[#050505]"><LandingNav /><main className="flex-1"><NotFound /></main><LandingFooter /></div>} />
+                    <Route path="*" element={<div className="nb-landing min-h-dvh flex flex-col bg-[#F4F2EC] dark:bg-[#050505]"><LandingNav /><main className="flex-1"><NotFound /></main><LandingFooter /></div>} />
                 </Routes>
             </Suspense>
         </>

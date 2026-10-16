@@ -3,6 +3,7 @@ import { Mail, Phone } from 'lucide-react';
 import Hero from '../home/Hero';
 import Marquee from '../home/Marquee';
 import Story from '../home/Story';
+import About from '../home/About';
 import Proof from '../home/Proof';
 import Process from '../home/Process';
 import Manifesto from '../home/Manifesto';
@@ -43,6 +44,7 @@ export default function HomePage() {
             <Marquee />
             <Story />
             {!off('home_clients') && <Proof clients={feed?.clients} stats={feed?.settings?.stats} />}
+            <About recentStages={(feed?.caseStudies || []).map((c) => c.title).slice(0, 4)} openCampaigns={(feed?.campaigns || []).length} upcomingCount={events.length} />
             <Process />
             <Manifesto />
             {!off('home_portfolio') && <CaseStudies items={feed?.caseStudies} />}
@@ -55,7 +57,7 @@ export default function HomePage() {
                     <div className="lg:sticky lg:top-28 self-start">
                         <SectionHeading
                             id="enquire-title"
-                            index="08"
+                            index="09"
                             eyebrow="Work with us"
                             title="Let's make"
                             highlight="noise."

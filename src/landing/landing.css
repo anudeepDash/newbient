@@ -1,5 +1,5 @@
 /* Landing site only (newbi.live marketing pages), built with its own Tailwind config. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&family=Outfit:wght@500;600;700;800&display=swap');
 @config "../../tailwind.landing.config.js";
 
 @tailwind base;
@@ -67,6 +67,9 @@
  */
 
 ::selection { background: #39FF14; color: #050505; }
+
+/* Display face for the landing shell (the /creator page keeps Outfit). */
+.nb-landing .font-heading { font-family: 'Inter Tight', 'Inter', system-ui, sans-serif; }
 
 /* Outlined display text. The stroke colour is a variable, since the fill is transparent. */
 :root { --nb-stroke: #0a0a0a; --nb-stroke-soft: rgba(10, 10, 10, 0.45); }
@@ -142,7 +145,7 @@ details[open] > summary .nb-plus { transform: rotate(45deg); }
 
     /* Horizontal track (desktop): the section pins and the panels slide sideways with the scroll. */
     @media (min-width: 1024px) {
-      .nb-story { height: 470vh; view-timeline-name: --nb-story; view-timeline-axis: block; }
+      .nb-story { height: 560vh; view-timeline-name: --nb-story; view-timeline-axis: block; }
       .nb-story-pin { position: sticky; top: 0; height: 100vh; overflow: hidden; }
       .nb-story-track { display: flex; flex-direction: row; height: 100%; width: max-content; animation: nb-pan linear both; animation-timeline: --nb-story; animation-range: contain 0% contain 100%; }
       .nb-story-panel { width: 100vw; height: 100%; flex: none; }
