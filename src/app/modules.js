@@ -27,6 +27,11 @@ const HomePage = lazy(() => import('./pages/HomePage'));
 const CommunityPage = lazy(() => import('./pages/CommunityPage'));
 const CreatorPage = lazy(() => import('./pages/CreatorPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const GuestlistPage = lazy(() => import('./community/GuestlistPage'));
+const GiveawayPage = lazy(() => import('./community/GiveawayPage'));
+const FormPage = lazy(() => import('./community/FormPage'));
+const PassPage = lazy(() => import('./passes/PassPage'));
+const TicketLinkPage = lazy(() => import('./passes/TicketLinkPage'));
 
 export const APP_MODULES = [
     {
@@ -44,7 +49,11 @@ export const APP_MODULES = [
         tab: { label: 'Community', icon: Users },
         capability: null,
         launched: true,
-        routes: [{ path: '', Component: CommunityPage }],
+        routes: [
+            { path: '', Component: CommunityPage },
+            { path: 'g/:id', Component: GuestlistPage },
+            { path: 'giveaways/:slug', Component: GiveawayPage },
+        ],
         onboarding: ['name'],
     },
     {
@@ -101,11 +110,24 @@ export function moduleForPath(pathname = '/') {
     return launchedModules().find(m => (m.path === '/' ? path === '/' : path === m.path || path.startsWith(`${m.path}/`))) || null;
 }
 
+/*
+ * Pages that belong to no tab: a pass (opened from Community or a campaign),
+ * the signed ticket link from WhatsApp/email, and a single form.
+ */
+export const STANDALONE_ROUTES = [
+    { path: 'p/:ref', Component: PassPage },
+    { path: 't/:token', Component: TicketLinkPage },
+    { path: 'forms/:id', Component: FormPage },
+];
+
 /* Route definitions for the router, relative to the app root. */
 export function appRoutes() {
-    return launchedModules().flatMap(module => module.routes.map(route => {
-        const base = module.path === '/' ? '' : module.path.slice(1);
-        const path = [base, route.path].filter(Boolean).join('/');
-        return { key: `${module.id}:${route.path || 'index'}`, path, index: !path, Component: route.Component };
-    }));
+    return [
+        ...launchedModules().flatMap(module => module.routes.map(route => {
+            const base = module.path === '/' ? '' : module.path.slice(1);
+            const path = [base, route.path].filter(Boolean).join('/');
+            return { key: `${module.id}:${route.path || 'index'}`, path, index: !path, Component: route.Component };
+        })),
+        ...STANDALONE_ROUTES.map(route => ({ key: `page:${route.path}`, path: route.path, index: false, Component: route.Component })),
+    ];
 }
