@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import X from 'lucide-react/dist/esm/icons/x';
 import { cn } from '../../lib/utils';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import BrandLayers from './BrandLayers';
 
 /*
  * The app's one modal primitive.
@@ -18,7 +19,8 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
  *   </Sheet>
  *
  * size: 'auto' (fits content, up to 92dvh) or 'full' (full height on phones).
- * backdrop: an element painted behind the header and body (e.g. <AmbientBackdrop/>).
+ * Every sheet sits on the Newbi surface (BrandLayers: corner glow, dot grid,
+ * faded N. mark). backdrop: an element painted instead, behind the header and body.
  */
 
 const MOBILE_QUERY = '(max-width: 767px)';
@@ -107,14 +109,14 @@ const Sheet = ({
                         dragElastic={{ top: 0, bottom: 0.5 }}
                         onDragEnd={(_, info) => { if (info.offset.y > 120 || info.velocity.y > 600) requestClose(); }}
                         className={cn(
-                            'relative flex w-full flex-col overflow-hidden border-black/[0.08] bg-white text-gray-900 shadow-2xl dark:border-white/[0.08] dark:bg-[#0d0f15] dark:text-white',
+                            'relative isolate flex w-full flex-col overflow-hidden border-black/[0.08] bg-[#f7f7f3] text-gray-900 shadow-2xl dark:border-white/[0.1] dark:bg-[#0b0d12] dark:text-white',
                             phone
                                 ? cn('rounded-t-[1.75rem] border-t', size === 'full' ? 'h-[calc(100dvh-env(safe-area-inset-top)-0.75rem)]' : 'max-h-[92dvh]')
                                 : cn('max-h-[88dvh] rounded-[2rem] border shadow-[0_40px_120px_-30px_rgba(0,0,0,0.6)]', widths[width] || widths.md),
                             className
                         )}
                     >
-                        {backdrop && <div aria-hidden="true" className="pointer-events-none absolute inset-0">{backdrop}</div>}
+                        {backdrop ? <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">{backdrop}</div> : <BrandLayers soft mark="large" />}
                         {phone && (
                             // The handle is the only drag target.
                             <div
@@ -137,7 +139,7 @@ const Sheet = ({
                                         type="button"
                                         onClick={onClose}
                                         aria-label="Close"
-                                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/5 text-gray-500 hover:text-gray-900 dark:bg-white/10 dark:text-zinc-400 dark:hover:text-white"
+                                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/70 text-gray-600 ring-1 ring-inset ring-black/[0.08] transition-colors hover:text-gray-900 dark:bg-white/[0.08] dark:text-zinc-300 dark:ring-white/[0.12] dark:hover:text-white"
                                     >
                                         <X size={18} />
                                     </button>
@@ -148,7 +150,7 @@ const Sheet = ({
                             {children}
                         </div>
                         {footer ? (
-                            <div className={cn('relative shrink-0 border-t border-black/[0.06] bg-white px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 dark:border-white/[0.06] dark:bg-[#0d0f15]', !phone && 'px-7 pb-5')}>
+                            <div className={cn('relative shrink-0 border-t border-black/[0.06] bg-[#f7f7f3]/85 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0b0d12]/85', !phone && 'px-7 pb-5')}>
                                 {footer}
                             </div>
                         ) : phone && <div className="h-[env(safe-area-inset-bottom)] shrink-0" />}

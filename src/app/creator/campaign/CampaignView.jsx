@@ -11,7 +11,7 @@ import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import Hourglass from 'lucide-react/dist/esm/icons/hourglass';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
-import { AmbientBackdrop, Button, Sheet, useIsPhone } from '../../../components/app';
+import { Button, Sheet, useIsPhone } from '../../../components/app';
 import { useAppStore } from '../../../lib/store/appStore';
 import { useStore as useLegacyStore } from '../../../lib/store.js';
 import { isPresent } from '../../../lib/present';
@@ -62,8 +62,6 @@ const Chip = ({ icon: Icon, label, tone }) => {
     );
 };
 
-const RADIAL = 'radial-gradient(closest-side at 50% 50%, #000 35%, transparent 100%)';
-const PAGE_GLOW_MASK = { WebkitMaskImage: RADIAL, maskImage: RADIAL };
 
 const spotsLabel = (c) => {
     const left = c.spotsLeft;
@@ -223,7 +221,7 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
     const bar = <ApplyPanel {...panelProps} compact />;
 
     const poster = campaign.thumbnail ? (
-        <div className="overflow-hidden rounded-3xl border border-black/[0.06] bg-black/[0.04] shadow-[0_30px_80px_-40px_rgba(0,0,0,0.6)] dark:border-white/[0.08] dark:bg-white/[0.04]">
+        <div className="overflow-hidden rounded-[1.5rem] bg-black/[0.04] ring-1 ring-inset ring-black/[0.08] shadow-[0_30px_80px_-40px_rgba(0,0,0,0.6)] dark:bg-white/[0.04] dark:ring-white/[0.12]">
             <img src={campaign.thumbnail} alt="" className="aspect-video w-full object-cover md:aspect-auto md:max-h-[70dvh] md:object-contain" />
         </div>
     ) : null;
@@ -237,7 +235,7 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
                         {isPresent(campaign.brand) && <span className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-700 dark:text-neon-green">{campaign.brand}</span>}
                     </div>
                 )}
-                <h1 className="font-heading text-[28px] font-extrabold leading-[1.05] tracking-[-0.035em] sm:text-[34px] md:text-[40px]">{campaign.title}</h1>
+                <h1 className="font-heading text-[28px] font-extrabold leading-[1.05] tracking-[-0.035em] sm:text-[32px] md:text-[36px]">{campaign.title}</h1>
                 <div className="flex flex-wrap gap-2">
                     <Chip icon={Award} label={reward} tone="accent" />
                     <Chip icon={MapPin} label={city} />
@@ -312,12 +310,6 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
 
     const body = (
         <div className="relative isolate">
-            {variant === 'page' && (
-                // On a page the glow fades out on every side, so it has no edges.
-                <div aria-hidden="true" className="pointer-events-none absolute -inset-x-4 -top-20 h-[560px] sm:-inset-x-24" style={PAGE_GLOW_MASK}>
-                    <AmbientBackdrop image={campaign.thumbnail} fade={false} />
-                </div>
-            )}
             <div className={cn('relative grid gap-6', poster && 'md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:gap-10')}>
                 {poster && <div className="md:sticky md:top-0 md:self-start">{poster}</div>}
                 {details}
@@ -362,7 +354,6 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
                     header={<span className="sr-only">{campaign.title}</span>}
                     footer={phone ? bar : null}
                     bodyClassName="pt-0"
-                    backdrop={<AmbientBackdrop image={campaign.thumbnail} className="bottom-auto h-[520px]" />}
                 >
                     {body}
                 </Sheet>

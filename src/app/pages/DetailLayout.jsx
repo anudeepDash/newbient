@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import Share2 from 'lucide-react/dist/esm/icons/share-2';
-import { AmbientBackdrop } from '../../components/app';
 import { isPresent } from '../../lib/present';
 import { cn } from '../../lib/utils';
 import { PageBody } from './PageHeader';
@@ -19,9 +18,6 @@ import { GLASS } from './parts';
  * With no poster it's one centred column. `aside` adds content under the
  * poster on desktop (and above the main column on phones).
  */
-
-// closest-side: fully transparent at every edge, so the glow never shows a box.
-const RADIAL = 'radial-gradient(closest-side at 50% 50%, #000 35%, transparent 100%)';
 
 export const BackLink = ({ to, children }) => (
     <Link to={to} className="-ml-2 inline-flex h-10 items-center gap-1 rounded-full px-2 text-[14px] font-bold text-gray-600 transition-colors hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white">
@@ -76,12 +72,6 @@ const DetailLayout = ({ back, image, badges, eyebrow, title, onShare, aside, chi
     return (
         <PageBody>
             <div className="relative isolate">
-                {hasImage && (
-                    // The poster's colours, as a soft glow behind the page (no edges).
-                    <div aria-hidden="true" className="pointer-events-none absolute -inset-x-4 -top-24 -z-10 h-[620px] sm:-inset-x-24" style={{ WebkitMaskImage: RADIAL, maskImage: RADIAL }}>
-                        <AmbientBackdrop image={image} fade={false} />
-                    </div>
-                )}
                 {back && <div className="mb-3 lg:mb-5">{back}</div>}
                 <div className={cn('grid gap-6', hasImage ? 'lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12' : 'mx-auto max-w-2xl')}>
                     {hasImage && (
