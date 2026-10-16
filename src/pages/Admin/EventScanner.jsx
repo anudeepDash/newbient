@@ -26,7 +26,8 @@ import { cn } from '../../lib/utils';
 import { SOLD_STATUSES, orderTicketCount, isOrderCheckedIn, isGuestAdmissible } from '../../lib/ticketing';
 import Sheet from '../../components/admin/Sheet';
 import { Toggle } from '../../components/admin/uploads/UploadKit';
-import { useOperationalEvents, useGuestEntries, hasGuestlist } from '../../components/admin/ticketing/events';
+import { useOperationalEvents, useGuestEntries, useEventPasses, hasGuestlist } from '../../components/admin/ticketing/events';
+import { passesPost } from '../../lib/passesApi';
 import { formatEventDate } from '../../components/admin/ticketing/format';
 import { scanFeedback, unlockScanAudio } from '../../components/admin/events/scanFeedback';
 
@@ -35,7 +36,8 @@ import { scanFeedback, unlockScanAudio } from '../../components/admin/events/sca
  * dark. Camera first, a big colour result for every scan (green = let in,
  * amber = already used, red = not valid), sound and vibration, manual entry,
  * recent scans, and scans made without signal are kept and sent later.
- * Check-ins go through store.scanTicket (Firestore transactions).
+ * Passes (passes/{ref}) are checked in by the passes API; older order and
+ * guestlist codes go through store.scanTicket (Firestore transactions).
  */
 
 const SHEET_Z = 600;
@@ -63,11 +65,13 @@ const isNetworkError = (err) => Boolean(
     || /offline|network|failed to fetch/i.test(String(err?.message || err))
 );
 
-// Same reading as store.scanTicket, for offline look-ups.
+// Same reading as store.scanTicket (plus pass links, /p/REF), for offline look-ups.
 const refFromCode = (raw) => {
     let text = String(raw || '').trim();
     for (let i = 0; i < 2; i++) { try { text = decodeURIComponent(text); } catch { break; } }
     try { const o = JSON.parse(text); if (o?.ref) return String(o.ref).toUpperCase(); } catch { /* not JSON */ }
+    const link = text.match(/\/(?:p|ticket)\/([A-Za-z0-9-]{5,16})(?:[/?#]|$)/);
+    if (link) return link[1].toUpperCase();
     const m = text.toUpperCase().match(/\b(?:NB|GL)-[A-Z0-9]{3,12}\b/);
     return m ? m[0] : text.toUpperCase().replace(/\s+/g, '');
 };
@@ -240,6 +244,8 @@ const ScanScreen = ({ eventId, event, onChangeEvent, onBack, canOpenDesk, onOpen
     const ticketOrders = useStore(s => s.ticketOrders);
     const addToast = useStore(s => s.addToast);
     const { entries } = useGuestEntries(event?.guestlistIds, Boolean(event && hasGuestlist(event)));
+    // Passes: guestlist passes, creator campaign tickets and confirmed orders.
+    const passes = useEventPasses(event?.id || eventId, event?.guestlistIds);
 
     const [prefs, setPrefsState] = useState(() => ({ ...DEFAULT_PREFS, ...readJson('nb_scanner_prefs', {}) }));
     const setPref = (patch) => setPrefsState(p => { const n = { ...p, ...patch }; writeJson('nb_scanner_prefs', n); return n; });
@@ -282,8 +288,15 @@ const ScanScreen = ({ eventId, event, onChangeEvent, onBack, canOpenDesk, onOpen
             expected += n;
             if (e.attended) inside += n;
         });
+        // Creator tickets have no order or guestlist entry behind them.
+        passes.forEach(p => {
+            if (p.source !== 'campaign' || p.qr === false || p.status === 'revoked') return;
+            const n = Number(p.qty) || 1;
+            expected += n;
+            if (p.status === 'checked_in') inside += n;
+        });
         return { expected, inside };
-    }, [ticketOrders, entries, event?.id]);
+    }, [ticketOrders, entries, passes, event?.id]);
 
     // ── keep the screen awake while scanning ──
     useEffect(() => {
@@ -401,11 +414,23 @@ const ScanScreen = ({ eventId, event, onChangeEvent, onBack, canOpenDesk, onOpen
         if (entry) {
             return { code: ref, name: entry.customerName || entry.name || 'Guest', people: Number(entry.guestsCount) || 1, local: !isGuestAdmissible(entry) ? 'invalid' : entry.attended ? 'used' : 'valid' };
         }
+        const pass = passes.find(p => p.ref === ref);
+        if (pass) {
+            return { code: ref, name: pass.holderName || 'Guest', people: Number(pass.qty) || 1, local: pass.status === 'revoked' || pass.qr === false ? 'invalid' : pass.status === 'checked_in' ? 'used' : 'valid' };
+        }
         return { code: ref, local: 'unknown' };
-    }, [ticketOrders, entries, event?.id]);
+    }, [ticketOrders, entries, passes, event?.id]);
 
     const check = useCallback(async (code) => {
         const opts = { guestlistIds: event?.guestlistIds || [] };
+        // Passes first (guestlist passes, creator tickets, confirmed orders): checked in on the server.
+        const viaPass = await withTimeout(passesPost('checkin', { code, eventId: event?.id || eventId, guestlistIds: opts.guestlistIds }), 12000);
+        if (!viaPass.ok && viaPass.code === 'OFFLINE') throw Object.assign(new Error('offline'), { network: true });
+        if (viaPass.ok && viaPass.data.found) {
+            const { success, found, ...result } = viaPass.data;
+            void success; void found;
+            return result;
+        }
         const attempt = (c) => withTimeout(scanTicket(event?.id || eventId, c, opts), 12000);
         let res = await attempt(code);
         // Typed codes without the "NB-" / "GL-" part.
@@ -475,7 +500,7 @@ const ScanScreen = ({ eventId, event, onChangeEvent, onBack, canOpenDesk, onOpen
             const left = [];
             for (const item of queue) {
                 try {
-                    const res = await withTimeout(scanTicket(event?.id || eventId, item.code, { guestlistIds: event?.guestlistIds || [] }), 12000);
+                    const res = await check(item.code);
                     done += 1;
                     addRecent({ code: res.data?.code || item.code, reason: res.reason, name: res.data?.name || '', people: res.data?.people || null, at: new Date().toISOString(), via: 'synced' });
                 } catch (err) {

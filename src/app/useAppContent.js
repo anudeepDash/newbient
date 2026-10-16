@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useAppStore } from '../lib/store/appStore';
-import { landingUrl } from './host';
+import { appPath } from './host';
 
 /*
  * Loads the public content the app pages show (open campaigns and the
@@ -14,6 +14,6 @@ export function useAppContent({ campaigns = true, feed = true } = {}) {
         if (campaigns) useAppStore.getState().loadOpenCampaigns();
     }, [campaigns]);
     useEffect(() => {
-        if (feed && authReady) useAppStore.getState().loadCommunityFeed(landingUrl);
+        if (feed && authReady) useAppStore.getState().loadCommunityFeed(appPath);
     }, [feed, uid, authReady]);
 }

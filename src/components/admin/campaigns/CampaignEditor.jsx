@@ -7,6 +7,7 @@ import Layers from 'lucide-react/dist/esm/icons/layers';
 import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
 import { cn } from '../../../lib/utils';
 import { useStore } from '../../../lib/store';
+import { useStoreSubscription } from '../../../hooks/useStoreSubscription';
 import { PREDEFINED_CITIES, CREATOR_NICHES, nicheKey } from '../../../lib/constants';
 import { accent } from '../theme';
 import { Button, EmptyState, Card } from '../ui';
@@ -32,6 +33,7 @@ const SECTIONS = [
     { id: 'cm-deliverables', label: 'Deliverables' },
     { id: 'cm-eligibility', label: 'Who can apply' },
     { id: 'cm-pay', label: 'Pay and spots' },
+    { id: 'cm-tickets', label: 'Event tickets' },
     { id: 'cm-dates', label: 'Deadlines' },
     { id: 'cm-images', label: 'Images' },
     { id: 'cm-visibility', label: 'Visibility' },
@@ -44,6 +46,7 @@ const blankForm = (uid) => ({
     targetCity: 'Any', targetCollege: '', minInstagramFollowers: '', preferredNiches: [],
     reward: '', payoutPerCreator: '', totalSpots: '', spotsLeft: '',
     thumbnail: '', websiteApplyEnabled: true, autoShortlistEligible: true, isPinned: false,
+    eventId: '', ticketsPerCreator: '', ticketAutoIssue: '',
     status: 'Open', tasks: [], createdBy: uid || '',
 });
 
@@ -64,6 +67,9 @@ const toForm = (c, { copy = false } = {}) => ({
     totalSpots: toStr(c.totalSpots),
     spotsLeft: copy ? '' : toStr(c.spotsLeft),
     thumbnail: c.thumbnail || '',
+    eventId: c.eventId || '',
+    ticketsPerCreator: toStr(c.ticketsPerCreator),
+    ticketAutoIssue: ['selected', 'completed'].includes(c.ticketAutoIssue) ? c.ticketAutoIssue : '',
     websiteApplyEnabled: c.websiteApplyEnabled !== false,
     // Stored truthiness: an old campaign without the flag never auto-selected.
     autoShortlistEligible: Boolean(c.autoShortlistEligible),
@@ -101,6 +107,10 @@ const toPayload = (f) => ({
     totalSpots: num(f.totalSpots),
     spotsLeft: num(f.spotsLeft),
     thumbnail: f.thumbnail.trim(),
+    // Event tickets for selected creators (Phase 5): the linked event, how many each, and when they go out.
+    eventId: f.eventId || null,
+    ticketsPerCreator: f.eventId ? (num(f.ticketsPerCreator) || 1) : null,
+    ticketAutoIssue: f.eventId && f.ticketAutoIssue ? f.ticketAutoIssue : null,
     websiteApplyEnabled: f.websiteApplyEnabled,
     autoShortlistEligible: f.autoShortlistEligible,
     isPinned: f.isPinned,
@@ -123,8 +133,10 @@ const firstImageFrom = (e) => {
 };
 
 const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, onCancel, onCopyTaskLink }) => {
+    useStoreSubscription(['upcomingEvents']);
     const user = useStore(s => s.user);
     const addToast = useStore(s => s.addToast);
+    const upcomingEvents = useStore(s => s.upcomingEvents);
     const [form, setForm] = useState(() => blankForm(user?.uid));
     const [readyFor, setReadyFor] = useState(isEdit ? null : 'new');
     const baseline = useRef(JSON.stringify(blankForm(user?.uid)));
@@ -137,6 +149,14 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
     const [removeTask, setRemoveTask] = useState(null);
     const [leaving, setLeaving] = useState(false);
     const [otherCity, setOtherCity] = useState(false);
+    // Upcoming events to link (plus the one already linked, even if it has passed).
+    const eventOptions = useMemo(() => {
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        return (upcomingEvents || [])
+            .filter(e => e.id === form.eventId || !e.date || new Date(e.date) >= today)
+            .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
+            .map(e => ({ id: e.id, label: [e.title || 'Untitled event', e.date ? formatDay(e.date) : null].filter(Boolean).join(' · ') }));
+    }, [upcomingEvents, form.eventId]);
 
     // Load the campaign once per id (and a duplicate source once). Later
     // listener updates (a creator submitting) must not wipe the admin's edits.
@@ -503,6 +523,35 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                                 <p className={cn('rounded-xl px-3.5 py-2.5 text-[13px] font-semibold', accent('teal').soft, accent('teal').text)}>
                                     Up to {inr(num(form.payoutPerCreator) * num(form.totalSpots))} if every spot is filled.
                                 </p>
+                            )}
+                        </div>
+                    </BuilderCard>
+
+                    <BuilderCard id="cm-tickets" title="Event tickets" hint="Optional: tickets for selected creators, sent in the app, by email and on WhatsApp">
+                        <div className="space-y-4">
+                            <Field label="Linked event" optional hint="Creators get passes for this event. Send them from the campaign's applicants.">
+                                <ThemedSelect className={cn(fieldCls, 'cursor-pointer')} value={form.eventId} onChange={(e) => set({ eventId: e.target.value })}>
+                                    <option value="">No event tickets</option>
+                                    {eventOptions.map(e => <option key={e.id} value={e.id}>{e.label}</option>)}
+                                </ThemedSelect>
+                            </Field>
+                            {form.eventId && (
+                                <>
+                                    <Field label="Tickets per creator">
+                                        <input className={fieldCls} type="number" min="1" max="20" inputMode="numeric" value={form.ticketsPerCreator} onChange={(e) => set({ ticketsPerCreator: e.target.value })} placeholder="1" />
+                                    </Field>
+                                    <Field label="Send Newbi passes automatically" hint="Official partner tickets (PDFs or links) are always sent by hand with a CSV.">
+                                        <Choice
+                                            value={form.ticketAutoIssue}
+                                            onChange={(v) => set({ ticketAutoIssue: v })}
+                                            options={[
+                                                { value: '', label: 'Off', hint: 'Send by hand' },
+                                                { value: 'selected', label: 'On selection', hint: 'When you select a creator' },
+                                                { value: 'completed', label: 'When done', hint: 'All required tasks approved' },
+                                            ]}
+                                        />
+                                    </Field>
+                                </>
                             )}
                         </div>
                     </BuilderCard>
