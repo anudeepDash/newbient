@@ -5,6 +5,8 @@ import { sendTransactional } from './_lib/mail/send.js';
 import { sendCreatorVerification } from './_lib/whatsapp.js';
 import { isTicketAction, handleTicketAction } from './_lib/tickets.js';
 import { safeSiteOrigin } from './_lib/linkSign.js';
+import { cleanHandle as cleanInstagramHandle, lookupInstagram, readCreatorSettings } from './_lib/instagram.js';
+import { CREATOR_APP_ACTIONS, handleCreatorAppAction } from './_lib/creatorApp.js';
 
 export const maxDuration = 60;
 let adminDb = null;
@@ -121,236 +123,11 @@ const hasDisallowedLink = (input) => {
            str.includes('://');
 };
 
-const parseFollowerCount = (str) => {
-    if (!str && str !== 0) return 0;
-    if (typeof str === 'number') return Math.round(str);
-    const cleaned = String(str).trim().replace(/,/g, '');
-    const match = cleaned.match(/^([0-9.]+)\s*([kKmMbB])?$/i);
-    if (!match) {
-        const num = parseFloat(cleaned);
-        return isNaN(num) ? 0 : Math.round(num);
-    }
-    const val = parseFloat(match[1]);
-    const unit = (match[2] || '').toUpperCase();
-    if (unit === 'K') return Math.round(val * 1000);
-    if (unit === 'M') return Math.round(val * 1000000);
-    if (unit === 'B') return Math.round(val * 1000000000);
-    return Math.round(val);
-};
-
 const formatFollowerCount = (num) => {
     const val = Number(num) || 0;
-    if (val >= 1000000) {
-        return (val / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-    }
-    if (val >= 1000) {
-        return (val / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
-    }
+    if (val >= 1000000) return (val / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (val >= 1000) return (val / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
     return val.toLocaleString();
-};
-
-const fetchInstagramProfile = async (rawHandle) => {
-    const cleanHandle = extractSocialUsername(rawHandle, 'instagram').toLowerCase();
-    if (!cleanHandle || !/^[a-zA-Z0-9._]{1,30}$/.test(cleanHandle)) {
-        return { success: false, error: 'Links are not permitted. Please enter only your Instagram username (1-30 characters, letters, numbers, periods, underscores).' };
-    }
-
-    const decodeEntities = (str) => {
-        if (!str) return '';
-        return str
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&quot;/g, '"')
-            .replace(/&#039;/g, "'")
-            .replace(/&#064;/g, '@')
-            .replace(/&#x2022;/g, '•')
-            .replace(/&bull;/g, '•');
-    };
-
-    // Strategy 1: Social Crawler Previews (Instagram serves complete OpenGraph data to social sharing agents)
-    const crawlers = [
-        'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
-        'Twitterbot/1.0',
-        'LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)',
-        'TelegramBot (like TwitterBot)',
-        'WhatsApp/2.21.12.21 A',
-        'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)',
-        'Googlebot/2.1 (+http://www.google.com/bot.html)'
-    ];
-
-
-    const fetchWithUA = async (ua) => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout per request
-        try {
-            const htmlUrl = `https://www.instagram.com/${cleanHandle}/`;
-            const res = await fetch(htmlUrl, {
-                headers: {
-                    'User-Agent': ua,
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.9'
-                },
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            if (res.ok) {
-                const html = await res.text();
-                const descMatch = html.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i) ||
-                                  html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i) ||
-                                  html.match(/content=["']([^"']+)["']\s+property=["']og:description["']/i);
-                
-                if (descMatch && descMatch[1]) {
-                    const desc = decodeEntities(descMatch[1]);
-                    // Format: "542 Followers, 541 Following, 13 Posts - See Instagram photos and videos from Anudeep Dash (@anudeepdash)"
-                    const followerMatch = desc.match(/([0-9.,kKmMbB]+)\s+Followers/i);
-                    if (followerMatch) {
-                        const parsedCount = parseFollowerCount(followerMatch[1]);
-                        
-                        // Extract title for display name
-                        const titleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i) ||
-                                           html.match(/content=["']([^"']+)["']\s+property=["']og:title["']/i);
-                        let fullName = cleanHandle;
-                        if (titleMatch && titleMatch[1]) {
-                            const rawTitle = decodeEntities(titleMatch[1]);
-                            const namePart = rawTitle.split('(@')[0].split('•')[0].trim();
-                            const cleanedName = namePart.replace(/^["'‘“”’`\s]+|["'‘“”’`\s]+$/g, '').trim();
-                            if (cleanedName && cleanedName.length > 1) {
-                                fullName = cleanedName;
-                            }
-                        }
-                        
-                        // Extract profile image
-                        const imgMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
-                                         html.match(/content=["']([^"']+)["']\s+property=["']og:image["']/i);
-                        const profilePic = imgMatch ? decodeEntities(imgMatch[1]) : null;
-                        
-                        // Check if officially verified by Instagram (Meta verification is reflected in og:description)
-                        const isVerifiedBadge = Boolean(
-                            desc.toLowerCase().includes('verified account') || 
-                            desc.toLowerCase().includes('verified profile')
-                        );
-                        
-                        return {
-                            success: true,
-                            handle: cleanHandle,
-                            name: fullName,
-                            followers: parsedCount,
-                            formattedFollowers: formatFollowerCount(parsedCount),
-                            profilePic,
-                            isPrivate: desc.toLowerCase().includes('private'),
-                            isVerified: isVerifiedBadge
-                        };
-                    }
-                }
-            }
-            throw new Error('No valid profile data found');
-        } catch (err) {
-            clearTimeout(timeoutId);
-            throw err;
-        }
-    };
-
-    let crawlerErrors = [];
-    const maxRetries = 3;
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-            // Fire crawlers concurrently, first to succeed wins immediately
-            const result = await Promise.any(crawlers.map(ua => fetchWithUA(ua)));
-            return result;
-        } catch (err) {
-            crawlerErrors = err.errors ? err.errors.map(e => e.message) : [err.message];
-            
-            if (attempt < maxRetries) {
-                // Wait 800ms before retrying to allow Meta's CDN to generate and cache the OpenGraph page
-                await new Promise(resolve => setTimeout(resolve, 800));
-            } else {
-                console.warn(`[API/CREATOR-JOIN] All concurrent social crawlers failed after ${maxRetries} attempts.`, crawlerErrors);
-            }
-        }
-    }
-    // Strategy 2: External RapidAPI fallback if key provided
-    if (process.env.RAPIDAPI_KEY) {
-        try {
-            const rapidHost = process.env.RAPIDAPI_HOST || 'instagram-looter2.p.rapidapi.com';
-            // Some APIs use /profile, some use /user, some use /v1/users. We'll default to the standard Looter V2 endpoint.
-            const rapidEndpoint = process.env.RAPIDAPI_ENDPOINT || `https://${rapidHost}/profile?username=${cleanHandle}`;
-            
-            const rapidRes = await fetch(rapidEndpoint, {
-                headers: {
-                    'x-rapidapi-key': process.env.RAPIDAPI_KEY,
-                    'x-rapidapi-host': rapidHost
-                }
-            });
-            
-            if (rapidRes.ok) {
-                const rapidData = await rapidRes.json();
-                
-                // Supports both instagram-data12 AND instagram-looter2 JSON structures
-                const count = rapidData?.follower_count || rapidData?.edge_followed_by?.count;
-                
-                if (count !== undefined) {
-                    const parsedCount = Number(count) || 0;
-                    return {
-                        success: true,
-                        handle: cleanHandle,
-                        name: rapidData.full_name || cleanHandle,
-                        followers: parsedCount,
-                        formattedFollowers: formatFollowerCount(parsedCount),
-                        profilePic: rapidData.hd_profile_pic_url_info?.url || rapidData.profile_pic_url || null,
-                        isPrivate: Boolean(rapidData.is_private),
-                        isVerified: Boolean(rapidData.is_verified)
-                    };
-                }
-            }
-        } catch (err) {
-            console.warn('[API/CREATOR-JOIN] RapidAPI notice:', err.message);
-        }
-    }
-
-    // Strategy 3: Apify integration if APIFY_API_TOKEN is provided
-    if (process.env.APIFY_API_TOKEN) {
-        try {
-            const apifyRes = await fetch(`https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?token=${process.env.APIFY_API_TOKEN}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ usernames: [cleanHandle] })
-            });
-
-            if (apifyRes.ok) {
-                const dataset = await apifyRes.json();
-                if (dataset && dataset.length > 0) {
-                    const profile = dataset[0];
-                    const count = profile.followersCount;
-                    
-                    if (count !== undefined) {
-                        const parsedCount = Number(count) || 0;
-                        return {
-                            success: true,
-                            handle: cleanHandle,
-                            name: profile.fullName || cleanHandle,
-                            followers: parsedCount,
-                            formattedFollowers: formatFollowerCount(parsedCount),
-                            profilePic: profile.profilePicUrlHD || profile.profilePicUrl || null,
-                            isPrivate: Boolean(profile.isPrivate ?? profile.private),
-                            isVerified: Boolean(profile.isVerified ?? profile.verified)
-                        };
-                    }
-                }
-            }
-        } catch (err) {
-            console.warn('[API/CREATOR-JOIN] Apify notice:', err.message);
-        }
-    }
-
-    return {
-        success: false,
-        requiresManualEntry: true,
-        error: `@${cleanHandle} could not be automatically verified (Anti-Bot Active).`
-    };
 };
 
 // WhatsApp sends live in _lib/whatsapp.js (templates only, logged to message_log).
@@ -500,7 +277,7 @@ const sendWelcomeEmail = async (toEmail, creatorName, verificationUrl, creatorDa
 
 
 // ── Access control ──────────────────────────────────────────────────────────
-const PROD_ORIGINS = ['https://newbi.live', 'https://www.newbi.live', 'https://artistant.in', 'https://www.artistant.in'];
+const PROD_ORIGINS = ['https://newbi.live', 'https://www.newbi.live', 'https://app.newbi.live', 'https://artistant.in', 'https://www.artistant.in'];
 
 // True only for local development (Vite middleware or `vercel dev`), never on a deployed site.
 const isDevRuntime = () => (process.env.VERCEL_ENV
@@ -510,7 +287,7 @@ const isDevRuntime = () => (process.env.VERCEL_ENV
 const isAllowedOrigin = (origin) => {
     if (!origin) return false;
     if (PROD_ORIGINS.includes(origin)) return true;
-    return isDevRuntime() && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+    return isDevRuntime() && /^http:\/\/((app\.)?localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 };
 
 const isLocalDevRequest = (req) => {
@@ -693,6 +470,11 @@ export default async function handler(req, res) {
         return handleTicketAction(action, req, res, adminDb, decodedToken);
     }
 
+    // The app's creator module: apply, Instagram verification, campaign apply and submissions.
+    if (CREATOR_APP_ACTIONS.has(action)) {
+        return handleCreatorAppAction(action, req, res, { decodedToken });
+    }
+
     if (!PUBLIC_ACTIONS.has(action) && !decodedToken) {
         return res.status(401).json({ success: false, error: 'Please sign in to continue.' });
     }
@@ -705,124 +487,65 @@ export default async function handler(req, res) {
         }
     }
 
-    // ── ACTION: VERIFY INSTAGRAM PROFILE & FOLLOWERS ──────────────────────────
+    // ── ACTION: VERIFY INSTAGRAM (legacy shape) ───────────────────────────────
+    // Meta's Business Discovery only (api/_lib/instagram.js); there is no scraping.
+    // When Meta can't confirm the account, the caller falls back to manual entry
+    // and an admin checks the profile.
     if (action === 'verify-instagram') {
-        const rawHandle = req.query?.handle || req.body?.handle || '';
-        const cleanHandle = extractSocialUsername(rawHandle, 'instagram').toLowerCase();
-
+        const cleanHandle = cleanInstagramHandle(req.query?.handle || req.body?.handle || '');
         if (!cleanHandle) {
             return res.status(400).json({ success: false, error: 'Instagram username is required. Links are not permitted.' });
         }
-
         try {
-            // Check deduplication / existing creator linkage
+            const settings = await readCreatorSettings(adminDb);
             let alreadyRegistered = false;
             let registeredTo = null;
-            if (adminDb) {
-                try {
-                    const matchSnap = await adminDb.collection('creators')
-                        .where('instagram', '==', cleanHandle)
-                        .limit(1)
-                        .get();
-                    if (!matchSnap.empty) {
-                        const conflictDoc = matchSnap.docs[0].data();
-                        alreadyRegistered = true;
-                        registeredTo = conflictDoc.displayName || conflictDoc.name || 'Existing Account';
-                    }
-                } catch (snapErr) {
-                    console.warn('[API/CREATOR-JOIN] Deduplication check notice:', snapErr.message);
+            try {
+                const matchSnap = await adminDb.collection('creators').where('instagram', '==', cleanHandle).limit(1).get();
+                if (!matchSnap.empty) {
+                    const conflictDoc = matchSnap.docs[0].data();
+                    alreadyRegistered = true;
+                    registeredTo = conflictDoc.displayName || conflictDoc.name || 'Existing Account';
                 }
+            } catch (snapErr) {
+                console.warn('[API/CREATOR-JOIN] Deduplication check notice:', snapErr.message);
             }
 
-            // Fetch minimum follower threshold from site_settings/general
-            let minFollowersRequired = 1000;
-            let requireVerification = true;
-            if (adminDb) {
-                try {
-                    const settingsSnap = await adminDb.collection('site_settings').doc('general').get();
-                    if (settingsSnap.exists) {
-                        const sData = settingsSnap.data();
-                        if (sData.minInstagramFollowersToJoin !== undefined) {
-                            minFollowersRequired = Number(sData.minInstagramFollowersToJoin);
-                        }
-                        if (sData.requireInstagramVerification !== undefined) {
-                            requireVerification = Boolean(sData.requireInstagramVerification);
-                        }
-                    }
-                } catch (sErr) {
-                    console.warn('[API/CREATOR-JOIN] site_settings read notice:', sErr.message);
-                }
-            }
-
-            const isLocal = isLocalDevRequest(req);
-
-            const result = await fetchInstagramProfile(cleanHandle);
-            if (!result.success) {
-                if (isLocal) {
-                    return res.status(200).json({
-                        success: true,
-                        handle: cleanHandle,
-                        name: cleanHandle,
-                        followers: 5500,
-                        formattedFollowers: '5.5K',
-                        profilePic: null,
-                        isPrivate: false,
-                        isVerified: false,
-                        minFollowersRequired,
-                        requireVerification,
-                        meetsMinimumFollowers: true,
-                        alreadyRegistered,
-                        registeredTo,
-                        isSimulated: true
-                    });
-                }
+            const lookup = settings.metaVerification ? await lookupInstagram(cleanHandle, { db: adminDb }) : { ok: false, reason: 'not_configured' };
+            if (!lookup.ok) {
                 return res.status(200).json({
                     success: false,
-                    error: result.error || `@${cleanHandle} was not found on Instagram. Please check handle spelling or make sure your account is public.`
+                    requiresManualEntry: true,
+                    reason: lookup.reason,
+                    error: lookup.reason === 'not_professional'
+                        ? `@${cleanHandle} isn't a Professional Instagram account, so we can't check it automatically.`
+                        : `@${cleanHandle} could not be checked automatically.`,
+                    minFollowersRequired: settings.minFollowers,
+                    requireVerification: settings.requireVerification,
+                    alreadyRegistered,
+                    registeredTo
                 });
             }
-
-            // Permanently save scraped profile picture to Cloudinary so it doesn't expire
-            if (result.profilePic) {
-                try {
-                    const cloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
-                    const uploadPreset = process.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud";
-                    const data = new URLSearchParams();
-                    data.append("file", result.profilePic);
-                    data.append("upload_preset", uploadPreset);
-                    
-                    const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-                        method: 'POST',
-                        body: data
-                    });
-                    
-                    if (uploadRes.ok) {
-                        const json = await uploadRes.json();
-                        result.profilePic = json.secure_url;
-                    }
-                } catch (e) {
-                    console.warn('[API/CREATOR-JOIN] Failed to permanently save profile pic to Cloudinary:', e.message);
-                }
-            }
-
-            const followers = Number(result.followers) || 0;
-            const meetsMinimum = minFollowersRequired <= 0 || followers >= minFollowersRequired;
-
+            const followers = lookup.profile.followers;
             return res.status(200).json({
-                ...result,
-                minFollowersRequired,
-                requireVerification,
-                meetsMinimumFollowers: meetsMinimum,
+                success: true,
+                handle: lookup.profile.username,
+                name: lookup.profile.name || lookup.profile.username,
+                followers,
+                formattedFollowers: formatFollowerCount(followers),
+                profilePic: lookup.profile.profilePic,
+                igUserId: lookup.profile.igUserId,
+                isPrivate: false,
+                isVerified: false,
+                minFollowersRequired: settings.minFollowers,
+                requireVerification: settings.requireVerification,
+                meetsMinimumFollowers: settings.minFollowers <= 0 || followers >= settings.minFollowers,
                 alreadyRegistered,
                 registeredTo
             });
-
         } catch (err) {
             console.error('[API/CREATOR-JOIN] verify-instagram error:', err);
-            return res.status(500).json({
-                success: false,
-                error: err.message || 'Failed to verify Instagram profile.'
-            });
+            return res.status(500).json({ success: false, error: 'Failed to verify Instagram profile.' });
         }
     }
 

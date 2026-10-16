@@ -60,6 +60,7 @@ import {
     STAGES, applicantsFor, campaignStatus, creatorHandle, creatorPhotoOf, creatorKeys, creatorRef, formatCount, formatDay,
     inr, stageMeta, taskTypeOf, platformOf, daysUntil, waNumber, isUniversalCity,
 } from './campaignModel';
+import { isRequiredTask } from '../../../lib/creator/tasks';
 
 const SELECTED_STAGES = ['selected', 'review', 'approved', 'paid'];
 const SORTS = [
@@ -451,7 +452,7 @@ const CampaignManage = ({
                                 <p className="truncate text-[15px] font-bold">{task.title || `Deliverable ${idx + 1}`}</p>
                                 <p className="flex flex-wrap items-center gap-x-2.5 text-[12px] text-gray-500">
                                     <span>{platformOf(task.platform).label}</span>
-                                    {task.priority === 'optional' && <span>Optional</span>}
+                                    {!isRequiredTask(task) && <span>Optional</span>}
                                     {task.deadline && <span className={cn(due !== null && due < 0 && 'font-semibold text-rose-600 dark:text-rose-300')}>Due {formatDay(task.deadline)}</span>}
                                     <span>{approved} of {rows.length} approved</span>
                                 </p>
@@ -538,7 +539,7 @@ const CampaignManage = ({
                                 <li key={t.id || i} className="flex items-center gap-2 text-[13px]">
                                     <span className={cn('h-1.5 w-1.5 rounded-full', accent('pink').dot)} />
                                     <span className="font-semibold">{t.title}</span>
-                                    <span className="text-gray-500">{[platformOf(t.platform).label, t.priority === 'optional' ? 'optional' : null, t.deadline ? `due ${formatDay(t.deadline)}` : null].filter(Boolean).join(' · ')}</span>
+                                    <span className="text-gray-500">{[platformOf(t.platform).label, !isRequiredTask(t) ? 'optional' : null, t.deadline ? `due ${formatDay(t.deadline)}` : null].filter(Boolean).join(' · ')}</span>
                                 </li>
                             ))}
                         </ul>

@@ -26,6 +26,7 @@ import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import { DeliveryDots } from './CampaignTickets';
 import { StageBadge, Spinner } from './parts';
 import { creatorHandle, creatorPhotoOf, formatCount, formatDay, inr, taskTypeOf, waNumber } from './campaignModel';
+import { isRequiredTask } from '../../../lib/creator/tasks';
 
 const SUB_STATUS = {
     not_started: { label: 'Not started', tone: 'gray' },
@@ -157,10 +158,13 @@ const ApplicantSheet = ({
                                                     <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-gray-500">
                                                         <Badge tone={cfg.tone}>{cfg.label}</Badge>
                                                         {sub?.submittedAt && <span>Sent {formatDay(sub.submittedAt)}</span>}
-                                                        {task.priority === 'optional' && <span>Optional</span>}
+                                                        {!isRequiredTask(task) && <span>Optional</span>}
                                                     </p>
                                                     {status === 'rejected' && sub?.rejectionReason && (
                                                         <p className="mt-1.5 text-[12px] text-rose-600 dark:text-rose-300">You asked: {sub.rejectionReason}</p>
+                                                    )}
+                                                    {sub?.note && (
+                                                        <p className="mt-1.5 break-words text-[12px] text-gray-600 dark:text-zinc-300">Note: {sub.note}</p>
                                                     )}
                                                     {sub?.contentLink && !content && sub.contentLink !== 'Deliverable completed by creator' && (
                                                         <p className="mt-1.5 break-words text-[12px] text-gray-600 dark:text-zinc-300">{sub.contentLink}</p>

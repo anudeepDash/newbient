@@ -9,6 +9,7 @@ import Twitter from 'lucide-react/dist/esm/icons/twitter';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import { isCampaignCityMatch, nicheKey } from '../../../lib/constants';
 import { toMillis } from '../creatorPortal/creatorUtils';
+import { isRequiredTask } from '../../../lib/creator/tasks';
 
 /*
  * Campaign rules shared by the list, the editor and the manage screen.
@@ -16,6 +17,8 @@ import { toMillis } from '../creatorPortal/creatorUtils';
  * Where things live (unchanged from before, so old records keep working):
  *   campaign doc      title, brand, description, tasks[], status 'Open' | 'Closed' | 'Draft', …
  *   task.submissions  { [creator uid or id]: { status: 'submitted' | 'approved' | 'rejected', contentLink, proofUrl, … } }
+ *                     App submissions live in campaigns/{id}/submissions/{uid}; the store merges
+ *                     them in here (store: 'app'), so these screens read both.
  *   creator doc       joinedCampaigns[] (applied), shortlistedCampaigns[] (selected: sees the tasks)
  * New, admin-only, on the creator doc:
  *   campaignStages   { [campaignId]: 'shortlisted' | 'declined' | null }
@@ -186,7 +189,7 @@ export const progressFor = (campaign, creator) => {
         const sub = submissionOf(task, creator);
         return { task, sub, status: sub?.status || 'not_started' };
     });
-    const required = items.filter(i => i.task.priority !== 'optional');
+    const required = items.filter(i => isRequiredTask(i.task));
     return {
         items,
         toReview: items.filter(i => i.status === 'submitted').length,

@@ -13,9 +13,9 @@ const PageHeader = ({ eyebrow, title, subtitle, action }) => (
     </header>
 );
 
-/* Standard page width and padding. */
+/* Standard page width and padding: the phone layout, centred on bigger screens. */
 export const PageBody = ({ children }) => (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-5 sm:px-6 lg:px-10 lg:py-10">{children}</div>
+    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-5 sm:px-6 sm:py-8">{children}</div>
 );
 
 export default PageHeader;
