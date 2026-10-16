@@ -41,7 +41,6 @@ const HomePage = () => {
     const firstName = (profile?.name || authUser?.displayName || '').trim().split(/\s+/)[0];
     const missing = authUser && profileLoaded ? missingFields(profile, ONBOARDING_FIELDS) : [];
     const joined = new Set(creator?.joinedCampaigns || []);
-    const heroImage = campaigns[0]?.thumbnail || feed.find(i => i.image)?.image || null;
 
     return (
         <PageBody>
@@ -51,7 +50,7 @@ const HomePage = () => {
                     <h1 className="font-heading text-[30px] font-black leading-tight tracking-tight sm:text-[34px]">{firstName ? `Hi, ${firstName}` : 'Welcome back'}</h1>
                 </header>
             ) : (
-                <HeroPanel image={heroImage} eyebrow="Newbi" title="Concerts, campaigns and the community, in one app.">
+                <HeroPanel eyebrow="Newbi" title="Concerts, campaigns and the community, in one app.">
                     <p className="text-[15px] text-gray-600 dark:text-zinc-300">Get on guestlists, enter giveaways and apply to creator campaigns with one account.</p>
                     <div className="flex flex-wrap gap-3 pt-1">
                         <Button onClick={() => requestSignIn()}>Sign in</Button>
