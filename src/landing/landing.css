@@ -118,9 +118,6 @@
 .nb-fill-green { background-image: linear-gradient(90deg, #39FF14 48%, rgba(255, 255, 255, 0.16) 52%); }
 .nb-fill-white { background-image: linear-gradient(90deg, #ffffff 48%, rgba(255, 255, 255, 0.16) 52%); }
 
-/* Selected work: the plain card grid unless the scroll reel can run (below). */
-.nb-work-reel { display: none; }
-
 /* Chevrons on <details> */
 details > summary { list-style: none; }
 details > summary::-webkit-details-marker { display: none; }
@@ -173,6 +170,21 @@ details[open] > summary .nb-plus { transform: rotate(45deg); }
     .nb-stack-card > div { transform-origin: 50% 0; animation: nb-settle linear both; animation-timeline: --nb-stack; animation-range: contain calc(var(--i) * 22%) contain calc(var(--i) * 22% + 28%); }
     .nb-stack-card:last-child > div { animation: none; }
 
+    /* Nights we built: the strip pins and the posters slide past with the scroll. */
+    .nb-film { height: calc(100svh + var(--n) * 42svh); view-timeline-name: --nb-film; view-timeline-axis: block; }
+    .nb-film-pin { position: sticky; top: 0; height: 100svh; display: flex; flex-direction: column; }
+    .nb-film-track { overflow: visible; flex: 1; width: max-content; scroll-snap-type: none; animation: nb-pan linear both; animation-timeline: --nb-film; animation-range: contain 0% contain 100%; }
+    .nb-film-frame { width: auto; height: 52svh; aspect-ratio: 4 / 5; }
+    .nb-film-frame > * { height: 100%; }
+    .nb-film-frame figure > div { height: calc(100% - 4.5rem); aspect-ratio: auto; }
+    .nb-film-low { margin-top: 5svh; }
+    .nb-film-progress { display: block; }
+    .nb-film-bar { transform-origin: left; animation: nb-grow-x linear both; animation-timeline: --nb-film; animation-range: contain 0% contain 100%; }
+    @media (min-width: 1024px) {
+      .nb-film-frame { height: 58vh; }
+      .nb-film-low { margin-top: 7vh; }
+    }
+
     /* Horizontal track: the section pins and the slides move sideways with the scroll. */
     .nb-story { height: 600svh; view-timeline-name: --nb-story; view-timeline-axis: block; }
     .nb-story-pin { position: sticky; top: 0; height: 100svh; overflow: hidden; }
@@ -196,35 +208,3 @@ details[open] > summary .nb-plus { transform: rotate(45deg); }
     }
   }
 }
-
-/* Selected work reel: titles drive the poster in the pinned frame through named
- * view timelines shared across the section (timeline-scope). */
-@supports (animation-timeline: view()) and (timeline-scope: none) {
-  @media (prefers-reduced-motion: no-preference) {
-    .nb-work-grid { display: none; }
-    .nb-work-reel { display: grid; timeline-scope: --nbw0, --nbw1, --nbw2, --nbw3; }
-    @media (min-width: 1024px) { .nb-work-reel { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 4rem; } }
-
-    .nb-reel-step:nth-child(1) { view-timeline-name: --nbw0; }
-    .nb-reel-step:nth-child(2) { view-timeline-name: --nbw1; }
-    .nb-reel-step:nth-child(3) { view-timeline-name: --nbw2; }
-    .nb-reel-step:nth-child(4) { view-timeline-name: --nbw3; }
-
-    @keyframes nb-reel-in-out { 0% { opacity: 0; transform: scale(1.12); } 25%, 75% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.96); } }
-    @keyframes nb-reel-out { 0%, 75% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.96); } }
-    @keyframes nb-reel-in { 0% { opacity: 0; transform: scale(1.12); } 25%, 100% { opacity: 1; transform: scale(1); } }
-    .nb-reel-img { opacity: 0; animation: nb-reel-in-out linear both; animation-range: cover 0% cover 100%; }
-    .nb-reel-img:first-child { animation-name: nb-reel-out; }
-    .nb-reel-img:last-child { animation-name: nb-reel-in; }
-    .nb-reel-img:only-child { animation: none; opacity: 1; }
-    .nb-reel-img:nth-child(1) { animation-timeline: --nbw0; }
-    .nb-reel-img:nth-child(2) { animation-timeline: --nbw1; }
-    .nb-reel-img:nth-child(3) { animation-timeline: --nbw2; }
-    .nb-reel-img:nth-child(4) { animation-timeline: --nbw3; }
-
-    /* The title in view lights up; the others stay muted. */
-    @keyframes nb-reel-title { 0%, 100% { color: var(--nb-ghost); } 35%, 65% { color: var(--nb-ink); } }
-    .nb-reel-title { animation: nb-reel-title linear both; animation-timeline: view(); animation-range: cover 10% cover 90%; }
-  }
-}
-
