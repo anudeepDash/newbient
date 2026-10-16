@@ -38,9 +38,10 @@ export default function Proof({ clients = [], stats = [] }) {
     return (
         <section aria-labelledby="proof-title" className="py-12 md:py-16 border-y border-black/[0.06] dark:border-white/[0.06] bg-white/60 dark:bg-white/[0.015]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 id="proof-title" className="nb-reveal text-sm font-semibold text-gray-500 dark:text-zinc-400">
-                    {clients.length ? 'Brands, venues and colleges we have worked with' : 'Newbi so far'}
-                </h2>
+                <p className="nb-reveal flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.3em] text-gray-500 dark:text-zinc-400">
+                    <span className="w-6 h-px bg-neon-green" aria-hidden="true" />
+                    <span id="proof-title">{clients.length ? 'Trusted by brands, venues and colleges' : 'Newbi in numbers'}</span>
+                </p>
             </div>
 
             {clients.length > 0 && (
@@ -57,7 +58,7 @@ export default function Proof({ clients = [], stats = [] }) {
                     {stats.map((s) => (
                         <div key={s.label}>
                             <dt className="sr-only">{s.label}</dt>
-                            <dd className="font-heading text-3xl md:text-4xl font-bold text-gray-950 dark:text-white tabular-nums">{s.value}</dd>
+                            <dd className="font-heading text-4xl md:text-5xl font-black text-gray-950 dark:text-white tabular-nums">{s.value}</dd>
                             <dd className="mt-1 text-sm text-gray-600 dark:text-zinc-400">{s.label}</dd>
                         </div>
                     ))}

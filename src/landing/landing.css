@@ -58,56 +58,49 @@
 }
 
 /* ───────────────────────── Motion (landing only) ─────────────────────────
- * Everything here is decoration on top of a page that is complete without it:
- * nothing starts hidden on first paint, the scroll effects are CSS scroll-driven
- * animations (no JavaScript; browsers without support show the static page),
- * and all of it is switched off for people who prefer reduced motion.
+ * Decoration on top of a page that is complete without it: nothing starts
+ * hidden on first paint, scroll effects are CSS scroll-driven animations (no
+ * JavaScript; unsupported browsers show the still page), and all of it is off
+ * for people who prefer reduced motion.
  */
 
-/* Highlighted phrases in the hero headline: the underline draws in, the words never hide. */
-.nb-mark {
-  background-image: linear-gradient(var(--mark, #39FF14), var(--mark, #39FF14));
-  background-repeat: no-repeat;
-  background-position: 0 94%;
-  background-size: 100% 0.12em;
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
-}
+:root { --hero-edge: rgba(248, 249, 250, 0.95); }
+.dark { --hero-edge: rgba(0, 0, 0, 0.92); }
+.nb-hero-vignette { background: radial-gradient(ellipse at center, transparent 30%, var(--hero-edge) 100%); }
 
-@keyframes nb-draw { from { background-size: 0% 0.12em; } to { background-size: 100% 0.12em; } }
-@keyframes nb-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -12px; } }
-@keyframes nb-drift { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); } 50% { transform: translate3d(-6%, 4%, 0) scale(1.08); } }
+/* Gradient words in headings (the original site's signature). */
+.nb-gradient {
+  background-image: linear-gradient(90deg, #0b0f17, #1fae0a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.dark .nb-gradient { background-image: linear-gradient(90deg, #ffffff, #39FF14); }
+
+@keyframes nb-float-a { 0%, 100% { transform: translate3d(0, 0, 0) rotate(-12deg); } 50% { transform: translate3d(0, -20px, 0) rotate(-7deg); } }
+@keyframes nb-float-b { 0%, 100% { transform: translate3d(0, 0, 0) rotate(45deg); } 50% { transform: translate3d(0, 20px, 0) rotate(40deg); } }
+@keyframes nb-scroll-dot { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(28px); } }
 @keyframes nb-ping { 75%, 100% { transform: scale(2.2); opacity: 0; } }
+.nb-float-a { transform: rotate(-12deg); }
+.nb-float-b { transform: rotate(45deg); }
 
 @media (prefers-reduced-motion: no-preference) {
-  .nb-mark { animation: nb-draw 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--d, 0.15s); }
-  .nb-float { animation: nb-float var(--t, 7s) ease-in-out infinite; animation-delay: var(--fd, 0s); }
   .nb-ping { animation: nb-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite; }
+  .nb-scroll-dot { animation: nb-scroll-dot 2s ease-in-out infinite; }
 }
-/* The drifting light behind the hero is desktop-only: phones keep a still gradient. */
 @media (prefers-reduced-motion: no-preference) and (min-width: 768px) {
-  .nb-aurora { animation: nb-drift 18s ease-in-out infinite; }
+  .nb-float-a { animation: nb-float-a 8s ease-in-out infinite; }
+  .nb-float-b { animation: nb-float-b 10s ease-in-out infinite 1s; }
 }
 
 @supports (animation-timeline: scroll()) {
   @media (prefers-reduced-motion: no-preference) {
     /* Hero copy eases up and dims as you scroll past it. */
-    @keyframes nb-hero-exit { to { transform: translate3d(0, -48px, 0); opacity: 0.35; } }
-    .nb-hero-exit { animation: nb-hero-exit linear both; animation-timeline: scroll(root); animation-range: 0 75vh; }
+    @keyframes nb-hero-exit { to { transform: translate3d(0, -40px, 0); opacity: 0.4; } }
+    .nb-hero-exit { animation: nb-hero-exit linear both; animation-timeline: scroll(root); animation-range: 0 70vh; }
 
-    /* Hero photo cards fan out as you scroll. */
-    @keyframes nb-fan { to { transform: translate3d(var(--fx, 0), var(--fy, -60px), 0) rotate(var(--fr, 0deg)); } }
-    .nb-fan { animation: nb-fan linear both; animation-timeline: scroll(root); animation-range: 0 90vh; }
-
-    /* Sections and cards rise in as they enter the screen. */
+    /* Sections and cards rise in as they come on screen. */
     @keyframes nb-rise { from { opacity: 0; transform: translate3d(0, 36px, 0); } to { opacity: 1; transform: none; } }
-    .nb-reveal { animation: nb-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
-
-    /* Showreel rows slide in opposite directions with the scroll. */
-    @keyframes nb-row-left { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-28%, 0, 0); } }
-    @keyframes nb-row-right { from { transform: translate3d(-28%, 0, 0); } to { transform: translate3d(0, 0, 0); } }
-    .nb-row-left { animation: nb-row-left linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
-    .nb-row-right { animation: nb-row-right linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
-
+    .nb-reveal { animation: nb-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 22%; }
   }
 }
