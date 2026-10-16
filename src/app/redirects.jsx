@@ -49,6 +49,24 @@ export function legacyAppPath(pathname = '/', search = '') {
     }
     if (APPLY.test(path)) return withQuery('/creator/apply', params);
     if (PITCH.test(path)) return withQuery('/creator', params);
+
+    // Community: the old hub and its share links (?gl=, ?event=, ?form=, ?gig=).
+    if (/^\/(community|community-join)$/.test(path)) {
+        const list = params.get('gl') || params.get('event');
+        if (list) return `/community/g/${encodeURIComponent(list)}`;
+        if (params.get('form')) return `/forms/${encodeURIComponent(params.get('form'))}`;
+        return params.get('gig') ? `/community?gig=${encodeURIComponent(params.get('gig'))}` : '/community';
+    }
+    const form = path.match(/^\/forms?\/([^/]+)$/);
+    if (form) return `/forms/${encodeURIComponent(decodeURIComponent(form[1]))}`;
+    if (/^\/forms?$/.test(path)) {
+        const id = params.get('form') || params.get('id') || params.get('formId');
+        return id ? `/forms/${encodeURIComponent(id)}` : '/community';
+    }
+    const giveaway = path.match(/^\/giveaway\/([^/]+)$/);
+    if (giveaway) return `/community/giveaways/${encodeURIComponent(decodeURIComponent(giveaway[1]))}`;
+    const ticket = path.match(/^\/ticket\/([^/]+)$/);
+    if (ticket) return `/p/${encodeURIComponent(decodeURIComponent(ticket[1]))}`;
     return null;
 }
 

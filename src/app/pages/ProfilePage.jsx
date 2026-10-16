@@ -87,7 +87,7 @@ const ProfileDetails = () => {
 
 const ProfilePage = () => (
     <PageBody>
-        <PageHeader eyebrow="Profile" title="Your profile" subtitle="Used for every pass, giveaway and application, so you only fill it once." />
+        <PageHeader eyebrow="Profile" title="Your" highlight="profile." subtitle="Used for every pass, giveaway and application, so you only fill it once." />
         <AuthGate title="Sign in to see your profile" message="Your passes, campaigns and details live in one account.">
             <ProfileDetails />
         </AuthGate>

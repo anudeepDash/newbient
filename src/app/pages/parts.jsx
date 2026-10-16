@@ -9,9 +9,9 @@ import newbiIcon from '../../assets/logo/newbi-icon.svg';
 /* Section title with an optional "See all" link. */
 export const SectionHeader = ({ title, to, linkLabel = 'See all' }) => (
     <div className="flex items-end justify-between gap-3">
-        <h2 className="font-heading text-[20px] font-black tracking-tight">{title}</h2>
+        <h2 className="font-heading text-[22px] font-extrabold tracking-[-0.03em]">{title}</h2>
         {to && (
-            <Link to={to} className="-mr-1 flex h-9 items-center gap-0.5 rounded-full px-2 text-[14px] font-bold text-emerald-700 dark:text-neon-green">
+            <Link to={to} className="-mr-1 flex h-9 items-center gap-0.5 rounded-full px-2 text-[14px] font-semibold text-gray-800 underline decoration-neon-green decoration-2 underline-offset-4 dark:text-zinc-200">
                 {linkLabel} <ChevronRight size={16} />
             </Link>
         )}
@@ -67,11 +67,15 @@ export const EmptyState = ({ icon: Icon, title, message, action }) => (
 const DOTS = 'radial-gradient(currentColor 1px, transparent 1.2px)';
 const FADE_RIGHT = 'linear-gradient(to left, black 0%, black 35%, transparent 85%)';
 
+/* Liquid-glass surface for app panels (same look as HeroPanel and the landing path cards). */
+export const GLASS = 'relative overflow-hidden backdrop-blur-2xl backdrop-saturate-[1.8] bg-white/55 ring-1 ring-inset ring-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_18px_44px_-26px_rgba(0,0,0,0.3)] dark:bg-white/[0.05] dark:ring-white/[0.12] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_18px_44px_-26px_rgba(0,0,0,0.8)]';
+
 export const HeroPanel = ({ eyebrow, title, children, className }) => (
     <section className={cn(
-        'relative isolate overflow-hidden rounded-[2rem] border p-6 sm:p-8',
-        'border-emerald-900/10 bg-white text-gray-900 shadow-[0_20px_60px_-30px_rgba(16,185,129,0.45)]',
-        'dark:border-white/[0.08] dark:bg-[#06080a] dark:text-white dark:shadow-[0_20px_60px_-30px_rgba(57,255,20,0.35)]',
+        // Liquid glass, like the landing site's path cards.
+        'relative isolate overflow-hidden rounded-[2rem] p-6 sm:p-8 backdrop-blur-2xl backdrop-saturate-[1.8]',
+        'bg-white/55 text-gray-900 ring-1 ring-inset ring-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_24px_60px_-28px_rgba(0,0,0,0.3)]',
+        'dark:bg-white/[0.05] dark:text-white dark:ring-white/[0.12] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_24px_60px_-28px_rgba(0,0,0,0.8)]',
         className
     )}>
         {/* Glow: neon in dark mode, a soft mint wash in light mode */}
@@ -85,8 +89,12 @@ export const HeroPanel = ({ eyebrow, title, children, className }) => (
         {/* The brand mark, large and faded, off the bottom-right corner */}
         <img aria-hidden="true" src={newbiIcon} alt="" className="pointer-events-none absolute -bottom-10 -right-8 -z-10 w-52 rotate-[-8deg] opacity-[0.10] sm:w-72 dark:opacity-[0.12]" />
         <div className="relative max-w-xl space-y-3">
-            {eyebrow && <p className="text-[12px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-neon-green">{eyebrow}</p>}
-            <h2 className="font-heading text-[26px] font-black leading-[1.1] tracking-tight sm:text-[32px]">{title}</h2>
+            {eyebrow && (
+                <p className="inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-gray-600 dark:text-zinc-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-neon-green shadow-[0_0_8px_rgba(57,255,20,0.9)]" aria-hidden="true" />{eyebrow}
+                </p>
+            )}
+            <h2 className="font-heading text-[26px] font-extrabold leading-[1.08] tracking-[-0.035em] sm:text-[32px]">{title}</h2>
             {children}
         </div>
     </section>

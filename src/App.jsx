@@ -18,8 +18,6 @@ const ConcertZone = lazy(() => import('./pages/ConcertZone'));
 const Invoice = lazy(() => import('./pages/Invoice'));
 const Proposal = lazy(() => import('./pages/Proposal'));
 const Agreement = lazy(() => import('./pages/Agreement'));
-const FormViewer = lazy(() => import('./pages/FormViewer'));
-const CommunityJoin = lazy(() => import('./pages/CommunityJoin'));
 const ActionHandler = lazy(() => import('./pages/Auth/ActionHandler'));
 const ConcertZoneBlog = lazy(() => import('./pages/ConcertZoneBlog'));
 const BlogPostDetail = lazy(() => import('./pages/BlogPostDetail'));
@@ -258,8 +256,8 @@ function AppContent() {
             <Route path="invoice/:id" element={<Invoice />} />
             <Route path="proposal/:id" element={<MaintenanceGuard isPage featureId="docs"><Proposal /></MaintenanceGuard>} />
             <Route path="agreement/:id" element={<MaintenanceGuard isPage featureId="docs"><Agreement /></MaintenanceGuard>} />
-            <Route path="community" element={<MaintenanceGuard isPage featureId="community"><CommunityJoin /></MaintenanceGuard>} />
-            <Route path="community-join" element={<MaintenanceGuard isPage featureId="community"><CommunityJoin /></MaintenanceGuard>} />
+            <Route path="community" element={<ToAppRedirect />} />
+            <Route path="community-join" element={<ToAppRedirect />} />
 
             <Route path="creator" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorLanding /></MaintenanceGuard>} />
             {/* Retired creator pages and their aliases: they live in the app now (src/app/redirects.jsx). */}
@@ -269,10 +267,10 @@ function AppContent() {
               'creator/register', 'creator/signup', 'creator/landing'].map(path => (
               <Route key={path} path={path} element={<ToAppRedirect />} />
             ))}
-            <Route path="forms" element={<MaintenanceGuard isPage featureId="forms_public"><FormViewer /></MaintenanceGuard>} />
-            <Route path="forms/:id" element={<MaintenanceGuard isPage featureId="forms_public"><FormViewer /></MaintenanceGuard>} />
-            <Route path="form/:id" element={<MaintenanceGuard isPage featureId="forms_public"><FormViewer /></MaintenanceGuard>} />
-            <Route path="form" element={<MaintenanceGuard isPage featureId="forms_public"><FormViewer /></MaintenanceGuard>} />
+            <Route path="forms" element={<ToAppRedirect />} />
+            <Route path="forms/:id" element={<ToAppRedirect />} />
+            <Route path="form/:id" element={<ToAppRedirect />} />
+            <Route path="form" element={<ToAppRedirect />} />
             {/* Passes and giveaways live in the app now (Phase 5). */}
             <Route path="giveaway/:slug" element={<ToApp to="/community/giveaways/:slug" />} />
             <Route path="ticket/:id" element={<ToApp to="/p/:id" />} />
