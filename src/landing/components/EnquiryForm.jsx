@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
-import { AUDIENCES, BUDGETS, TIMELINES, validateEnquiry } from '../../../api/_lib/enquiry.js';
+import { AUDIENCES, BUDGETS, TIMELINES, validateEnquiry } from '../../../api/_lib/enquiryRules.js';
 import { ENQUIRY_URL } from '../links';
 
 const EMPTY = { name: '', email: '', phone: '', company: '', budget: '', timeline: '', message: '' };
