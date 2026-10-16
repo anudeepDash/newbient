@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Sun, Moon, ArrowUpRight } from 'lucide-react';
+import { Menu, X, Sun, Moon, ArrowUpRight, UserRound } from 'lucide-react';
 import Logo from './Logo';
 import { useTheme } from '../../hooks/useTheme';
 import { APP_LINKS } from '../links';
@@ -59,9 +59,13 @@ export default function LandingNav() {
                         : <Link key={l.label} to={l.to} className={linkCls}>{l.label}</Link>)}
                 </nav>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1 sm:gap-1.5">
                     <ThemeToggle className="hidden sm:flex" />
-                    <Link to="/#enquire" className="h-11 px-5 inline-flex items-center rounded-full bg-neon-green text-black font-heading text-sm font-bold hover:scale-[1.03] transition-transform">
+                    {/* Into the app: sign in, passes, campaigns. */}
+                    <a href={APP_LINKS.home} className="h-11 px-3 sm:px-5 inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white/70 dark:bg-white/[0.08] ring-1 ring-inset ring-black/10 dark:ring-white/15 text-gray-950 dark:text-white font-heading text-sm font-bold hover:bg-white dark:hover:bg-white/[0.14] transition-colors">
+                        <UserRound size={15} aria-hidden="true" className="hidden sm:block" /> Sign in
+                    </a>
+                    <Link to="/#enquire" className="h-11 px-4 sm:px-5 inline-flex whitespace-nowrap items-center rounded-full bg-neon-green text-black font-heading text-sm font-bold hover:scale-[1.03] transition-transform">
                         Work with us
                     </Link>
                     <button
