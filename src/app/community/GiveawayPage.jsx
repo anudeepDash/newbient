@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { cn } from '../../lib/utils';
 import { INPUT } from '../../components/app/controls';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
-import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import { useParams, useSearchParams } from 'react-router-dom';
 import Gift from 'lucide-react/dist/esm/icons/gift';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
@@ -11,7 +10,7 @@ import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Share2 from 'lucide-react/dist/esm/icons/share-2';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import { format } from 'date-fns';
-import { AmbientBackdrop, Button, Field, GlassChip, Section, Sheet, Stat, StatRow, TextInput } from '../../components/app';
+import { Button, Field, GlassChip, Section, Sheet, Stat, StatRow, TextInput } from '../../components/app';
 import { useAppStore } from '../../lib/store/appStore';
 import { communityGet, communityPost } from '../../lib/passesApi';
 import { isPresent } from '../../lib/present';
@@ -21,6 +20,7 @@ import CompleteProfileSheet from '../profile/CompleteProfileSheet';
 import { missingFields } from '../profile/requirements';
 import { appPath } from '../host';
 import { PageBody } from '../pages/PageHeader';
+import DetailLayout, { BackLink, DetailSkeleton, Panel, ROW } from '../pages/DetailLayout';
 import AppNotFound from '../pages/AppNotFound';
 import { plainText, shareLink } from './communityParts';
 
@@ -148,11 +148,10 @@ const GiveawayPage = () => {
 
     if (notFound) return <AppNotFound />;
     if (!g) {
+        if (!loadError) return <DetailSkeleton />;
         return (
             <PageBody>
-                {loadError
-                    ? <p className="mx-auto max-w-md rounded-3xl border border-dashed border-black/[0.1] px-6 py-10 text-center text-[15px] dark:border-white/[0.1]">{loadError}</p>
-                    : <div className="mx-auto max-w-2xl space-y-4"><div className="aspect-video animate-pulse rounded-3xl bg-black/[0.05] dark:bg-white/[0.05]" /><div className="h-7 w-2/3 animate-pulse rounded-full bg-black/[0.06] dark:bg-white/[0.06]" /></div>}
+                <p className="mx-auto max-w-md rounded-3xl border border-dashed border-black/[0.1] px-6 py-10 text-center text-[15px] dark:border-white/[0.1]">{loadError}</p>
             </PageBody>
         );
     }
@@ -161,34 +160,30 @@ const GiveawayPage = () => {
     const description = plainText(g.description);
     const winner = board?.winner;
 
+    const rowCls = `flex items-center gap-3 px-4 py-3.5 ${ROW}`;
+
     return (
-        <PageBody>
-            <div className="mx-auto max-w-2xl space-y-5">
-                <Link to={appPath('/community')} className="-ml-2 inline-flex h-10 items-center gap-1 rounded-full px-2 text-[14px] font-bold text-gray-600 dark:text-zinc-400">
-                    <ChevronLeft size={18} /> Community
-                </Link>
+        <>
+            <DetailLayout
+                back={<BackLink to={appPath('/community')}>Community</BackLink>}
+                image={g.posterUrl}
+                badges={<GlassChip icon={Gift} label={g.ended ? 'Ended' : 'Giveaway'} />}
+                title={g.name}
+                onShare={() => shareLink({ title: g.name, text: `Enter the ${g.name} giveaway on Newbi`, url: shareUrl })}
+            >
+                <Panel>
+                    <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
+                        <Field icon={Trophy} label="Prize" value={g.prize} />
+                        <Field icon={CalendarDays} label={g.ended ? 'Ended' : 'Closes'} value={endsLabel(g.endsAt)} />
+                    </div>
 
-                <article className="relative overflow-hidden rounded-[2rem] border border-black/[0.06] bg-white dark:border-white/[0.08] dark:bg-[#0c0e14]">
-                    <AmbientBackdrop image={g.posterUrl} />
-                    {isPresent(g.posterUrl) && (
-                        <div className="relative aspect-video w-full overflow-hidden" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 55%, transparent)', maskImage: 'linear-gradient(to bottom, #000 55%, transparent)' }}>
-                            <img src={g.posterUrl} alt="" className="h-full w-full object-cover" decoding="async" />
-                            <div className="absolute left-4 top-4"><GlassChip icon={Gift} label={g.ended ? 'Ended' : 'Giveaway'} /></div>
-                        </div>
+                    {winner && (
+                        <p className="flex items-center gap-2 rounded-2xl bg-emerald-500/10 px-4 py-3 text-[15px] font-bold text-emerald-800 ring-1 ring-inset ring-emerald-500/20 dark:text-neon-green dark:ring-neon-green/20">
+                            <Trophy size={17} /> Winner: {winner.name}{me?.isWinner ? ' (that’s you!)' : ''}
+                        </p>
                     )}
-                    <div className={isPresent(g.posterUrl) ? 'relative -mt-4 space-y-5 px-5 pb-6 sm:px-7' : 'relative space-y-5 px-5 py-6 sm:px-7'}>
-                        <h1 className="font-heading text-[28px] font-black leading-tight tracking-tight sm:text-[34px]">{g.name}</h1>
-                        <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
-                            <Field icon={Trophy} label="Prize" value={g.prize} />
-                            <Field icon={CalendarDays} label={g.ended ? 'Ended' : 'Closes'} value={endsLabel(g.endsAt)} />
-                        </div>
 
-                        {winner && (
-                            <p className="flex items-center gap-2 rounded-2xl bg-emerald-500/10 px-4 py-3 text-[15px] font-bold text-emerald-800 dark:text-neon-green">
-                                <Trophy size={17} /> Winner: {winner.name}{me?.isWinner ? ' (that’s you!)' : ''}
-                            </p>
-                        )}
-
+                    <div className="pt-1">
                         {me ? (
                             <StatRow>
                                 <Stat label="Your points" value={me.entryScore} tone="accent" allowZero />
@@ -199,65 +194,63 @@ const GiveawayPage = () => {
                             <p className="rounded-2xl bg-black/[0.04] px-4 py-3 text-center text-[15px] font-semibold text-gray-600 dark:bg-white/[0.05] dark:text-zinc-400">This giveaway has ended.</p>
                         ) : (
                             <div className="space-y-2">
-                                <Button size="lg" className="w-full" onClick={onEnter} loading={busy === 'enter' && !step}>Enter giveaway</Button>
+                                <Button size="lg" className="w-full" icon={Gift} onClick={onEnter} loading={busy === 'enter' && !step}>Enter giveaway</Button>
                                 {error && !step && <p role="alert" className="text-center text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
                             </div>
                         )}
                     </div>
-                </article>
+                </Panel>
 
                 {me && !g.ended && (
-                    <>
-                        <Section title="Earn more points">
-                            {g.tasks.length > 0 && (
-                                <ul className="space-y-2">
-                                    {g.tasks.map(task => {
-                                        const done = Boolean(me.completedTasks?.[task.id]);
-                                        return (
-                                            <li key={task.id} className="flex items-center gap-3 rounded-2xl border border-black/[0.06] px-4 py-3 dark:border-white/[0.08]">
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-[15px] font-semibold">{task.label}</p>
-                                                    {task.points > 0 && <p className="text-[13px] text-gray-500 dark:text-zinc-400">+{task.points} {task.points === 1 ? 'point' : 'points'}</p>}
-                                                </div>
-                                                {done
-                                                    ? <span className="flex items-center gap-1.5 text-[14px] font-bold text-emerald-700 dark:text-neon-green"><CircleCheck size={16} /> Done</span>
-                                                    : <Button size="sm" variant="secondary" icon={task.url ? ExternalLink : undefined} loading={busy === `task:${task.id}`} onClick={() => openTask(task)}>{task.url ? 'Go' : 'Done'}</Button>}
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            )}
-                            <div className="flex items-center gap-3 rounded-2xl border border-black/[0.06] px-4 py-3 dark:border-white/[0.08]">
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-[15px] font-semibold">Invite friends</p>
-                                    <p className="text-[13px] text-gray-500 dark:text-zinc-400">+{g.referralPoints} points for each friend who enters with your link</p>
-                                </div>
-                                <Button size="sm" variant="secondary" icon={Share2} onClick={() => shareLink({ title: g.name, text: `Enter the ${g.name} giveaway on Newbi`, url: shareUrl })}>Share</Button>
+                    <Section title="Earn more points">
+                        {g.tasks.length > 0 && (
+                            <ul className="space-y-2">
+                                {g.tasks.map(task => {
+                                    const done = Boolean(me.completedTasks?.[task.id]);
+                                    return (
+                                        <li key={task.id} className={rowCls}>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-[15px] font-semibold">{task.label}</p>
+                                                {task.points > 0 && <p className="text-[13px] text-gray-500 dark:text-zinc-400">+{task.points} {task.points === 1 ? 'point' : 'points'}</p>}
+                                            </div>
+                                            {done
+                                                ? <span className="flex items-center gap-1.5 text-[14px] font-bold text-emerald-700 dark:text-neon-green"><CircleCheck size={16} /> Done</span>
+                                                : <Button size="sm" variant="secondary" icon={task.url ? ExternalLink : undefined} loading={busy === `task:${task.id}`} onClick={() => openTask(task)}>{task.url ? 'Go' : 'Done'}</Button>}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+                        <div className={rowCls}>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[15px] font-semibold">Invite friends</p>
+                                <p className="text-[13px] text-gray-500 dark:text-zinc-400">+{g.referralPoints} points for each friend who enters with your link</p>
                             </div>
-                            {g.showSpinWheel && (
-                                <div className="flex items-center gap-3 rounded-2xl border border-black/[0.06] px-4 py-3 dark:border-white/[0.08]">
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-[15px] font-semibold">Bonus spin</p>
-                                        <p className="text-[13px] text-gray-500 dark:text-zinc-400">{me.hasSpunWheel ? `You won ${String(me.spinReward || '').toLowerCase()}.` : `One spin: ${g.wheel.map(w => w.label).join(', ')}`}</p>
-                                    </div>
-                                    {!me.hasSpunWheel && <Button size="sm" icon={Sparkles} loading={busy === 'spin'} onClick={doSpin}>Spin</Button>}
+                            <Button size="sm" variant="secondary" icon={Share2} onClick={() => shareLink({ title: g.name, text: `Enter the ${g.name} giveaway on Newbi`, url: shareUrl })}>Share</Button>
+                        </div>
+                        {g.showSpinWheel && (
+                            <div className={rowCls}>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[15px] font-semibold">Bonus spin</p>
+                                    <p className="text-[13px] text-gray-500 dark:text-zinc-400">{me.hasSpunWheel ? `You won ${String(me.spinReward || '').toLowerCase()}.` : `One spin: ${g.wheel.map(w => w.label).join(', ')}`}</p>
                                 </div>
-                            )}
-                            {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
-                        </Section>
-                    </>
+                                {!me.hasSpunWheel && <Button size="sm" icon={Sparkles} loading={busy === 'spin'} onClick={doSpin}>Spin</Button>}
+                            </div>
+                        )}
+                        {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
+                    </Section>
                 )}
 
                 <Section title="About">
-                    {description && <p className="whitespace-pre-line px-1 text-[15px] leading-relaxed text-gray-700 dark:text-zinc-300">{description}</p>}
+                    {description && <p className="whitespace-pre-line px-1 text-[15px] leading-relaxed text-gray-700 dark:text-zinc-300 lg:text-[16px]">{description}</p>}
                 </Section>
 
                 <Section title="Leaderboard">
                     {(board?.leaderboard || []).length > 0 && (
-                        <ol className="divide-y divide-black/[0.05] rounded-2xl border border-black/[0.06] px-4 dark:divide-white/[0.06] dark:border-white/[0.08]">
+                        <ol className={`divide-y divide-black/[0.05] px-4 dark:divide-white/[0.06] ${ROW}`}>
                             {board.leaderboard.map((p, i) => (
                                 <li key={p.id} className="flex items-center gap-3 py-3">
-                                    <span className="w-6 text-center text-[14px] font-black text-gray-400">{i + 1}</span>
+                                    <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-black ${i === 0 ? 'bg-neon-green text-black' : 'text-gray-400'}`}>{i + 1}</span>
                                     <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{p.name}</span>
                                     <span className="text-[14px] font-black tabular-nums">{p.entryScore}</span>
                                 </li>
@@ -265,7 +258,7 @@ const GiveawayPage = () => {
                         </ol>
                     )}
                 </Section>
-            </div>
+            </DetailLayout>
 
             <CompleteProfileSheet open={step === 'name'} required={['name']} reason="to enter" onClose={() => setStep(s => (s === 'name' ? null : s))} onComplete={() => setTimeout(() => (needsSheet ? setStep('enter') : enter()), 0)} />
 
@@ -303,7 +296,7 @@ const GiveawayPage = () => {
             <Sheet open={Boolean(spin)} onClose={() => setSpin(null)} title="Bonus spin" footer={<Button className="w-full" onClick={() => setSpin(null)}>Nice</Button>}>
                 <p className="py-6 text-center font-heading text-[40px] font-black text-emerald-700 dark:text-neon-green">{spin?.label}</p>
             </Sheet>
-        </PageBody>
+        </>
     );
 };
 

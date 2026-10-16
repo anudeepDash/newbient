@@ -62,7 +62,7 @@ const Chip = ({ icon: Icon, label, tone }) => {
     );
 };
 
-const RADIAL = 'radial-gradient(ellipse 65% 60% at 50% 38%, #000 25%, transparent 100%)';
+const RADIAL = 'radial-gradient(closest-side at 50% 50%, #000 35%, transparent 100%)';
 const PAGE_GLOW_MASK = { WebkitMaskImage: RADIAL, maskImage: RADIAL };
 
 const spotsLabel = (c) => {
