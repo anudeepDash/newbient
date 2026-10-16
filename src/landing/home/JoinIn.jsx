@@ -38,7 +38,7 @@ export default function JoinIn({ welcomePoints }) {
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
                 <SectionHeading
                     id="join-title"
-                    index="06"
+                    index="05"
                     eyebrow="Creators & community"
                     title="Not just an agency."
                     highlight="A platform too."

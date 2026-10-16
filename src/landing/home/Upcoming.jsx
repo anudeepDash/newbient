@@ -12,7 +12,7 @@ const parts = (iso) => {
 const cta = (e) => (e.isTicketed ? 'Get tickets' : e.hasGuestlist ? 'Get on the list' : 'See event');
 
 // The next three public events, laid out like a tour-date list. Each row opens the event page.
-export default function Upcoming({ events = [], index = '07' }) {
+export default function Upcoming({ events = [], index = '06' }) {
     if (!events.length) return null;
     return (
         <section id="upcoming" aria-labelledby="upcoming-title" className="scroll-mt-20 py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
