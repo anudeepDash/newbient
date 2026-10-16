@@ -24,6 +24,8 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import DocumentSeal from '../components/ui/DocumentSeal';
 import SharedDocumentViewer from '../components/ui/SharedDocumentViewer';
+import Sheet from '../components/admin/Sheet';
+import { SignForm, SignedRecord, SignatureBox, TextField, DocButton, Row, docTheme } from '../components/ui/docviewer/DocKit';
 import SignatureModal from '../components/ui/SignatureModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
@@ -132,19 +134,8 @@ const Agreement = () => {
     const agreementRef = useRef(null);
     const loggedVisitRef = useRef(null);
 
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth < 850) {
-                const newScale = (window.innerWidth - 32) / 850;
-                setScale(newScale);
-            } else {
-                setScale(1);
-            }
-        };
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    // The viewer reports how wide the paper can be; fit the A4 pages to it.
+    const fitToStage = React.useCallback((w) => setScale(Math.min(1, w / 794)), []);
 
     useEffect(() => {
         const agreement = agreements.find(a => a.id === id);
@@ -378,152 +369,29 @@ const Agreement = () => {
         coverDescription: displayAgreement.coverDescription || displayAgreement.details?.purpose || '',
     };
 
-    const actionPanel = (displayAgreement.showSignatures || displayAgreement.showSeal) ? (
-        <div className="space-y-4">
-            {displayAgreement.status === 'Executed' ? (
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 bg-[#A855F7]/10 border border-[#A855F7]/30 rounded-xl">
-                        <div className="w-10 h-10 rounded-xl bg-[#A855F7]/20 flex items-center justify-center text-[#A855F7] shrink-0">
-                            <ShieldCheck size={22} />
-                        </div>
-                        <div>
-                            <h4 className="text-sm font-black uppercase italic tracking-tight text-white">
-                                Executed & Sealed
-                            </h4>
-                            <p className="text-[9px] text-gray-300 font-bold uppercase tracking-widest">
-                                Legal Handshake Recorded
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="p-4 bg-black/40 border border-white/10 rounded-xl space-y-3">
-                        <div>
-                            <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 block mb-0.5">
-                                Signatory
-                            </span>
-                            <p className="text-sm font-black text-white">
-                                {displayAgreement.approvalMetadata?.signedBy || displayAgreement.parties?.secondParty?.name || 'Authorized Signatory'}
-                            </p>
-                        </div>
-
-                        <div className="h-20 border border-dashed border-white/10 rounded-lg bg-white/[0.02] flex items-center justify-center p-2">
-                            {displayAgreement.approvalMetadata?.clientSignature || displayAgreement.clientSignature ? (
-                                <img
-                                    src={displayAgreement.approvalMetadata?.clientSignature || displayAgreement.clientSignature}
-                                    alt="Client Signature"
-                                    className="max-h-full object-contain filter invert"
-                                />
-                            ) : (
-                                <p className="text-2xl font-signature text-[#A855F7]">
-                                    {displayAgreement.approvalMetadata?.signedBy || displayAgreement.parties?.secondParty?.name || 'Authorized Signatory'}
-                                </p>
-                            )}
-                        </div>
-
-                        {displayAgreement.approvalMetadata?.signedAt && (
-                            <div className="text-[9px] font-mono text-gray-400 pt-2 border-t border-white/5 flex justify-between">
-                                <span className="text-gray-500">EXECUTED</span>
-                                <span>{new Date(displayAgreement.approvalMetadata.signedAt).toLocaleDateString()}</span>
-                            </div>
-                        )}
-
-                        {displayAgreement.approvalMetadata?.ip && (
-                            <div className="text-[8px] font-mono text-gray-500 flex justify-between">
-                                <span>AUDIT IP</span>
-                                <span className="text-gray-400">{displayAgreement.approvalMetadata.ip}</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    <div className="border-b border-white/10 pb-3">
-                        <h3 className="text-sm font-black uppercase italic tracking-tight font-heading text-white">
-                            Execution & Sign-Off
-                        </h3>
-                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                            Digital Legal Acceptance
-                        </p>
-                    </div>
-
-                    <div className="space-y-3">
-                        <div>
-                            <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-1">
-                                Full Name <span className="text-[#A855F7]">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                value={signatureName}
-                                onChange={(e) => setSignatureName(e.target.value)}
-                                placeholder="Authorized signatory name..."
-                                className="w-full h-10 bg-white/5 border border-white/10 rounded-xl px-3 text-xs font-bold text-white placeholder:text-gray-600 outline-none focus:border-[#A855F7]/50 transition-colors"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-1">
-                                Signature <span className="text-[#A855F7]">*</span>
-                            </label>
-                            
-                            {clientSignature ? (
-                                <div className="p-3 bg-white/[0.03] border border-white/10 rounded-xl space-y-2">
-                                    <div className="h-16 flex items-center justify-center bg-black/40 rounded-lg p-2 border border-white/5">
-                                        <img src={clientSignature} alt="Signature" className="max-h-full object-contain filter invert" />
-                                    </div>
-                                    <div className="flex justify-between items-center pt-1">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsSignatureModalOpen(true)}
-                                            className="text-[9px] font-bold uppercase tracking-wider text-[#A855F7] hover:underline"
-                                        >
-                                            Change Signature
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setClientSignature(null)}
-                                            className="text-[9px] font-bold uppercase tracking-wider text-red-400 hover:underline"
-                                        >
-                                            Clear
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={() => setIsSignatureModalOpen(true)}
-                                    className="w-full h-16 border-2 border-dashed border-white/15 hover:border-[#A855F7]/50 bg-white/[0.02] hover:bg-white/[0.04] rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-white transition-all group"
-                                >
-                                    <PenTool size={16} className="group-hover:text-[#A855F7] transition-colors" />
-                                    <span className="text-[9px] font-black uppercase tracking-widest group-hover:text-[#A855F7] transition-colors">
-                                        Adopt / Draw Signature
-                                    </span>
-                                </button>
-                            )}
-                        </div>
-
-                        <Button
-                            type="button"
-                            onClick={() => setIsVerifying(true)}
-                            disabled={isSubmitting || !signatureName.trim() || (displayAgreement.showSignatures && !clientSignature)}
-                            className="w-full h-11 bg-[#A855F7] hover:bg-[#A855F7]/90 text-black font-black uppercase tracking-widest text-[10px] rounded-xl shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <RefreshCw size={14} className="animate-spin" />
-                                    <span>Executing...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <ShieldCheck size={14} />
-                                    <span>Authorize & Execute Instrument</span>
-                                </>
-                            )}
-                        </Button>
-                    </div>
-                </div>
-            )}
-        </div>
-    ) : null;
+    const theme = docTheme('agreement');
+    const signedMeta = displayAgreement.approvalMetadata || {};
+    let actionPanel = null;
+    if (displayAgreement.showSignatures || displayAgreement.showSeal) {
+        actionPanel = isSigned ? (
+            <SignedRecord theme={theme} title="Signed" subtitle="Both parties’ copies now carry this signature."
+                signedBy={signedMeta.signedBy || sp.name}
+                signature={signedMeta.clientSignature || displayAgreement.clientSignature}
+                signedAt={signedMeta.signedAt} email={signedMeta.email} ip={signedMeta.ip} />
+        ) : (
+            <SignForm
+                theme={theme}
+                title="Sign this contract"
+                subtitle={sp.name ? `Signing for ${sp.name}.` : 'Read every page, then sign below.'}
+                name={signatureName} onName={setSignatureName}
+                signature={clientSignature} onOpenPad={() => setIsSignatureModalOpen(true)} onClearSignature={() => setClientSignature(null)}
+                requireSignature={Boolean(displayAgreement.showSignatures)}
+                submitLabel="Continue to sign" onSubmit={() => setIsVerifying(true)} submitting={isSubmitting}
+                note={isAdmin ? 'You’re signed in as an admin. Signing here records the other party’s signature.' : undefined}
+                consent="Next you’ll confirm your email. Your signature is legally binding and is recorded with the time, IP address and device."
+            />
+        );
+    }
 
     return (
         <>
@@ -535,6 +403,8 @@ const Agreement = () => {
                 onDownloadPDF={handleDownloadPDF}
                 pdfBlobUrl={pdfBlobUrl}
                 actionPanel={actionPanel}
+                actionLabel="Review and sign"
+                onStageWidth={fitToStage}
             >
                 {!displayAgreement.isUploaded && (
                     <>
@@ -789,54 +659,37 @@ const Agreement = () => {
                 )}
             </>
         )}
-                
-                <SignatureModal 
-                    isOpen={isSignatureModalOpen}
-                    onClose={() => setIsSignatureModalOpen(false)}
-                    onSave={(sig, name) => {
-                        setClientSignature(sig);
-                        setSignatureName(name);
-                    }}
-                    initialName={signatureName}
-                />
             </SharedDocumentViewer>
 
-            <AnimatePresence>
-                {isVerifying && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white dark:bg-black/80 backdrop-blur-md">
-                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-md bg-white rounded-[2.5rem] p-10 text-black shadow-2xl relative">
-                            <div className="space-y-6 relative z-10">
-                                <h3 className="text-3xl font-black uppercase tracking-tighter italic">Identity Verification.</h3>
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-[9px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 px-1">Authorization Email</label>
-                                        <input 
-                                            type="email" 
-                                            value={verificationEmail}
-                                            onChange={e => setVerificationEmail(e.target.value)}
-                                            placeholder="email@newbi.live"
-                                            className="w-full h-14 bg-gray-50 border border-gray-100 rounded-xl px-6 text-sm font-bold outline-none focus:border-[#A855F7] transition-all"
-                                        />
-                                    </div>
-                                    <div className="p-5 bg-gray-50 rounded-xl border border-gray-100 flex items-center gap-4">
-                                        <Globe size={18} className="text-[#A855F7]" />
-                                        <div className="flex-1">
-                                            <p className="text-[10px] font-black uppercase text-black">{ipAddress}</p>
-                                            <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-tighter">Network Signature Detected</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 pt-4">
-                                    <button onClick={() => setIsVerifying(false)} className="h-14 rounded-xl border-2 border-gray-100 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all">Cancel</button>
-                                    <Button onClick={handleApprove} disabled={isSubmitting || !verificationEmail.includes('@')} className="h-14 bg-white dark:bg-black text-gray-900 dark:text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#A855F7] hover:text-black transition-all">
-                                        {isSubmitting ? 'Executing...' : 'Verify & Sign'}
-                                    </Button>
-                                </div>
-                            </div>
-                        </motion.div>
+            {/* Outside the viewer so it also works for uploaded PDF contracts. */}
+            <SignatureModal
+                isOpen={isSignatureModalOpen}
+                onClose={() => setIsSignatureModalOpen(false)}
+                onSave={(sig, name) => {
+                    setClientSignature(sig);
+                    setSignatureName(name);
+                }}
+                initialName={signatureName}
+            />
+
+            <Sheet open={isVerifying} onClose={() => !isSubmitting && setIsVerifying(false)} variant="dialog" size="sm" zIndex={1000}
+                title="Confirm and sign" subtitle="We send the signed copy to this email and record it with your signature."
+                footer={(
+                    <div className="flex gap-2">
+                        <DocButton variant="secondary" onClick={() => setIsVerifying(false)} disabled={isSubmitting} className="flex-1">Back</DocButton>
+                        <DocButton theme={theme} onClick={handleApprove} busy={isSubmitting} disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(verificationEmail.trim())} className="flex-[1.4]">{isSubmitting ? 'Signing…' : 'Sign contract'}</DocButton>
                     </div>
-                )}
-            </AnimatePresence>
+                )}>
+                <div className="space-y-4">
+                    <TextField theme={theme} label="Email" required type="email" inputMode="email" value={verificationEmail} onChange={(e) => setVerificationEmail(e.target.value)} placeholder="you@company.com" autoComplete="email" />
+                    <dl className="space-y-1.5 rounded-xl bg-black/[0.03] p-3 text-[13px] dark:bg-white/[0.04]">
+                        <Row label="Signing as" value={signatureName.trim() || '—'} />
+                        {sp.name && <Row label="For" value={sp.name} />}
+                        <Row label="IP address" value={/\d/.test(String(ipAddress)) ? ipAddress : 'Not available'} mono />
+                    </dl>
+                    {clientSignature && <SignatureBox src={clientSignature} name={signatureName} />}
+                </div>
+            </Sheet>
         </>
     );
 };

@@ -8,7 +8,6 @@ import NotificationBell from './NotificationBell';
 const ProfilePanel = lazy(() => import('./ProfilePanel'));
 import { useStore } from '../lib/store';
 import logo from '../assets/logo.png';
-import logoLight from '../assets/logo_light.png';
 import newbiCreatorsLogoDark from '../assets/newbi-creators-logo.png';
 import newbiCreatorsLogoLight from '../assets/newbi-creators-logo-light.png';
 import { useTheme } from '../hooks/useTheme';
@@ -164,8 +163,7 @@ const Navbar = () => {
                                 </>
                             ) : (
                                 <>
-                                    <img src={logo} alt="Newbi Entertainments" className="h-6 w-auto hidden dark:block" />
-                                    <img src={logoLight} alt="Newbi Entertainments" className="h-6 w-auto block dark:hidden" />
+                                    <img src={logo} alt="newbi.live" className="h-9 w-auto" />
                                 </>
                             )}
                         </Link>

@@ -352,7 +352,7 @@ export default function PdfDocumentViewer({
             // Mobile viewport where window/body is the scrolling element
             const elRect = el.getBoundingClientRect();
             const currentY = window.pageYOffset || document.documentElement.scrollTop;
-            const targetTop = currentY + elRect.top - 68; // 68px leaves 12px breathing room below 56px sticky header
+            const targetTop = currentY + elRect.top - (window.innerWidth >= 1024 ? 80 : 72); // clear the sticky top bar
             window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
         }
     }, []);
@@ -518,7 +518,7 @@ export default function PdfDocumentViewer({
 
             {/* Mobile Sleek Floating Bottom Control Pill (< md) */}
             {!isLoading && pdfDoc && (
-                <div className="md:hidden fixed bottom-4 inset-x-0 flex justify-center z-40 px-4 pointer-events-none select-none">
+                <div className="md:hidden fixed bottom-[calc(var(--doc-dock,0px)+0.75rem)] inset-x-0 flex justify-center z-40 px-4 pointer-events-none select-none">
                     <div className="pointer-events-auto bg-zinc-950/85 dark:bg-black/90 backdrop-blur-2xl border border-white/15 text-white shadow-[0_12px_36px_rgba(0,0,0,0.6)] rounded-full px-3.5 py-1.5 flex items-center gap-2.5">
                         {/* Prev Page Button */}
                         <button
@@ -621,10 +621,10 @@ export default function PdfDocumentViewer({
                 <div 
                     style={{ left: hudCenter != null ? `${hudCenter}px` : undefined }}
                     className={cn(
-                        "hidden md:block fixed bottom-6 z-50 transition-[bottom,opacity] duration-200 -translate-x-1/2",
+                        "hidden md:block fixed bottom-[calc(var(--doc-dock,0px)+1.5rem)] z-30 transition-[bottom,opacity] duration-200 -translate-x-1/2",
                         isFullscreen 
                             ? "left-1/2" 
-                            : "left-1/2 lg:left-[calc(50%+200px)] xl:left-[calc(50%+210px)]"
+                            : "left-1/2"
                     )}
                 >
                     <div className="bg-zinc-950/80 dark:bg-black/85 backdrop-blur-2xl border border-white/15 text-white shadow-[0_20px_50px_rgba(0,0,0,0.55)] rounded-full px-4 py-2 flex items-center gap-2 select-none">

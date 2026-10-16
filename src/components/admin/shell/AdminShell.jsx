@@ -171,7 +171,7 @@ const AdminShell = () => {
                         </Link>
                     ) : (
                         <Link to="/admin" className="flex items-center gap-2.5">
-                            <Logo className="h-9" />
+                            <Logo className="h-8" />
                             <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-neon-green/10 dark:text-neon-green">Admin</span>
                         </Link>
                     )}
