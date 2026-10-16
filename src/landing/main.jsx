@@ -9,6 +9,18 @@ import { loadFeed } from './feed';
 // Start the (edge-cached) feed request before React even starts.
 loadFeed();
 
+// Vercel previews (*.vercel.app) serve the app under /app on the same host, so
+// links into app.newbi.live stay on the preview instead of leaving for production.
+if (/\.vercel\.app$/i.test(window.location.hostname)) {
+    document.addEventListener('click', (e) => {
+        const a = e.target instanceof Element ? e.target.closest('a[href^="https://app.newbi.live"]') : null;
+        if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
+        const url = new URL(a.href);
+        window.location.assign(`/app${url.pathname === '/' ? '' : url.pathname}${url.search}${url.hash}`);
+    }, true);
+}
+
 const container = document.getElementById('landing-root');
 const app = (
     <StrictMode>
