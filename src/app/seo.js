@@ -186,7 +186,7 @@ export const PAGES = {
     'app-home': {
         site: 'app', path: '/',
         title: 'Newbi • Guestlists, Gigs, Giveaways & Creator Campaigns',
-        description: 'Your passes, guestlists, gigs, giveaways and creator campaigns from Newbi, in one app.',
+        description: 'Your passes, guestlists, gigs, giveaways and creator campaigns from Newbi, in one place.',
     },
     community: {
         site: 'app', path: '/community',
