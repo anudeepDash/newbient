@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useParams, useLocation, useSearchParams, Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
@@ -9,6 +9,8 @@ import { cn } from '../../lib/utils';
 import { copyToClipboard } from '../../lib/clipboard';
 import { safeLocalStorage } from '../../lib/storage';
 import { getEarnedBadges } from '../../lib/badges';
+import MultiSelectFilter from '../../components/admin/filters/MultiSelectFilter';
+import RangeFilter from '../../components/admin/filters/RangeFilter';
 import { downloadXlsx, exportSubtitle, fileDate } from '../../lib/xlsx';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Search from 'lucide-react/dist/esm/icons/search';
@@ -61,14 +63,6 @@ import CreatorLeaderboard from '../../components/admin/creators/CreatorLeaderboa
 
 const STATUS_TABS = ['all', 'pending', 'approved', 'rejected', 'blocked'];
 const PAGE_SIZES = { list: 25, cards: 24 };
-const FOLLOWER_PRESETS = [
-    { value: '', label: 'Any followers' },
-    { value: '1000', label: '1K+ followers' },
-    { value: '5000', label: '5K+ followers' },
-    { value: '10000', label: '10K+ followers' },
-    { value: '50000', label: '50K+ followers' },
-    { value: '100000', label: '100K+ followers' },
-];
 const SORTS = [
     { value: 'newest', label: 'Newest first' },
     { value: 'oldest', label: 'Oldest first' },
@@ -141,11 +135,15 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
     const q = searchParams.get('q') || '';
     const field = searchParams.get('field') || 'all';
     const status = STATUS_TABS.includes(searchParams.get('status')) ? searchParams.get('status') : 'all';
-    const city = searchParams.get('city') || 'all';
+    // ?city= takes one city or several, comma-separated (old single-city links still work).
+    const cityParam = searchParams.get('city') || '';
+    const cities = useMemo(() => (cityParam && cityParam !== 'all' ? cityParam.split(',').map(s => s.trim()).filter(Boolean) : []), [cityParam]);
     const niche = searchParams.get('niche') || 'all';
     const college = searchParams.get('college') || 'all';
     const platform = searchParams.get('platform') || 'all';
-    const minFollowers = searchParams.get('min') || '';
+    // Follower range: ?min= and ?max= (either can be left open).
+    const minFollowers = Number(searchParams.get('min')) || null;
+    const maxFollowers = Number(searchParams.get('max')) || null;
     const joined = ['7', '30'].includes(searchParams.get('joined')) ? searchParams.get('joined') : '';
     const manualOnly = searchParams.get('manual') === '1';
     const sort = searchParams.get('sort') || 'newest';
@@ -218,7 +216,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
     const cityOptions = useMemo(() => {
         const set = new Set(PREDEFINED_CITIES.filter(c => c !== 'Others'));
         creators.forEach(c => { if (c.city && !isBangaloreVariant(c.city)) set.add(String(c.city).trim()); });
-        return [{ value: 'all', label: 'All cities' }, ...[...set].filter(Boolean).sort().map(c => ({ value: c, label: c }))];
+        return [...set].filter(Boolean).sort().map(c => ({ value: c, label: c }));
     }, [creators]);
 
     // Colleges grouped case-insensitively, most creators first.
@@ -247,27 +245,36 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
         [creators]
     );
 
-    const filtered = useMemo(() => {
-        const min = Number(minFollowers) || 0;
+    // One rule for "does this creator match the filters", with a way to leave
+    // one filter out: the city list counts and the follower preview use it so
+    // their numbers reflect everything else you've picked.
+    const matches = useCallback((c, { skipCity = false, skipFollowers = false, range } = {}) => {
         const joinedSince = joined ? Date.now() - Number(joined) * 86400000 : 0;
-        const list = creators.filter(c => {
-            if (!matchesCreatorSearch(c, q, field)) return false;
-            if (status === 'pending' && !isPendingCreator(c)) return false;
-            if (status !== 'all' && status !== 'pending' && c.profileStatus !== status) return false;
-            if (manualOnly && !isManualFollowerEntry(c)) return false;
-            if (city !== 'all' && c.city !== city && !(city === 'Bengaluru' && isBangaloreVariant(c.city))) return false;
-            if (niche !== 'all') {
-                const target = nicheKey(niche);
-                if (![...creatorNiches(c), c.categories, c.category, c.niche].some(n => nicheKey(n) === target)) return false;
-            }
-            if (college === 'missing') {
-                if (!creatorHasCollegeNiche(c) || String(c.collegeName || '').trim()) return false;
-            } else if (college !== 'all' && String(c.collegeName || '').trim().toLowerCase() !== college.toLowerCase()) return false;
-            if (platform !== 'all' && !String(c[platform] || '').trim()) return false;
-            if (min && creatorReach(c) < min) return false;
-            if (joinedSince && creatorJoinedAt(c) < joinedSince) return false;
-            return true;
-        });
+        if (!matchesCreatorSearch(c, q, field)) return false;
+        if (status === 'pending' && !isPendingCreator(c)) return false;
+        if (status !== 'all' && status !== 'pending' && c.profileStatus !== status) return false;
+        if (manualOnly && !isManualFollowerEntry(c)) return false;
+        if (!skipCity && cities.length && !cities.some(ct => c.city === ct || (ct === 'Bengaluru' && isBangaloreVariant(c.city)))) return false;
+        if (niche !== 'all') {
+            const target = nicheKey(niche);
+            if (![...creatorNiches(c), c.categories, c.category, c.niche].some(n => nicheKey(n) === target)) return false;
+        }
+        if (college === 'missing') {
+            if (!creatorHasCollegeNiche(c) || String(c.collegeName || '').trim()) return false;
+        } else if (college !== 'all' && String(c.collegeName || '').trim().toLowerCase() !== college.toLowerCase()) return false;
+        if (platform !== 'all' && !String(c[platform] || '').trim()) return false;
+        if (!skipFollowers) {
+            const { min, max } = range || { min: minFollowers, max: maxFollowers };
+            const reach = creatorReach(c);
+            if (min && reach < min) return false;
+            if (max && reach > max) return false;
+        }
+        if (joinedSince && creatorJoinedAt(c) < joinedSince) return false;
+        return true;
+    }, [q, field, status, manualOnly, cities, niche, college, platform, minFollowers, maxFollowers, joined]);
+
+    const filtered = useMemo(() => {
+        const list = creators.filter(c => matches(c));
         const sorters = {
             newest: (x, y) => creatorJoinedAt(y) - creatorJoinedAt(x),
             oldest: (x, y) => creatorJoinedAt(x) - creatorJoinedAt(y),
@@ -275,13 +282,31 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
             name: (x, y) => String(x.name || '').localeCompare(String(y.name || '')),
         };
         return list.sort(sorters[sort] || sorters.newest);
-    }, [creators, q, field, status, manualOnly, city, niche, college, platform, minFollowers, joined, sort]);
+    }, [creators, matches, sort]);
+
+    // How many creators each city has, given the other filters.
+    const cityCounts = useMemo(() => {
+        const out = {};
+        creators.forEach(c => {
+            if (!c.city || !matches(c, { skipCity: true })) return;
+            const key = isBangaloreVariant(c.city) ? 'Bengaluru' : String(c.city).trim();
+            out[key] = (out[key] || 0) + 1;
+        });
+        return out;
+    }, [creators, matches]);
+
+    // Live count for the follower range while it's being adjusted.
+    const followerBase = useMemo(() => creators.filter(c => matches(c, { skipFollowers: true })), [creators, matches]);
+    const countForRange = useCallback((min, max) => followerBase.filter(c => {
+        const reach = creatorReach(c);
+        return (!min || reach >= min) && (!max || reach <= max);
+    }).length, [followerBase]);
 
     const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const currentPage = Math.min(page, pageCount);
     const pageRows = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-    const activeFilters = [q, city !== 'all', niche !== 'all', college !== 'all', platform !== 'all', minFollowers, joined, manualOnly].filter(Boolean).length;
+    const activeFilters = [q, cities.length > 0, niche !== 'all', college !== 'all', platform !== 'all', minFollowers || maxFollowers, joined, manualOnly].filter(Boolean).length;
     const hasFilters = activeFilters > 0 || status !== 'all';
     const panelFilters = activeFilters - (q ? 1 : 0) - (manualOnly ? 1 : 0);
 
@@ -477,7 +502,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
         }
     };
 
-    const exportLabel = [status !== 'all' ? status : 'all', city !== 'all' ? city.toLowerCase().replace(/\s+/g, '-') : null].filter(Boolean).join('-');
+    const exportLabel = [status !== 'all' ? status : 'all', cities.length ? cities.slice(0, 3).join('-').toLowerCase().replace(/\s+/g, '-') : null].filter(Boolean).join('-');
     const exportSelected = () => {
         const ok = downloadXlsx(exportSpecFor(selectedCreators, 'selected'));
         toast(ok ? 'Download started.' : "There's nothing to export.", ok ? 'success' : 'info');
@@ -584,7 +609,16 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
 
             {/* Filters */}
             <div className={cn('grid-cols-2 gap-2 sm:grid sm:grid-cols-3 lg:flex lg:flex-wrap', filtersOpen ? 'grid' : 'hidden')}>
-                <Select label="City" value={city} onChange={(v) => updateParams({ city: v })} options={cityOptions} className="lg:w-40" />
+                <MultiSelectFilter
+                    label="Cities"
+                    allLabel="All cities"
+                    noun="city"
+                    nounPlural="cities"
+                    options={cityOptions.map(o => ({ ...o, count: cityCounts[o.value] || 0 }))}
+                    value={cities}
+                    onChange={(list) => updateParams({ city: list.join(',') })}
+                    className="lg:w-48"
+                />
                 <Select label="Niche" value={niche} onChange={(v) => updateParams({ niche: v })} options={nicheOptions} className="lg:w-48" />
                 {collegeOptions.length > 1 && (
                     <Select label="College" value={college} onChange={(v) => updateParams({ college: v })} options={collegeOptions} className="lg:w-52" />
@@ -601,7 +635,13 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                     ]}
                     className="lg:w-40"
                 />
-                <Select label="Followers" value={minFollowers} onChange={(v) => updateParams({ min: v })} options={FOLLOWER_PRESETS} className="lg:w-40" />
+                <RangeFilter
+                    label="Followers"
+                    value={{ min: minFollowers, max: maxFollowers }}
+                    onChange={({ min, max }) => updateParams({ min: min || '', max: max || '' })}
+                    countFor={countForRange}
+                    className="lg:w-44"
+                />
                 <Select label="Joined" value={joined} onChange={(v) => updateParams({ joined: v })} options={JOINED} className="lg:w-44" />
                 <Select label="Sort" value={sort} onChange={(v) => updateParams({ sort: v })} options={SORTS} className="lg:w-40" />
             </div>
@@ -732,7 +772,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                 <div className="flex items-center gap-2">
                                     <Button size="sm" variant="success" onClick={() => requestBulk('approved')} className="h-10 flex-1 sm:flex-none"><Check size={14} /> Verify</Button>
                                     <Button size="sm" variant="accent" onClick={() => setEmailRecipients({ list: selectedCreators, fromSelection: true })} className="h-10 flex-1 sm:flex-none"><Mail size={14} /> Email</Button>
-                                    <Button size="sm" variant="secondary" onClick={() => setCityInvite({ city: city !== 'all' ? city : (selectedCreators[0]?.city || 'Bengaluru'), uids: [...selected] })} className="h-10 flex-1 sm:flex-none">
+                                    <Button size="sm" variant="secondary" onClick={() => setCityInvite({ city: cities.length === 1 ? cities[0] : (selectedCreators[0]?.city || 'Bengaluru'), uids: [...selected] })} className="h-10 flex-1 sm:flex-none">
                                         <Send size={14} /> <span className="sm:hidden">Invite</span><span className="hidden sm:inline">Group invites</span>
                                     </Button>
                                     <Menu trigger={({ toggle }) => (

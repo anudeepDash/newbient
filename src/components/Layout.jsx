@@ -43,6 +43,7 @@ const Layout = () => {
         isAdminArea ||
         location.pathname.startsWith('/invoice/') || 
         location.pathname.startsWith('/proposal/') ||
+        location.pathname.startsWith('/agreement/') ||
         location.pathname.startsWith('/artistant') ||
         location.pathname.startsWith('/campaign/') ||
         location.pathname.startsWith('/doc/') ||

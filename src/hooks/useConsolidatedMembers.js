@@ -1,8 +1,28 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useStore } from '../lib/store';
 import { useStoreSubscription } from './useStoreSubscription';
 
+// Refresh the account count when a members view opens, every few minutes while
+// it stays open, and when the tab comes back — so it never waits on a manual sync.
+const COUNT_TTL = 2 * 60 * 1000;
+const refreshCount = () => {
+    const { membersCountedAt, fetchMembersCount, user } = useStore.getState();
+    if (!user || Date.now() - (membersCountedAt || 0) < COUNT_TTL) return;
+    useStore.setState({ membersCountedAt: Date.now() }); // one request at a time
+    fetchMembersCount?.().then(count => { if (count == null) useStore.setState({ membersCountedAt: 0 }); });
+};
+
 export function useConsolidatedMembers() {
+    const uid = useStore(s => s.user?.uid);
+    useEffect(() => {
+        if (!uid) return undefined;
+        refreshCount();
+        const timer = setInterval(refreshCount, COUNT_TTL + 1000);
+        const onVisible = () => { if (document.visibilityState === 'visible') refreshCount(); };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => { clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); };
+    }, [uid]);
+
     useStoreSubscription([
         'allUsers',
         'creators',
@@ -23,7 +43,7 @@ export function useConsolidatedMembers() {
         ticketOrders = [],
         giveawayEntries = [],
         clientRequests = [],
-        totalAuthUsers = 1387
+        totalAuthUsers
     } = useStore();
 
     const members = useMemo(() => {
@@ -158,8 +178,8 @@ export function useConsolidatedMembers() {
         return members.filter(m => m.isBlocked);
     }, [members]);
 
-    // Total Authenticated Users in Firebase Authentication (baseline: 1387)
-    const totalCount = Math.max(totalAuthUsers || 1387, members.length);
+    // Accounts in Firebase Auth (live), or everyone we know of if that's higher.
+    const totalCount = Math.max(totalAuthUsers || 0, members.length);
     const activeCount = Math.max(0, totalCount - suspendedMembers.length);
 
     return {

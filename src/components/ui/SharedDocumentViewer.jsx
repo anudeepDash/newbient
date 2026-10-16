@@ -1,72 +1,98 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { PDFDocument } from 'pdf-lib';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { embedProposalNumberInPdf } from '../../lib/pdfStampUtils';
 import { Link } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import Share2 from 'lucide-react/dist/esm/icons/share-2';
 import Printer from 'lucide-react/dist/esm/icons/printer';
 import Download from 'lucide-react/dist/esm/icons/download';
 import Paperclip from 'lucide-react/dist/esm/icons/paperclip';
-import Upload from 'lucide-react/dist/esm/icons/upload';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
-import X from 'lucide-react/dist/esm/icons/x';
+import Info from 'lucide-react/dist/esm/icons/info';
 import PdfDocumentViewer from './PdfDocumentViewer';
+import logo from '../../assets/logo.png';
 import DocumentShareModal from './DocumentShareModal';
+import Sheet from '../admin/Sheet';
+import { docTheme, StatusChip, fmtDate, fmtMoney, Row, DocButton } from './docviewer/DocKit';
+import { invoiceState, invoiceBalance } from '../../lib/invoicing';
+import { proposalState } from '../../lib/proposals';
 
 // Safely render content that might be HTML (e.g. from rich text editor) or plain text
+const decodeEntities = (s) => s
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ');
+
 const renderSafeContent = (rawText) => {
     if (!rawText) return null;
     if (typeof rawText !== 'string') return rawText;
 
-    const hasHtml = /<[a-z][\s\S]*>/i.test(rawText);
-
-    if (hasHtml) {
+    if (/<[a-z][\s\S]*>/i.test(rawText)) {
         try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(rawText, 'text/html');
-            // Remove any dangerous elements
-            doc.querySelectorAll('script, iframe, object, embed, form').forEach(el => el.remove());
-            const cleanHtml = doc.body.innerHTML;
+            const doc = new DOMParser().parseFromString(rawText, 'text/html');
+            doc.querySelectorAll('script, iframe, object, embed, form, style').forEach(el => el.remove());
+            doc.querySelectorAll('*').forEach(el => {
+                [...el.attributes].forEach(a => { if (/^on/i.test(a.name) || /^\s*javascript:/i.test(a.value)) el.removeAttribute(a.name); });
+            });
             return (
-                <div 
-                    className="leading-relaxed [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-bold [&_strong]:text-gray-900 dark:[&_strong]:text-white [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_a]:underline"
-                    dangerouslySetInnerHTML={{ __html: cleanHtml }}
+                <div
+                    className="leading-relaxed [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-4 [&_p:last-child]:mb-0 [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-4"
+                    dangerouslySetInnerHTML={{ __html: doc.body.innerHTML }}
                 />
             );
-        } catch (e) {
-            const text = rawText
-                .replace(/<[^>]+>/g, ' ')
-                .replace(/&amp;/g, '&')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'")
-                .replace(/&nbsp;/g, ' ')
-                .trim();
-            return <p className="leading-relaxed whitespace-pre-line">{text}</p>;
+        } catch {
+            return <p className="whitespace-pre-line leading-relaxed">{decodeEntities(rawText.replace(/<[^>]+>/g, ' ')).trim()}</p>;
         }
     }
-
-    // Decode HTML entities if present without tags
-    const decoded = rawText
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&nbsp;/g, ' ');
-
-    return <p className="leading-relaxed whitespace-pre-line">{decoded}</p>;
+    return <p className="whitespace-pre-line leading-relaxed">{decodeEntities(rawText)}</p>;
 };
 
+const isPdfLike = (data) => Boolean(data.fileUrl) && (data.fileType === 'pdf' || data.fileUrl.toLowerCase().includes('.pdf') || data.fileUrl.includes('/raw/upload/'));
+
+/* Where the document stands, in words the reader understands. */
+const deriveState = (type, data, isAdmin) => {
+    if (type === 'invoice') {
+        const s = invoiceState(data);
+        return {
+            paid: { tone: 'green', label: 'Paid', done: true },
+            verifying: { tone: 'amber', label: isAdmin ? 'Claimed paid' : 'Payment being verified', done: !isAdmin },
+            overdue: { tone: 'red', label: 'Overdue' },
+            partial: { tone: 'blue', label: 'Part paid' },
+            unpaid: { tone: 'blue', label: isAdmin ? 'Unpaid' : 'Awaiting payment' },
+        }[s];
+    }
+    if (type === 'agreement') {
+        if (data.status === 'Executed') return { tone: 'green', label: 'Signed', done: true };
+        if (data.status === 'Draft' && isAdmin) return { tone: 'gray', label: 'Draft' };
+        return { tone: 'amber', label: 'Awaiting signature' };
+    }
+    const s = proposalState(data);
+    return {
+        accepted: { tone: 'green', label: 'Accepted', done: true },
+        declined: { tone: 'red', label: 'Declined', done: true },
+        expired: { tone: 'amber', label: 'Expired', done: true },
+        viewed: { tone: 'blue', label: isAdmin ? 'Viewed' : 'Awaiting approval' },
+        sent: { tone: 'blue', label: isAdmin ? 'Sent' : 'Awaiting approval' },
+        draft: { tone: 'gray', label: isAdmin ? 'Draft' : 'Awaiting approval' },
+    }[s];
+};
+
+const firstValue = (...values) => values.find(v => v !== undefined && v !== null && v !== '' && !(typeof v === 'number' && isNaN(v)));
+
+/*
+ * The public page around an invoice, proposal or contract: a slim top bar,
+ * the paper on a neutral stage, and a side panel (a sheet on phones) with the
+ * summary and whatever the reader needs to do — pay, accept or sign.
+ *
+ * The page passes the rendered paper as children; this never restyles it.
+ * onStageWidth(px) reports the room the paper has, so pages can fit it.
+ */
 export default function SharedDocumentViewer({
     documentData = {},
     type = 'proposal', // 'proposal', 'invoice', 'agreement'
@@ -74,64 +100,69 @@ export default function SharedDocumentViewer({
     isExporting,
     onShare,
     onDownloadPDF,
+    onPrint,
     onOpenAttachments,
     pdfBlobUrl: externalPdfBlobUrl,
     actionPanel,
+    actionLabel,
+    banner,
+    summary = {},
+    onStageWidth,
     children
 }) {
+    const theme = docTheme(type);
     const [internalPdfBlobUrl, setInternalPdfBlobUrl] = useState(null);
     const pdfBlobUrl = internalPdfBlobUrl || externalPdfBlobUrl || null;
-    const [pdfViewerFailed, setPdfViewerFailed] = useState(false);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [pdfPagePreview, setPdfPagePreview] = useState(null);
-    const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
-    // Start loading if we have an uploaded file that needs blob processing
-    const needsPdfProcessing = Boolean(
-        documentData.isUploaded && documentData.fileUrl &&
-        (documentData.fileType === 'pdf' || documentData.fileUrl.toLowerCase().includes('.pdf') || documentData.fileUrl.includes('/raw/upload/'))
-    );
+    const [detailsOpen, setDetailsOpen] = useState(false);
+    const needsPdfProcessing = Boolean(documentData.isUploaded && isPdfLike(documentData));
     const [isLoadingPdf, setIsLoadingPdf] = useState(needsPdfProcessing);
-    const [scale, setScale] = useState(1);
+    const stageRef = useRef(null);
+    const stageCb = useRef(onStageWidth);
+    stageCb.current = onStageWidth;
+    // Pages set the paper to full size while exporting; don't fight them.
+    const exportingRef = useRef(isExporting);
+    exportingRef.current = isExporting;
 
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth < 850) {
-                setScale((window.innerWidth - 32) / 850);
-            } else {
-                setScale(1);
-            }
+    // Tell the page how wide the paper can be (the stage minus its padding).
+    useLayoutEffect(() => {
+        const el = stageRef.current;
+        if (!el) return undefined;
+        const report = () => {
+            const cs = getComputedStyle(el);
+            const w = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+            if (w > 0 && !exportingRef.current) stageCb.current?.(w);
         };
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+        report();
+        const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(report) : null;
+        ro?.observe(el);
+        window.addEventListener('resize', report);
+        return () => { ro?.disconnect(); window.removeEventListener('resize', report); };
+    }, [isExporting]);
 
+    // Uploaded PDFs: fetch once, stamp proposal numbers and signatures, serve as a blob.
     useEffect(() => {
         let isMounted = true;
-        
-        if (!documentData.fileUrl || (documentData.fileType !== 'pdf' && !documentData.fileUrl.toLowerCase().includes('.pdf') && !documentData.fileUrl.includes('/raw/upload/'))) {
+        let createdUrl = null;
+        if (!documentData.fileUrl || !isPdfLike(documentData)) {
             setIsLoadingPdf(false);
-            return;
+            return undefined;
         }
 
-        const modifyAndServePdf = async () => {
+        (async () => {
             try {
                 setIsLoadingPdf(true);
                 const response = await fetch(documentData.fileUrl);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const arrayBuffer = await response.arrayBuffer();
-                
                 let finalBytes = arrayBuffer;
 
-                const clientSig = documentData.clientSignature || documentData.approvalMetadata?.clientSignature;
-                const ourSig = documentData.ourSignature || documentData.providerSignature;
-
-                // For proposals, automatically remove old proposal numbers and embed the new proposal number on all pages
                 if (type === 'proposal' && documentData.proposalNumber) {
                     try {
                         finalBytes = await embedProposalNumberInPdf(arrayBuffer, documentData.proposalNumber, {
-                            clientSignature: clientSig,
-                            ourSignature: ourSig,
+                            clientSignature: documentData.clientSignature || documentData.approvalMetadata?.clientSignature,
+                            ourSignature: documentData.ourSignature || documentData.providerSignature,
                             clientName: documentData.clientName,
                             senderName: documentData.senderName || 'Newbi Entertainment & Marketing LLP',
                             signedBy: documentData.approvalMetadata?.signedBy || documentData.clientName,
@@ -144,36 +175,30 @@ export default function SharedDocumentViewer({
                     }
                 }
 
-                
-                const blob = new Blob([finalBytes], { type: 'application/pdf' });
-                const blobUrl = URL.createObjectURL(blob);
-                
+                createdUrl = URL.createObjectURL(new Blob([finalBytes], { type: 'application/pdf' }));
                 if (isMounted) {
-                    setInternalPdfBlobUrl(blobUrl);
+                    setInternalPdfBlobUrl(createdUrl);
                     setIsLoadingPdf(false);
+                } else {
+                    URL.revokeObjectURL(createdUrl);
                 }
             } catch (err) {
-                console.error("Error creating PDF blob:", err);
+                console.error('Error creating PDF blob:', err);
                 if (isMounted) {
                     setIsLoadingPdf(false);
-                    // If fetch failed (e.g. offline/CORS), fallback to direct URL as blob
-                    // Create a blob from a direct fetch attempt, or use the URL directly
                     setInternalPdfBlobUrl(null);
                 }
             }
-        };
-
-        modifyAndServePdf();
+        })();
 
         return () => {
             isMounted = false;
-            if (internalPdfBlobUrl) {
-                URL.revokeObjectURL(internalPdfBlobUrl);
-            }
+            if (createdUrl) URL.revokeObjectURL(createdUrl);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
-        documentData.fileUrl, 
-        documentData.clientSignature, 
+        documentData.fileUrl,
+        documentData.clientSignature,
         documentData.ourSignature,
         documentData.status,
         documentData.approvalMetadata?.signedAt,
@@ -181,241 +206,146 @@ export default function SharedDocumentViewer({
         documentData.approvalMetadata?.signedBy
     ]);
 
-    const rawTitle = type === 'invoice' 
-        ? 'Tax Invoice' 
-        : type === 'agreement' 
-            ? 'Service Agreement' 
-            : (documentData.campaignName || documentData.proposalName || 'Strategic Quotation & Proposal');
-    const title = rawTitle.replace(/pre[- ]?made\s*(?:proposal|contract|agreement|document)?/gi, 'Strategic Proposal').trim() || 'Strategic Quotation & Proposal';
+    const rawTitle = type === 'invoice'
+        ? `Invoice for ${documentData.clientName || 'client'}`
+        : type === 'agreement'
+            ? (documentData.title || documentData.agreementTitle || 'Service agreement')
+            : (documentData.campaignName || documentData.proposalName || 'Proposal');
+    const title = rawTitle.replace(/pre[- ]?made\s*(?:proposal|contract|agreement|document)?/gi, 'Proposal').trim() || theme.label;
     const docNumber = type === 'invoice' ? documentData.invoiceNumber : type === 'agreement' ? documentData.agreementNumber : (documentData.proposalNumber || documentData.id);
-    const backLink = isAdmin ? `/admin/${type}s` : "/";
-    const status = documentData.status || 'DRAFT';
-    const isAccepted = status === 'Accepted' || status === 'Paid' || status === 'Executed';
-    const isRejected = status === 'Rejected' || status === 'Failed';
-    
-    // Dynamic color theme based on document type
-    const theme = {
-        proposal: {
-            primary: '#39FF14',
-            name: 'neon-green',
-            text: 'text-neon-green',
-            bg: 'bg-neon-green',
-            bgSubtle: 'bg-neon-green/10',
-            bgSubtleHover: 'hover:bg-neon-green/20',
-            border: 'border-neon-green/30',
-            borderSubtle: 'border-neon-green/20',
-            selection: 'selection:bg-neon-green selection:text-black',
-            dot: 'bg-neon-green',
-            shadow: 'shadow-[0_10px_30px_rgba(57,255,20,0.25)]',
-            hoverText: 'hover:text-neon-green',
-            groupHoverText: 'group-hover:text-neon-green',
-            groupHoverBorder: 'group-hover:border-neon-green/40',
-            linkText: 'text-neon-green hover:underline',
-            accentBar: 'bg-neon-green',
-        },
-        invoice: {
-            primary: '#00D1FF',
-            name: 'neon-blue',
-            text: 'text-[#00D1FF]',
-            bg: 'bg-[#00D1FF]',
-            bgSubtle: 'bg-[#00D1FF]/10',
-            bgSubtleHover: 'hover:bg-[#00D1FF]/20',
-            border: 'border-[#00D1FF]/30',
-            borderSubtle: 'border-[#00D1FF]/20',
-            selection: 'selection:bg-[#00D1FF] selection:text-black',
-            dot: 'bg-[#00D1FF]',
-            shadow: 'shadow-[0_10px_30px_rgba(0,209,255,0.25)]',
-            hoverText: 'hover:text-[#00D1FF]',
-            groupHoverText: 'group-hover:text-[#00D1FF]',
-            groupHoverBorder: 'group-hover:border-[#00D1FF]/40',
-            linkText: 'text-[#00D1FF] hover:underline',
-            accentBar: 'bg-[#00D1FF]',
-        },
-        agreement: {
-            primary: '#A855F7',
-            name: 'purple',
-            text: 'text-[#A855F7]',
-            bg: 'bg-[#A855F7]',
-            bgSubtle: 'bg-[#A855F7]/10',
-            bgSubtleHover: 'hover:bg-[#A855F7]/20',
-            border: 'border-[#A855F7]/30',
-            borderSubtle: 'border-[#A855F7]/20',
-            selection: 'selection:bg-[#A855F7] selection:text-white',
-            dot: 'bg-[#A855F7]',
-            shadow: 'shadow-[0_10px_30px_rgba(168,85,247,0.25)]',
-            hoverText: 'hover:text-[#A855F7]',
-            groupHoverText: 'group-hover:text-[#A855F7]',
-            groupHoverBorder: 'group-hover:border-[#A855F7]/40',
-            linkText: 'text-[#A855F7] hover:underline',
-            accentBar: 'bg-[#A855F7]',
-        }
-    }[type] || {
-        primary: '#39FF14',
-        name: 'neon-green',
-        text: 'text-neon-green',
-        bg: 'bg-neon-green',
-        bgSubtle: 'bg-neon-green/10',
-        bgSubtleHover: 'hover:bg-neon-green/20',
-        border: 'border-neon-green/30',
-        borderSubtle: 'border-neon-green/20',
-        selection: 'selection:bg-neon-green selection:text-black',
-        dot: 'bg-neon-green',
-        shadow: 'shadow-[0_10px_30px_rgba(57,255,20,0.25)]',
-        hoverText: 'hover:text-neon-green',
-        groupHoverText: 'group-hover:text-neon-green',
-        groupHoverBorder: 'group-hover:border-neon-green/40',
-        linkText: 'text-neon-green hover:underline',
-        accentBar: 'bg-neon-green',
+    const backLink = `/admin/${type}s`;
+    const state = deriveState(type, documentData, isAdmin) || { tone: 'gray', label: documentData.status || 'Draft' };
+    const hasAction = Boolean(actionPanel);
+    const awaitingAction = hasAction && !state.done;
+
+    const amount = firstValue(
+        summary.amount,
+        type === 'invoice' ? invoiceBalance(documentData) : undefined,
+        documentData.dealValue, documentData.totalOverride, documentData.amount,
+        documentData.commercials?.totalValue, documentData.subtotal
+    );
+    const amountLabel = summary.amountLabel || (type === 'invoice'
+        ? (state.done ? 'Amount' : 'Amount due')
+        : type === 'agreement' ? 'Contract value' : 'Quoted total');
+
+    const issued = firstValue(documentData.invoiceDate, documentData.effectiveDate, documentData.date, documentData.createdAt);
+    const rows = summary.rows || [
+        docNumber && { label: type === 'invoice' ? 'Invoice no.' : type === 'agreement' ? 'Contract no.' : 'Proposal no.', value: docNumber, mono: true },
+        issued && { label: type === 'agreement' ? 'Effective' : 'Issued', value: fmtDate(issued) },
+        type === 'invoice' && documentData.dueDate && { label: 'Due', value: fmtDate(documentData.dueDate) },
+        type === 'proposal' && documentData.validUntil && { label: 'Valid until', value: fmtDate(documentData.validUntil) },
+    ].filter(Boolean);
+
+    const fromName = documentData.senderName || documentData.parties?.firstParty?.name || 'Newbi Entertainment';
+    const fromEmail = documentData.senderEmail || documentData.parties?.firstParty?.email;
+    const toName = documentData.clientName || documentData.parties?.secondParty?.name || 'Client';
+    const toEmail = documentData.clientEmail || documentData.parties?.secondParty?.email;
+    const note = documentData.coverDescription || documentData.note;
+    const attachmentCount = Array.isArray(documentData.attachments) ? documentData.attachments.length : 0;
+
+    const effectivePdfUrl = pdfBlobUrl || documentData.fileUrl;
+
+    const downloadFile = (href) => {
+        const a = document.createElement('a');
+        a.href = href;
+        a.download = documentData.fileName || `${documentData.clientName || 'Document'}.pdf`;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     };
 
-    // Status colors dynamically themed
-    const statusColorClass = isAccepted 
-        ? cn(theme.bgSubtle, theme.text, theme.border)
-        : (isRejected 
-            ? "bg-red-500/10 text-red-500 border-red-500/30" 
-            : cn(theme.bgSubtle, theme.text, theme.borderSubtle));
-    const statusDotClass = isAccepted ? theme.dot : cn(theme.dot, "animate-pulse");
-    
-    // Logo resolution
-    const logoOptions = [
-        { id: 'entertainment', label: 'Newbi Entertainment', path: '/brand/newbi-logo-entertainment-800w.png', color: '#39FF14' },
-        { id: 'media', label: 'Newbi Media', path: '/brand/newbi-logo-media-800w.png', color: '#00D1FF' },
-        { id: 'marketing', label: 'Newbi Marketing', path: '/brand/newbi-logo-marketing-800w.png', color: '#FF0055' }
-    ];
-    const currentLogo = logoOptions.find(l => l.id === documentData.selectedLogo) || logoOptions[0];
-
-    const effectivePdfUrl = pdfBlobUrl || externalPdfBlobUrl || documentData.fileUrl;
-
     const handleDownloadPDF = () => {
-        if (onDownloadPDF) {
-            onDownloadPDF(pdfBlobUrl);
-        } else if (documentData.isUploaded) {
-            const a = document.createElement('a');
-            a.href = pdfBlobUrl || documentData.fileUrl;
-            a.download = documentData.fileName || `${documentData.clientName || 'Document'}.pdf`;
-            a.target = '_blank';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        } else {
-            window.print();
-        }
+        if (onDownloadPDF) onDownloadPDF(pdfBlobUrl);
+        else if (documentData.isUploaded) downloadFile(pdfBlobUrl || documentData.fileUrl);
+        else window.print();
     };
 
     const handlePrint = () => {
-        if (documentData.isUploaded && (effectivePdfUrl || documentData.fileUrl)) {
-            window.open(effectivePdfUrl || documentData.fileUrl, '_blank');
-        } else {
-            window.print();
-        }
+        if (onPrint) onPrint();
+        else if (documentData.isUploaded && effectivePdfUrl) window.open(effectivePdfUrl, '_blank');
+        else window.print();
     };
 
-    const renderSidebarBody = () => (
-        <>
-            {/* Status & Amount */}
-            <div className="flex flex-col gap-4">
-                <div className="flex flex-wrap items-center gap-3">
-                    <span className={cn("px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border", statusColorClass)}>
-                        <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", statusDotClass)} />
-                        {status}
-                    </span>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                        <Clock size={12} />
-                        {new Date(documentData.createdAt || documentData.invoiceDate || documentData.effectiveDate || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </span>
+    const openShare = () => {
+        setDetailsOpen(false);
+        setIsShareModalOpen(true);
+        onShare?.();
+    };
+
+    const panelBody = (
+        <div className="flex flex-col gap-4">
+            {/* What it is and where it stands */}
+            <div>
+                <div className="flex flex-wrap items-center gap-2">
+                    <StatusChip tone={state.tone} pulse={!state.done}>{state.label}</StatusChip>
+                    {isAdmin && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[11.5px] font-semibold text-gray-600 dark:bg-white/[0.07] dark:text-zinc-300">Admin view</span>}
                 </div>
-                
-                {(documentData.dealValue || documentData.totalOverride || documentData.amount || documentData.commercials?.totalValue || documentData.subtotal) && (
-                    <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Commercial Value</p>
-                        <h2 className="text-3xl lg:text-4xl font-black tracking-tighter" style={{ color: theme.primary }}>
-                            ₹{Number(documentData.dealValue || documentData.totalOverride || documentData.amount || documentData.commercials?.totalValue || documentData.subtotal || 0).toLocaleString('en-IN')}
-                        </h2>
+                <h1 className="mt-3 font-heading text-[22px] font-extrabold leading-tight tracking-tight text-gray-900 dark:text-white">{title}</h1>
+                {amount !== undefined && Number(amount) > 0 && (
+                    <div className="mt-3">
+                        <p className="text-[12.5px] font-medium text-gray-500 dark:text-zinc-400">{amountLabel}</p>
+                        <p className={cn('font-heading text-[34px] font-extrabold leading-none tracking-tight tabular-nums', theme.text)}>{fmtMoney(amount)}</p>
                     </div>
                 )}
             </div>
 
-            {/* Title & Document Meta */}
-            <div>
-                <h1 className="text-lg lg:text-xl font-black uppercase italic tracking-tight font-heading text-gray-900 dark:text-white leading-tight mb-2">
-                    {title}
-                </h1>
-                <div className="flex flex-wrap items-center gap-2">
-                    <span className={cn("text-[9px] font-black font-mono tracking-widest px-2.5 py-1 rounded-full border", theme.text, theme.bgSubtle, theme.borderSubtle)}>
-                        {docNumber}
-                    </span>
-                </div>
-            </div>
+            {actionPanel && <div className="flex flex-col gap-3">{actionPanel}</div>}
 
-            {/* Entities Info */}
-            <div className="p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 space-y-4">
-                <div>
-                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1.5">Prepared For</p>
-                    <p className="font-bold text-sm leading-tight text-gray-900 dark:text-white">{documentData.clientName || documentData.parties?.secondParty?.name || 'Client'}</p>
-                    {(documentData.clientEmail || documentData.parties?.secondParty?.email) && (
-                        <p className="text-xs text-gray-500 mt-0.5 truncate">{documentData.clientEmail || documentData.parties?.secondParty?.email}</p>
-                    )}
-                </div>
-                <div className="w-full h-px bg-black/5 dark:bg-white/5" />
-                <div>
-                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1.5">Prepared By</p>
-                    <p className="font-bold text-sm leading-tight text-gray-900 dark:text-white">{documentData.senderName || documentData.parties?.firstParty?.name || 'Newbi Entertainment'}</p>
-                    {(documentData.senderEmail || documentData.parties?.firstParty?.email) && (
-                        <p className="text-xs text-gray-500 mt-0.5 truncate">{documentData.senderEmail || documentData.parties?.firstParty?.email}</p>
-                    )}
-                </div>
-            </div>
-
-            {/* Attachments Note */}
-            {documentData.attachments && documentData.attachments.length > 0 && onOpenAttachments && (
-                <button onClick={onOpenAttachments} className="w-full p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 flex items-center justify-between hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors group">
-                    <div className="flex items-center gap-3">
-                        <div className={cn("w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-500 transition-colors", theme.groupHoverText)}>
-                            <Paperclip size={18} />
-                        </div>
-                        <div className="text-left">
-                            <p className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Attachments</p>
-                            <p className="text-[9px] text-gray-500 uppercase tracking-widest">{documentData.attachments.length} Files Included</p>
-                        </div>
+            <section className="rounded-2xl border border-black/[0.07] bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.03]">
+                <dl className="space-y-2 text-[13px]">
+                    {rows.map(r => <Row key={r.label} label={r.label} value={r.value} mono={r.mono} strong={r.strong} />)}
+                </dl>
+                <div className="my-3.5 h-px bg-black/[0.06] dark:bg-white/[0.07]" />
+                <div className="grid grid-cols-2 gap-3 text-[13px]">
+                    <div className="min-w-0">
+                        <p className="text-[12px] text-gray-500 dark:text-zinc-400">From</p>
+                        <p className="mt-0.5 truncate font-semibold text-gray-900 dark:text-white">{fromName}</p>
+                        {fromEmail && <p className="truncate text-[12px] text-gray-500 dark:text-zinc-400">{fromEmail}</p>}
                     </div>
-                    <ArrowRight size={14} className={cn("text-gray-400 group-hover:translate-x-1 transition-all", theme.groupHoverText)} />
+                    <div className="min-w-0">
+                        <p className="text-[12px] text-gray-500 dark:text-zinc-400">To</p>
+                        <p className="mt-0.5 truncate font-semibold text-gray-900 dark:text-white">{toName}</p>
+                        {toEmail && <p className="truncate text-[12px] text-gray-500 dark:text-zinc-400">{toEmail}</p>}
+                    </div>
+                </div>
+            </section>
+
+            {note && (
+                <section className="rounded-2xl border border-black/[0.07] bg-white p-4 text-[13.5px] text-gray-700 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-zinc-300">
+                    <p className={cn('mb-1.5 text-[12px] font-semibold', theme.text)}>{type === 'invoice' ? 'Note' : type === 'agreement' ? 'Purpose' : 'From the team'}</p>
+                    {renderSafeContent(note)}
+                </section>
+            )}
+
+            {attachmentCount > 0 && onOpenAttachments && (
+                <button type="button" onClick={() => { setDetailsOpen(false); onOpenAttachments(); }}
+                    className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-black/[0.07] bg-white px-4 text-left transition-colors hover:bg-gray-50 dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:bg-white/[0.06]">
+                    <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', theme.soft, theme.text)}><Paperclip size={16} /></span>
+                    <span className="min-w-0 flex-1">
+                        <span className="block text-[14px] font-semibold text-gray-900 dark:text-white">Attachments</span>
+                        <span className="block text-[12px] text-gray-500 dark:text-zinc-400">{attachmentCount} {attachmentCount === 1 ? 'file' : 'files'}</span>
+                    </span>
+                    <ChevronRight size={16} className="text-gray-400" />
                 </button>
             )}
 
-            {/* Executive Memo / Note if present */}
-            {(documentData.coverDescription || documentData.note) && (
-                <div className="p-4 bg-zinc-100 dark:bg-zinc-900/60 rounded-2xl relative overflow-hidden border border-black/5 dark:border-white/5">
-                    <div className={cn("w-1 h-full absolute left-0 top-0", theme.accentBar)} />
-                    <p className={cn("text-[8px] font-black uppercase tracking-[0.2em] mb-1.5", theme.text)}>{type === 'invoice' ? 'Invoice Note' : type === 'agreement' ? 'Instrument Notice' : 'Memorandum'}</p>
-                    <div className="text-xs font-medium leading-relaxed text-gray-700 dark:text-gray-300">
-                        {renderSafeContent(documentData.coverDescription || documentData.note)}
-                    </div>
-                </div>
-            )}
-
-            {/* Action Panel (e.g. Signature, Status, Payment) */}
-            {actionPanel && (
-                <div className="flex flex-col gap-3">
-                    {actionPanel}
-                </div>
-            )}
-
-            {/* Export / Print Actions */}
-            <div className="flex flex-col gap-3 mt-auto pt-6 border-t border-black/5 dark:border-white/5">
-                <div className="grid grid-cols-2 gap-3">
-                    <button onClick={handleDownloadPDF} disabled={isExporting} className="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-black font-black uppercase tracking-widest text-[10px] rounded-2xl hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg">
-                        <Download size={14} /> {isExporting ? 'Exporting...' : 'Save PDF'}
-                    </button>
-                    <button onClick={handlePrint} className="w-full py-3.5 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center justify-center gap-2 border border-black/5 dark:border-white/5">
-                        <Printer size={14} /> Print
-                    </button>
-                </div>
+            <div className="grid grid-cols-2 gap-2">
+                <DocButton variant="dark" onClick={handleDownloadPDF} busy={isExporting}>
+                    {!isExporting && <Download size={16} />} {isExporting ? 'Preparing…' : 'Download PDF'}
+                </DocButton>
+                <DocButton variant="secondary" onClick={handlePrint}><Printer size={16} /> Print</DocButton>
             </div>
-        </>
+
+            <p className="flex items-start gap-2 px-1 pb-1 text-[12px] leading-snug text-gray-500 dark:text-zinc-500">
+                <ShieldCheck size={14} className="mt-px shrink-0" />
+                Shared securely by Newbi. Opening, signing and payment claims are recorded with the time and device.
+            </p>
+        </div>
     );
 
     return (
-        <div className={cn("min-h-screen bg-[#FAFAFA] dark:bg-[#050505] font-sans text-gray-900 dark:text-gray-100 flex flex-col lg:flex-row", theme.selection)}>
+        <div className={cn('min-h-dvh bg-[#eef0f3] font-sans text-gray-900 dark:bg-[#07080b] dark:text-gray-100', theme.selection)}>
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
@@ -423,212 +353,143 @@ export default function SharedDocumentViewer({
                 body { font-family: 'Outfit', sans-serif; }
                 .font-signature { font-family: 'Caveat', cursive; }
                 .font-formal { font-family: 'Crimson Pro', serif; }
+                /* Room for the phone action bar, so the PDF pager and page end clear it. */
+                .doc-viewer-root { --doc-dock: 0px; }
+                @media (max-width: 1023px) { .doc-viewer-root { --doc-dock: calc(4.5rem + env(safe-area-inset-bottom)); } }
                 @media print {
                     .fixed-header-nav, .print-hidden { display: none !important; }
-                    body { background: white !important; }
-                    .proposal-page-render, .invoice-page-render, .agreement-page-render { 
-                        margin: 0 !important; 
-                        box-shadow: none !important; 
-                        page-break-after: always !important; 
+                    body, .doc-viewer-root { background: white !important; }
+                    .doc-stage { padding: 0 !important; }
+                    .proposal-page-render, .invoice-page-render, .agreement-page-render {
+                        margin: 0 !important;
+                        box-shadow: none !important;
+                        page-break-after: always !important;
                     }
                 }
             `}} />
 
-            {/* Mobile Compact Top Bar (< lg) */}
-            {!isExporting && (
-                <header className="print-hidden lg:hidden sticky top-0 z-40 bg-white/95 dark:bg-[#0A0A0A]/95 backdrop-blur-md border-b border-black/5 dark:border-white/5 h-14 px-3 sm:px-4 flex items-center justify-between shadow-sm">
-                    {/* Back button */}
-                    <Link to={backLink} className="flex items-center gap-1.5 p-2 rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                        <ArrowLeft size={16} />
-                        <span className="text-[10px] font-black uppercase tracking-wider hidden sm:inline">{isAdmin ? 'Admin' : 'Back'}</span>
-                    </Link>
+            <div className="doc-viewer-root">
+                {/* Top bar: same colour as the page so Safari's bars blend into it. */}
+                {!isExporting && (
+                    <header className="print-hidden sticky top-0 z-40 border-b border-black/[0.06] bg-[#eef0f3]/85 pt-[env(safe-area-inset-top)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/[0.06] dark:bg-[#07080b]/85">
+                        <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-2 px-3 sm:px-5 lg:h-16">
+                            {isAdmin ? (
+                                <Link to={backLink} className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl pl-2 pr-3 text-[13px] font-semibold text-gray-600 hover:bg-black/[0.05] dark:text-zinc-300 dark:hover:bg-white/[0.07]">
+                                    <ArrowLeft size={17} /> <span className="hidden sm:inline">Admin</span>
+                                </Link>
+                            ) : (
+                                <Link to="/" className="flex h-10 shrink-0 items-center rounded-xl px-1.5" aria-label="Newbi home">
+                                    <img src={logo} alt="newbi.live" className="h-8 w-auto" />
+                                </Link>
+                            )}
 
-                    {/* Center Document Overview Dropdown Button */}
-                    <button
-                        onClick={() => setIsMobileDetailsOpen(prev => !prev)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/5 dark:border-white/5 transition-all max-w-[210px] text-left"
-                    >
-                        <span className={cn("w-2 h-2 rounded-full shrink-0", statusDotClass)} />
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-[11px] font-black font-mono tracking-tight text-gray-900 dark:text-white truncate leading-none">
-                                {docNumber}
-                            </span>
-                            <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest leading-none mt-0.5 truncate">
-                                {status} • Details
-                            </span>
-                        </div>
-                        <ChevronDown size={13} className={cn("text-gray-400 transition-transform duration-200 shrink-0 ml-0.5", isMobileDetailsOpen && "rotate-180")} />
-                    </button>
+                            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                                <span className={cn('hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:flex', theme.soft, theme.text)}>
+                                    <FileText size={17} />
+                                </span>
+                                <div className="min-w-0">
+                                    <p className="truncate text-[14px] font-bold leading-tight text-gray-900 dark:text-white sm:text-[15px]">{title}</p>
+                                    <p className="truncate text-[12px] leading-tight text-gray-500 dark:text-zinc-400">
+                                        {theme.label}{docNumber ? ` · ${docNumber}` : ''}
+                                    </p>
+                                </div>
+                                <StatusChip tone={state.tone} className="ml-1 hidden md:inline-flex">{state.label}</StatusChip>
+                            </div>
 
-                    {/* Quick Right Actions */}
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={handleDownloadPDF}
-                            disabled={isExporting}
-                            className="p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                            title="Download PDF"
-                        >
-                            <Download size={16} />
-                        </button>
-                        <button
-                            onClick={() => {
-                                setIsShareModalOpen(true);
-                                if (onShare) onShare();
-                            }}
-                            className={cn("p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors", theme.hoverText)}
-                            title="Share"
-                        >
-                            <Share2 size={16} />
-                        </button>
-                    </div>
-                </header>
-            )}
-
-            {/* Mobile Collapsible Details Drawer */}
-            <AnimatePresence>
-                {!isExporting && isMobileDetailsOpen && (
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsMobileDetailsOpen(false)}
-                            className="lg:hidden fixed inset-0 top-14 bg-black/60 backdrop-blur-sm z-40 print-hidden"
-                        />
-                        <motion.div
-                            initial={{ y: -20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: -20, opacity: 0 }}
-                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                            className="lg:hidden fixed top-14 left-0 right-0 max-h-[85vh] overflow-y-auto bg-white dark:bg-[#0A0A0A] border-b border-black/10 dark:border-white/10 z-50 shadow-2xl p-5 flex flex-col gap-6 custom-scrollbar print-hidden"
-                        >
-                            <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Document Overview</span>
-                                <button
-                                    onClick={() => setIsMobileDetailsOpen(false)}
-                                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                                >
-                                    <X size={16} />
+                            <div className="flex shrink-0 items-center gap-1">
+                                <button type="button" onClick={handlePrint} title="Print" aria-label="Print"
+                                    className="hidden h-10 w-10 items-center justify-center rounded-xl text-gray-600 hover:bg-black/[0.05] dark:text-zinc-300 dark:hover:bg-white/[0.07] md:flex">
+                                    <Printer size={18} />
+                                </button>
+                                <button type="button" onClick={handleDownloadPDF} disabled={isExporting} title="Download PDF" aria-label="Download PDF"
+                                    className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-600 hover:bg-black/[0.05] disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/[0.07]">
+                                    <Download size={18} />
+                                </button>
+                                <button type="button" onClick={openShare}
+                                    className="flex h-10 items-center gap-2 rounded-xl px-2.5 text-[13px] font-semibold text-gray-700 hover:bg-black/[0.05] dark:text-zinc-200 dark:hover:bg-white/[0.07] sm:border sm:border-black/10 sm:bg-white sm:px-3.5 sm:dark:border-white/10 sm:dark:bg-white/[0.04]">
+                                    <Share2 size={17} /> <span className="hidden sm:inline">Share</span>
                                 </button>
                             </div>
-
-                            {renderSidebarBody()}
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
-
-            {/* Mobile Floating Action Indicator (e.g. for signing/approving) */}
-            {!isExporting && actionPanel && !isAccepted && !isMobileDetailsOpen && (
-                <div className="lg:hidden fixed bottom-6 left-4 right-4 z-30 flex justify-center pointer-events-none print-hidden">
-                    <button
-                        onClick={() => setIsMobileDetailsOpen(true)}
-                        className="pointer-events-auto px-5 py-3 rounded-2xl bg-gray-900 text-white dark:bg-white dark:text-black shadow-2xl font-black text-xs uppercase tracking-wider flex items-center gap-2.5 border border-black/10 dark:border-white/10 active:scale-95 transition-transform"
-                    >
-                        <ShieldCheck size={16} />
-                        <span>Review & Authorize</span>
-                        <ChevronDown size={14} className="-rotate-90 text-gray-400" />
-                    </button>
-                </div>
-            )}
-
-            {/* Desktop Left Sidebar (lg+) */}
-            {!isExporting && (
-                <aside className="print-hidden hidden lg:flex w-full lg:w-[400px] xl:w-[420px] shrink-0 bg-white dark:bg-[#0A0A0A] border-r border-black/5 dark:border-white/5 flex-col h-screen sticky top-0 z-[100] shadow-[10px_0_40px_rgba(0,0,0,0.03)] dark:shadow-none">
-                    {/* Top Header inside Sidebar */}
-                    <div className="h-20 px-6 lg:px-8 flex items-center justify-between border-b border-black/5 dark:border-white/5 shrink-0">
-                        <Link to={backLink} className="flex items-center gap-3 text-[10px] font-black text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all uppercase tracking-widest">
-                            <ArrowLeft size={16} /> 
-                            <span>Back to {isAdmin ? 'Admin' : 'Dashboard'}</span>
-                        </Link>
-                        <button 
-                            onClick={() => {
-                                setIsShareModalOpen(true);
-                                if (onShare) onShare();
-                            }} 
-                            className={cn("p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/5 dark:border-white/5", theme.hoverText)} 
-                            title="Share Document"
-                        >
-                            <Share2 size={15} />
-                            <span className="text-[10px] font-black uppercase tracking-wider">Share</span>
-                        </button>
-                    </div>
-
-                    {/* Scrollable Sidebar Content */}
-                    <div className="flex-1 overflow-y-auto p-6 lg:p-8 flex flex-col gap-6 custom-scrollbar">
-                        {renderSidebarBody()}
-                    </div>
-                </aside>
-            )}
-
-            {/* Document Viewer Area (Right Panel) */}
-            <main className="flex-1 relative overflow-y-auto min-h-[500px] lg:h-screen bg-[#F3F4F6] dark:bg-[#0B0F17] flex items-start justify-center p-2 sm:p-4 md:p-8 lg:p-12 custom-scrollbar">
-                {/* Subtle Background Pattern */}
-                <div className="absolute inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.02]" style={{ backgroundImage: "radial-gradient(circle at center, black 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
-                
-                <div className="w-full flex flex-col items-center pb-20 relative z-10">
-                    {documentData.isUploaded && (documentData.fileUrl || pdfBlobUrl) ? (
-                        isLoadingPdf ? (
-                            <div className="w-full min-h-[500px] flex flex-col items-center justify-center gap-4 py-24">
-                                <div className="w-16 h-16 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center backdrop-blur-md">
-                                    <RefreshCw size={24} className={cn("animate-spin", theme.text)} />
-                                </div>
-                                <p className={cn("text-[10px] font-mono uppercase tracking-[0.2em]", theme.text)}>
-                                    Preparing document preview...
-                                </p>
-                            </div>
-                        ) : (
-                            Boolean(
-                                (documentData.fileType === 'pdf') ||
-                                (documentData.fileName && documentData.fileName.toLowerCase().endsWith('.pdf')) ||
-                                (effectivePdfUrl && (
-                                    effectivePdfUrl.startsWith('blob:') ||
-                                    effectivePdfUrl.toLowerCase().includes('.pdf') ||
-                                    effectivePdfUrl.includes('/raw/upload/') ||
-                                    effectivePdfUrl.includes('application/pdf')
-                                ))
-                            ) ? (
-                                <PdfDocumentViewer
-                                    pdfUrl={effectivePdfUrl}
-                                    documentData={documentData}
-                                    theme={theme}
-                                    onFirstPageRendered={setPdfPagePreview}
-                                    onDownload={() => {
-                                        if (onDownloadPDF) {
-                                            onDownloadPDF(pdfBlobUrl);
-                                        } else {
-                                            const a = document.createElement('a');
-                                            a.href = effectivePdfUrl;
-                                            a.download = documentData.fileName || `${documentData.clientName || 'Document'}.pdf`;
-                                            a.target = '_blank';
-                                            document.body.appendChild(a);
-                                            a.click();
-                                            document.body.removeChild(a);
-                                        }
-                                    }}
-                                    onPrint={() => {
-                                        window.open(effectivePdfUrl, '_blank');
-                                    }}
-                                />
-                            ) : (
-                                <div className="proposal-page-render w-[794px] max-w-full bg-white relative shadow-[0_20px_60px_rgba(0,0,0,0.12)] dark:shadow-[0_30px_90px_rgba(0,0,0,0.55)] border border-black/5 dark:border-white/10 overflow-hidden flex flex-col rounded-[2px] p-4">
-                                    <img 
-                                        src={documentData.fileUrl} 
-                                        alt={documentData.fileName || "Uploaded document"} 
-                                        className="w-full h-auto object-contain rounded-[2px]" 
-                                    />
-                                </div>
-                            )
-                        )
-                    ) : (
-                        <div className="w-full flex flex-col items-center">
-                            {children}
                         </div>
+                    </header>
+                )}
+
+                {!isExporting && banner && <div className="print-hidden">{banner}</div>}
+
+                <div className="mx-auto flex max-w-[1440px] items-start">
+                    {/* The paper */}
+                    <main
+                        ref={stageRef}
+                        className={cn('doc-stage min-w-0 flex-1 overflow-x-clip',
+                            isExporting ? 'p-0' : 'px-3 pb-[calc(var(--doc-dock)+2rem)] pt-4 sm:px-6 sm:pt-8 lg:px-10 lg:pb-16')}
+                    >
+                        <div className="flex w-full flex-col items-center">
+                            {documentData.isUploaded && (documentData.fileUrl || pdfBlobUrl) ? (
+                                isLoadingPdf ? (
+                                    <div className="flex min-h-[60dvh] w-full flex-col items-center justify-center gap-3">
+                                        <span className={cn('flex h-14 w-14 items-center justify-center rounded-2xl', theme.soft)}>
+                                            <RefreshCw size={22} className={cn('animate-spin', theme.text)} />
+                                        </span>
+                                        <p className="text-[13px] font-medium text-gray-500 dark:text-zinc-400">Opening the document…</p>
+                                    </div>
+                                ) : (
+                                    (documentData.fileType === 'pdf' ||
+                                        documentData.fileName?.toLowerCase().endsWith('.pdf') ||
+                                        (effectivePdfUrl && (effectivePdfUrl.startsWith('blob:') || effectivePdfUrl.toLowerCase().includes('.pdf') || effectivePdfUrl.includes('/raw/upload/') || effectivePdfUrl.includes('application/pdf')))
+                                    ) ? (
+                                        <PdfDocumentViewer
+                                            pdfUrl={effectivePdfUrl}
+                                            documentData={documentData}
+                                            theme={theme}
+                                            onFirstPageRendered={setPdfPagePreview}
+                                            onDownload={() => (onDownloadPDF ? onDownloadPDF(pdfBlobUrl) : downloadFile(effectivePdfUrl))}
+                                            onPrint={() => window.open(effectivePdfUrl, '_blank')}
+                                        />
+                                    ) : (
+                                        <div className="proposal-page-render w-[794px] max-w-full overflow-hidden rounded-[2px] bg-white p-4 shadow-[0_20px_60px_rgba(0,0,0,0.12)] dark:shadow-[0_30px_90px_rgba(0,0,0,0.55)]">
+                                            <img src={documentData.fileUrl} alt={documentData.fileName || 'Uploaded document'} className="h-auto w-full object-contain" />
+                                        </div>
+                                    )
+                                )
+                            ) : (
+                                children
+                            )}
+                        </div>
+                    </main>
+
+                    {/* Desktop side panel */}
+                    {!isExporting && (
+                        <aside className="print-hidden sticky top-16 hidden h-[calc(100dvh-4rem)] w-[400px] shrink-0 overflow-y-auto overscroll-contain border-l border-black/[0.06] px-6 py-8 dark:border-white/[0.06] lg:block">
+                            {panelBody}
+                        </aside>
                     )}
                 </div>
-            </main>
 
-            {/* Document Share & Social Link Preview Modal */}
+                {/* Phone action bar */}
+                {!isExporting && (
+                    <div className="print-hidden fixed inset-x-0 bottom-0 z-40 border-t border-black/[0.06] bg-[#eef0f3]/90 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl backdrop-saturate-150 dark:border-white/[0.06] dark:bg-[#07080b]/90 lg:hidden">
+                        <div className="mx-auto flex max-w-xl items-center gap-2">
+                            <DocButton variant="secondary" onClick={() => setDetailsOpen(true)} className={awaitingAction ? 'w-12 shrink-0 px-0' : 'flex-1'} aria-label="Details">
+                                <Info size={17} /> {!awaitingAction && 'Details'}
+                            </DocButton>
+                            {awaitingAction ? (
+                                <DocButton theme={theme} onClick={() => setDetailsOpen(true)} className="flex-1">
+                                    {actionLabel || 'Review'} <ChevronRight size={16} />
+                                </DocButton>
+                            ) : (
+                                <DocButton variant="dark" onClick={handleDownloadPDF} busy={isExporting} className="flex-1">
+                                    <Download size={16} /> Download PDF
+                                </DocButton>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <Sheet open={detailsOpen} onClose={() => setDetailsOpen(false)} title={theme.label + (docNumber ? ` ${docNumber}` : '')} bodyClassName="bg-[#f6f7f9] dark:bg-[#0b0c10]">
+                {panelBody}
+            </Sheet>
+
             <DocumentShareModal
                 isOpen={isShareModalOpen}
                 onClose={() => setIsShareModalOpen(false)}
