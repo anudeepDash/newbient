@@ -170,7 +170,7 @@ const AnnouncementsManager = () => {
                 if (!claimed) { addToast('It was already sent a moment ago.', 'info'); }
                 else {
                     await sendAnnouncementNotification(item, !!confirm.email);
-                    addToast(confirm.email ? 'Notification and email sent.' : 'Notification sent to everyone.', 'success');
+                    addToast(confirm.email ? 'Notification sent. Opening Mailing for the email…' : 'Notification sent to everyone.', 'success');
                 }
             }
             setConfirm(null);
@@ -370,7 +370,7 @@ const AnnouncementsManager = () => {
                 open={confirm?.kind === 'notify'}
                 onClose={() => setConfirm(null)}
                 title={confirm?.item?.notifiedAt ? 'Notify everyone again?' : 'Notify everyone?'}
-                confirmLabel={confirm?.email ? 'Send notification and email' : 'Send notification'}
+                confirmLabel={confirm?.email ? 'Send and write email' : 'Send notification'}
                 tone="accent"
                 busy={busy}
                 onConfirm={runConfirm}
@@ -379,7 +379,7 @@ const AnnouncementsManager = () => {
                 {confirm?.item?.notifiedAt && <p className="font-semibold text-amber-600 dark:text-amber-400">It was already sent {formatDayTime(confirm.item.notifiedAt)}. People will get it twice.</p>}
                 <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-black/10 px-3 dark:border-white/10">
                     <input type="checkbox" className="h-5 w-5 accent-amber-500" checked={!!confirm?.email} onChange={(e) => setConfirm(c => ({ ...c, email: e.target.checked }))} />
-                    <span className="text-[13px] font-semibold text-gray-800 dark:text-zinc-200">Also email all registered users</span>
+                    <span className="text-[13px] font-semibold text-gray-800 dark:text-zinc-200">Also write an email (opens Mailing to pick who gets it)</span>
                 </label>
             </ConfirmSheet>
         </AdminCommunityHubLayout>

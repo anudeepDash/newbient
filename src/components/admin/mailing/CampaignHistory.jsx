@@ -13,6 +13,8 @@ import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Inbox from 'lucide-react/dist/esm/icons/inbox';
 import Activity from 'lucide-react/dist/esm/icons/activity';
+import CircleStop from 'lucide-react/dist/esm/icons/circle-stop';
+import { cancelQueuedCampaign } from '../../../lib/mailApi';
 import { db } from '../../../lib/firebase';
 import { cn } from '../../../lib/utils';
 import { accent } from '../theme';
@@ -129,6 +131,11 @@ const CampaignReport = ({ campaign, onClose, onReuse, onRetry, onDelete }) => {
     }, { preview: true }) : '');
     const retryable = canRetryCampaign(campaign);
     const pendingCount = (campaign.failedEmails || []).length + (campaign.unsentEmails || []).length;
+    const inQueue = campaign.queue && ['scheduled', 'queued', 'sending', 'paused'].includes(state);
+    const stopQueued = async () => {
+        if (!window.confirm(state === 'scheduled' ? 'Cancel this scheduled email? Nobody will get it.' : 'Stop sending? People who haven\'t got it yet won\'t get it.')) return;
+        try { await cancelQueuedCampaign(campaign.id); } catch (err) { window.alert(err.message || "Couldn't stop it."); }
+    };
 
     return (
         <Sheet
@@ -148,6 +155,7 @@ const CampaignReport = ({ campaign, onClose, onReuse, onRetry, onDelete }) => {
             bodyClassName="space-y-5"
             footer={(
                 <div className="flex flex-wrap gap-2">
+                    {inQueue && <Button variant="secondary" className="h-12 flex-1" onClick={stopQueued}><CircleStop size={15} /> {state === 'scheduled' ? 'Cancel send' : 'Stop sending'}</Button>}
                     {retryable && <Button variant="primary" className="h-12 flex-1" onClick={() => onRetry(campaign)}><RotateCcw size={15} /> Retry {fmt(pendingCount)}</Button>}
                     {(campaign.messageBody || campaign.headerText) && <Button variant="secondary" className="h-12 flex-1" onClick={() => onReuse(campaign)}><Copy size={15} /> Reuse</Button>}
                     <Button variant="ghost" className="h-12 text-red-600 dark:text-red-400" onClick={() => onDelete(campaign)}><Trash2 size={15} /> Delete</Button>
@@ -181,13 +189,23 @@ const CampaignReport = ({ campaign, onClose, onReuse, onRetry, onDelete }) => {
                             ['From', `${campaign.senderName || 'Newbi'} <${campaign.senderEmail || 'partnership@newbi.live'}>`],
                             ['Audience', campaign.audience?.label || campaign.recipientType || '—'],
                             ['Started', formatWhen(campaign.sentAt) || '—'],
-                            ['Finished', formatWhen(campaign.completedAt) || (state === 'sending' ? 'Still sending' : '—')],
+                            ['Finished', formatWhen(campaign.completedAt) || (['sending', 'queued', 'paused'].includes(state) ? 'Still sending' : state === 'scheduled' ? 'Not started' : '—')],
                             campaign.lastRetryAt && ['Last retry', formatWhen(campaign.lastRetryAt)],
                             (campaign.invalidCount || campaign.duplicateCount) && ['Skipped', `${fmt(campaign.invalidCount)} invalid, ${fmt(campaign.duplicateCount)} duplicates`],
                         ].filter(Boolean).map(([k, v]) => (
                             <div key={k} className="flex justify-between gap-4 px-4 py-2.5"><dt className="shrink-0 font-bold text-gray-500">{k}</dt><dd className="min-w-0 break-words text-right font-semibold">{v}</dd></div>
                         ))}
                     </dl>
+                    {state === 'scheduled' && (
+                        <p className={cn('rounded-xl p-3 text-[13px] font-semibold', accent('violet').soft, accent('violet').text)}>
+                            Scheduled for {formatWhen(campaign.scheduledAt)}. Our server sends it then; you don't need to keep anything open.
+                        </p>
+                    )}
+                    {state === 'paused' && (
+                        <p className={cn('rounded-xl p-3 text-[13px] font-semibold', accent('amber').soft, accent('amber').text)}>
+                            Today's sending limit is reached. The rest goes out automatically from {formatWhen(campaign.resumesAt) || 'tomorrow'}.
+                        </p>
+                    )}
                     {state === 'interrupted' && (
                         <p className={cn('rounded-xl p-3 text-[13px] font-semibold', accent('orange').soft, accent('orange').text)}>
                             Sending stopped part-way (the tab was probably closed). {fmt(n.sent)} were sent before it stopped. The rest weren't recorded, so check the list before sending again.

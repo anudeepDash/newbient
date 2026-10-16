@@ -1,7 +1,8 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
-import nodemailer from 'nodemailer';
+import { sendTransactional } from './_lib/mail/send.js';
+import { sendCreatorVerification } from './_lib/whatsapp.js';
 import { isTicketAction, handleTicketAction } from './_lib/tickets.js';
 import { safeSiteOrigin } from './_lib/linkSign.js';
 
@@ -352,72 +353,8 @@ const fetchInstagramProfile = async (rawHandle) => {
     };
 };
 
-// WhatsApp Meta Cloud API trigger helper
-const sendWhatsAppVerification = async (phone, creatorName, verificationUrl) => {
-    const token = process.env.WHATSAPP_ACCESS_TOKEN;
-    const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-    if (!token || !phoneId || !phone || !verificationUrl) return;
-
-    let cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length === 10) cleanPhone = `91${cleanPhone}`;
-
-    const metaApiUrl = `https://graph.facebook.com/v19.0/${phoneId}/messages`;
-
-    try {
-        let payload = {
-            messaging_product: 'whatsapp',
-            recipient_type: 'individual',
-            to: cleanPhone,
-            type: 'template',
-            template: {
-                name: 'creator_verification',
-                language: { code: 'en_US' },
-                components: [
-                    {
-                        type: 'body',
-                        parameters: [
-                            { type: 'text', text: creatorName },
-                            { type: 'text', text: verificationUrl }
-                        ]
-                    }
-                ]
-            }
-        };
-
-        let response = await fetch(metaApiUrl, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-
-        let data = await response.json();
-        if (!response.ok && data?.error?.code === 132001) {
-            payload = {
-                messaging_product: 'whatsapp',
-                recipient_type: 'individual',
-                to: cleanPhone,
-                type: 'text',
-                text: {
-                    preview_url: true,
-                    body: `Hi ${creatorName}! 🚀 Tap this link to verify your phone number for Newbi Creator Network and activate priority campaign matching:\n\n${verificationUrl}`
-                }
-            };
-            await fetch(metaApiUrl, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-        }
-    } catch (err) {
-        console.warn('[API/CREATOR-JOIN] WhatsApp notice:', err.message);
-    }
-};
+// WhatsApp sends live in _lib/whatsapp.js (templates only, logged to message_log).
+const sendWhatsAppVerification = (phone, creatorName, verificationUrl, uid = null) => sendCreatorVerification(phone, creatorName, verificationUrl, { uid });
 
 const DEFAULT_CREATOR_GROUPS = [
     {
@@ -544,339 +481,21 @@ const resolveCityWhatsAppGroup = async (city = '', customUrl = '') => {
     return partial || DEFAULT_CREATOR_GROUPS[0];
 };
 
-// Send Welcome Email helper
-const sendWelcomeEmail = async (toEmail, creatorName, verificationUrl, creatorData = {}) => {
-    const user = process.env.SMTP_USER_CREATORS || process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS_CREATORS || process.env.SMTP_PASS;
-    if (!user || !pass || !toEmail) return;
-
-    try {
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST || 'smtp.gmail.com',
-            port: parseInt(process.env.SMTP_PORT || '587', 10),
-            secure: process.env.SMTP_SECURE === 'true',
-            auth: { user, pass }
-        });
-
-        const baseUrl = 'https://newbi.live';
-        const city = creatorData.city || 'Pan-India';
-        const cityGroup = await resolveCityWhatsAppGroup(city, creatorData.customGroupUrl || creatorData.whatsappGroupUrl);
-        const passId = (creatorData.passId || creatorData.creatorId || 'NWB-PASS').toString().toUpperCase().replace(/^NWB-CR-/, '');
-        const fullPassId = `NWB-CR-${passId}`;
-        const handle = (creatorData.handle || creatorData.instagram || creatorName || 'creator').toString().replace(/^@/, '');
-        const niche = creatorData.niche || creatorData.primaryNiche || creatorData.categories || creatorData.category || 'Creator & Influencer';
-        const avatar = creatorData.avatar || creatorData.profilePicture || creatorData.photoURL || '';
-        const initialLetter = (creatorName ? creatorName.charAt(0) : 'C').toUpperCase();
-        const firstName = (creatorName || 'Creator').trim().split(' ')[0];
-        const interactivePassUrl = `${baseUrl}/creator-dashboard`;
-
-        const html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="color-scheme" content="light dark">
-    <meta name="supported-color-schemes" content="light dark">
-    <title>Your Newbi Creator Pass</title>
-    <style>
-        :root {
-            color-scheme: light dark;
-            supported-color-schemes: light dark;
-        }
-        .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
-        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
-        table { border-collapse: separate; }
-        a { text-decoration: none; }
-        @media only screen and (max-width: 600px) {
-            .email-container { width: 100% !important; border-radius: 0 !important; border-left: none !important; border-right: none !important; }
-            .content-padding { padding: 22px 18px !important; }
-            .header-padding { padding: 20px 18px 14px 18px !important; }
-            .pass-card { padding: 14px !important; }
-            .wa-card { padding: 18px 16px !important; }
-            .wa-btn { display: block !important; width: 100% !important; box-sizing: border-box !important; text-align: center !important; }
-        }
-
-        /* Light Mode Rules */
-        @media (prefers-color-scheme: light) {
-            .light-logo { display: block !important; }
-            .dark-logo { display: none !important; }
-            .dark-logo-wrap { display: none !important; }
-            .email-bg { background-color: #F4F6F9 !important; }
-            .email-container { background-color: #FFFFFF !important; border-color: #E2E8F0 !important; box-shadow: 0 10px 30px rgba(0,0,0,0.06) !important; }
-            .header-border { border-bottom-color: #F1F5F9 !important; }
-            .chip-minted { background: #ECFDF5 !important; border-color: #A7F3D0 !important; color: #059669 !important; }
-            .text-title { color: #0F172A !important; }
-            .text-subtitle { color: #475569 !important; }
-            .text-bold { color: #0F172A !important; }
-            .pass-card { background: #F8FAFC !important; border-color: #E2E8F0 !important; }
-            .pass-header-text { color: #0F172A !important; }
-            .pass-id-pill { background: #FFFFFF !important; border-color: #CBD5E1 !important; color: #475569 !important; }
-            .pass-avatar-fallback { background-color: #ECFDF5 !important; border-color: #10B981 !important; color: #059669 !important; }
-            .pass-name { color: #0F172A !important; }
-            .pass-meta { color: #475569 !important; }
-            .pass-meta-sep { color: #94A3B8 !important; }
-            .pass-footer-strip { border-top-color: #E2E8F0 !important; background: #F1F5F9 !important; }
-            .pass-footer-text { color: #64748B !important; }
-            .pass-barcode { color: #94A3B8 !important; }
-            .wa-card { background: linear-gradient(180deg, #F0FDF4 0%, #DCFCE7 100%) !important; border-color: #86EFAC !important; }
-            .wa-chip { background: #DCFCE7 !important; color: #166534 !important; }
-            .wa-title { color: #0F172A !important; }
-            .wa-desc { color: #334155 !important; }
-            .wa-sublink { color: #475569 !important; }
-            .verify-note { color: #64748B !important; }
-            .verify-link { color: #059669 !important; }
-            .footer-bg { background-color: #F8FAFC !important; border-top-color: #E2E8F0 !important; }
-            .social-icon { filter: invert(0) !important; opacity: 0.6 !important; }
-            .footer-copy { color: #64748B !important; }
-            .footer-support { color: #64748B !important; }
-            .footer-support-link { color: #334155 !important; }
-        }
-
-        /* Dark Mode Rules */
-        @media (prefers-color-scheme: dark) {
-            .light-logo { display: none !important; }
-            .dark-logo-wrap { display: block !important; max-height: none !important; max-width: none !important; overflow: visible !important; }
-            .dark-logo { display: block !important; }
-            .email-bg { background-color: #060709 !important; }
-            .email-container { background-color: #0B0D14 !important; border-color: rgba(255, 255, 255, 0.08) !important; box-shadow: 0 20px 50px rgba(0,0,0,0.7) !important; }
-            .header-border { border-bottom-color: rgba(255, 255, 255, 0.06) !important; }
-            .chip-minted { background: rgba(57, 255, 20, 0.08) !important; border-color: rgba(57, 255, 20, 0.25) !important; color: #39FF14 !important; }
-            .text-title { color: #FFFFFF !important; }
-            .text-subtitle { color: #8E96A4 !important; }
-            .text-bold { color: #FFFFFF !important; }
-            .pass-card { background: #111420 !important; border-color: rgba(255, 255, 255, 0.09) !important; }
-            .pass-header-text { color: #E2E8F0 !important; }
-            .pass-id-pill { background: rgba(255, 255, 255, 0.05) !important; border-color: rgba(255, 255, 255, 0.08) !important; color: #94A3B8 !important; }
-            .pass-avatar-fallback { background-color: #171B2A !important; border-color: #39FF14 !important; color: #39FF14 !important; }
-            .pass-name { color: #FFFFFF !important; }
-            .pass-meta { color: #8E96A4 !important; }
-            .pass-meta-sep { color: #475569 !important; }
-            .pass-footer-strip { border-top-color: rgba(255, 255, 255, 0.06) !important; background: rgba(255, 255, 255, 0.015) !important; }
-            .pass-footer-text { color: #64748B !important; }
-            .pass-barcode { color: #475569 !important; }
-            .wa-card { background: linear-gradient(180deg, rgba(37, 211, 102, 0.08) 0%, rgba(37, 211, 102, 0.02) 100%) !important; border-color: rgba(37, 211, 102, 0.22) !important; }
-            .wa-chip { background: rgba(37, 211, 102, 0.12) !important; color: #25D366 !important; }
-            .wa-title { color: #FFFFFF !important; }
-            .wa-desc { color: #94A3B8 !important; }
-            .wa-sublink { color: #64748B !important; }
-            .verify-note { color: #64748B !important; }
-            .verify-link { color: #39FF14 !important; }
-            .footer-bg { background-color: #07090F !important; border-top-color: rgba(255, 255, 255, 0.06) !important; }
-            .social-icon { filter: invert(1) !important; opacity: 0.4 !important; }
-            .footer-copy { color: #475569 !important; }
-            .footer-support { color: #475569 !important; }
-            .footer-support-link { color: #8E96A4 !important; }
-        }
-
-        /* Outlook [data-ogsc] Dark Mode */
-        [data-ogsc] .light-logo { display: none !important; }
-        [data-ogsc] .dark-logo-wrap { display: block !important; max-height: none !important; max-width: none !important; overflow: visible !important; }
-        [data-ogsc] .dark-logo { display: block !important; }
-        [data-ogsc] .email-bg { background-color: #060709 !important; }
-        [data-ogsc] .email-container { background-color: #0B0D14 !important; border-color: rgba(255, 255, 255, 0.08) !important; }
-        [data-ogsc] .text-title { color: #FFFFFF !important; }
-        [data-ogsc] .text-subtitle { color: #8E96A4 !important; }
-        [data-ogsc] .text-bold { color: #FFFFFF !important; }
-        [data-ogsc] .pass-card { background: #111420 !important; border-color: rgba(255, 255, 255, 0.09) !important; }
-        [data-ogsc] .pass-name { color: #FFFFFF !important; }
-        [data-ogsc] .pass-meta { color: #8E96A4 !important; }
-        [data-ogsc] .footer-bg { background-color: #07090F !important; }
-        [data-ogsc] .social-icon { filter: invert(1) !important; }
-    </style>
-</head>
-<body class="email-bg" style="margin: 0; padding: 0; background-color: #F4F6F9; color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-    <span class="preheader">Your Newbi Creator Pass is active. Join the ${cityGroup.city} community to unlock drops.</span>
-
-    <!-- Outer Wrapper -->
-    <table role="presentation" class="email-bg" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #F4F6F9; padding: 24px 8px;">
-        <tr>
-            <td align="center">
-                <!-- Main Container -->
-                <table role="presentation" class="email-container" width="560" border="0" cellspacing="0" cellpadding="0" style="max-width: 560px; width: 100%; background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.06);">
-                    
-                    <!-- Clean Electric Lime Accent Bar -->
-                    <tr>
-                        <td style="height: 2px; background: #39FF14;"></td>
-                    </tr>
-
-                    <!-- Header: Brand Logo & Status Chip -->
-                    <tr>
-                        <td class="header-padding header-border" style="padding: 26px 30px 16px 30px; border-bottom: 1px solid #F1F5F9;">
-                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
-                                <tr>
-                                    <td align="left" valign="middle">
-                                        <a href="${baseUrl}" target="_blank" style="text-decoration: none; display: inline-block;">
-                                            <img src="${baseUrl}/newbi-creators-logo-light.png" alt="Newbi Creators" class="light-logo" height="22" style="display: block; height: 22px; width: auto; max-width: 130px; border: 0;" />
-                                            <!--[if !mso]><!-->
-                                            <div class="dark-logo-wrap" style="display: none; mso-hide: all; overflow: hidden; max-height: 0; max-width: 0; line-height: 0;">
-                                                <img src="${baseUrl}/newbi-creators-logo.png" alt="Newbi Creators" class="dark-logo" height="22" style="display: none; height: 22px; width: auto; max-width: 130px; border: 0;" />
-                                            </div>
-                                            <!--<![endif]-->
-                                        </a>
-                                    </td>
-                                    <td align="right" valign="middle">
-                                        <span class="chip-minted" style="display: inline-block; padding: 3px 9px; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 100px; color: #059669; font-family: monospace, -apple-system, sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">
-                                            ● PASS MINTED
-                                        </span>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-
-                    <!-- Content Body -->
-                    <tr>
-                        <td class="content-padding" style="padding: 26px 30px 24px 30px;">
-                            
-                            <!-- Salutation & Context -->
-                            <div style="margin-bottom: 20px;">
-                                <h1 class="text-title" style="margin: 0 0 6px 0; font-size: 22px; font-weight: 800; color: #0F172A; line-height: 1.25; letter-spacing: -0.4px;">
-                                    You're in, ${firstName}.
-                                </h1>
-                                <p class="text-subtitle" style="margin: 0; font-size: 13px; line-height: 1.55; color: #475569;">
-                                    Your official digital creator pass for <strong class="text-bold" style="color: #0F172A;">${cityGroup.city}</strong> is live. You are now officially enrolled in the Newbi Creator Network.
-                                </p>
-                            </div>
-
-                            <!-- ─── THE CREATOR PASS CARD ─── -->
-                            <table role="presentation" class="pass-card" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px; overflow: hidden; margin: 0 0 22px 0;">
-                                
-                                <!-- Pass Header: Brand & Pass ID -->
-                                <tr>
-                                    <td style="padding: 14px 18px 10px 18px;" align="left" valign="middle">
-                                        <span class="pass-header-text" style="font-size: 10px; font-weight: 800; letter-spacing: 1.2px; color: #0F172A; text-transform: uppercase;">NEWBI CREATORS</span>
-                                        <span style="display: inline-block; width: 5px; height: 5px; background-color: #10B981; border-radius: 50%; margin-left: 5px; vertical-align: middle;"></span>
-                                    </td>
-                                    <td style="padding: 14px 18px 10px 18px;" align="right" valign="middle">
-                                        <span class="pass-id-pill" style="font-family: monospace, -apple-system, sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.8px; color: #475569; background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 6px; padding: 3px 7px;">
-                                            ${fullPassId}
-                                        </span>
-                                    </td>
-                                </tr>
-
-                                <!-- Pass Identity: Avatar, Name & Meta -->
-                                <tr>
-                                    <td colspan="2" style="padding: 8px 18px 16px 18px;">
-                                        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
-                                            <tr>
-                                                <td width="54" valign="middle" style="width: 54px; padding-right: 14px;">
-                                                    ${avatar ? `
-                                                        <img src="${avatar}" alt="${creatorName}" width="48" height="48" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover; border: 1.5px solid #10B981; display: block;" />
-                                                    ` : `
-                                                        <table role="presentation" class="pass-avatar-fallback" width="48" height="48" border="0" cellspacing="0" cellpadding="0" style="width: 48px; height: 48px; background-color: #ECFDF5; border: 1.5px solid #10B981; border-radius: 12px; text-align: center;">
-                                                            <tr>
-                                                                <td align="center" valign="middle" style="font-size: 18px; font-weight: 800; color: #059669;">${initialLetter}</td>
-                                                            </tr>
-                                                        </table>
-                                                    `}
-                                                </td>
-                                                <td valign="middle">
-                                                    <div class="pass-name" style="font-size: 16px; font-weight: 800; color: #0F172A; line-height: 1.2; letter-spacing: -0.2px;">
-                                                        ${creatorName}
-                                                    </div>
-                                                    <div class="pass-meta" style="font-size: 12px; font-weight: 500; color: #475569; margin-top: 3px;">
-                                                        @${handle} <span class="pass-meta-sep" style="color: #94A3B8;">·</span> ${cityGroup.city} <span class="pass-meta-sep" style="color: #94A3B8;">·</span> ${niche}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-
-                                <!-- Pass Authentication & Barcode Strip -->
-                                <tr>
-                                    <td colspan="2" class="pass-footer-strip" style="border-top: 1px solid #E2E8F0; background: #F1F5F9; padding: 9px 18px;">
-                                        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
-                                            <tr>
-                                                <td align="left" valign="middle">
-                                                    <span class="pass-footer-text" style="font-family: monospace, -apple-system, sans-serif; font-size: 8px; font-weight: 700; letter-spacing: 1.2px; color: #64748B; text-transform: uppercase;">
-                                                        ALL-ACCESS CREATOR ROSTER
-                                                    </span>
-                                                </td>
-                                                <td align="right" valign="middle">
-                                                    <span class="pass-barcode" style="font-family: monospace, -apple-system, sans-serif; font-size: 9px; letter-spacing: 2px; color: #94A3B8;">
-                                                        ||| || | |||| || |
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <!-- ─── ACTION: City WhatsApp Community ─── -->
-                            <table role="presentation" class="wa-card" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #F0FDF4 0%, #DCFCE7 100%); border: 1px solid #86EFAC; border-radius: 16px; overflow: hidden; margin-bottom: 12px;">
-                                <tr>
-                                    <td style="padding: 22px 20px; text-align: center;">
-                                        <div style="margin-bottom: 8px;">
-                                            <span class="wa-chip" style="display: inline-block; background: #DCFCE7; color: #166534; font-size: 9px; font-weight: 800; letter-spacing: 1.2px; border-radius: 100px; padding: 3px 10px; text-transform: uppercase;">
-                                                ⚡ PRIORITY DROPS · ${cityGroup.city.toUpperCase()}
-                                            </span>
-                                        </div>
-                                        <h2 class="wa-title" style="margin: 0 0 6px 0; font-size: 17px; font-weight: 800; color: #0F172A; letter-spacing: -0.2px;">
-                                            Join the ${cityGroup.city} Creator Circle
-                                        </h2>
-                                        <p class="wa-desc" style="margin: 0 0 16px 0; font-size: 12px; line-height: 1.5; color: #334155; max-width: 420px; margin-left: auto; margin-right: auto;">
-                                            Commercial brand briefs, festival VIP guestlists, and backstage invites are posted here first before going public.
-                                        </p>
-                                        <div>
-                                            <a href="${cityGroup.groupUrl}" target="_blank" class="wa-btn" style="display: inline-block; padding: 12px 28px; background-color: #25D366; color: #000000 !important; font-weight: 800; font-size: 12px; text-decoration: none; border-radius: 10px; letter-spacing: 0.4px; text-transform: uppercase;">
-                                                Join ${cityGroup.city} WhatsApp Group &rarr;
-                                            </a>
-                                        </div>
-                                        <div style="margin-top: 14px;">
-                                            <a href="${interactivePassUrl}" class="wa-sublink" style="color: #475569; font-size: 11px; font-weight: 600; text-decoration: none;">
-                                                or Open 3D Pass in Creator Studio &rarr;
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </table>
-
-
-
-                        </td>
-                    </tr>
-
-                    <!-- Footer -->
-                    <tr>
-                        <td class="footer-bg" style="padding: 22px 30px; background-color: #F8FAFC; border-top: 1px solid #E2E8F0; text-align: center;">
-                            <div style="margin-bottom: 12px;">
-                                <a href="https://www.instagram.com/newbi.live" style="display: inline-block; margin: 0 8px;"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-icon" width="16" height="16" style="opacity: 0.6; filter: invert(0); display: block;" alt="Instagram"></a>
-                                <a href="https://linkedin.com/company/newbi-ent" style="display: inline-block; margin: 0 8px;"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-icon" width="16" height="16" style="opacity: 0.6; filter: invert(0); display: block;" alt="LinkedIn"></a>
-                                <a href="https://newbi.live" style="display: inline-block; margin: 0 8px;"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-icon" width="16" height="16" style="opacity: 0.6; filter: invert(0); display: block;" alt="Website"></a>
-                            </div>
-                            <p class="footer-copy" style="margin: 0 0 4px 0; font-size: 9px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 1px;">
-                                &copy; ${new Date().getFullYear()} NEWBI ENTERTAINMENT &amp; MARKETING LLP
-                            </p>
-                            <p class="footer-support" style="margin: 0; font-size: 10px; font-weight: 500; color: #64748B;">
-                                Support &amp; briefs: <a href="mailto:creators@newbi.live" class="footer-support-link" style="color: #334155; text-decoration: none;">creators@newbi.live</a>
-                            </p>
-                        </td>
-                    </tr>
-
-                </table>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>
-        `.trim();
-
-        const creatorFromName = process.env.SMTP_FROM_NAME_CREATORS || 'Newbi Creators';
-        const creatorFromEmail = process.env.SMTP_FROM_EMAIL_CREATORS || 'creators@newbi.live';
-        const fromAddress = process.env.SMTP_FROM_CREATORS || `"${creatorFromName}" <${creatorFromEmail}>`;
-
-        await transporter.sendMail({
-            from: fromAddress,
-            to: toEmail,
-            subject: `🎟️ Your Newbi Creator Pass & ${cityGroup.city} Community Access!`,
-            html
-        });
-    } catch (err) {
-        console.warn('[API/CREATOR-JOIN] Email notice:', err.message);
-    }
+// The one welcome email for new creators (server template, logged, awaited).
+const sendWelcomeEmail = async (toEmail, creatorName, verificationUrl, creatorData = {}, uid = null) => {
+    const city = creatorData.city || '';
+    const cityGroup = city ? await resolveCityWhatsAppGroup(city, creatorData.customGroupUrl || creatorData.whatsappGroupUrl).catch(() => null) : null;
+    return sendTransactional('creator-application-received', toEmail, {
+        name: creatorName,
+        status: creatorData.profileStatus === 'approved' ? 'approved' : 'pending',
+        passId: creatorData.creatorId || creatorData.passId,
+        handle: creatorData.instagram || creatorData.handle,
+        city,
+        cityGroupName: cityGroup?.city || '',
+        cityGroupUrl: cityGroup?.groupUrl || '',
+        verifyUrl: creatorData.isEmailVerified ? '' : verificationUrl,
+        dashboardUrl: `${new URL(verificationUrl).origin}/creator-dashboard`,
+    }, { uid, idempotencyKey: uid ? `creator-welcome_${uid}` : undefined });
 };
 
 
@@ -1300,8 +919,9 @@ export default async function handler(req, res) {
             return res.status(400).json({ success: false, error: 'verificationUrl must point to newbi.live.' });
         }
         try {
-            await sendWhatsAppVerification(phone, creatorName, verificationUrl);
-            return res.status(200).json({ success: true });
+            const sent = await sendWhatsAppVerification(phone, creatorName, verificationUrl);
+            if (!sent.ok) return res.status(sent.status === 'skipped' ? 400 : 502).json({ success: false, error: sent.error || 'WhatsApp message not sent' });
+            return res.status(200).json({ success: true, messageId: sent.messageId });
         } catch (err) {
             console.error('[API/CREATOR-JOIN] WhatsApp verify dispatch error:', err);
             return res.status(500).json({ success: false, error: err.message });
@@ -2171,16 +1791,17 @@ export default async function handler(req, res) {
         const siteOrigin = safeSiteOrigin(host.includes('localhost') ? `http://${host}` : `https://${host}`);
         const verificationUrl = `${siteOrigin}/verify-creator?id=${targetUid}&token=${verificationToken}`;
 
-        // Trigger WhatsApp and Email async in background
-        if (finalCreator.phone) {
-            sendWhatsAppVerification(finalCreator.phone, finalCreator.displayName || finalCreator.name || 'Creator', verificationUrl)
-                .catch(err => console.warn('WhatsApp background notice:', err));
-        }
-
-        if (sendWelcome && finalCreator.email) {
-            sendWelcomeEmail(finalCreator.email, finalCreator.displayName || finalCreator.name || 'Creator', verificationUrl, finalCreator)
-                .catch(err => console.warn('Email background notice:', err));
-        }
+        // Awaited: a serverless function can freeze as soon as it responds, which
+        // used to drop these. Neither failing stops the application.
+        const displayName = finalCreator.displayName || finalCreator.name || 'Creator';
+        await Promise.allSettled([
+            finalCreator.phone && !finalCreator.isPhoneVerified
+                ? sendWhatsAppVerification(finalCreator.phone, displayName, verificationUrl, targetUid)
+                : null,
+            sendWelcome && finalCreator.email
+                ? sendWelcomeEmail(finalCreator.email, displayName, verificationUrl, finalCreator, targetUid)
+                : null,
+        ]);
 
         // The token only travels by WhatsApp/email; returning it would let anyone verify without the message.
         const { verificationToken: _omitToken, ...creatorResponse } = finalCreator;

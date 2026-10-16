@@ -1,4 +1,5 @@
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
+import { getDb } from './db.js';
 
 /*
  * Mailing helpers shared by api/mail.js (bulk sends, suppression list) and
@@ -19,17 +20,14 @@ export const isValidEmail = (value) => EMAIL_RE.test(normalizeEmail(value));
 // Firestore doc ids can't contain "/".
 export const unsubscribeDocId = (email) => normalizeEmail(email).replace(/\//g, '_');
 
-let cachedDb = null;
 export const getAdminDb = (db) => {
     if (db) return db;
-    if (cachedDb) return cachedDb;
     try {
-        cachedDb = getFirestore();
+        return getDb();
     } catch (e) {
         console.warn('[MAILING] Firestore unavailable:', e.message);
-        cachedDb = null;
+        return null;
     }
-    return cachedDb;
 };
 
 const toMillis = (value) => {
@@ -101,7 +99,12 @@ export const listSuppressed = async (db) => {
         .map(d => ({ email: normalizeEmail(d.email || d.id), unsubscribedAt: d.unsubscribedAt || null, campaignId: d.campaignId || null, source: d.source || null }));
 };
 
-export const recordUnsubscribe = async ({ email, campaignId = '', source = 'email_link', userAgent = '' }, db) => {
+/**
+ * `signed` says whether the request carried a valid HMAC for this address.
+ * Unsigned requests (old links, the type-your-email form) still work but are
+ * recorded as unsigned so abuse is visible.
+ */
+export const recordUnsubscribe = async ({ email, campaignId = '', source = 'email_link', userAgent = '', signed = false }, db) => {
     const database = getAdminDb(db);
     if (!database) throw new Error('Database unavailable');
     const clean = normalizeEmail(email);
@@ -112,8 +115,10 @@ export const recordUnsubscribe = async ({ email, campaignId = '', source = 'emai
         unsubscribedAt: now,
         campaignId: campaignId || null,
         source,
+        signed: Boolean(signed),
         userAgent: String(userAgent || '').slice(0, 300),
     }, { merge: true });
+    if (!signed) console.warn(`[MAILING] Unsigned unsubscribe for ${clean} (${source})`);
 
     // Best effort: flag matching newsletter subscribers and count it on the campaign.
     const extras = [];
@@ -130,6 +135,8 @@ export const recordUnsubscribe = async ({ email, campaignId = '', source = 'emai
     extras.push(database.collection('email_events').add({
         eventType: 'unsubscribe',
         email: clean,
+        signed: Boolean(signed),
+        source,
         campaignId: campaignId || null,
         trackingId: campaignId || null,
         timestamp: now,
@@ -139,12 +146,12 @@ export const recordUnsubscribe = async ({ email, campaignId = '', source = 'emai
     return clean;
 };
 
-export const recordResubscribe = async (email, db) => {
+export const recordResubscribe = async (email, db, { source = 'admin' } = {}) => {
     const database = getAdminDb(db);
     if (!database) throw new Error('Database unavailable');
     const clean = normalizeEmail(email);
     const now = new Date().toISOString();
-    await database.collection('email_unsubscribes').doc(unsubscribeDocId(clean)).set({ email: clean, resubscribedAt: now }, { merge: true });
+    await database.collection('email_unsubscribes').doc(unsubscribeDocId(clean)).set({ email: clean, resubscribedAt: now, resubscribeSource: source }, { merge: true });
     const snap = await database.collection('subscribers').where('email', '==', clean).get();
     await Promise.allSettled(snap.docs.map(d => d.ref.update({ unsubscribed: false, resubscribedAt: now })));
     return clean;
@@ -152,11 +159,28 @@ export const recordResubscribe = async (email, db) => {
 
 const escapeHtml = (s) => String(s || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
-/** The small public page behind every unsubscribe link. */
-export const unsubscribePage = ({ state, email = '', campaignId = '', message = '' }) => {
+/**
+ * The small public page behind every unsubscribe link. With a valid `sig`
+ * (links we email) it's a one-tap confirm for that address; without one
+ * (old links) the person types their address.
+ */
+export const unsubscribePage = ({ state, email = '', campaignId = '', message = '', sig = '' }) => {
     const action = `/api/track?type=unsubscribe${campaignId ? `&cid=${encodeURIComponent(campaignId)}` : ''}`;
     const body = state === 'done'
         ? `<h1>You're unsubscribed</h1><p>${escapeHtml(email)} won't get Newbi campaign emails any more. You'll still get receipts and messages about things you booked.</p><p><a href="https://newbi.live">Back to newbi.live</a></p>`
+        : state === 'resubscribed'
+        ? `<h1>You're subscribed</h1><p>${escapeHtml(email)} will get Newbi emails again. You can unsubscribe from any email.</p><p><a href="https://newbi.live">Back to newbi.live</a></p>`
+        : state === 'invalid'
+        ? `<h1>This link has expired</h1><p>${escapeHtml(message || 'Please sign up again to get a new link.')}</p><p><a href="https://newbi.live">Back to newbi.live</a></p>`
+        : sig && email
+        ? `<h1>Unsubscribe from Newbi emails</h1>
+           <p>Stop campaign emails to <strong>${escapeHtml(email)}</strong>? You'll still get receipts and messages about things you booked.</p>
+           ${message ? `<p class="err">${escapeHtml(message)}</p>` : ''}
+           <form method="POST" action="${action}">
+             <input type="hidden" name="email" value="${escapeHtml(email)}" />
+             <input type="hidden" name="sig" value="${escapeHtml(sig)}" />
+             <button type="submit">Unsubscribe</button>
+           </form>`
         : `<h1>Unsubscribe from Newbi emails</h1>
            <p>Confirm the address you'd like to remove from our campaign emails.</p>
            ${message ? `<p class="err">${escapeHtml(message)}</p>` : ''}

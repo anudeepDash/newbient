@@ -1853,7 +1853,7 @@ const Proposal = () => {
                                                     const isSpreadsheet = attachment.fileType === 'spreadsheet';
                                                     const isPdf = attachment.fileType === 'pdf';
                                                     const isImage = attachment.fileType === 'image';
-                                                    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(attachment.url)}`;
+                                                    const qrCodeUrl = `/api/qr?size=300&margin=1&text=${encodeURIComponent(attachment.url)}`;
                                                     
                                                     if (isImage) {
                                                         return (
@@ -2349,7 +2349,7 @@ const Proposal = () => {
                                                 const isSpreadsheet = attachment.fileType === 'spreadsheet';
                                                 const isPdf = attachment.fileType === 'pdf';
                                                 const isImage = attachment.fileType === 'image';
-                                                const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(attachment.url)}`;
+                                                const qrCodeUrl = `/api/qr?size=300&margin=1&text=${encodeURIComponent(attachment.url)}`;
                                                 
                                                 if (isImage) {
                                                     return (

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { sendComposedEmail } from '../../../../lib/mailApi';
 import { useNavigate } from 'react-router-dom';
 import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import Mail from 'lucide-react/dist/esm/icons/mail';
@@ -88,16 +89,8 @@ const ReviewSection = ({ id, formData, live, totals, checks, onGoto, ensureSaved
         }
     });
     const email = () => withSaved('email', async (pid) => setEmailFor({ ...formData, id: pid }));
-    const sendEmail = async ({ to, cc, bcc, subject, html }) => {
-        const { auth } = await import('../../../../lib/firebase');
-        const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
-        const res = await fetch('/api/mail', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
-            body: JSON.stringify({ to, cc, bcc, subject, html, fromName: 'Newbi Partnerships', fromEmail: 'partnership@newbi.live' }),
-        });
-        const result = await res.json().catch(() => ({}));
-        if (!result.success) throw new Error(result.error || 'Send failed');
+    const sendEmail = async (payload) => {
+        await sendComposedEmail({ ...payload, fromName: 'Newbi Partnerships', fromEmail: 'partnership@newbi.live' });
         if (emailFor?.id) markShared(emailFor.id, 'email');
     };
     const openClient = () => withSaved('open', async (pid) => { window.open(`/proposal/${pid}`, '_blank', 'noopener'); });

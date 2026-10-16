@@ -5,6 +5,7 @@
  * event — which buyers' browsers cannot — and enforce capacity and coupons.
  */
 import { FieldValue } from 'firebase-admin/firestore';
+import { sendOrderEmail } from './mail/events.js';
 import {
     computeAvailability, priceCart, applyCoupon, couponProblem, normalizeCouponCode, makeBookingRef,
 } from '../../src/lib/ticketing.js';
@@ -141,7 +142,7 @@ const orderAction = async (db, body, decodedToken) => {
     const lockRef = db.collection('ticket_locks').doc(event.id);
     const orderRef = db.collection('ticket_orders').doc();
 
-    return db.runTransaction(async (tx) => {
+    const result = await db.runTransaction(async (tx) => {
         const [eventSnap, lockSnap, orders, couponSnap, duplicateSnap] = await Promise.all([
             tx.get(eventRef),
             tx.get(lockRef),
@@ -211,6 +212,17 @@ const orderAction = async (db, body, decodedToken) => {
             couponRejected: Boolean(couponIssue && couponCandidate),
         };
     });
+
+    // Free tickets get their pass straight away; paid orders get "order received"
+    // until the team verifies the payment. Awaited, but never fails the order.
+    try {
+        const sent = await sendOrderEmail(result.orderId, { event });
+        result.emailed = Boolean(sent?.delivery?.email?.status === 'sent' || sent?.duplicate);
+    } catch (err) {
+        console.warn('[API/TICKETS] Order email not sent:', err.message);
+        result.emailed = false;
+    }
+    return result;
 };
 
 const ACTIONS = {

@@ -296,7 +296,7 @@ const DigitalTicket = () => {
                             </div>
                         ) : isVerified ? (
                             <img 
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrData}`} 
+                                src={`/api/qr?size=600&margin=1&text=${qrData}`} 
                                 alt="Ticket QR" 
                                 className="w-48 h-48 object-contain mix-blend-multiply transition-transform group-hover:scale-105"
                             />

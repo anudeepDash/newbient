@@ -14,7 +14,7 @@ import Users from 'lucide-react/dist/esm/icons/users';
 import Repeat from 'lucide-react/dist/esm/icons/repeat';
 import { useStore } from '../../lib/store';
 import { PREDEFINED_CITIES, DEFAULT_CREATOR_GROUPS } from '../../lib/constants';
-import { sendCreatorGroupsBroadcastEmail } from '../../lib/email';
+import { queueCreatorGroupsBroadcast } from '../../lib/creatorGroupsMail';
 import { cn } from '../../lib/utils';
 import Sheet from './Sheet';
 import { Button, Badge, SearchInput, Select, SegmentedTabs, Avatar, Menu, MenuItem, EmptyState } from './ui';
@@ -286,7 +286,7 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
         let failed = 0;
         for (const { group, people: batch } of byGroup.values()) {
             try {
-                const result = await sendCreatorGroupsBroadcastEmail(
+                const result = await queueCreatorGroupsBroadcast(
                     batch.map(p => ({ email: p.email, name: p.c.name || 'Creator', city: group.city })),
                     {
                         city: group.city,

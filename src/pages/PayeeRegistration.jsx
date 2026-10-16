@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { notifyEvent } from '../lib/mailApi';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
@@ -107,10 +108,11 @@ const PayeeRegistration = () => {
                 submittedByEmail: user.email || '',
             };
 
-            await addFinancePayee({
+            const saved = await addFinancePayee({
                 ...payeeData,
                 createdAt: new Date().toISOString()
             });
+            await notifyEvent('payee-registered', { payeeId: saved?.id || undefined });
             useStore.getState().addToast("Your payment details were sent. Our team will review them.", 'success');
             setIsSubmitted(true);
         } catch (err) {
