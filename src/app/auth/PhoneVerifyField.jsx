@@ -7,10 +7,10 @@ import { usePhoneVerification } from './usePhoneVerification';
  * Phone number + OTP in one block, on top of usePhoneVerification.
  * The code field uses one-time-code autofill, so iOS offers the SMS code.
  */
-const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile number' }) => {
+const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile number', mode, sendLabel = 'Send code' }) => {
     const [number, setNumber] = useState(initialPhone || '');
     const [code, setCode] = useState('');
-    const phone = usePhoneVerification({ onVerified });
+    const phone = usePhoneVerification({ mode, onVerified });
 
     if (phone.verified) {
         return (
@@ -37,7 +37,7 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
                 />
                 {!phone.codeSent && (
                     <Button variant="secondary" onClick={() => phone.send(number)} loading={phone.isSending} disabled={!number.trim()}>
-                        Send code
+                        {sendLabel}
                     </Button>
                 )}
             </div>

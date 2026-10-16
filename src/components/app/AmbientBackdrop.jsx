@@ -24,8 +24,11 @@ const CLOUDINARY_UPLOAD = /(res\.cloudinary\.com\/[^/]+\/image\/upload\/)/;
 /* A pre-blurred, tiny Cloudinary rendition, or null for other hosts. */
 export const tinyBlurredUrl = (url) => {
     if (!url || !CLOUDINARY_UPLOAD.test(url)) return null;
-    return url.replace(CLOUDINARY_UPLOAD, '$1w_64,e_blur:800,q_40,f_auto/');
+    return url.replace(CLOUDINARY_UPLOAD, '$1w_64,e_blur:800,e_saturation:60,q_50,f_auto/');
 };
+
+/* A small (not blurred) Cloudinary rendition for the live-blur layer, or the original. */
+const smallUrl = (url) => (url && CLOUDINARY_UPLOAD.test(url) ? url.replace(CLOUDINARY_UPLOAD, '$1w_480,q_60,f_auto/') : url);
 
 const FADE = 'linear-gradient(to bottom, rgba(0,0,0,1) 30%, rgba(0,0,0,0.55) 70%, rgba(0,0,0,0) 100%)';
 
@@ -81,7 +84,7 @@ const AmbientBackdrop = ({
             ) : (
                 <div
                     className={cn(layer, 'bg-cover bg-center')}
-                    style={{ backgroundImage: `url("${tiny || image}")`, filter: `blur(${blur}px) saturate(1.2)`, opacity: intensity }}
+                    style={{ backgroundImage: `url("${smallUrl(image)}")`, filter: `blur(${blur}px) saturate(1.6)`, opacity: intensity }}
                 />
             )}
         </div>

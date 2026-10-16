@@ -9,6 +9,7 @@
 const PLACEHOLDERS = new Set([
     '—', '–', '-', '--', '...', '…', '@', '#', '0+',
     'tbd', 'tba', 'n/a', 'na', 'none', 'null', 'undefined', 'nan', 'universal', 'unknown',
+    'any', 'all', 'all cities', 'anywhere',
 ]);
 
 const isPlainObject = (v) => Object.prototype.toString.call(v) === '[object Object]';
