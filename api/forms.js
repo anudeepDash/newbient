@@ -1,6 +1,8 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { verifyToken } from './_lib/auth.js';
+import { handlePublicFeed } from './_lib/publicFeed.js';
+import { handleEnquiry } from './_lib/enquiry.js';
 
 let adminDb = null;
 
@@ -78,6 +80,10 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
+
+    // Landing site (newbi.live): the cached public feed and the enquiry form.
+    if (req.query?.type === 'public-feed') return handlePublicFeed(adminDb, req, res);
+    if (req.query?.type === 'enquiry') return handleEnquiry(adminDb, req, res);
 
     // Native (built-in) form responses: submit, and the admin's read/update/delete.
     const action = String(req.query?.action || '');

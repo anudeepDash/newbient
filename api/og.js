@@ -111,7 +111,10 @@ async function getBaseHtml(req) {
         return { html: cachedBaseHtml, path: 'memory' };
     }
 
+    // The app shell is dist/app-shell.html since the landing pages took over "/" (scripts/prerender.mjs).
     const candidatePaths = [
+        path.join(process.cwd(), 'dist', 'app-shell.html'),
+        path.join(__dirname, '..', 'dist', 'app-shell.html'),
         path.join(process.cwd(), 'dist', 'index.html'),
         path.join(__dirname, '..', 'dist', 'index.html'),
         path.join(__dirname, 'dist', 'index.html'),
@@ -131,7 +134,7 @@ async function getBaseHtml(req) {
     }
 
     try {
-        const res = await fetch('https://www.newbi.live/index.html');
+        const res = await fetch('https://www.newbi.live/app-shell.html');
         if (res.ok) {
             const fetched = await res.text();
             if (fetched && fetched.length > 50 && fetched.includes('<div id="root">') && !fetched.includes('/src/main.jsx')) {

@@ -31,6 +31,7 @@ export function HorizontalCarousel({ children, className, autoScroll = false, au
         const isTouch = typeof window !== 'undefined' && 
             (window.matchMedia?.('(pointer: coarse)').matches || 'ontouchstart' in window);
         if (isTouch) return;
+        if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
         
         const interval = setInterval(() => {
             if (isHovered || isTouchingRef.current) return;

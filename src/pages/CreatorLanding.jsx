@@ -1,164 +1,63 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
-import { useStore } from '../lib/store';
-import { useStoreSubscription } from '../hooks/useStoreSubscription';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
-import { cn, normalizePhoneNumber } from '../lib/utils';
-import { 
-    ArrowRight, ArrowLeft, Users, ShieldCheck, ChevronDown, 
+import { cn } from '../lib/utils';
+import {
+    ArrowRight, ArrowLeft, Users, ShieldCheck, ChevronDown,
     Briefcase, LayoutDashboard, Menu, X, Ticket, Coins, Sun, Moon,
-    Star, Quote, MapPin, TrendingUp, Zap, Globe, Sparkles, Target, Instagram, Youtube
+    Star, Quote, MapPin, Target, ArrowUpRight
 } from 'lucide-react';
-import { Button } from '../components/ui/Button';
-import useDynamicMeta from '../hooks/useDynamicMeta';
 import useBodyScrollLock from '../hooks/useBodyScrollLock';
-import ProfilePanel from '../components/ProfilePanel';
-import NotificationBell from '../components/NotificationBell';
-import PastClients from '../components/home/PastClients';
-import CreatorPassCard from '../components/creator/CreatorPassCard';
-import CampaignDetailModal from '../components/creator/CampaignDetailModal';
-import CampaignCard from '../components/ui/CampaignCard';
 import { HorizontalCarousel } from '../components/ui/HorizontalCarousel';
-import newbiCreatorsLogoDark from '../assets/newbi-creators-logo.png';
-import newbiCreatorsLogoLight from '../assets/newbi-creators-logo-light.png';
+import { LogoImage } from '../landing/components/Logo';
+import CampaignTeaser from '../landing/components/CampaignTeaser';
+import Proof from '../landing/home/Proof';
+import { usePublicFeed, isOff } from '../landing/feed';
+import { APP_LINKS, appUrl } from '../landing/links';
 
-/**
- * Intelligent, warm, time-aware greetings in Claude's signature conversational style.
+/*
+ * The creator program pitch at newbi.live/creator. Part of the landing site:
+ * prerendered, no sign-in and no Firestore. Live data (open campaigns, past
+ * clients, testimonials, welcome points) comes from the cached public feed;
+ * applying and the creator dashboard live in the app.
  */
-const getClaudeGreeting = (name) => {
-    if (!name) return "India's Elite Creator Collective";
-    const firstName = name.trim().split(' ')[0] || name;
-    const hour = new Date().getHours();
-
-    const morningGreetings = [
-        `Good morning, ${firstName}`,
-        `Rise and shine, ${firstName}`,
-        `Ready to create today, ${firstName}?`,
-        `Great to see you this morning, ${firstName}`,
-        `Let's make something iconic today, ${firstName}`,
-        `Hope your morning is off to a great start, ${firstName}`,
-    ];
-    const afternoonGreetings = [
-        `Good afternoon, ${firstName}`,
-        `Hope your day is going great, ${firstName}`,
-        `Ready to make magic, ${firstName}?`,
-        `Back in the creative flow, ${firstName}`,
-        `Great to see you this afternoon, ${firstName}`,
-        `Hope you're having an inspired day, ${firstName}`,
-    ];
-    const eveningGreetings = [
-        `Good evening, ${firstName}`,
-        `Hope you had a productive day, ${firstName}`,
-        `Back in the creative zone, ${firstName}`,
-        `Great to see you tonight, ${firstName}`,
-        `Ready for your next big drop, ${firstName}?`,
-        `Evening, ${firstName} • Ready to make something iconic?`,
-    ];
-    const lateNightGreetings = [
-        `Late-night creativity hits different, ${firstName}`,
-        `Burning the midnight oil, ${firstName}?`,
-        `In the flow state, ${firstName}`,
-        `Quiet hours, big ideas, ${firstName}`,
-        `Great ideas happen after midnight, ${firstName}`,
-    ];
-
-    let pool = afternoonGreetings;
-    if (hour >= 5 && hour < 12) pool = morningGreetings;
-    else if (hour >= 12 && hour < 17) pool = afternoonGreetings;
-    else if (hour >= 17 && hour < 22) pool = eveningGreetings;
-    else pool = lateNightGreetings;
-
-    return pool[Math.floor(Math.random() * pool.length)];
-};
-
 const CreatorLanding = () => {
-    useStoreSubscription(['campaigns', 'pastClients', 'creatorTestimonials']);
-    useDynamicMeta({
-        title: "Newbi Creator Network • Brand Campaigns & Concert Experiences",
-        description: "Join India's premier creator collective. Collaborate with iconic brands, access front-row concerts, and unlock real-world perks. 100% free to join.",
-        url: window.location.href
-    });
+    const feed = usePublicFeed();
+    const { toggleTheme } = useTheme();
 
-    const navigate = useNavigate();
-    const { user, campaigns, siteSettings, creatorTestimonials, resolveCreatorProfile } = useStore();
-    const { theme, toggleTheme } = useTheme();
-    const isDark = theme === 'dark';
+    const activeCampaigns = feed?.campaigns || [];
+    const activeTestimonials = feed?.testimonials || [];
+    const clients = isOff(feed, { section: 'home_clients' }) ? [] : (feed?.clients || []);
+    const welcomePoints = feed?.settings?.creatorWelcomePoints || null;
+    const pointsText = welcomePoints ? welcomePoints.toLocaleString('en-IN') : '';
 
-    const activeCampaigns = useMemo(() => {
-        return (campaigns || []).filter(c => !c.status || c.status.toLowerCase() === 'open');
-    }, [campaigns]);
-
-    const activeTestimonials = useMemo(() => (creatorTestimonials || []).filter(t => t.isActive !== false), [creatorTestimonials]);
-
-    const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [openFaq, setOpenFaq] = useState(null);
-    const [selectedCampaignForModal, setSelectedCampaignForModal] = useState(null);
-    const [isScrolled, setIsScrolled] = useState(false);
-
-    const [resolvedCreator, setResolvedCreator] = useState(null);
     useBodyScrollLock(isMenuOpen);
 
     useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 50);
-        };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+        if (!isMenuOpen) return undefined;
+        const onKey = (e) => { if (e.key === 'Escape') setIsMenuOpen(false); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isMenuOpen]);
 
-    useEffect(() => {
-        if (user) {
-            resolveCreatorProfile(user).then(found => {
-                setResolvedCreator(found || null);
-            }).catch(err => console.error("Error resolving creator for landing page:", err));
-        } else {
-            setResolvedCreator(null);
-        }
-    }, [user, resolveCreatorProfile]);
-
-    const activeCreator = useMemo(() => {
-        if (!user) return null;
-        if (resolvedCreator) {
-            return {
-                ...resolvedCreator,
-                displayName: resolvedCreator.name || resolvedCreator.displayName || user.displayName || 'Creator',
-                profilePicture: resolvedCreator.profilePicture || resolvedCreator.profileImage || user.photoURL || null
-            };
-        }
-        // If user is signed in but hasn't finalized creator record yet, personalize card with their authenticated profile
-        return {
-            uid: user.uid,
-            name: user.displayName || 'Member',
-            displayName: user.displayName || 'Member',
-            email: user.email,
-            profilePicture: user.photoURL || null,
-            city: 'Pan-India',
-            instagram: user.displayName ? user.displayName.toLowerCase().replace(/\s+/g, '') : 'creator',
-            profileStatus: 'unclaimed',
-            points: 500,
-            isVerified: false,
-        };
-    }, [user, resolvedCreator]);
-
-    const isActualCreator = Boolean(resolvedCreator && resolvedCreator.profileStatus !== 'unclaimed');
-
-    // Dynamic Claude-style greeting computed per session
-    const greetingText = useMemo(() => {
-        if (!activeCreator) return "India's Elite Creator Collective";
-        const firstName = (activeCreator.name || activeCreator.displayName || 'Creator').trim().split(' ')[0];
-        return getClaudeGreeting(firstName);
-    }, [activeCreator?.uid, activeCreator?.name, activeCreator?.displayName]);
+    // Only real numbers: open campaigns and past clients from the feed, points from settings.
+    const metrics = useMemo(() => [
+        activeCampaigns.length > 0 && { val: String(activeCampaigns.length), label: activeCampaigns.length === 1 ? 'Open Campaign' : 'Open Campaigns' },
+        clients.length > 0 && { val: String(clients.length), label: 'Brands Worked With' },
+        welcomePoints && { val: pointsText, label: 'Welcome Points' },
+        { val: '100%', label: 'Free to Join' },
+    ].filter(Boolean), [activeCampaigns.length, clients.length, welcomePoints, pointsText]);
 
     const faqs = [
         { 
             q: 'Is Newbi Creator free to join?', 
             a: 'Yes, 100% free forever. There are zero application fees, no monthly subscriptions, and no hidden charges to join the collective or participate in brand briefs.' 
         },
-        { 
-            q: 'How does the Newbi Points system work?', 
-            a: 'Points are extra perks! You earn Newbi Points for signing up, referring fellow creators, and completing special community quests. Points can be redeemed for exclusive concert ticket drops, brand vouchers, and curated lifestyle drops. Campaign deliverables earn direct brand rewards independently.' 
+        welcomePoints && {
+            q: 'How do Newbi Points work?',
+            a: `You get ${pointsText} Newbi Points when you join, shown on your creator pass. Campaign rewards are separate and listed on each brief.`
         },
         { 
             q: 'What kind of campaigns and activations are available?', 
@@ -178,13 +77,13 @@ const CreatorLanding = () => {
         },
         { 
             q: 'How do I submit campaign deliverables?', 
-            a: 'Everything is managed through your sleek Creator Dashboard. Once selected for a campaign, you simply post according to the brief guidelines and submit your live links or screenshots for instant verification.' 
+            a: 'Everything is managed through your sleek Creator Dashboard. Once selected for a campaign, you simply post according to the brief guidelines and submit your live links or screenshots for review.' 
         },
         { 
             q: 'Can I invite other creators?', 
-            a: 'Absolutely! Each creator receives a unique referral code. When a creator you refer signs up and completes their first verification, you both receive bonus Newbi Points.' 
+            a: 'Absolutely! Each creator gets a personal referral code to share with other creators.' 
         },
-    ];
+    ].filter(Boolean);
 
     const steps = [
         { 
@@ -205,7 +104,7 @@ const CreatorLanding = () => {
         { 
             num: '04', 
             title: 'Unlock Perks & Access', 
-            desc: 'Claim guaranteed brand rewards, festival entries, exclusive experiences, and stack up bonus Newbi Points.'
+            desc: 'Claim the brand rewards on your brief, plus festival entries and experiences where the campaign includes them.'
         },
     ];
 
@@ -220,10 +119,10 @@ const CreatorLanding = () => {
             title: 'Concert & Festival Access', 
             desc: "Front-row passes and backstage access to India's biggest music festivals, stadium tours, and pop-culture summits."
         },
-        { 
+        welcomePoints && {
             icon: Coins,
-            title: 'Redeemable Creator Points', 
-            desc: 'Collect bonus points for milestones, quests, and referrals. Redeem for festival drops, merchandise, and gift cards.'
+            title: 'Newbi Points',
+            desc: `Start with ${pointsText} points when you join. They sit on your creator pass alongside your campaign history.`
         },
         { 
             icon: ShieldCheck,
@@ -233,14 +132,50 @@ const CreatorLanding = () => {
         { 
             icon: LayoutDashboard,
             title: 'Real-Time Creator Studio', 
-            desc: 'Track brief milestones, live submissions, points ledger, and campaign statuses seamlessly in one powerful dashboard.'
+            desc: 'Track your briefs, submissions and campaign status in one dashboard.'
         },
         { 
             icon: Users, 
             title: 'Creator Community & Summits', 
             desc: "Join a curated network of visionary creators across India. Collaborate, network, and attend private masterclasses."
         },
-    ];
+    ].filter(Boolean);
+
+    const pillars = [
+        {
+            num: '01',
+            category: 'Brand Partnerships',
+            title: 'Curated Brand Collabs',
+            desc: 'Direct partnerships with leading lifestyle, beverage, tech, and fashion brands. Authentic campaigns matched to your audience with zero agency cuts.',
+            stat: '0%',
+            statLabel: 'Agency Cut',
+            highlightTitle: 'Matched Briefs',
+            highlightSub: 'Tier-1 Brand Deals',
+            icon: Briefcase,
+        },
+        {
+            num: '02',
+            category: 'Live Experiences',
+            title: 'Concert & Festival Access',
+            desc: 'Exclusive passes, experiential coverage gigs, and artist hospitality at India’s largest music festivals, stadium tours, and creative gatherings.',
+            stat: 'ENTRY',
+            statLabel: 'Festival Guestlist',
+            highlightTitle: 'Artist Lounges',
+            highlightSub: 'Live Coverage Gigs',
+            icon: Ticket,
+        },
+        welcomePoints && {
+            num: '03',
+            category: 'Creator Pass',
+            title: 'Newbi Points',
+            desc: `Every new creator starts with ${pointsText} Newbi Points on their creator pass, next to their campaign history.`,
+            stat: pointsText,
+            statLabel: 'Welcome Points',
+            highlightTitle: 'Creator Pass',
+            highlightSub: 'In the Newbi app',
+            icon: Coins,
+        },
+    ].filter(Boolean);
 
     return (
         <div className="min-h-[100dvh] bg-[#fafafa] dark:bg-[#08090d] text-gray-900 dark:text-white selection:bg-neon-green selection:text-black font-heading transition-colors duration-300 relative overflow-x-hidden" style={{ WebkitTapHighlightColor: 'transparent' }}>
@@ -257,17 +192,13 @@ const CreatorLanding = () => {
                 style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
             >
                 <header 
-                    className="w-full h-16 bg-white/90 dark:bg-[#0C1017]/90 backdrop-blur-md border border-black/5 dark:border-white/10 rounded-2xl px-4 sm:px-6 md:px-7 flex items-center justify-between shadow-lg shadow-black/[0.03] dark:shadow-black/40 transition-colors duration-300 transform-gpu"
-                    style={{ WebkitBackdropFilter: 'blur(12px)' }}
+                    className="w-full h-16 bg-white/95 dark:bg-[#0C1017]/95 md:bg-white/90 md:dark:bg-[#0C1017]/90 md:backdrop-blur-md border border-black/5 dark:border-white/10 rounded-2xl px-4 sm:px-6 md:px-7 flex items-center justify-between shadow-lg shadow-black/[0.03] dark:shadow-black/40 transition-colors duration-300 transform-gpu"
                 >
                     {/* Brand Logo */}
                     <div className="flex items-center gap-3">
-                        <Link to="/creator" className="flex items-center gap-2 group" style={{ touchAction: 'manipulation' }}>
-                            <img 
-                                src={isDark ? newbiCreatorsLogoDark : newbiCreatorsLogoLight} 
-                                alt="Newbi Creators" 
-                                className="h-6 w-auto object-contain transition-transform group-hover:scale-105" 
-                            />
+                        <Link to="/creator" aria-label="Newbi Creators" className="flex items-center gap-2 min-h-[44px]" style={{ touchAction: 'manipulation' }}>
+                            <LogoImage height={26} priority />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Creators</span>
                         </Link>
                     </div>
 
@@ -284,12 +215,13 @@ const CreatorLanding = () => {
                     <div className="flex items-center gap-2 sm:gap-3">
                         {/* Theme Toggle Button */}
                         <button
-                            onClick={toggleTheme}
-                            aria-label="Toggle theme"
-                            className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 text-gray-700 dark:text-zinc-300 hover:text-black dark:hover:text-white flex items-center justify-center transition-colors active:scale-95"
+                            onClick={() => toggleTheme()}
+                            aria-label="Switch light or dark theme"
+                            className="w-11 h-11 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 text-gray-700 dark:text-zinc-300 hover:text-black dark:hover:text-white flex items-center justify-center transition-colors active:scale-95"
                             style={{ touchAction: 'manipulation' }}
                         >
-                            {isDark ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} className="text-gray-700" />}
+                            <Moon size={17} className="text-gray-700 dark:hidden" aria-hidden="true" />
+                            <Sun size={17} className="text-amber-400 hidden dark:block" aria-hidden="true" />
                         </button>
 
                         <div className="hidden md:flex items-center gap-2">
@@ -301,53 +233,28 @@ const CreatorLanding = () => {
                                 <span>newbi.live</span>
                             </Link>
 
-                            {isActualCreator ? (
-                                <Link 
-                                    to="/creator-dashboard" 
-                                    className="h-10 px-4 rounded-xl bg-neon-green hover:bg-white text-black font-black uppercase tracking-wider text-[10px] transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95"
-                                >
-                                    <LayoutDashboard size={13} />
-                                    <span>Dashboard</span>
-                                </Link>
-                            ) : (
-                                <div className="flex items-center gap-2">
-                                    {!user && (
-                                        <button 
-                                            onClick={() => useStore.getState().setAuthModal(true)} 
-                                            className="h-10 px-3.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 text-gray-800 dark:text-white font-bold uppercase tracking-wider text-[10px] hover:bg-gray-200 dark:hover:bg-white/10 transition-colors active:scale-95"
-                                        >
-                                            Sign In
-                                        </button>
-                                    )}
-                                    <Link 
-                                        to="/creator/join" 
-                                        className="h-10 px-4 rounded-xl bg-neon-green hover:bg-white text-black font-black uppercase tracking-wider text-[10px] transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] group active:scale-95"
-                                    >
-                                        <span>Apply Now</span>
-                                        <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
-                                    </Link>
-                                </div>
-                            )}
+                            <a
+                                href={appUrl('/creator')}
+                                className="h-10 px-3.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 text-gray-800 dark:text-white font-bold uppercase tracking-wider text-[10px] hover:bg-gray-200 dark:hover:bg-white/10 transition-colors flex items-center active:scale-95"
+                            >
+                                Open App
+                            </a>
+                            <a
+                                href={APP_LINKS.creatorApply}
+                                className="h-10 px-4 rounded-xl bg-neon-green hover:bg-white text-black font-black uppercase tracking-wider text-[10px] transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] group active:scale-95"
+                            >
+                                <span>Apply Now</span>
+                                <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                            </a>
                         </div>
 
-                        <NotificationBell />
-
-                        {user ? (
-                            <div className="flex items-center cursor-pointer active:scale-95" onClick={() => setIsProfileOpen(true)}>
-                                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-zinc-800 border border-gray-300 dark:border-white/10 flex items-center justify-center font-black text-xs text-gray-800 dark:text-white shadow-sm overflow-hidden">
-                                    {activeCreator?.profilePicture ? (
-                                        <img src={activeCreator.profilePicture} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                        user.displayName ? user.displayName.charAt(0) : 'U'
-                                    )}
-                                </div>
-                            </div>
-                        ) : null}
 
                         {/* Mobile Menu Button */}
                         <button 
-                            onClick={() => setIsMenuOpen(!isMenuOpen)} 
-                            className="p-2 lg:hidden rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 text-gray-800 dark:text-white outline-none active:scale-95"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+                            aria-expanded={isMenuOpen}
+                            className="w-11 h-11 flex items-center justify-center lg:hidden rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 text-gray-800 dark:text-white outline-none active:scale-95"
                             style={{ touchAction: 'manipulation' }}
                         >
                             {isMenuOpen ? <X size={17} /> : <Menu size={17} />}
@@ -357,15 +264,10 @@ const CreatorLanding = () => {
             </div>
 
             {/* ===== MOBILE MENU ===== */}
-            <AnimatePresence>
                 {isMenuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.96 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.96 }}
-                        className="fixed inset-0 z-[100] lg:hidden bg-white/95 dark:bg-black/95 backdrop-blur-md flex flex-col justify-between px-6 overflow-y-auto transform-gpu"
+                    <div
+                        className="fixed inset-0 z-[100] lg:hidden bg-white dark:bg-black flex flex-col justify-between px-6 overflow-y-auto transform-gpu"
                         style={{
-                            WebkitBackdropFilter: 'blur(16px)',
                             paddingTop: 'calc(env(safe-area-inset-top, 0px) + 5rem)',
                             paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2rem)',
                             WebkitOverflowScrolling: 'touch',
@@ -373,7 +275,8 @@ const CreatorLanding = () => {
                         }}
                     >
                         <button 
-                            onClick={() => setIsMenuOpen(false)} 
+                            onClick={() => setIsMenuOpen(false)}
+                            aria-label="Close menu"
                             className="absolute right-6 p-3 rounded-full bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-white active:scale-95"
                             style={{ 
                                 top: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)',
@@ -385,11 +288,7 @@ const CreatorLanding = () => {
                         
                         <div className="space-y-3">
                             <div className="mb-6">
-                                <img 
-                                    src={isDark ? newbiCreatorsLogoDark : newbiCreatorsLogoLight} 
-                                    alt="Newbi Creators" 
-                                    className="h-6 w-auto object-contain" 
-                                />
+                                <LogoImage height={26} />
                             </div>
                             <p className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-[0.3em] mb-4">Navigation</p>
                             {[
@@ -412,36 +311,20 @@ const CreatorLanding = () => {
                         </div>
 
                         <div className="pt-6 border-t border-gray-200 dark:border-white/10 space-y-3">
-                            {isActualCreator ? (
-                                <Link 
-                                    to="/creator-dashboard" 
-                                    onClick={() => setIsMenuOpen(false)} 
-                                    className="w-full h-12 bg-neon-green text-black flex items-center justify-center gap-2 rounded-xl font-black uppercase tracking-wider text-xs active:scale-95"
-                                    style={{ touchAction: 'manipulation' }}
-                                >
-                                    <LayoutDashboard size={14} /> Open Creator Dashboard
-                                </Link>
-                            ) : (
-                                <>
-                                    <Link 
-                                        to="/creator/join" 
-                                        onClick={() => setIsMenuOpen(false)} 
-                                        className="w-full h-12 bg-neon-green text-black flex items-center justify-center gap-2 rounded-xl font-black uppercase tracking-wider text-xs active:scale-95"
-                                        style={{ touchAction: 'manipulation' }}
-                                    >
-                                        Apply as Creator
-                                    </Link>
-                                    {!user && (
-                                        <button 
-                                            onClick={() => { useStore.getState().setAuthModal(true); setIsMenuOpen(false); }} 
-                                            className="w-full h-12 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-bold uppercase tracking-wider text-xs active:scale-95"
-                                            style={{ touchAction: 'manipulation' }}
-                                        >
-                                            Sign In
-                                        </button>
-                                    )}
-                                </>
-                            )}
+                            <a
+                                href={APP_LINKS.creatorApply}
+                                className="w-full h-12 bg-neon-green text-black flex items-center justify-center gap-2 rounded-xl font-black uppercase tracking-wider text-xs active:scale-95"
+                                style={{ touchAction: 'manipulation' }}
+                            >
+                                Apply as Creator
+                            </a>
+                            <a
+                                href={appUrl('/creator')}
+                                className="w-full h-12 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-2 active:scale-95"
+                                style={{ touchAction: 'manipulation' }}
+                            >
+                                Open the App <ArrowUpRight size={14} />
+                            </a>
                             <Link 
                                 to="/" 
                                 onClick={() => setIsMenuOpen(false)} 
@@ -451,9 +334,8 @@ const CreatorLanding = () => {
                                 <ArrowLeft size={14} /> Back to newbi.live
                             </Link>
                         </div>
-                    </motion.div>
+                    </div>
                 )}
-            </AnimatePresence>
 
             {/* ===== MAIN CONTENT ===== */}
             <main className="relative z-10">
@@ -466,25 +348,19 @@ const CreatorLanding = () => {
                     <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 w-full flex flex-col items-center">
                         
                         {/* Center Column: Hero Narrative */}
-                        <motion.div 
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                        <div 
                             className="w-full max-w-4xl mx-auto text-center space-y-8"
                         >
                             {/* Warm Conversational Greeting */}
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ duration: 0.5, delay: 0.1 }}
+                            <div
                                 className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-gray-100 dark:bg-white/[0.04] border border-gray-200/50 dark:border-white/[0.05] text-xs sm:text-sm font-medium text-gray-600 dark:text-zinc-300 mx-auto"
                             >
                                 <span className="relative flex h-2 w-2">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75" />
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-green" />
                                 </span>
-                                <span>{greetingText}</span>
-                            </motion.div>
+                                <span>Newbi Creator Network · Free to join</span>
+                            </div>
 
                             {/* Massive Display Headline */}
                             <h1 className="text-4xl sm:text-6xl lg:text-[5.5rem] font-semibold tracking-tighter leading-[1.05] text-gray-900 dark:text-white mx-auto">
@@ -496,30 +372,22 @@ const CreatorLanding = () => {
 
                             {/* Narrative Description */}
                             <p className="text-lg sm:text-xl text-gray-500 dark:text-zinc-400 font-medium max-w-2xl mx-auto leading-relaxed">
-                                Collaborate with iconic brands, secure front-row concert passes, and earn redeemable points — all on one verified creator platform.
+                                {welcomePoints
+                                    ? 'Collaborate with iconic brands, secure front-row concert passes, and earn Newbi points — all on one verified creator platform.'
+                                    : 'Collaborate with iconic brands and secure front-row concert passes — all on one verified creator platform.'}
                             </p>
 
                             {/* CTAs */}
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                                {isActualCreator ? (
-                                    <button 
-                                        onClick={() => navigate('/creator-dashboard')}
-                                        className="h-14 px-8 rounded-full bg-gray-900 dark:bg-white sm:hover:bg-black dark:sm:hover:bg-gray-100 text-white dark:text-black font-semibold text-[15px] transition-all flex items-center justify-center gap-2 shadow-sm sm:hover:scale-105 active:scale-95 group w-full sm:w-auto"
-                                        style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-                                    >
-                                        <span>Open Dashboard</span>
-                                        <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                                    </button>
-                                ) : (
                                     <>
-                                        <button 
-                                            onClick={() => navigate('/creator/join')}
+                                        <a
+                                            href={APP_LINKS.creatorApply}
                                             className="h-14 px-8 rounded-full bg-neon-green sm:hover:bg-[#a8ff6f] text-black font-semibold text-[15px] transition-all flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(57,255,20,0.2)] sm:hover:shadow-[0_6px_20px_rgba(57,255,20,0.3)] sm:hover:scale-105 active:scale-95 group w-full sm:w-auto"
                                             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                                         >
                                             <span>Apply as Creator</span>
                                             <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                                        </button>
+                                        </a>
                                         <a 
                                             href="#advantages"
                                             className="h-14 px-8 rounded-full bg-gray-100 dark:bg-white/[0.05] sm:hover:bg-gray-200 dark:sm:hover:bg-white/[0.1] border border-transparent dark:border-white/[0.05] text-gray-900 dark:text-white font-semibold text-[15px] transition-all flex items-center justify-center gap-2 w-full sm:w-auto active:scale-95"
@@ -528,29 +396,20 @@ const CreatorLanding = () => {
                                             <span>Explore Perks</span>
                                         </a>
                                     </>
-                                )}
                             </div>
-                        </motion.div>
+                        </div>
 
 
 
                         {/* Premium Metric Cards - Subdued and Centered */}
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 1, delay: 0.6 }}
+                        <div
                             className="w-full mt-16 sm:mt-24"
                         >
                             <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:flex sm:justify-center">
-                                {[
-                                    { val: '2,400+', label: 'Active Creators' },
-                                    { val: '60+', label: 'Brand Partners' },
-                                    { val: '12', label: 'Metros & Hubs' },
-                                    { val: '100%', label: 'Free to Join' },
-                                ].map((m, i) => (
+                                {metrics.map((m, i) => (
                                     <div
                                         key={i}
-                                        className="flex flex-col items-center justify-center text-center p-4 rounded-3xl bg-transparent sm:w-[180px] w-full"
+                                        className="flex flex-col items-center justify-center text-center p-4 rounded-3xl bg-transparent sm:w-[180px] w-full [&:last-child:nth-child(odd)]:col-span-2"
                                     >
                                         <p className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-white leading-none">
                                             {m.val}
@@ -561,7 +420,7 @@ const CreatorLanding = () => {
                                     </div>
                                 ))}
                             </div>
-                        </motion.div>
+                        </div>
 
                     </div>
                 </section>
@@ -576,21 +435,18 @@ const CreatorLanding = () => {
                                     Live brand briefs & drops.
                                 </h2>
                                 <p className="text-gray-600 dark:text-zinc-400 text-sm sm:text-base font-normal max-w-2xl">
-                                    {isActualCreator 
-                                        ? 'Curated campaigns matched to your creator profile. Apply directly with your Newbi Creator Pass.'
-                                        : 'Vetted collaborations across lifestyle, fashion, tech, and live entertainment with guaranteed rewards.'
-                                    }
+                                    Vetted collaborations across lifestyle, fashion, tech, and live entertainment. Open one to see the brief and apply in the app.
                                 </p>
                             </div>
 
                             <div className="flex items-center gap-3 shrink-0">
-                                <Link 
-                                    to="/creator-dashboard"
+                                <a
+                                    href={appUrl('/creator')}
                                     className="h-11 px-5 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-white transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(57,255,20,0.3)]"
                                 >
                                     <LayoutDashboard size={13} />
-                                    <span>{isActualCreator ? 'My Dashboard' : 'Creator Dashboard'}</span>
-                                </Link>
+                                    <span>Creator Dashboard</span>
+                                </a>
                             </div>
                         </div>
 
@@ -599,12 +455,7 @@ const CreatorLanding = () => {
                             <HorizontalCarousel autoScroll={true} className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-6 lg:gap-8 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible">
                                 {activeCampaigns.map((camp, idx) => (
                                     <div key={camp.id || idx} className="shrink-0 w-[85vw] sm:w-[400px] md:w-auto snap-start">
-                                        <CampaignCard
-                                            campaign={camp}
-                                            profile={activeCreator}
-                                            type="available"
-                                            onOpenMission={(c) => setSelectedCampaignForModal(c)}
-                                        />
+                                        <CampaignTeaser campaign={camp} />
                                     </div>
                                 ))}
                             </HorizontalCarousel>
@@ -620,23 +471,13 @@ const CreatorLanding = () => {
                                 <p className="text-sm text-gray-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
                                     Brand briefs are updated frequently. Registered creators receive priority notifications and instant email alerts whenever new briefs launch.
                                 </p>
-                                {isActualCreator ? (
-                                    <button
-                                        onClick={() => navigate('/creator-dashboard')}
-                                        className="h-10 px-6 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-white transition-all inline-flex items-center gap-2"
-                                    >
-                                        <LayoutDashboard size={13} />
-                                        <span>Check Creator Studio</span>
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={() => navigate('/creator/join')}
-                                        className="h-10 px-6 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-white transition-all inline-flex items-center gap-2"
-                                    >
-                                        <span>Join Creator Collective</span>
-                                        <ArrowRight size={13} />
-                                    </button>
-                                )}
+                                <a
+                                    href={APP_LINKS.creatorApply}
+                                    className="h-11 px-6 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-white transition-all inline-flex items-center gap-2"
+                                >
+                                    <span>Join Creator Collective</span>
+                                    <ArrowRight size={13} />
+                                </a>
                             </div>
                         )}
                     </div>
@@ -655,48 +496,10 @@ const CreatorLanding = () => {
                             </p>
                         </div>
 
-                        <HorizontalCarousel autoScroll={true} className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-6 lg:gap-8 lg:grid lg:grid-cols-3 lg:overflow-visible">
-                            {[
-                                {
-                                    num: '01',
-                                    category: 'Brand Partnerships',
-                                    title: 'Curated Brand Collabs',
-                                    desc: 'Direct partnerships with leading lifestyle, beverage, tech, and fashion brands. Authentic campaigns matched to your audience with zero agency cuts.',
-                                    stat: '0%',
-                                    statLabel: 'Agency Cut',
-                                    highlightTitle: 'Direct Payouts',
-                                    highlightSub: 'Tier-1 Brand Deals',
-                                    icon: Briefcase,
-                                },
-                                {
-                                    num: '02',
-                                    category: 'Live Experiences',
-                                    title: 'Concert & Festival Access',
-                                    desc: 'Exclusive passes, experiential coverage gigs, and artist hospitality at India’s largest music festivals, stadium tours, and creative gatherings.',
-                                    stat: 'ENTRY',
-                                    statLabel: 'Festival Guestlist',
-                                    highlightTitle: 'Artist Lounges',
-                                    highlightSub: 'Live Coverage Gigs',
-                                    icon: Ticket,
-                                },
-                                {
-                                    num: '03',
-                                    category: 'Loyalty Ecosystem',
-                                    title: 'Newbi Points & Drops',
-                                    desc: 'Earn points for community milestones, sign-up bonuses, and creator referrals. Redeem them for festival tickets, rare merchandise drops, and lifestyle vouchers.',
-                                    stat: '1:1',
-                                    statLabel: 'Instant Redemption',
-                                    highlightTitle: 'Merch Drops',
-                                    highlightSub: 'Exclusive Ticket Drops',
-                                    icon: Coins,
-                                }
-                            ].map((pillar, i) => (
-                                <motion.div
+                        <HorizontalCarousel autoScroll={true} className={cn("pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-6 lg:gap-8 lg:grid lg:overflow-visible", pillars.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-2")}>
+                            {pillars.map((pillar, i) => (
+                                <div
                                     key={i}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: i * 0.1 }}
                                     className="shrink-0 w-[85vw] sm:w-[350px] lg:w-auto snap-start relative p-8 sm:p-9 rounded-[2rem] bg-white dark:bg-[#0C0E14] border border-gray-200/80 dark:border-white/[0.08] hover:border-neon-green/40 dark:hover:border-neon-green/40 transition-all duration-300 shadow-sm hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_0_50px_rgba(57,255,20,0.07)] hover:-translate-y-1.5 flex flex-col justify-between group overflow-hidden"
                                 >
                                     {/* Subtle Top Accent Glow */}
@@ -744,7 +547,7 @@ const CreatorLanding = () => {
                                             </p>
                                         </div>
                                     </div>
-                                </motion.div>
+                                </div>
                             ))}
                         </HorizontalCarousel>
                     </div>
@@ -766,12 +569,8 @@ const CreatorLanding = () => {
 
                         <HorizontalCarousel autoScroll={true} className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-5 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible">
                             {steps.map((s, i) => (
-                                <motion.div
+                                <div
                                     key={i}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: i * 0.1 }}
                                     className="shrink-0 w-[80vw] sm:w-[280px] md:w-auto snap-start relative p-7 rounded-3xl bg-white dark:bg-zinc-900/30 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/15 transition-all flex flex-col justify-between overflow-hidden shadow-sm dark:shadow-none group"
                                 >
                                     <div className="space-y-4">
@@ -790,7 +589,7 @@ const CreatorLanding = () => {
                                             {s.desc}
                                         </p>
                                     </div>
-                                </motion.div>
+                                </div>
                             ))}
                         </HorizontalCarousel>
                     </div>
@@ -810,12 +609,8 @@ const CreatorLanding = () => {
 
                         <HorizontalCarousel autoScroll={true} className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-5 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible">
                             {perks.map((p, i) => (
-                                <motion.div
+                                <div
                                     key={i}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: i * 0.08 }}
                                     className="shrink-0 w-[85vw] sm:w-[340px] md:w-auto snap-start p-7 rounded-3xl bg-white dark:bg-zinc-900/30 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 transition-all shadow-sm dark:shadow-none space-y-3 group"
                                 >
                                     <div className="w-10 h-10 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center text-gray-800 dark:text-zinc-200 group-hover:text-neon-green group-hover:border-neon-green/40 transition-all">
@@ -827,21 +622,17 @@ const CreatorLanding = () => {
                                     <p className="text-xs text-gray-600 dark:text-zinc-400 leading-relaxed font-normal">
                                         {p.desc}
                                     </p>
-                                </motion.div>
+                                </div>
                             ))}
                         </HorizontalCarousel>
                     </div>
                 </section>
 
                 {/* 5. PAST CLIENTS MARQUEE */}
-                {siteSettings?.showPastClients !== false && (
-                    <div className="border-t border-gray-200/80 dark:border-white/5">
-                        <PastClients />
-                    </div>
-                )}
+                {clients.length > 0 && <Proof clients={clients} />}
 
                 {/* CREATOR TESTIMONIALS (Dynamically rendered from real verified creators) */}
-                {siteSettings?.showCreatorTestimonials !== false && activeTestimonials.length > 0 && (
+                {activeTestimonials.length > 0 && (
                     <section id="testimonials" className="py-20 md:py-28 relative border-t border-gray-200/80 dark:border-white/5 bg-gray-50/50 dark:bg-black/20">
                         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
                             <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
@@ -859,12 +650,8 @@ const CreatorLanding = () => {
 
                             <HorizontalCarousel autoScroll={true} className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-6 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible">
                                 {activeTestimonials.map((t, i) => (
-                                    <motion.div
+                                    <div
                                         key={t.id || i}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        whileInView={{ opacity: 1, y: 0 }}
-                                        viewport={{ once: true }}
-                                        transition={{ delay: i * 0.08 }}
                                         className="shrink-0 w-[85vw] sm:w-[360px] md:w-auto snap-start p-7 rounded-3xl bg-white dark:bg-zinc-900/40 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/15 transition-all shadow-sm dark:shadow-none flex flex-col justify-between group"
                                     >
                                         <div className="space-y-4">
@@ -886,6 +673,9 @@ const CreatorLanding = () => {
                                                 <img
                                                     src={t.avatarUrl}
                                                     alt={t.name}
+                                                    width="40"
+                                                    height="40"
+                                                    loading="lazy"
                                                     className="w-10 h-10 rounded-full object-cover border border-black/10 dark:border-white/10 shrink-0"
                                                 />
                                             ) : (
@@ -910,7 +700,7 @@ const CreatorLanding = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                    </motion.div>
+                                    </div>
                                 ))}
                             </HorizontalCarousel>
                         </div>
@@ -938,6 +728,8 @@ const CreatorLanding = () => {
                                 >
                                     <button 
                                         onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                                        aria-expanded={openFaq === i}
+                                        aria-controls={`faq-${i}`}
                                         className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 hover:bg-gray-50 dark:hover:bg-white/[0.02] active:bg-gray-100 dark:active:bg-white/[0.05] transition-colors active:scale-[0.99]"
                                         style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                                     >
@@ -951,19 +743,14 @@ const CreatorLanding = () => {
                                             <ChevronDown size={15} />
                                         </div>
                                     </button>
-                                    <AnimatePresence>
                                         {openFaq === i && (
-                                            <motion.div 
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: 'auto', opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                transition={{ duration: 0.25 }}
+                                            <div
+                                                id={`faq-${i}`}
                                                 className="px-5 sm:px-6 pb-6 text-gray-600 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed border-t border-gray-100 dark:border-white/5 pt-4 font-normal"
                                             >
                                                 {faq.a}
-                                            </motion.div>
+                                            </div>
                                         )}
-                                    </AnimatePresence>
                                 </div>
                             ))}
                         </div>
@@ -973,10 +760,7 @@ const CreatorLanding = () => {
                 {/* 7. FINAL CALL TO ACTION */}
                 <section className="py-20 md:py-28 relative">
                     <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
-                        <motion.div
-                            initial={{ opacity: 0, y: 24 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
+                        <div
                             className="relative rounded-[2.5rem] bg-[#0B0F17] text-white p-10 sm:p-16 md:p-20 text-center overflow-hidden shadow-2xl border border-neon-green/30"
                         >
                             {/* Ambient Glows */}
@@ -990,137 +774,29 @@ const CreatorLanding = () => {
                                 </div>
 
                                 <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.08] md:whitespace-nowrap">
-                                    {isActualCreator ? "Your Creator Hub Awaits." : "Ready to Step Into the Spotlight?"}
+                                    Ready to Step Into the Spotlight?
                                 </h2>
 
                                 <p className="text-zinc-300 text-sm sm:text-base leading-relaxed font-normal">
-                                    {isActualCreator 
-                                        ? "Manage brand collaborations, track live deliverables, and claim your rewards directly in your dashboard."
-                                        : "Join thousands of creators collaborating with global brands and unlocking front-row concert access. Free forever."
-                                    }
+                                    Collaborate with brands and unlock front-row concert access. Free forever.
                                 </p>
 
                                 <div className="pt-2">
-                                    {isActualCreator ? (
-                                        <button
-                                            onClick={() => navigate('/creator-dashboard')}
-                                            className="h-11 sm:h-12 px-7 rounded-xl bg-neon-green hover:bg-white text-black font-bold uppercase tracking-wider text-xs transition-all inline-flex items-center gap-2 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
-                                            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-                                        >
-                                            <LayoutDashboard size={14} />
-                                            <span>Enter Creator Dashboard</span>
-                                            <ArrowRight size={14} />
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => navigate('/creator/join')}
-                                            className="h-11 sm:h-12 px-7 rounded-xl bg-neon-green hover:bg-white text-black font-bold uppercase tracking-wider text-xs transition-all inline-flex items-center gap-2 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
-                                            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-                                        >
-                                            <span>Apply as Creator for Free</span>
-                                            <ArrowRight size={14} />
-                                        </button>
-                                    )}
+                                    <a
+                                        href={APP_LINKS.creatorApply}
+                                        className="h-12 px-7 rounded-xl bg-neon-green hover:bg-white text-black font-bold uppercase tracking-wider text-xs transition-all inline-flex items-center gap-2 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
+                                        style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                                    >
+                                        <span>Apply as Creator for Free</span>
+                                        <ArrowRight size={14} />
+                                    </a>
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
                     </div>
                 </section>
 
             </main>
-
-            {/* ─── Floating Actions (Mobile Only) ─────────────────────────── */}
-            <AnimatePresence>
-                {user && (
-                    <>
-                        {/* Left Button: newbi.live */}
-                        <motion.div 
-                            initial={{ y: 100, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: 100, opacity: 0 }}
-                            className="fixed left-5 z-50 pointer-events-auto md:hidden"
-                            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.25rem)' }}
-                        >
-                            <div
-                                className="relative bg-white/80 dark:bg-[#12151c]/80 border border-black/5 dark:border-white/10 rounded-full p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 transform-gpu"
-                                style={{ backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
-                            >
-                                <button
-                                    onClick={() => navigate('/')}
-                                    style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-                                    className={cn(
-                                        "rounded-full transition-all duration-300 ease-out flex items-center justify-center active:scale-95 overflow-hidden h-10",
-                                        !isScrolled 
-                                            ? "bg-white dark:bg-black border border-gray-200 dark:border-white/10 text-gray-800 dark:text-zinc-300 shadow-sm px-4" 
-                                            : "bg-transparent border border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white px-[11px]"
-                                    )}
-                                >
-                                    <ArrowLeft size={18} strokeWidth={2} className="shrink-0 transition-all duration-300" />
-                                    <span
-                                        className={cn(
-                                            "font-bold uppercase tracking-wider text-[10px] whitespace-nowrap overflow-hidden transition-all duration-300 ease-out leading-none",
-                                            !isScrolled ? "max-w-[100px] opacity-100 ml-2" : "max-w-0 opacity-0 ml-0"
-                                        )}
-                                    >
-                                        newbi.live
-                                    </span>
-                                </button>
-                            </div>
-                        </motion.div>
-
-                        {/* Right Button: Dashboard or Apply */}
-                        <motion.div 
-                            initial={{ y: 100, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: 100, opacity: 0 }}
-                            className="fixed right-5 z-50 pointer-events-auto md:hidden"
-                            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.25rem)' }}
-                        >
-                            <div
-                                className="relative bg-white/80 dark:bg-[#12151c]/80 border border-black/5 dark:border-white/10 rounded-full p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 transform-gpu"
-                                style={{ backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
-                            >
-                                <button
-                                    onClick={() => navigate(isActualCreator ? '/creator-dashboard' : '/creator/join')}
-                                    style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-                                    className={cn(
-                                        "rounded-full transition-all duration-300 ease-out flex items-center justify-center active:scale-95 overflow-hidden h-10",
-                                        !isScrolled 
-                                            ? "bg-neon-green text-black shadow-sm px-4" 
-                                            : "bg-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white px-[11px]"
-                                    )}
-                                >
-                                    {isActualCreator ? (
-                                        <LayoutDashboard size={18} strokeWidth={2} className="shrink-0 transition-all duration-300" />
-                                    ) : (
-                                        <Zap size={18} strokeWidth={2} className="shrink-0 transition-all duration-300" />
-                                    )}
-                                    <span
-                                        className={cn(
-                                            "font-bold uppercase tracking-wider text-[10px] whitespace-nowrap overflow-hidden transition-all duration-300 ease-out leading-none",
-                                            !isScrolled ? "max-w-[130px] opacity-100 ml-2" : "max-w-0 opacity-0 ml-0"
-                                        )}
-                                    >
-                                        {isActualCreator ? "Dashboard" : "Apply as Creator"}
-                                    </span>
-                                </button>
-                            </div>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
-
-            <ProfilePanel isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
-
-            {/* Campaign Detail Modal */}
-            <AnimatePresence>
-                {selectedCampaignForModal && (
-                    <CampaignDetailModal 
-                        campaign={selectedCampaignForModal}
-                        onClose={() => setSelectedCampaignForModal(null)}
-                    />
-                )}
-            </AnimatePresence>
         </div>
     );
 };
