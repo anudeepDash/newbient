@@ -1,8 +1,14 @@
 /**
- * Instagram verification through Meta's official APIs only.
+ * Instagram lookups and verification.
  *
- * Professional (Business or Creator) accounts only; personal accounts can't be
- * looked up or connected, and the app tells the creator how to switch.
+ * Lookup order (lookupInstagram):
+ *   1. Meta Business Discovery, when it's set up and switched on
+ *      (site_settings/general.instagramMetaVerification). Exact count for
+ *      Professional accounts; a personal account gets the "switch" message.
+ *   2. Otherwise, or if Meta is down: the public profile page (follower count,
+ *      name and picture from its preview tags), then RapidAPI if RAPIDAPI_KEY is
+ *      set. These counts are estimates (source 'public' / 'rapidapi'), so the
+ *      application still goes to admin review.
  *
  *   Step A  lookupInstagram(handle)
  *           Business Discovery through Newbi's own Instagram Business account
@@ -39,12 +45,22 @@ export const cleanHandle = (raw = '') => {
     return /^[a-z0-9._]{1,30}$/.test(value) ? value : '';
 };
 
+/* A slow Firestore call must never hold up the answer: give up after `ms` and use `fallback`. */
+const within = (promise, ms, fallback) => new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(fallback), ms);
+    Promise.resolve(promise).then(
+        (v) => { clearTimeout(timer); resolve(v); },
+        () => { clearTimeout(timer); resolve(fallback); },
+    );
+});
+
 /** site_settings/general.instagramMetaVerification: off until the owner finishes the Meta setup. */
 export const readCreatorSettings = async (db = getDb()) => {
     let data = {};
     try {
-        const snap = await db.collection('site_settings').doc('general').get();
-        data = snap.exists ? snap.data() || {} : {};
+        const snap = await within(db.collection('site_settings').doc('general').get(), 2500, null);
+        if (!snap) console.warn('[instagram] site_settings read timed out; using defaults');
+        data = snap?.exists ? snap.data() || {} : {};
     } catch (e) {
         console.warn('[instagram] site_settings read:', e.message);
     }
@@ -64,7 +80,7 @@ export const isOauthConfigured = () => Boolean(process.env.IG_APP_ID && process.
 /** Errors go to integration_log (server-only), so admins can see why a check failed. */
 export const logIntegration = async (entry = {}, db = getDb()) => {
     try {
-        await db.collection('integration_log').add({ provider: 'instagram', ...entry, at: nowIso() });
+        await within(db.collection("integration_log").add({ provider: "instagram", ...entry, at: nowIso() }), 1500, null);
     } catch (e) {
         console.warn('[instagram] integration_log write:', e.message);
     }
@@ -106,8 +122,8 @@ const cacheRef = (db, key) => db.collection('instagram_profiles').doc(key);
 
 const readCache = async (db, handle) => {
     try {
-        const snap = await cacheRef(db, `h_${handle}`).get();
-        if (!snap.exists) return null;
+        const snap = await within(cacheRef(db, `h_${handle}`).get(), 1500, null);
+        if (!snap?.exists) return null;
         const data = snap.data();
         const age = Date.now() - new Date(data.fetchedAt || 0).getTime();
         return age >= 0 && age < CACHE_TTL_MS ? data : null;
@@ -122,11 +138,118 @@ const writeCache = async (db, profile) => {
         const batch = db.batch();
         batch.set(cacheRef(db, `h_${profile.username}`), record);
         if (profile.igUserId) batch.set(cacheRef(db, String(profile.igUserId)), record);
-        await batch.commit();
+        // The answer doesn't wait long for the cache: it's only there to make repeat checks instant.
+        await within(batch.commit().catch(e => console.warn('[instagram] cache write:', e.message)), 1500, null);
     } catch (e) {
         console.warn('[instagram] cache write:', e.message);
     }
     return record;
+};
+
+/* ── Public-profile fallback ─────────────────────────────────────────────── */
+
+const CRAWLERS = [
+    'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+    'Twitterbot/1.0',
+    'WhatsApp/2.23.20.0 A',
+];
+const PUBLIC_TIMEOUT_MS = 4500;
+
+const decodeEntities = (str = '') => str
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&#064;/g, '@')
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)));
+
+/* "12.5K" → 12500, "1,234" → 1234, "687M" → 687000000 */
+export const parseFollowerCount = (raw = '') => {
+    const m = String(raw).replace(/,/g, '').trim().match(/^([\d.]+)\s*([kmb])?$/i);
+    if (!m) return 0;
+    const n = parseFloat(m[1]);
+    const mult = { k: 1e3, m: 1e6, b: 1e9 }[(m[2] || '').toLowerCase()] || 1;
+    return Math.round(n * mult);
+};
+
+const metaTag = (html, prop) => {
+    const a = html.match(new RegExp(`<meta[^>]+property=["']${prop}["'][^>]+content=["']([^"']*)["']`, 'i'));
+    const b = a || html.match(new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+property=["']${prop}["']`, 'i'));
+    return b ? decodeEntities(b[1]) : '';
+};
+
+const fromPublicHtml = (html, handle) => {
+    const desc = metaTag(html, 'og:description');
+    const count = desc.match(/([\d.,]+\s*[kmb]?)\s+Followers/i);
+    if (!count) return null;
+    const title = metaTag(html, 'og:title');
+    const name = title.split('(@')[0].split('•')[0].replace(/^["'\s]+|["'\s]+$/g, '').trim();
+    return {
+        igUserId: null,
+        username: handle,
+        name: name.length > 1 ? name : '',
+        followers: parseFollowerCount(count[1]),
+        mediaCount: parseFollowerCount((desc.match(/([\d.,]+\s*[kmb]?)\s+Posts/i) || [])[1] || ''),
+        profilePic: metaTag(html, 'og:image'),
+    };
+};
+
+const fetchText = async (url, headers, ms) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    try {
+        const res = await fetch(url, { headers, signal: ctrl.signal, redirect: 'follow' });
+        return { ok: res.ok, status: res.status, text: res.ok ? await res.text() : '' };
+    } finally {
+        clearTimeout(timer);
+    }
+};
+
+/*
+ * The public profile page, read the way link previews read it: a few preview
+ * crawlers in parallel, first answer wins, one attempt each. Then RapidAPI if
+ * a key is configured. { ok, source, profile } or { ok: false, reason }.
+ */
+export const fetchPublicInstagram = async (handle) => {
+    const url = `https://www.instagram.com/${encodeURIComponent(handle)}/`;
+    let notFound = 0;
+    try {
+        const profile = await Promise.any(CRAWLERS.map(async (ua) => {
+            const r = await fetchText(url, { 'User-Agent': ua, Accept: 'text/html', 'Accept-Language': 'en-US,en;q=0.9' }, PUBLIC_TIMEOUT_MS);
+            // A missing account is a 404, or a 200 "error page" with no profile tags.
+            if (r.status === 404 || (r.ok && /"pageID":"httpErrorPage"/.test(r.text) && !/og:description/.test(r.text))) {
+                notFound += 1;
+                throw new Error('not found');
+            }
+            const parsed = r.ok ? fromPublicHtml(r.text, handle) : null;
+            if (!parsed) throw new Error(`no profile data (${r.status})`);
+            return parsed;
+        }));
+        return { ok: true, source: 'public', profile };
+    } catch (e) { /* every crawler failed: try RapidAPI */ }
+
+    if (process.env.RAPIDAPI_KEY) {
+        try {
+            const host = process.env.RAPIDAPI_HOST || 'instagram-looter2.p.rapidapi.com';
+            const endpoint = process.env.RAPIDAPI_ENDPOINT || `https://${host}/profile?username=${encodeURIComponent(handle)}`;
+            const r = await fetchJson(endpoint, { headers: { 'x-rapidapi-key': process.env.RAPIDAPI_KEY, 'x-rapidapi-host': host } });
+            const d = r.ok ? r.json : null;
+            const count = d?.follower_count ?? d?.edge_followed_by?.count;
+            if (count !== undefined && count !== null) {
+                return {
+                    ok: true,
+                    source: 'rapidapi',
+                    profile: {
+                        igUserId: d.id || d.pk ? String(d.id || d.pk) : null,
+                        username: handle,
+                        name: d.full_name || '',
+                        followers: Number(count) || 0,
+                        mediaCount: Number(d.media_count ?? d.edge_owner_to_timeline_media?.count) || 0,
+                        profilePic: d.hd_profile_pic_url_info?.url || d.profile_pic_url || '',
+                    },
+                };
+            }
+        } catch (e) { /* fall through */ }
+    }
+    return { ok: false, reason: notFound === CRAWLERS.length ? 'not_found' : 'unavailable' };
 };
 
 /**
@@ -134,7 +257,7 @@ const writeCache = async (db, profile) => {
  *   { ok: true, profile: { igUserId, username, name, followers, mediaCount, profilePic }, cached }
  *   { ok: false, reason: 'invalid' | 'not_professional' | 'unavailable' | 'not_configured', message }
  */
-export const lookupInstagram = async (rawHandle, { force = false, db = getDb() } = {}) => {
+export const lookupInstagram = async (rawHandle, { force = false, db = getDb(), useMeta = true } = {}) => {
     const handle = cleanHandle(rawHandle);
     if (!handle) return { ok: false, reason: 'invalid', message: 'Enter your Instagram username, without links.' };
 
@@ -142,9 +265,7 @@ export const lookupInstagram = async (rawHandle, { force = false, db = getDb() }
         const cached = await readCache(db, handle);
         if (cached) return { ok: true, cached: true, profile: publicProfile(cached) };
     }
-    if (!isLookupConfigured()) {
-        return { ok: false, reason: 'not_configured', message: 'Instagram checks are not switched on yet.' };
-    }
+    if (!useMeta || !isLookupConfigured()) return publicLookup(db, handle);
 
     const fields = `business_discovery.username(${handle}){id,username,name,followers_count,media_count,profile_picture_url}`;
     const url = `https://graph.facebook.com/${GRAPH_VERSION()}/${encodeURIComponent(process.env.NEWBI_IG_USER_ID)}?fields=${encodeURIComponent(fields)}&access_token=${encodeURIComponent(process.env.META_GRAPH_TOKEN)}`;
@@ -152,7 +273,10 @@ export const lookupInstagram = async (rawHandle, { force = false, db = getDb() }
     const bd = result.ok ? result.json?.business_discovery : null;
     if (!bd?.id) {
         const { reason, detail, code } = result.ok ? { reason: 'not_professional', detail: 'no business_discovery' } : classifyGraphError(result);
-        if (reason === 'unavailable') await logIntegration({ op: 'business_discovery', handle, error: detail, code: code || null }, db);
+        if (reason === 'unavailable') {
+            await logIntegration({ op: 'business_discovery', handle, error: detail, code: code || null }, db);
+            return publicLookup(db, handle); // Meta is down: estimate from the public profile meanwhile
+        }
         return {
             ok: false,
             reason,
@@ -173,7 +297,23 @@ export const lookupInstagram = async (rawHandle, { force = false, db = getDb() }
     return { ok: true, cached: false, profile: publicProfile(record) };
 };
 
+/* The public-profile fallback, cached like Meta results but marked as an estimate. */
+const publicLookup = async (db, handle) => {
+    const pub = await fetchPublicInstagram(handle);
+    if (!pub.ok) {
+        return {
+            ok: false,
+            reason: pub.reason,
+            message: pub.reason === 'not_found' ? `We couldn't find @${handle} on Instagram.` : "Instagram isn't answering right now.",
+        };
+    }
+    const record = await writeCache(db, { ...pub.profile, source: pub.source });
+    return { ok: true, cached: false, profile: publicProfile(record) };
+};
+
 export const publicProfile = (p = {}) => ({
+    source: p.source || 'business_discovery',
+    estimated: Boolean(p.source && p.source !== 'business_discovery'),
     igUserId: p.igUserId ? String(p.igUserId) : null,
     username: p.username || null,
     name: p.name || null,

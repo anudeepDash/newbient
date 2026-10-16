@@ -159,7 +159,7 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
     /* ── Action bar ── */
     let action;
     if (!authUser) {
-        action = <Button className="flex-1" size="lg" onClick={() => gate.requestSignIn({ type: INTENTS.campaignApply, payload: { id } })}>Sign in to apply</Button>;
+        action = <Button className="flex-1" size="lg" onClick={() => gate.requestSignIn({ type: INTENTS.campaignApply, payload: { id } })}>Apply</Button>;
     } else if (!creatorLoaded) {
         action = <Button className="flex-1" size="lg" loading disabled>Loading</Button>;
     } else if (!creator) {

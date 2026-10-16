@@ -117,7 +117,8 @@ const GiveawayPage = () => {
         }
     }, [wantStart, uid, profileLoaded, g]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const onEnter = () => gate.run({ type: INTENTS.giveawayEnter, payload: { slug } }, () => setWantStart(true));
+    // One account sheet: sign in and a name first; city/college/answer are asked in the entry sheet.
+    const onEnter = () => gate.run({ type: INTENTS.giveawayEnter, payload: { slug } }, () => setWantStart(true), { require: ['name'] });
     useResumeIntent(INTENTS.giveawayEnter, () => setWantStart(true));
 
     const doTask = async (task, instagram) => {

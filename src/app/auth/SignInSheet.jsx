@@ -8,6 +8,8 @@ import { signInWithGoogle } from '../../lib/googleSignIn';
 import { isInAppBrowser } from '../../lib/platform';
 import { Sheet, Button, TextInput } from '../../components/app';
 import PhoneVerifyField from './PhoneVerifyField';
+import ProfileDetailsForm from '../profile/ProfileDetailsForm';
+import { missingFields } from '../profile/requirements';
 import { landingUrl } from '../host';
 import newbiIcon from '../../assets/logo/newbi-icon.svg';
 
@@ -17,7 +19,10 @@ import newbiIcon from '../../assets/logo/newbi-icon.svg';
  *   start  → Google · phone · email
  *   phone  → number + SMS code (signs in, or creates the account)
  *   email  → sign in / create account, with "forgot password"
- *   name   → asked once, for new phone accounts that have no name
+ *   details → right after sign-in, in the same sheet: whatever profile fields
+ *            the next action needs and the account doesn't have yet
+ *            (accountRequire, always including a name). Signed-in users who
+ *            are only missing details open straight on this step.
  *
  * It opens and closes on the same `isAuthOpen` flag as AuthOverlay, so
  * useAuthGate().requestSignIn() and every existing "Sign in" button work.
@@ -63,7 +68,11 @@ const OptionButton = ({ icon: Icon, children, onClick, loading }) => (
 const SignInSheet = () => {
     const isOpen = useLegacyStore(s => s.isAuthOpen);
     const setAuthModal = useLegacyStore(s => s.setAuthModal);
-    const updateProfile = useAppStore(s => s.updateProfile);
+    const authUser = useAppStore(s => s.authUser);
+    const profile = useAppStore(s => s.profile);
+    const profileLoaded = useAppStore(s => s.profileLoaded);
+    const accountRequire = useAppStore(s => s.accountRequire);
+    const takeAccountAction = useAppStore(s => s.takeAccountAction);
 
     const [step, setStep] = useState('start');
     const [emailMode, setEmailMode] = useState('signIn'); // signIn | signUp | forgot
@@ -71,17 +80,43 @@ const SignInSheet = () => {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
+    // The fields the details step asks for, frozen once the profile has loaded.
+    const [detailFields, setDetailFields] = useState(null);
+
+    // Already signed in (only details missing): open on the details step.
+    useEffect(() => {
+        if (isOpen && authUser) setStep('details');
+        // Only when the sheet opens.
+        // eslint-disable-next-line
+    }, [isOpen]);
+
+    // On the details step, work out what's missing once the profile is in; nothing missing → done.
+    useEffect(() => {
+        if (!isOpen || step !== 'details' || !authUser || !profileLoaded || detailFields) return;
+        const missing = missingFields(profile, accountRequire);
+        if (missing.length) setDetailFields(missing);
+        else finish();
+        // eslint-disable-next-line
+    }, [isOpen, step, authUser, profileLoaded, profile, detailFields]);
 
     useEffect(() => {
         if (isOpen) return;
         const t = setTimeout(() => {
-            setStep('start'); setEmailMode('signIn'); setError(''); setNotice('');
+            setStep('start'); setEmailMode('signIn'); setError(''); setNotice(''); setDetailFields(null);
             setForm({ email: '', password: '', name: '' });
         }, 250);
         return () => clearTimeout(t);
     }, [isOpen]);
 
     const close = () => setAuthModal(false);
+    // Signed in: move on to any missing details (the effect above closes if there are none).
+    const signedIn = () => setStep('details');
+    // Details done: close, then run what a signed-in user was doing (signed-out flows resume via their intent).
+    const finish = () => {
+        const action = takeAccountAction();
+        close();
+        if (action) setTimeout(action, 0);
+    };
     const field = (key) => ({ value: form[key], onChange: (e) => setForm(f => ({ ...f, [key]: e.target.value })) });
 
     const run = async (fn) => {
@@ -94,7 +129,7 @@ const SignInSheet = () => {
 
     const google = () => run(async () => {
         const user = await signInWithGoogle();
-        if (user) close(); // a redirect sign-in leaves the page instead
+        if (user) signedIn(); // a redirect sign-in leaves the page instead
     });
 
     const submitEmail = (e) => {
@@ -111,16 +146,7 @@ const SignInSheet = () => {
         return run(async () => {
             if (emailMode === 'signUp') await legacy.signUpWithEmail(email.trim(), password, name.trim());
             else await legacy.signInWithEmail(email.trim(), password);
-            close();
-        });
-    };
-
-    const saveName = (e) => {
-        e?.preventDefault();
-        if (!form.name.trim()) return setError('Add your name.');
-        return run(async () => {
-            await updateProfile({ name: form.name.trim() });
-            close();
+            signedIn();
         });
     };
 
@@ -130,7 +156,7 @@ const SignInSheet = () => {
         email: emailMode === 'signUp' ? ['Create your account', 'Use your email and a password.']
             : emailMode === 'forgot' ? ['Reset your password', 'We’ll email you a link.']
                 : ['Sign in with email', 'Welcome back.'],
-        name: ['What should we call you?', 'This goes on your passes and applications.'],
+        details: ['Almost there', 'Just what this needs, once. It’s saved to your account.'],
     };
     const [title, subtitle] = titles[step];
 
@@ -139,7 +165,7 @@ const SignInSheet = () => {
             open={isOpen}
             onClose={close}
             width="sm"
-            dismissible={step !== 'name'}
+            dismissible
             header={(
                 <div className="flex items-start gap-3">
                     {step === 'phone' || step === 'email' ? (
@@ -180,14 +206,7 @@ const SignInSheet = () => {
                     <PhoneVerifyField
                         mode="signIn"
                         sendLabel="Get code"
-                        onVerified={async (_e164, result) => {
-                            const user = result?.user;
-                            if (user && !user.displayName) {
-                                setStep('name');
-                                return;
-                            }
-                            close();
-                        }}
+                        onVerified={() => signedIn()}
                     />
                 )}
 
@@ -219,11 +238,10 @@ const SignInSheet = () => {
                     </form>
                 )}
 
-                {step === 'name' && (
-                    <form onSubmit={saveName} className="space-y-3">
-                        <TextInput label="Your name" autoComplete="name" autoFocus {...field('name')} />
-                        <Button type="submit" className="w-full" loading={busy}>Continue</Button>
-                    </form>
+                {step === 'details' && (
+                    detailFields
+                        ? <ProfileDetailsForm fields={detailFields} onSaved={finish} />
+                        : <div className="h-24 animate-pulse rounded-2xl bg-black/[0.04] dark:bg-white/[0.05]" />
                 )}
 
                 {notice && <p role="status" className="rounded-2xl bg-emerald-500/10 px-4 py-3 text-[14px] font-medium text-emerald-800 dark:text-neon-green">{notice}</p>}

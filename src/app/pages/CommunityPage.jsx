@@ -21,6 +21,7 @@ import { appPath } from '../host';
 import { plainText } from '../community/communityParts';
 import { isUpcomingPass, passCard } from '../passes/passCards';
 import PageHeader, { PageBody } from './PageHeader';
+import { requirementsFor } from '../profile/requirements';
 import { usePublicContact } from '../usePublicFeed';
 import { CardGrid, CardSkeleton, EmptyState, SectionHeader, Rail, GLASS } from './parts';
 
@@ -47,7 +48,7 @@ const GigSheet = ({ gig, onClose }) => {
         else { setState('idle'); setError(res.error); }
     };
     useResumeIntent(INTENTS.gigInterest, (payload) => { if (payload?.id === gig?.id) save(); });
-    const interested = () => gate.run({ type: INTENTS.gigInterest, payload: { id: gig.id }, returnTo: `${appPath('/community')}?gig=${encodeURIComponent(gig.id)}` }, save);
+    const interested = () => gate.run({ type: INTENTS.gigInterest, payload: { id: gig.id }, returnTo: `${appPath('/community')}?gig=${encodeURIComponent(gig.id)}` }, save, { require: requirementsFor('gig') });
 
     if (!gig) return null;
     const wa = gig.applyType === 'whatsapp' ? String(gig.applyLink || '').replace(/\D/g, '') : '';
@@ -125,7 +126,7 @@ const JoinPanel = () => {
                 <p className="font-heading text-[19px] font-extrabold tracking-[-0.02em]">Join the Newbi community</p>
                 <p className="text-[14px] text-gray-600 dark:text-zinc-400">First word on guestlists, gigs and giveaways. One tap, no forms.</p>
             </div>
-            <Button loading={busy} onClick={() => gate.run({ type: INTENTS.joinCommunity }, join)}>Join</Button>
+            <Button loading={busy} onClick={() => gate.run({ type: INTENTS.joinCommunity }, join, { require: requirementsFor('community') })}>Join</Button>
             {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
         </div>
     );
@@ -167,7 +168,6 @@ const CommunityPage = () => {
     const loaded = useAppStore(s => s.communityFeedLoaded);
     const passes = useAppStore(s => s.passes);
     const myGuestlists = useMemo(() => guestlistPasses(passes).filter(isUpcomingPass), [passes]);
-    const { requestSignIn } = useAuthGate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [city, setCity] = useState('all');
 
@@ -221,11 +221,6 @@ const CommunityPage = () => {
                 />
             )}
 
-            {loaded && !authUser && (
-                <p className="px-1 text-[14px] text-gray-500 dark:text-zinc-400">
-                    <button type="button" className="font-bold text-emerald-700 underline-offset-2 hover:underline dark:text-neon-green" onClick={() => requestSignIn()}>Sign in</button> to see members-only guestlists and your passes.
-                </p>
-            )}
 
             {authUser && myGuestlists.length === 0 && guestlistPasses(passes).length === 0 && loaded && (
                 <p className="flex items-center gap-2 px-1 text-[14px] text-gray-500 dark:text-zinc-400"><Ticket size={15} /> Passes for guestlists you join show up here.</p>

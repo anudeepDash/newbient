@@ -6,9 +6,10 @@ import { isCollegeNiche } from '../../../lib/creator/options';
 /*
  * State for the one-screen creator application.
  *
- *   Instagram username   checked against Meta while typing (when
- *                        instagramMetaVerification is on); the result fills
- *                        the live creator pass (picture, name, followers)
+ *   Instagram username   looked up while typing (Meta when it's switched on,
+ *                        else the public profile); the result fills the live
+ *                        creator pass. If it can't be read, the creator types
+ *                        their follower count instead (reviewed by the team).
  *   city                 one pick, prefilled from the profile
  *   niches               up to three
  *   college              only for campus niches
@@ -19,6 +20,14 @@ import { isCollegeNiche } from '../../../lib/creator/options';
  */
 
 const DRAFT_KEY = 'nb_creator_apply_v2';
+// When the automatic check can't read the profile, the creator types their follower count (reviewed by the team).
+export const MANUAL_STATES = ['unavailable', 'not_found'];
+export const parseFollowersInput = (raw = '') => {
+    const m = String(raw).trim().toLowerCase().replace(/,/g, '').match(/^(\d+(?:\.\d+)?)\s*([km])?$/);
+    if (!m) return 0;
+    const n = Number(m[1]) * (m[2] === 'm' ? 1e6 : m[2] === 'k' ? 1e3 : 1);
+    return Number.isFinite(n) ? Math.floor(n) : 0;
+};
 const HANDLE_RE = /^[a-z0-9._]{1,30}$/;
 export const MAX_NICHES = 3;
 
@@ -48,7 +57,8 @@ export function useCreatorApplication({ referredBy = '', initialCity = '' } = {}
     const [customNiche, setCustomNiche] = useState(draft?.customNiche || '');
     const [collegeName, setCollegeName] = useState(draft?.collegeName || '');
     const [whatsappOptIn, setWhatsappOptIn] = useState(draft?.whatsappOptIn !== false);
-    // lookup.state: idle | checking | found | not_professional | invalid | unavailable | disabled
+    const [manualFollowers, setManualFollowers] = useState(draft?.manualFollowers || '');
+    // lookup.state: idle | checking | found | not_found | not_professional | invalid | unavailable | disabled
     const [lookup, setLookup] = useState({ state: 'idle' });
     const [connecting, setConnecting] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -61,8 +71,8 @@ export function useCreatorApplication({ referredBy = '', initialCity = '' } = {}
     useEffect(() => { if (!city && initialCity) setCity(initialCity); }, [initialCity]); // eslint-disable-line
 
     useEffect(() => {
-        writeDraft({ handle, city, niches, customNiche, collegeName, whatsappOptIn, autoSubmit: autoSubmit.current });
-    }, [handle, city, niches, customNiche, collegeName, whatsappOptIn]);
+        writeDraft({ handle, city, niches, customNiche, collegeName, whatsappOptIn, manualFollowers, autoSubmit: autoSubmit.current });
+    }, [handle, city, niches, customNiche, collegeName, whatsappOptIn, manualFollowers]);
 
     const setHandle = (raw) => {
         setHandleState(cleanHandleInput(raw));
@@ -75,7 +85,7 @@ export function useCreatorApplication({ referredBy = '', initialCity = '' } = {}
         return [...list, id];
     });
 
-    /* One Business Discovery check (the server caches it for 24 hours). */
+    /* One lookup (Meta, or the public profile as an estimate); the server caches it for 24 hours. */
     const check = useCallback(async (value = handle) => {
         const h = cleanHandleInput(value);
         if (!isValidHandle(h)) {
@@ -104,8 +114,16 @@ export function useCreatorApplication({ referredBy = '', initialCity = '' } = {}
     }, [handle]);
 
     const campus = niches.some(isCollegeNiche);
+    const manualAllowed = isValidHandle(handle) && MANUAL_STATES.includes(lookup.state);
+    const manualCount = manualAllowed ? parseFollowersInput(manualFollowers) : 0;
+    const manualBelowMin = Boolean(manualCount && lookup.minFollowers && manualCount < lookup.minFollowers);
     const steps = [
-        { key: 'instagram', done: isValidHandle(handle) && !['invalid', 'not_professional', 'checking'].includes(lookup.state) && !lookup.alreadyRegistered && lookup.meetsMinimum !== false },
+        {
+            key: 'instagram',
+            done: manualAllowed
+                ? manualCount > 0 && !manualBelowMin
+                : isValidHandle(handle) && !['invalid', 'not_professional', 'checking'].includes(lookup.state) && !lookup.alreadyRegistered && lookup.meetsMinimum !== false,
+        },
         { key: 'city', done: Boolean(String(city).trim()) },
         { key: 'niche', done: niches.length > 0 && (!niches.includes('Others') || Boolean(customNiche.trim())) && (!campus || Boolean(collegeName.trim())) },
     ];
@@ -145,6 +163,7 @@ export function useCreatorApplication({ referredBy = '', initialCity = '' } = {}
             collegeName: campus ? collegeName.trim() : '',
             whatsappOptIn,
             referredBy,
+            ...(manualCount ? { manualFollowers: manualCount } : {}),
         });
         setSubmitting(false);
         if (res.ok) {
@@ -154,7 +173,7 @@ export function useCreatorApplication({ referredBy = '', initialCity = '' } = {}
             setError(res);
         }
         return res;
-    }, [handle, city, niches, customNiche, collegeName, campus, whatsappOptIn, referredBy]);
+    }, [handle, city, niches, customNiche, collegeName, campus, whatsappOptIn, referredBy, manualCount]);
 
     return {
         handle, setHandle,
@@ -163,6 +182,7 @@ export function useCreatorApplication({ referredBy = '', initialCity = '' } = {}
         customNiche, setCustomNiche,
         collegeName, setCollegeName,
         whatsappOptIn, setWhatsappOptIn,
+        manualFollowers, setManualFollowers, manualAllowed, manualCount, manualBelowMin,
         campus, steps, ready,
         lookup, check, found, needsConnect,
         connect, connecting,
