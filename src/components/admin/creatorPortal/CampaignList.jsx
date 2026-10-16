@@ -252,7 +252,7 @@ const CampaignList = ({
                     {pageRows.map(({ campaign: c, status, stats, spots }) => (
                         <Card key={c.id} className="relative flex flex-col overflow-hidden rounded-2xl transition-colors hover:border-black/15 dark:hover:border-white/15">
                             <button type="button" onClick={() => onOpen(c)} className="relative block w-full text-left" aria-label={`Manage ${c.title || 'campaign'}`}>
-                                <CampaignThumb campaign={c} className="aspect-[16/8] w-full" iconSize={28} />
+                                <CampaignThumb campaign={c} className="aspect-video w-full" iconSize={28} />
                                 <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
                                     <CampaignStatusPill campaign={c} />
                                     {c.isPinned && <Badge tone="blue"><Pin size={10} /> Pinned</Badge>}
@@ -293,7 +293,7 @@ const CampaignList = ({
                             <li key={c.id} className="relative transition-colors hover:bg-black/[0.015] dark:hover:bg-white/[0.02]">
                                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-5 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,1.6fr)_auto] lg:gap-4">
                                     <button type="button" onClick={() => onOpen(c)} className="flex min-w-0 items-center gap-3 text-left">
-                                        <CampaignThumb campaign={c} className="h-12 w-16 shrink-0 rounded-lg" iconSize={18} />
+                                        <CampaignThumb campaign={c} className="aspect-video h-12 shrink-0 rounded-lg" iconSize={18} />
                                         <span className="min-w-0">
                                             <span className="flex items-center gap-2">
                                                 {c.isPinned && <Pin size={12} className="shrink-0 text-sky-500" aria-label="Pinned" />}
