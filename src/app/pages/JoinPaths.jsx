@@ -6,11 +6,12 @@ import { Button } from '../../components/app';
 import { appPath } from '../host';
 import { useAuthGate, useResumeIntent, INTENTS } from '../auth/AuthGate';
 import { HeroPanel } from './parts';
+import { useTicketedEvents } from '../tickets/useTicketedEvents';
 
 /*
- * The two ways into the app, shown on Home until you've taken them:
- * become a creator (campaigns) and join the community (guestlists, gigs,
- * giveaways). Both use the hero card from creator home: dark with the green
+ * The ways into the app on Home: become a creator (campaigns) and join the
+ * community (guestlists, gigs, giveaways), each until you've done it, and
+ * tickets for upcoming shows (always: it's how fans buy). Both use the hero card from creator home: dark with the green
  * corner glow, dot texture and the faded "N." mark, one headline, one line
  * and one button.
  *
@@ -34,6 +35,7 @@ const JoinPaths = () => {
     const isMember = useCapability('member');
     const { run } = useAuthGate();
     const location = useLocation();
+    const { events: ticketed } = useTicketedEvents();
     const [busy, setBusy] = useState(false);
 
     const join = async () => {
@@ -66,6 +68,17 @@ const JoinPaths = () => {
             title: 'Guestlists, gigs and giveaways for shows near you.',
             text: 'Join the Newbi community. It’s free and takes one tap.',
             action: <Button loading={busy} onClick={() => run({ type: INTENTS.joinCommunity }, join)}>{authUser ? 'Join the community' : 'Sign in and join'}</Button>,
+        },
+        {
+            key: 'tickets',
+            eyebrow: 'Tickets',
+            title: 'Tickets for the shows coming up.',
+            text: ticketed.length === 1
+                ? `${ticketed[0].title} is on sale. Pay by UPI and your ticket shows up in the app.`
+                : ticketed.length > 1
+                    ? `${ticketed.length} shows on sale. Pay by UPI and your ticket shows up in the app.`
+                    : 'Ticket sales open here first. Pay by UPI and your ticket shows up in the app.',
+            action: <Button to={appPath('/tickets')}>{ticketed.length ? 'Get tickets' : 'See upcoming shows'}</Button>,
         },
     ].filter(Boolean);
 
