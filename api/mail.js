@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { verifyToken } from './_lib/auth.js';
+import { isStaffCaller, findSuppressed, listSuppressed, recordResubscribe, normalizeEmail, isValidEmail } from './_lib/mailing.js';
 
 if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
     throw new Error('CRITICAL: Missing default SMTP credentials. App refuses to start.');
@@ -9,7 +10,11 @@ const rateLimitCache = new Map();
 const RATE_LIMIT_MAX_REQUESTS = 10;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
-function checkRateLimit(ip) {
+// Staff sending campaigns make one request per batch (or per person for
+// personalised mail), so they get a much larger allowance keyed by account.
+const STAFF_RATE_LIMIT_MAX_REQUESTS = 3000;
+
+function checkRateLimit(ip, max = RATE_LIMIT_MAX_REQUESTS) {
     if (!ip || ip === 'unknown') return true;
     const now = Date.now();
     const userRecord = rateLimitCache.get(ip) || { count: 0, resetTime: now + RATE_LIMIT_WINDOW_MS };
@@ -24,7 +29,7 @@ function checkRateLimit(ip) {
     if (rateLimitCache.size > 10000) rateLimitCache.clear();
     
     rateLimitCache.set(ip, userRecord);
-    return userRecord.count <= RATE_LIMIT_MAX_REQUESTS;
+    return userRecord.count <= max;
 }
 
 // Helper to resolve name and email from "Name <email>" or "email" formats
@@ -114,15 +119,74 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized: Valid Firebase ID Token required' });
     }
 
+    const isStaff = await isStaffCaller(decodedToken);
+    const body = req.body || {};
+
+    // Mailing admin helpers: the unsubscribe list, and letting an address back in.
+    if (body.action === 'suppression-list' || body.action === 'resubscribe') {
+        if (!isStaff) return res.status(403).json({ error: 'Forbidden' });
+        try {
+            if (body.action === 'suppression-list') {
+                return res.status(200).json({ success: true, entries: await listSuppressed() });
+            }
+            if (!isValidEmail(body.email)) return res.status(400).json({ error: 'Invalid email' });
+            const email = await recordResubscribe(body.email);
+            return res.status(200).json({ success: true, email });
+        } catch (error) {
+            console.error('[MAIL] Mailing action failed:', error.message);
+            return res.status(500).json({ error: 'Mailing action failed' });
+        }
+    }
+
     const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
-    if (!checkRateLimit(clientIp)) {
+    const allowed = isStaff
+        ? checkRateLimit(`uid:${decodedToken.uid || decodedToken.email}`, STAFF_RATE_LIMIT_MAX_REQUESTS)
+        : checkRateLimit(clientIp);
+    if (!allowed) {
         return res.status(429).json({ error: 'Too many requests. Please try again later.' });
     }
 
-    const { to, cc, bcc, subject, text, html, attachments, accountType = 'official', fromName, fromEmail } = req.body;
+    let { to, cc, bcc } = body;
+    const { subject, text, html, attachments, accountType = 'official', fromName, fromEmail, bulk = false, campaignId = '' } = body;
 
     if (!to || !subject || (!text && !html)) {
         return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Campaign mail never goes to people who unsubscribed. Transactional mail
+    // (tickets, invoices) doesn't set `bulk` and is unaffected.
+    let suppressed = [];
+    if (bulk) {
+        const splitList = (v) => (Array.isArray(v) ? v : String(v || '').split(','))
+            .map(normalizeEmail).filter(Boolean);
+        const bccList = splitList(bcc);
+        const toList = splitList(to);
+        const candidates = bccList.length ? bccList : toList;
+        const check = await findSuppressed(candidates);
+        suppressed = check.suppressed;
+        if (suppressed.length) {
+            const blocked = new Set(suppressed);
+            if (bccList.length) {
+                bcc = bccList.filter(e => !blocked.has(e));
+                if (!bcc.length) return res.status(200).json({ success: true, skipped: true, suppressed, rejected: [] });
+            } else {
+                to = toList.filter(e => !blocked.has(e));
+                if (!to.length) return res.status(200).json({ success: true, skipped: true, suppressed, rejected: [] });
+            }
+        }
+    }
+
+    // Only list headers are passed through, never arbitrary ones.
+    const extraHeaders = {};
+    const ALLOWED_HEADERS = ['List-Unsubscribe', 'List-Unsubscribe-Post', 'List-Id', 'X-Campaign-Id'];
+    if (body.headers && typeof body.headers === 'object') {
+        ALLOWED_HEADERS.forEach(name => {
+            const value = body.headers[name];
+            if (typeof value === 'string' && value.length < 1000 && !/[\r\n]/.test(value)) extraHeaders[name] = value;
+        });
+    }
+    if (bulk && campaignId && !extraHeaders['X-Campaign-Id'] && /^[\w-]{1,80}$/.test(String(campaignId))) {
+        extraHeaders['X-Campaign-Id'] = String(campaignId);
     }
 
     // Resolve serviceKey based on accountType or fromEmail
@@ -216,6 +280,7 @@ export default async function handler(req, res) {
             html,
             attachments: attachments || [],
         };
+        if (Object.keys(extraHeaders).length) mailOptions.headers = extraHeaders;
 
         if (cc) {
             if (typeof cc === 'string' && cc.trim()) {
@@ -235,7 +300,9 @@ export default async function handler(req, res) {
 
         const info = await transporter.sendMail(mailOptions);
 
-        return res.status(200).json({ success: true, messageId: info.messageId });
+        // Addresses the mail server refused outright (the rest of the batch still went).
+        const rejected = (info.rejected || []).map(r => normalizeEmail(typeof r === 'string' ? r : r?.address)).filter(Boolean);
+        return res.status(200).json({ success: true, messageId: info.messageId, suppressed, rejected });
     } catch (error) {
         const correlationId = Math.random().toString(36).substring(2, 15);
         console.error(`[MAIL] 💥 ${serviceKey} mail failed [Correlation ID: ${correlationId}]:`, error);

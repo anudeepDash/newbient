@@ -9,6 +9,11 @@
     },
     "redirects": [
         {
+            "source": "/unsubscribe",
+            "destination": "/api/track?type=unsubscribe",
+            "permanent": false
+        },
+        {
             "source": "/artistant",
             "has": [{ "type": "host", "value": "newbi.live" }],
             "destination": "https://artistant.in",

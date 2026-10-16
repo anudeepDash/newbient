@@ -1,5 +1,6 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { recordUnsubscribe, unsubscribePage, isValidEmail, normalizeEmail } from './_lib/mailing.js';
 
 let adminDb = null;
 
@@ -92,6 +93,35 @@ export default async function handler(req, res) {
     const userAgent = req.headers['user-agent'] || 'unknown';
     const referrer = req.headers['referer'] || req.headers['referrer'] || '';
     const nowIso = new Date().toISOString();
+
+    // -------------------------------------------------------------
+    // 0. Unsubscribe (link in every campaign email + one-click header)
+    //    GET shows a confirm page; POST unsubscribes. Mail scanners that
+    //    prefetch links only GET, so they can't unsubscribe anyone.
+    // -------------------------------------------------------------
+    if (type === 'unsubscribe') {
+        const sendPage = (status, html) => {
+            res.statusCode = status;
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-store');
+            return res.end(html);
+        };
+        const campaignId = cid || tid || '';
+        if (req.method !== 'POST') {
+            return sendPage(200, unsubscribePage({ state: 'confirm', email: email ? normalizeEmail(email) : '', campaignId }));
+        }
+        const target = normalizeEmail((req.body && req.body.email) || email || '');
+        if (!isValidEmail(target)) {
+            return sendPage(400, unsubscribePage({ state: 'confirm', email: target, campaignId, message: "That doesn't look like an email address." }));
+        }
+        try {
+            await recordUnsubscribe({ email: target, campaignId, source: req.body && req.body['List-Unsubscribe'] ? 'one_click' : 'email_link', userAgent }, adminDb);
+            return sendPage(200, unsubscribePage({ state: 'done', email: target }));
+        } catch (err) {
+            console.error('[TRACK API] Unsubscribe failed:', err.message);
+            return sendPage(500, unsubscribePage({ state: 'confirm', email: target, campaignId, message: "Couldn't unsubscribe you just now. Please try again in a minute." }));
+        }
+    }
 
     // Determine event type: open pixel vs click redirect vs custom short code
     const isExplicitOpen = type === 'open' || type === 'pixel';
