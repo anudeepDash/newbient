@@ -613,6 +613,8 @@ const handleCampaignApply = async (req, res, { db, token }) => {
     if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
     const campaignId = str(req.body?.campaignId, 120);
     if (!campaignId) return send(res, 400, { success: false, error: 'campaignId is required' });
+    // 'newbi': the 1-click apply. 'google_form': the creator says they sent the campaign's Google Form.
+    const via = req.body?.via === 'google_form' ? 'google_form' : 'newbi';
 
     const [creatorSnap, campSnap] = await Promise.all([findOwnCreator(db, token.uid), db.collection('campaigns').doc(campaignId).get()]);
     if (!creatorSnap) return send(res, 409, { success: false, code: 'no_profile', error: 'Apply as a creator first.' });
@@ -625,6 +627,9 @@ const handleCampaignApply = async (req, res, { db, token }) => {
     if (!OPEN_STATUSES.has(String(c.status || 'open').toLowerCase()) || c.websiteApplyEnabled === false) {
         return send(res, 409, { success: false, error: 'This campaign is not taking applications.' });
     }
+    const method = ['form', 'both'].includes(c.applyMethod) && c.applyFormUrl ? c.applyMethod : 'newbi';
+    if (method === 'form' && via !== 'google_form') return send(res, 409, { success: false, code: 'form_only', error: 'Apply with the Google Form for this campaign.' });
+    if (method === 'newbi' && via === 'google_form') return send(res, 400, { success: false, error: 'This campaign has no Google Form.' });
 
     const followers = Number(creator.instagramFollowers) || 0;
     const min = Number(c.minInstagramFollowers) || 0;
@@ -650,7 +655,9 @@ const handleCampaignApply = async (req, res, { db, token }) => {
     const patch = { joinedCampaigns: FieldValue.arrayUnion(campaignId), updatedAt: nowIso() };
     if (shortlisted) patch.shortlistedCampaigns = FieldValue.arrayUnion(campaignId);
     await creatorSnap.ref.update(patch);
-    return send(res, 200, { success: true, shortlisted });
+    // How they applied, per campaign (a nested map, so set+merge rather than a dotted path).
+    await creatorSnap.ref.set({ campaignApplyVia: { [campaignId]: { via, at: nowIso() } } }, { merge: true }).catch(() => {});
+    return send(res, 200, { success: true, shortlisted, via });
 };
 
 /* ── campaign-submit ──────────────────────────────────────────────────── */

@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { cn } from '../../lib/utils';
+import { INPUT } from '../../components/app/controls';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import Gift from 'lucide-react/dist/esm/icons/gift';
@@ -281,7 +283,7 @@ const GiveawayPage = () => {
                     {g.question && (
                         <label className="block space-y-1.5">
                             <span className="block text-[13px] font-semibold text-gray-600 dark:text-zinc-400">{g.question}</span>
-                            <textarea rows={3} value={form.answer} onChange={e => setForm(f => ({ ...f, answer: e.target.value }))} className="w-full rounded-2xl border border-black/[0.1] bg-white px-4 py-3 text-[16px] outline-none focus:border-gray-900 dark:border-white/[0.1] dark:bg-white/[0.04] dark:focus:border-neon-green/60" />
+                            <textarea rows={3} value={form.answer} onChange={e => setForm(f => ({ ...f, answer: e.target.value }))} className={cn(INPUT, 'px-4 py-3.5')} />
                         </label>
                     )}
                     {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}

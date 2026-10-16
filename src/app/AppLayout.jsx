@@ -20,12 +20,11 @@ import NewbiLogo from '../components/brand/NewbiLogo';
 /*
  * The app shell (app.newbi.live, or /app on localhost).
  *
- * Every screen size gets the phone layout: a top bar (logo, admin for staff,
- * theme on larger screens, notification bell) and a floating glass pill of
- * tabs, both clear of the notch and home bar; only the active tab shows its
- * label. On desktop the same layout is centred (the owner prefers it to a
- * side rail). Tabs come from the module registry (modules.js). The pill is the one live blur in the shell; the top bar is
- * solid, so iPhone Safari never stacks blur layers.
+ * Phones and tablets: a top bar (logo, admin for staff, notification bell)
+ * and a floating glass pill of tabs, both clear of the notch and home bar;
+ * only the active tab shows its label.
+ * Desktop (lg+): one top bar like the landing site's, with the tabs in the
+ * middle, and wider pages. Tabs come from the module registry (modules.js).
  */
 
 // The unified newbi.live logo (outlined, so one file works on light and dark).
@@ -50,7 +49,7 @@ const BellButton = ({ count, onClick, className }) => (
 );
 
 const PageFallback = () => (
-    <div className="mx-auto max-w-3xl space-y-4 px-4 py-6 sm:px-6">
+    <div className="mx-auto max-w-6xl space-y-4 px-4 py-6 sm:px-6 lg:px-8">
         <div className="h-8 w-40 animate-pulse rounded-xl bg-black/[0.05] dark:bg-white/[0.05]" />
         <div className="aspect-video animate-pulse rounded-3xl bg-black/[0.04] dark:bg-white/[0.04]" />
     </div>
@@ -104,11 +103,39 @@ const AppLayout = () => {
             <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 hidden dark:block" style={{ background: 'radial-gradient(60% 40% at 100% 0%, rgba(57,255,20,0.14), transparent 70%), radial-gradient(50% 40% at 0% 100%, rgba(56,189,248,0.08), transparent 70%)' }} />
             <AuthResumer />
 
-            {/* ── Top bar (every screen size: desktop is the phone layout, centred) ── */}
+            {/* ── Top bar ── */}
             <header className="fixed inset-x-0 top-0 z-40 border-b border-black/[0.05] bg-[#f4f4f1]/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl dark:border-white/[0.05] dark:bg-[#050608]/80">
-                <div className="mx-auto flex h-14 max-w-3xl items-center justify-between pl-4 pr-1.5 sm:px-4">
-                    <Link to={appPath('/')} aria-label="Newbi home" className="flex h-11 items-center"><Logo className="h-7" /></Link>
-                    <div className="flex items-center">
+                <div className="mx-auto flex h-14 max-w-6xl items-center justify-between pl-4 pr-1.5 sm:px-4 lg:h-[4.5rem] lg:px-8">
+                    <Link to={appPath('/')} aria-label="Newbi home" className="flex h-11 items-center lg:w-48"><Logo className="h-7 lg:h-8" /></Link>
+                    {/* Desktop: the tabs live in the top bar. */}
+                    <nav aria-label="App sections" className="hidden items-center gap-1 rounded-full bg-black/[0.04] p-1 ring-1 ring-inset ring-black/[0.04] dark:bg-white/[0.05] dark:ring-white/[0.06] lg:flex">
+                        {tabs.map(({ module, label }) => {
+                            const Icon = module.tab.icon;
+                            const active = activeModule?.id === module.id;
+                            return (
+                                <Link
+                                    key={module.id}
+                                    to={appPath(module.path)}
+                                    aria-current={active ? 'page' : undefined}
+                                    className={cn(
+                                        'relative flex h-10 items-center gap-2 rounded-full px-4 text-[14px] font-bold transition-colors',
+                                        active ? 'text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white'
+                                    )}
+                                >
+                                    {active && (
+                                        <motion.span
+                                            layoutId="app-top-tab"
+                                            transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                                            className="absolute inset-0 rounded-full bg-white shadow-[0_2px_10px_rgba(0,0,0,0.1)] dark:bg-white/[0.14] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
+                                        />
+                                    )}
+                                    <Icon size={17} strokeWidth={active ? 2.3 : 1.9} className={cn('relative', active && 'text-emerald-600 dark:text-neon-green')} />
+                                    <span className="relative">{label}</span>
+                                </Link>
+                            );
+                        })}
+                    </nav>
+                    <div className="flex items-center lg:w-48 lg:justify-end">
                         {isStaff && (
                             <Link
                                 to="/admin"
@@ -132,16 +159,16 @@ const AppLayout = () => {
             </header>
 
             {/* ── Page ── */}
-            <main className="min-w-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-[calc(3.5rem+env(safe-area-inset-top))]">
+            <main className="min-w-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-[calc(3.5rem+env(safe-area-inset-top))] lg:pb-16 lg:pt-[4.5rem]">
                 <Suspense fallback={<PageFallback />}>
                     <Outlet />
                 </Suspense>
             </main>
 
-            {/* ── Tab bar: a floating glass pill on every screen; only the active tab shows its label ── */}
+            {/* ── Tab bar (phones and tablets): a floating glass pill; only the active tab shows its label ── */}
             <nav
                 aria-label="App sections"
-                className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-5"
+                className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-5 lg:hidden"
             >
                 <div
                     className={cn(

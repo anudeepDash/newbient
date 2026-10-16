@@ -24,7 +24,7 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 const MOBILE_QUERY = '(max-width: 767px)';
 const stack = [];
 
-const useIsPhone = () => {
+export const useIsPhone = () => {
     const [phone, setPhone] = useState(() => typeof window !== 'undefined' && window.matchMedia?.(MOBILE_QUERY).matches);
     useEffect(() => {
         const mq = window.matchMedia?.(MOBILE_QUERY);
@@ -73,7 +73,7 @@ const Sheet = ({
     }, [open, dismissible]);
 
     const requestClose = () => { if (dismissible) onClose?.(); };
-    const widths = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' };
+    const widths = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl', '2xl': 'max-w-5xl' };
 
     if (typeof document === 'undefined') return null;
 
@@ -110,7 +110,7 @@ const Sheet = ({
                             'relative flex w-full flex-col overflow-hidden border-black/[0.08] bg-white text-gray-900 shadow-2xl dark:border-white/[0.08] dark:bg-[#0d0f15] dark:text-white',
                             phone
                                 ? cn('rounded-t-[1.75rem] border-t', size === 'full' ? 'h-[calc(100dvh-env(safe-area-inset-top)-0.75rem)]' : 'max-h-[92dvh]')
-                                : cn('max-h-[85dvh] rounded-3xl border', widths[width] || widths.md),
+                                : cn('max-h-[88dvh] rounded-[2rem] border shadow-[0_40px_120px_-30px_rgba(0,0,0,0.6)]', widths[width] || widths.md),
                             className
                         )}
                     >
@@ -125,10 +125,10 @@ const Sheet = ({
                             </div>
                         )}
                         {(header || title || dismissible) && (
-                            <div className={cn('relative flex shrink-0 items-start justify-between gap-4 px-5 pb-3', phone ? 'pt-1' : 'pt-5')}>
+                            <div className={cn('relative flex shrink-0 items-start justify-between gap-4 px-5 pb-3', phone ? 'pt-1' : 'px-7 pt-6')}>
                                 {header ? <div className="min-w-0 flex-1">{header}</div> : (
                                     <div className="min-w-0">
-                                        {title && <h2 className="text-lg font-extrabold tracking-tight">{title}</h2>}
+                                        {title && <h2 className="font-heading text-[20px] font-extrabold tracking-[-0.02em]">{title}</h2>}
                                         {subtitle && <p className="mt-0.5 text-[13px] text-gray-500 dark:text-zinc-400">{subtitle}</p>}
                                     </div>
                                 )}
@@ -144,11 +144,11 @@ const Sheet = ({
                                 )}
                             </div>
                         )}
-                        <div className={cn('relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 pt-1 [-webkit-overflow-scrolling:touch]', bodyClassName)}>
+                        <div className={cn('relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 pt-1 [-webkit-overflow-scrolling:touch]', !phone && 'px-7 pb-7', bodyClassName)}>
                             {children}
                         </div>
                         {footer ? (
-                            <div className="relative shrink-0 border-t border-black/[0.06] bg-white px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 dark:border-white/[0.06] dark:bg-[#0d0f15]">
+                            <div className={cn('relative shrink-0 border-t border-black/[0.06] bg-white px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 dark:border-white/[0.06] dark:bg-[#0d0f15]', !phone && 'px-7 pb-5')}>
                                 {footer}
                             </div>
                         ) : phone && <div className="h-[env(safe-area-inset-bottom)] shrink-0" />}

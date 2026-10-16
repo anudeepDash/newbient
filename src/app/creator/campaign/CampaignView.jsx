@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Award from 'lucide-react/dist/esm/icons/award';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Users from 'lucide-react/dist/esm/icons/users';
@@ -7,12 +7,11 @@ import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
 import Flame from 'lucide-react/dist/esm/icons/flame';
 import CalendarClock from 'lucide-react/dist/esm/icons/calendar-clock';
 import GraduationCap from 'lucide-react/dist/esm/icons/graduation-cap';
-import Share2 from 'lucide-react/dist/esm/icons/share-2';
 import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import Hourglass from 'lucide-react/dist/esm/icons/hourglass';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
-import { AmbientBackdrop, Button, Sheet } from '../../../components/app';
+import { AmbientBackdrop, Button, Sheet, useIsPhone } from '../../../components/app';
 import { useAppStore } from '../../../lib/store/appStore';
 import { useStore as useLegacyStore } from '../../../lib/store.js';
 import { isPresent } from '../../../lib/present';
@@ -30,14 +29,19 @@ import { Notice, STICKY_DOCK } from '../ui';
 import TaskCard from './TaskCard';
 import SubmitTaskSheet from './SubmitTaskSheet';
 import TicketSlot from './TicketSlot';
+import ApplyPanel from './ApplyPanel';
+import GoogleFormSheet from './GoogleFormSheet';
+import { applyMethodOf, formValuesFor, googleFormUrl } from './applyMethod';
 
 /*
- * The campaign page body, shared by the sheet (opened over a list) and the
- * full page (opened from a shared link). Layout, top to bottom:
+ * The campaign, shared by the sheet (opened over a list) and the full page
+ * (opened from a shared link).
  *
- *   ambient glow · hero image · title · stat chips (only those with a value)
- *   · your status · Your ticket (Phase 5) · brief · deliverables
- *   and a sticky action bar: Apply / Submit / status, padded for the home bar.
+ *   Phones: poster · title · stat chips · status · ticket · brief ·
+ *           deliverables, and the apply bar pinned at the bottom.
+ *   Desktop: two columns. The poster stays put on the left; on the right the
+ *           title, chips, the apply panel (Newbi ID card + 1-click apply, or
+ *           the Google Form), then the brief and deliverables.
  *
  * No fallback strings: an unset city, reward, follower minimum or brief is
  * simply not shown.
@@ -92,8 +96,11 @@ const blockerFor = (campaign, creator) => {
 
 const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) => {
     const location = useLocation();
+    const navigate = useNavigate();
+    const phone = useIsPhone();
     const gate = useAuthGate();
     const authUser = useAppStore(s => s.authUser);
+    const profile = useAppStore(s => s.profile);
     const creator = useAppStore(s => s.creatorProfile);
     const creatorLoaded = useAppStore(s => s.creatorLoaded);
     const records = useAppStore(s => s.mySubmissions);
@@ -103,8 +110,11 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
     const [applyError, setApplyError] = useState(null);
     const [justApplied, setJustApplied] = useState(null);
     const [submitting, setSubmitting] = useState(null);
+    const [formOpen, setFormOpen] = useState(false);
+    const [pendingApply, setPendingApply] = useState(false);
 
     const id = campaign.id;
+    const method = applyMethodOf(campaign);
     const joined = Boolean(justApplied) || (creator?.joinedCampaigns || []).includes(id);
     const shortlisted = Boolean(justApplied?.shortlisted) || isShortlisted(creator, id);
     const inCampaign = joined || shortlisted;
@@ -125,20 +135,30 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
         return () => clearTimeout(t);
     }, [initialTaskId]);
 
-    const apply = useCallback(async () => {
+    const apply = useCallback(async (via = 'newbi') => {
         setApplying(true);
         setApplyError(null);
-        const res = await callCreatorApi('campaign-apply', { campaignId: id });
+        const res = await callCreatorApi('campaign-apply', { campaignId: id, via });
         setApplying(false);
-        if (!res.ok) return setApplyError(res.error);
+        if (!res.ok) { setApplyError(res.error); return false; }
         setJustApplied({ shortlisted: Boolean(res.data.shortlisted) });
         addToast?.(res.data.shortlisted ? 'You’re in. Your deliverables are below.' : 'Applied. We’ll let you know if you’re picked.', 'success');
-        return undefined;
+        return true;
     }, [id, addToast]);
 
-    useResumeIntent(INTENTS.campaignApply, (payload) => {
-        if (payload?.id === id && creator && !inCampaign) apply();
-    });
+    // No Newbi ID yet: the 30-second creator form, which applies to this campaign when it's done.
+    const getId = useCallback(() => {
+        navigate(`${appPath('/creator/apply')}?next=${encodeURIComponent(`/c/${id}`)}`, { state: { backgroundLocation: location.state?.backgroundLocation || location } });
+    }, [navigate, id, location]);
+
+    // Back from signing in: wait for the creator profile, then apply (or get a Newbi ID first).
+    useResumeIntent(INTENTS.campaignApply, (payload) => { if (payload?.id === id) setPendingApply(true); });
+    useEffect(() => {
+        if (!pendingApply || !authUser || !creatorLoaded) return;
+        setPendingApply(false);
+        if (inCampaign) return;
+        if (creator) { if (!blockerFor(campaign, creator)) apply(); } else getId();
+    }, [pendingApply, authUser, creatorLoaded, creator, inCampaign, campaign, apply, getId]);
 
     const share = () => {
         const url = campaignShareUrl(id);
@@ -149,6 +169,15 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
         }
     };
 
+    const formValues = useMemo(() => formValuesFor({ creator, profile }), [creator, profile]);
+    const formEmbed = method !== 'newbi' ? googleFormUrl(campaign.applyFormUrl, formValues, { embed: true }) : null;
+    const formOpenUrl = method !== 'newbi' ? googleFormUrl(campaign.applyFormUrl, formValues) : null;
+    const formSent = async () => {
+        if (!creator || inCampaign) { setFormOpen(false); return; }
+        const ok = await apply('google_form');
+        if (ok) setFormOpen(false);
+    };
+
     const reward = campaign.reward;
     const city = isCampaignCityMatch(campaign.targetCity, '') ? null : campaign.targetCity;
     const min = Number(campaign.minInstagramFollowers) || 0;
@@ -156,141 +185,170 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
     const blocker = creator && !inCampaign ? blockerFor(campaign, creator) : null;
     const nextTask = shortlisted ? tasks.find(t => ['not_started', 'rejected'].includes(submissionFor(t, who)?.status || 'not_started')) : null;
 
-    /* ── Action bar ── */
-    let action;
-    if (!authUser) {
-        action = <Button className="flex-1" size="lg" onClick={() => gate.requestSignIn({ type: INTENTS.campaignApply, payload: { id } })}>Apply</Button>;
-    } else if (!creatorLoaded) {
-        action = <Button className="flex-1" size="lg" loading disabled>Loading</Button>;
-    } else if (!creator) {
-        // The application opens in place, over whatever this campaign is open over.
-        action = <Button className="flex-1" size="lg" to={`${appPath('/creator/apply')}?next=${encodeURIComponent(`/c/${id}`)}`} state={{ backgroundLocation: location.state?.backgroundLocation || location }}>Apply as a creator</Button>;
-    } else if (!inCampaign) {
-        action = blocker
-            ? <p className="flex min-h-[48px] flex-1 items-center text-[14px] font-semibold text-gray-600 dark:text-zinc-400">{blocker}</p>
-            : <Button className="flex-1" size="lg" loading={applying} onClick={apply}>Apply</Button>;
-    } else if (!shortlisted) {
-        action = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-semibold text-gray-700 dark:text-zinc-300"><Hourglass size={17} className="shrink-0 text-amber-600 dark:text-amber-300" /> Applied. We’ll let you know if you’re picked.</p>;
-    } else if (progress.requiredDone) {
-        action = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-bold text-emerald-700 dark:text-neon-green"><CircleCheck size={18} className="shrink-0" /> All required deliverables approved</p>;
-    } else if (nextTask) {
-        action = <Button className="flex-1" size="lg" onClick={() => setSubmitting(nextTask)}>Submit {tasks.length > 1 ? 'next deliverable' : 'deliverable'}</Button>;
-    } else if (tasks.length) {
-        action = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-semibold text-gray-700 dark:text-zinc-300"><Hourglass size={17} className="shrink-0 text-sky-600 dark:text-sky-300" /> Everything’s in review</p>;
-    } else {
-        action = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-bold text-emerald-700 dark:text-neon-green"><CircleCheck size={18} className="shrink-0" /> You’re in this campaign</p>;
+    /* ── Once you're in the campaign: your status (or the next thing to do) ── */
+    let status = null;
+    if (inCampaign) {
+        if (!shortlisted) {
+            status = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-semibold text-gray-700 dark:text-zinc-300"><Hourglass size={17} className="shrink-0 text-amber-600 dark:text-amber-300" /> Applied. We’ll let you know if you’re picked.</p>;
+        } else if (progress.requiredDone) {
+            status = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-bold text-emerald-700 dark:text-neon-green"><CircleCheck size={18} className="shrink-0" /> All required deliverables approved</p>;
+        } else if (nextTask) {
+            status = <Button className="flex-1" size="lg" onClick={() => setSubmitting(nextTask)}>Submit {tasks.length > 1 ? 'next deliverable' : 'deliverable'}</Button>;
+        } else if (tasks.length) {
+            status = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-semibold text-gray-700 dark:text-zinc-300"><Hourglass size={17} className="shrink-0 text-sky-600 dark:text-sky-300" /> Everything’s in review</p>;
+        } else {
+            status = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-bold text-emerald-700 dark:text-neon-green"><CircleCheck size={18} className="shrink-0" /> You’re in this campaign</p>;
+        }
     }
 
-    const bar = (
-        <div className="flex items-center gap-2">
-            {action}
-            <Button variant="secondary" size="lg" icon={Share2} onClick={share} aria-label="Share campaign" className="w-14 shrink-0 px-0" />
+    const panelProps = {
+        method,
+        creator,
+        profile,
+        signedIn: Boolean(authUser),
+        loading: Boolean(authUser) && !creatorLoaded,
+        blocker,
+        status,
+        applying,
+        onApply: () => apply('newbi'),
+        onGetId: getId,
+        onSignIn: () => gate.requestSignIn({ type: INTENTS.campaignApply, payload: { id } }),
+        onOpenForm: () => {
+            // Forms that need a Google sign-in open in a new tab, straight from the tap (so Safari allows it).
+            if (campaign.applyFormNeedsSignIn && formOpenUrl) window.open(formOpenUrl, '_blank', 'noopener');
+            setFormOpen(true);
+        },
+        onShare: share,
+    };
+    const bar = <ApplyPanel {...panelProps} compact />;
+
+    const poster = campaign.thumbnail ? (
+        <div className="overflow-hidden rounded-3xl border border-black/[0.06] bg-black/[0.04] shadow-[0_30px_80px_-40px_rgba(0,0,0,0.6)] dark:border-white/[0.08] dark:bg-white/[0.04]">
+            <img src={campaign.thumbnail} alt="" className="aspect-video w-full object-cover md:aspect-auto md:max-h-[70dvh] md:object-contain" />
+        </div>
+    ) : null;
+
+    const details = (
+        <div className="space-y-6">
+            <div className="space-y-3">
+                {(isPresent(campaign.brand) || campaign.brandLogo) && (
+                    <div className="flex items-center gap-2">
+                        {campaign.brandLogo && <img src={campaign.brandLogo} alt="" className="h-7 w-7 rounded-lg border border-black/10 bg-white object-contain p-0.5 dark:border-white/10" />}
+                        {isPresent(campaign.brand) && <span className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-700 dark:text-neon-green">{campaign.brand}</span>}
+                    </div>
+                )}
+                <h1 className="font-heading text-[28px] font-extrabold leading-[1.05] tracking-[-0.035em] sm:text-[34px] md:text-[40px]">{campaign.title}</h1>
+                <div className="flex flex-wrap gap-2">
+                    <Chip icon={Award} label={reward} tone="accent" />
+                    <Chip icon={MapPin} label={city} />
+                    <Chip icon={GraduationCap} label={isPresent(campaign.targetCollege) ? campaign.targetCollege : null} />
+                    <Chip icon={Users} label={min > 0 ? `${compactCount(min)}+ followers` : null} />
+                    <Chip icon={ListChecks} label={tasks.length ? `${tasks.length} ${tasks.length === 1 ? 'deliverable' : 'deliverables'}` : null} />
+                    <Chip icon={Flame} label={spotsLabel(campaign)} />
+                    <Chip icon={CalendarClock} label={dueLabel(campaign.deadline || campaign.endDate)} />
+                </div>
+            </div>
+
+            {/* Desktop: the apply panel sits here. Phones get it as the bottom bar. */}
+            {!phone && <ApplyPanel {...panelProps} />}
+
+            {inCampaign && (
+                <Notice tone={progress.requiredDone ? 'success' : shortlisted ? 'success' : 'info'} title={progress.requiredDone ? 'Completed' : shortlisted ? 'You’re in' : 'Applied'}>
+                    {progress.requiredDone
+                        ? 'Every required deliverable is approved. Nice work.'
+                        : shortlisted
+                            ? (tasks.length ? `${progress.approved ? `${progress.approved} of ${tasks.length} approved. ` : ''}Submit each deliverable below once it’s live.` : 'You’re picked for this campaign.')
+                            : 'The brand is picking creators. You’ll hear from us either way.'}
+                </Notice>
+            )}
+            {applyError && <Notice tone="error">{applyError}</Notice>}
+
+            {shortlisted && isPresent(campaign.whatsappLink) && (
+                <Button variant="secondary" icon={MessageCircle} href={campaign.whatsappLink} target="_blank" rel="noopener noreferrer">Join the campaign WhatsApp group</Button>
+            )}
+
+            <TicketSlot campaign={campaign} creator={creator} />
+
+            {brief && (
+                <section className="space-y-3">
+                    <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-400">The brief</h2>
+                    <div className="campaign-briefing-content break-words text-[15px] leading-relaxed text-gray-800 dark:text-zinc-200 md:text-[16px]" dangerouslySetInnerHTML={{ __html: brief }} />
+                </section>
+            )}
+
+            {tasks.length > 0 && (
+                <section className="space-y-3">
+                    <div className="flex items-end justify-between gap-3">
+                        <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-400">Deliverables</h2>
+                        {shortlisted && progress.total > 0 && progress.approved > 0 && (
+                            <span className="text-[13px] font-bold text-gray-700 dark:text-zinc-300">{progress.approved}/{progress.total} approved</span>
+                        )}
+                    </div>
+                    <ol className="space-y-3">
+                        {tasks.map((task, i) => {
+                            const sub = shortlisted ? submissionFor(task, who) : null;
+                            return (
+                                <TaskCard
+                                    key={task.id || i}
+                                    task={task}
+                                    index={i}
+                                    status={sub?.status || 'not_started'}
+                                    submission={sub}
+                                    canSubmit={shortlisted}
+                                    onSubmit={setSubmitting}
+                                    highlight={String(task.id) === String(initialTaskId)}
+                                />
+                            );
+                        })}
+                    </ol>
+                </section>
+            )}
+
+            {!brief && !tasks.length && (
+                <p className="flex items-center gap-2 text-[14px] text-gray-500 dark:text-zinc-400"><Megaphone size={16} /> The full brief is shared with picked creators.</p>
+            )}
         </div>
     );
 
     const body = (
-            <div className="relative isolate">
-                {variant === 'page' && (
-                    // On a page the glow fades out on every side, so it has no edges.
-                    <div aria-hidden="true" className="pointer-events-none absolute -inset-x-4 -top-20 h-[560px] sm:-inset-x-24" style={PAGE_GLOW_MASK}>
-                        <AmbientBackdrop image={campaign.thumbnail} fade={false} />
-                    </div>
-                )}
-                <div className="relative space-y-5">
-                    {campaign.thumbnail ? (
-                        <div className="overflow-hidden rounded-3xl border border-black/[0.06] bg-black/[0.04] dark:border-white/[0.08] dark:bg-white/[0.04]">
-                            <img src={campaign.thumbnail} alt="" className="aspect-video w-full object-cover" />
-                        </div>
-                    ) : null}
-
-                    <div className="space-y-2">
-                        {(isPresent(campaign.brand) || campaign.brandLogo) && (
-                            <div className="flex items-center gap-2">
-                                {campaign.brandLogo && <img src={campaign.brandLogo} alt="" className="h-6 w-6 rounded-md border border-black/10 bg-white object-contain p-0.5 dark:border-white/10" />}
-                                {isPresent(campaign.brand) && <span className="text-[12px] font-black uppercase tracking-widest text-emerald-700 dark:text-neon-green">{campaign.brand}</span>}
-                            </div>
-                        )}
-                        <h1 className="font-heading text-[26px] font-black leading-[1.15] tracking-tight sm:text-[32px]">{campaign.title}</h1>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                        <Chip icon={Award} label={reward} tone="accent" />
-                        <Chip icon={MapPin} label={city} />
-                        <Chip icon={GraduationCap} label={isPresent(campaign.targetCollege) ? campaign.targetCollege : null} />
-                        <Chip icon={Users} label={min > 0 ? `${compactCount(min)}+ followers` : null} />
-                        <Chip icon={ListChecks} label={tasks.length ? `${tasks.length} ${tasks.length === 1 ? 'deliverable' : 'deliverables'}` : null} />
-                        <Chip icon={Flame} label={spotsLabel(campaign)} />
-                        <Chip icon={CalendarClock} label={dueLabel(campaign.deadline || campaign.endDate)} />
-                    </div>
-
-                    {inCampaign && (
-                        <Notice tone={progress.requiredDone ? 'success' : shortlisted ? 'success' : 'info'} title={progress.requiredDone ? 'Completed' : shortlisted ? 'You’re in' : 'Applied'}>
-                            {progress.requiredDone
-                                ? 'Every required deliverable is approved. Nice work.'
-                                : shortlisted
-                                    ? (tasks.length ? `${progress.approved ? `${progress.approved} of ${tasks.length} approved. ` : ''}Submit each deliverable below once it’s live.` : 'You’re picked for this campaign.')
-                                    : 'The brand is picking creators. You’ll hear from us either way.'}
-                        </Notice>
-                    )}
-                    {applyError && <Notice tone="error">{applyError}</Notice>}
-
-                    {shortlisted && isPresent(campaign.whatsappLink) && (
-                        <Button variant="secondary" icon={MessageCircle} href={campaign.whatsappLink} target="_blank" rel="noopener noreferrer">Join the campaign WhatsApp group</Button>
-                    )}
-
-                    <TicketSlot campaign={campaign} creator={creator} />
-
-                    {brief && (
-                        <section className="space-y-2">
-                            <h2 className="text-[13px] font-bold text-gray-500 dark:text-zinc-400">The brief</h2>
-                            <div className="campaign-briefing-content break-words text-[15px] leading-relaxed text-gray-800 dark:text-zinc-200" dangerouslySetInnerHTML={{ __html: brief }} />
-                        </section>
-                    )}
-
-                    {tasks.length > 0 && (
-                        <section className="space-y-3">
-                            <div className="flex items-end justify-between gap-3">
-                                <h2 className="text-[13px] font-bold text-gray-500 dark:text-zinc-400">Deliverables</h2>
-                                {shortlisted && progress.total > 0 && progress.approved > 0 && (
-                                    <span className="text-[13px] font-bold text-gray-700 dark:text-zinc-300">{progress.approved}/{progress.total} approved</span>
-                                )}
-                            </div>
-                            <ol className="space-y-3">
-                                {tasks.map((task, i) => {
-                                    const sub = shortlisted ? submissionFor(task, who) : null;
-                                    return (
-                                        <TaskCard
-                                            key={task.id || i}
-                                            task={task}
-                                            index={i}
-                                            status={sub?.status || 'not_started'}
-                                            submission={sub}
-                                            canSubmit={shortlisted}
-                                            onSubmit={setSubmitting}
-                                            highlight={String(task.id) === String(initialTaskId)}
-                                        />
-                                    );
-                                })}
-                            </ol>
-                        </section>
-                    )}
-
-                    {!brief && !tasks.length && (
-                        <p className="flex items-center gap-2 text-[14px] text-gray-500 dark:text-zinc-400"><Megaphone size={16} /> The full brief is shared with picked creators.</p>
-                    )}
+        <div className="relative isolate">
+            {variant === 'page' && (
+                // On a page the glow fades out on every side, so it has no edges.
+                <div aria-hidden="true" className="pointer-events-none absolute -inset-x-4 -top-20 h-[560px] sm:-inset-x-24" style={PAGE_GLOW_MASK}>
+                    <AmbientBackdrop image={campaign.thumbnail} fade={false} />
                 </div>
+            )}
+            <div className={cn('relative grid gap-6', poster && 'md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:gap-10')}>
+                {poster && <div className="md:sticky md:top-0 md:self-start">{poster}</div>}
+                {details}
             </div>
+        </div>
     );
 
-    const submitSheet = (
-        <SubmitTaskSheet
-            open={Boolean(submitting)}
-            onClose={() => setSubmitting(null)}
-            campaign={campaign}
-            task={submitting}
-            current={submitting ? submissionFor(submitting, who) : null}
-            onSubmitted={() => addToast?.('Sent for review', 'success')}
-        />
+    const sheets = (
+        <>
+            <SubmitTaskSheet
+                open={Boolean(submitting)}
+                onClose={() => setSubmitting(null)}
+                campaign={campaign}
+                task={submitting}
+                current={submitting ? submissionFor(submitting, who) : null}
+                onSubmitted={() => addToast?.('Sent for review', 'success')}
+            />
+            {method !== 'newbi' && (
+                <GoogleFormSheet
+                    open={formOpen}
+                    onClose={() => setFormOpen(false)}
+                    title={campaign.title}
+                    embedUrl={formEmbed}
+                    openUrl={formOpenUrl}
+                    external={Boolean(campaign.applyFormNeedsSignIn)}
+                    canMarkApplied={Boolean(creator) && !inCampaign}
+                    marking={applying}
+                    onSent={formSent}
+                />
+            )}
+        </>
     );
 
     if (variant === 'sheet') {
@@ -300,15 +358,15 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
                     open
                     onClose={onClose}
                     size="full"
-                    width="lg"
+                    width={poster ? '2xl' : 'lg'}
                     header={<span className="sr-only">{campaign.title}</span>}
-                    footer={bar}
+                    footer={phone ? bar : null}
                     bodyClassName="pt-0"
                     backdrop={<AmbientBackdrop image={campaign.thumbnail} className="bottom-auto h-[520px]" />}
                 >
                     {body}
                 </Sheet>
-                {submitSheet}
+                {sheets}
             </>
         );
     }
@@ -316,11 +374,9 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
     return (
         <>
             {body}
-            {/* Full page: a solid dock under the app's tab pill. */}
-            <div className={cn(STICKY_DOCK, 'mt-6')}>
-                {bar}
-            </div>
-            {submitSheet}
+            {/* Phones: a solid dock under the app's tab pill. */}
+            {phone && <div className={cn(STICKY_DOCK, 'mt-6')}>{bar}</div>}
+            {sheets}
         </>
     );
 };

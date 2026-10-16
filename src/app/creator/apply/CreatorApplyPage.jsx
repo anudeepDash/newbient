@@ -17,6 +17,7 @@ import { creatorPassId } from '../format';
 import { ChoiceChip, Notice, STICKY_DOCK } from '../ui';
 import { useCreatorApplication, MAX_NICHES, isValidHandle } from './useCreatorApplication';
 import CreatorPass from './CreatorPass';
+import { callCreatorApi } from '../api';
 import { SwitchGuide, oauthErrorMessage } from './instagramCopy';
 
 /*
@@ -93,7 +94,7 @@ const confetti = () => {
     }).catch(() => {});
 };
 
-const Success = ({ app, profile, next, welcomePoints }) => {
+const Success = ({ app, profile, next, welcomePoints, campaignApply }) => {
     const r = app.result;
     const approved = r.status === 'approved';
     useEffect(() => { confetti(); window.scrollTo({ top: 0 }); }, []);
@@ -121,6 +122,13 @@ const Success = ({ app, profile, next, welcomePoints }) => {
                 </p>
                 {approved && welcomePoints > 0 && <p className="text-[14px] font-bold text-emerald-700 dark:text-neon-green">+{welcomePoints.toLocaleString('en-IN')} welcome points</p>}
             </div>
+            {next && campaignApply && (
+                campaignApply.state === 'sending'
+                    ? <p className="flex items-center justify-center gap-2 text-[14px] font-semibold text-gray-600 dark:text-zinc-400"><Loader2 size={16} className="animate-spin" /> Applying to the campaign…</p>
+                    : campaignApply.state === 'done'
+                        ? <Notice tone="success" title="Applied to the campaign too">{campaignApply.shortlisted ? 'You’re in. Your deliverables are on the campaign page.' : 'We’ll let you know if you’re picked.'}</Notice>
+                        : <Notice tone="info">{campaignApply.error || 'Open the campaign to finish applying.'}</Notice>
+            )}
             <div className="space-y-2">
                 {next && <Button className="w-full" size="lg" to={appPath(next)} icon={ArrowRight}>Back to the campaign</Button>}
                 <Button className="w-full" size="lg" variant={next ? 'secondary' : 'primary'} to={appPath('/creator')}>See open campaigns</Button>
@@ -128,6 +136,20 @@ const Success = ({ app, profile, next, welcomePoints }) => {
             </div>
         </div>
     );
+};
+
+/* Desktop page: two columns, with the live creator pass and Apply pinned on the right. */
+const WIDE_QUERY = '(min-width: 1024px)';
+const useWide = () => {
+    const [wide, setWide] = useState(() => typeof window !== 'undefined' && Boolean(window.matchMedia?.(WIDE_QUERY).matches));
+    useEffect(() => {
+        const mq = window.matchMedia?.(WIDE_QUERY);
+        if (!mq) return undefined;
+        const onChange = (e) => setWide(e.matches);
+        mq.addEventListener('change', onChange);
+        return () => mq.removeEventListener('change', onChange);
+    }, []);
+    return wide;
 };
 
 /* The same flow as a page (sticky dock under the tab pill) or a sheet (Apply in its footer). */
@@ -154,9 +176,19 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
     const referredBy = useMemo(() => readRef(params), [params]);
     const next = safeNext(params.get('next'));
     const app = useCreatorApplication({ referredBy, initialCity: profile?.city || '' });
+    // Opened from a campaign ("Get my Newbi ID"): apply to it as soon as the creator profile exists.
+    const [campaignApply, setCampaignApply] = useState(null);
+    useEffect(() => {
+        if (!app.result || !next || campaignApply) return;
+        setCampaignApply({ state: 'sending' });
+        callCreatorApi('campaign-apply', { campaignId: next.slice(3), via: 'newbi' }).then((res) => {
+            setCampaignApply(res.ok ? { state: 'done', shortlisted: Boolean(res.data?.shortlisted) } : { state: 'error', error: res.error });
+        });
+    }, [app.result, next, campaignApply]);
     const [otherCity, setOtherCity] = useState(false);
     const [oauthError, setOauthError] = useState(null);
     const gate = useAuthGate();
+    const twoColumns = useWide() && Frame === PageFrame;
 
     useEffect(() => { loadCreatorSettings(); }, [loadCreatorSettings]);
     const { check, handle } = app;
@@ -193,7 +225,7 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
     }, [params]);
 
     if (creatorLoaded && creator && !app.result) return <Navigate to={appPath(next || '/creator')} replace />;
-    if (app.result) return <Frame onClose={onClose}><Success app={app} profile={profile} next={next} welcomePoints={settings?.welcomePoints || 0} /></Frame>;
+    if (app.result) return <Frame onClose={onClose}><Success app={app} profile={profile} next={next} welcomePoints={settings?.welcomePoints || 0} campaignApply={campaignApply} /></Frame>;
     if (settings && !settings.allowSignups) {
         return (
             <Frame onClose={onClose}>
@@ -224,9 +256,10 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
         </div>
     );
 
-    return (
-        <Frame footer={dock} onClose={onClose}>
-            <div className="mx-auto max-w-xl space-y-5">
+    const pass = <CreatorPass handle={app.handle} lookup={lookup} profile={profile} city={app.city} niches={app.niches} customNiche={app.customNiche} manualFollowers={app.manualBelowMin ? 0 : app.manualCount} />;
+
+    const form = (
+            <div className={cn('space-y-5', !twoColumns && 'mx-auto max-w-xl')}>
                 <header className="pb-1">
                     <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-gray-700 ring-1 ring-inset ring-black/[0.06] backdrop-blur-md dark:bg-white/[0.06] dark:text-zinc-300 dark:ring-white/10">
                         <span className="h-1.5 w-1.5 rounded-full bg-neon-green shadow-[0_0_8px_rgba(57,255,20,0.9)]" aria-hidden="true" /> Newbi creators
@@ -274,7 +307,7 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
                     {oauthError && <Notice tone="error">{oauthError}</Notice>}
                 </div>
 
-                <CreatorPass handle={app.handle} lookup={lookup} profile={profile} city={app.city} niches={app.niches} customNiche={app.customNiche} manualFollowers={app.manualBelowMin ? 0 : app.manualCount} />
+                {!twoColumns && pass}
 
                 <Block label="Your city" done={app.steps[1].done}>
                     <div className="flex flex-wrap gap-2">
@@ -315,8 +348,24 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
                 </label>
                 {referredBy && <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-500">Invite code <span className="font-bold text-gray-800 dark:text-zinc-200">{referredBy}</span> applied.</p>}
             </div>
-        </Frame>
     );
+
+    if (twoColumns) {
+        return (
+            <PageBody>
+                <div className="grid grid-cols-[minmax(0,1fr)_380px] items-start gap-10 xl:grid-cols-[minmax(0,1fr)_420px] xl:gap-14">
+                    {form}
+                    <aside className="sticky top-24 space-y-4 pt-[7.5rem]">
+                        {pass}
+                        <div className={cn('rounded-[1.5rem] p-4', GLASS)}>{dock}</div>
+                        <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-400">Name, email and phone come from your Newbi account. Rates and bio can be added later.</p>
+                    </aside>
+                </div>
+            </PageBody>
+        );
+    }
+
+    return <Frame footer={dock} onClose={onClose}>{form}</Frame>;
 };
 
 const CreatorApplyPage = ({ overlay = false }) => {

@@ -4,6 +4,7 @@ import Info from 'lucide-react/dist/esm/icons/info';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import TriangleAlert from 'lucide-react/dist/esm/icons/triangle-alert';
 import { cn } from '../../lib/utils';
+import { INPUT } from '../../components/app/controls';
 import { isPresent } from '../../lib/present';
 import { CREATOR_STATUS, TONES } from './format';
 
@@ -14,7 +15,7 @@ import { CREATOR_STATUS, TONES } from './format';
  * screen edge, so the app's floating tab pill sits over its lower part and
  * nothing scrolls between the button and the tabs. Safe-area padded.
  */
-export const STICKY_DOCK = 'sticky bottom-0 z-30 -mx-4 space-y-2 border-t border-black/[0.06] bg-[#f4f4f1]/90 backdrop-blur-xl px-4 pt-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] dark:border-white/[0.06] dark:bg-[#050608] sm:-mx-6 sm:px-6';
+export const STICKY_DOCK = 'sticky bottom-0 z-30 -mx-4 space-y-2 border-t border-black/[0.06] bg-[#f4f4f1]/90 backdrop-blur-xl px-4 pt-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] dark:border-white/[0.06] dark:bg-[#050608] sm:-mx-6 sm:px-6 lg:mx-0 lg:rounded-[1.5rem] lg:border lg:px-5 lg:pb-3 lg:bottom-6';
 
 export const StatusChip = ({ status, className }) => {
     const meta = CREATOR_STATUS[status];
@@ -32,17 +33,17 @@ export const ToneChip = ({ tone = 'gray', icon: Icon, children, className }) => 
 };
 
 const NOTICE = {
-    info: { icon: Info, cls: 'bg-sky-500/[0.08] text-sky-900 dark:text-sky-200' },
-    warn: { icon: TriangleAlert, cls: 'bg-amber-500/10 text-amber-900 dark:text-amber-200' },
-    error: { icon: TriangleAlert, cls: 'bg-red-500/10 text-red-800 dark:text-red-300' },
-    success: { icon: CircleCheck, cls: 'bg-emerald-500/10 text-emerald-900 dark:text-neon-green' },
+    info: { icon: Info, cls: 'bg-sky-500/[0.08] text-sky-900 ring-sky-500/15 dark:text-sky-200 dark:ring-sky-400/20' },
+    warn: { icon: TriangleAlert, cls: 'bg-amber-500/10 text-amber-900 ring-amber-500/20 dark:text-amber-200 dark:ring-amber-400/20' },
+    error: { icon: TriangleAlert, cls: 'bg-red-500/10 text-red-800 ring-red-500/20 dark:text-red-300 dark:ring-red-400/20' },
+    success: { icon: CircleCheck, cls: 'bg-emerald-500/10 text-emerald-900 ring-emerald-500/20 dark:text-neon-green dark:ring-neon-green/20' },
 };
 
 export const Notice = ({ tone = 'info', title, children, action, className }) => {
     if (!isPresent(title) && !isPresent(children)) return null;
     const { icon: Icon, cls } = NOTICE[tone] || NOTICE.info;
     return (
-        <div role={tone === 'error' ? 'alert' : undefined} className={cn('flex gap-3 rounded-2xl px-4 py-3', cls, className)}>
+        <div role={tone === 'error' ? 'alert' : undefined} className={cn('flex gap-3 rounded-2xl px-4 py-3.5 ring-1 ring-inset', cls, className)}>
             <Icon size={18} className="mt-0.5 shrink-0" />
             <div className="min-w-0 flex-1 space-y-1 text-[14px] leading-snug">
                 {title && <p className="font-bold">{title}</p>}
@@ -60,10 +61,10 @@ export const ChoiceChip = ({ selected, onClick, children, hint, className }) => 
         onClick={onClick}
         aria-pressed={selected}
         className={cn(
-            'min-h-[44px] rounded-2xl border px-4 py-2.5 text-left text-[14px] font-semibold transition-colors active:scale-[0.98]',
+            'min-h-[44px] rounded-full px-4 py-2.5 text-left text-[14px] font-semibold ring-1 ring-inset transition-all active:scale-[0.98]',
             selected
-                ? 'border-gray-900 bg-gray-900 text-white dark:border-neon-green dark:bg-neon-green/15 dark:text-neon-green'
-                : 'border-black/[0.08] bg-white text-gray-800 hover:border-black/20 dark:border-white/[0.1] dark:bg-white/[0.03] dark:text-zinc-200 dark:hover:border-white/25',
+                ? 'bg-neon-green text-black ring-black shadow-[2px_2px_0_#000] dark:shadow-[2px_2px_0_rgba(255,255,255,0.85)]'
+                : 'bg-white/70 text-gray-800 ring-black/[0.08] hover:ring-black/20 dark:bg-white/[0.05] dark:text-zinc-200 dark:ring-white/[0.1] dark:hover:ring-white/25',
             className
         )}
     >
@@ -124,7 +125,7 @@ export const SubTabs = ({ tabs }) => {
 /* A label + control block for forms. */
 export const FormBlock = ({ label, hint, children, className }) => (
     <div className={cn('space-y-2', className)}>
-        {label && <p className="text-[13px] font-bold text-gray-700 dark:text-zinc-300">{label}</p>}
+        {label && <p className="px-1 text-[13px] font-bold text-gray-700 dark:text-zinc-300">{label}</p>}
         {children}
         {hint && <p className="text-[12px] text-gray-500 dark:text-zinc-500">{hint}</p>}
     </div>
@@ -139,7 +140,7 @@ export const TextArea = ({ value, onChange, maxLength, placeholder, rows = 4, id
             maxLength={maxLength}
             rows={rows}
             placeholder={placeholder}
-            className="w-full resize-none rounded-2xl border border-black/[0.1] bg-white px-4 py-3 text-[16px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-gray-900 dark:border-white/[0.1] dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-600 dark:focus:border-neon-green/60"
+            className={cn(INPUT, 'resize-none px-4 py-3.5 leading-relaxed')}
         />
         {maxLength && <p className="text-right text-[12px] text-gray-400 dark:text-zinc-600">{String(value || '').length}/{maxLength}</p>}
     </div>
