@@ -23,7 +23,7 @@ import {
 } from '../../../constants/adminNavigation';
 import CommandPalette from './CommandPalette';
 import { AccentContext, accent } from '../theme';
-import newbiLogo from '../../../assets/logo/newbi-logo.svg';
+import NewbiLogo from '../../brand/NewbiLogo';
 import newbiIcon from '../../../assets/logo/newbi-icon.svg';
 
 const COLLAPSE_KEY = 'nb_admin_sidebar_collapsed';
@@ -36,7 +36,7 @@ const roleLabel = (role) => String(role || '').replace(/_/g, ' ');
 
 // White letters with a black outline, so one file reads on light and dark.
 const Logo = ({ className }) => (
-    <img src={newbiLogo} alt="Newbi" className={cn('w-auto', className)} />
+    <NewbiLogo className={cn('w-auto', className)} />
 );
 
 const Badge = ({ count, compact }) => {
@@ -171,7 +171,7 @@ const AdminShell = () => {
                         </Link>
                     ) : (
                         <Link to="/admin" className="flex items-center gap-2.5">
-                            <Logo className="h-9" />
+                            <Logo className="h-8" />
                             <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-neon-green/10 dark:text-neon-green">Admin</span>
                         </Link>
                     )}

@@ -89,7 +89,8 @@ export default function PaymentClaimReview({ invoice, onApprove, onDecline }) {
             <div className="mt-3 divide-y divide-black/[0.06] rounded-xl bg-white px-3.5 dark:divide-white/[0.06] dark:bg-black/20">
                 <Row label="Name" value={claim.name || '—'} />
                 <Row label="Email" value={claim.email} copy />
-                <Row label="Method" value={claim.method === 'gateway' ? 'Online payment page' : claim.method} />
+                {Number(claim.amount) > 0 && <Row label="Amount" value={`₹${Number(claim.amount).toLocaleString('en-IN')}`} />}
+                <Row label="Method" value={{ gateway: 'Online payment page', upi: 'UPI', bank: 'Bank transfer', other: 'Other' }[claim.method] || claim.method} />
                 <Row label="Reference" value={claim.transactionId} copy />
                 <Row label="Device" value={device(claim.userAgent)} />
                 <Row label="IP address" value={claim.ip} />

@@ -87,7 +87,7 @@ const CampaignPublicView = () => {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#090a0f] relative overflow-hidden flex items-center justify-center">
             {/* Ambient Background Lighting */}
-            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+            <div className="hidden sm:block fixed inset-0 z-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-neon-green/5 rounded-full blur-[140px]" />
                 <div className="absolute bottom-10 right-10 w-80 h-80 bg-emerald-500/5 rounded-full blur-[120px]" />
             </div>

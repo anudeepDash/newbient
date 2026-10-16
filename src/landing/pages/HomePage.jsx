@@ -8,7 +8,6 @@ import Process from '../home/Process';
 import Manifesto from '../home/Manifesto';
 import CaseStudies from '../home/CaseStudies';
 import JoinIn from '../home/JoinIn';
-import Upcoming from '../home/Upcoming';
 import Faq from '../home/Faq';
 import Wordmark from '../home/Wordmark';
 import EnquiryForm from '../components/EnquiryForm';
@@ -35,11 +34,10 @@ export default function HomePage() {
     const [audience, setAudience] = useState('');
     const off = (section) => isOff(feed, { section });
     const contact = feed?.contact || {};
-    const events = off('home_upcoming') ? [] : (feed?.events || []);
 
     return (
         <div>
-            <Hero onChooseAudience={setAudience} nextEvent={events[0]} />
+            <Hero onChooseAudience={setAudience} />
             <Marquee />
             <Story />
             {!off('home_clients') && <Proof clients={feed?.clients} stats={feed?.settings?.stats} />}
@@ -47,7 +45,6 @@ export default function HomePage() {
             <Manifesto />
             {!off('home_portfolio') && <CaseStudies items={feed?.caseStudies} />}
             {!off('home_creators') && <JoinIn welcomePoints={feed?.settings?.creatorWelcomePoints} />}
-            <Upcoming events={events} />
             <Faq />
 
             <section id="enquire" aria-labelledby="enquire-title" className="scroll-mt-20 py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
