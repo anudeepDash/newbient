@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Zap, Star, Megaphone, AlertTriangle, Users, LogOut, Settings, Home, Music, Image as ImageIcon, User as UserIcon, PlusCircle, LayoutGrid, Mic2, Search, ChevronRight, GraduationCap, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, normalizePhoneNumber } from '../lib/utils';
 import NotificationBell from './NotificationBell';
-import ProfilePanel from './ProfilePanel';
+// The profile panel is large; it's fetched the first time someone opens it.
+const ProfilePanel = lazy(() => import('./ProfilePanel'));
 import { useStore } from '../lib/store';
 import logo from '../assets/logo.png';
 import logoLight from '../assets/logo_light.png';
@@ -19,6 +20,10 @@ const Navbar = () => {
     const pinnedAnnouncement = announcements?.find(a => a.isPinned && a.id !== dismissedAnnouncementId && isAnnouncementLive(a));
     const [isOpen, setIsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const profileOpen = Boolean(isProfileOpen || isProfilePanelOpen);
+    // Mount the panel on first open, then keep it mounted so its close animation runs.
+    const [profilePanelLoaded, setProfilePanelLoaded] = useState(false);
+    if (profileOpen && !profilePanelLoaded) setProfilePanelLoaded(true);
     const location = useLocation();
     const { isDark, toggleTheme } = useTheme();
 
@@ -649,13 +654,17 @@ const Navbar = () => {
                     </>
                 )}
             </AnimatePresence>
-            <ProfilePanel 
-                isOpen={Boolean(isProfileOpen || isProfilePanelOpen)} 
-                onClose={() => {
-                    setIsProfileOpen(false);
-                    useStore.getState().closeProfilePanel();
-                }} 
-            />
+            {profilePanelLoaded && (
+                <Suspense fallback={null}>
+                    <ProfilePanel
+                        isOpen={profileOpen}
+                        onClose={() => {
+                            setIsProfileOpen(false);
+                            useStore.getState().closeProfilePanel();
+                        }}
+                    />
+                </Suspense>
+            )}
         </>
     );
 };

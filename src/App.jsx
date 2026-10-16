@@ -1,4 +1,4 @@
-import React, { useEffect, lazy, Suspense } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import ScrollToTop from './components/ScrollToTop';
@@ -6,7 +6,6 @@ import { useStore } from './lib/store';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { requestNotificationPermission, initForegroundMessaging } from './lib/notifications';
-import Layout from './components/Layout';
 import GlobalLoader from './components/ui/GlobalLoader';
 import { isAppHost, landingAppBase } from './app/host';
 
@@ -83,11 +82,14 @@ const NewsletterStudio = lazy(() => import('./pages/Admin/NewsletterStudio'));
 const AdminShell = lazy(() => import('./components/admin/shell/AdminShell'));
 
 
-// Guards & Components
-import AuthOverlay from './components/auth/AuthOverlay';
-import AdminGuard from './components/AdminGuard';
-import FinanceGuard from './components/FinanceGuard';
-import MaintenanceGuard from './components/MaintenanceGuard';
+// Guards & Components. The public layout, guards and the old sign-in overlay load on
+// demand, so the app (app.newbi.live, /app) doesn't download the site's navbar,
+// profile panel or admin code before its first screen.
+const Layout = lazy(() => import('./components/Layout'));
+const AuthOverlay = lazy(() => import('./components/auth/AuthOverlay'));
+const AdminGuard = lazy(() => import('./components/AdminGuard'));
+const FinanceGuard = lazy(() => import('./components/FinanceGuard'));
+const MaintenanceGuard = lazy(() => import('./components/MaintenanceGuard'));
 import NewbiToast from './components/ui/NewbiToast';
 
 import { safeLocalStorage } from './lib/storage';
@@ -115,7 +117,9 @@ function AppContent() {
   const currentColor = getColorByPath(location.pathname);
   const appHost = isAppHost();
   const appBase = landingAppBase();
-  const inApp = appHost || Boolean(appBase && (location.pathname === appBase || location.pathname.startsWith(`${appBase}/`)));
+  const onAdminPath = location.pathname === '/admin' || location.pathname.startsWith('/admin/');
+  // The app's own screens; the admin (also served on app.newbi.live) is not one of them.
+  const inApp = (appHost && !onAdminPath) || Boolean(appBase && (location.pathname === appBase || location.pathname.startsWith(`${appBase}/`)));
   const isAdmin = ['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'].includes(user?.role) || safeLocalStorage.getItem('adminAuth') === 'true';
 
   // Foreground push handler: once per page load, not on every auth change.
@@ -139,10 +143,17 @@ function AppContent() {
   }, []);
 
   // Site config listeners: re-subscribed only when admin access changes, not on every login.
+  // The app reads its own per-user data (src/lib/store/*), so it skips these.
   useEffect(() => {
+    if (inApp) return undefined;
     const unsubscribeData = subscribeToData ? subscribeToData(isAdmin) : null;
     return () => { if (unsubscribeData) unsubscribeData(); };
-  }, [subscribeToData, isAdmin]);
+  }, [subscribeToData, isAdmin, inApp]);
+
+  // The old sign-in overlay is only fetched the first time someone opens it.
+  const isAuthOpen = useStore(s => s.isAuthOpen);
+  const [authOverlayLoaded, setAuthOverlayLoaded] = useState(false);
+  useEffect(() => { if (isAuthOpen) setAuthOverlayLoaded(true); }, [isAuthOpen]);
 
   // The signed-in user's notifications.
   useEffect(() => {
@@ -150,6 +161,79 @@ function AppContent() {
     return () => { if (unsubscribeNotifications) unsubscribeNotifications(); };
   }, [subscribeToNotifications, user?.uid]);
 
+
+  // The admin route tree. Served on newbi.live/admin and on app.newbi.live/admin, so staff
+  // signed in to the app reach it without a second sign-in.
+  const adminRoutes = (
+    <Route element={<AdminShell />}>
+      <Route path="admin" element={<AdminGuard><Dashboard /></AdminGuard>} />
+      <Route path="admin/manage-admins" element={<AdminGuard><MaintenanceGuard featureId="admins"><AdminManager /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/active-users" element={<Navigate to="/admin/manage-admins?tab=active" replace />} />
+      <Route path="admin/finance" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><FinanceDashboard /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+      <Route path="admin/spends" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><SpendsManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+      <Route path="admin/other-income" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><OtherIncomeManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+      <Route path="admin/payees" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><PayeeRegistry /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+      <Route path="admin/invoices" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><InvoiceManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+      <Route path="admin/create-invoice" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+      <Route path="admin/edit-invoice/:id" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+      <Route path="admin/announcements" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><AnnouncementsManager /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/concertzone" element={<AdminGuard><MaintenanceGuard featureId="concerts"><ConcertManager /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/messages" element={<AdminGuard><MaintenanceGuard featureId="messages"><MessageManager /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/mailing" element={<AdminGuard><MaintenanceGuard featureId="mailing"><MailingManager /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/proposals" element={<AdminGuard><MaintenanceGuard featureId="docs"><ProposalManagement /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/create-proposal" element={<AdminGuard><MaintenanceGuard featureId="docs"><ProposalGenerator /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/edit-proposal/:id" element={<AdminGuard><MaintenanceGuard featureId="docs"><ProposalGenerator /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/agreements" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementManagement /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/agreements/new" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementGenerator /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/agreements/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementGenerator /></MaintenanceGuard></AdminGuard>} />
+    
+      {/* The Documents section was removed from the admin; old links go to the dashboard. */}
+      <Route path="admin/gen-documents" element={<Navigate to="/admin" replace />} />
+      <Route path="admin/create-gen-document" element={<Navigate to="/admin" replace />} />
+      <Route path="admin/edit-gen-document/:id" element={<Navigate to="/admin" replace />} />
+      <Route path="admin/ai-studio" element={<AdminGuard><MaintenanceGuard featureId="docs"><AIStudio /></MaintenanceGuard></AdminGuard>} />
+
+      <Route path="admin/forms" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormManager /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/forms/create" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/forms/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
+      {/* Artistant is its own product now (artistant.in); old admin links go to the dashboard. */}
+      <Route path="admin/artists" element={<Navigate to="/admin" replace />} />
+      <Route path="admin/client-requests" element={<Navigate to="/admin" replace />} />
+      <Route path="admin/artistant" element={<Navigate to="/admin" replace />} />
+      <Route path="admin/volunteer-gigs" element={<AdminGuard><MaintenanceGuard featureId="community"><VolunteerGigManager /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/guestlists" element={<AdminGuard><MaintenanceGuard featureId="guestlists"><GuestlistManager /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/upcoming-events" element={<AdminGuard><MaintenanceGuard featureId="upcoming_events"><UpcomingEventsManager /></MaintenanceGuard></AdminGuard>} />
+      <Route element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorPortalLayout /></MaintenanceGuard></AdminGuard>}>
+        <Route path="admin/creators" element={<CreatorManager isEmbedded />} />
+        <Route path="admin/creators/leaderboard" element={<CreatorManager showLeaderboardOnly={true} isEmbedded />} />
+        <Route path="admin/creators/:id" element={<CreatorManager isEmbedded />} />
+        <Route path="admin/creators/settings" element={<CreatorSettingsPage isEmbedded />} />
+        <Route path="admin/creators/groups" element={<CreatorGroupsPage />} />
+        <Route path="admin/campaigns" element={<CampaignManager isEmbedded />} />
+        <Route path="admin/campaigns/create" element={<CampaignManager isEmbedded />} />
+        <Route path="admin/campaigns/edit/:id" element={<CampaignManager isEmbedded />} />
+        <Route path="admin/campaigns/manage/:id" element={<CampaignManager isEmbedded />} />
+        <Route path="admin/campaigns/:id" element={<RedirectKeepQuery to="/admin/campaigns/manage/:id" />} />
+      </Route>
+      <Route path="admin/city-groups" element={<Navigate to="/admin/creators/groups" replace />} />
+                    <Route path="admin/creator-hub" element={<Navigate to="/admin/creators" replace />} />
+      <Route path="admin/content" element={<AdminGuard><SiteContentManager /></AdminGuard>} />
+      <Route path="admin/site-content" element={<Navigate to="/admin/content" replace />} />
+      <Route path="admin/giveaways" element={<AdminGuard><MaintenanceGuard featureId="giveaways"><GiveawayManager /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/giveaways/:giveawayId/participants" element={<AdminGuard><MaintenanceGuard featureId="giveaways"><GiveawayParticipants /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/blog" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><ConcertZoneStudio /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/concertzone/studio" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><ConcertZoneStudio /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/blog/create" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><BlogPostEditor /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/blog/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><BlogPostEditor /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/newsletter/studio" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><NewsletterStudio /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/scanner" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><EventScanner /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/ticketing" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><TicketingManagement /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/documents" element={<Navigate to="/admin" replace />} />
+      <Route path="admin/system-command" element={<AdminGuard><DevSettings /></AdminGuard>} />
+      <Route path="admin/settings" element={<Navigate to="/admin/system-command" replace />} />
+      <Route path="admin/dev-settings" element={<Navigate to="/admin/system-command" replace />} />
+    </Route>
+  );
 
   return (
     <>
@@ -164,6 +248,7 @@ function AppContent() {
           // app.newbi.live: the app owns every path.
           <Routes>
             <Route path="auth/action" element={<ActionHandler />} />
+            <Route element={<Layout />}>{adminRoutes}</Route>
             <Route path="*" element={<AppRoutes />} />
           </Routes>
         ) : (
@@ -220,75 +305,7 @@ function AppContent() {
             <Route path="verify-payout" element={<VerifyPayout />} />
             <Route path="verify-creator" element={<VerifyCreator />} />
 
-            {/* Admin: one shell (sidebar, mobile tabs, quick jump) around every screen */}
-            <Route element={<AdminShell />}>
-              <Route path="admin" element={<AdminGuard><Dashboard /></AdminGuard>} />
-              <Route path="admin/manage-admins" element={<AdminGuard><MaintenanceGuard featureId="admins"><AdminManager /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/active-users" element={<Navigate to="/admin/manage-admins?tab=active" replace />} />
-              <Route path="admin/finance" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><FinanceDashboard /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
-              <Route path="admin/spends" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><SpendsManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
-              <Route path="admin/other-income" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><OtherIncomeManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
-              <Route path="admin/payees" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><PayeeRegistry /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
-              <Route path="admin/invoices" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><InvoiceManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
-              <Route path="admin/create-invoice" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
-              <Route path="admin/edit-invoice/:id" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
-              <Route path="admin/announcements" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><AnnouncementsManager /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/concertzone" element={<AdminGuard><MaintenanceGuard featureId="concerts"><ConcertManager /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/messages" element={<AdminGuard><MaintenanceGuard featureId="messages"><MessageManager /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/mailing" element={<AdminGuard><MaintenanceGuard featureId="mailing"><MailingManager /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/proposals" element={<AdminGuard><MaintenanceGuard featureId="docs"><ProposalManagement /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/create-proposal" element={<AdminGuard><MaintenanceGuard featureId="docs"><ProposalGenerator /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/edit-proposal/:id" element={<AdminGuard><MaintenanceGuard featureId="docs"><ProposalGenerator /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/agreements" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementManagement /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/agreements/new" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementGenerator /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/agreements/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementGenerator /></MaintenanceGuard></AdminGuard>} />
-            
-              {/* The Documents section was removed from the admin; old links go to the dashboard. */}
-              <Route path="admin/gen-documents" element={<Navigate to="/admin" replace />} />
-              <Route path="admin/create-gen-document" element={<Navigate to="/admin" replace />} />
-              <Route path="admin/edit-gen-document/:id" element={<Navigate to="/admin" replace />} />
-              <Route path="admin/ai-studio" element={<AdminGuard><MaintenanceGuard featureId="docs"><AIStudio /></MaintenanceGuard></AdminGuard>} />
-
-              <Route path="admin/forms" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormManager /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/forms/create" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/forms/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
-              {/* Artistant is its own product now (artistant.in); old admin links go to the dashboard. */}
-              <Route path="admin/artists" element={<Navigate to="/admin" replace />} />
-              <Route path="admin/client-requests" element={<Navigate to="/admin" replace />} />
-              <Route path="admin/artistant" element={<Navigate to="/admin" replace />} />
-              <Route path="admin/volunteer-gigs" element={<AdminGuard><MaintenanceGuard featureId="community"><VolunteerGigManager /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/guestlists" element={<AdminGuard><MaintenanceGuard featureId="guestlists"><GuestlistManager /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/upcoming-events" element={<AdminGuard><MaintenanceGuard featureId="upcoming_events"><UpcomingEventsManager /></MaintenanceGuard></AdminGuard>} />
-              <Route element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorPortalLayout /></MaintenanceGuard></AdminGuard>}>
-                <Route path="admin/creators" element={<CreatorManager isEmbedded />} />
-                <Route path="admin/creators/leaderboard" element={<CreatorManager showLeaderboardOnly={true} isEmbedded />} />
-                <Route path="admin/creators/:id" element={<CreatorManager isEmbedded />} />
-                <Route path="admin/creators/settings" element={<CreatorSettingsPage isEmbedded />} />
-                <Route path="admin/creators/groups" element={<CreatorGroupsPage />} />
-                <Route path="admin/campaigns" element={<CampaignManager isEmbedded />} />
-                <Route path="admin/campaigns/create" element={<CampaignManager isEmbedded />} />
-                <Route path="admin/campaigns/edit/:id" element={<CampaignManager isEmbedded />} />
-                <Route path="admin/campaigns/manage/:id" element={<CampaignManager isEmbedded />} />
-                <Route path="admin/campaigns/:id" element={<RedirectKeepQuery to="/admin/campaigns/manage/:id" />} />
-              </Route>
-              <Route path="admin/city-groups" element={<Navigate to="/admin/creators/groups" replace />} />
-                            <Route path="admin/creator-hub" element={<Navigate to="/admin/creators" replace />} />
-              <Route path="admin/content" element={<AdminGuard><SiteContentManager /></AdminGuard>} />
-              <Route path="admin/site-content" element={<Navigate to="/admin/content" replace />} />
-              <Route path="admin/giveaways" element={<AdminGuard><MaintenanceGuard featureId="giveaways"><GiveawayManager /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/giveaways/:giveawayId/participants" element={<AdminGuard><MaintenanceGuard featureId="giveaways"><GiveawayParticipants /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/blog" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><ConcertZoneStudio /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/concertzone/studio" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><ConcertZoneStudio /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/blog/create" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><BlogPostEditor /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/blog/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><BlogPostEditor /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/newsletter/studio" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><NewsletterStudio /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/scanner" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><EventScanner /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/ticketing" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><TicketingManagement /></MaintenanceGuard></AdminGuard>} />
-              <Route path="admin/documents" element={<Navigate to="/admin" replace />} />
-              <Route path="admin/system-command" element={<AdminGuard><DevSettings /></AdminGuard>} />
-              <Route path="admin/settings" element={<Navigate to="/admin/system-command" replace />} />
-              <Route path="admin/dev-settings" element={<Navigate to="/admin/system-command" replace />} />
-            </Route>
+            {adminRoutes}
 
             <Route path="campaign/:id" element={<CampaignPublicView />} />
             <Route path="doc/:id" element={<DocumentViewer />} />
@@ -311,7 +328,9 @@ function AppContent() {
         )}
       </Suspense>
       {/* The app has its own sign-in sheet (src/app/auth/SignInSheet). */}
-      {!inApp && <AuthOverlay />}
+      {!inApp && authOverlayLoaded && (
+        <Suspense fallback={null}><AuthOverlay /></Suspense>
+      )}
       <NewbiToast />
     </>
   );
