@@ -24,7 +24,9 @@ import { formatDate, firstName } from './mail/layout.js';
 
 const short = (s, n = 60) => String(s || '').slice(0, n);
 
-const passLink = (d) => d.passUrl || (d.ref ? `${APP_URL}/ticket/${encodeURIComponent(d.ref)}` : `${APP_URL}/`);
+// Passes open in the app (app.newbi.live/p/REF); PUBLIC_APP_URL overrides the host.
+const PASS_ORIGIN = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace(/\/+$/, '');
+const passLink = (d) => d.passUrl || (d.ref ? `${PASS_ORIGIN}/p/${encodeURIComponent(d.ref)}` : `${PASS_ORIGIN}/`);
 
 export const EVENTS = {
     'pass-confirmed': {
