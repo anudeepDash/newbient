@@ -105,6 +105,8 @@ const Card = ({
     cta,
     children,
     to,
+    /* Router state for `to` links (e.g. { backgroundLocation } to open a page as a sheet over this list). */
+    linkState,
     href,
     onClick,
     className,
@@ -119,7 +121,7 @@ const Card = ({
     const ctaNode = React.isValidElement(cta) ? cta : null;
 
     const Root = to ? Link : href ? 'a' : onClick ? 'button' : 'div';
-    const rootProps = to ? { to } : href ? { href } : onClick ? { type: 'button', onClick } : {};
+    const rootProps = to ? { to, state: linkState } : href ? { href } : onClick ? { type: 'button', onClick } : {};
 
     return (
         <Root

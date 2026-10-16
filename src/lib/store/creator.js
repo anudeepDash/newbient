@@ -1,5 +1,6 @@
-import { collection, doc, getDocs, limit, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, limit, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
+import { callCreatorApi } from '../../app/creator/api';
 
 /*
  * Creator slice: the signed-in user's own creator profile, plus the public
@@ -21,7 +22,77 @@ export const isCampaignOpen = (c = {}) => {
     return !(left !== null && left !== undefined && left !== '' && Number(left) <= 0);
 };
 
+const REFERRALS_TTL_MS = 2 * 60 * 1000;
+
 export const createCreatorSlice = (set, get) => ({
+    /*
+     * Creator settings from site_settings/general (public): the follower
+     * minimum, whether Meta verification is on, and the welcome points. The
+     * points shown anywhere come from creatorWelcomePoints only.
+     */
+    creatorSettings: null,
+    loadCreatorSettings: async () => {
+        if (get().creatorSettings || !db) return;
+        try {
+            const snap = await getDoc(doc(db, 'site_settings', 'general'));
+            const d = snap.exists() ? snap.data() : {};
+            const min = Number(d.minInstagramFollowersToJoin);
+            set({
+                creatorSettings: {
+                    minFollowers: Number.isFinite(min) ? min : 1000,
+                    metaVerification: d.instagramMetaVerification === true,
+                    requireVerification: d.requireInstagramVerification !== false,
+                    welcomePoints: Number(d.creatorWelcomePoints) || 0,
+                },
+            });
+        } catch (error) {
+            console.warn('[app/creator] settings:', error?.code || error);
+            set({ creatorSettings: { minFollowers: 1000, metaVerification: false, requireVerification: true, welcomePoints: 0 } });
+        }
+    },
+
+    /* Single campaigns by id (shared links, closed campaigns you joined). */
+    campaignsById: {},
+    loadCampaign: async (id, { force = false } = {}) => {
+        if (!id || !db) return null;
+        const known = get().campaignsById[id];
+        if (known !== undefined && !force) return known;
+        try {
+            const snap = await getDoc(doc(db, 'campaigns', id));
+            const value = snap.exists() ? { ...snap.data(), id: snap.id } : null;
+            set(state => ({ campaignsById: { ...state.campaignsById, [id]: value } }));
+            return value;
+        } catch (error) {
+            console.warn('[app/creator] campaign:', error?.code || error);
+            set(state => ({ campaignsById: { ...state.campaignsById, [id]: null } }));
+            return null;
+        }
+    },
+
+    /* Your own submissions record for a campaign: campaigns/{id}/submissions/{uid}. */
+    mySubmissions: {},
+    subscribeMySubmission: (campaignId) => {
+        const uid = get().authUser?.uid;
+        if (!uid || !campaignId || !db) return () => {};
+        return onSnapshot(doc(db, 'campaigns', campaignId, 'submissions', uid), (snap) => {
+            set(state => ({ mySubmissions: { ...state.mySubmissions, [campaignId]: snap.exists() ? snap.data() : null } }));
+        }, (error) => {
+            // Until the rules for the new location ship, this read may be denied.
+            if (error?.code !== 'permission-denied') console.warn('[app/creator] submission:', error?.code || error);
+            set(state => ({ mySubmissions: { ...state.mySubmissions, [campaignId]: null } }));
+        });
+    },
+
+    /* Your referrals and the top-10 leaderboard, from the server (never the whole creators list). */
+    referrals: null,
+    _referralsAt: 0,
+    loadReferrals: async ({ force = false } = {}) => {
+        if (!force && get().referrals && Date.now() - get()._referralsAt < REFERRALS_TTL_MS) return;
+        set({ _referralsAt: Date.now() });
+        const res = await callCreatorApi('creator-referrals', {}, { method: 'GET' });
+        set({ referrals: res.ok ? { list: res.data.referrals || [], leaderboard: res.data.leaderboard || [], myRank: res.data.myRank || 0 } : { list: [], leaderboard: [], myRank: 0, failed: true } });
+    },
+
     openCampaigns: [],
     campaignsLoaded: false,
     _campaignsAt: 0,
