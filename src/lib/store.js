@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { db, storage, auth } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch, runTransaction } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch, runTransaction, FieldPath } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { notifyEvent, subscribeToNewsletter } from './mailApi';
 import { normalizePhoneNumber } from './utils';
@@ -12,6 +12,8 @@ import { extractSocialUsername, hasDisallowedLink } from './socialUtils';
 import { safeLocalStorage } from './storage';
 import { DEFAULT_CREATOR_GROUPS, isCampaignCityMatch } from './constants';
 import { TOAST_TYPES, toFriendlyMessage, getSupportHint, getToastDuration } from './toastCopy';
+import { indexAppSubmissions, mergeAppSubmissions, isAppSubmission } from './creator/appSubmissions';
+import { ADMIN_ROLES } from '../constants/roles';
 
 const MAX_TOASTS = 4;
 let toastSeq = 0;
@@ -283,6 +285,45 @@ const mergeLiveTaskProgress = (formTasks, liveTasks) => {
 const initialUser = getCachedSession();
 
 const activeListeners = {};
+
+// Pinned first, then open before closed, then newest.
+const sortCampaigns = (data) => {
+    return data.sort((a, b) => {
+        // 1. Pinned to top
+        if (Boolean(a.isPinned) !== Boolean(b.isPinned)) {
+            return a.isPinned ? -1 : 1;
+        }
+        // 2. Open campaigns before Closed campaigns
+        const aIsOpen = a.status === 'Open';
+        const bIsOpen = b.status === 'Open';
+        if (aIsOpen !== bIsOpen) {
+            return aIsOpen ? -1 : 1;
+        }
+        // 3. Date added (newest first)
+        const getTs = (c) => {
+            if (!c) return 0;
+            const raw = c.createdAt || c.dateAdded || c.updatedAt;
+            if (!raw) return 0;
+            if (typeof raw === 'number') return raw;
+            if (typeof raw === 'string') {
+                const p = Date.parse(raw);
+                return isNaN(p) ? 0 : p;
+            }
+            if (typeof raw === 'object') {
+                if (typeof raw.toDate === 'function') return raw.toDate().getTime();
+                if (typeof raw.seconds === 'number') return raw.seconds * 1000;
+            }
+            return 0;
+        };
+        return getTs(b) - getTs(a);
+    });
+};
+
+// Admin only: app task submissions (campaigns/{id}/submissions/{uid}), merged
+// into the campaigns list so every admin screen sees them (lib/creator/appSubmissions.js).
+let rawCampaigns = null;
+let appSubmissionIndex = {};
+let appSubmissionsUnsub = null;
 
 // ── Giveaway helpers ─────────────────────────────────────────────────────
 // The end moment of a giveaway in local time: endDate (YYYY-MM-DD) plus
@@ -963,37 +1004,25 @@ export const useStore = create((set, get) => ({
         });
         return data;
     }),
-    subscribeToCampaigns: () => get().subscribeToKey('campaigns', 'campaigns', (data) => {
-        return data.sort((a, b) => {
-            // 1. Pinned to top
-            if (Boolean(a.isPinned) !== Boolean(b.isPinned)) {
-                return a.isPinned ? -1 : 1;
-            }
-            // 2. Open campaigns before Closed campaigns
-            const aIsOpen = a.status === 'Open';
-            const bIsOpen = b.status === 'Open';
-            if (aIsOpen !== bIsOpen) {
-                return aIsOpen ? -1 : 1;
-            }
-            // 3. Date added (newest first)
-            const getTs = (c) => {
-                if (!c) return 0;
-                const raw = c.createdAt || c.dateAdded || c.updatedAt;
-                if (!raw) return 0;
-                if (typeof raw === 'number') return raw;
-                if (typeof raw === 'string') {
-                    const p = Date.parse(raw);
-                    return isNaN(p) ? 0 : p;
-                }
-                if (typeof raw === 'object') {
-                    if (typeof raw.toDate === 'function') return raw.toDate().getTime();
-                    if (typeof raw.seconds === 'number') return raw.seconds * 1000;
-                }
-                return 0;
-            };
-            return getTs(b) - getTs(a);
+    subscribeToCampaigns: () => {
+        // Staff also get the app's submissions (one collection-group listener for the session).
+        if (!appSubmissionsUnsub && ADMIN_ROLES.includes(get().user?.role)) {
+            appSubmissionsUnsub = onSnapshot(collectionGroup(db, 'submissions'), (snap) => {
+                appSubmissionIndex = indexAppSubmissions(snap.docs
+                    .filter(d => d.ref.parent.parent?.parent?.id === 'campaigns')
+                    .map(d => ({ campaignId: d.ref.parent.parent.id, uid: d.id, data: d.data() })));
+                set({ appSubmissions: appSubmissionIndex });
+                if (rawCampaigns) set({ campaigns: mergeAppSubmissions(rawCampaigns, appSubmissionIndex) });
+            }, (error) => {
+                console.warn('[Store] app submissions listener:', error?.code || error);
+                appSubmissionsUnsub = null;
+            });
+        }
+        return get().subscribeToKey('campaigns', 'campaigns', (data) => {
+            rawCampaigns = sortCampaigns(data);
+            return mergeAppSubmissions(rawCampaigns, appSubmissionIndex);
         });
-    }),
+    },
     subscribeToProposals: () => get().subscribeToKey('proposals', 'proposals', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToAgreements: () => get().subscribeToKey('agreements', 'agreements', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToSubscribers: () => get().subscribeToKey('subscribers', 'subscribers'),
@@ -4130,9 +4159,35 @@ export const useStore = create((set, get) => ({
      * uid and their profile id. Read and written in one transaction so a
      * creator submitting at the same moment isn't lost.
      */
-    reviewTaskSubmissions: async (campaignId, reviews = []) => {
-        if (!reviews.length) return 0;
+    reviewTaskSubmissions: async (campaignId, allReviews = []) => {
+        if (!allReviews.length) return 0;
         const reviewedAt = new Date().toISOString();
+
+        // Submissions made in the app are reviewed where they live
+        // (campaigns/{id}/submissions/{uid}); older ones on the campaign doc.
+        const appReviews = [];
+        const reviews = [];
+        allReviews.forEach(r => {
+            const keys = Array.from(new Set([...(r.keys || []), r.creatorUid].filter(Boolean)));
+            const appKey = keys.find(k => isAppSubmission(appSubmissionIndex, campaignId, k, r.taskId));
+            if (appKey) appReviews.push({ ...r, appKey });
+            else reviews.push(r);
+        });
+        if (appReviews.length) {
+            const batch = writeBatch(db);
+            appReviews.forEach(r => {
+                const field = (name) => new FieldPath('tasks', String(r.taskId), name);
+                batch.update(doc(db, 'campaigns', campaignId, 'submissions', r.appKey),
+                    field('status'), r.status,
+                    field('rejectionReason'), r.status === 'rejected' ? (r.rejectionReason || '') : '',
+                    field('reviewedAt'), reviewedAt,
+                    field('reviewedBy'), get().user?.email || null,
+                    'updatedAt', reviewedAt);
+            });
+            await batch.commit();
+        }
+        if (!reviews.length) return appReviews.length;
+
         let applied = 0;
         const applyReviews = (tasks) => {
             applied = 0;
@@ -4174,12 +4229,13 @@ export const useStore = create((set, get) => ({
             return next;
         });
 
+        if (rawCampaigns) rawCampaigns = rawCampaigns.map(c => (c.id === campaignId ? { ...c, tasks } : c));
         set(state => ({
-            campaigns: (state.campaigns || []).map(c => 
+            campaigns: mergeAppSubmissions((state.campaigns || []).map(c => 
                 c.id === campaignId ? { ...c, tasks } : c
-            )
+            ), appSubmissionIndex)
         }));
-        return applied;
+        return applied + appReviews.length;
     },
 
     // Giveaways
