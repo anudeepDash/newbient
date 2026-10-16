@@ -1,1375 +1,418 @@
 import React, { useState } from 'react';
+import X from 'lucide-react/dist/esm/icons/x';
 import Plus from 'lucide-react/dist/esm/icons/plus';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import GripVertical from 'lucide-react/dist/esm/icons/grip-vertical';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import { cn } from '../../lib/utils';
-import { Card } from '../ui/Card';
-import { Input } from '../ui/Input';
-import { Button } from '../ui/Button';
-import DocumentSeal from '../ui/DocumentSeal';
+import { useAccent } from './theme';
+import { BuilderCard } from './events/EditorParts';
+import { Toggle, fieldCls } from './uploads/UploadKit';
+import {
+    TextInput, TextArea, MoneyInput, ListCard, RowActions, AddButton, OptionalBlock, Chips, moveItem,
+} from './proposals/builder/parts';
+import { rupees } from './proposals/builder/model';
 
-// ── Reusable Toggle Switch Component ─────────────────────────────────────────
-export function ToggleSwitch({ label, checked, onChange, description, accentColor = 'neon-green' }) {
-    return (
-        <div className="flex items-center justify-between p-3.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 transition-colors">
-            <div className="pr-4">
-                <p className="text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white leading-tight">
-                    {label}
-                </p>
-                {description && (
-                    <p className="text-[9px] font-medium text-gray-500 dark:text-gray-400 mt-0.5">
-                        {description}
-                    </p>
-                )}
-            </div>
-            <button
-                type="button"
-                role="switch"
-                aria-checked={checked}
-                onClick={() => onChange(!checked)}
-                className={cn(
-                    "w-12 h-6 rounded-full transition-all relative p-0.5 shrink-0 cursor-pointer shadow-inner",
-                    checked ? "bg-[#16A34A]" : "bg-gray-300 dark:bg-zinc-700"
-                )}
-            >
-                <div
-                    className={cn(
-                        "w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-200",
-                        checked ? "translate-x-6" : "translate-x-0"
-                    )}
-                />
-            </button>
-        </div>
-    );
+/*
+ * Editors for each part of the 8-page proposal (the "v2" paper). Field names
+ * match what the paper prints (components/ui/ProposalDocumentRenderer).
+ *
+ * Every editor takes { formData, setFormData, onRefine }. setFormData accepts
+ * an updater function. onRefine({ label, value, apply }) opens the AI helper.
+ */
+
+const pad2 = (n) => String(n).padStart(2, '0');
+
+const useSetters = (setFormData) => ({
+    set: (patch) => setFormData(prev => ({ ...prev, ...patch })),
+    setList: (key, fn) => setFormData(prev => ({ ...prev, [key]: fn(Array.isArray(prev[key]) ? prev[key] : []) })),
+});
+
+const PageToggle = ({ checked, onChange, label = 'Show this page' }) => (
+    <div className="mb-4 rounded-xl bg-black/[0.025] px-3 py-2 dark:bg-white/[0.03]">
+        <Toggle label={label} checked={checked} onChange={onChange} />
+    </div>
+);
+
+/** Kept for older imports: a labelled on/off switch. */
+export function ToggleSwitch({ label, checked, onChange, description }) {
+    return <Toggle label={label} hint={description} checked={Boolean(checked)} onChange={onChange} />;
 }
 
-// ── 1. COVER PAGE & INDEX EDITOR ─────────────────────────────────────────────
-export function V2CoverEditor({ formData, setFormData, logoOptions = [] }) {
-    const whatsInside = formData.whatsInside || [];
+const KickerTitle = ({ formData, set, kickerKey, titleKey, kickerPlaceholder, titlePlaceholder }) => (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <TextInput label="Small heading" value={formData[kickerKey]} onChange={v => set({ [kickerKey]: v })} placeholder={kickerPlaceholder} />
+        <TextInput label="Page title" value={formData[titleKey]} onChange={v => set({ [titleKey]: v })} placeholder={titlePlaceholder} />
+    </div>
+);
 
-    const handleUpdateWhatsInside = (idx, field, value) => {
-        const updated = [...whatsInside];
-        updated[idx] = { ...updated[idx], [field]: value };
-        setFormData({ ...formData, whatsInside: updated });
-    };
-
-    const handleAddWhatsInsideItem = () => {
-        const nextNum = String(whatsInside.length + 1).padStart(2, '0');
-        setFormData({
-            ...formData,
-            whatsInside: [...whatsInside, { num: nextNum, title: 'New Section' }]
-        });
-    };
-
-    const handleRemoveWhatsInsideItem = (idx) => {
-        const updated = whatsInside.filter((_, i) => i !== idx);
-        setFormData({ ...formData, whatsInside: updated });
-    };
-
+/** A titled callout box on the page (Primary objective, What's included…). */
+const Callout = ({ formData, set, showKey, titleKey, textKey, label, hint, titlePlaceholder, textPlaceholder, onRefine }) => {
+    const on = formData[showKey] !== false;
     return (
-        <div className="space-y-8">
-            {/* Division Branding */}
-            <div className="space-y-4">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">
-                    Division Branding & Logo
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {logoOptions.map(logo => (
-                        <button
-                            key={logo.id}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, selectedLogo: logo.id })}
-                            className={cn(
-                                "p-3 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-2 overflow-hidden relative",
-                                formData.selectedLogo === logo.id
-                                    ? "bg-neon-green/10 border-neon-green text-black dark:text-white shadow-lg"
-                                    : "bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                            )}
-                        >
-                            <div className="w-full aspect-[4/3] rounded-xl bg-white flex items-center justify-center p-2 relative overflow-hidden">
-                                <img src={logo.path} alt={logo.label} className="w-full h-full object-contain" />
-                            </div>
-                            <span className="text-[9px] font-black uppercase tracking-widest">{logo.label}</span>
-                            {formData.selectedLogo === logo.id && (
-                                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-                            )}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Proposal Number & Pill */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">
-                        Quotation Number (Fixed on all pages)
-                    </label>
-                    <input
-                        value={formData.proposalNumber || ''}
-                        onChange={e => setFormData({ ...formData, proposalNumber: e.target.value })}
-                        className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-14 px-5 rounded-2xl font-mono font-bold text-sm outline-none focus:border-neon-green/40 transition-all"
-                        placeholder="NBQ-XXXX"
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">
-                        Cover Classification
-                    </label>
-                    <input
-                        value={formData.classification || ''}
-                        onChange={e => setFormData({ ...formData, classification: e.target.value })}
-                        className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-14 px-5 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all"
-                        placeholder="Strategic Commercial"
-                    />
-                </div>
-            </div>
-
-            {/* Top Pill Callout */}
-            <div className="space-y-3 p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/50 border border-black/5 dark:border-white/5">
-                <ToggleSwitch
-                    label="Official Strategic Quotation Pill"
-                    checked={formData.showCoverPill !== false}
-                    onChange={v => setFormData({ ...formData, showCoverPill: v })}
-                    description="Green pill badge displayed at the top of the cover page"
-                />
-                {formData.showCoverPill !== false && (
-                    <input
-                        value={formData.coverPillText || ''}
-                        onChange={e => setFormData({ ...formData, coverPillText: e.target.value })}
-                        className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs outline-none focus:border-[#16A34A] transition-all"
-                        placeholder="OFFICIAL STRATEGIC QUOTATION"
-                    />
-                )}
-            </div>
-
-            {/* Client Entity Metadata */}
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/50 border border-black/5 dark:border-white/5 space-y-4">
-                <p className="text-[10px] font-black uppercase tracking-widest text-[#16A34A]">
-                    Client Entity Specification
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-2">Client Entity Name</label>
-                        <input
-                            value={formData.clientName || ''}
-                            onChange={e => setFormData({ ...formData, clientName: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-sm outline-none focus:border-[#16A34A]"
-                            placeholder="e.g. ITW Playworks"
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-2">Client Subtitle / Association</label>
-                        <input
-                            value={formData.clientSubtitle || ''}
-                            onChange={e => setFormData({ ...formData, clientSubtitle: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-sm outline-none focus:border-[#16A34A]"
-                            placeholder="e.g. In association with Playworx"
-                        />
-                    </div>
-                </div>
-                <div className="space-y-1">
-                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-2">Client Address (Optional)</label>
-                    <input
-                        value={formData.clientAddress || ''}
-                        onChange={e => setFormData({ ...formData, clientAddress: e.target.value })}
-                        className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-sm outline-none focus:border-[#16A34A]"
-                        placeholder="Corporate Headquarters address"
-                    />
-                </div>
-            </div>
-
-            {/* Project Specification */}
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/50 border border-black/5 dark:border-white/5 space-y-4">
-                <p className="text-[10px] font-black uppercase tracking-widest text-[#16A34A]">
-                    Project Specification
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-2">Project Specification Title</label>
-                        <input
-                            value={formData.campaignName || ''}
-                            onChange={e => setFormData({ ...formData, campaignName: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-sm outline-none focus:border-[#16A34A]"
-                            placeholder="e.g. Sonu Nigam's Revolution"
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-2">Tour / Campaign Subtitle</label>
-                        <input
-                            value={formData.campaignSubtitle || ''}
-                            onChange={e => setFormData({ ...formData, campaignSubtitle: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-sm outline-none focus:border-[#16A34A]"
-                            placeholder="e.g. India Tour 2026–27"
-                        />
-                    </div>
-                </div>
-
-                <div className="space-y-3 pt-2">
-                    <ToggleSwitch
-                        label="Project Duration Badge"
-                        checked={formData.showDuration !== false}
-                        onChange={v => setFormData({ ...formData, showDuration: v })}
-                        description="Shows green duration badge e.g. DURATION: OCT '26 – MAR '27"
-                    />
-                    {formData.showDuration !== false && (
-                        <input
-                            value={formData.campaignDuration || ''}
-                            onChange={e => setFormData({ ...formData, campaignDuration: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs outline-none focus:border-[#16A34A]"
-                            placeholder="OCT '26 – MAR '27"
-                        />
-                    )}
-                </div>
-            </div>
-
-            {/* Intro Paragraph */}
-            <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">
-                    Cover Page Introduction Paragraph
-                </label>
-                <textarea
-                    rows={4}
-                    value={formData.introParagraph || ''}
-                    onChange={e => setFormData({ ...formData, introParagraph: e.target.value })}
-                    className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 p-4 rounded-2xl font-medium text-sm outline-none focus:border-neon-green/40 transition-all leading-relaxed"
-                    placeholder="NewBi Entertainment & Marketing LLP is pleased to present this proposal..."
-                />
-            </div>
-
-            {/* What's Inside 6-Card Grid */}
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/50 border border-black/5 dark:border-white/5 space-y-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-[#16A34A]">
-                            WHAT'S INSIDE — Card Index Grid
-                        </p>
-                        <p className="text-[9px] text-gray-500">6 numbered cards displaying proposal table of contents</p>
-                    </div>
-                    <ToggleSwitch
-                        label="Show Grid"
-                        checked={formData.showWhatsInside !== false}
-                        onChange={v => setFormData({ ...formData, showWhatsInside: v })}
-                    />
-                </div>
-
-                {formData.showWhatsInside !== false && (
-                    <div className="space-y-3 pt-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {whatsInside.map((item, idx) => (
-                                <div key={idx} className="flex items-center gap-2 bg-white dark:bg-zinc-950 p-2.5 rounded-xl border border-black/10 dark:border-white/10">
-                                    <input
-                                        value={item.num}
-                                        onChange={e => handleUpdateWhatsInside(idx, 'num', e.target.value)}
-                                        className="w-12 h-9 text-center bg-gray-100 dark:bg-zinc-900 border border-black/5 dark:border-white/5 rounded-lg font-mono font-bold text-xs"
-                                        placeholder="01"
-                                    />
-                                    <input
-                                        value={item.title}
-                                        onChange={e => handleUpdateWhatsInside(idx, 'title', e.target.value)}
-                                        className="flex-1 h-9 px-3 bg-gray-100 dark:bg-zinc-900 border border-black/5 dark:border-white/5 rounded-lg font-bold text-xs"
-                                        placeholder="Section Title"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveWhatsInsideItem(idx)}
-                                        className="p-1.5 text-gray-400 hover:text-red-400 transition-colors"
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={handleAddWhatsInsideItem}
-                            className="text-xs text-neon-green gap-2"
-                        >
-                            <Plus size={14} /> Add Card Item
-                        </Button>
-                    </div>
-                )}
-            </div>
-
-            {/* Prepared For Callout Box */}
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/50 border border-black/5 dark:border-white/5 space-y-3">
-                <ToggleSwitch
-                    label="PREPARED FOR Callout Box"
-                    checked={formData.showPreparedFor !== false}
-                    onChange={v => setFormData({ ...formData, showPreparedFor: v })}
-                    description="Green-accented box stating proposal exclusivity and confidentiality"
-                />
-                {formData.showPreparedFor !== false && (
-                    <textarea
+        <OptionalBlock on={on}>
+            <Toggle label={label} hint={hint} checked={on} onChange={v => set({ [showKey]: v })} />
+            {on && (
+                <>
+                    {titleKey && <TextInput label="Box title" value={formData[titleKey]} onChange={v => set({ [titleKey]: v })} placeholder={titlePlaceholder} />}
+                    <TextArea
+                        label="Box text"
                         rows={3}
-                        value={formData.preparedForText || ''}
-                        onChange={e => setFormData({ ...formData, preparedForText: e.target.value })}
-                        className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 p-3.5 rounded-xl font-medium text-xs outline-none focus:border-[#16A34A] leading-relaxed"
-                        placeholder="This quotation has been prepared exclusively for..."
+                        value={formData[textKey]}
+                        onChange={v => set({ [textKey]: v })}
+                        placeholder={textPlaceholder}
+                        onRefine={onRefine ? () => onRefine({ label, value: formData[textKey], apply: (t) => set({ [textKey]: t }) }) : undefined}
                     />
-                )}
-            </div>
-        </div>
+                </>
+            )}
+        </OptionalBlock>
     );
-}
+};
 
-// ── 2. STRATEGY & OBJECTIVES EDITOR ──────────────────────────────────────────
-export function V2StrategyEditor({ formData, setFormData }) {
-    const executiveParagraphs = formData.executiveParagraphs || [];
-    const anchorMarkets = formData.anchorMarkets || [];
-    const [newMarketInput, setNewMarketInput] = useState('');
-
-    const handleUpdateParagraph = (idx, text) => {
-        const updated = [...executiveParagraphs];
-        updated[idx] = text;
-        setFormData({ ...formData, executiveParagraphs: updated });
-    };
-
-    const handleAddParagraph = () => {
-        setFormData({
-            ...formData,
-            executiveParagraphs: [...executiveParagraphs, '']
-        });
-    };
-
-    const handleRemoveParagraph = (idx) => {
-        const updated = executiveParagraphs.filter((_, i) => i !== idx);
-        setFormData({ ...formData, executiveParagraphs: updated });
-    };
-
-    const handleAddMarket = (e) => {
-        e?.preventDefault();
-        const trimmed = newMarketInput.trim();
-        if (!trimmed) return;
-        if (!anchorMarkets.includes(trimmed)) {
-            setFormData({
-                ...formData,
-                anchorMarkets: [...anchorMarkets, trimmed]
-            });
-        }
-        setNewMarketInput('');
-    };
-
-    const handleRemoveMarket = (marketToRemove) => {
-        setFormData({
-            ...formData,
-            anchorMarkets: anchorMarkets.filter(m => m !== marketToRemove)
-        });
-    };
-
+// ── Cover page ───────────────────────────────────────────────────────────────
+export function V2CoverEditor({ formData, setFormData, onRefine }) {
+    const { set, setList } = useSetters(setFormData);
+    const cards = formData.whatsInside || [];
     return (
-        <div className="space-y-8">
-            {/* Titles */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Section Kicker</label>
-                    <input
-                        value={formData.strategySub || ''}
-                        onChange={e => setFormData({ ...formData, strategySub: e.target.value })}
-                        className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs uppercase"
-                        placeholder="STRATEGIC OUTLINE"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Section Title</label>
-                    <input
-                        value={formData.strategyTitle || ''}
-                        onChange={e => setFormData({ ...formData, strategyTitle: e.target.value })}
-                        className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs"
-                        placeholder="Executive Summary"
-                    />
-                </div>
-            </div>
-
-            {/* Executive Summary Body Paragraphs */}
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/50 border border-black/5 dark:border-white/5 space-y-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-[#16A34A]">
-                            Executive Summary Paragraphs
-                        </p>
-                        <p className="text-[9px] text-gray-500">Core narrative body paragraphs for Page 2</p>
-                    </div>
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={handleAddParagraph}
-                        className="text-xs text-neon-green gap-1"
-                    >
-                        <Plus size={14} /> Add Paragraph
-                    </Button>
-                </div>
-
+        <div className="space-y-5">
+            <BuilderCard title="Campaign" hint="The project this proposal is for">
+                <PageToggle label="Show the cover page" checked={formData.showCover !== false} onChange={v => set({ showCover: v })} />
                 <div className="space-y-3">
-                    {executiveParagraphs.map((para, idx) => (
-                        <div key={idx} className="relative group bg-white dark:bg-zinc-950 p-3 rounded-xl border border-black/10 dark:border-white/10">
-                            <div className="flex justify-between items-center pb-2 mb-2 border-b border-black/5 dark:border-white/5">
-                                <span className="text-[9px] font-black text-gray-400 uppercase">Paragraph {idx + 1}</span>
-                                {executiveParagraphs.length > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveParagraph(idx)}
-                                        className="text-gray-400 hover:text-red-400 transition-colors"
-                                    >
-                                        <Trash2 size={13} />
-                                    </button>
-                                )}
-                            </div>
-                            <textarea
-                                rows={3}
-                                value={para}
-                                onChange={e => handleUpdateParagraph(idx, e.target.value)}
-                                className="w-full bg-transparent font-medium text-xs outline-none leading-relaxed resize-y"
-                                placeholder={`Paragraph ${idx + 1} text...`}
-                            />
-                        </div>
-                    ))}
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <TextInput label="Campaign or project name" value={formData.campaignName} onChange={v => set({ campaignName: v })} placeholder="e.g. Revolution India Tour" />
+                        <TextInput label="Subtitle" optional value={formData.campaignSubtitle} onChange={v => set({ campaignSubtitle: v })} placeholder="e.g. India Tour 2026–27" />
+                    </div>
+                    <Toggle label="Show the duration badge" checked={formData.showDuration !== false} onChange={v => set({ showDuration: v })} />
+                    {formData.showDuration !== false && (
+                        <TextInput label="Duration" value={formData.campaignDuration} onChange={v => set({ campaignDuration: v })} placeholder="e.g. Oct '26 – Mar '27" />
+                    )}
                 </div>
-            </div>
+            </BuilderCard>
 
-            {/* Primary Objective Callout Box */}
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/50 border border-black/5 dark:border-white/5 space-y-3">
-                <ToggleSwitch
-                    label="PRIMARY OBJECTIVE Callout Box"
-                    checked={formData.showPrimaryObjective !== false}
-                    onChange={v => setFormData({ ...formData, showPrimaryObjective: v })}
-                    description="Green vertical border callout emphasizing the project's primary goal"
-                />
-                {formData.showPrimaryObjective !== false && (
-                    <div className="space-y-3 pt-2">
-                        <input
-                            value={formData.primaryObjectiveTitle || ''}
-                            onChange={e => setFormData({ ...formData, primaryObjectiveTitle: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-10 px-3 rounded-lg font-bold text-xs"
-                            placeholder="PRIMARY OBJECTIVE"
-                        />
-                        <textarea
-                            rows={3}
-                            value={formData.primaryObjectiveText || ''}
-                            onChange={e => setFormData({ ...formData, primaryObjectiveText: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 p-3 rounded-lg font-medium text-xs leading-relaxed"
-                            placeholder="To build a local fan and audience base..."
-                        />
-                    </div>
-                )}
-            </div>
-
-            {/* Key Anchor Markets Grid Box */}
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/50 border border-black/5 dark:border-white/5 space-y-4">
-                <ToggleSwitch
-                    label="KEY ANCHOR MARKETS Matrix"
-                    checked={formData.showAnchorMarkets !== false}
-                    onChange={v => setFormData({ ...formData, showAnchorMarkets: v })}
-                    description="3x3 grid showing anchor cities/markets with caption note"
-                />
-
-                {formData.showAnchorMarkets !== false && (
-                    <div className="space-y-3 pt-2">
-                        <input
-                            value={formData.anchorMarketsTitle || ''}
-                            onChange={e => setFormData({ ...formData, anchorMarketsTitle: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-10 px-3 rounded-lg font-bold text-xs"
-                            placeholder="KEY ANCHOR MARKETS"
-                        />
-
-                        {/* City Tag Chips */}
-                        <div className="flex flex-wrap gap-2 p-3 bg-white dark:bg-zinc-950 rounded-xl border border-black/10 dark:border-white/10">
-                            {anchorMarkets.map((city, idx) => (
-                                <span
-                                    key={idx}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gray-100 dark:bg-zinc-900 text-xs font-bold text-gray-800 dark:text-gray-200 border border-black/5 dark:border-white/5"
-                                >
-                                    {city}
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveMarket(city)}
-                                        className="text-gray-400 hover:text-red-400"
-                                    >
-                                        ×
-                                    </button>
-                                </span>
-                            ))}
-                        </div>
-
-                        {/* Add City Input */}
-                        <div className="flex gap-2">
-                            <input
-                                value={newMarketInput}
-                                onChange={e => setNewMarketInput(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && handleAddMarket(e)}
-                                className="flex-1 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-10 px-3 rounded-lg font-bold text-xs"
-                                placeholder="Type city and hit Enter (e.g. Pune, Indore, Surat)"
-                            />
-                            <Button type="button" size="sm" onClick={handleAddMarket} className="bg-neon-green text-black font-bold">
-                                Add Market
-                            </Button>
-                        </div>
-
-                        {/* Caption */}
-                        <input
-                            value={formData.anchorMarketsCaption || ''}
-                            onChange={e => setFormData({ ...formData, anchorMarketsCaption: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-10 px-3 rounded-lg font-medium text-xs text-gray-500"
-                            placeholder="These markets anchor the campaign, with promotion extending..."
-                        />
-                    </div>
-                )}
-            </div>
-
-            {/* Why This Approach Callout Box */}
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/50 border border-black/5 dark:border-white/5 space-y-3">
-                <ToggleSwitch
-                    label="WHY THIS APPROACH Callout Box"
-                    checked={formData.showWhyThisApproach !== false}
-                    onChange={v => setFormData({ ...formData, showWhyThisApproach: v })}
-                    description="Green vertical border callout detailing the strategic rationale"
-                />
-                {formData.showWhyThisApproach !== false && (
-                    <div className="space-y-3 pt-2">
-                        <input
-                            value={formData.whyThisApproachTitle || ''}
-                            onChange={e => setFormData({ ...formData, whyThisApproachTitle: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-10 px-3 rounded-lg font-bold text-xs"
-                            placeholder="WHY THIS APPROACH"
-                        />
-                        <textarea
-                            rows={3}
-                            value={formData.whyThisApproachText || ''}
-                            onChange={e => setFormData({ ...formData, whyThisApproachText: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 p-3 rounded-lg font-medium text-xs leading-relaxed"
-                            placeholder="Audience demographics respond significantly higher to peer-to-peer amplification..."
-                        />
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-}
-
-// ── 3. EXECUTION BLUEPRINT EDITOR ────────────────────────────────────────────
-export function V2BlueprintEditor({ formData, setFormData }) {
-    const blueprintSteps = formData.blueprintSteps || [];
-
-    const handleUpdateStep = (stepIdx, field, value) => {
-        const updated = [...blueprintSteps];
-        updated[stepIdx] = { ...updated[stepIdx], [field]: value };
-        setFormData({ ...formData, blueprintSteps: updated });
-    };
-
-    const handleAddStep = () => {
-        const nextNum = String(blueprintSteps.length + 1).padStart(2, '0');
-        setFormData({
-            ...formData,
-            blueprintSteps: [
-                ...blueprintSteps,
-                { number: nextNum, title: 'New Execution Phase', bullets: ['Initial deliverable item'] }
-            ]
-        });
-    };
-
-    const handleRemoveStep = (stepIdx) => {
-        const updated = blueprintSteps.filter((_, i) => i !== stepIdx);
-        setFormData({ ...formData, blueprintSteps: updated });
-    };
-
-    const handleUpdateBullet = (stepIdx, bulletIdx, value) => {
-        const updated = [...blueprintSteps];
-        const step = { ...updated[stepIdx] };
-        const bullets = [...step.bullets];
-        bullets[bulletIdx] = value;
-        step.bullets = bullets;
-        updated[stepIdx] = step;
-        setFormData({ ...formData, blueprintSteps: updated });
-    };
-
-    const handleAddBullet = (stepIdx) => {
-        const updated = [...blueprintSteps];
-        const step = { ...updated[stepIdx] };
-        step.bullets = [...(step.bullets || []), ''];
-        updated[stepIdx] = step;
-        setFormData({ ...formData, blueprintSteps: updated });
-    };
-
-    const handleRemoveBullet = (stepIdx, bulletIdx) => {
-        const updated = [...blueprintSteps];
-        const step = { ...updated[stepIdx] };
-        step.bullets = step.bullets.filter((_, i) => i !== bulletIdx);
-        updated[stepIdx] = step;
-        setFormData({ ...formData, blueprintSteps: updated });
-    };
-
-    return (
-        <div className="space-y-8">
-            {/* Headers */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Section Kicker</label>
-                    <input
-                        value={formData.blueprintSub || ''}
-                        onChange={e => setFormData({ ...formData, blueprintSub: e.target.value })}
-                        className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs uppercase"
-                        placeholder="HOW WE'LL EXECUTE"
+            <BuilderCard title="Cover text" hint="What the client reads first">
+                <div className="space-y-3">
+                    <OptionalBlock on={formData.showCoverPill !== false}>
+                        <Toggle label="Label at the top of the cover" checked={formData.showCoverPill !== false} onChange={v => set({ showCoverPill: v })} />
+                        {formData.showCoverPill !== false && (
+                            <TextInput aria-label="Cover label" value={formData.coverPillText} onChange={v => set({ coverPillText: v })} placeholder="OFFICIAL STRATEGIC QUOTATION" />
+                        )}
+                    </OptionalBlock>
+                    <TextArea
+                        label="Introduction"
+                        rows={5}
+                        value={formData.introParagraph}
+                        onChange={v => set({ introParagraph: v })}
+                        placeholder="NewBi Entertainment & Marketing LLP is pleased to present…"
+                        onRefine={() => onRefine?.({ label: 'Introduction', value: formData.introParagraph, apply: (t) => set({ introParagraph: t }) })}
                     />
+                    <TextInput label="Classification" optional value={formData.classification} onChange={v => set({ classification: v })} placeholder="Strategic Commercial" />
                 </div>
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Section Title</label>
-                    <input
-                        value={formData.blueprintTitle || ''}
-                        onChange={e => setFormData({ ...formData, blueprintTitle: e.target.value })}
-                        className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs"
-                        placeholder="Process & Execution Blueprint"
-                    />
-                </div>
-            </div>
+            </BuilderCard>
 
-            <ToggleSwitch
-                label="Process & Execution Blueprint (Pages 3 & 4)"
-                checked={formData.showBlueprint !== false}
-                onChange={v => setFormData({ ...formData, showBlueprint: v })}
-                description="Renders steps 1-3 on Page 3 and steps 4-5 on Page 4 with green number badges"
-            />
-
-            {/* Steps List */}
-            {formData.showBlueprint !== false && (
-                <div className="space-y-6">
-                    <div className="flex justify-between items-center">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-[#16A34A]">
-                            Execution Blueprint Steps ({blueprintSteps.length} Steps)
-                        </p>
-                        <Button
-                            type="button"
-                            size="sm"
-                            onClick={handleAddStep}
-                            className="bg-neon-green text-black font-bold text-xs gap-1"
-                        >
-                            <Plus size={14} /> Add Step
-                        </Button>
-                    </div>
-
-                    {blueprintSteps.map((step, stepIdx) => (
-                        <div key={stepIdx} className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/50 border border-black/5 dark:border-white/5 space-y-4">
-                            <div className="flex items-center gap-3">
-                                <span className="w-8 h-8 rounded-full bg-[#E8FAF0] border border-[#B8F2D1] text-[#16A34A] flex items-center justify-center font-black text-xs shrink-0">
-                                    {step.number || String(stepIdx + 1).padStart(2, '0')}
-                                </span>
-                                <input
-                                    value={step.number || ''}
-                                    onChange={e => handleUpdateStep(stepIdx, 'number', e.target.value)}
-                                    className="w-14 h-10 text-center bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-lg font-mono font-bold text-xs"
-                                    placeholder="01"
-                                />
-                                <input
-                                    value={step.title || ''}
-                                    onChange={e => handleUpdateStep(stepIdx, 'title', e.target.value)}
-                                    className="flex-1 h-10 px-3 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-lg font-bold text-xs"
-                                    placeholder="Step Title (e.g. Campus & Youth Outreach)"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => handleRemoveStep(stepIdx)}
-                                    className="p-2 text-gray-400 hover:text-red-400 transition-colors"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
-
-                            {/* Bullet Items */}
-                            <div className="space-y-2 pl-11">
-                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">
-                                    Action Items & Deliverables (Green Bullets)
-                                </label>
-                                {(step.bullets || []).map((bullet, bulletIdx) => (
-                                    <div key={bulletIdx} className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-[#16A34A] shrink-0" />
-                                        <input
-                                            value={bullet}
-                                            onChange={e => handleUpdateBullet(stepIdx, bulletIdx, e.target.value)}
-                                            className="flex-1 h-9 px-3 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-lg font-medium text-xs"
-                                            placeholder="Detail bullet item..."
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveBullet(stepIdx, bulletIdx)}
-                                            className="p-1 text-gray-400 hover:text-red-400"
-                                        >
-                                            <Trash2 size={13} />
-                                        </button>
-                                    </div>
-                                ))}
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleAddBullet(stepIdx)}
-                                    className="text-xs text-neon-green gap-1 mt-1"
-                                >
-                                    <Plus size={12} /> Add Bullet
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-}
-
-// ── 4. DELIVERABLES TABLE EDITOR ─────────────────────────────────────────────
-export function V2DeliverablesEditor({ formData, setFormData }) {
-    const deliverablesTable = formData.deliverablesTable || [];
-
-    const handleUpdateRow = (idx, field, value) => {
-        const updated = [...deliverablesTable];
-        updated[idx] = { ...updated[idx], [field]: value };
-        setFormData({ ...formData, deliverablesTable: updated });
-    };
-
-    const handleAddRow = () => {
-        const nextId = deliverablesTable.length + 1;
-        setFormData({
-            ...formData,
-            deliverablesTable: [
-                ...deliverablesTable,
-                { id: nextId, deliverable: 'New Deliverable', qty: '1 Unit', timeline: 'Pre-Event' }
-            ]
-        });
-    };
-
-    const handleRemoveRow = (idx) => {
-        const updated = deliverablesTable.filter((_, i) => i !== idx);
-        setFormData({ ...formData, deliverablesTable: updated });
-    };
-
-    return (
-        <div className="space-y-8">
-            {/* Headers */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Section Kicker</label>
-                    <input
-                        value={formData.deliverablesSub || ''}
-                        onChange={e => setFormData({ ...formData, deliverablesSub: e.target.value })}
-                        className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs uppercase"
-                        placeholder="SCOPE SUMMARY"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Section Title</label>
-                    <input
-                        value={formData.deliverablesTitle || ''}
-                        onChange={e => setFormData({ ...formData, deliverablesTitle: e.target.value })}
-                        className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs"
-                        placeholder="Per City Deliverables"
-                    />
-                </div>
-            </div>
-
-            <ToggleSwitch
-                label="Scope Summary / Deliverables Page"
-                checked={formData.showDeliverables !== false}
-                onChange={v => setFormData({ ...formData, showDeliverables: v })}
-                description="Renders the 4-column deliverables table and city note callout box"
-            />
-
-            {/* Deliverables Table */}
-            {formData.showDeliverables !== false && (
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-[#16A34A]">
-                            Scope Deliverables Table (4 Columns)
-                        </p>
-                        <Button
-                            type="button"
-                            size="sm"
-                            onClick={handleAddRow}
-                            className="bg-neon-green text-black font-bold text-xs gap-1"
-                        >
-                            <Plus size={14} /> Add Deliverable Row
-                        </Button>
-                    </div>
-
-                    <div className="overflow-x-auto rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-950">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="border-b border-black/10 dark:border-white/10 bg-gray-50 dark:bg-zinc-900/60 text-[9px] font-black uppercase tracking-wider text-gray-500">
-                                    <th className="p-3 w-12 text-center">#</th>
-                                    <th className="p-3">Deliverable Item</th>
-                                    <th className="p-3 w-40">Qty / Unit</th>
-                                    <th className="p-3 w-36">Timeline</th>
-                                    <th className="p-3 w-12 text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-black/5 dark:divide-white/5">
-                                {deliverablesTable.map((row, idx) => (
-                                    <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-zinc-900/30">
-                                        <td className="p-2 text-center">
-                                            <span className="text-xs font-mono font-bold text-[#16A34A]">{idx + 1}</span>
-                                        </td>
-                                        <td className="p-2">
-                                            <input
-                                                value={row.deliverable || ''}
-                                                onChange={e => handleUpdateRow(idx, 'deliverable', e.target.value)}
-                                                className="w-full h-9 px-2.5 bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-lg font-bold text-xs"
-                                                placeholder="Deliverable description"
-                                            />
-                                        </td>
-                                        <td className="p-2">
-                                            <input
-                                                value={row.qty || ''}
-                                                onChange={e => handleUpdateRow(idx, 'qty', e.target.value)}
-                                                className="w-full h-9 px-2.5 bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-lg font-mono font-bold text-xs"
-                                                placeholder="2–3 videos"
-                                            />
-                                        </td>
-                                        <td className="p-2">
-                                            <input
-                                                value={row.timeline || ''}
-                                                onChange={e => handleUpdateRow(idx, 'timeline', e.target.value)}
-                                                className="w-full h-9 px-2.5 bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-lg font-mono font-bold text-xs"
-                                                placeholder="T-14 to T-7"
-                                            />
-                                        </td>
-                                        <td className="p-2 text-center">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveRow(idx)}
-                                                className="p-1 text-gray-400 hover:text-red-400"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Indicative Note */}
-                    <div className="space-y-1">
-                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest px-2">
-                            Table Disclaimer / Indicative Sub-Note
-                        </label>
-                        <input
-                            value={formData.deliverablesIndicativeNote || ''}
-                            onChange={e => setFormData({ ...formData, deliverablesIndicativeNote: e.target.value })}
-                            className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-10 px-3 rounded-xl font-medium text-xs text-gray-600 dark:text-gray-300"
-                            placeholder="Deliverables listed above are per city. Total scope across 75 cities is scaled accordingly."
-                        />
-                    </div>
-                </div>
-            )}
-
-            {/* City Note Callout Box */}
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/50 border border-black/5 dark:border-white/5 space-y-3">
-                <ToggleSwitch
-                    label="Primary City / Hub Note Callout Box"
-                    checked={formData.showCityNote !== false}
-                    onChange={v => setFormData({ ...formData, showCityNote: v })}
-                    description="Green-accented callout box for Bengaluru or primary flagship market"
-                />
-                {formData.showCityNote !== false && (
-                    <div className="space-y-3 pt-2">
-                        <input
-                            value={formData.cityNoteTitle || ''}
-                            onChange={e => setFormData({ ...formData, cityNoteTitle: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-10 px-3 rounded-lg font-bold text-xs"
-                            placeholder="NOTE ON BENGALURU"
-                        />
-                        <textarea
-                            rows={3}
-                            value={formData.cityNoteText || ''}
-                            onChange={e => setFormData({ ...formData, cityNoteText: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 p-3 rounded-lg font-medium text-xs leading-relaxed"
-                            placeholder="Bengaluru will receive direct on-ground management from NewBi..."
-                        />
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-}
-
-// ── 5. PRICING & COMMERCIALS EDITOR ──────────────────────────────────────────
-export function V2PricingEditor({ formData, setFormData }) {
-    const pricingTable = formData.pricingTable || [];
-
-    const handleUpdateRow = (idx, field, value) => {
-        const updated = [...pricingTable];
-        updated[idx] = { ...updated[idx], [field]: value };
-        setFormData({ ...formData, pricingTable: updated });
-    };
-
-    const handleAddRow = () => {
-        const nextId = pricingTable.length + 1;
-        setFormData({
-            ...formData,
-            pricingTable: [
-                ...pricingTable,
-                { id: nextId, package: 'Standard Package', scope: 'Scope summary description', price: '₹1,50,000 / city' }
-            ]
-        });
-    };
-
-    const handleRemoveRow = (idx) => {
-        const updated = pricingTable.filter((_, i) => i !== idx);
-        setFormData({ ...formData, pricingTable: updated });
-    };
-
-    return (
-        <div className="space-y-8">
-            {/* Headers */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Section Kicker</label>
-                    <input
-                        value={formData.commercialsSub || ''}
-                        onChange={e => setFormData({ ...formData, commercialsSub: e.target.value })}
-                        className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs uppercase"
-                        placeholder="COMMERCIALS"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Section Title</label>
-                    <input
-                        value={formData.commercialsTitle || ''}
-                        onChange={e => setFormData({ ...formData, commercialsTitle: e.target.value })}
-                        className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs"
-                        placeholder="04 · Pricing Structure"
-                    />
-                </div>
-            </div>
-
-            <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Commercials Subtitle</label>
-                <input
-                    value={formData.commercialsSubtitle || ''}
-                    onChange={e => setFormData({ ...formData, commercialsSubtitle: e.target.value })}
-                    className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-medium text-xs text-gray-600 dark:text-gray-300"
-                    placeholder="Costs are indicative and scalable based on final scope, creator tier mix, and city network."
-                />
-            </div>
-
-            <ToggleSwitch
-                label="Commercials & Pricing Page (Page 6)"
-                checked={formData.showCommercials !== false}
-                onChange={v => setFormData({ ...formData, showCommercials: v })}
-                description="Renders the pricing packages table, What's Included callout, and Payment & Scaling terms"
-            />
-
-            {/* Pricing Table */}
-            {formData.showCommercials !== false && (
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-[#16A34A]">
-                            Package Pricing Table (3 Columns)
-                        </p>
-                        <Button
-                            type="button"
-                            size="sm"
-                            onClick={handleAddRow}
-                            className="bg-neon-green text-black font-bold text-xs gap-1"
-                        >
-                            <Plus size={14} /> Add Package Tier
-                        </Button>
-                    </div>
-
-                    <div className="overflow-x-auto rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-950">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="border-b border-black/10 dark:border-white/10 bg-gray-50 dark:bg-zinc-900/60 text-[9px] font-black uppercase tracking-wider text-gray-500">
-                                    <th className="p-3 w-48">Package Tier</th>
-                                    <th className="p-3">Scope & Inclusions</th>
-                                    <th className="p-3 w-44">Indicative Cost</th>
-                                    <th className="p-3 w-12 text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-black/5 dark:divide-white/5">
-                                {pricingTable.map((row, idx) => (
-                                    <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-zinc-900/30">
-                                        <td className="p-2">
-                                            <input
-                                                value={row.package || ''}
-                                                onChange={e => handleUpdateRow(idx, 'package', e.target.value)}
-                                                className="w-full h-9 px-2.5 bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-lg font-bold text-xs text-[#16A34A]"
-                                                placeholder="e.g. Anchor City Package"
-                                            />
-                                        </td>
-                                        <td className="p-2">
-                                            <input
-                                                value={row.scope || ''}
-                                                onChange={e => handleUpdateRow(idx, 'scope', e.target.value)}
-                                                className="w-full h-9 px-2.5 bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-lg font-medium text-xs"
-                                                placeholder="Scope description..."
-                                            />
-                                        </td>
-                                        <td className="p-2">
-                                            <input
-                                                value={row.price || ''}
-                                                onChange={e => handleUpdateRow(idx, 'price', e.target.value)}
-                                                className="w-full h-9 px-2.5 bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-lg font-mono font-bold text-xs"
-                                                placeholder="₹1,50,000 / city"
-                                            />
-                                        </td>
-                                        <td className="p-2 text-center">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveRow(idx)}
-                                                className="p-1 text-gray-400 hover:text-red-400"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
-            {/* What's Included Callout Box */}
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/50 border border-black/5 dark:border-white/5 space-y-3">
-                <ToggleSwitch
-                    label="WHAT'S INCLUDED Callout Box"
-                    checked={formData.showWhatsIncluded !== false}
-                    onChange={v => setFormData({ ...formData, showWhatsIncluded: v })}
-                    description="Green-accented box outlining universal package inclusions"
-                />
-                {formData.showWhatsIncluded !== false && (
-                    <div className="space-y-3 pt-2">
-                        <input
-                            value={formData.whatsIncludedTitle || ''}
-                            onChange={e => setFormData({ ...formData, whatsIncludedTitle: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-10 px-3 rounded-lg font-bold text-xs"
-                            placeholder="WHAT'S INCLUDED"
-                        />
-                        <textarea
-                            rows={3}
-                            value={formData.whatsIncludedText || ''}
-                            onChange={e => setFormData({ ...formData, whatsIncludedText: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 p-3 rounded-lg font-medium text-xs leading-relaxed"
-                            placeholder="All pricing packages include creator sourcing and briefing, content review..."
-                        />
-                    </div>
-                )}
-            </div>
-
-            {/* Payment & Scaling Callout Box */}
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/50 border border-black/5 dark:border-white/5 space-y-3">
-                <ToggleSwitch
-                    label="PAYMENT & SCALING Callout Box"
-                    checked={formData.showPaymentScaling !== false}
-                    onChange={v => setFormData({ ...formData, showPaymentScaling: v })}
-                    description="Green-accented box covering payment milestones and volume discount scaling"
-                />
-                {formData.showPaymentScaling !== false && (
-                    <div className="space-y-3 pt-2">
-                        <input
-                            value={formData.paymentScalingTitle || ''}
-                            onChange={e => setFormData({ ...formData, paymentScalingTitle: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-10 px-3 rounded-lg font-bold text-xs"
-                            placeholder="PAYMENT & SCALING"
-                        />
-                        <textarea
-                            rows={3}
-                            value={formData.paymentScalingText || ''}
-                            onChange={e => setFormData({ ...formData, paymentScalingText: e.target.value })}
-                            className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 p-3 rounded-lg font-medium text-xs leading-relaxed"
-                            placeholder="Payment terms: 50% advance upon contract signing; balance billed against delivery milestones..."
-                        />
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-}
-
-// ── 6. CITY DEEP-DIVE EDITOR ─────────────────────────────────────────────────
-export function V2DeepDiveEditor({ formData, setFormData }) {
-    const deepDiveSubsections = formData.deepDiveSubsections || [];
-
-    const handleUpdateSubsection = (idx, field, value) => {
-        const updated = [...deepDiveSubsections];
-        updated[idx] = { ...updated[idx], [field]: value };
-        setFormData({ ...formData, deepDiveSubsections: updated });
-    };
-
-    const handleAddSubsection = () => {
-        const nextBadge = `5.${deepDiveSubsections.length + 1}`;
-        setFormData({
-            ...formData,
-            deepDiveSubsections: [
-                ...deepDiveSubsections,
-                { badge: nextBadge, title: 'New Management Area', bullets: ['Specific operational detail item'] }
-            ]
-        });
-    };
-
-    const handleRemoveSubsection = (idx) => {
-        const updated = deepDiveSubsections.filter((_, i) => i !== idx);
-        setFormData({ ...formData, deepDiveSubsections: updated });
-    };
-
-    const handleUpdateBullet = (subIdx, bulletIdx, value) => {
-        const updated = [...deepDiveSubsections];
-        const sub = { ...updated[subIdx] };
-        const bullets = [...sub.bullets];
-        bullets[bulletIdx] = value;
-        sub.bullets = bullets;
-        updated[subIdx] = sub;
-        setFormData({ ...formData, deepDiveSubsections: updated });
-    };
-
-    const handleAddBullet = (subIdx) => {
-        const updated = [...deepDiveSubsections];
-        const sub = { ...updated[subIdx] };
-        sub.bullets = [...(sub.bullets || []), ''];
-        updated[subIdx] = sub;
-        setFormData({ ...formData, deepDiveSubsections: updated });
-    };
-
-    const handleRemoveBullet = (subIdx, bulletIdx) => {
-        const updated = [...deepDiveSubsections];
-        const sub = { ...updated[subIdx] };
-        sub.bullets = sub.bullets.filter((_, i) => i !== bulletIdx);
-        updated[subIdx] = sub;
-        setFormData({ ...formData, deepDiveSubsections: updated });
-    };
-
-    return (
-        <div className="space-y-8">
-            {/* Headers */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Section Kicker</label>
-                    <input
-                        value={formData.deepDiveSub || ''}
-                        onChange={e => setFormData({ ...formData, deepDiveSub: e.target.value })}
-                        className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs uppercase"
-                        placeholder="CITY DEEP-DIVE · BENGALURU"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Section Title</label>
-                    <input
-                        value={formData.deepDiveTitle || ''}
-                        onChange={e => setFormData({ ...formData, deepDiveTitle: e.target.value })}
-                        className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs"
-                        placeholder="05 · Bengaluru Management"
-                    />
-                </div>
-            </div>
-
-            <ToggleSwitch
-                label="City Deep-Dive Page (Page 7)"
-                checked={formData.showDeepDive !== false}
-                onChange={v => setFormData({ ...formData, showDeepDive: v })}
-                description="Renders dedicated primary market execution plan with badge subsections (5.1, 5.2, etc.)"
-            />
-
-            {formData.showDeepDive !== false && (
-                <div className="space-y-6">
-                    {/* Intro */}
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">
-                            Deep-Dive Introduction Narrative
-                        </label>
-                        <textarea
-                            rows={3}
-                            value={formData.deepDiveIntro || ''}
-                            onChange={e => setFormData({ ...formData, deepDiveIntro: e.target.value })}
-                            className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 p-4 rounded-2xl font-medium text-xs leading-relaxed"
-                            placeholder="Bengaluru is the tour's primary market. NewBi will manage overall execution directly..."
-                        />
-                    </div>
-
-                    {/* Subsections */}
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-[#16A34A]">
-                                Management Subsections with Badges
-                            </p>
-                            <Button
-                                type="button"
-                                size="sm"
-                                onClick={handleAddSubsection}
-                                className="bg-neon-green text-black font-bold text-xs gap-1"
-                            >
-                                <Plus size={14} /> Add Subsection
-                            </Button>
-                        </div>
-
-                        {deepDiveSubsections.map((sub, subIdx) => (
-                            <div key={subIdx} className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/50 border border-black/5 dark:border-white/5 space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        value={sub.badge || ''}
-                                        onChange={e => handleUpdateSubsection(subIdx, 'badge', e.target.value)}
-                                        className="w-16 h-10 text-center bg-[#E8FAF0] border border-[#B8F2D1] text-[#16A34A] rounded-xl font-bold text-xs"
-                                        placeholder="5.1"
-                                    />
-                                    <input
-                                        value={sub.title || ''}
-                                        onChange={e => handleUpdateSubsection(subIdx, 'title', e.target.value)}
-                                        className="flex-1 h-10 px-3 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-lg font-bold text-xs"
-                                        placeholder="Direct Management"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveSubsection(subIdx)}
-                                        className="p-2 text-gray-400 hover:text-red-400 transition-colors"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-
-                                {/* Bullets */}
-                                <div className="space-y-2 pl-4">
-                                    {(sub.bullets || []).map((bullet, bulletIdx) => (
-                                        <div key={bulletIdx} className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-[#16A34A] shrink-0" />
-                                            <input
-                                                value={bullet}
-                                                onChange={e => handleUpdateBullet(subIdx, bulletIdx, e.target.value)}
-                                                className="flex-1 h-9 px-3 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-lg font-medium text-xs"
-                                                placeholder="Operational action bullet..."
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveBullet(subIdx, bulletIdx)}
-                                                className="p-1 text-gray-400 hover:text-red-400"
-                                            >
-                                                <Trash2 size={13} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => handleAddBullet(subIdx)}
-                                        className="text-xs text-neon-green gap-1 mt-1"
-                                    >
-                                        <Plus size={12} /> Add Bullet
-                                    </Button>
-                                </div>
+            <BuilderCard title="What's inside" hint="The numbered contents cards on the cover">
+                <Toggle label="Show the contents cards" checked={formData.showWhatsInside !== false} onChange={v => set({ showWhatsInside: v })} />
+                {formData.showWhatsInside !== false && (
+                    <div className="mt-3 space-y-2">
+                        {cards.map((card, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                                <input aria-label={`Card ${idx + 1} number`} className={cn(fieldCls, 'w-16 shrink-0 px-2 text-center tabular-nums')} value={card.num || ''} onChange={e => setList('whatsInside', l => l.map((c, i) => (i === idx ? { ...c, num: e.target.value } : c)))} placeholder={pad2(idx + 1)} />
+                                <input aria-label={`Card ${idx + 1} title`} className={cn(fieldCls, 'min-w-0 flex-1')} value={card.title || ''} onChange={e => setList('whatsInside', l => l.map((c, i) => (i === idx ? { ...c, title: e.target.value } : c)))} placeholder="Section title" />
+                                <RowActions index={idx} count={cards.length} onRemove={(i) => setList('whatsInside', l => l.filter((_, j) => j !== i))} />
                             </div>
                         ))}
+                        <AddButton onClick={() => setList('whatsInside', l => [...l, { num: pad2(l.length + 1), title: '' }])}>Add a card</AddButton>
                     </div>
-                </div>
-            )}
+                )}
+            </BuilderCard>
+
+            <BuilderCard title="Prepared for" hint="A short note on who the proposal is for">
+                <Callout
+                    formData={formData} set={set} onRefine={onRefine}
+                    showKey="showPreparedFor" textKey="preparedForText"
+                    label="Show the prepared-for box"
+                    hint="Leave the text empty to use a standard line with the client's name"
+                    textPlaceholder="This quotation has been prepared exclusively for…"
+                />
+            </BuilderCard>
         </div>
     );
 }
 
-// ── 7. CLOSING & SIGNATURES EDITOR ───────────────────────────────────────────
-export function V2ClosingEditor({ formData, setFormData }) {
+// ── Executive summary ────────────────────────────────────────────────────────
+export function V2StrategyEditor({ formData, setFormData, onRefine }) {
+    const { set, setList } = useSetters(setFormData);
+    const paragraphs = formData.executiveParagraphs || [];
+    const markets = formData.anchorMarkets || [];
+    const [market, setMarket] = useState('');
+    const a = useAccent();
+
+    const addMarket = () => {
+        const names = market.split(',').map(s => s.trim()).filter(Boolean);
+        if (!names.length) return;
+        setList('anchorMarkets', l => [...l, ...names.filter(n => !l.some(m => m.toLowerCase() === n.toLowerCase()))]);
+        setMarket('');
+    };
+
     return (
-        <div className="space-y-8">
-            {/* Headers */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Section Kicker</label>
-                    <input
-                        value={formData.closingSub || ''}
-                        onChange={e => setFormData({ ...formData, closingSub: e.target.value })}
-                        className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs uppercase"
-                        placeholder="CLOSING"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Section Title</label>
-                    <input
-                        value={formData.closingTitle || ''}
-                        onChange={e => setFormData({ ...formData, closingTitle: e.target.value })}
-                        className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs"
-                        placeholder="06 · Next Steps"
-                    />
-                </div>
-            </div>
-
-            <ToggleSwitch
-                label="Closing & Next Steps (Page 8)"
-                checked={formData.showClosing !== false}
-                onChange={v => setFormData({ ...formData, showClosing: v })}
-                description="Renders closing text, quotation classification reference, and authorization block"
-            />
-
-            {/* Closing Text */}
-            <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">
-                    Closing Statement
-                </label>
-                <textarea
-                    rows={4}
-                    value={formData.closingText || ''}
-                    onChange={e => setFormData({ ...formData, closingText: e.target.value })}
-                    className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 p-4 rounded-2xl font-medium text-xs leading-relaxed"
-                    placeholder="We'd welcome the opportunity to walk the client through this plan in detail..."
-                />
-            </div>
-
-            <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">
-                    Prepared By Entity
-                </label>
-                <input
-                    value={formData.preparedBy || ''}
-                    onChange={e => setFormData({ ...formData, preparedBy: e.target.value })}
-                    className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs"
-                    placeholder="NewBi Entertainment & Marketing LLP"
-                />
-            </div>
-
-            {/* Signatures & Seal Toggles */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <ToggleSwitch
-                    label="Digital Signatures Block"
-                    checked={formData.showSignatures !== false}
-                    onChange={v => setFormData({ ...formData, showSignatures: v })}
-                    description="Dual signature blocks for Provider & Client"
-                />
-                <ToggleSwitch
-                    label="Official Document Seal"
-                    checked={formData.showSeal !== false}
-                    onChange={v => setFormData({ ...formData, showSeal: v })}
-                    description="Green Newbi Entertainment stamp seal"
-                />
-            </div>
-
-            {/* Signatory Details */}
-            {formData.showSignatures !== false && (
-                <div className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/50 border border-black/5 dark:border-white/5 space-y-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-[#16A34A]">
-                        Authorized Signatory Information
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-2">Signatory Name</label>
-                            <input
-                                value={formData.senderName || ''}
-                                onChange={e => setFormData({ ...formData, senderName: e.target.value })}
-                                className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs"
-                                placeholder="Authorized Signatory"
+        <div className="space-y-5">
+            <BuilderCard title="Executive summary">
+                <PageToggle checked={formData.showExecutiveSummary !== false} onChange={v => set({ showExecutiveSummary: v })} />
+                <div className="space-y-3">
+                    <KickerTitle formData={formData} set={set} kickerKey="strategySub" titleKey="strategyTitle" kickerPlaceholder="STRATEGIC OUTLINE" titlePlaceholder="Executive Summary" />
+                    {paragraphs.map((para, idx) => (
+                        <ListCard key={idx} badge={idx + 1} title="Paragraph" actions={<RowActions index={idx} count={paragraphs.length} onMove={(i, d) => setList('executiveParagraphs', l => moveItem(l, i, d))} onRemove={paragraphs.length > 1 ? (i) => setList('executiveParagraphs', l => l.filter((_, j) => j !== i)) : undefined} />}>
+                            <TextArea
+                                aria-label={`Paragraph ${idx + 1}`}
+                                rows={4}
+                                value={para}
+                                onChange={v => setList('executiveParagraphs', l => l.map((p, i) => (i === idx ? v : p)))}
+                                onRefine={() => onRefine?.({ label: `Summary paragraph ${idx + 1}`, value: para, apply: (t) => setList('executiveParagraphs', l => l.map((p, i) => (i === idx ? t : p))) })}
                             />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-2">Signatory Designation</label>
-                            <input
-                                value={formData.senderDesignation || ''}
-                                onChange={e => setFormData({ ...formData, senderDesignation: e.target.value })}
-                                className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 h-12 px-4 rounded-xl font-bold text-xs"
-                                placeholder="Director of Operations"
-                            />
-                        </div>
-                    </div>
+                        </ListCard>
+                    ))}
+                    <AddButton onClick={() => setList('executiveParagraphs', l => [...l, ''])}>Add a paragraph</AddButton>
+                </div>
+            </BuilderCard>
+
+            <BuilderCard title="Objective and approach">
+                <div className="space-y-3">
+                    <Callout formData={formData} set={set} onRefine={onRefine} showKey="showPrimaryObjective" titleKey="primaryObjectiveTitle" textKey="primaryObjectiveText" label="Primary objective box" titlePlaceholder="PRIMARY OBJECTIVE" textPlaceholder="To build a local fan and audience base…" />
+                    <Callout formData={formData} set={set} onRefine={onRefine} showKey="showWhyThisApproach" titleKey="whyThisApproachTitle" textKey="whyThisApproachText" label="Why this approach box" titlePlaceholder="WHY THIS APPROACH" textPlaceholder="Why this plan will work…" />
+                </div>
+            </BuilderCard>
+
+            <BuilderCard title="Key markets" hint="Cities or markets shown as a grid">
+                <OptionalBlock on={formData.showAnchorMarkets !== false}>
+                    <Toggle label="Show key markets" checked={formData.showAnchorMarkets !== false} onChange={v => set({ showAnchorMarkets: v })} />
+                    {formData.showAnchorMarkets !== false && (
+                        <>
+                            <TextInput label="Box title" value={formData.anchorMarketsTitle} onChange={v => set({ anchorMarketsTitle: v })} placeholder="KEY ANCHOR MARKETS" />
+                            <div className="flex flex-wrap gap-1.5">
+                                {markets.map((m, idx) => (
+                                    <span key={`${m}-${idx}`} className={cn('inline-flex h-9 items-center gap-1 rounded-full pl-3 pr-1 text-[13px] font-semibold', a.chip)}>
+                                        {m}
+                                        <button type="button" aria-label={`Remove ${m}`} onClick={() => setList('anchorMarkets', l => l.filter((_, i) => i !== idx))} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-black/10 dark:hover:bg-white/10"><X size={13} /></button>
+                                    </span>
+                                ))}
+                                {!markets.length && <span className="text-[13px] text-gray-500">No markets yet.</span>}
+                            </div>
+                            <div className="flex gap-2">
+                                <input aria-label="Add a market" className={cn(fieldCls, 'min-w-0 flex-1')} value={market} onChange={e => setMarket(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addMarket(); } }} placeholder="Type a city, then Add" enterKeyHint="done" />
+                                <button type="button" onClick={addMarket} disabled={!market.trim()} className="flex h-12 shrink-0 items-center gap-1 rounded-xl border border-black/10 px-4 text-[13px] font-bold disabled:opacity-40 dark:border-white/10"><Plus size={14} /> Add</button>
+                            </div>
+                            <TextInput label="Caption" optional value={formData.anchorMarketsCaption} onChange={v => set({ anchorMarketsCaption: v })} placeholder="These markets anchor the campaign…" />
+                        </>
+                    )}
+                </OptionalBlock>
+            </BuilderCard>
+        </div>
+    );
+}
+
+// ── Execution plan (timeline) ────────────────────────────────────────────────
+export function V2BlueprintEditor({ formData, setFormData, onRefine }) {
+    const { set, setList } = useSetters(setFormData);
+    const steps = formData.blueprintSteps || [];
+    const updateStep = (idx, patch) => setList('blueprintSteps', l => l.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
+    const updateBullets = (idx, fn) => setList('blueprintSteps', l => l.map((s, i) => (i === idx ? { ...s, bullets: fn(Array.isArray(s.bullets) ? s.bullets : []) } : s)));
+    // Steps are numbered by position, so reordering keeps 1, 2, 3…
+    const renumber = (list) => list.map((s, i) => ({ ...s, stepNumber: i + 1, number: pad2(i + 1) }));
+
+    return (
+        <BuilderCard title="How we'll execute" hint="Phases and actions, in order. Steps 1–3 go on one page, the rest on the next.">
+            <PageToggle label="Show the execution plan" checked={formData.showBlueprint !== false} onChange={v => set({ showBlueprint: v })} />
+            {formData.showBlueprint !== false && (
+                <div className="space-y-3">
+                    <KickerTitle formData={formData} set={set} kickerKey="blueprintSub" titleKey="blueprintTitle" kickerPlaceholder="HOW WE'LL EXECUTE" titlePlaceholder="Process & Execution Blueprint" />
+                    {steps.map((step, idx) => {
+                        const bullets = Array.isArray(step.bullets) ? step.bullets : [];
+                        return (
+                            <ListCard
+                                key={idx}
+                                badge={step.stepNumber || idx + 1}
+                                title={`Step ${idx + 1}`}
+                                actions={<RowActions index={idx} count={steps.length} onMove={(i, d) => setList('blueprintSteps', l => renumber(moveItem(l, i, d)))} onRemove={(i) => setList('blueprintSteps', l => renumber(l.filter((_, j) => j !== i)))} removeLabel="Remove step" />}
+                            >
+                                <TextInput label="Step title" value={step.title} onChange={v => updateStep(idx, { title: v })} placeholder="e.g. Campus and youth outreach" />
+                                <div className="space-y-2">
+                                    <span className="block text-[12px] font-bold text-gray-500">Actions</span>
+                                    {bullets.map((b, bIdx) => (
+                                        <div key={bIdx} className="flex items-start gap-1">
+                                            <textarea
+                                                aria-label={`Step ${idx + 1} action ${bIdx + 1}`}
+                                                rows={2}
+                                                className="min-h-12 w-full min-w-0 flex-1 resize-y rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-[14px] font-medium leading-snug text-gray-900 outline-none focus:border-neon-green/60 dark:border-white/10 dark:bg-white/[0.04] dark:text-white"
+                                                value={b}
+                                                onChange={e => updateBullets(idx, l => l.map((x, i) => (i === bIdx ? e.target.value : x)))}
+                                                placeholder="What happens in this step"
+                                            />
+                                            <RowActions index={bIdx} count={bullets.length} onRemove={(i) => updateBullets(idx, l => l.filter((_, j) => j !== i))} removeLabel="Remove action" />
+                                        </div>
+                                    ))}
+                                    <div className="flex flex-wrap gap-2">
+                                        <button type="button" onClick={() => updateBullets(idx, l => [...l, ''])} className="flex h-10 items-center gap-1.5 rounded-xl border border-black/10 px-3 text-[12px] font-bold dark:border-white/10"><Plus size={14} /> Add action</button>
+                                        {onRefine && (
+                                            <button type="button" onClick={() => onRefine({ label: `Step ${idx + 1}: ${step.title || 'actions'}`, value: bullets.join('\n'), apply: (t) => updateBullets(idx, () => String(t).split('\n').map(s => s.replace(/^[-•*\d.\s]+/, '').trim()).filter(Boolean)) })} className="flex h-10 items-center gap-1.5 rounded-xl px-3 text-[12px] font-bold text-gray-600 hover:bg-black/5 dark:text-zinc-300 dark:hover:bg-white/10">
+                                                Improve with AI
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </ListCard>
+                        );
+                    })}
+                    <AddButton onClick={() => setList('blueprintSteps', l => [...l, { stepNumber: l.length + 1, number: pad2(l.length + 1), title: '', bullets: [''] }])}>Add a step</AddButton>
                 </div>
             )}
+        </BuilderCard>
+    );
+}
+
+// ── Deliverables ─────────────────────────────────────────────────────────────
+export function V2DeliverablesEditor({ formData, setFormData, onRefine }) {
+    const { set, setList } = useSetters(setFormData);
+    const rows = formData.deliverablesTable || [];
+    const update = (idx, patch) => setList('deliverablesTable', l => l.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+    const renumber = (list) => list.map((r, i) => ({ ...r, id: pad2(i + 1) }));
+    return (
+        <div className="space-y-5">
+            <BuilderCard title="Deliverables" hint="What the client gets, how many and when">
+                <PageToggle label="Show the deliverables page" checked={formData.showDeliverables !== false} onChange={v => set({ showDeliverables: v })} />
+                {formData.showDeliverables !== false && (
+                    <div className="space-y-3">
+                        <KickerTitle formData={formData} set={set} kickerKey="deliverablesSub" titleKey="deliverablesTitle" kickerPlaceholder="SCOPE SUMMARY" titlePlaceholder="Per City Deliverables" />
+                        {rows.map((row, idx) => (
+                            <ListCard key={idx} badge={row.id || pad2(idx + 1)} actions={<RowActions index={idx} count={rows.length} onMove={(i, d) => setList('deliverablesTable', l => renumber(moveItem(l, i, d)))} onRemove={(i) => setList('deliverablesTable', l => renumber(l.filter((_, j) => j !== i)))} removeLabel="Remove deliverable" />}>
+                                <TextInput label="Deliverable" value={row.deliverable ?? row.item} onChange={v => update(idx, { deliverable: v })} placeholder="e.g. Creator reels (1 reel + 3 stories)" />
+                                <div className="grid grid-cols-2 gap-3">
+                                    <TextInput label="Qty / unit" value={row.qty} onChange={v => update(idx, { qty: v })} placeholder="e.g. 20–30" />
+                                    <TextInput label="Timeline" value={row.timeline} onChange={v => update(idx, { timeline: v })} placeholder="e.g. Week 1–2" />
+                                </div>
+                            </ListCard>
+                        ))}
+                        <AddButton onClick={() => setList('deliverablesTable', l => [...l, { id: pad2(l.length + 1), deliverable: '', qty: '', timeline: '' }])}>Add a deliverable</AddButton>
+                        <TextInput label="Note under the table" optional value={formData.deliverablesTableNote} onChange={v => set({ deliverablesTableNote: v })} placeholder="Figures are indicative…" />
+                    </div>
+                )}
+            </BuilderCard>
+            <BuilderCard title="Market note" hint="A highlighted note about a lead city or market">
+                <Callout formData={formData} set={set} onRefine={onRefine} showKey="showCityNote" titleKey="cityNoteTitle" textKey="cityNoteText" label="Show the note" titlePlaceholder="NOTE ON BENGALURU" textPlaceholder="Bengaluru is treated as the primary market…" />
+            </BuilderCard>
         </div>
+    );
+}
+
+// ── Pricing and payment terms ────────────────────────────────────────────────
+export function V2PricingEditor({ formData, setFormData, onRefine, totals }) {
+    const { set, setList } = useSetters(setFormData);
+    const rows = formData.pricingTable || [];
+    const update = (idx, patch) => setList('pricingTable', l => l.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+    const renumber = (list) => list.map((r, i) => ({ ...r, id: pad2(i + 1) }));
+    return (
+        <div className="space-y-5">
+            <BuilderCard title="Pricing" hint="Packages or line items as printed on the pricing page">
+                <PageToggle label="Show the pricing page" checked={formData.showCommercials !== false} onChange={v => set({ showCommercials: v })} />
+                {formData.showCommercials !== false && (
+                    <div className="space-y-3">
+                        <KickerTitle formData={formData} set={set} kickerKey="commercialsSub" titleKey="commercialsTitle" kickerPlaceholder="COMMERCIALS" titlePlaceholder="04 · Pricing Structure" />
+                        <TextArea label="Intro line" optional rows={2} value={formData.commercialsSubtitle} onChange={v => set({ commercialsSubtitle: v })} placeholder="The pricing below covers…" />
+                        {rows.map((row, idx) => (
+                            <ListCard key={idx} badge={row.id || pad2(idx + 1)} actions={<RowActions index={idx} count={rows.length} onMove={(i, d) => setList('pricingTable', l => renumber(moveItem(l, i, d)))} onRemove={(i) => setList('pricingTable', l => renumber(l.filter((_, j) => j !== i)))} removeLabel="Remove line" />}>
+                                <TextInput label="Package or item" value={row.deliverable} onChange={v => update(idx, { deliverable: v })} placeholder="e.g. Digital promotion package" />
+                                <TextInput label="What's included" optional value={row.description} onChange={v => update(idx, { description: v })} placeholder="Short description" />
+                                <div className="grid grid-cols-2 gap-3">
+                                    <TextInput label="Qty / price" value={row.qtyPrice} onChange={v => update(idx, { qtyPrice: v })} placeholder="e.g. ₹75,000 / city" hint="Printed as you type it" />
+                                    <TextInput label="Timeline" optional value={row.timeline} onChange={v => update(idx, { timeline: v })} placeholder="—" />
+                                </div>
+                            </ListCard>
+                        ))}
+                        <AddButton onClick={() => setList('pricingTable', l => [...l, { id: pad2(l.length + 1), deliverable: '', description: '', qtyPrice: '', timeline: '' }])}>Add a price line</AddButton>
+                        <TextInput label="Note under the table" optional value={formData.pricingTableNote} onChange={v => set({ pricingTableNote: v })} placeholder="Pricing is indicative…" />
+                    </div>
+                )}
+            </BuilderCard>
+
+            <BuilderCard title="Deal value and GST" hint="For your pipeline and the invoice. Not printed on the proposal.">
+                <div className="space-y-3">
+                    <MoneyInput label="Deal value before GST" value={formData.dealValue} onChange={v => set({ dealValue: v })} placeholder="0" hint="Counts in your proposals pipeline." />
+                    <Toggle label="Add GST" hint="Used when you turn the proposal into an invoice" checked={Boolean(formData.showGst)} onChange={v => set({ showGst: v })} />
+                    {formData.showGst && (
+                        <div className="space-y-2">
+                            <MoneyInput label="GST rate (%)" prefix="" value={formData.gstRate ?? 18} onChange={v => set({ gstRate: v === '' ? '' : Math.max(0, Math.min(100, v)) })} max="100" />
+                            <Chips options={[5, 12, 18, 28].map(r => ({ label: `${r}%`, value: r }))} value={Number(formData.gstRate)} onPick={v => set({ gstRate: v })} />
+                        </div>
+                    )}
+                    {totals && (
+                        <div className="rounded-xl bg-black/[0.03] p-3 text-[13px] dark:bg-white/[0.03]">
+                            <div className="flex justify-between py-0.5"><span className="text-gray-500">Value</span><span className="font-semibold tabular-nums">{rupees(totals.subtotal)}</span></div>
+                            {formData.showGst && <div className="flex justify-between py-0.5"><span className="text-gray-500">GST {totals.gstRate}%</span><span className="font-semibold tabular-nums">{rupees(totals.gstAmount)}</span></div>}
+                            <div className="mt-1 flex justify-between border-t border-black/[0.06] pt-1.5 text-[15px] dark:border-white/[0.08]"><span className="font-bold">Total</span><span className="font-extrabold tabular-nums">{rupees(totals.totalAmount)}</span></div>
+                        </div>
+                    )}
+                </div>
+            </BuilderCard>
+
+            <BuilderCard title="Inclusions and payment terms">
+                <div className="space-y-3">
+                    <Callout formData={formData} set={set} onRefine={onRefine} showKey="showWhatsIncluded" titleKey="whatsIncludedTitle" textKey="whatsIncludedText" label="What's included box" titlePlaceholder="WHAT'S INCLUDED" textPlaceholder="The fee covers…" />
+                    <Callout formData={formData} set={set} onRefine={onRefine} showKey="showPaymentScaling" titleKey="paymentScalingTitle" textKey="paymentScalingText" label="Payment terms box" hint="Advance, milestones and how cost scales" titlePlaceholder="PAYMENT & SCALING" textPlaceholder="50% advance on signing, balance on delivery…" />
+                </div>
+            </BuilderCard>
+        </div>
+    );
+}
+
+// ── City deep-dive ───────────────────────────────────────────────────────────
+export function V2DeepDiveEditor({ formData, setFormData, onRefine }) {
+    const { set, setList } = useSetters(setFormData);
+    const subs = formData.deepDiveSubsections || [];
+    const update = (idx, patch) => setList('deepDiveSubsections', l => l.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
+    const updateBullets = (idx, fn) => setList('deepDiveSubsections', l => l.map((s, i) => (i === idx ? { ...s, bullets: fn(Array.isArray(s.bullets) ? s.bullets : []) } : s)));
+    return (
+        <BuilderCard title="City deep-dive" hint="A page on the lead market and how we'll manage it">
+            <PageToggle checked={formData.showDeepDive !== false} onChange={v => set({ showDeepDive: v })} />
+            {formData.showDeepDive !== false && (
+                <div className="space-y-3">
+                    <KickerTitle formData={formData} set={set} kickerKey="deepDiveSub" titleKey="deepDiveTitle" kickerPlaceholder="CITY DEEP-DIVE · BENGALURU" titlePlaceholder="05 · Bengaluru Management" />
+                    <TextArea label="Introduction" rows={3} value={formData.deepDiveIntro} onChange={v => set({ deepDiveIntro: v })} onRefine={() => onRefine?.({ label: 'Deep-dive introduction', value: formData.deepDiveIntro, apply: (t) => set({ deepDiveIntro: t }) })} />
+                    {subs.map((sub, idx) => {
+                        const bullets = Array.isArray(sub.bullets) ? sub.bullets : [];
+                        return (
+                            <ListCard key={idx} badge={sub.badge || `${idx + 1}`} actions={<RowActions index={idx} count={subs.length} onMove={(i, d) => setList('deepDiveSubsections', l => moveItem(l, i, d))} onRemove={(i) => setList('deepDiveSubsections', l => l.filter((_, j) => j !== i))} removeLabel="Remove part" />}>
+                                <div className="grid grid-cols-[88px_1fr] gap-3">
+                                    <TextInput label="Badge" value={sub.badge} onChange={v => update(idx, { badge: v })} placeholder="5.1" />
+                                    <TextInput label="Title" value={sub.title} onChange={v => update(idx, { title: v })} placeholder="Direct management" />
+                                </div>
+                                <div className="space-y-2">
+                                    <span className="block text-[12px] font-bold text-gray-500">Points</span>
+                                    {bullets.map((b, bIdx) => (
+                                        <div key={bIdx} className="flex items-start gap-1">
+                                            <textarea aria-label={`Point ${bIdx + 1}`} rows={2} className="min-h-12 w-full min-w-0 flex-1 resize-y rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-[14px] font-medium leading-snug outline-none focus:border-neon-green/60 dark:border-white/10 dark:bg-white/[0.04]" value={b} onChange={e => updateBullets(idx, l => l.map((x, i) => (i === bIdx ? e.target.value : x)))} />
+                                            <RowActions index={bIdx} count={bullets.length} onRemove={(i) => updateBullets(idx, l => l.filter((_, j) => j !== i))} removeLabel="Remove point" />
+                                        </div>
+                                    ))}
+                                    <button type="button" onClick={() => updateBullets(idx, l => [...l, ''])} className="flex h-10 items-center gap-1.5 rounded-xl border border-black/10 px-3 text-[12px] font-bold dark:border-white/10"><Plus size={14} /> Add point</button>
+                                </div>
+                            </ListCard>
+                        );
+                    })}
+                    <AddButton onClick={() => setList('deepDiveSubsections', l => [...l, { badge: `5.${l.length + 1}`, title: '', bullets: [''] }])}>Add a part</AddButton>
+                </div>
+            )}
+        </BuilderCard>
+    );
+}
+
+// ── Closing page ─────────────────────────────────────────────────────────────
+export function V2ClosingEditor({ formData, setFormData, onRefine }) {
+    const { set } = useSetters(setFormData);
+    return (
+        <BuilderCard title="Closing page" hint="Next steps and who prepared the proposal">
+            <PageToggle checked={formData.showClosing !== false} onChange={v => set({ showClosing: v })} />
+            {formData.showClosing !== false && (
+                <div className="space-y-3">
+                    <KickerTitle formData={formData} set={set} kickerKey="closingSub" titleKey="closingTitle" kickerPlaceholder="CLOSING" titlePlaceholder="06 · Next Steps" />
+                    <TextArea label="Closing note" rows={4} value={formData.closingText} onChange={v => set({ closingText: v })} placeholder="We'd welcome the opportunity to walk you through…" onRefine={() => onRefine?.({ label: 'Closing note', value: formData.closingText, apply: (t) => set({ closingText: t }) })} />
+                    <TextInput label="Prepared by" value={formData.preparedBy} onChange={v => set({ preparedBy: v })} placeholder="NewBi Entertainment & Marketing LLP" />
+                </div>
+            )}
+        </BuilderCard>
     );
 }

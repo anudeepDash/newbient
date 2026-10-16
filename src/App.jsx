@@ -47,13 +47,9 @@ const PayeeRegistry = lazy(() => import('./pages/Admin/PayeeRegistry'));
 const AnnouncementsManager = lazy(() => import('./pages/Admin/AnnouncementsManager'));
 const ConcertManager = lazy(() => import('./pages/Admin/ConcertManager'));
 const MessageManager = lazy(() => import('./pages/Admin/MessageManager'));
-const ArtistManager = lazy(() => import('./pages/Admin/ArtistManager'));
-const ClientRequestManager = lazy(() => import('./pages/Admin/ClientRequestManager'));
 const ProposalManagement = lazy(() => import('./pages/Admin/ProposalManagement'));
 const AIStudio = lazy(() => import('./pages/Admin/AIStudio'));
 const ProposalGenerator = lazy(() => import('./pages/Admin/ProposalGenerator'));
-const DocumentPDFGenerator = lazy(() => import('./pages/Admin/DocumentPDFGenerator'));
-const DocumentPDFManagement = lazy(() => import('./pages/Admin/DocumentPDFManagement'));
 const AgreementGenerator = lazy(() => import('./pages/Admin/AgreementGenerator'));
 const FormManager = lazy(() => import('./pages/Admin/FormManager'));
 const FormBuilder = lazy(() => import('./pages/Admin/FormBuilder'));
@@ -71,17 +67,16 @@ const MailingManager = lazy(() => import('./pages/Admin/MailingManager'));
 const BlogManager = lazy(() => import('./pages/Admin/BlogManager'));
 const ConcertZoneStudio = lazy(() => import('./pages/Admin/ConcertZoneStudio'));
 const BlogPostEditor = lazy(() => import('./pages/Admin/BlogPostEditor'));
-const ArtistantHub = lazy(() => import('./pages/Admin/ArtistantHub'));
 const AgreementManagement = lazy(() => import('./pages/Admin/AgreementManagement'));
 const EventScanner = lazy(() => import('./pages/Admin/EventScanner'));
 const TicketingManagement = lazy(() => import('./pages/Admin/TicketingManagement'));
 const GuestlistManager = lazy(() => import('./pages/Admin/GuestlistManager'));
-const CreatorHub = lazy(() => import('./pages/Admin/CreatorHub'));
 const CreatorSettingsPage = lazy(() => import('./pages/Admin/CreatorSettingsPage'));
+const CreatorGroupsPage = lazy(() => import('./pages/Admin/CreatorGroupsPage'));
 const CityGroupPage = lazy(() => import('./pages/Admin/CityGroupPage'));
 const SiteContentManager = lazy(() => import('./pages/Admin/SiteContentManager'));
 const NewsletterStudio = lazy(() => import('./pages/Admin/NewsletterStudio'));
-const DocumentHub = lazy(() => import('./pages/Admin/DocumentHub'));
+const AdminShell = lazy(() => import('./components/admin/shell/AdminShell'));
 
 
 // Guards & Components
@@ -203,70 +198,75 @@ function AppContent() {
             <Route path="verify-payout" element={<VerifyPayout />} />
             <Route path="verify-creator" element={<VerifyCreator />} />
 
-            <Route path="admin" element={<AdminGuard><Dashboard /></AdminGuard>} />
-            <Route path="admin/manage-admins" element={<AdminGuard><MaintenanceGuard featureId="admins"><AdminManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/active-users" element={<Navigate to="/admin/manage-admins?tab=active" replace />} />
-            <Route path="admin/finance" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><FinanceDashboard /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
-            <Route path="admin/spends" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><SpendsManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
-            <Route path="admin/other-income" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><OtherIncomeManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
-            <Route path="admin/payees" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><PayeeRegistry /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
-            <Route path="admin/invoices" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><InvoiceManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
-            <Route path="admin/create-invoice" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
-            <Route path="admin/edit-invoice/:id" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
-            <Route path="admin/announcements" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><AnnouncementsManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/concertzone" element={<AdminGuard><MaintenanceGuard featureId="concerts"><ConcertManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/messages" element={<AdminGuard><MaintenanceGuard featureId="messages"><MessageManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/mailing" element={<AdminGuard><MaintenanceGuard featureId="mailing"><MailingManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/proposals" element={<AdminGuard><MaintenanceGuard featureId="docs"><ProposalManagement /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/create-proposal" element={<AdminGuard><MaintenanceGuard featureId="docs"><ProposalGenerator /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/edit-proposal/:id" element={<AdminGuard><MaintenanceGuard featureId="docs"><ProposalGenerator /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/agreements" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementManagement /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/agreements/new" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementGenerator /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/agreements/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementGenerator /></MaintenanceGuard></AdminGuard>} />
+            {/* Admin: one shell (sidebar, mobile tabs, quick jump) around every screen */}
+            <Route element={<AdminShell />}>
+              <Route path="admin" element={<AdminGuard><Dashboard /></AdminGuard>} />
+              <Route path="admin/manage-admins" element={<AdminGuard><MaintenanceGuard featureId="admins"><AdminManager /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/active-users" element={<Navigate to="/admin/manage-admins?tab=active" replace />} />
+              <Route path="admin/finance" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><FinanceDashboard /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+              <Route path="admin/spends" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><SpendsManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+              <Route path="admin/other-income" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><OtherIncomeManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+              <Route path="admin/payees" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><PayeeRegistry /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+              <Route path="admin/invoices" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><InvoiceManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+              <Route path="admin/create-invoice" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+              <Route path="admin/edit-invoice/:id" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+              <Route path="admin/announcements" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><AnnouncementsManager /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/concertzone" element={<AdminGuard><MaintenanceGuard featureId="concerts"><ConcertManager /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/messages" element={<AdminGuard><MaintenanceGuard featureId="messages"><MessageManager /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/mailing" element={<AdminGuard><MaintenanceGuard featureId="mailing"><MailingManager /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/proposals" element={<AdminGuard><MaintenanceGuard featureId="docs"><ProposalManagement /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/create-proposal" element={<AdminGuard><MaintenanceGuard featureId="docs"><ProposalGenerator /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/edit-proposal/:id" element={<AdminGuard><MaintenanceGuard featureId="docs"><ProposalGenerator /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/agreements" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementManagement /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/agreements/new" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementGenerator /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/agreements/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementGenerator /></MaintenanceGuard></AdminGuard>} />
             
-            <Route path="admin/gen-documents" element={<AdminGuard><MaintenanceGuard featureId="docs"><DocumentPDFManagement /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/create-gen-document" element={<AdminGuard><MaintenanceGuard featureId="docs"><DocumentPDFGenerator /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/edit-gen-document/:id" element={<AdminGuard><MaintenanceGuard featureId="docs"><DocumentPDFGenerator /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/ai-studio" element={<AdminGuard><MaintenanceGuard featureId="docs"><AIStudio /></MaintenanceGuard></AdminGuard>} />
+              {/* The Documents section was removed from the admin; old links go to the dashboard. */}
+              <Route path="admin/gen-documents" element={<Navigate to="/admin" replace />} />
+              <Route path="admin/create-gen-document" element={<Navigate to="/admin" replace />} />
+              <Route path="admin/edit-gen-document/:id" element={<Navigate to="/admin" replace />} />
+              <Route path="admin/ai-studio" element={<AdminGuard><MaintenanceGuard featureId="docs"><AIStudio /></MaintenanceGuard></AdminGuard>} />
 
-            <Route path="admin/forms" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/forms/create" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/forms/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/artists" element={<AdminGuard><MaintenanceGuard featureId="artists"><ArtistManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/client-requests" element={<AdminGuard><MaintenanceGuard featureId="client_requests"><ClientRequestManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/artistant" element={<AdminGuard><MaintenanceGuard featureId="artists"><ArtistantHub /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/volunteer-gigs" element={<AdminGuard><MaintenanceGuard featureId="community"><VolunteerGigManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/guestlists" element={<AdminGuard><MaintenanceGuard featureId="guestlists"><GuestlistManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/upcoming-events" element={<AdminGuard><MaintenanceGuard featureId="upcoming_events"><UpcomingEventsManager /></MaintenanceGuard></AdminGuard>} />
-            <Route element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorPortalLayout /></MaintenanceGuard></AdminGuard>}>
-              <Route path="admin/creators" element={<CreatorManager isEmbedded />} />
-              <Route path="admin/creators/leaderboard" element={<CreatorManager showLeaderboardOnly={true} isEmbedded />} />
-              <Route path="admin/creators/:id" element={<CreatorManager isEmbedded />} />
-              <Route path="admin/creators/settings" element={<CreatorSettingsPage isEmbedded />} />
-              <Route path="admin/campaigns" element={<CampaignManager isEmbedded />} />
-              <Route path="admin/campaigns/create" element={<CampaignManager isEmbedded />} />
-              <Route path="admin/campaigns/edit/:id" element={<CampaignManager isEmbedded />} />
-              <Route path="admin/campaigns/manage/:id" element={<CampaignManager isEmbedded />} />
-              <Route path="admin/campaigns/:id" element={<RedirectKeepQuery to="/admin/campaigns/manage/:id" />} />
+              <Route path="admin/forms" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormManager /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/forms/create" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/forms/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
+              {/* Artistant is its own product now (artistant.in); old admin links go to the dashboard. */}
+              <Route path="admin/artists" element={<Navigate to="/admin" replace />} />
+              <Route path="admin/client-requests" element={<Navigate to="/admin" replace />} />
+              <Route path="admin/artistant" element={<Navigate to="/admin" replace />} />
+              <Route path="admin/volunteer-gigs" element={<AdminGuard><MaintenanceGuard featureId="community"><VolunteerGigManager /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/guestlists" element={<AdminGuard><MaintenanceGuard featureId="guestlists"><GuestlistManager /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/upcoming-events" element={<AdminGuard><MaintenanceGuard featureId="upcoming_events"><UpcomingEventsManager /></MaintenanceGuard></AdminGuard>} />
+              <Route element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorPortalLayout /></MaintenanceGuard></AdminGuard>}>
+                <Route path="admin/creators" element={<CreatorManager isEmbedded />} />
+                <Route path="admin/creators/leaderboard" element={<CreatorManager showLeaderboardOnly={true} isEmbedded />} />
+                <Route path="admin/creators/:id" element={<CreatorManager isEmbedded />} />
+                <Route path="admin/creators/settings" element={<CreatorSettingsPage isEmbedded />} />
+                <Route path="admin/creators/groups" element={<CreatorGroupsPage />} />
+                <Route path="admin/campaigns" element={<CampaignManager isEmbedded />} />
+                <Route path="admin/campaigns/create" element={<CampaignManager isEmbedded />} />
+                <Route path="admin/campaigns/edit/:id" element={<CampaignManager isEmbedded />} />
+                <Route path="admin/campaigns/manage/:id" element={<CampaignManager isEmbedded />} />
+                <Route path="admin/campaigns/:id" element={<RedirectKeepQuery to="/admin/campaigns/manage/:id" />} />
+              </Route>
+              <Route path="admin/city-groups" element={<Navigate to="/admin/creators/groups" replace />} />
+                            <Route path="admin/creator-hub" element={<Navigate to="/admin/creators" replace />} />
+              <Route path="admin/content" element={<AdminGuard><SiteContentManager /></AdminGuard>} />
+              <Route path="admin/site-content" element={<Navigate to="/admin/content" replace />} />
+              <Route path="admin/giveaways" element={<AdminGuard><MaintenanceGuard featureId="giveaways"><GiveawayManager /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/giveaways/:giveawayId/participants" element={<AdminGuard><MaintenanceGuard featureId="giveaways"><GiveawayParticipants /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/blog" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><ConcertZoneStudio /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/concertzone/studio" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><ConcertZoneStudio /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/blog/create" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><BlogPostEditor /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/blog/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><BlogPostEditor /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/newsletter/studio" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><NewsletterStudio /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/scanner" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><EventScanner /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/ticketing" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><TicketingManagement /></MaintenanceGuard></AdminGuard>} />
+              <Route path="admin/documents" element={<Navigate to="/admin" replace />} />
+              <Route path="admin/system-command" element={<AdminGuard><DevSettings /></AdminGuard>} />
+              <Route path="admin/settings" element={<Navigate to="/admin/system-command" replace />} />
+              <Route path="admin/dev-settings" element={<Navigate to="/admin/system-command" replace />} />
             </Route>
-            <Route path="admin/city-groups" element={<Navigate to="/admin/creators/settings?tab=groups" replace />} />
-            <Route path="admin/creators/groups" element={<Navigate to="/admin/creators/settings?tab=groups" replace />} />
-            <Route path="admin/creator-hub" element={<Navigate to="/admin/creators" replace />} />
-            <Route path="admin/content" element={<AdminGuard><SiteContentManager /></AdminGuard>} />
-            <Route path="admin/site-content" element={<Navigate to="/admin/content" replace />} />
-            <Route path="admin/giveaways" element={<AdminGuard><MaintenanceGuard featureId="giveaways"><GiveawayManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/giveaways/:giveawayId/participants" element={<AdminGuard><MaintenanceGuard featureId="giveaways"><GiveawayParticipants /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/blog" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><ConcertZoneStudio /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/concertzone/studio" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><ConcertZoneStudio /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/blog/create" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><BlogPostEditor /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/blog/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><BlogPostEditor /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/newsletter/studio" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><NewsletterStudio /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/scanner" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><EventScanner /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/ticketing" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><TicketingManagement /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/documents" element={<AdminGuard><DocumentHub /></AdminGuard>} />
-            <Route path="admin/system-command" element={<AdminGuard><DevSettings /></AdminGuard>} />
-            <Route path="admin/settings" element={<Navigate to="/admin/system-command" replace />} />
-            <Route path="admin/dev-settings" element={<Navigate to="/admin/system-command" replace />} />
 
             <Route path="campaign/:id" element={<CampaignPublicView />} />
             <Route path="doc/:id" element={<DocumentViewer />} />

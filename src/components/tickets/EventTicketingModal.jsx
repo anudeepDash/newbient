@@ -16,6 +16,8 @@ import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'fireba
 import html2canvas from 'html2canvas';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import GuestlistTaskSubmissionStep from '../community/GuestlistTaskSubmissionStep';
+import { callTicketApi } from '../../lib/ticketApi';
+import { purchasableCount, priceCart, applyCoupon, MAX_TICKETS_PER_TIER, BASE_TIER_ID, normalizeCouponCode, makeBookingRef } from '../../lib/ticketing';
 
 const OTPVerificationSuccess = () => {
     return (
@@ -112,10 +114,6 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
     const user = useStore(state => state.user);
     const setAuthModal = useStore(state => state.setAuthModal);
 
-    if (!event && isOpen) {
-        return null; // Don't render if open but no event data
-    }
-    
     // Core state
     const [activeTab, setActiveTab] = useState('tickets'); // 'tickets' or 'guestlist'
     const [step, setStep] = useState('selection'); // map, selection, identity, otp, payment, success
@@ -162,6 +160,8 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
     const [couponInput, setCouponInput] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+    // Remaining seats from the ticket API; null until loaded (or if it's unreachable).
+    const [availability, setAvailability] = useState(null);
     const [isPendingTaskReview, setIsPendingTaskReview] = useState(false);
     
     // Zoom state for map
@@ -272,7 +272,46 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
         }
     }, [user, isOpen, formData.phone]);
 
+    const refreshAvailability = async () => {
+        if (!event?.id || !event?.isTicketed) return null;
+        const res = await callTicketApi('ticket-availability', { eventId: event.id });
+        if (res.ok) { setAvailability(res.data.availability); return res.data.availability; }
+        return null;
+    };
+
+    useEffect(() => {
+        if (isOpen && event?.isTicketed) refreshAvailability();
+    }, [isOpen, event?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Seats left for a tier (null = unlimited / unknown).
+    const tierRemaining = (tierId) => {
+        const r = availability?.tiers?.[tierId]?.remaining;
+        const total = availability?.total?.remaining;
+        const values = [r, total].filter(v => v !== null && v !== undefined);
+        return values.length ? Math.min(...values) : null;
+    };
+    const baseTicketMax = availability ? Math.max(1, Math.min(MAX_TICKETS_PER_TIER, purchasableCount(availability, BASE_TIER_ID, 0))) : MAX_TICKETS_PER_TIER;
+    const isEventSoldOut = Boolean(availability?.soldOut);
+
+    // The cart as the ticket API expects it: [{ id, count }].
+    const cartItemsForApi = () => (hasCategories
+        ? Object.entries(cart).map(([id, count]) => ({ id, count }))
+        : [{ id: BASE_TIER_ID, count: ticketCount }]);
+
     const updateCart = (categoryId, delta) => {
+        if (delta > 0 && availability) {
+            const inCartElsewhere = Object.entries(cart).reduce((a, [id, n]) => a + (id === categoryId ? 0 : n), 0);
+            const inThisTier = cart[categoryId] || 0;
+            const allowed = Math.min(
+                purchasableCount(availability, categoryId, inThisTier),
+                availability.total?.remaining === null || availability.total?.remaining === undefined ? Infinity : availability.total.remaining - inCartElsewhere - inThisTier
+            );
+            if (allowed <= 0) {
+                const left = tierRemaining(categoryId);
+                useStore.getState().addToast(left === 0 ? 'That ticket type is sold out.' : `You can't add more of this ticket type.`, 'info');
+                return;
+            }
+        }
         setCart(prev => {
             const nextCart = { ...prev };
             
@@ -294,35 +333,24 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
     };
 
     const cartTotalCount = useMemo(() => Object.values(cart).reduce((a, b) => a + b, 0), [cart]);
+    // Same pricing rules as the ticket API (lib/ticketing), so what the buyer
+    // pays always matches the order the server records.
     const totalAmount = useMemo(() => {
         if (!event) return 0;
-        let amount = 0;
-        if (!hasCategories) {
-            amount = ticketCount * (event.basePrice || 0);
-        } else {
-            amount = Object.entries(cart).reduce((total, [id, count]) => {
-                const cat = event.ticketCategories?.find(c => c.id === id);
-                return total + (cat?.price || 0) * count;
-            }, 0);
-        }
-
-        if (appliedCoupon && amount > 0) {
-            if (appliedCoupon.discountType === 'percentage') {
-                const discount = (amount * appliedCoupon.discountValue) / 100;
-                amount = Math.max(0, amount - discount);
-            } else if (appliedCoupon.discountType === 'flat') {
-                amount = Math.max(0, amount - appliedCoupon.discountValue);
-            }
-        }
-
-        return amount;
+        const cartForPricing = hasCategories ? cart : { [BASE_TIER_ID]: ticketCount };
+        const { subtotal } = priceCart(event, cartForPricing);
+        return applyCoupon(subtotal, appliedCoupon).total;
     }, [cart, event, hasCategories, ticketCount, appliedCoupon]);
 
     const handleApplyCoupon = async () => {
         if (!couponInput.trim()) return;
         setIsValidatingCoupon(true);
         try {
-            const coupon = await useStore.getState().validateCoupon(couponInput.trim(), event.id);
+            const res = await callTicketApi('ticket-coupon', { eventId: event.id, code: normalizeCouponCode(couponInput) });
+            let coupon;
+            if (res.ok) coupon = res.data.coupon;
+            else if (res.unavailable) coupon = await useStore.getState().validateCoupon(couponInput.trim(), event.id);
+            else throw new Error(res.error);
             setAppliedCoupon(coupon);
             useStore.getState().addToast("Coupon applied.", 'success');
         } catch (error) {
@@ -442,8 +470,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                     if (currentAmount === 0) {
                         submitTickets();
                     } else {
-                        setLockedAmount(currentAmount); // Lock the price
-                        setStep('payment');
+                        goToPayment(currentAmount);
                     }
                 } else {
                     if (event?.hasGuestlistTask && event?.guestlistTask) {
@@ -470,8 +497,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                         if (currentAmount === 0) {
                             submitTickets();
                         } else {
-                            setLockedAmount(currentAmount);
-                            setStep('payment');
+                            goToPayment(currentAmount);
                         }
                     } else {
                         if (event?.hasGuestlistTask && event?.guestlistTask) {
@@ -649,6 +675,30 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
         }
     };
 
+    // Re-check seats and the coupon on the server before the buyer pays.
+    const goToPayment = async (amount) => {
+        setLoading(true);
+        try {
+            const res = await callTicketApi('ticket-check', {
+                eventId: event.id,
+                items: cartItemsForApi(),
+                couponCode: appliedCoupon?.code || null,
+            });
+            if (!res.ok && !res.unavailable) {
+                useStore.getState().addToast(res.error || "Those tickets aren't available any more.", 'error', 'TKT-CAP-01');
+                refreshAvailability();
+                if (res.code === 'COUPON_INVALID') setAppliedCoupon(null);
+                setStep('selection');
+                return;
+            }
+            if (res.ok) setAvailability(res.data.availability);
+            setLockedAmount(res.ok ? res.data.total : amount);
+            setStep('payment');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const submitTickets = async () => {
         if (totalAmount > 0 && !paymentRef.trim()) {
             return useStore.getState().addToast("Please enter your payment reference (UTR) number.", 'error', 'TKT-VAL-04');
@@ -656,53 +706,73 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
 
         setLoading(true);
         try {
-            // 1. DEDUPLICATION CHECK: Check if this payment reference was used before
-            if (totalAmount > 0) {
-                const { query, collection, where, getDocs } = await import('firebase/firestore');
-                const q = query(collection(db, 'ticket_orders'), where('paymentRef', '==', paymentRef.trim()));
-                const snap = await getDocs(q);
-                if (!snap.empty) {
-                    setLoading(false);
-                    return useStore.getState().addToast("This payment reference has already been used. Please check your UTR number.", 'error', 'TKT-PAY-02');
+            const customerPhone = `${countryCode}${formData.phone}`;
+            const pricedItems = priceCart(event, hasCategories ? cart : { [BASE_TIER_ID]: ticketCount }).lines
+                .map(l => ({ id: l.id, name: l.name, count: l.count, price: l.price }));
+            let ref;
+            let finalTotal = totalAmount;
+
+            // Preferred path: the ticket API checks seats and the coupon and saves
+            // the order in one transaction.
+            const apiRes = await callTicketApi('ticket-order', {
+                eventId: event.id,
+                items: cartItemsForApi(),
+                couponCode: appliedCoupon?.code || null,
+                paymentRef: totalAmount > 0 ? paymentRef.trim() : '',
+                customer: { name: formData.name, email: formData.email, phone: customerPhone },
+            });
+
+            if (apiRes.ok) {
+                ref = apiRes.data.bookingRef;
+                finalTotal = apiRes.data.totalAmount;
+            } else if (!apiRes.unavailable) {
+                useStore.getState().addToast(apiRes.error || "We couldn't complete your booking.", 'error', 'TKT-PAY-03');
+                if (apiRes.code === 'SOLD_OUT') { refreshAvailability(); setStep('selection'); }
+                if (apiRes.code === 'COUPON_INVALID') setAppliedCoupon(null);
+                return;
+            } else {
+                // Fallback if the API is unreachable: the original in-browser flow.
+                if (totalAmount > 0) {
+                    const { query, where, getDocs } = await import('firebase/firestore');
+                    const snap = await getDocs(query(collection(db, 'ticket_orders'), where('paymentRef', '==', paymentRef.trim())));
+                    if (!snap.empty) {
+                        return useStore.getState().addToast("This payment reference has already been used. Please check your UTR number.", 'error', 'TKT-PAY-02');
+                    }
+                }
+                ref = makeBookingRef();
+                await addDoc(collection(db, 'ticket_orders'), {
+                    eventId: event?.id,
+                    userId: user?.uid || null,
+                    customerName: formData.name,
+                    customerEmail: formData.email,
+                    customerPhone,
+                    items: pricedItems,
+                    totalAmount: lockedAmount || totalAmount,
+                    paymentRef: totalAmount > 0 ? paymentRef.trim() : 'FREE',
+                    bookingRef: ref,
+                    appliedCoupon: appliedCoupon ? {
+                        id: appliedCoupon.id,
+                        code: appliedCoupon.code,
+                        discountValue: appliedCoupon.discountValue,
+                        discountType: appliedCoupon.discountType
+                    } : null,
+                    source: 'checkout-fallback',
+                    createdAt: new Date().toISOString(),
+                    status: totalAmount > 0 ? 'pending' : 'confirmed'
+                });
+                if (appliedCoupon?.id) {
+                    try {
+                        const { increment, updateDoc, doc } = await import('firebase/firestore');
+                        await updateDoc(doc(db, 'coupons', appliedCoupon.id), { usedCount: increment(1) });
+                    } catch (couponErr) {
+                        console.warn('Coupon usage count not updated:', couponErr);
+                    }
                 }
             }
 
-            const ref = `NB-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
-            const orderData = {
-                eventId: event?.id,
-                userId: user?.uid || null,
-                customerName: formData.name,
-                customerEmail: formData.email,
-                customerPhone: `${countryCode}${formData.phone}`,
-                items: hasCategories 
-                    ? Object.entries(cart).map(([id, count]) => {
-                        const cat = event.ticketCategories?.find(c => c.id === id);
-                        return { id, name: cat?.name || 'Category', count, price: cat?.price || 0 };
-                    })
-                    : [{ id: 'base', name: 'Standard', count: ticketCount, price: event.basePrice || 0 }],
-                totalAmount: lockedAmount || totalAmount, // Use locked amount for security
-                paymentRef: totalAmount > 0 ? paymentRef.trim() : 'FREE',
-                bookingRef: ref,
-                appliedCoupon: appliedCoupon ? {
-                    id: appliedCoupon.id,
-                    code: appliedCoupon.code,
-                    discountValue: appliedCoupon.discountValue,
-                    discountType: appliedCoupon.discountType
-                } : null,
-                createdAt: serverTimestamp(),
-                status: totalAmount > 0 ? 'pending' : 'confirmed'
-            };
-            await addDoc(collection(db, 'ticket_orders'), orderData);
-            
-            // Increment coupon usage
-            if (appliedCoupon) {
-                const { increment, updateDoc, doc } = await import('firebase/firestore');
-                await updateDoc(doc(db, 'coupons', appliedCoupon.id), {
-                    usedCount: increment(1)
-                });
-            }
+            const orderData = { customerName: formData.name, customerEmail: formData.email, items: pricedItems };
 
-            if (totalAmount === 0) {
+            if (finalTotal === 0) {
                 try {
                     const { sendBookingConfirmation } = await import('../../lib/email');
                     const ticketsHtml = orderData.items.map(item => `
@@ -1140,12 +1210,19 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                         <div className="text-left">
                                                             <div className="font-bold text-gray-900 dark:text-white uppercase text-xs md:text-sm tracking-wider leading-none mb-1">{cat.name}</div>
                                                             <div className="text-neon-green font-bold text-lg md:text-xl tracking-tight">₹{cat.price}</div>
+                                                            {(() => {
+                                                                const left = tierRemaining(cat.id);
+                                                                if (left === null) return null;
+                                                                if (left === 0) return <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-red-500">Sold out</div>;
+                                                                if (left <= 20) return <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-amber-500">Only {left} left</div>;
+                                                                return null;
+                                                            })()}
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-3 md:gap-4 bg-white dark:bg-black/40 p-1.5 rounded-xl border border-black/10 dark:border-white/5">
                                                         <button onClick={() => updateCart(cat.id, -1)} className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-gray-900 dark:text-white"><Minus size={14}/></button>
                                                         <span className="w-6 text-center font-bold text-sm md:text-base tabular-nums text-gray-900 dark:text-white">{cart[cat.id] || 0}</span>
-                                                        <button onClick={() => updateCart(cat.id, 1)} className="w-8 h-8 rounded-lg bg-black/10 dark:bg-white/10 flex items-center justify-center hover:bg-neon-green hover:text-black transition-all text-gray-900 dark:text-white"><Plus size={14}/></button>
+                                                        <button onClick={() => updateCart(cat.id, 1)} disabled={tierRemaining(cat.id) === 0} aria-label={`Add ${cat.name} ticket`} className="w-8 h-8 rounded-lg bg-black/10 dark:bg-white/10 flex items-center justify-center hover:bg-neon-green hover:text-black transition-all text-gray-900 dark:text-white disabled:opacity-30 disabled:pointer-events-none"><Plus size={14}/></button>
                                                     </div>
                                                 </div>
                                             )) : (
@@ -1153,7 +1230,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                     <span className="text-6xl font-bold tracking-tight tabular-nums text-neon-green drop-shadow-[0_0_15px_rgba(57,255,20,0.2)]">{ticketCount}</span>
                                                     <div className="flex gap-8">
                                                         <button onClick={() => setTicketCount(g => Math.max(1, g - 1))} className="w-14 h-14 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white"><Minus size={20}/></button>
-                                                        <button onClick={() => setTicketCount(g => Math.min(10, g + 1))} className="w-14 h-14 rounded-full bg-neon-green/20 text-neon-green flex items-center justify-center"><Plus size={20}/></button>
+                                                        <button onClick={() => setTicketCount(g => Math.min(baseTicketMax, g + 1))} disabled={isEventSoldOut || ticketCount >= baseTicketMax} className="w-14 h-14 rounded-full bg-neon-green/20 text-neon-green flex items-center justify-center"><Plus size={20}/></button>
                                                     </div>
                                                 </div>
                                             )
@@ -1220,10 +1297,10 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                             <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
                                                 <Button 
                                                     onClick={handleNext} 
-                                                    disabled={loading || (activeTab === 'tickets' && totalAmount === 0 && hasCategories && !appliedCoupon)}
+                                                    disabled={loading || (activeTab === 'tickets' && isEventSoldOut) || (activeTab === 'tickets' && hasCategories && cartTotalCount === 0)}
                                                     className="w-full sm:w-auto h-14 px-10 md:px-16 rounded-xl bg-neon-green text-black font-bold uppercase tracking-wider text-xs shadow-[0_15px_30px_rgba(57,255,20,0.15)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4"
                                                 >
-                                                    {loading ? <LoadingSpinner size="xs" color="#000000" /> : 'Continue'}
+                                                    {loading ? <LoadingSpinner size="xs" color="#000000" /> : (activeTab === 'tickets' && isEventSoldOut ? 'Sold out' : 'Continue')}
                                                     <ArrowRight size={18} />
                                                 </Button>
                                             </div>
@@ -1427,8 +1504,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                                 if (currentAmount === 0) {
                                                                     submitTickets();
                                                                 } else {
-                                                                    setLockedAmount(currentAmount);
-                                                                    setStep('payment');
+                                                                    goToPayment(currentAmount);
                                                                 }
                                                             } else {
                                                                 if (event?.hasGuestlistTask && event?.guestlistTask) {
@@ -1845,6 +1921,9 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
 );
 
     if (isEmbedded) return isOpen ? modalContent : null;
+
+    // Checked after every hook has run (an early return above them breaks React's hook order).
+    if (!event && isOpen) return null;
 
     return createPortal(
         <AnimatePresence>

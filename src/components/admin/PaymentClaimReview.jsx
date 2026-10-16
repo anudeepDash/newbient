@@ -1,220 +1,139 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { cn } from '../../lib/utils';
-import User from 'lucide-react/dist/esm/icons/user';
-import Mail from 'lucide-react/dist/esm/icons/mail';
-import Globe from 'lucide-react/dist/esm/icons/globe';
-import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import ShieldX from 'lucide-react/dist/esm/icons/shield-x';
 import Clock from 'lucide-react/dist/esm/icons/clock';
 import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
 import XCircle from 'lucide-react/dist/esm/icons/x-circle';
-import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
-import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
-import ShieldX from 'lucide-react/dist/esm/icons/shield-x';
+import Copy from 'lucide-react/dist/esm/icons/copy';
+import { cn } from '../../lib/utils';
+import { useStore } from '../../lib/store';
+import { Badge, Button } from './ui';
+import { accent } from './theme';
+import { inr } from './ticketing/format';
+import { invoiceBalance, INVOICE_STATUS } from '../../lib/invoicing';
+import ConfirmDialog from './finance/ConfirmDialog';
 
-const statusConfig = {
-  pending: {
-    bg: 'bg-yellow-500/5',
-    border: 'border-yellow-500/20',
-    badgeBg: 'bg-yellow-500/10',
-    badgeText: 'text-yellow-500',
-    badgeBorder: 'border-yellow-500/20',
-    icon: AlertTriangle,
-    label: 'PENDING',
-  },
-  approved: {
-    bg: 'bg-[#39FF14]/5',
-    border: 'border-[#39FF14]/20',
-    badgeBg: 'bg-[#39FF14]/10',
-    badgeText: 'text-[#39FF14]',
-    badgeBorder: 'border-[#39FF14]/20',
-    icon: ShieldCheck,
-    label: 'APPROVED',
-  },
-  declined: {
-    bg: 'bg-red-500/5',
-    border: 'border-red-500/20',
-    badgeBg: 'bg-red-500/10',
-    badgeText: 'text-red-500',
-    badgeBorder: 'border-red-500/20',
-    icon: ShieldX,
-    label: 'DECLINED',
-  },
+/*
+ * A client said they paid an invoice. Shows who claimed it and lets an admin
+ * confirm (records the remaining balance as paid) or decline (back to unpaid).
+ * Props are unchanged: { invoice, onApprove, onDecline }.
+ */
+
+const STATUS = {
+    pending: { label: 'Waiting for you', tone: 'amber', icon: Clock },
+    approved: { label: 'Confirmed', tone: 'green', icon: ShieldCheck },
+    declined: { label: 'Declined', tone: 'red', icon: ShieldX },
 };
 
-function DetailRow({ icon: Icon, label, value }) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
-          {label}
-        </p>
-        <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{value}</p>
-      </div>
+const when = (value) => {
+    if (!value) return '';
+    const d = new Date(typeof value?.toDate === 'function' ? value.toDate() : value);
+    return isNaN(d.getTime()) ? '' : d.toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+};
+
+// "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 …) … Safari" → "iPhone · Safari"
+const device = (ua = '') => {
+    if (!ua) return '';
+    const os = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Mac OS X/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : '';
+    const browser = /Edg\//.test(ua) ? 'Edge' : /CriOS|Chrome\//.test(ua) ? 'Chrome' : /FxiOS|Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : '';
+    return [os, browser].filter(Boolean).join(' · ') || ua.slice(0, 60);
+};
+
+const Row = ({ label, value, copy }) => (value ? (
+    <div className="flex items-center justify-between gap-4 py-2">
+        <span className="shrink-0 text-[13px] text-gray-500">{label}</span>
+        <span className="flex min-w-0 items-center gap-1">
+            <span className="min-w-0 break-words text-right text-[13px] font-semibold">{value}</span>
+            {copy && (
+                <button
+                    type="button"
+                    aria-label={`Copy ${label}`}
+                    onClick={() => navigator.clipboard?.writeText(String(value)).then(() => useStore.getState().addToast?.(`${label} copied.`, 'success')).catch(() => {})}
+                    className="-mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-400 hover:bg-black/5 hover:text-gray-900 dark:hover:bg-white/10 dark:hover:text-white"
+                >
+                    <Copy size={13} />
+                </button>
+            )}
+        </span>
     </div>
-  );
-}
+) : null);
 
 export default function PaymentClaimReview({ invoice, onApprove, onDecline }) {
-  const [loading, setLoading] = useState(null); // 'approve' | 'decline' | null
+    const [confirm, setConfirm] = useState(null); // 'approve' | 'decline' | null
 
-  const claim = invoice?.paymentClaim;
-  if (!claim) return null;
+    const claim = invoice?.paymentClaim;
+    if (!claim) return null;
 
-  const status = claim.status || 'pending';
-  const config = statusConfig[status] || statusConfig.pending;
-  const StatusIcon = config.icon;
-  const isResolved = status === 'approved' || status === 'declined';
+    const status = STATUS[claim.status] ? claim.status : 'pending';
+    const cfg = STATUS[status];
+    const StatusIcon = cfg.icon;
+    const resolved = status !== 'pending';
+    const balance = invoiceBalance({ ...invoice, status: INVOICE_STATUS.PENDING });
+    const alreadyPaid = invoice.status === INVOICE_STATUS.PAID;
 
-  const handleApprove = async () => {
-    if (!window.confirm('Are you sure you want to approve this payment claim?')) return;
-    try {
-      setLoading('approve');
-      await onApprove();
-    } finally {
-      setLoading(null);
-    }
-  };
+    return (
+        <section className={cn('rounded-2xl border p-4', accent(cfg.tone).border, accent(cfg.tone).soft)}>
+            <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                    <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', accent(cfg.tone).chip)}>
+                        <StatusIcon size={18} />
+                    </span>
+                    <div className="min-w-0">
+                        <h3 className="text-[15px] font-bold">Client says they paid</h3>
+                        <p className="text-[12.5px] text-gray-500 dark:text-zinc-400">{when(claim.claimedAt) || 'Date not recorded'}</p>
+                    </div>
+                </div>
+                <Badge tone={cfg.tone}>{cfg.label}</Badge>
+            </div>
 
-  const handleDecline = async () => {
-    if (!window.confirm('Are you sure you want to decline this payment claim?')) return;
-    try {
-      setLoading('decline');
-      await onDecline();
-    } finally {
-      setLoading(null);
-    }
-  };
+            <div className="mt-3 divide-y divide-black/[0.06] rounded-xl bg-white px-3.5 dark:divide-white/[0.06] dark:bg-black/20">
+                <Row label="Name" value={claim.name || '—'} />
+                <Row label="Email" value={claim.email} copy />
+                <Row label="Method" value={claim.method === 'gateway' ? 'Online payment page' : claim.method} />
+                <Row label="Reference" value={claim.transactionId} copy />
+                <Row label="Device" value={device(claim.userAgent)} />
+                <Row label="IP address" value={claim.ip} />
+                {resolved && <Row label={status === 'approved' ? 'Confirmed' : 'Declined'} value={[when(claim.reviewedAt), claim.reviewedBy].filter(Boolean).join(' · ')} />}
+            </div>
 
-  const formattedDate = claim.claimedAt
-    ? new Date(claim.claimedAt).toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : '—';
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
-      className={cn('p-6 rounded-2xl border', config.bg, config.border)}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white/70">
-          Payment Claim
-        </h3>
-        <span
-          className={cn(
-            'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest',
-            config.badgeBg,
-            config.badgeText,
-            config.badgeBorder
-          )}
-        >
-          <StatusIcon className="w-3 h-3" />
-          {config.label}
-        </span>
-      </div>
-
-      {/* Details Card */}
-      <div className="space-y-3.5 bg-white dark:bg-black/30 rounded-xl p-4 border border-black/10 dark:border-white/5 mb-5">
-        <DetailRow icon={User} label="Name" value={claim.name || '—'} />
-        <DetailRow icon={Mail} label="Email" value={claim.email || '—'} />
-        <DetailRow icon={Globe} label="IP Address" value={claim.ip || '—'} />
-        <DetailRow
-          icon={Smartphone}
-          label="Browser / Device"
-          value={claim.userAgent || '—'}
-        />
-        <DetailRow icon={Clock} label="Claimed At" value={formattedDate} />
-      </div>
-
-      {/* Actions or Resolved State */}
-      {isResolved ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className={cn(
-            'flex items-center justify-center gap-2 py-3 rounded-xl border',
-            status === 'approved'
-              ? 'bg-[#39FF14]/5 border-[#39FF14]/20'
-              : 'bg-red-500/5 border-red-500/20'
-          )}
-        >
-          {status === 'approved' ? (
-            <CheckCircle className="w-4 h-4 text-[#39FF14]" />
-          ) : (
-            <XCircle className="w-4 h-4 text-red-500" />
-          )}
-          <span
-            className={cn(
-              'text-[10px] font-black uppercase tracking-widest',
-              status === 'approved' ? 'text-[#39FF14]' : 'text-red-500'
-            )}
-          >
-            {status === 'approved' ? 'Payment Approved' : 'Claim Declined'}
-          </span>
-        </motion.div>
-      ) : (
-        <div className="flex flex-col gap-2.5">
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleApprove}
-            disabled={loading !== null}
-            className={cn(
-              'w-full flex items-center justify-center gap-2 py-3 rounded-xl',
-              'bg-[#39FF14] text-black font-black uppercase tracking-widest text-[10px]',
-              'transition-opacity duration-200',
-              'disabled:opacity-50 disabled:cursor-not-allowed'
-            )}
-          >
-            {loading === 'approve' ? (
-              <motion.div
-                className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-              />
+            {resolved ? (
+                <p className={cn('mt-3 flex items-center gap-2 text-[13px] font-semibold', accent(cfg.tone).text)}>
+                    {status === 'approved' ? <CheckCircle size={15} /> : <XCircle size={15} />}
+                    {status === 'approved' ? 'Payment confirmed. The invoice is marked paid.' : 'Claim declined. The client was told to check their payment.'}
+                </p>
             ) : (
-              <CheckCircle className="w-4 h-4" />
+                <>
+                    <p className="mt-3 text-[12.5px] text-gray-600 dark:text-zinc-400">
+                        {alreadyPaid
+                            ? 'This invoice is already paid. Confirming just closes the claim.'
+                            : `Check your bank for ${inr(balance)} before confirming. Confirming records it as paid.`}
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                        <Button variant="ghost" className="h-11 text-red-500 hover:text-red-600" onClick={() => setConfirm('decline')}><XCircle size={15} /> Decline</Button>
+                        <Button variant="success" className="h-11" onClick={() => setConfirm('approve')}><CheckCircle size={15} /> Confirm payment</Button>
+                    </div>
+                </>
             )}
-            {loading === 'approve' ? 'Approving…' : 'Approve Payment'}
-          </motion.button>
 
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleDecline}
-            disabled={loading !== null}
-            className={cn(
-              'w-full flex items-center justify-center gap-2 py-3 rounded-xl',
-              'bg-red-500/10 text-red-500 border border-red-500/20',
-              'font-black uppercase tracking-widest text-[10px]',
-              'transition-opacity duration-200',
-              'disabled:opacity-50 disabled:cursor-not-allowed'
-            )}
-          >
-            {loading === 'decline' ? (
-              <motion.div
-                className="w-4 h-4 border-2 border-red-500/30 border-t-red-500 rounded-full"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-              />
-            ) : (
-              <XCircle className="w-4 h-4" />
-            )}
-            {loading === 'decline' ? 'Declining…' : 'Decline Claim'}
-          </motion.button>
-        </div>
-      )}
-    </motion.div>
-  );
+            <ConfirmDialog
+                open={confirm === 'approve'}
+                onClose={() => setConfirm(null)}
+                title="Confirm this payment?"
+                confirmLabel="Confirm payment"
+                tone="success"
+                body={alreadyPaid
+                    ? <p>The invoice is already paid, so nothing new is recorded. The client gets a confirmation email.</p>
+                    : <p>We record <b>{inr(balance)}</b> as received for {invoice.invoiceNumber || 'this invoice'}, mark it paid and email the client.</p>}
+                onConfirm={onApprove}
+            />
+            <ConfirmDialog
+                open={confirm === 'decline'}
+                onClose={() => setConfirm(null)}
+                title="Decline this claim?"
+                confirmLabel="Decline claim"
+                body={<p>{alreadyPaid ? 'The invoice stays paid, since it was paid another way.' : 'The invoice goes back to unpaid.'} The client gets an email asking them to check their payment.</p>}
+                onConfirm={onDecline}
+            />
+        </section>
+    );
 }

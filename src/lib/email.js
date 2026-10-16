@@ -116,10 +116,13 @@ export const generateOfficialHTML = (data) => {
         ctaText = "", 
         ctaUrl = "#",
         theme = "light",
-        isPreview = false
+        isPreview = false,
+        preheader = ""
     } = data;
 
     const formattedBody = formatEmailBodyHtml(messageBody);
+    // Inbox preview text: the custom preheader if one was written, else the start of the message.
+    const preheaderText = String(preheader || '').trim() || String(messageBody || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').substring(0, 150);
 
     const isDark = theme === 'dark';
     const bgColor = isDark ? '#000000' : '#fcfcfc';
@@ -189,7 +192,7 @@ export const generateOfficialHTML = (data) => {
             </style>
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0;">
-            <span class="preheader">${messageBody.replace(/<[^>]*>?/gm, '').substring(0, 150)}</span>
+            <span class="preheader">${preheaderText.replace(/</g, '&lt;')}</span>
             <div class="container" style="width: 100%; max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); color: ${textColor};">
                 <div class="header" style="padding: 40px; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder}; text-align: left;">
                     <!-- Brand Logo -->
@@ -1131,299 +1134,409 @@ export const generateWeeklyHTML = (data) => {
 };
 
 
+const MASS_EMAIL_RE = /^[^\s@,;<>"]+@[^\s@,;<>"]+\.[^\s@,;<>"]{2,}$/;
+const MERGE_TAG_RE = /\{\{?\s*(name|first_name|email|role)\s*\}?\}/i;
+const UNSUBSCRIBE_HREF_RE = /https?:\/\/(?:www\.)?newbi\.live\/unsubscribe\/?/gi;
+const MAX_STORED_EMAILS = 2000;
+const MAX_STORED_BODY_CHARS = 200000;
+
+const escapeMergeValue = (value) => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+
+/** Unsubscribe page for campaign mail. With an email it's a one-tap confirm. */
+export const buildUnsubscribeUrl = ({ email = '', campaignId = '' } = {}) => {
+    const base = (getBaseUrl() || 'https://newbi.live').replace(/\/+$/, '');
+    const params = new URLSearchParams({ type: 'unsubscribe' });
+    if (email) params.set('email', email);
+    if (campaignId) params.set('cid', campaignId);
+    return `${base}/api/track?${params.toString()}`;
+};
+
+// POST /api/mail and keep the HTTP status, so 429/5xx can be retried and
+// 4xx can't.
+const postMail = async (body) => {
+    try {
+        const token = await getAuthToken();
+        const response = await fetch('/api/mail', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
+            body: JSON.stringify(body),
+        });
+        let data = {};
+        try { data = await response.json(); } catch (e) { data = {}; }
+        // Only a JSON { success: true } counts (a dev server answering with index.html doesn't).
+        return { ok: response.ok && data.success === true, status: response.status, data };
+    } catch (error) {
+        return { ok: false, status: 0, data: { error: error.message || 'Network error' } };
+    }
+};
+
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Up to 3 tries for network errors, rate limits and server errors.
+const postMailWithRetry = async (body, signal) => {
+    let last;
+    for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) {
+            if (signal?.aborted) break;
+            await wait(attempt === 1 ? 2000 : 6000);
+        }
+        last = await postMail(body);
+        if (last.ok) return last;
+        // 504 means the server may have sent it before timing out: don't risk a double send.
+        const retryable = last.status === 0 || last.status === 429 || (last.status >= 500 && last.status !== 504);
+        if (!retryable) break;
+    }
+    return last;
+};
+
+/** Sends one copy of a campaign to the admin (no campaign record, no tracking). */
+export const sendTestEmail = async ({ to, subject, html, accountType = 'official', fromName = null, fromEmail = null }) => {
+    const result = await postMail({ to, subject: `[Test] ${subject || 'Untitled'}`, html, accountType, fromName, fromEmail });
+    if (!result.ok) throw new Error(result.data?.error || `Send failed (${result.status})`);
+    return result.data;
+};
+
 /**
- * Sends a mass email to multiple recipients.
- * If merge tags (like {{name}}, {{first_name}}, {{email}}, {{role}}) are detected in the subject or body,
- * sends personalized emails per recipient.
- * Otherwise, batches recipients into BCC groups of 45 for max delivery efficiency.
+ * Sends a campaign to many people and records it in `email_campaigns`.
+ *
+ * - Addresses are cleaned, checked and de-duplicated first; `options.exclude`
+ *   drops more (unsubscribed people, for example). The server also drops
+ *   anyone in the unsubscribe list (`bulk: true`).
+ * - With merge tags ({{name}}, {{first_name}}, {{email}}, {{role}}) or
+ *   `options.individual`, everyone gets their own email (own tracking and
+ *   unsubscribe link), 3 at a time. Otherwise BCC batches of 45.
+ * - Each request is retried on network errors, 429 and 5xx. Whoever still
+ *   fails is returned in `failedEmails` and saved on the campaign so the admin
+ *   can retry just them (pass `options.campaignId` + `options.baseSentCount`).
+ * - `options.signal` (AbortController) stops between sends; the rest are
+ *   returned as `unsentEmails` and the campaign is marked cancelled.
+ * - `options.buildHtml(mailData)` rebuilds the html per person in individual
+ *   mode (defaults to generateOfficialHTML).
  */
 export const sendMassEmail = async (
-    recipientList, 
-    subject, 
-    htmlContent, 
-    accountType = 'official', 
-    onProgress = null, 
-    fromName = null, 
+    recipientList,
+    subject,
+    htmlContent,
+    accountType = 'official',
+    onProgress = null,
+    fromName = null,
     fromEmail = null,
-    mailData = null
+    mailData = null,
+    options = {}
 ) => {
     const BATCH_SIZE = 45;
-    const DELAY_BETWEEN_BATCHES_MS = 1500;
-    const toAddress = accountType === 'weekly' ? 'weekly@newbi.live' : (accountType === 'creators' || accountType === 'creator') ? 'creators@newbi.live' : 'partnership@newbi.live';
+    const DELAY_BETWEEN_BATCHES_MS = 1200;
+    const INDIVIDUAL_CONCURRENCY = 3;
+    const {
+        exclude = [],
+        individual = false,
+        signal = null,
+        campaignId: existingCampaignId = null,
+        baseSentCount = 0,
+        buildHtml = null,
+        audience = null,
+    } = options || {};
+    const isCreators = accountType === 'creators' || accountType === 'creator';
+    const toAddress = accountType === 'weekly' ? 'weekly@newbi.live' : isCreators ? 'creators@newbi.live' : 'partnership@newbi.live';
 
-    // Parse array of email strings OR recipient objects ({ email, name, displayName, role })
-    const normalizedRecipients = (recipientList || []).map(item => {
-        if (typeof item === 'string') {
-            const trimmed = item.trim().toLowerCase();
-            return trimmed ? { email: trimmed, name: '', role: '' } : null;
-        }
-        if (!item || !item.email) return null;
-        return {
-            email: item.email.trim().toLowerCase(),
-            name: item.displayName || item.name || item.fullName || '',
-            role: item.role || item.category || ''
-        };
-    }).filter(Boolean);
-
-    // Deduplicate by email address
-    const uniqueRecipients = Array.from(new Map(normalizedRecipients.map(r => [r.email, r])).values());
+    // 1. Clean the list: valid, unique, not excluded.
+    let invalidCount = 0;
+    const normalized = [];
+    (recipientList || []).forEach(item => {
+        const raw = typeof item === 'string' ? item : item?.email;
+        const email = String(raw || '').trim().toLowerCase();
+        if (!email) { invalidCount++; return; }
+        if (!MASS_EMAIL_RE.test(email)) { invalidCount++; return; }
+        normalized.push(typeof item === 'string'
+            ? { email, name: '', role: '' }
+            : { email, name: item.displayName || item.name || item.fullName || '', role: item.role || item.category || '' });
+    });
+    const byEmail = new Map();
+    normalized.forEach(r => { if (!byEmail.has(r.email)) byEmail.set(r.email, r); });
+    const duplicateCount = normalized.length - byEmail.size;
+    const excludeSet = new Set((exclude || []).map(e => String(e || '').trim().toLowerCase()).filter(Boolean));
+    let excludedCount = 0;
+    const uniqueRecipients = [];
+    byEmail.forEach(r => { if (excludeSet.has(r.email)) excludedCount++; else uniqueRecipients.push(r); });
 
     if (uniqueRecipients.length === 0) {
-        return { success: false, error: 'No valid recipients' };
+        return { success: false, error: 'No valid recipients', sent: 0, failed: 0, total: 0, invalid: invalidCount, duplicates: duplicateCount, excluded: excludedCount, failedEmails: [], suppressed: [] };
     }
 
-    // Generate unique Campaign ID for tracking and analytics
-    const campaignId = 'camp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-    const campaignSentAt = new Date().toISOString();
-    const effectiveCategory = mailData?.category === 'CUSTOM' 
-        ? (mailData?.customCategory || 'CUSTOM') 
-        : (mailData?.category || (accountType === 'weekly' ? 'NEWSLETTER' : (accountType === 'creators' || accountType === 'creator') ? 'CREATORS' : 'OFFICIAL'));
+    const hasTags = MERGE_TAG_RE.test(subject || '') || MERGE_TAG_RE.test(htmlContent || '') ||
+        (mailData && (MERGE_TAG_RE.test(mailData.headerText || '') || MERGE_TAG_RE.test(mailData.messageBody || '') || MERGE_TAG_RE.test(mailData.ctaText || '') || MERGE_TAG_RE.test(mailData.preheader || '')));
+    const perPerson = hasTags || individual;
 
-    const senderDisplayName = fromName || (accountType === 'weekly' ? 'Weekly by Concert Zone' : (accountType === 'creators' || accountType === 'creator') ? 'Newbi Creators' : 'Newbi Entertainment');
-    const senderEmailAddress = fromEmail || (accountType === 'weekly' ? 'weekly@newbi.live' : (accountType === 'creators' || accountType === 'creator') ? 'creators@newbi.live' : 'partnership@newbi.live');
+    // 2. Campaign record (or reuse one when retrying failed addresses).
+    const campaignId = existingCampaignId || ('camp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7));
+    const startedAt = new Date().toISOString();
+    const effectiveCategory = mailData?.category === 'CUSTOM'
+        ? (mailData?.customCategory || 'CUSTOM')
+        : (mailData?.category || (accountType === 'weekly' ? 'NEWSLETTER' : isCreators ? 'CREATORS' : 'OFFICIAL'));
+    const senderDisplayName = fromName || (accountType === 'weekly' ? 'Weekly by Concert Zone' : isCreators ? 'Newbi Creators' : 'Newbi Entertainment');
+    const senderEmailAddress = fromEmail || (accountType === 'weekly' ? 'weekly@newbi.live' : isCreators ? 'creators@newbi.live' : 'partnership@newbi.live');
 
-    // Create tracking campaign record in Firestore
+    let recordSaved = false;
     if (db) {
         try {
-            const campaignRecord = {
-                id: campaignId,
-                subject: subject || 'Untitled Broadcast',
-                category: effectiveCategory,
-                senderName: senderDisplayName,
-                senderEmail: senderEmailAddress,
-                accountType: accountType || 'official',
-                recipientType: mailData?.recipientType || (accountType === 'weekly' ? 'subscribers' : 'custom'),
-                totalRecipients: uniqueRecipients.length,
-                recipients: uniqueRecipients.map(r => ({ email: r.email, name: r.name || '' })),
-                sentAt: campaignSentAt,
-                status: 'sending',
-                opensCount: 0,
-                uniqueOpens: 0,
-                openedEmails: [],
-                clicksCount: 0,
-                uniqueClicks: 0,
-                clickedEmails: [],
-                clickedUrls: [],
-                headerText: mailData?.headerText || '',
-                ctaText: mailData?.ctaText || '',
-                ctaUrl: mailData?.ctaUrl || '',
-                theme: mailData?.theme || 'light'
-            };
-            await setDoc(doc(db, 'email_campaigns', campaignId), campaignRecord, { merge: true });
-        } catch (dbErr) {
-            console.warn('[Mass Mail] Could not initialize Firestore campaign record:', dbErr.message);
-        }
-    }
-
-    // Check if subject, htmlContent, or mailData contains merge tags (e.g. {{name}}, {{first_name}}, {{email}}, {{role}})
-    const tagRegex = /\{\{?\s*(name|first_name|email|role)\s*\}?\}/i;
-    const hasTags = tagRegex.test(subject || '') || 
-                     tagRegex.test(htmlContent || '') || 
-                     (mailData && (tagRegex.test(mailData.headerText || '') || tagRegex.test(mailData.messageBody || '')));
-
-    if (hasTags) {
-        console.log(`[Mass Mail] Personalized Mode enabled for ${uniqueRecipients.length} recipient(s) with Tracking ID: ${campaignId}`);
-        let successCount = 0;
-        let failCount = 0;
-        const errors = [];
-
-        for (let i = 0; i < uniqueRecipients.length; i++) {
-            const user = uniqueRecipients[i];
-            const userEmail = user.email;
-            const fullName = user.name || userEmail.split('@')[0] || 'Subscriber';
-            const firstName = fullName.split(' ')[0] || 'Subscriber';
-            const userRole = user.role || 'Member';
-
-            const replaceUserTags = (text) => {
-                if (!text || typeof text !== 'string') return text;
-                return text
-                    .replace(/\{\{?\s*name\s*\}?\}/gi, fullName)
-                    .replace(/\{\{?\s*first_name\s*\}?\}/gi, firstName)
-                    .replace(/\{\{?\s*email\s*\}?\}/gi, userEmail)
-                    .replace(/\{\{?\s*role\s*\}?\}/gi, userRole);
-            };
-
-            const personalizedSubject = replaceUserTags(subject);
-            let personalizedHtml = htmlContent;
-
-            if (mailData) {
-                const personalizedMailData = {
-                    ...mailData,
-                    headerText: replaceUserTags(mailData.headerText || ''),
-                    messageBody: replaceUserTags(mailData.messageBody || ''),
-                    ctaText: replaceUserTags(mailData.ctaText || '')
-                };
-                personalizedHtml = generateOfficialHTML(personalizedMailData);
-            } else {
-                personalizedHtml = replaceUserTags(htmlContent);
-            }
-
-            // Inject open tracking pixel and link click tracking for this specific recipient
-            const trackedHtml = injectEmailTracking({
-                html: personalizedHtml,
-                trackingId: campaignId,
-                recipientEmail: userEmail,
-                campaignId: campaignId,
-                subject: personalizedSubject
-            });
-
-            try {
-                const result = await apiFetch('/api/mail', {
-                    to: userEmail,
-                    subject: personalizedSubject,
-                    html: trackedHtml,
-                    accountType: accountType,
-                    fromName: fromName,
-                    fromEmail: fromEmail,
-                    headers: {
-                        'List-Unsubscribe': '<https://newbi.live/unsubscribe>'
-                    }
-                });
-
-                if (result.success) {
-                    successCount++;
-                    console.log(`[Mass Mail] ✅ Personalized mail ${i + 1}/${uniqueRecipients.length} sent to ${userEmail}`);
-                } else {
-                    failCount++;
-                    errors.push(`${userEmail}: ${result.error}`);
-                    console.error(`[Mass Mail] ❌ Personalized mail to ${userEmail} failed:`, result.error);
-                }
-            } catch (error) {
-                failCount++;
-                errors.push(`${userEmail}: ${error.message}`);
-                console.error(`[Mass Mail] ❌ Personalized mail exception for ${userEmail}:`, error);
-            }
-
-            if (onProgress) {
-                onProgress({
-                    currentBatch: i + 1,
-                    totalBatches: uniqueRecipients.length,
-                    sent: successCount,
-                    failed: failCount,
-                    total: uniqueRecipients.length
-                });
-            }
-
-            // Small throttle delay between individual personalized sends
-            if (i < uniqueRecipients.length - 1) {
-                await new Promise(resolve => setTimeout(resolve, 300));
-            }
-        }
-
-        const allSucceeded = failCount === 0;
-
-        // Update campaign status in Firestore
-        if (db) {
-            try {
+            if (existingCampaignId) {
                 await updateDoc(doc(db, 'email_campaigns', campaignId), {
-                    status: allSucceeded ? 'completed' : 'partially_failed',
-                    sentCount: successCount,
-                    failedCount: failCount,
-                    errors: errors.length > 0 ? errors.slice(0, 50) : []
+                    status: 'sending',
+                    lastRetryAt: startedAt,
+                    retryRecipients: uniqueRecipients.length,
+                    lastProgressAt: startedAt,
                 });
-            } catch (e) {}
-        }
-
-        return {
-            success: allSucceeded,
-            campaignId,
-            sent: successCount,
-            failed: failCount,
-            total: uniqueRecipients.length,
-            batches: uniqueRecipients.length,
-            error: errors.length > 0 ? errors.join('; ') : undefined
-        };
-    }
-
-    // Standard BCC Batching mode when no merge tags are present
-    const uniqueEmails = uniqueRecipients.map(r => r.email);
-    const batches = [];
-    for (let i = 0; i < uniqueEmails.length; i += BATCH_SIZE) {
-        batches.push(uniqueEmails.slice(i, i + BATCH_SIZE));
-    }
-
-    console.log(`[Mass Mail] Standard BCC Mode: Sending to ${uniqueEmails.length} recipients in ${batches.length} batch(es) with Tracking ID: ${campaignId}`);
-
-    let successCount = 0;
-    let failCount = 0;
-    const errors = [];
-
-    // Inject open tracking and click tracking for campaign
-    const trackedHtml = injectEmailTracking({
-        html: htmlContent,
-        trackingId: campaignId,
-        recipientEmail: '',
-        campaignId: campaignId,
-        subject: subject
-    });
-
-    for (let i = 0; i < batches.length; i++) {
-        const batch = batches[i];
-        try {
-            const result = await apiFetch('/api/mail', {
-                to: toAddress,
-                bcc: batch.join(','),
-                subject: subject,
-                html: trackedHtml,
-                accountType: accountType,
-                fromName: fromName,
-                fromEmail: fromEmail,
-                headers: {
-                    'List-Unsubscribe': '<https://newbi.live/unsubscribe>'
-                }
-            });
-
-            if (result.success) {
-                successCount += batch.length;
-                console.log(`[Mass Mail] ✅ Batch ${i + 1}/${batches.length} sent (${batch.length} recipients)`);
             } else {
-                failCount += batch.length;
-                errors.push(`Batch ${i + 1}: ${result.error}`);
-                console.error(`[Mass Mail] ❌ Batch ${i + 1} failed:`, result.error);
+                const body = String(mailData?.messageBody || '');
+                await setDoc(doc(db, 'email_campaigns', campaignId), {
+                    id: campaignId,
+                    subject: subject || 'Untitled Broadcast',
+                    category: effectiveCategory,
+                    senderName: senderDisplayName,
+                    senderEmail: senderEmailAddress,
+                    accountType: accountType || 'official',
+                    recipientType: mailData?.recipientType || (accountType === 'weekly' ? 'subscribers' : 'custom'),
+                    audience: audience || null,
+                    totalRecipients: uniqueRecipients.length,
+                    recipients: uniqueRecipients.slice(0, MAX_STORED_EMAILS).map(r => ({ email: r.email, name: r.name || '' })),
+                    recipientsTruncated: uniqueRecipients.length > MAX_STORED_EMAILS,
+                    invalidCount,
+                    duplicateCount,
+                    excludedCount,
+                    deliveryMode: perPerson ? 'individual' : 'batched',
+                    sentAt: startedAt,
+                    lastProgressAt: startedAt,
+                    status: 'sending',
+                    sentCount: 0,
+                    failedCount: 0,
+                    suppressedCount: 0,
+                    opensCount: 0,
+                    uniqueOpens: 0,
+                    openedEmails: [],
+                    clicksCount: 0,
+                    uniqueClicks: 0,
+                    clickedEmails: [],
+                    clickedUrls: [],
+                    headerText: mailData?.headerText || '',
+                    messageBody: body.length > MAX_STORED_BODY_CHARS ? '' : body,
+                    // Emails built outside the composer (newsletter) keep their html so failed people can be retried.
+                    html: !mailData && String(htmlContent || '').length <= MAX_STORED_BODY_CHARS ? String(htmlContent || '') : '',
+                    preheader: mailData?.preheader || '',
+                    heroImage: mailData?.heroImage || '',
+                    ctaText: mailData?.ctaText || '',
+                    ctaUrl: mailData?.ctaUrl || '',
+                    theme: mailData?.theme || 'light',
+                });
             }
-        } catch (error) {
-            failCount += batch.length;
-            errors.push(`Batch ${i + 1}: ${error.message}`);
-            console.error(`[Mass Mail] ❌ Batch ${i + 1} exception:`, error);
+            recordSaved = true;
+        } catch (dbErr) {
+            console.warn('[Mass Mail] Could not save the campaign record:', dbErr.message);
         }
+    }
 
+    // 3. Send.
+    const sentEmails = [];
+    const failed = []; // { email, error }
+    const suppressed = [];
+    const unsent = [];
+    const errors = [];
+    let unitsDone = 0;
+    const totalUnits = perPerson ? uniqueRecipients.length : Math.ceil(uniqueRecipients.length / BATCH_SIZE);
+
+    const progress = () => {
         if (onProgress) {
             onProgress({
-                currentBatch: i + 1,
-                totalBatches: batches.length,
-                sent: successCount,
-                failed: failCount,
-                total: uniqueEmails.length
+                currentBatch: unitsDone,
+                totalBatches: totalUnits,
+                sent: sentEmails.length,
+                failed: failed.length,
+                suppressed: suppressed.length,
+                total: uniqueRecipients.length,
             });
         }
+    };
 
-        if (i < batches.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES_MS));
-        }
-    }
-
-    const allSucceeded = failCount === 0;
-
-    // Update campaign status in Firestore
-    if (db) {
+    let lastSaved = Date.now();
+    const saveProgress = async (force = false) => {
+        if (!db || !recordSaved) return;
+        if (!force && Date.now() - lastSaved < 8000) return;
+        lastSaved = Date.now();
         try {
             await updateDoc(doc(db, 'email_campaigns', campaignId), {
-                status: allSucceeded ? 'completed' : 'partially_failed',
-                sentCount: successCount,
-                failedCount: failCount,
-                errors: errors.length > 0 ? errors.slice(0, 50) : []
+                sentCount: baseSentCount + sentEmails.length,
+                failedCount: failed.length,
+                suppressedCount: suppressed.length,
+                lastProgressAt: new Date().toISOString(),
             });
-        } catch (e) {}
+        } catch (e) { /* progress is best effort */ }
+    };
+
+    const unsubscribeHeaders = (url) => ({
+        'List-Unsubscribe': `<${url}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    });
+
+    if (perPerson) {
+        const render = buildHtml || generateOfficialHTML;
+        const queue = [...uniqueRecipients];
+        const worker = async () => {
+            while (queue.length) {
+                if (signal?.aborted) { unsent.push(...queue.splice(0).map(r => r.email)); return; }
+                const user = queue.shift();
+                const fullName = user.name || user.email.split('@')[0] || 'there';
+                const firstName = fullName.split(' ')[0] || 'there';
+                const role = user.role || 'Member';
+                const fill = (text, escape) => {
+                    if (!text || typeof text !== 'string') return text;
+                    const v = (s) => (escape ? escapeMergeValue(s) : s);
+                    return text
+                        .replace(/\{\{?\s*name\s*\}?\}/gi, v(fullName))
+                        .replace(/\{\{?\s*first_name\s*\}?\}/gi, v(firstName))
+                        .replace(/\{\{?\s*email\s*\}?\}/gi, v(user.email))
+                        .replace(/\{\{?\s*role\s*\}?\}/gi, v(role));
+                };
+                const personalSubject = fill(subject, false);
+                const html = mailData
+                    ? render({
+                        ...mailData,
+                        headerText: fill(mailData.headerText || '', true),
+                        messageBody: fill(mailData.messageBody || '', true),
+                        ctaText: fill(mailData.ctaText || '', true),
+                        preheader: fill(mailData.preheader || '', true),
+                    })
+                    : fill(htmlContent, true);
+                const unsubscribeUrl = buildUnsubscribeUrl({ email: user.email, campaignId });
+                const trackedHtml = injectEmailTracking({
+                    html: String(html || '').replace(UNSUBSCRIBE_HREF_RE, unsubscribeUrl),
+                    trackingId: campaignId,
+                    recipientEmail: user.email,
+                    campaignId,
+                    subject: personalSubject,
+                });
+                const result = await postMailWithRetry({
+                    to: user.email,
+                    subject: personalSubject,
+                    html: trackedHtml,
+                    accountType,
+                    fromName,
+                    fromEmail,
+                    bulk: true,
+                    campaignId,
+                    headers: unsubscribeHeaders(unsubscribeUrl),
+                }, signal);
+                if (result.ok) {
+                    const blocked = (result.data?.suppressed || []).includes(user.email);
+                    const rejected = (result.data?.rejected || []).includes(user.email);
+                    if (blocked) suppressed.push(user.email);
+                    else if (rejected) failed.push({ email: user.email, error: 'Rejected by mail server' });
+                    else sentEmails.push(user.email);
+                } else {
+                    const error = result.data?.error || `HTTP ${result.status}`;
+                    failed.push({ email: user.email, error });
+                    if (errors.length < 50) errors.push(`${user.email}: ${error}`);
+                }
+                unitsDone++;
+                progress();
+                saveProgress();
+            }
+        };
+        await Promise.all(Array.from({ length: Math.min(INDIVIDUAL_CONCURRENCY, uniqueRecipients.length) }, worker));
+    } else {
+        const emails = uniqueRecipients.map(r => r.email);
+        const batches = [];
+        for (let i = 0; i < emails.length; i += BATCH_SIZE) batches.push(emails.slice(i, i + BATCH_SIZE));
+        const unsubscribeUrl = buildUnsubscribeUrl({ campaignId });
+        const trackedHtml = injectEmailTracking({
+            html: String(htmlContent || '').replace(UNSUBSCRIBE_HREF_RE, unsubscribeUrl),
+            trackingId: campaignId,
+            recipientEmail: '',
+            campaignId,
+            subject,
+        });
+
+        for (let i = 0; i < batches.length; i++) {
+            if (signal?.aborted) { batches.slice(i).forEach(b => unsent.push(...b)); break; }
+            const batch = batches[i];
+            const result = await postMailWithRetry({
+                to: toAddress,
+                bcc: batch.join(','),
+                subject,
+                html: trackedHtml,
+                accountType,
+                fromName,
+                fromEmail,
+                bulk: true,
+                campaignId,
+                headers: unsubscribeHeaders(unsubscribeUrl),
+            }, signal);
+            if (result.ok) {
+                const blocked = new Set(result.data?.suppressed || []);
+                const rejected = new Set(result.data?.rejected || []);
+                batch.forEach(email => {
+                    if (blocked.has(email)) suppressed.push(email);
+                    else if (rejected.has(email)) failed.push({ email, error: 'Rejected by mail server' });
+                    else sentEmails.push(email);
+                });
+            } else {
+                const error = result.data?.error || `HTTP ${result.status}`;
+                batch.forEach(email => failed.push({ email, error }));
+                if (errors.length < 50) errors.push(`Batch ${i + 1}: ${error}`);
+            }
+            unitsDone++;
+            progress();
+            saveProgress();
+            if (i < batches.length - 1 && !signal?.aborted) await wait(DELAY_BETWEEN_BATCHES_MS);
+        }
     }
 
+    // 4. Final record.
+    const cancelled = unsent.length > 0;
+    const failedEmails = failed.map(f => f.email);
+    const status = cancelled
+        ? 'cancelled'
+        : failed.length === 0
+            ? 'completed'
+            : sentEmails.length > 0 || baseSentCount > 0 ? 'partially_failed' : 'failed';
+
+    if (db && recordSaved) {
+        try {
+            await updateDoc(doc(db, 'email_campaigns', campaignId), {
+                status,
+                sentCount: baseSentCount + sentEmails.length,
+                failedCount: failed.length,
+                suppressedCount: suppressed.length,
+                suppressedEmails: suppressed.slice(0, MAX_STORED_EMAILS),
+                failedEmails: failedEmails.slice(0, MAX_STORED_EMAILS),
+                unsentEmails: unsent.slice(0, MAX_STORED_EMAILS),
+                errors: errors.slice(0, 50),
+                completedAt: new Date().toISOString(),
+                lastProgressAt: new Date().toISOString(),
+            });
+        } catch (e) {
+            console.warn('[Mass Mail] Could not update the campaign record:', e.message);
+        }
+    }
+
+    console.log(`[Mass Mail] ${campaignId}: ${sentEmails.length} sent, ${failed.length} failed, ${suppressed.length} unsubscribed, ${unsent.length} not sent (${perPerson ? 'individual' : 'batched'}).`);
+
     return {
-        success: allSucceeded,
+        success: failed.length === 0 && !cancelled,
         campaignId,
-        sent: successCount,
-        failed: failCount,
-        total: uniqueEmails.length,
-        batches: batches.length,
-        error: errors.length > 0 ? errors.join('; ') : undefined
+        recordSaved,
+        sent: sentEmails.length,
+        failed: failed.length,
+        total: uniqueRecipients.length,
+        batches: totalUnits,
+        failedEmails,
+        failures: failed.slice(0, 200),
+        suppressed,
+        unsentEmails: unsent,
+        cancelled,
+        invalid: invalidCount,
+        duplicates: duplicateCount,
+        excluded: excludedCount,
+        mode: perPerson ? 'individual' : 'batched',
+        error: errors.length > 0 ? errors.join('; ') : undefined,
     };
 };
 

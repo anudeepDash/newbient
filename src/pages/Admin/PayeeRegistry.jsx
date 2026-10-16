@@ -1,662 +1,408 @@
-import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import Search from 'lucide-react/dist/esm/icons/search';
-import User from 'lucide-react/dist/esm/icons/user';
-import Copy from 'lucide-react/dist/esm/icons/copy';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
-import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
-import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
+import React, { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import Users from 'lucide-react/dist/esm/icons/users';
+import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
 import LinkIcon from 'lucide-react/dist/esm/icons/link';
+import Copy from 'lucide-react/dist/esm/icons/copy';
+import Edit from 'lucide-react/dist/esm/icons/edit';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
 import Mail from 'lucide-react/dist/esm/icons/mail';
 import Phone from 'lucide-react/dist/esm/icons/phone';
-import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
-import X from 'lucide-react/dist/esm/icons/x';
-import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
-import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
-import Building from 'lucide-react/dist/esm/icons/building';
-import Shield from 'lucide-react/dist/esm/icons/shield';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Activity from 'lucide-react/dist/esm/icons/activity';
 import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
-import Clock from 'lucide-react/dist/esm/icons/clock';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import Inbox from 'lucide-react/dist/esm/icons/inbox';
+import HandHeart from 'lucide-react/dist/esm/icons/hand-heart';
+import Building2 from 'lucide-react/dist/esm/icons/building-2';
+import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import Music from 'lucide-react/dist/esm/icons/music';
 
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { cn } from '../../lib/utils';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import ExportMenu from '../../components/admin/ExportMenu';
+import { exportSubtitle, fileDate } from '../../lib/xlsx';
+import {
+    Card, Button, Badge, Avatar, SearchInput, Select, SegmentedTabs, StatTile, EmptyState, Menu, MenuItem, ViewToggle, useViewMode,
+} from '../../components/admin/ui';
+import { inr } from '../../components/admin/ticketing/format';
+import {
+    FINANCE_TABS, PAYEE_TYPES, payeeType, findDuplicatePayees, spendsForPayee, isSpendPaid, isSpendPending, amountOf, formatDay, dayOf,
+} from '../../components/admin/finance/money';
+import { PayeeEditorSheet, PayeeDetailSheet, RegistrationLinkSheet, ConfirmDialog, copyText, payeeAccount } from '../../components/admin/finance/PayeeSheets';
+
+const PAGE = 30;
+const TYPE_ICON = { Volunteer: HandHeart, Vendor: Building2, Salary: Briefcase, Artist: Music };
+const MODES = [
+    { value: 'all', label: 'Any method' },
+    { value: 'UPI', label: 'UPI' },
+    { value: 'Bank Transfer', label: 'Bank transfer' },
+    { value: 'Other', label: 'Other' },
+    { value: 'missing', label: 'No payment details' },
+];
+const SORTS = [
+    { value: 'newest', label: 'Newest first' },
+    { value: 'name', label: 'Name A–Z' },
+    { value: 'paid', label: 'Most paid' },
+    { value: 'pending', label: 'Most to pay' },
+];
 
 const PayeeRegistry = () => {
-    useStoreSubscription(['financePayees', 'upcomingEvents']);
-    const { financePayees, deleteFinancePayee, upcomingEvents, addUpcomingEvent, user } = useStore();
-    
-    // Search and filter states
-    const [searchTerm, setSearchTerm] = useState('');
-    const [typeFilter, setTypeFilter] = useState('All');
-    const [paymentModeFilter, setPaymentModeFilter] = useState('All');
+    useStoreSubscription(['financePayees', 'upcomingEvents', 'spends']);
+    const financePayees = useStore(s => s.financePayees) || [];
+    const upcomingEvents = useStore(s => s.upcomingEvents) || [];
+    const spends = useStore(s => s.spends) || [];
+    const user = useStore(s => s.user);
+    const deleteFinancePayee = useStore(s => s.deleteFinancePayee);
+    const canDelete = user?.role !== 'editor' && user?.role !== 'content_admin';
 
-    // Link Builder states
-    const [builderType, setBuilderType] = useState('Volunteer');
-    const [selectedEvent, setSelectedEvent] = useState('');
-    const [customEvent, setCustomEvent] = useState('');
-    const [generatedLink, setGeneratedLink] = useState('');
-    const [copiedLink, setCopiedLink] = useState(false);
-
-    // Expandable detail rows state
-    const [expandedPayeeId, setExpandedPayeeId] = useState(null);
-
-    const financeTabs = [
-        { name: 'Overview', path: '/admin/finance', icon: LayoutGrid, color: 'text-[#39FF14]' },
-        { name: 'Spends Ledger', path: '/admin/spends', icon: IndianRupee, color: 'text-neon-pink' },
-        { name: 'Other Income', path: '/admin/other-income', icon: FileSpreadsheet, color: 'text-[#39FF14]' },
-        { name: 'Payee Registry', path: '/admin/payees', icon: User, color: 'text-neon-blue' }
-    ];
-
-    const navPills = [
-        { name: 'Overview', path: '/admin/finance', icon: LayoutGrid, isActive: false },
-        { name: 'Expense Ledger', path: '/admin/spends', icon: IndianRupee, isActive: false },
-        { name: 'Other Revenue', path: '/admin/other-income', icon: FileSpreadsheet, isActive: false },
-        { name: 'Payee Database', path: '/admin/payees', icon: User, isActive: true }
-    ];
-
-    const roles = [
-        { id: 'Volunteer', label: 'Volunteer Payout', desc: 'Event gigs & temp helpers', icon: Activity, color: 'text-neon-green', border: 'border-neon-green/30', bg: 'bg-neon-green/5', activeBg: 'bg-neon-green/10 border-neon-green shadow-[0_0_15px_rgba(57,255,20,0.15)]' },
-        { id: 'Vendor', label: 'Vendor / Partner', desc: 'Suppliers & business partners', icon: Building, color: 'text-neon-pink', border: 'border-neon-pink/30', bg: 'bg-neon-pink/5', activeBg: 'bg-neon-pink/10 border-neon-pink shadow-[0_0_15px_rgba(255,46,144,0.15)]' },
-        { id: 'Salary', label: 'Core Retainer', desc: 'Monthly salary & staff payouts', icon: Shield, color: 'text-neon-blue', border: 'border-neon-blue/30', bg: 'bg-neon-blue/5', activeBg: 'bg-neon-blue/10 border-neon-blue shadow-[0_0_15px_rgba(56,189,248,0.15)]' },
-        { id: 'Artist', label: 'Artist / Creator', desc: 'Performer fees & creator payouts', icon: Sparkles, color: 'text-neon-purple', border: 'border-neon-purple/30', bg: 'bg-neon-purple/5', activeBg: 'bg-neon-purple/10 border-neon-purple shadow-[0_0_15px_rgba(168,85,247,0.15)]' }
-    ];
-
-    // Filter payees
-    const filteredPayees = useMemo(() => {
-        return financePayees.filter(payee => {
-            const matchesSearch = 
-                payee.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                payee.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                payee.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                payee.destinationDetails?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                payee.linkedGig?.toLowerCase().includes(searchTerm.toLowerCase());
-
-            const matchesType = typeFilter === 'All' ? true : payee.type === typeFilter;
-            const matchesMode = paymentModeFilter === 'All' ? true : payee.paymentMode === paymentModeFilter;
-
-            return matchesSearch && matchesType && matchesMode;
-        });
-    }, [financePayees, searchTerm, typeFilter, paymentModeFilter]);
-
-    // Handle delete payee
-    const handleDeletePayee = (id) => {
-        if (user?.role === 'editor' || user?.role === 'content_admin') {
-            useStore.getState().addToast("Only admins can delete payees.", 'error');
-            return;
-        }
-
-        if (window.confirm('Are you sure you want to remove this payee from the registry?')) {
-            deleteFinancePayee(id);
-            useStore.getState().addToast('Payee deleted.', 'success');
-        }
+    // Filters live in the URL so a view can be shared or reloaded.
+    const [params, setParams] = useSearchParams();
+    const setParam = (key, value) => {
+        const next = new URLSearchParams(params);
+        if (value) next.set(key, value); else next.delete(key);
+        setParams(next, { replace: key !== 'id' });
+        if (key !== 'id') setLimit(PAGE);
     };
+    const q = params.get('q') || '';
+    const typeFilter = PAYEE_TYPES[params.get('type')] || params.get('type') === 'duplicates' ? params.get('type') : 'all';
+    const mode = MODES.some(m => m.value === params.get('mode')) ? params.get('mode') : 'all';
+    const sort = SORTS.some(s => s.value === params.get('sort')) ? params.get('sort') : 'newest';
+    const openId = params.get('id');
 
-    // Copy destination payout address
-    const handleCopyDetails = (details) => {
-        if (!details) return;
-        navigator.clipboard.writeText(details);
-        useStore.getState().addToast('Payout details copied.', 'success');
-    };
+    const [view, setView] = useViewMode('payees', 'cards');
+    const [limit, setLimit] = useState(PAGE);
+    const [editing, setEditing] = useState(null); // null | {} (new) | payee
+    const [linkOpen, setLinkOpen] = useState(false);
+    const [deleting, setDeleting] = useState(null);
 
-    // Generate targeted payee registration link
-    const handleGenerateLink = async (e) => {
-        e.preventDefault();
-        const base = `${window.location.origin}/register-payment`;
-        const eventName = builderType === 'Volunteer' ? (customEvent.trim() || selectedEvent) : '';
-        
-        let url = `${base}?type=${builderType}`;
-        if (eventName) {
-            url += `&event=${encodeURIComponent(eventName)}`;
-            
-            // Check if the event exists in upcomingEvents
-            const exists = upcomingEvents.some(evt => evt.title.toLowerCase() === eventName.toLowerCase());
-            if (!exists && builderType === 'Volunteer') {
-                try {
-                    await addUpcomingEvent({
-                        title: eventName,
-                        date: new Date().toISOString().split('T')[0],
-                        location: 'TBD',
-                        description: `Automatically created for volunteer registration: ${eventName}`,
-                        status: 'Upcoming',
-                        category: 'Volunteer Event',
-                        image: '',
-                        hubImage: '',
-                        venueLayout: '',
-                        videoUrl: '',
-                        buttonText: 'LEARN MORE',
-                        updatedAt: new Date().toISOString()
-                    });
-                    useStore.getState().addToast(`New event created: ${eventName}.`, 'success');
-                } catch (err) {
-                    console.error("Failed to auto-create event:", err);
-                }
+    const dupes = useMemo(() => findDuplicatePayees(financePayees), [financePayees]);
+
+    // Money per payee, matched by name the same way the detail sheet does.
+    const enriched = useMemo(() => financePayees.map(p => {
+        const list = spendsForPayee(p, spends);
+        return {
+            p,
+            paid: list.filter(isSpendPaid).reduce((a, s) => a + amountOf(s.amount), 0),
+            pending: list.filter(isSpendPending).reduce((a, s) => a + amountOf(s.amount), 0),
+            count: list.length,
+            dup: dupes.has(p.id),
+        };
+    }), [financePayees, spends, dupes]);
+
+    const beforeType = useMemo(() => {
+        const term = q.trim().toLowerCase();
+        return enriched.filter(({ p }) => {
+            if (term) {
+                const hay = [p.name, p.email, p.phone, p.destinationDetails, p.upiId, p.linkedGig, p.notes, p.bankDetails?.bankName].filter(Boolean).join(' ').toLowerCase();
+                if (!hay.includes(term)) return false;
             }
-        }
+            if (mode === 'missing') return !p.destinationDetails || /to be provided/i.test(p.destinationDetails);
+            if (mode === 'Other') return p.paymentMode !== 'UPI' && p.paymentMode !== 'Bank Transfer';
+            if (mode !== 'all') return p.paymentMode === mode;
+            return true;
+        });
+    }, [enriched, q, mode]);
 
-        setGeneratedLink(url);
-        navigator.clipboard.writeText(url);
-        setCopiedLink(true);
-        useStore.getState().addToast('Registration link created and copied.', 'success');
-        setTimeout(() => setCopiedLink(false), 2000);
+    const counts = useMemo(() => {
+        const c = { all: beforeType.length, duplicates: beforeType.filter(r => r.dup).length };
+        Object.keys(PAYEE_TYPES).forEach(t => { c[t] = beforeType.filter(r => r.p.type === t).length; });
+        return c;
+    }, [beforeType]);
+
+    const rows = useMemo(() => {
+        const list = typeFilter === 'all' ? beforeType
+            : typeFilter === 'duplicates' ? beforeType.filter(r => r.dup)
+                : beforeType.filter(r => r.p.type === typeFilter);
+        const sorted = [...list];
+        if (sort === 'name') sorted.sort((a, b) => (a.p.name || '').localeCompare(b.p.name || ''));
+        else if (sort === 'paid') sorted.sort((a, b) => b.paid - a.paid);
+        else if (sort === 'pending') sorted.sort((a, b) => b.pending - a.pending);
+        else sorted.sort((a, b) => (dayOf(b.p.createdAt) || '').localeCompare(dayOf(a.p.createdAt) || ''));
+        // Keep look-alikes next to each other on the duplicates tab.
+        if (typeFilter === 'duplicates') sorted.sort((a, b) => String(dupes.get(a.p.id)).localeCompare(String(dupes.get(b.p.id))));
+        return sorted;
+    }, [beforeType, typeFilter, sort, dupes]);
+    const shown = rows.slice(0, limit);
+
+    const totals = useMemo(() => ({
+        paid: enriched.reduce((a, r) => a + r.paid, 0),
+        pending: enriched.reduce((a, r) => a + r.pending, 0),
+        pendingPeople: enriched.filter(r => r.pending > 0).length,
+        missing: financePayees.filter(p => !p.destinationDetails || /to be provided/i.test(p.destinationDetails)).length,
+    }), [enriched, financePayees]);
+
+    const openPayee = financePayees.find(p => p.id === openId) || null;
+    const filtersActive = Boolean(q || mode !== 'all' || typeFilter !== 'all');
+    const clearFilters = () => {
+        const next = new URLSearchParams(params);
+        ['q', 'mode', 'type'].forEach(k => next.delete(k));
+        setParams(next, { replace: true });
+    };
+
+    const exportSpec = () => ({
+        filename: `newbi_payees_${fileDate()}`,
+        sheetName: 'Payees',
+        title: 'Newbi payees',
+        subtitle: exportSubtitle(rows.length, 'payee', typeFilter !== 'all' ? (PAYEE_TYPES[typeFilter]?.plural || 'Possible duplicates') : null),
+        rows,
+        totals: { paid: true, pending: true },
+        columns: [
+            { header: 'Name', value: r => r.p.name || '', width: 26 },
+            { header: 'Type', value: r => PAYEE_TYPES[r.p.type]?.label || r.p.type || '' },
+            { header: 'Email', value: r => r.p.email || '', width: 28 },
+            { header: 'Phone', value: r => r.p.phone || '' },
+            { header: 'Payment method', value: r => r.p.paymentMode || '' },
+            { header: 'UPI ID', value: r => payeeAccount(r.p).upiId || '' },
+            { header: 'Bank', value: r => payeeAccount(r.p).bankName || '' },
+            { header: 'Account no.', value: r => payeeAccount(r.p).accountNumber || '' },
+            { header: 'IFSC', value: r => payeeAccount(r.p).ifscCode || '' },
+            { header: 'Event or gig', value: r => r.p.linkedGig || '' },
+            { header: 'Paid so far', key: 'paid', type: 'money', value: r => r.paid },
+            { header: 'To pay', key: 'pending', type: 'money', value: r => r.pending },
+            { header: 'Payouts', type: 'number', value: r => r.count },
+            { header: 'Added', type: 'date', value: r => dayOf(r.p.createdAt) || null },
+            { header: 'Notes', value: r => r.p.notes || '', width: 40 },
+        ],
+    });
+
+    const actionsMenu = (p) => (
+        <Menu trigger={({ toggle }) => (
+            <Button variant="ghost" size="sm" onClick={toggle} aria-label={`More for ${p.name || 'payee'}`} className="h-10 w-10 px-0"><MoreHorizontal size={16} /></Button>
+        )}>
+            <MenuItem icon={Eye} onClick={() => setParam('id', p.id)}>View details and payouts</MenuItem>
+            <MenuItem icon={Edit} onClick={() => setEditing(p)}>Edit</MenuItem>
+            <MenuItem icon={Copy} disabled={!p.destinationDetails} onClick={() => copyText(p.destinationDetails, 'Payment details')} hint={p.destinationDetails || 'No payment details yet'}>Copy payment details</MenuItem>
+            {p.phone && <MenuItem icon={Phone} as="a" href={`tel:${p.phone}`}>Call {p.phone}</MenuItem>}
+            {p.email && <MenuItem icon={Mail} as="a" href={`mailto:${p.email}`}>Email</MenuItem>}
+            {canDelete && <MenuItem icon={Trash2} danger onClick={() => setDeleting(p)}>Delete</MenuItem>}
+        </Menu>
+    );
+
+    const typeBadge = (p) => {
+        const t = PAYEE_TYPES[payeeType(p)];
+        return <Badge tone={t.tone}>{PAYEE_TYPES[p.type]?.label || p.type || 'Payee'}</Badge>;
+    };
+    const methodLine = (p) => {
+        const a = payeeAccount(p);
+        if (a.upiId) return { label: 'UPI', value: a.upiId };
+        if (a.accountNumber) return { label: a.bankName || 'Bank', value: `A/C ${a.accountNumber}${a.ifscCode ? ` · ${a.ifscCode}` : ''}` };
+        return { label: p.paymentMode || 'No method', value: p.destinationDetails || 'No payment details yet', missing: !p.destinationDetails };
     };
 
     return (
         <AdminCommunityHubLayout
-            studioHeader={{
-                title: 'PAYEE',
-                subtitle: 'REGISTRY',
-                accentClass: 'text-neon-blue',
-                icon: User
-            }}
-            tabs={financeTabs}
-            accentColor="neon-blue"
+            studioHeader={{ title: 'Payees', icon: Users, description: 'Everyone you pay, with their UPI and bank details' }}
+            tabs={FINANCE_TABS}
+            action={(
+                <div className="flex w-full gap-2 sm:w-auto">
+                    <Button variant="secondary" onClick={() => setLinkOpen(true)} className="h-11 flex-1 sm:flex-none"><LinkIcon size={14} /> Registration link</Button>
+                    <Button variant="accent" onClick={() => setEditing({})} className="h-11 flex-1 sm:flex-none"><UserPlus size={14} /> Add payee</Button>
+                </div>
+            )}
         >
-            <div className="space-y-8 relative">
-                {/* Nav Pills */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex flex-wrap gap-3">
-                    {navPills.map((pill) => {
-                        const Icon = pill.icon;
-                        return (
-                            <Link key={pill.name} to={pill.path}
-                                className={cn(
-                                    "flex items-center gap-2 px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all duration-300 group",
-                                    pill.isActive 
-                                        ? "bg-neon-green text-black border-neon-green shadow-[0_0_15px_rgba(57,255,20,0.3)]" 
-                                        : "bg-white/[0.03] text-zinc-400 border-black/10 dark:border-white/10 hover:border-white/30 hover:text-gray-900 dark:hover:text-white hover:bg-white/[0.05]"
-                                )}
-                            >
-                                <Icon size={14} className={cn("transition-transform group-hover:scale-110", pill.isActive ? "text-black" : "text-neon-green")} />
-                                {pill.name}
-                            </Link>
-                        )
-                    })}
-                </motion.div>
+            <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <StatTile icon={Users} tone="teal" label="Payees" value={financePayees.length}
+                        hint={Object.entries(PAYEE_TYPES).map(([k, t]) => `${financePayees.filter(p => p.type === k).length} ${t.plural.toLowerCase()}`).slice(0, 2).join(' · ')}
+                        active={typeFilter === 'all' && !filtersActive} onClick={clearFilters} />
+                    <StatTile icon={CreditCard} tone="green" label="Paid out" value={inr(totals.paid)} hint="All payouts logged under their names" />
+                    <StatTile icon={HandHeart} tone={totals.pending ? 'orange' : 'gray'} label="Still to pay" value={inr(totals.pending)}
+                        hint={totals.pendingPeople ? `${totals.pendingPeople} ${totals.pendingPeople === 1 ? 'person' : 'people'} waiting` : 'Nobody waiting'}
+                        active={sort === 'pending'} onClick={() => setParam('sort', sort === 'pending' ? null : 'pending')} />
+                    <StatTile icon={AlertTriangle} tone={counts.duplicates || totals.missing ? 'amber' : 'gray'} label="Need a look"
+                        value={dupes.size + totals.missing}
+                        hint={`${dupes.size} possible duplicates · ${totals.missing} without details`}
+                        active={typeFilter === 'duplicates' || mode === 'missing'}
+                        onClick={() => (dupes.size ? setParam('type', typeFilter === 'duplicates' ? null : 'duplicates') : setParam('mode', mode === 'missing' ? null : 'missing'))} />
+                </div>
 
-                {/* Upper Grid: Link Builder Console & Quick Stats */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Registration Link Generator Console */}
-                    <div className="lg:col-span-2 p-6 md:p-8 bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl hover:border-black/20 dark:hover:border-white/20 transition-all">
-                        <div className="flex items-center justify-between mb-4">
-                            <div>
-                                <h3 className="text-lg font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-1 flex items-center gap-2">
-                                    <LinkIcon className="text-neon-blue" size={16} /> targeted link builder
-                                </h3>
-                                <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">
-                                    Generate secure custom URLs for core retainers, partners, or volunteer event gigs
-                                </p>
-                            </div>
-                        </div>
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                    <SearchInput value={q} onChange={(v) => setParam('q', v || null)} placeholder="Name, phone, email, UPI or gig" className="lg:w-80" />
+                    <div className="flex flex-1 flex-wrap items-center gap-2">
+                        <Select value={mode} onChange={(v) => setParam('mode', v === 'all' ? null : v)} label="Payment method" options={MODES} className="min-w-0 flex-1 lg:w-44 lg:flex-none" />
+                        <Select value={sort} onChange={(v) => setParam('sort', v === 'newest' ? null : v)} label="Sort" options={SORTS} className="min-w-0 flex-1 lg:w-40 lg:flex-none" />
+                        <ExportMenu getSpec={exportSpec} />
+                        <ViewToggle value={view} onChange={setView} />
+                    </div>
+                </div>
 
-                        <form onSubmit={handleGenerateLink} className="space-y-6">
-                            {/* Role Cards Selector */}
-                            <div className="space-y-2">
-                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-1">Target Payout Role *</label>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                    {roles.map((role) => {
-                                        const IconComp = role.icon;
-                                        const isActive = builderType === role.id;
-                                        return (
-                                            <button
-                                                key={role.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    setBuilderType(role.id);
-                                                    setSelectedEvent('');
-                                                    setCustomEvent('');
-                                                }}
-                                                className={cn(
-                                                    "flex flex-col text-left p-4 rounded-2xl border transition-all hover:scale-[1.01] active:scale-[0.99] select-none",
-                                                    isActive ? role.activeBg : `bg-white dark:bg-black/40 ${role.border} text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white`
-                                                )}
-                                            >
-                                                <div className={cn("w-8 h-8 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center mb-3 shrink-0", role.color)}>
-                                                    <IconComp size={16} />
-                                                </div>
-                                                <div className="text-[10px] font-black uppercase tracking-wider text-gray-900 dark:text-white leading-tight mb-1">{role.label}</div>
-                                                <div className="text-[8px] font-medium text-gray-500 leading-normal line-clamp-2">{role.desc}</div>
-                                            </button>
-                                        );
-                                    })}
+                <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+                    <SegmentedTabs
+                        value={typeFilter}
+                        onChange={(v) => setParam('type', v === 'all' ? null : v)}
+                        items={[
+                            { value: 'all', label: 'All', count: counts.all },
+                            ...Object.entries(PAYEE_TYPES).filter(([k]) => counts[k] > 0 || typeFilter === k).map(([k, t]) => ({ value: k, label: t.plural, count: counts[k], icon: TYPE_ICON[k] })),
+                            ...(counts.duplicates || typeFilter === 'duplicates' ? [{ value: 'duplicates', label: 'Possible duplicates', count: counts.duplicates, highlight: counts.duplicates > 0, icon: AlertTriangle }] : []),
+                        ]}
+                    />
+                </div>
+
+                {shown.length === 0 ? (
+                    <Card className="rounded-2xl">
+                        <EmptyState
+                            icon={financePayees.length ? Inbox : Users}
+                            title={financePayees.length ? 'No matching payees' : 'No payees yet'}
+                            description={financePayees.length ? 'Try another search or filter.' : 'Send a registration link so people add their own payment details, or add someone yourself.'}
+                            action={financePayees.length ? (filtersActive && <Button variant="secondary" onClick={clearFilters}>Clear filters</Button>) : (
+                                <div className="flex flex-wrap justify-center gap-2">
+                                    <Button variant="accent" onClick={() => setLinkOpen(true)}><LinkIcon size={14} /> Registration link</Button>
+                                    <Button variant="secondary" onClick={() => setEditing({})}><UserPlus size={14} /> Add payee</Button>
                                 </div>
-                            </div>
-
-                            {/* Conditional Event Selection Form Fields */}
-                            <AnimatePresence mode="wait">
-                                {builderType === 'Volunteer' && (
-                                    <motion.div
-                                        key="gig-fields"
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-hidden"
-                                    >
-                                        <div className="space-y-1.5">
-                                            <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-1">Select Event Gig (Optional)</label>
-                                            <div className="relative">
-                                                <select
-                                                    value={selectedEvent}
-                                                    onChange={(e) => {
-                                                        setSelectedEvent(e.target.value);
-                                                        if (e.target.value) setCustomEvent('');
-                                                    }}
-                                                    className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-neon-blue transition-all appearance-none cursor-pointer"
-                                                >
-                                                    <option value="" className="bg-gray-100 dark:bg-zinc-950">-- Select Active Event --</option>
-                                                    {upcomingEvents.map(ev => (
-                                                        <option key={ev.id} value={ev.title} className="bg-gray-100 dark:bg-zinc-950">{ev.title}</option>
-                                                    ))}
-                                                </select>
-                                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-1">Or Specify Custom Gig Title</label>
-                                            <input
-                                                value={customEvent}
-                                                onChange={(e) => {
-                                                    setCustomEvent(e.target.value);
-                                                    if (e.target.value) setSelectedEvent('');
-                                                }}
-                                                placeholder="e.g. Summer Festival 2026 Coordinator"
-                                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-neon-blue transition-all placeholder:text-gray-600"
-                                            />
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-
-                            {/* Generated Output View Block */}
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-4 border-t border-black/10 dark:border-white/5">
-                                <button 
-                                    type="submit" 
-                                    className="h-10 px-8 bg-gradient-to-r from-neon-blue to-blue-600 text-black font-black uppercase tracking-widest text-[9px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-[0_5px_15px_rgba(59,130,246,0.2)] shrink-0"
-                                >
-                                    <LinkIcon size={12} /> {copiedLink ? 'Copied URL!' : 'Forge Provision Link'}
-                                </button>
-                                {generatedLink && (
-                                    <motion.div 
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        className="text-[8px] text-neon-blue bg-neon-blue/5 border border-neon-blue/20 px-4 rounded-xl truncate font-mono select-all flex-1 h-10 flex items-center justify-between gap-4 group"
-                                    >
-                                        <span className="truncate">{generatedLink}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(generatedLink);
-                                                setCopiedLink(true);
-                                                useStore.getState().addToast('Registration link copied.', 'success');
-                                                setTimeout(() => setCopiedLink(false), 2000);
-                                            }}
-                                            className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-colors shrink-0"
-                                        >
-                                            <Copy size={12} className="text-neon-blue" />
-                                        </button>
-                                    </motion.div>
-                                )}
-                            </div>
-                        </form>
-                    </div>
-
-                    {/* Stats summary panel */}
-                    <div className="p-6 md:p-8 bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl hover:border-black/20 dark:hover:border-white/20 transition-all flex flex-col justify-between">
-                        <div>
-                            <h3 className="text-lg font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-1">
-                                registry status
-                            </h3>
-                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-6">
-                                Quick metrics across onboarded payee profiles
-                            </p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-2xl flex flex-col gap-1">
-                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Total Payees</span>
-                                <span className="text-2xl font-mono font-black text-gray-900 dark:text-white">{financePayees.length}</span>
-                            </div>
-                            <div className="p-4 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-2xl flex flex-col gap-1">
-                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Volunteers</span>
-                                <span className="text-2xl font-mono font-black text-neon-green">
-                                    {financePayees.filter(p => p.type === 'Volunteer').length}
-                                </span>
-                            </div>
-                            <div className="p-4 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-2xl flex flex-col gap-1">
-                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Vendors</span>
-                                <span className="text-2xl font-mono font-black text-neon-pink">
-                                    {financePayees.filter(p => p.type === 'Vendor').length}
-                                </span>
-                            </div>
-                            <div className="p-4 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-2xl flex flex-col gap-1">
-                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Core & Artists</span>
-                                <span className="text-2xl font-mono font-black text-neon-blue">
-                                    {financePayees.filter(p => p.type === 'Salary' || p.type === 'Artist').length}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* Filters & Control Console */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-2xl p-4">
-                    <div className="flex flex-col md:flex-row items-center gap-4">
-                        {/* Search Input */}
-                        <div className="relative flex-1 w-full group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-gray-900 dark:group-focus-within:text-white transition-colors" size={14} />
-                            <input 
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Search payees by name, contact info..."
-                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 pl-9 pr-3 outline-none focus:border-white/30 transition-all placeholder:text-gray-600"
-                            />
-                        </div>
-
-                        {/* Payee Type Filter */}
-                        <div className="w-full md:w-48 relative">
-                            <select 
-                                value={typeFilter} 
-                                onChange={(e) => setTypeFilter(e.target.value)}
-                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-white/30 transition-all appearance-none cursor-pointer"
-                            >
-                                <option value="All" className="bg-gray-100 dark:bg-zinc-950">All Types</option>
-                                <option value="Volunteer" className="bg-gray-100 dark:bg-zinc-950">Volunteers</option>
-                                <option value="Vendor" className="bg-gray-100 dark:bg-zinc-950">Vendors</option>
-                                <option value="Salary" className="bg-gray-100 dark:bg-zinc-950">Core Team</option>
-                                <option value="Artist" className="bg-gray-100 dark:bg-zinc-950">Artists</option>
-                            </select>
-                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-                        </div>
-
-                        {/* Payment Mode Filter */}
-                        <div className="w-full md:w-48 relative">
-                            <select 
-                                value={paymentModeFilter} 
-                                onChange={(e) => setPaymentModeFilter(e.target.value)}
-                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-white/30 transition-all appearance-none cursor-pointer"
-                            >
-                                <option value="All" className="bg-gray-100 dark:bg-zinc-950">All Modes</option>
-                                <option value="UPI" className="bg-gray-100 dark:bg-zinc-950">UPI</option>
-                                <option value="Bank Transfer" className="bg-gray-100 dark:bg-zinc-950">Bank Transfer</option>
-                                <option value="Other" className="bg-gray-100 dark:bg-zinc-950">Other Methods</option>
-                            </select>
-                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-                        </div>
-
-                        {/* Clear button */}
-                        <button
-                            onClick={() => {
-                                setSearchTerm('');
-                                setTypeFilter('All');
-                                setPaymentModeFilter('All');
-                            }}
-                            className="w-full md:w-auto h-10 px-5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white rounded-xl transition-all border border-black/10 dark:border-white/10 flex items-center justify-center gap-2 font-black tracking-widest uppercase text-[10px] shrink-0"
-                        >
-                            <X size={12} /> Clear
-                        </button>
-                    </div>
-                </motion.div>
-
-                {/* MOBILE DECK VIEW */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="grid grid-cols-1 gap-4 lg:hidden">
-                    {filteredPayees.length > 0 ? (
-                        filteredPayees.map((payee) => {
-                            const isExpanded = expandedPayeeId === payee.id;
+                            )}
+                        />
+                    </Card>
+                ) : view === 'cards' ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {shown.map(({ p, paid, pending, count, dup }) => {
+                            const m = methodLine(p);
                             return (
-                                <div key={payee.id} className="bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-2xl p-5 hover:bg-white/[0.04] hover:border-black/20 dark:hover:border-white/20 transition-all flex flex-col gap-4 relative overflow-hidden">
-                                    <div className="flex justify-between items-start gap-4">
-                                        <div>
-                                            <h4 className="text-sm font-black text-gray-900 dark:text-white">{payee.name}</h4>
-                                            <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest font-mono select-all block mt-0.5">ID: {payee.id.slice(0, 8)}...</span>
-                                        </div>
-                                        <span className={cn(
-                                            "px-2.5 py-0.5 rounded-full border font-black uppercase tracking-widest text-[8px]",
-                                            payee.type === 'Volunteer' ? 'bg-neon-green/10 border-neon-green/20 text-neon-green' :
-                                            payee.type === 'Vendor' ? 'bg-neon-pink/10 border-neon-pink/20 text-neon-pink' :
-                                            payee.type === 'Salary' ? 'bg-neon-blue/10 border-neon-blue/20 text-neon-blue' :
-                                            'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
-                                        )}>
-                                            {payee.type}
-                                        </span>
-                                    </div>
-                                    
-                                    <div className="space-y-1.5 text-[10px] text-zinc-400 border-t border-black/10 dark:border-white/5 pt-3">
-                                        <div className="flex items-center gap-2 select-all"><Mail size={12} className="text-zinc-500 shrink-0" /> {payee.email}</div>
-                                        <div className="flex items-center gap-2 select-all"><Phone size={12} className="text-zinc-500 shrink-0" /> {payee.phone}</div>
-                                        <div className="flex items-center gap-2 select-all"><CreditCard size={12} className="text-zinc-500 shrink-0" /> {payee.paymentMode}: {payee.destinationDetails || 'N/A'}</div>
-                                    </div>
-
-                                    {payee.notes && (
-                                        <div className="text-[9px] text-zinc-400 leading-normal font-semibold normal-case italic bg-white/[0.01] p-3 rounded-lg border border-black/10 dark:border-white/5 mt-1">
-                                            {payee.notes}
-                                        </div>
-                                    )}
-
-                                    <div className="flex items-center justify-between border-t border-black/10 dark:border-white/5 pt-3 mt-1 gap-4">
-                                        <span className="text-[8px] font-black text-neon-blue uppercase tracking-widest">
-                                            {payee.linkedGig || 'Global Retainer'}
-                                        </span>
-                                        <div className="flex gap-2">
-                                            <button 
-                                                onClick={() => handleCopyDetails(payee.destinationDetails)} 
-                                                className="p-2 text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-colors border border-black/10 dark:border-white/10 rounded-lg bg-gray-100 dark:bg-zinc-950/40 hover:bg-zinc-800"
-                                                title="Copy Payment Address"
-                                            >
-                                                <Copy size={12} />
-                                            </button>
-                                            {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                <button 
-                                                    onClick={() => handleDeletePayee(payee.id)} 
-                                                    className="p-2 text-zinc-400 hover:text-red-500 transition-colors border border-black/10 dark:border-white/10 rounded-lg bg-gray-100 dark:bg-zinc-950/40 hover:bg-red-500/10 hover:border-red-500/30"
-                                                    title="Remove Payee"
-                                                >
-                                                    <Trash2 size={12} />
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })
-                    ) : (
-                        <div className="flex items-center justify-center py-20 bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-2xl">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">No records found</span>
-                        </div>
-                    )}
-                </motion.div>
-
-                {/* DESKTOP TABLE VIEW */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="hidden lg:block overflow-x-auto scrollbar-hide">
-                    <div className="min-w-[1000px] bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl p-0 overflow-hidden">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="border-b border-black/10 dark:border-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 bg-white/[0.02]">
-                                    <th className="p-6">payee name</th>
-                                    <th className="p-6">classification</th>
-                                    <th className="p-6">contact details</th>
-                                    <th className="p-6">payment mode</th>
-                                    <th className="p-6">destination address</th>
-                                    <th className="p-6">linked gig / event</th>
-                                    <th className="p-6">registered date</th>
-                                    <th className="p-6 text-right">actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5 text-[11px] font-bold uppercase tracking-wider">
-                                {filteredPayees.length > 0 ? (
-                                    filteredPayees.map((payee) => {
-                                        const isExpanded = expandedPayeeId === payee.id;
-                                        return (
-                                            <React.Fragment key={payee.id}>
-                                                <tr className={cn(
-                                                    "border-b border-black/10 dark:border-white/5 hover:bg-white/[0.03] transition-all group cursor-pointer",
-                                                    isExpanded && "bg-white/[0.04]"
-                                                )}
-                                                    onClick={() => setExpandedPayeeId(isExpanded ? null : payee.id)}
-                                                >
-                                                    <td className="p-6">
-                                                        <div className="flex items-center gap-2">
-                                                            {isExpanded ? <ChevronUp size={12} className="text-neon-blue" /> : <ChevronDown size={12} className="text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white" />}
-                                                            <div className="text-xs font-black text-gray-900 dark:text-white">{payee.name}</div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-6 text-[9px]">
-                                                        <span className={cn(
-                                                            "px-3 py-1 rounded-full border font-black uppercase tracking-widest text-[8px]",
-                                                            payee.type === 'Volunteer' ? 'bg-neon-green/10 border-neon-green/20 text-neon-green' :
-                                                            payee.type === 'Vendor' ? 'bg-neon-pink/10 border-neon-pink/20 text-neon-pink' :
-                                                            payee.type === 'Salary' ? 'bg-neon-blue/10 border-neon-blue/20 text-neon-blue' :
-                                                            'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
-                                                        )}>
-                                                            {payee.type}
-                                                        </span>
-                                                    </td>
-                                                    <td className="p-6 text-zinc-400 space-y-1 text-[10px]">
-                                                        <div className="flex items-center gap-1.5 lowercase select-all"><Mail size={10} className="text-zinc-500 shrink-0" /> {payee.email}</div>
-                                                        <div className="flex items-center gap-1.5 select-all"><Phone size={10} className="text-zinc-500 shrink-0" /> {payee.phone}</div>
-                                                    </td>
-                                                    <td className="p-6 text-zinc-300 text-[10px]">{payee.paymentMode}</td>
-                                                    <td className="p-6 text-zinc-400">
-                                                        {payee.destinationDetails ? (
-                                                            <div className="flex items-center gap-2 max-w-[240px]" onClick={e => e.stopPropagation()}>
-                                                                <span className="font-mono text-[9px] truncate text-gray-900 dark:text-white select-all">{payee.destinationDetails}</span>
-                                                                <button 
-                                                                    onClick={() => handleCopyDetails(payee.destinationDetails)}
-                                                                    className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 text-zinc-500 rounded hover:text-gray-900 dark:hover:text-white transition-all shrink-0 border border-black/10 dark:border-white/5"
-                                                                    title="Copy Payout Address"
-                                                                >
-                                                                    <Copy size={10} />
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-[8px] text-zinc-700 font-black">N/A</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="p-6 text-neon-blue text-[9px] font-mono select-all">
-                                                        {payee.linkedGig || (payee.type === 'Volunteer' ? 'General gig' : 'N/A')}
-                                                    </td>
-                                                    <td className="p-6 text-zinc-500 font-mono text-[10px]">
-                                                        {payee.createdAt ? new Date(payee.createdAt).toLocaleDateString() : 'N/A'}
-                                                    </td>
-                                                    <td className="p-6 text-right" onClick={e => e.stopPropagation()}>
-                                                        <div className="flex justify-end gap-2">
-                                                            <button 
-                                                                onClick={() => handleCopyDetails(payee.destinationDetails)} 
-                                                                className="p-2 text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-colors border border-black/10 dark:border-white/10 rounded-lg bg-gray-100 dark:bg-zinc-950/40 hover:bg-zinc-800"
-                                                                title="Copy Payment Address"
-                                                            >
-                                                                <Copy size={14} />
-                                                            </button>
-                                                            {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                                <button 
-                                                                    onClick={() => handleDeletePayee(payee.id)} 
-                                                                    className="p-2 text-zinc-400 hover:text-red-500 transition-colors border border-black/10 dark:border-white/10 rounded-lg bg-gray-100 dark:bg-zinc-950/40 hover:bg-red-500/10 hover:border-red-500/30"
-                                                                    title="Remove Payee"
-                                                                >
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                
-                                                {/* Expanded Details Drawer */}
-                                                {isExpanded && (
-                                                    <tr className="bg-gray-100 dark:bg-zinc-950/40 border-b border-black/10 dark:border-white/5">
-                                                        <td colSpan="8" className="p-0">
-                                                            <motion.div
-                                                                initial={{ height: 0, opacity: 0 }}
-                                                                animate={{ height: 'auto', opacity: 1 }}
-                                                                exit={{ height: 0, opacity: 0 }}
-                                                                transition={{ duration: 0.25 }}
-                                                                className="overflow-hidden"
-                                                            >
-                                                                <div className="p-6 grid grid-cols-3 gap-6 text-left border-l-2 border-neon-blue bg-white/[0.01]">
-                                                                    {/* Notes / Bio */}
-                                                                    <div className="space-y-2">
-                                                                        <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                                                                            <FileText size={10} className="text-neon-blue" /> Payee Biography & Notes
-                                                                        </span>
-                                                                        <p className="text-[10px] text-zinc-300 normal-case font-semibold leading-relaxed italic bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/5 p-4 rounded-xl min-h-[90px]">
-                                                                            {payee.notes || "No notes or specific instructions provided for this payee profile."}
-                                                                        </p>
-                                                                    </div>
-                                                                    
-                                                                    {/* Bank details info */}
-                                                                    <div className="space-y-2">
-                                                                        <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                                                                            <CreditCard size={10} className="text-neon-green" /> Payout Credentials
-                                                                        </span>
-                                                                        <div className="bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/5 p-4 rounded-xl space-y-2 text-[10px] min-h-[90px] flex flex-col justify-center">
-                                                                            <div className="flex justify-between items-center">
-                                                                                <span className="text-zinc-500 font-bold uppercase">Payment Mode</span>
-                                                                                <span className="text-gray-900 dark:text-white font-black">{payee.paymentMode}</span>
-                                                                            </div>
-                                                                            <div className="flex justify-between items-start gap-4">
-                                                                                <span className="text-zinc-500 font-bold uppercase shrink-0">Address</span>
-                                                                                <span className="text-gray-900 dark:text-white font-mono break-all font-semibold select-all text-right">{payee.destinationDetails || 'N/A'}</span>
-                                                                            </div>
-                                                                            {payee.bankDetails && (
-                                                                                <>
-                                                                                    <div className="flex justify-between items-center">
-                                                                                        <span className="text-zinc-500 font-bold uppercase">Bank Name</span>
-                                                                                        <span className="text-gray-900 dark:text-white font-black">{payee.bankDetails.bankName}</span>
-                                                                                    </div>
-                                                                                    <div className="flex justify-between items-center">
-                                                                                        <span className="text-zinc-500 font-bold uppercase">Bank IFSC</span>
-                                                                                        <span className="text-gray-900 dark:text-white font-mono font-black">{payee.bankDetails.ifscCode}</span>
-                                                                                    </div>
-                                                                                </>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* Record info */}
-                                                                    <div className="space-y-2">
-                                                                        <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                                                                            <Clock size={10} className="text-neon-pink" /> Record Metadata
-                                                                        </span>
-                                                                        <div className="bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/5 p-4 rounded-xl space-y-2 text-[10px] min-h-[90px] flex flex-col justify-center">
-                                                                            <div className="flex justify-between items-center">
-                                                                                <span className="text-zinc-500 font-bold uppercase">Registry ID</span>
-                                                                                <span className="text-gray-900 dark:text-white font-mono text-[9px] select-all">{payee.id}</span>
-                                                                            </div>
-                                                                            <div className="flex justify-between items-center">
-                                                                                <span className="text-zinc-500 font-bold uppercase">Onboarded</span>
-                                                                                <span className="text-gray-900 dark:text-white font-semibold">{payee.createdAt ? new Date(payee.createdAt).toLocaleString('en-IN') : 'N/A'}</span>
-                                                                            </div>
-                                                                            <div className="flex justify-between items-center">
-                                                                                <span className="text-zinc-500 font-bold uppercase">Gig Scope</span>
-                                                                                <span className="text-neon-blue font-black uppercase tracking-wider text-[9px]">{payee.linkedGig || 'Global Retainer'}</span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </motion.div>
-                                                        </td>
-                                                    </tr>
-                                                )}
-                                            </React.Fragment>
-                                        );
-                                    })
-                                ) : (
-                                    <tr>
-                                        <td colSpan="8" className="p-12">
-                                            <div className="flex items-center justify-center">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">No records found</span>
+                                <Card key={p.id} className="relative flex flex-col rounded-2xl p-4 transition-colors hover:border-black/15 dark:hover:border-white/15">
+                                    <div className="flex items-start gap-3">
+                                        <Avatar name={p.name} size={44} />
+                                        <button type="button" onClick={() => setParam('id', p.id)} className="min-w-0 flex-1 text-left after:absolute after:inset-0">
+                                            <p className="truncate text-[15px] font-bold">{p.name || 'Unnamed payee'}</p>
+                                            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                                {typeBadge(p)}
+                                                {dup && <Badge tone="amber">Possible duplicate</Badge>}
                                             </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                        </button>
+                                        <div className="relative z-10 -mr-1 -mt-1">{actionsMenu(p)}</div>
+                                    </div>
+                                    <div className="mt-3 space-y-1 text-[12.5px] text-gray-500 dark:text-zinc-400">
+                                        {p.linkedGig && <p className="truncate">Gig: <span className="font-semibold text-gray-700 dark:text-zinc-200">{p.linkedGig}</span></p>}
+                                        {(p.phone || p.email) && <p className="truncate">{[p.phone, p.email].filter(Boolean).join(' · ')}</p>}
+                                    </div>
+                                    <div className={cn('relative z-10 mt-3 flex items-center gap-2 rounded-xl px-3 py-2', m.missing ? 'bg-amber-500/[0.07] dark:bg-amber-400/[0.07]' : 'bg-black/[0.03] dark:bg-white/[0.04]')}>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-[11.5px] font-bold text-gray-500">{m.label}</p>
+                                            <p className={cn('truncate font-mono text-[12.5px]', m.missing && 'font-sans text-amber-700 dark:text-amber-300')}>{m.value}</p>
+                                        </div>
+                                        {!m.missing && (
+                                            <button type="button" onClick={() => copyText(p.destinationDetails, 'Payment details')} aria-label="Copy payment details" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-black/5 hover:text-gray-900 dark:hover:bg-white/10 dark:hover:text-white">
+                                                <Copy size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="mt-3 flex items-end justify-between gap-3 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+                                        <div>
+                                            <p className="text-[11.5px] font-bold text-gray-500">Paid so far</p>
+                                            <p className="text-[17px] font-extrabold tabular-nums">{inr(paid)}</p>
+                                        </div>
+                                        <div className="text-right text-[12px] text-gray-500">
+                                            {pending > 0 ? <Badge tone="orange">{inr(pending)} to pay</Badge> : <span>{count} {count === 1 ? 'payout' : 'payouts'}</span>}
+                                            <p className="mt-0.5">Added {formatDay(p.createdAt) || '—'}</p>
+                                        </div>
+                                    </div>
+                                </Card>
+                            );
+                        })}
                     </div>
-                </motion.div>
+                ) : (
+                    <Card className="overflow-hidden rounded-2xl">
+                        <div className="hidden grid-cols-[minmax(0,1.6fr)_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.8fr)_auto] gap-4 border-b border-black/[0.06] px-5 py-2.5 text-[11px] font-bold text-gray-500 dark:border-white/[0.06] xl:grid">
+                            <span>Payee</span><span>Payment details</span><span>Contact</span><span className="text-right">Paid</span><span className="w-10" />
+                        </div>
+                        <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                            {shown.map(({ p, paid, pending, dup }) => {
+                                const m = methodLine(p);
+                                return (
+                                    <li key={p.id} className="relative transition-colors hover:bg-black/[0.015] dark:hover:bg-white/[0.02]">
+                                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-3 sm:px-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.8fr)_auto] xl:gap-4">
+                                            <button type="button" onClick={() => setParam('id', p.id)} className="flex min-w-0 items-center gap-3 text-left after:absolute after:inset-0">
+                                                <Avatar name={p.name} size={36} />
+                                                <span className="min-w-0">
+                                                    <span className="flex items-center gap-2">
+                                                        <span className="truncate text-[14.5px] font-bold">{p.name || 'Unnamed payee'}</span>
+                                                        {dup && <AlertTriangle size={13} className="shrink-0 text-amber-500" aria-label="Possible duplicate" />}
+                                                    </span>
+                                                    <span className="mt-0.5 flex items-center gap-1.5">
+                                                        {typeBadge(p)}
+                                                        <span className="truncate text-[12px] text-gray-500 xl:hidden">{m.missing ? 'No payment details' : m.value}</span>
+                                                    </span>
+                                                </span>
+                                            </button>
+                                            <div className="flex items-center gap-1 xl:hidden">
+                                                <span className="text-right">
+                                                    <span className="block text-[14px] font-extrabold tabular-nums">{inr(paid)}</span>
+                                                    {pending > 0 && <span className="block text-[11px] font-semibold text-orange-600 dark:text-orange-300">{inr(pending)} to pay</span>}
+                                                </span>
+                                                <span className="relative z-10">{actionsMenu(p)}</span>
+                                            </div>
+                                            <div className="hidden min-w-0 items-center gap-1 xl:flex">
+                                                <div className="min-w-0">
+                                                    <p className="text-[11.5px] font-bold text-gray-500">{m.label}</p>
+                                                    <p className={cn('truncate font-mono text-[12.5px]', m.missing && 'font-sans text-amber-700 dark:text-amber-300')}>{m.value}</p>
+                                                </div>
+                                                {!m.missing && (
+                                                    <button type="button" onClick={() => copyText(p.destinationDetails, 'Payment details')} aria-label="Copy payment details" className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-black/5 hover:text-gray-900 dark:hover:bg-white/10 dark:hover:text-white">
+                                                        <Copy size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="hidden min-w-0 text-[12.5px] text-gray-500 xl:block">
+                                                <p className="truncate">{p.phone || '—'}</p>
+                                                <p className="truncate">{p.email || ''}</p>
+                                            </div>
+                                            <div className="hidden text-right xl:block">
+                                                <p className="text-[14px] font-extrabold tabular-nums">{inr(paid)}</p>
+                                                {pending > 0 && <p className="text-[11.5px] font-semibold text-orange-600 dark:text-orange-300">{inr(pending)} to pay</p>}
+                                            </div>
+                                            <div className="relative z-10 hidden xl:block">{actionsMenu(p)}</div>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </Card>
+                )}
+                {rows.length > limit && (
+                    <div className="text-center">
+                        <Button variant="ghost" onClick={() => setLimit(l => l + PAGE)}>Show {Math.min(PAGE, rows.length - limit)} more of {rows.length - limit}</Button>
+                    </div>
+                )}
             </div>
+
+            <PayeeDetailSheet
+                open={Boolean(openPayee)}
+                payee={openPayee}
+                onClose={() => setParam('id', null)}
+                payees={financePayees}
+                spends={spends}
+                canDelete={canDelete}
+                onEdit={(p) => setEditing(p)}
+                onDelete={(p) => setDeleting(p)}
+                onOpenPayee={(id) => setParam('id', id)}
+            />
+            <PayeeEditorSheet
+                open={Boolean(editing)}
+                payee={editing?.id ? editing : null}
+                payees={financePayees}
+                onClose={() => setEditing(null)}
+                onSaved={(id) => id && !editing?.id && setParam('id', id)}
+                onOpenPayee={(id) => { setEditing(null); setParam('id', id); }}
+            />
+            <RegistrationLinkSheet open={linkOpen} onClose={() => setLinkOpen(false)} events={upcomingEvents} />
+            <ConfirmDialog
+                open={Boolean(deleting)}
+                onClose={() => setDeleting(null)}
+                title={`Delete ${deleting?.name || 'this payee'}?`}
+                body={(
+                    <>
+                        <p>Their saved contact and payment details will be removed. You can't undo this.</p>
+                        <p className="mt-2 text-gray-500">Payouts already logged in spends stay as they are.</p>
+                    </>
+                )}
+                onConfirm={async () => {
+                    const id = deleting.id;
+                    await deleteFinancePayee(id);
+                    if (openId === id) setParam('id', null);
+                    useStore.getState().addToast?.('Payee deleted.', 'success');
+                }}
+            />
         </AdminCommunityHubLayout>
     );
 };

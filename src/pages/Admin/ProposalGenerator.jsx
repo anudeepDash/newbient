@@ -1,5185 +1,600 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { createPortal } from 'react-dom';
-import { useNavigate, Link, useParams } from 'react-router-dom';
-import Plus from 'lucide-react/dist/esm/icons/plus';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Save from 'lucide-react/dist/esm/icons/save';
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
-import Download from 'lucide-react/dist/esm/icons/download';
-import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
-import X from 'lucide-react/dist/esm/icons/x';
-import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
-import Send from 'lucide-react/dist/esm/icons/send';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
+import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Send from 'lucide-react/dist/esm/icons/send';
+import Save from 'lucide-react/dist/esm/icons/save';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
-import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
-import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
-import Target from 'lucide-react/dist/esm/icons/target';
-import Users from 'lucide-react/dist/esm/icons/users';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
-import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
-import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
-import Settings from 'lucide-react/dist/esm/icons/settings';
-import Building2 from 'lucide-react/dist/esm/icons/building-2';
-import Layers from 'lucide-react/dist/esm/icons/layers';
-import ImageIcon from 'lucide-react/dist/esm/icons/image';
-import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
-import Undo2 from 'lucide-react/dist/esm/icons/undo-2';
-import Upload from 'lucide-react/dist/esm/icons/upload';
-import Paperclip from 'lucide-react/dist/esm/icons/paperclip';
-import LinkIcon from 'lucide-react/dist/esm/icons/link';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Cpu from 'lucide-react/dist/esm/icons/cpu';
-import PenTool from 'lucide-react/dist/esm/icons/pen-tool';
+import Download from 'lucide-react/dist/esm/icons/download';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import Lock from 'lucide-react/dist/esm/icons/lock';
-import Stamp from 'lucide-react/dist/esm/icons/stamp';
-import GripVertical from 'lucide-react/dist/esm/icons/grip-vertical';
-import Pencil from 'lucide-react/dist/esm/icons/pencil';
-import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
-import Check from 'lucide-react/dist/esm/icons/check';
-import Minus from 'lucide-react/dist/esm/icons/minus';
-import Maximize2 from 'lucide-react/dist/esm/icons/maximize-2';
-import Minimize2 from 'lucide-react/dist/esm/icons/minimize-2';
-import Music from 'lucide-react/dist/esm/icons/music';
-import Smile from 'lucide-react/dist/esm/icons/smile';
-import Trophy from 'lucide-react/dist/esm/icons/trophy';
-import Award from 'lucide-react/dist/esm/icons/award';
-import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 import Copy from 'lucide-react/dist/esm/icons/copy';
-import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
-import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import Users from 'lucide-react/dist/esm/icons/users';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import Target from 'lucide-react/dist/esm/icons/target';
+import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
+import Layers from 'lucide-react/dist/esm/icons/layers';
+import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
+import Building2 from 'lucide-react/dist/esm/icons/building-2';
+import PenTool from 'lucide-react/dist/esm/icons/pen-tool';
+import Paperclip from 'lucide-react/dist/esm/icons/paperclip';
+import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import ScrollText from 'lucide-react/dist/esm/icons/scroll-text';
 
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
-import SignatureModal from '../../components/ui/SignatureModal';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../../lib/firebase';
 import { cn } from '../../lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
-import StudioRichEditor, { MultiPageRichEditor } from '../../components/ui/StudioRichEditor';
-import { generateFullDocument, reviseDocument, refineFieldContent } from '../../lib/ai';
-import DocumentSeal from '../../components/ui/DocumentSeal';
-import ProposalDocumentRenderer from '../../components/ui/ProposalDocumentRenderer';
-import { DEFAULT_V2_PROPOSAL_DATA, getV2PaginatedPages, normalizeProposalData } from '../../lib/proposalTemplateV2';
+import { isProposalClosed, nextProposalNumber, proposalState, PROPOSAL_STATE_LABEL, PROPOSAL_STATUS } from '../../lib/proposals';
+import { useAccent } from '../../components/admin/theme';
+import { Badge, Button, EmptyState } from '../../components/admin/ui';
+import Sheet from '../../components/admin/Sheet';
 import {
-    V2CoverEditor,
-    V2StrategyEditor,
-    V2BlueprintEditor,
-    V2DeliverablesEditor,
-    V2PricingEditor,
-    V2DeepDiveEditor,
-    V2ClosingEditor,
-    ToggleSwitch
+    V2CoverEditor, V2StrategyEditor, V2BlueprintEditor, V2DeliverablesEditor, V2PricingEditor, V2DeepDiveEditor, V2ClosingEditor,
 } from '../../components/admin/V2ProposalEditorSections';
+import {
+    LegacyCoverEditor, LegacyStrategyEditor, LegacyScopeEditor, LegacyDeliverablesEditor, LegacyPricingEditor, LegacyPaymentEditor,
+} from '../../components/admin/proposals/builder/LegacySections';
+import { ClientSection, DetailsSection, CustomPagesSection, SignaturesSection, AttachmentsSection } from '../../components/admin/proposals/builder/CommonSections';
+import ReviewSection from '../../components/admin/proposals/builder/ReviewSection';
+import PreviewPane from '../../components/admin/proposals/builder/PreviewPane';
+import { AiSheet, RefineSheet } from '../../components/admin/proposals/builder/AiSheet';
+import { exportProposalPdf } from '../../components/admin/proposals/builder/exportPdf';
+import {
+    CLIENT_OWNED_FIELDS, applyAiDraft, applyRevision, aiItems, checkBeforeSharing, computeTotals, contentForAi, getProposalPages,
+    isPlaceholderItem, isV2Proposal, loadForEditing, newProposalData,
+} from '../../components/admin/proposals/builder/model';
 
-// Markdown-like formatting toolbar for textareas — defined outside to prevent remount on parent re-render
+/*
+ * Proposal builder (/admin/create-proposal and /admin/edit-proposal/:id).
+ *
+ * New proposals use the 8-page "v2" paper; older proposals keep the classic
+ * paper they were made with. Changes save automatically a few seconds after
+ * you stop typing. Accepted or declined proposals are locked so the version
+ * the client answered stays as it was.
+ */
 
-    // Render markdown-formatted text into styled JSX for the document preview
-    const inlineFmt = (text) => {
-        if (!text) return '';
-        return text
-            .replace(/\*\*(.*?)\*\*/g, '<strong class="font-black">$1</strong>')
-            .replace(/__(.*?)__/g, '<strong class="font-black">$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-            .replace(/_(.*?)_/g, '<em class="italic">$1</em>');
-    };
-
-    const htmlToPlainText = (html) => {
-        if (!html) return '';
-        if (!html.includes('<') || !html.includes('>')) return html;
-        let text = html;
-        text = text.replace(/<\/(p|div|li|h1|h2|h3|h4|h5|h6|ul|ol)>/gi, '\n');
-        text = text.replace(/<br\s*\/?>/gi, '\n');
-        text = text.replace(/<[^>]+>/g, '');
-        text = text.replace(/&nbsp;|\u00a0/g, ' ');
-        text = text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-        return text;
-    };
-
-    const getHtmlBlocks = (html) => {
-        const regex = /<(p|div|ul|ol|h[1-6])\b[^>]*?>([\s\S]*?)<\/\1>/gi;
-        const blocks = [];
-        let match;
-        while ((match = regex.exec(html)) !== null) {
-            blocks.push(match[0]);
-        }
-        if (blocks.length === 0) return [html];
-        return blocks;
-    };
-
-    const processHtmlHeadings = (html) => {
-        if (!html) return html;
-        return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
-            const level = hashes.length;
-            const headingClass = level === 1
-                ? "text-[18px] font-black text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
-                : level === 2
-                ? "text-[15px] font-bold text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
-                : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
-            const headingTag = `h${Math.min(level + 1, 6)}`;
-            return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
-        });
-    };
-
-const isHtmlEmpty = (html) => {
-    if (!html) return true;
-    const clean = String(html).replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
-    return clean.length === 0;
-};
-
-const estimateBlockHeight = (rawText) => {
-    if (!rawText) return 0;
-    const isHtml = rawText.includes('<') && rawText.includes('>');
-    
-    const estimateTextNodeHeight = (text) => {
-        if (!text) return 0;
-        const paragraphs = text.split('\n');
-        let h = 0;
-        paragraphs.forEach(p => {
-            const trimmed = p.trim();
-            if (!trimmed) {
-                h += 28; // Empty paragraph height (1.2rem + margin)
-            } else if (trimmed.match(/^[-*_]{3,}$/)) {
-                h += 40; // Horizontal rule
-            } else {
-                const headingMatch = trimmed.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
-                if (headingMatch) {
-                    const level = headingMatch[1].length;
-                    const hText = headingMatch[2];
-                    const lineCount = Math.max(1, Math.ceil(hText.length / 85));
-                    h += level <= 2 ? (lineCount * 22 + 28) : (lineCount * 18 + 16);
-                } else if (trimmed.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
-                    const liText = trimmed.replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, '');
-                    const lineCount = Math.max(1, Math.ceil(liText.length / 90));
-                    h += (lineCount * 20) + 4;
-                } else {
-                    const lineCount = Math.max(1, Math.ceil(trimmed.length / 95));
-                    h += (lineCount * 21) + 8;
-                }
-            }
-        });
-        return h;
-    };
-
-    if (!isHtml) {
-        return estimateTextNodeHeight(rawText);
-    }
-
-    try {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(`<div>${rawText}</div>`, 'text/html');
-        const container = doc.body.firstElementChild || doc.body;
-        let totalH = 0;
-
-        const processNode = (node) => {
-            if (node.nodeType === Node.TEXT_NODE) {
-                const text = node.textContent.trim();
-                if (text) {
-                    totalH += estimateTextNodeHeight(text);
-                }
-                return;
-            }
-
-            if (node.nodeType !== Node.ELEMENT_NODE) return;
-
-            const tag = node.tagName.toLowerCase();
-            if (tag === 'p' || tag === 'div') {
-                const html = node.innerHTML.trim();
-                if (!html || html === '<br>' || html === '<br/>' || html === '<br />') {
-                    totalH += 28;
-                } else {
-                    const parts = html.split(/<br\s*\/?>/gi);
-                    parts.forEach((part, partIdx) => {
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = part;
-                        const text = tempDiv.textContent.trim();
-                        if (text) {
-                            const lineCount = Math.max(1, Math.ceil(text.length / 95));
-                            totalH += (lineCount * 21);
-                        } else {
-                            if (partIdx > 0 || parts.length > 1) {
-                                totalH += 21; // Empty line via br
-                            }
-                        }
-                    });
-                    totalH += 8; // Margin bottom
-                }
-            } else if (tag.startsWith('h') && tag.length === 2) {
-                const level = parseInt(tag.substring(1)) || 2;
-                const text = node.textContent.trim();
-                const lineCount = Math.max(1, Math.ceil(text.length / 85));
-                totalH += level <= 2 ? (lineCount * 22 + 28) : (lineCount * 18 + 16);
-            } else if (tag === 'ul' || tag === 'ol') {
-                totalH += 12; // Wrapper margin
-                const lis = node.querySelectorAll('li');
-                if (lis.length > 0) {
-                    lis.forEach(li => {
-                        const liText = li.textContent.trim();
-                        const lineCount = Math.max(1, Math.ceil(liText.length / 90));
-                        totalH += (lineCount * 20) + 4;
-                    });
-                } else {
-                    const text = node.textContent.trim();
-                    const lineCount = Math.max(1, Math.ceil(text.length / 90));
-                    totalH += (lineCount * 20) + 4;
-                }
-            } else if (tag === 'br') {
-                totalH += 21;
-            } else {
-                const hasBlockChildren = Array.from(node.children).some(c => 
-                    ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol'].includes(c.tagName.toLowerCase())
-                );
-                if (hasBlockChildren) {
-                    Array.from(node.childNodes).forEach(processNode);
-                } else {
-                    const text = node.textContent.trim();
-                    if (text) {
-                        const lineCount = Math.max(1, Math.ceil(text.length / 95));
-                        totalH += (lineCount * 21) + 8;
-                    }
-                }
-            }
-        };
-
-        Array.from(container.childNodes).forEach(processNode);
-        return totalH;
-    } catch (e) {
-        console.error("HTML estimation failed, fallback:", e);
-        return estimateTextNodeHeight(htmlToPlainText(rawText));
-    }
-};
-
-const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
-    if (!rawText) return [''];
-    
-    // First, split by manual page breaks
-    const pageBreakRegex = /<div[^>]*class="[^"]*page-break[^"]*"[^>]*><\/div>/gi;
-    const manualPages = rawText.split(pageBreakRegex);
-    
-    const finalPages = [];
-    
-    const splitSinglePageByHeight = (pageContent) => {
-        if (!pageContent) return [''];
-        if (estimateBlockHeight(pageContent) <= maxPageHeight) {
-            return [pageContent];
-        }
-        
-        const isHtml = pageContent.includes('<') && pageContent.includes('>');
-        
-        if (!isHtml) {
-            const lines = pageContent.split('\n');
-            const pages = [];
-            let currentPageText = '';
-            
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const testText = currentPageText ? currentPageText + '\n' + line : line;
-                if (estimateBlockHeight(testText) > maxPageHeight) {
-                    if (currentPageText) {
-                        pages.push(currentPageText);
-                        currentPageText = line;
-                    } else {
-                        pages.push(line);
-                        currentPageText = '';
-                    }
-                } else {
-                    currentPageText = testText;
-                }
-            }
-            if (currentPageText) {
-                pages.push(currentPageText);
-            }
-            return pages;
-        }
-        
-        try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(`<div>${pageContent}</div>`, 'text/html');
-            const container = doc.body.firstElementChild || doc.body;
-            const blocks = Array.from(container.childNodes);
-            
-            const pages = [];
-            let currentPageDiv = document.createElement('div');
-            
-            for (let i = 0; i < blocks.length; i++) {
-                const block = blocks[i].cloneNode(true);
-                const testDiv = currentPageDiv.cloneNode(true);
-                testDiv.appendChild(block.cloneNode(true));
-                
-                if (estimateBlockHeight(testDiv.innerHTML) > maxPageHeight) {
-                    const blockTag = block.nodeType === Node.ELEMENT_NODE ? block.tagName.toLowerCase() : '';
-                    if (blockTag === 'p' || blockTag === 'div') {
-                        const html = block.innerHTML;
-                        const brParts = html.split(/<br\s*\/?>/gi);
-                        
-                        if (brParts.length > 1) {
-                            let partDiv = document.createElement(blockTag);
-                            for (let j = 0; j < brParts.length; j++) {
-                                const part = brParts[j];
-                                const lineTestDiv = currentPageDiv.cloneNode(true);
-                                const lineTestBlock = partDiv.cloneNode(true);
-                                if (j > 0) lineTestBlock.innerHTML += '<br>' + part;
-                                else lineTestBlock.innerHTML = part;
-                                lineTestDiv.appendChild(lineTestBlock);
-                                
-                                if (estimateBlockHeight(lineTestDiv.innerHTML) > maxPageHeight) {
-                                    if (currentPageDiv.innerHTML.trim()) {
-                                        pages.push(currentPageDiv.innerHTML);
-                                    }
-                                    currentPageDiv = document.createElement('div');
-                                    partDiv = document.createElement(blockTag);
-                                    partDiv.innerHTML = part;
-                                    currentPageDiv.appendChild(partDiv);
-                                } else {
-                                    partDiv.innerHTML = lineTestBlock.innerHTML;
-                                }
-                            }
-                            if (partDiv.innerHTML.trim()) {
-                                if (currentPageDiv.innerHTML.indexOf(partDiv.outerHTML) === -1) {
-                                    currentPageDiv.appendChild(partDiv);
-                                }
-                            }
-                            continue;
-                        }
-                    }
-                    
-                    if (currentPageDiv.innerHTML.trim()) {
-                        pages.push(currentPageDiv.innerHTML);
-                    }
-                    currentPageDiv = document.createElement('div');
-                    currentPageDiv.appendChild(block);
-                } else {
-                    currentPageDiv.appendChild(block);
-                }
-            }
-            if (currentPageDiv.innerHTML.trim()) {
-                pages.push(currentPageDiv.innerHTML);
-            }
-            return pages;
-        } catch (e) {
-            console.error("Error splitting HTML by height:", e);
-            return [pageContent];
-        }
-    };
-    
-    manualPages.forEach(p => {
-        const subPages = splitSinglePageByHeight(p);
-        finalPages.push(...subPages);
-    });
-    
-    return finalPages;
-};
-
-    const renderChatMessage = (text) => {
-        if (!text) return null;
-        const lines = text.split('\n');
-        const elements = [];
-        let i = 0;
-        
-        const formatInline = (t) => {
-            if (!t) return '';
-            return t
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>');
-        };
-
-        while (i < lines.length) {
-            const line = lines[i];
-            if (line.trim() === '') {
-                elements.push(<div key={`spacer-${i}`} className="h-1.5" />);
-                i++;
-                continue;
-            }
-
-            const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
-            if (headingMatch) {
-                const level = headingMatch[1].length;
-                const headingText = headingMatch[2];
-                const sizeClass = level === 1 ? "text-[13px] font-bold" : level === 2 ? "text-[12px] font-bold" : "text-[11px] font-semibold text-zinc-400";
-                elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-gray-900 dark:text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
-            } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
-                const items = [];
-                while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
-                    items.push(lines[i].replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, '').trim());
-                    i++;
-                }
-                elements.push(
-                    <ul key={`ul-${i}`} className="list-disc ml-4 my-1.5 space-y-1 text-zinc-300">
-                        {items.map((item, j) => (
-                            <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
-                        ))}
-                    </ul>
-                );
-                continue;
-            } else if (line.match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
-                const items = [];
-                while (i < lines.length && lines[i].match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
-                    items.push(lines[i].replace(/^\d+\.(?:\s|&nbsp;|\u00a0)+/, '').trim());
-                    i++;
-                }
-                elements.push(
-                    <ol key={`ol-${i}`} className="list-decimal ml-4 my-1.5 space-y-1 text-zinc-300">
-                        {items.map((item, j) => (
-                            <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
-                        ))}
-                    </ol>
-                );
-                continue;
-            } else {
-                elements.push(<p key={i} className="mb-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatInline(line) }} />);
-            }
-            i++;
-        }
-        return <div className="space-y-0.5">{elements}</div>;
-    };
-
-    const renderFormatted = (text, baseClass = '') => {
-        if (!text) return null;
-        const rawLines = text.split('\n');
-        const lines = [];
-        rawLines.forEach(rl => {
-            const parts = rl.split(/\s(?=\d+\.\s)/);
-            if (parts.length > 1) lines.push(...parts);
-            else lines.push(rl);
-        });
-
-        const elements = [];
-        let i = 0;
-        while (i < lines.length) {
-            const line = lines[i].trim();
-            if (!line && i < lines.length - 1) {
-                const lastElement = elements[elements.length - 1];
-                const isLastSpacer = lastElement && lastElement.key && String(lastElement.key).startsWith('spacer-');
-                if (!isLastSpacer) {
-                    elements.push(<div key={`spacer-${i}`} className="h-3" />);
-                }
-                i++;
-                continue;
-            }
-
-            if (line.match(/^[-*_]{3,}$/)) {
-                elements.push(<div key={`hr-${i}`} className="h-[1.5px] bg-white dark:bg-black/10 my-8 w-full" />);
-                i++;
-                continue;
-            }
-
-            const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
-            if (headingMatch) {
-                const level = headingMatch[1].length;
-                const headingText = headingMatch[2];
-                const headingClass = level === 1
-                    ? "text-[18px] font-black text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
-                    : level === 2
-                    ? "text-[15px] font-bold text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
-                    : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
-                const headingTag = level === 1 ? 'h2' : level === 2 ? 'h3' : 'h4';
-                const Tag = headingTag;
-                elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: inlineFmt(headingText) }} />);
-            } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
-                const items = [];
-                while (i < lines.length && lines[i].trim().match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
-                    items.push(lines[i].trim().replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, ''));
-                    i++;
-                }
-                elements.push(
-                    <div key={`ul-${i}`} className="pl-4 space-y-1.5 my-3">
-                        {items.map((item, j) => (
-                            <div key={j} className="flex items-start gap-3">
-                                <span className="text-neon-green mt-[7px] text-[8px] select-none shrink-0">●</span>
-                                <span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />
-                            </div>
-                        ))}
-                    </div>
-                );
-                continue;
-            } else if (line.match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
-                const items = [];
-                while (i < lines.length && lines[i].trim().match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
-                    const l = lines[i].trim();
-                    const match = l.match(/^(\d+)\.(?:\s|&nbsp;|\u00a0)+(.*)/);
-                    if (match) {
-                        items.push({ num: match[1], text: match[2].trim() });
-                    } else {
-                        items.push({ num: '•', text: l.replace(/^\d+\.(?:\s|&nbsp;|\u00a0)+/, '').trim() });
-                    }
-                    i++;
-                }
-                elements.push(
-                    <div key={`ol-${i}`} className="pl-4 space-y-2 my-4">
-                        {items.map((item, j) => (
-                            <div key={j} className="flex items-start gap-3">
-                                <span className="text-[11px] font-black text-gray-600 dark:text-gray-400 mt-0.5 w-6 shrink-0">{item.num}.</span>
-                                <span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item.text) }} />
-                            </div>
-                        ))}
-                    </div>
-                );
-                continue;
-            } else if (line) {
-                elements.push(<p key={i} className={cn("text-[13px] font-medium text-black leading-[1.9] text-justify", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
-            }
-            i++;
-        }
-        return <div>{elements}</div>;
-    };
-
-    const renderContent = (content, baseClass = '') => {
-        if (!content) return null;
-        const isHtml = content.includes('<') && content.includes('>');
-        
-        if (isHtml) {
-            return (
-                <div 
-                    className={cn("article-content", baseClass)} 
-                    dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} 
-                />
-            );
-        }
-        
-        return renderFormatted(content, baseClass);
-    };
-
-
-const defaultColumns = [
-    { key: 'description', label: 'Resource Inventory', type: 'text' },
-    { key: 'qty', label: 'Qty', type: 'number' },
-    { key: 'price', label: 'Amount (INR)', type: 'amount' }
+// Sections in the order you'd fill them. `page` is the preview page to show.
+const V2_SECTIONS = [
+    { id: 'client', label: 'Client', icon: Users, desc: 'Who it is for and how to reach them', page: 'v2-cover' },
+    { id: 'details', label: 'Number & brand', icon: FileText, desc: 'Proposal number, validity and logo', page: 'v2-cover' },
+    { id: 'cover', label: 'Campaign & cover', icon: ImageIcon, desc: 'Project name and the cover page', page: 'v2-cover' },
+    { id: 'strategy', label: 'Strategy', icon: Target, desc: 'Executive summary and objective', page: 'v2-executive' },
+    { id: 'plan', label: 'Plan & timeline', icon: ClipboardList, desc: 'How you will execute, step by step', page: 'v2-blueprint-1' },
+    { id: 'deliverables', label: 'Deliverables', icon: Layers, desc: 'What the client gets and when', page: 'v2-deliverables' },
+    { id: 'pricing', label: 'Pricing & payment', icon: CreditCard, desc: 'Prices, GST and payment terms', page: 'v2-commercials' },
+    { id: 'deepdive', label: 'City deep-dive', icon: Building2, desc: 'The lead market in detail', page: 'v2-deepdive' },
+    { id: 'terms', label: 'Terms & pages', icon: ScrollText, desc: 'Terms and conditions and extra pages', page: 'v2-custom' },
+    { id: 'sign', label: 'Closing & signing', icon: PenTool, desc: 'Next steps, acceptance, signature and seal', page: 'v2-closing' },
+    { id: 'files', label: 'Attachments', icon: Paperclip, desc: 'Files and links for the client', page: null },
+    { id: 'review', label: 'Review & send', icon: Send, desc: 'Check it and send it', page: null },
 ];
 
-const COLUMN_TYPES = [
-    { value: 'text',   label: 'Text',   icon: 'T' },
-    { value: 'number', label: 'Number', icon: '#' },
-    { value: 'amount', label: 'Amount', icon: '₹' },
+const LEGACY_SECTIONS = [
+    { id: 'client', label: 'Client', icon: Users, desc: 'Who it is for and how to reach them', page: 'cover' },
+    { id: 'details', label: 'Number & brand', icon: FileText, desc: 'Proposal number, validity and logo', page: 'cover' },
+    { id: 'cover', label: 'Campaign & cover', icon: ImageIcon, desc: 'Project name and the cover note', page: 'cover' },
+    { id: 'strategy', label: 'Strategy', icon: Target, desc: 'Executive summary and objective', page: 'strategy' },
+    { id: 'scope', label: 'Scope of work', icon: ClipboardList, desc: 'What the work covers', page: 'scope' },
+    { id: 'deliverables', label: 'Deliverables', icon: Layers, desc: 'What you deliver and when', page: 'proposal' },
+    { id: 'pricing', label: 'Price table', icon: Briefcase, desc: 'Line items and columns', page: 'table' },
+    { id: 'payment', label: 'Payment & terms', icon: CreditCard, desc: 'GST, advance, terms and bank details', page: 'commercials' },
+    { id: 'terms', label: 'Extra pages', icon: ScrollText, desc: 'More pages anywhere in the document', page: 'custom' },
+    { id: 'sign', label: 'Signing', icon: PenTool, desc: 'Acceptance, signature and seal', page: 'commercials' },
+    { id: 'files', label: 'Attachments', icon: Paperclip, desc: 'Files and links for the client', page: 'attachments' },
+    { id: 'review', label: 'Review & send', icon: Send, desc: 'Check it and send it', page: null },
 ];
+
+const timeNow = () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+const SectionNavButton = ({ s, index, active, onClick, compact }) => {
+    const a = useAccent();
+    if (compact) {
+        return (
+            <button type="button" onClick={onClick} aria-current={active ? 'step' : undefined}
+                className={cn('flex h-10 shrink-0 items-center gap-2 rounded-full px-3.5 text-[13px] font-semibold transition-colors',
+                    active ? a.solid : 'text-gray-500 hover:bg-black/5 hover:text-gray-900 dark:hover:bg-white/5 dark:hover:text-white')}>
+                <s.icon size={14} /> {s.label}
+            </button>
+        );
+    }
+    return (
+        <button type="button" onClick={onClick} aria-current={active ? 'step' : undefined}
+            className={cn('flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors',
+                active ? cn(a.soft, 'text-gray-900 dark:text-white') : 'text-gray-600 hover:bg-black/[0.04] dark:text-zinc-400 dark:hover:bg-white/[0.04]')}>
+            <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', active ? a.chip : 'bg-black/[0.04] dark:bg-white/[0.06]')}><s.icon size={15} /></span>
+            <span className="min-w-0">
+                <span className="block truncate text-[13px] font-bold">{s.label}</span>
+                <span className="block text-[11px] tabular-nums text-gray-400">Step {index + 1}</span>
+            </span>
+        </button>
+    );
+};
 
 const ProposalGenerator = () => {
     useStoreSubscription(['proposals']);
     const { id } = useParams();
     const navigate = useNavigate();
-    const { addProposal, updateProposal, proposals, user, addToast, activeModel } = useStore();
-    const [autosaveStatus, setAutosaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+    const a = useAccent();
+    const proposals = useStore(s => s.proposals);
+    const proposalsLoaded = useStore(s => Boolean(s.subscriptionsLoaded?.proposals));
+    const activeModel = useStore(s => s.activeModel);
+    const addToast = useStore(s => s.addToast);
+
+    const [formData, setFormData] = useState(newProposalData);
+    const [items, setItems] = useState([]);
+    const [section, setSection] = useState('client');
+    const [previewPage, setPreviewPage] = useState(0);
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [aiOpen, setAiOpen] = useState(false);
+    const [refineTarget, setRefineTarget] = useState(null);
+    const [autosaveStatus, setAutosaveStatus] = useState('idle'); // idle | saving | saved | error
     const [lastSaved, setLastSaved] = useState('');
-    const isDirtyRef = useRef(false);
-    const initialDataLoadedRef = useRef(false);
-    const [previewScale, setPreviewScale] = useState(0.65);
-    const previewContainerRef = useRef(null);
+    const [saving, setSaving] = useState(false);
+    const [downloading, setDownloading] = useState(false);
+    const [copying, setCopying] = useState(false);
 
-    const [activeTab, setActiveTab] = useState('ai'); 
-    const [currentPreviewPage, setCurrentPreviewPage] = useState(0);
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
-    const [generatingSection, setGeneratingSection] = useState(null); // 'all', 'strategy', 'scope', 'deliverables', etc.
-    const [promptBoxClear, setPromptBoxClear] = useState(false);
-    const [showPreviewMobile, setShowPreviewMobile] = useState(false);
-    const [userZoom, setUserZoom] = useState(1);
-    const [isExpandedPreview, setIsExpandedPreview] = useState(false);
-    const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-    const [isSignaturesCollapsed, setIsSignaturesCollapsed] = useState(true);
-    const [bulkRawText, setBulkRawText] = useState('');
-    const [bulkCampaignName, setBulkCampaignName] = useState('PROPOSAL PLAN');
-    const [isUploadingFile, setIsUploadingFile] = useState(false);
-    const [linkName, setLinkName] = useState('');
-    const [linkUrl, setLinkUrl] = useState('');
+    // ── loading and change tracking ──
+    const loadedIdRef = useRef(null);            // which proposal the form holds
+    const justCreatedIdRef = useRef(null);       // set when this editor created the proposal
+    const autoNumberRef = useRef('');            // the number we filled in (replaced on first save if still untouched)
+    const savedSnapRef = useRef(null);           // what the last save (or load) looked like
+    const dirtyRef = useRef(false);
+    const revisionRef = useRef(0);
+    const createPromiseRef = useRef(null);       // one shared create, so a slow network can't make duplicates
+    const pendingIdRef = useRef(null);           // a copy we just made and are waiting to load
 
-    const [isBulkMode, setIsBulkMode] = useState(false);
-    const [bulkProposals, setBulkProposals] = useState([]);
-    const [isBulkGenerating, setIsBulkGenerating] = useState(false);
-    const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
-    const [selectedBulkIndex, setSelectedBulkIndex] = useState(0);
+    const snapshot = useCallback((fd, its) => JSON.stringify([
+        { ...fd, proposalNumber: fd.proposalNumber === autoNumberRef.current ? '' : fd.proposalNumber },
+        its,
+    ]), []);
 
-    const parsedPrompts = useMemo(() => {
-        if (!bulkRawText || !bulkRawText.trim()) return [];
-        let list = [];
-        if (bulkRawText.includes('---') || bulkRawText.includes('___')) {
-            list = bulkRawText.split(/\n?[-_]{3,}\n?/).map(p => p.trim()).filter(p => p.length > 5);
-        } else {
-            list = bulkRawText.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 10);
-        }
-        return list.length > 0 ? list : [bulkRawText.trim()];
-    }, [bulkRawText]);
+    const currentId = id || justCreatedIdRef.current;
+    const live = currentId ? (proposals || []).find(p => p.id === currentId) : null;
+    const locked = Boolean(live && isProposalClosed(live));
+    const notFound = Boolean(id && proposalsLoaded && !live && id !== justCreatedIdRef.current && id !== pendingIdRef.current);
+    const isV2 = isV2Proposal(formData);
+    const sections = isV2 ? V2_SECTIONS : LEGACY_SECTIONS;
 
-    const [refinementPrompt, setRefinementPrompt] = useState('');
-    const [isRefining, setIsRefining] = useState(false);
-
-    // AI Studio State
-    const [promptText, setPromptText] = useState('');
-    const [aiMode, setAiMode] = useState('generate');
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const [suggestionCategory, setSuggestionCategory] = useState(0);
-    const [refinementContext, setRefinementContext] = useState(null);
-    const [aiTone, setAiTone] = useState('balanced'); // 'creative' | 'balanced' | 'formal'
-    const [aiLength, setAiLength] = useState('balanced'); // 'concise' | 'balanced' | 'detailed'
-
-    // Inline AI Refinement Popup state
-    const [inlineRefineState, setInlineRefineState] = useState(null); // { fieldKey, fieldLabel, currentValue, anchorRect }
-    const [inlineRefinePrompt, setInlineRefinePrompt] = useState('');
-    const [inlineRefineLoading, setInlineRefineLoading] = useState(false);
-    const [inlineRefineSuccess, setInlineRefineSuccess] = useState(false);
-    const inlineRefineInputRef = useRef(null);
-
-    // Resizable chat popup state
-    const [chatPopupSize, setChatPopupSize] = useState({ width: 420, height: 560 });
-    const [isResizingChat, setIsResizingChat] = useState(false);
-    const chatResizeRef = useRef(null);
-    const [unreadChatCount, setUnreadChatCount] = useState(0);
-
-    const handleRefineClick = (fieldKey, fieldLabel, currentValue, e) => {
-        // Open inline popup anchored near the button
-        const rect = e?.currentTarget?.getBoundingClientRect?.();
-        setInlineRefineState({
-            fieldKey,
-            fieldLabel,
-            currentValue: typeof currentValue === 'string' ? currentValue.substring(0, 200) : '',
-            anchorRect: rect || null
-        });
-        setInlineRefinePrompt('');
-        setInlineRefineSuccess(false);
-        setTimeout(() => inlineRefineInputRef.current?.focus(), 100);
-    };
-
-    const handleInlineRefineSubmit = async () => {
-        if (!inlineRefinePrompt.trim() || inlineRefineLoading || !inlineRefineState) return;
-        setInlineRefineLoading(true);
-        try {
-            const refined = await refineFieldContent(
-                'proposal',
-                inlineRefineState.fieldLabel,
-                inlineRefineState.currentValue,
-                inlineRefinePrompt.trim(),
-                'Premium'
-            );
-            const fieldKey = inlineRefineState.fieldKey;
-            if (fieldKey.startsWith('deliverables[')) {
-                const match = fieldKey.match(/deliverables\[(\d+)\]\.(item|qty|timeline)/);
-                if (match) {
-                    const idx = parseInt(match[1]);
-                    const field = match[2];
-                    const updated = [...formData.deliverables];
-                    updated[idx] = { ...updated[idx], [field]: refined };
-                    setFormData({ ...formData, deliverables: updated });
-                }
-            } else if (fieldKey.startsWith('clientRequirements[')) {
-                const match = fieldKey.match(/clientRequirements\[(\d+)\]\.description/);
-                if (match) {
-                    const idx = parseInt(match[1]);
-                    const updated = [...formData.clientRequirements];
-                    updated[idx] = { ...updated[idx], description: refined };
-                    setFormData({ ...formData, clientRequirements: updated });
-                }
-            } else if (fieldKey.startsWith('items[')) {
-                const match = fieldKey.match(/items\[(\d+)\]\.(description|qty|price)/);
-                if (match) {
-                    const idx = parseInt(match[1]);
-                    const field = match[2];
-                    const newItems = [...items];
-                    let val = refined;
-                    if (field === 'qty' || field === 'price') val = Number(refined) || 0;
-                    newItems[idx] = { ...newItems[idx], [field]: val };
-                    setItems(newItems);
-                }
-            } else if (fieldKey.startsWith('customPages[')) {
-                const match = fieldKey.match(/customPages\[(\d+)\]\.content/);
-                if (match) {
-                    const idx = parseInt(match[1]);
-                    const updated = [...(formData.customPages || [])];
-                    updated[idx] = { ...updated[idx], content: refined };
-                    setFormData({ ...formData, customPages: updated });
-                }
-            } else {
-                setFormData(prev => ({ ...prev, [fieldKey]: refined }));
-            }
-            addToast(`"${inlineRefineState.fieldLabel}" refined.`, 'success');
-            setInlineRefineSuccess(true);
-            setTimeout(() => {
-                setInlineRefineState(null);
-                setInlineRefineSuccess(false);
-            }, 1200);
-        } catch (err) {
-            addToast(`Couldn't refine "${inlineRefineState.fieldLabel}". ${err.message || 'Try again with a different prompt.'}`, 'error');
-                    } finally {
-            setInlineRefineLoading(false);
-        }
-    };
-
-    // Auto bulk mode detection: checks if the text is structured proposal draft/text
-    const detectBulkMode = useCallback((prompt) => {
-        if (!prompt || prompt.trim().length < 80) return false;
-        const trimmed = prompt.trim();
-        const hasHeaders = /(?:^|\n)(?:#{1,3}\s+|scope of work|deliverables|payment terms|commercials|pricing breakdown|client overview|cost summary)/i.test(trimmed);
-        const hasStructuredSections = trimmed.includes('---') || trimmed.includes('___') || (trimmed.split(/\n\n+/).length >= 3 && trimmed.length > 200);
-        return hasHeaders || hasStructuredSections;
-    }, []);
-
-    // Page duplication helpers
-    const duplicateCustomPage = (idx) => {
-        const pages = [...(formData.customPages || [])];
-        const original = pages[idx];
-        if (!original) return;
-        const cloned = {
-            ...original,
-            id: String(Date.now()) + '-dup',
-            title: `${original.title} (Copy)`
-        };
-        pages.splice(idx + 1, 0, cloned);
-        setFormData({ ...formData, customPages: pages });
-        addToast("Page duplicated.", "success");
-    };
-
-    const duplicateAllCustomPages = () => {
-        const pages = [...(formData.customPages || [])];
-        if (pages.length === 0) return;
-        const copies = pages.map((page, i) => ({
-            ...page,
-            id: String(Date.now()) + '-dup-all-' + i,
-            title: `${page.title} (Copy)`
-        }));
-        setFormData({ ...formData, customPages: [...pages, ...copies] });
-        addToast("All pages duplicated.", "success");
-    };
-
-    // Chat popup resizer handlers
-    const handleStartResize = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsResizingChat(true);
-        const startX = e.clientX;
-        const startY = e.clientY;
-        const startWidth = chatPopupSize.width;
-        const startHeight = chatPopupSize.height;
-
-        const onMouseMove = (moveEvent) => {
-            const deltaX = startX - moveEvent.clientX;
-            const deltaY = startY - moveEvent.clientY;
-            const newWidth = Math.max(320, Math.min(window.innerWidth - 32, startWidth + deltaX));
-            const newHeight = Math.max(380, Math.min(window.innerHeight - 100, startHeight + deltaY));
-            setChatPopupSize({ width: newWidth, height: newHeight });
-        };
-
-        const onMouseUp = () => {
-            setIsResizingChat(false);
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('mouseup', onMouseUp);
-        };
-
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mouseup', onMouseUp);
-    };
-
-    const handleTouchStartResize = (e) => {
-        const touch = e.touches[0];
-        if (!touch) return;
-        setIsResizingChat(true);
-        const startX = touch.clientX;
-        const startY = touch.clientY;
-        const startWidth = chatPopupSize.width;
-        const startHeight = chatPopupSize.height;
-
-        const onTouchMove = (moveEvent) => {
-            const moveTouch = moveEvent.touches[0];
-            if (!moveTouch) return;
-            const deltaX = startX - moveTouch.clientX;
-            const deltaY = startY - moveTouch.clientY;
-            const newWidth = Math.max(300, Math.min(window.innerWidth - 20, startWidth + deltaX));
-            const newHeight = Math.max(350, Math.min(window.innerHeight - 60, startHeight + deltaY));
-            setChatPopupSize({ width: newWidth, height: newHeight });
-        };
-
-        const onTouchEnd = () => {
-            setIsResizingChat(false);
-            window.removeEventListener('touchmove', onTouchMove);
-            window.removeEventListener('touchend', onTouchEnd);
-        };
-
-        window.addEventListener('touchmove', onTouchMove);
-        window.addEventListener('touchend', onTouchEnd);
-    };
-
-    // Render Inline AI Field Refinement Popup anchored near the clicked field
-    const renderInlineRefinePopup = () => {
-        if (!inlineRefineState) return null;
-
-        let top = 120;
-        let left = 20;
-        if (inlineRefineState.anchorRect) {
-            const { bottom, left: aLeft, top: aTop } = inlineRefineState.anchorRect;
-            const popupWidth = Math.min(380, window.innerWidth - 32);
-            const popupHeight = 260;
-            
-            // Prefer placing below, flip to above if near viewport bottom
-            if (bottom + popupHeight < window.innerHeight - 20) {
-                top = bottom + 8;
-            } else {
-                top = Math.max(20, aTop - popupHeight - 8);
-            }
-            // Horizontal clamp
-            left = Math.max(16, Math.min(window.innerWidth - popupWidth - 16, aLeft - 100));
-        }
-
-        return createPortal(
-            <div 
-                className="fixed z-[999] w-[92vw] max-w-[380px] bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-2xl border border-neon-green/30 rounded-3xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(57,255,20,0.15)] animate-fade-in flex flex-col gap-3 font-['Outfit']"
-                style={{ top: `${top}px`, left: `${left}px` }}
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-neon-green/10 border border-neon-green/20 flex items-center justify-center">
-                            <Sparkles size={12} className="text-neon-green animate-pulse" />
-                        </div>
-                        <div className="min-w-0">
-                            <h4 className="text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white truncate">
-                                Refine with AI
-                            </h4>
-                            <p className="text-[9px] font-bold text-neon-green truncate">
-                                {inlineRefineState.fieldLabel}
-                            </p>
-                        </div>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => setInlineRefineState(null)}
-                        className="p-1 text-zinc-500 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-all"
-                    >
-                        <X size={14} />
-                    </button>
-                </div>
-
-                {/* Current Value Preview (if any) */}
-                {inlineRefineState.currentValue && (
-                    <div className="bg-white dark:bg-white border border-black/10 dark:border-white/5 rounded-xl px-3 py-2 text-[10px] text-zinc-400 italic line-clamp-2">
-                        "{inlineRefineState.currentValue}"
-                    </div>
-                )}
-
-                {/* Quick Instruction Presets */}
-                <div className="flex flex-wrap gap-1.5">
-                    {[
-                        'Make it more formal',
-                        'Shorten & punchy',
-                        'Expand details',
-                        'Improve phrasing'
-                    ].map((preset) => (
-                        <button
-                            key={preset}
-                            type="button"
-                            onClick={() => setInlineRefinePrompt(preset)}
-                            className="px-2.5 py-1 bg-black/5 dark:bg-white/5 hover:bg-neon-green/10 border border-black/10 dark:border-white/5 hover:border-neon-green/20 rounded-lg text-[8px] font-bold uppercase tracking-wider text-zinc-400 hover:text-neon-green transition-all"
-                        >
-                            {preset}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Instruction Input */}
-                <div className="relative">
-                    <textarea
-                        ref={inlineRefineInputRef}
-                        value={inlineRefinePrompt}
-                        onChange={(e) => setInlineRefinePrompt(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                handleInlineRefineSubmit();
-                            }
-                            if (e.key === 'Escape') {
-                                setInlineRefineState(null);
-                            }
-                        }}
-                        placeholder="Type how you want to revise this text (e.g. Add 2 more key objectives, make it punchier)..."
-                        disabled={inlineRefineLoading || inlineRefineSuccess}
-                        className="w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 focus:border-neon-green/50 rounded-xl p-3 text-xs text-gray-900 dark:text-white placeholder:text-zinc-600 outline-none resize-none min-h-[70px] scrollbar-hide font-medium"
-                    />
-                </div>
-
-                {/* Action Row */}
-                <div className="flex items-center justify-between pt-1">
-                    <button
-                        type="button"
-                        onClick={() => setInlineRefineState(null)}
-                        className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleInlineRefineSubmit}
-                        disabled={!inlineRefinePrompt.trim() || inlineRefineLoading || inlineRefineSuccess}
-                        className={cn(
-                            "px-4 py-2 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all flex items-center gap-1.5 shadow-lg",
-                            inlineRefineSuccess
-                                ? "bg-emerald-500 text-black shadow-[0_0_15px_rgba(16,185,129,0.4)]"
-                                : "bg-neon-green text-black hover:scale-105 active:scale-95 disabled:opacity-30 disabled:scale-100 shadow-[0_0_15px_rgba(57,255,20,0.3)]"
-                        )}
-                    >
-                        {inlineRefineLoading ? (
-                            <>
-                                <RefreshCw className="animate-spin" size={12} />
-                                <span>Refining...</span>
-                            </>
-                        ) : inlineRefineSuccess ? (
-                            <>
-                                <Check size={12} />
-                                <span>Applied!</span>
-                            </>
-                        ) : (
-                            <>
-                                <Sparkles size={12} />
-                                <span>Refine Field</span>
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>,
-            document.body
-        );
-    };
-
-
-    const [messages, setMessages] = useState([
-        {
-            id: 'init-msg',
-            sender: 'ai',
-            text: "Welcome to Newbi AI Proposal Studio. Describe the event or campaign requirements in the prompt box below, and I will draft a comprehensive proposal. Once generated, continue chatting to refine any details!"
-        }
-    ]);
-    const chatEndRef = useRef(null);
-    const chatContainerRef = useRef(null);
-    const [isFloatingChatOpen, setIsFloatingChatOpen] = useState(false);
-    const floatingChatContainerRef = useRef(null);
-
-
-    const [generationStage, setGenerationStage] = useState(0);
-    const [generationProgress, setGenerationProgress] = useState(0);
-    const [generationTime, setGenerationTime] = useState(0);
-
-    const STAGE_MESSAGES = useMemo(() => [
-        { text: "Establishing connection to neural node...", progress: 15 },
-        { text: "Analyzing prompt & structural constraints...", progress: 40 },
-        { text: "Synthesizing document data fields...", progress: 65 },
-        { text: "Formulating line items & pricing dynamics...", progress: 85 },
-        { text: "Polishing final layout parameters...", progress: 95 }
-    ], []);
-
+    // A new proposal: remember the blank state so only real edits create a document.
     useEffect(() => {
-        let timer;
-        let stageTimer;
-        if (isGenerating || isBulkGenerating) {
-            setGenerationStage(0);
-            setGenerationProgress(15);
-            setGenerationTime(0);
-            
-            timer = setInterval(() => {
-                setGenerationTime(prev => prev + 1);
-            }, 1000);
+        if (id) return;
+        if (savedSnapRef.current === null) savedSnapRef.current = snapshot(formData, items);
+    }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-            stageTimer = setInterval(() => {
-                setGenerationStage(prev => {
-                    const next = Math.min(prev + 1, STAGE_MESSAGES.length - 1);
-                    setGenerationProgress(STAGE_MESSAGES[next].progress);
+    // A new proposal gets the next number in the NBQ series once proposals load.
+    useEffect(() => {
+        if (id || justCreatedIdRef.current || !proposalsLoaded) return;
+        setFormData(prev => {
+            if (prev.proposalNumber && prev.proposalNumber !== autoNumberRef.current) return prev;
+            const next = nextProposalNumber(proposals);
+            autoNumberRef.current = next;
+            return prev.proposalNumber === next ? prev : { ...prev, proposalNumber: next };
+        });
+    }, [id, proposals, proposalsLoaded]);
+
+    // Load an existing proposal once (later server updates don't overwrite what you're typing).
+    useEffect(() => {
+        if (!id || loadedIdRef.current === id) return;
+        if (id === justCreatedIdRef.current) { loadedIdRef.current = id; return; }
+        const p = (proposals || []).find(x => x.id === id);
+        if (!p) return;
+        if (p.isUploaded) { navigate(`/admin/proposals?edit=${id}`, { replace: true }); return; }
+        const loaded = loadForEditing(p);
+        const loadedItems = (Array.isArray(p.items) ? p.items : []).filter(it => !(isV2Proposal(p) && isPlaceholderItem(it)));
+        setFormData(loaded);
+        setItems(loadedItems);
+        loadedIdRef.current = id;
+        autoNumberRef.current = '';
+        savedSnapRef.current = snapshot(loaded, loadedItems);
+        dirtyRef.current = false;
+        createPromiseRef.current = null;
+        setAutosaveStatus('idle');
+    }, [id, proposals, navigate, snapshot]);
+
+    // Every edit bumps the revision; a save only clears "dirty" if nothing changed meanwhile.
+    useEffect(() => {
+        if (savedSnapRef.current === null) return;
+        if (id && loadedIdRef.current !== id) return;
+        if (snapshot(formData, items) === savedSnapRef.current) { dirtyRef.current = false; return; }
+        dirtyRef.current = true;
+        revisionRef.current += 1;
+    }, [formData, items]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const totals = useMemo(() => computeTotals(formData, items), [formData, items]);
+
+    // One save path for autosave and the Save button.
+    const persist = async () => {
+        const targetId = id || justCreatedIdRef.current;
+        // Never write while the form still holds a different proposal (switching to a copy).
+        if (id && loadedIdRef.current !== id) throw Object.assign(new Error('Still loading.'), { code: 'LOADING' });
+        const liveNow = targetId ? (useStore.getState().proposals || []).find(p => p.id === targetId) : null;
+        if (liveNow && isProposalClosed(liveNow)) throw Object.assign(new Error('This proposal is closed.'), { code: 'CLOSED' });
+        const revision = revisionRef.current;
+        const snap = snapshot(formData, items);
+        const cleanItems = isV2 ? items.filter(it => !isPlaceholderItem(it)) : items;
+        const data = JSON.parse(JSON.stringify({
+            ...formData,
+            items: cleanItems,
+            subtotal: totals.subtotal,
+            gstAmount: totals.gstAmount,
+            totalAmount: totals.totalAmount,
+            updatedAt: new Date().toISOString(),
+        }));
+        if (targetId) {
+            CLIENT_OWNED_FIELDS.forEach(k => { delete data[k]; });
+            await useStore.getState().updateProposal(targetId, data);
+        } else {
+            CLIENT_OWNED_FIELDS.forEach(k => { delete data[k]; });
+            data.status = PROPOSAL_STATUS.DRAFT;
+            // Untouched auto number: take the next free one at the moment of saving.
+            if (!data.proposalNumber || data.proposalNumber === autoNumberRef.current) {
+                const fresh = nextProposalNumber(useStore.getState().proposals || []);
+                const old = autoNumberRef.current;
+                data.proposalNumber = fresh;
+                autoNumberRef.current = fresh;
+                setFormData(prev => (!prev.proposalNumber || prev.proposalNumber === old ? { ...prev, proposalNumber: fresh } : prev));
+            }
+            if (!createPromiseRef.current) {
+                createPromiseRef.current = useStore.getState().addProposal(data).catch(err => { createPromiseRef.current = null; throw err; });
+            }
+            const newId = await createPromiseRef.current;
+            justCreatedIdRef.current = newId;
+            loadedIdRef.current = newId;
+            navigate(`/admin/edit-proposal/${newId}`, { replace: true });
+        }
+        if (revisionRef.current === revision) {
+            dirtyRef.current = false;
+            savedSnapRef.current = snap;
+        }
+        // Images (signature, pictures in text) are stored as files on save. Swap the
+        // stored links in so the next save doesn't upload the same image again.
+        const pid = targetId || justCreatedIdRef.current;
+        const stored = (useStore.getState().proposals || []).find(p => p.id === pid);
+        if (stored) {
+            const swaps = {};
+            Object.keys(formData).forEach(k => {
+                const mine = JSON.stringify(formData[k] ?? null);
+                if (mine.includes(';base64,') && stored[k] !== undefined && !JSON.stringify(stored[k]).includes(';base64,')) swaps[k] = stored[k];
+            });
+            if (Object.keys(swaps).length) {
+                const sent = formData;
+                setFormData(prev => {
+                    const next = { ...prev };
+                    Object.entries(swaps).forEach(([k, v]) => { if (prev[k] === sent[k]) next[k] = v; });
                     return next;
                 });
-            }, 2500);
-        } else {
-            setGenerationStage(0);
-            setGenerationProgress(0);
-            setGenerationTime(0);
-        }
-        return () => {
-            clearInterval(timer);
-            clearInterval(stageTimer);
-        };
-    }, [isGenerating, isBulkGenerating, STAGE_MESSAGES]);
-
-    useEffect(() => {
-        if (chatContainerRef.current) {
-            chatContainerRef.current.scrollTo({
-                top: chatContainerRef.current.scrollHeight,
-                behavior: 'smooth'
-            });
-        }
-        if (floatingChatContainerRef.current) {
-            floatingChatContainerRef.current.scrollTo({
-                top: floatingChatContainerRef.current.scrollHeight,
-                behavior: 'smooth'
-            });
-        }
-    }, [messages]);
-
-    const suggestions = useMemo(() => {
-        const proposalSuggestions = [
-            [
-                "Event production proposal for a 2-day music festival, including stage, sound, and lighting setup",
-                "Artist logistics and hospitality proposal for a multi-city stand-up comedy tour",
-                "Proposal for 50 event volunteers and site management for a corporate marathon"
-            ],
-            [
-                "Strategic event consultation for a brand's 10th-anniversary gala dinner",
-                "Complete digital marketing and social media coverage for a product launch event",
-                "Technical production and stage management proposal for a TEDx event"
-            ]
-        ];
-        return proposalSuggestions[suggestionCategory] || proposalSuggestions[0];
-    }, [suggestionCategory]);
-
-    const logoOptions = [
-        { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
-        { id: 'media', label: 'Newbi Media', path: '/logo_media.png', color: '#00D1FF' },
-        { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
-    ];
-
-    const [singleFormData, setSingleFormData] = useState(() => ({
-        ...DEFAULT_V2_PROPOSAL_DATA,
-        proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
-        templateVersion: 'v2',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-    }));
-
-    const [singleItems, setSingleItems] = useState([
-        { id: 1, description: 'Project Phase 01: Initial Strategic Planning', qty: 1, unit: 'Phase', price: 0 }
-    ]);
-
-    const formData = (isBulkMode && bulkProposals.length > 0 && bulkProposals[selectedBulkIndex]) ? bulkProposals[selectedBulkIndex] : singleFormData;
-    const items = (isBulkMode && bulkProposals.length > 0 && bulkProposals[selectedBulkIndex]) ? (bulkProposals[selectedBulkIndex]?.items || []) : singleItems;
-
-    const setFormData = (updater) => {
-        if (isBulkMode && bulkProposals.length > 0) {
-            setBulkProposals(prevBulk => {
-                const updatedBulk = [...prevBulk];
-                const current = updatedBulk[selectedBulkIndex];
-                const nextState = typeof updater === 'function' ? updater(current) : updater;
-                updatedBulk[selectedBulkIndex] = { ...current, ...nextState };
-                return updatedBulk;
-            });
-        } else {
-            setSingleFormData(updater);
-        }
-    };
-
-    const setItems = (updater) => {
-        if (isBulkMode && bulkProposals.length > 0) {
-            setBulkProposals(prevBulk => {
-                const updatedBulk = [...prevBulk];
-                const current = updatedBulk[selectedBulkIndex];
-                const nextItems = typeof updater === 'function' ? updater(current.items || []) : updater;
-                updatedBulk[selectedBulkIndex] = { ...current, items: nextItems };
-                return updatedBulk;
-            });
-        } else {
-            setSingleItems(updater);
-        }
-    };
-
-    const currentLogo = logoOptions.find(l => l.id === formData.selectedLogo) || logoOptions[0];
-
-    const hasInitializedRef = useRef(false);
-    useEffect(() => {
-        hasInitializedRef.current = false;
-        initialDataLoadedRef.current = false;
-    }, [id]);
-
-    useEffect(() => {
-        if (!id) {
-            initialDataLoadedRef.current = true;
-        }
-    }, [id]);
-
-    useEffect(() => {
-        if (id && proposals.length > 0 && !hasInitializedRef.current) {
-            const proposal = proposals.find(p => p.id === id);
-            if (proposal) {
-                if (proposal.isUploaded) {
-                    navigate(`/admin/proposals?edit=${id}`, { replace: true });
-                    return;
-                }
-                const isExistingV2 = proposal.templateVersion === 'v2' || Boolean(proposal.whatsInside || proposal.blueprintSteps || proposal.deliverablesTable);
-                const loadedProposal = isExistingV2 ? normalizeProposalData(proposal) : proposal;
-                setSingleFormData({ 
-                    ...loadedProposal, 
-                    hiddenFields: proposal.hiddenFields || [], 
-                    selectedLogo: proposal.selectedLogo || 'entertainment',
-                    hideTotalColumn: proposal.hideTotalColumn || false,
-                    strategyTitle: proposal.strategyTitle ?? 'EXECUTIVE SUMMARY',
-                    strategySub: proposal.strategySub ?? 'STRATEGIC OUTLINE',
-                    scopeTitle: proposal.scopeTitle ?? 'SCOPE OF WORK',
-                    scopeSub: proposal.scopeSub ?? 'RESOURCE DELIVERABLES',
-                    proposalTitle: proposal.proposalTitle ?? 'DELIVERABLES',
-                    proposalSub: proposal.proposalSub ?? 'PROJECT INVENTORY',
-                    inventoryTitle: proposal.inventoryTitle ?? 'RESOURCE INVENTORY',
-                    inventorySub: proposal.inventorySub ?? 'COMMERCIALS BREAKDOWN',
-                    commercialsTitle: proposal.commercialsTitle ?? 'COMMERCIAL TERMS',
-                    commercialsSub: proposal.commercialsSub ?? 'SETTLEMENT & SIGN-OFF',
-                    attachments: proposal.attachments || []
-                });
-                setSingleItems(proposal.items || []);
-                hasInitializedRef.current = true;
-                setTimeout(() => {
-                    initialDataLoadedRef.current = true;
-                }, 200);
+                if (revisionRef.current === revision) savedSnapRef.current = snapshot({ ...formData, ...swaps }, items);
             }
         }
-    }, [id, proposals]);
+        setAutosaveStatus('saved');
+        setLastSaved(timeNow());
+        return targetId || justCreatedIdRef.current;
+    };
+    const persistRef = useRef(persist);
+    persistRef.current = persist;
 
+    // Autosave a few seconds after the last change.
     useEffect(() => {
-        if (initialDataLoadedRef.current) {
-            isDirtyRef.current = true;
-        }
-    }, [formData, items]);
-
-    useEffect(() => {
-        if (!initialDataLoadedRef.current || !isDirtyRef.current) return;
-
-        let active = true;
+        if (!dirtyRef.current || locked || notFound || (id && loadedIdRef.current !== id)) return undefined;
         const timer = setTimeout(async () => {
-            if (!active) return;
+            if (!dirtyRef.current) return;
             setAutosaveStatus('saving');
             try {
-                const rawProposalData = { ...formData, items, totalAmount, subtotal, updatedAt: new Date().toISOString() };
-                const proposalData = JSON.parse(JSON.stringify(rawProposalData));
-                
-                if (id) {
-                    await updateProposal(id, proposalData);
-                    if (active) {
-                        setAutosaveStatus('saved');
-                        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-                        isDirtyRef.current = false;
-                    }
-                } else {
-                    const newDocId = await addProposal(proposalData);
-                    if (active) {
-                        setAutosaveStatus('saved');
-                        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-                        isDirtyRef.current = false;
-                        hasInitializedRef.current = true;
-                        initialDataLoadedRef.current = true;
-                        navigate(`/admin/edit-proposal/${newDocId}`, { replace: true });
-                    }
-                }
+                await persistRef.current();
             } catch (err) {
-                console.error("Proposal autosave failed:", err);
-                if (active) {
-                    setAutosaveStatus('error');
-                }
+                console.error('Proposal autosave failed:', err);
+                setAutosaveStatus(err?.code === 'CLOSED' || err?.code === 'LOADING' ? 'idle' : 'error');
             }
-        }, 5000);
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, [formData, items, id, locked, notFound]);
 
-        return () => {
-            active = false;
-            clearTimeout(timer);
-        };
-    }, [formData, items, id]);
-
+    // Warn before closing the tab with unsaved changes.
     useEffect(() => {
-        const handleResize = () => {
-            if (previewContainerRef.current) {
-                const containerWidth = previewContainerRef.current.clientWidth - 48; // padding
-                const containerHeight = previewContainerRef.current.clientHeight - 48; // padding
-                const scaleWidth = containerWidth / 794;
-                const scaleHeight = containerHeight / 1123;
-                const autoScale = isExpandedPreview ? Math.min(scaleWidth, scaleHeight) : scaleWidth;
-                setPreviewScale(Math.max(0.1, Math.min(2.0, autoScale)) * userZoom);
-            }
+        const onBeforeUnload = (e) => {
+            if (!dirtyRef.current || locked) return;
+            e.preventDefault();
+            e.returnValue = '';
         };
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [userZoom, isExpandedPreview]);
+        window.addEventListener('beforeunload', onBeforeUnload);
+        return () => window.removeEventListener('beforeunload', onBeforeUnload);
+    }, [locked]);
 
-    const totalSrcCol = formData.totalSourceColumn || 'price';
-    const subtotal = items.reduce((sum, item) => {
-        return sum + (Number(item[totalSrcCol]) || 0);
-    }, 0);
-    const hasOverride = formData.totalOverride !== null && formData.totalOverride !== undefined && formData.totalOverride !== '';
-    const overrideBase = hasOverride ? Number(formData.totalOverride) : subtotal;
-    const gstAmount = formData.showGst ? (overrideBase * formData.gstRate) / 100 : 0;
-    const computedTotal = subtotal + (formData.showGst ? (subtotal * formData.gstRate) / 100 : 0);
-    const totalAmount = hasOverride ? (overrideBase + gstAmount) : computedTotal;
-
-    const toggleFieldVisibility = (field) => {
-        setFormData(prev => {
-            const current = prev.hiddenFields || [];
-            const updated = current.includes(field) ? current.filter(f => f !== field) : [...current, field];
-            return { ...prev, hiddenFields: updated };
-        });
+    const clashWith = (number) => {
+        const n = String(number || '').trim().toUpperCase();
+        return n && (proposals || []).find(p => p.id !== currentId && String(p.proposalNumber || '').trim().toUpperCase() === n);
     };
 
-    const moveCustomPage = (index, direction) => {
-        const pages = [...(formData.customPages || [])];
-        if (direction === 'up' && index > 0) {
-            const temp = pages[index];
-            pages[index] = pages[index - 1];
-            pages[index - 1] = temp;
-        } else if (direction === 'down' && index < pages.length - 1) {
-            const temp = pages[index];
-            pages[index] = pages[index + 1];
-            pages[index + 1] = temp;
-        }
-        setFormData(prev => ({ ...prev, customPages: pages }));
-    };
-
-    const isHidden = (f) => (formData.hiddenFields || []).includes(f);
-
-    const VisibilityToggle = ({ field, label }) => (
-        <button 
-            onClick={() => toggleFieldVisibility(field)}
-            className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all text-[9px] font-black uppercase tracking-[0.1em]",
-                isHidden(field) 
-                    ? "bg-red-500/5 border-red-500/20 text-red-400 hover:bg-red-500/10" 
-                    : "bg-[#39FF14]/5 border-[#39FF14]/20 text-[#39FF14]/70 hover:bg-[#39FF14]/10 hover:text-[#39FF14]"
-            )}
-        >
-            {isHidden(field) ? <EyeOff size={10} /> : <Eye size={10} />}
-            {label || (isHidden(field) ? "Hidden" : "Live")}
-        </button>
-    );
-
-    const isV2 = formData.templateVersion === 'v2' || Boolean(formData.whatsInside || formData.blueprintSteps || formData.deliverablesTable);
-
-    const getPaginatedPages = () => {
-        if (isV2) {
-            return getV2PaginatedPages(formData);
-        }
-        const pages = [];
-
-        const insertCustomPagesFor = (placement) => {
-            if (!isHidden('customPages') && formData.customPages && formData.customPages.length > 0) {
-                formData.customPages.forEach((cp, cpIdx) => {
-                    const target = cp.insertAfter || 'default';
-                    if (target === placement) {
-                        const cpPages = splitTextIntoPages(cp.content || '', 800);
-                        cpPages.forEach((cpText, cpSubIdx) => {
-                            pages.push({
-                                type: 'custom',
-                                items: [],
-                                title: cpPages.length > 1 ? `${cp.title} (Part ${cpSubIdx + 1})` : cp.title,
-                                content: cpText,
-                                pageIndex: cpIdx,
-                                customSubIdx: cpSubIdx
-                            });
-                        });
-                    }
-                });
-            }
-        };
-
-        if (!isHidden('cover')) {
-            pages.push({ type: 'cover', items: [] });
-        }
-        insertCustomPagesFor('cover');
-
-        if (!isHidden('strategy') && (!isHidden('overview') || !isHidden('primaryGoal'))) {
-            const overviewHtml = !isHidden('overview') ? (formData.overview || '') : '';
-            const primaryGoalHtml = (!isHidden('primaryGoal') && !isHtmlEmpty(formData.primaryGoal)) ? (formData.primaryGoal || '') : '';
-            
-            const overviewPages = splitTextIntoPages(overviewHtml, 800);
-            const lastOverviewPage = overviewPages[overviewPages.length - 1] || '';
-            const goalContainerHeight = primaryGoalHtml ? estimateBlockHeight(primaryGoalHtml) + 120 : 0;
-            
-            if (estimateBlockHeight(lastOverviewPage) + goalContainerHeight <= 800) {
-                overviewPages.forEach((opText, opIdx) => {
-                    if (opIdx === overviewPages.length - 1) {
-                        pages.push({
-                            type: 'strategy',
-                            overviewText: opText,
-                            primaryGoalText: primaryGoalHtml,
-                            strategyPage: opIdx + 1,
-                            isLastStrategy: true
-                        });
-                    } else {
-                        pages.push({
-                            type: 'strategy',
-                            overviewText: opText,
-                            primaryGoalText: '',
-                            strategyPage: opIdx + 1,
-                            isLastStrategy: false
-                        });
-                    }
-                });
-            } else {
-                overviewPages.forEach((opText, opIdx) => {
-                    pages.push({
-                        type: 'strategy',
-                        overviewText: opText,
-                        primaryGoalText: '',
-                        strategyPage: opIdx + 1,
-                        isLastStrategy: false
-                    });
-                });
-                pages.push({
-                    type: 'strategy',
-                    overviewText: '',
-                    primaryGoalText: primaryGoalHtml,
-                    strategyPage: overviewPages.length + 1,
-                    isLastStrategy: true
-                });
-            }
-        }
-        insertCustomPagesFor('strategy');
-
-        if (!isHidden('scopeOfWork') && formData.scopeOfWork) {
-            const scopePages = splitTextIntoPages(formData.scopeOfWork, 800);
-            scopePages.forEach((spText, spIdx) => {
-                pages.push({
-                    type: 'scope',
-                    items: [],
-                    scopeText: spText,
-                    scopePage: spIdx + 1,
-                    isLastScope: spIdx === scopePages.length - 1
-                });
-            });
-        }
-        insertCustomPagesFor('scope');
-
-        if (!isHidden('proposal')) {
-            const activeDeliverables = (formData.deliverables || []).filter(d => d.item);
-            const clientReqs = (formData.clientRequirements || []).filter(r => r.description);
-            
-            if (activeDeliverables.length === 0) {
-                pages.push({
-                    type: 'proposal',
-                    deliverables: [],
-                    clientRequirements: clientReqs,
-                    proposalPage: 1,
-                    isLastProposal: true
-                });
-            } else {
-                let delsRemaining = [...activeDeliverables];
-                let pageIdx = 1;
-                while (delsRemaining.length > 0) {
-                    const chunk = delsRemaining.splice(0, 10);
-                    const isLast = delsRemaining.length === 0;
-                    pages.push({
-                        type: 'proposal',
-                        deliverables: chunk,
-                        clientRequirements: isLast ? clientReqs : [],
-                        proposalPage: pageIdx++,
-                        isLastProposal: isLast,
-                        startIndex: (pageIdx - 2) * 10
-                    });
-                }
-            }
-        }
-        insertCustomPagesFor('proposal');
-
-        if (!isHidden('inventory')) {
-            let itemsRemaining = [...items];
-            if (itemsRemaining.length === 0) pages.push({ type: 'table', items: [] });
-            else {
-                let pIdx = 1;
-                while (itemsRemaining.length > 0) {
-                    pages.push({ 
-                        type: 'table', 
-                        items: itemsRemaining.splice(0, 10),
-                        tablePageIdx: pIdx++ 
-                    });
-                }
-            }
-        }
-        insertCustomPagesFor('table');
-
-        insertCustomPagesFor('default');
-
-        if (!isHidden('commercials')) {
-            const termsHtml = formData.terms || '';
-            const paymentDetailsHtml = (formData.showPaymentDetails !== false && !isHidden('paymentDetails')) ? (formData.paymentDetails || '') : '';
-            
-            if (termsHtml) {
-                const termsPages = splitTextIntoPages(termsHtml, 800);
-                const lastTermsPageText = termsPages[termsPages.length - 1];
-                const finalPageStaticHeight = 550;
-                const lastTermsHeight = estimateBlockHeight(lastTermsPageText) + (paymentDetailsHtml ? 100 : 0);
-                
-                if (lastTermsHeight + finalPageStaticHeight <= 800) {
-                    for (let i = 0; i < termsPages.length - 1; i++) {
-                        pages.push({
-                            type: 'terms_only',
-                            termsText: termsPages[i],
-                            termsPageIdx: i + 1
-                        });
-                    }
-                    pages.push({
-                        type: 'commercials',
-                        termsText: lastTermsPageText,
-                        paymentDetailsText: paymentDetailsHtml,
-                        items: []
-                    });
-                } else {
-                    for (let i = 0; i < termsPages.length; i++) {
-                        pages.push({
-                            type: 'terms_only',
-                            termsText: termsPages[i],
-                            termsPageIdx: i + 1
-                        });
-                    }
-                    pages.push({
-                        type: 'commercials',
-                        termsText: '',
-                        paymentDetailsText: paymentDetailsHtml,
-                        items: []
-                    });
-                }
-            } else {
-                pages.push({
-                    type: 'commercials',
-                    termsText: '',
-                    paymentDetailsText: paymentDetailsHtml,
-                    items: []
-                });
-            }
-        }
-        insertCustomPagesFor('commercials');
-        if (!isHidden('attachments') && formData.attachments && formData.attachments.length > 0) {
-            pages.push({
-                type: 'attachments',
-                attachments: formData.attachments
-            });
-        }
-        return pages;
-    };
-    const handleSave = async () => {
-        setIsSaving(true);
+    const save = async ({ quiet } = {}) => {
+        if (locked) return currentId;
+        if (saving) return null;
+        const clash = formData.proposalNumber !== autoNumberRef.current && clashWith(formData.proposalNumber);
+        if (clash && !window.confirm(`${formData.proposalNumber} is already used by another proposal${clash.clientName ? ` (${clash.clientName})` : ''}. Save with the same number anyway?`)) return null;
+        setSaving(true);
+        setAutosaveStatus('saving');
         try {
-            const rawProposalData = { ...formData, items, totalAmount, subtotal, updatedAt: new Date().toISOString() };
-            const proposalData = JSON.parse(JSON.stringify(rawProposalData));
-            if (id) {
-                await updateProposal(id, proposalData);
-                addToast('Proposal updated.', 'success');
-                isDirtyRef.current = false;
-                setAutosaveStatus('saved');
-                setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-            } else {
-                const newDocId = await addProposal(proposalData);
-                addToast('Proposal created.', 'success');
-                isDirtyRef.current = false;
-                setAutosaveStatus('saved');
-                setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-                navigate(`/admin/edit-proposal/${newDocId}`);
-            }
-        } catch (err) {
-            addToast("Couldn't save the proposal. Please try again.", 'error');
-        } finally {
-            setIsSaving(false);
-        }
-    };
-    const handleGenerateProposal = async (prompt) => {
-        setIsGenerating(true);
-        setGeneratingSection('all');
-        try {
-            const data = await generateFullDocument('proposal', prompt, 'Premium', {});
-            setFormData(prev => ({
-                ...prev,
-                clientName: data.clientName || prev.clientName,
-                clientAddress: data.clientAddress || prev.clientAddress,
-                campaignName: data.campaignName || prev.campaignName,
-                campaignDuration: data.campaignDuration || prev.campaignDuration,
-                coverDescription: data.coverDescription || prev.coverDescription,
-                overview: data.overview || prev.overview,
-                primaryGoal: data.primaryGoal || prev.primaryGoal,
-                scopeOfWork: data.scopeOfWork || prev.scopeOfWork,
-                terms: data.terms || prev.terms,
-                // NOTE: Never overwrite paymentDetails — user has their own bank details pre-configured
-                deliverables: data.deliverables?.length 
-                    ? data.deliverables.map((d, i) => ({ 
-                        id: Date.now() + i, 
-                        item: d.item || d.name || '', 
-                        qty: d.qty || '1', 
-                        timeline: d.timeline || 'TBD' 
-                    })) 
-                    : prev.deliverables,
-                clientRequirements: data.clientRequirements?.length 
-                    ? data.clientRequirements.map((r, i) => ({ 
-                        id: Date.now() + 100 + i, 
-                        description: r.description || r.requirement || '' 
-                    })) 
-                    : prev.clientRequirements,
-            }));
-            if (data.items && data.items.length > 0) {
-                setItems(data.items.map((item, idx) => ({
-                    id: Date.now() + 200 + idx,
-                    description: item.description || item.name || '',
-                    qty: Number(item.qty) || 1,
-                    unit: item.unit || 'Unit',
-                    price: Number(item.price) || 0
-                })));
-            }
-        } catch (error) {
-            useStore.getState().addToast("AI couldn't generate the content right now. Please try again.", 'error');
-        } finally {
-            setIsGenerating(false);
-            setGeneratingSection(null);
-        }
-    };
-
-
-    const handleTabClick = (tabId) => {
-        setActiveTab(tabId);
-        const pages = getPaginatedPages();
-        const mapping = { 
-            'ai': 'cover', 
-            '1': 'cover', 
-            '2': 'strategy', 
-            '3': 'scope', 
-            '4': 'proposal', 
-            '5': 'table', 
-            '6': 'commercials',
-            '7': 'custom',
-            '8': 'attachments'
-        };
-        const targetType = mapping[tabId];
-        const pageIndex = pages.findIndex(p => p.type === targetType);
-        if (pageIndex !== -1) setCurrentPreviewPage(pageIndex);
-    };
-
-    const generatePDF = async () => {
-        setIsSaving(true);
-        const originalScale = previewScale;
-        setPreviewScale(1);
-        await new Promise(r => setTimeout(r, 800));
-        try {
-            // Lazy load libraries
-            const [jsPDFModule, html2canvasModule] = await Promise.all([
-                import('jspdf'),
-                import('html2canvas')
-            ]);
-            const jsPDF = jsPDFModule.default;
-            const html2canvas = html2canvasModule.default;
-
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            // Use a separate container that has all pages rendered
-            const pages = document.querySelectorAll('.pdf-export-only .proposal-page-render');
-            if (pages.length === 0) {
-                // Fallback to preview if export-only not found (shouldn't happen)
-                const singlePage = document.querySelector('.proposal-page-render');
-                if (singlePage) {
-                    const canvas = await html2canvas(singlePage, { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' });
-                    pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297, '', 'FAST');
-                }
-            } else {
-                for (let i = 0; i < pages.length; i++) {
-                    const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' });
-                    if (i > 0) pdf.addPage();
-                    pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297, '', 'FAST');
-                }
-            }
-            pdf.save(`Newbi-Quotation-${formData.clientName || 'Proposal'}.pdf`);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setPreviewScale(originalScale);
-            setIsSaving(false);
-        }
-    };
-
-    const handleBulkGenerate = async () => {
-        if (!bulkRawText || !bulkRawText.trim()) {
-            addToast("Add client details or requirements to generate proposals in bulk.", "error");
-            return;
-        }
-        setIsBulkGenerating(true);
-
-        let prompts = [];
-        if (bulkRawText.includes('---') || bulkRawText.includes('___')) {
-            prompts = bulkRawText
-                .split(/\n?[-_]{3,}\n?/)
-                .map(p => p.trim())
-                .filter(p => p.length > 5);
-        } else {
-            prompts = bulkRawText
-                .split(/\n\n+/)
-                .map(p => p.trim())
-                .filter(p => p.length > 10);
-        }
-        if (prompts.length === 0) {
-            prompts = [bulkRawText.trim()];
-        }
-
-        setBulkProgress({ current: 0, total: prompts.length });
-        const generatedProposals = [];
-        
-        try {
-            for (let i = 0; i < prompts.length; i++) {
-                const prompt = prompts[i];
-                const data = await generateFullDocument('proposal', prompt, 'Premium', {});
-                
-                const finalProposal = {
-                    clientName: data.clientName || `Client 0${i + 1}`,
-                    clientAddress: data.clientAddress || 'Corporate Headquarters',
-                    campaignName: (bulkCampaignName && bulkCampaignName.trim() !== 'PROPOSAL PLAN') ? bulkCampaignName.trim() : (data.campaignName || 'PROPOSAL PLAN'),
-                    campaignDuration: data.campaignDuration || 'TBD',
-                    proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
-                    coverDescription: data.coverDescription || 'This document contains the beautifully formatted and arranged synthesis of your data.',
-                    overview: data.overview || '',
-                    primaryGoal: data.primaryGoal || '',
-                    numericTargets: '',
-                    audienceAge: '',
-                    audienceLocation: '',
-                    audienceInterests: '',
-                    selectedChannels: [],
-                    contentCount: { reels: 0, posts: 0, stories: 0 },
-                    deliverables: data.deliverables?.length 
-                        ? data.deliverables.map((d, index) => ({ 
-                            id: Date.now() + index + Math.random(), 
-                            item: d.item || d.name || '', 
-                            qty: d.qty || '1', 
-                            timeline: d.timeline || 'TBD' 
-                        })) 
-                        : [],
-                    clientRequirements: data.clientRequirements?.length 
-                        ? data.clientRequirements.map((r, index) => ({ 
-                            id: Date.now() + 100 + index + Math.random(), 
-                            description: r.description || r.requirement || '' 
-                        })) 
-                        : [],
-                    scopeOfWork: data.scopeOfWork || prompt,
-                    terms: data.terms || '1. 50% Advance Fee required.\n2. Balance on delivery.\n3. Taxes as applicable (18% GST).\n4. Quote valid for 14 days.',
-                    paymentDetails: 'Account Name: Newbi Entertainment\nAccount Number: 0000000000\nIFSC: YOUR000000\nUPI: newbi@upi',
-                    gstRate: 18,
-                    advanceRequested: 50,
-                    showGst: true,
-                    showPaymentDetails: true,
-                    showSeal: false,
-                    showSignatures: true,
-                    signatureType: 'handwritten',
-                    providerSignature: '',
-                    clientSignature: '',
-                    senderName: 'Authorized Signatory',
-                    senderDesignation: 'Director of Operations',
-                    status: 'Draft',
-                    hiddenFields: [],
-                    selectedLogo: 'entertainment',
-                    customPages: [],
-                    items: data.items?.length 
-                        ? data.items.map((item, idx) => ({
-                            id: Date.now() + 200 + idx + Math.random(),
-                            description: item.description || item.name || '',
-                            qty: Number(item.qty) || 1,
-                            unit: item.unit || 'Unit',
-                            price: Number(item.price) || 0
-                        }))
-                        : [],
-                    subtotal: 0,
-                    gstAmount: 0,
-                    totalAmount: 0,
-                    hideTotalColumn: false,
-                    isBulkGenerated: true,
-                    strategyTitle: 'EXECUTIVE SUMMARY',
-                    strategySub: 'STRATEGIC OUTLINE',
-                    scopeTitle: 'SCOPE OF WORK',
-                    scopeSub: 'RESOURCE DELIVERABLES',
-                    proposalTitle: 'DELIVERABLES',
-                    proposalSub: 'PROJECT INVENTORY',
-                    inventoryTitle: 'RESOURCE INVENTORY',
-                    inventorySub: 'COMMERCIALS BREAKDOWN',
-                    commercialsTitle: 'COMMERCIAL TERMS',
-                    commercialsSub: 'SETTLEMENT & SIGN-OFF'
-                };
-                
-                generatedProposals.push(finalProposal);
-                setBulkProgress({ current: i + 1, total: prompts.length });
-            }
-            
-            setBulkProposals(prev => {
-                const newVault = [...prev, ...generatedProposals];
-                setSelectedBulkIndex(newVault.length - generatedProposals.length);
-                return newVault;
-            });
-            addToast(`${generatedProposals.length} proposals generated.`, 'success');
-        } catch (err) {
-            addToast(err.message || "Couldn't generate the proposals. Please try again.", 'error');
-        }
-        setIsBulkGenerating(false);
-    };
-
-    const handleSaveAllBulk = async () => {
-        if (bulkProposals.length === 0) return;
-        setIsSaving(true);
-        let savedCount = 0;
-        try {
-            for (const prop of bulkProposals) {
-                const proposalData = JSON.parse(JSON.stringify({
-                    ...prop,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                }));
-                await addProposal(proposalData);
-                savedCount++;
-            }
-            addToast(`All ${savedCount} proposals saved.`, 'success');
-            navigate('/admin/proposals');
-        } catch (error) {
-            addToast("Couldn't save all the proposals. Please try again.", 'error');
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    const generateAllBulkPDFs = async () => {
-        if (bulkProposals.length === 0) return;
-        setIsSaving(true);
-        const originalScale = previewScale;
-        const originalIndex = selectedBulkIndex;
-        setPreviewScale(1);
-        
-        try {
-            const [jsPDFModule, html2canvasModule] = await Promise.all([
-                import('jspdf'),
-                import('html2canvas')
-            ]);
-            const jsPDF = jsPDFModule.default;
-            const html2canvas = html2canvasModule.default;
-
-            for (let b = 0; b < bulkProposals.length; b++) {
-                setSelectedBulkIndex(b);
-                await new Promise(r => setTimeout(r, 800));
-                
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pages = document.querySelectorAll('.pdf-export-only .proposal-page-render');
-                
-                if (pages.length > 0) {
-                    for (let i = 0; i < pages.length; i++) {
-                        const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' });
-                        if (i > 0) pdf.addPage();
-                        pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297, '', 'FAST');
-                    }
-                    pdf.save(`Newbi-Quotation-${bulkProposals[b].clientName || `Bulk-${b+1}`}.pdf`);
-                }
-            }
-            addToast(`All ${bulkProposals.length} proposals downloaded as PDFs.`, 'success');
-        } catch (error) {
-            console.error(error);
-            addToast("Couldn't download the PDFs. Please try again.", 'error');
-        } finally {
-            setPreviewScale(originalScale);
-            setSelectedBulkIndex(originalIndex);
-            setIsSaving(false);
-        }
-    };
-
-    const paginatedPages = getPaginatedPages();
-
-    useEffect(() => {
-        if (paginatedPages.length > 0 && currentPreviewPage >= paginatedPages.length) {
-            setCurrentPreviewPage(paginatedPages.length - 1);
-        }
-    }, [paginatedPages.length, currentPreviewPage]);
-
-    const handleRefine = async () => {
-        if (!refinementPrompt.trim() || isRefining) return;
-        setIsRefining(true);
-        try {
-            const currentDoc = (isBulkMode && bulkProposals.length > 0) ? bulkProposals[selectedBulkIndex] : singleFormData;
-            const updatedDoc = await reviseDocument(currentDoc, refinementPrompt, 'Premium');
-            
-            if (isBulkMode && bulkProposals.length > 0) {
-                setBulkProposals(prev => {
-                    const newVault = [...prev];
-                    newVault[selectedBulkIndex] = { ...currentDoc, ...updatedDoc };
-                    return newVault;
-                });
-                if (singleFormData.id === currentDoc.id) {
-                    setSingleFormData(prev => ({ ...prev, ...updatedDoc }));
-                }
-            } else {
-                setSingleFormData(prev => ({ ...prev, ...updatedDoc }));
-            }
-            addToast('Changes applied to your proposal.', 'success');
+            const pid = await persist();
+            if (!quiet) addToast('Proposal saved.', 'success');
+            return pid;
         } catch (err) {
             console.error(err);
-            addToast(err.message || "Couldn't apply the changes. Please try again.", 'error');
+            setAutosaveStatus('error');
+            addToast(err?.code === 'CLOSED' ? 'The client already answered this proposal, so it can no longer be changed.' : "Couldn't save the proposal. Please try again.", 'error');
+            return null;
         } finally {
-            setIsRefining(false);
+            setSaving(false);
         }
     };
 
-    const handleStudioSubmit = async () => {
-        if (!promptText.trim() || isGenerating) return;
-        const currentPrompt = promptText.trim();
-        setPromptText('');
+    // Used before sharing: saves if needed, resolves to the proposal id.
+    const ensureSaved = async () => {
+        if (currentId && !dirtyRef.current) return currentId;
+        return save({ quiet: true });
+    };
 
-        setMessages(prev => [...prev, { id: String(Date.now()) + '-user', sender: 'user', text: currentPrompt }]);
-        setIsGenerating(true);
+    const leave = async () => {
+        if (dirtyRef.current && !locked && !notFound) {
+            const pid = await save({ quiet: true });
+            if (!pid && !window.confirm("Your latest changes aren't saved. Leave anyway?")) return;
+        }
+        navigate('/admin/proposals');
+    };
 
+    // ── preview ──
+    const deferredForm = useDeferredValue(formData);
+    const deferredItems = useDeferredValue(items);
+    const pages = useMemo(() => getProposalPages(deferredForm, deferredItems), [deferredForm, deferredItems]);
+    const previewTotals = useMemo(() => computeTotals(deferredForm, deferredItems), [deferredForm, deferredItems]);
+    useEffect(() => {
+        if (previewPage >= pages.length && pages.length) setPreviewPage(pages.length - 1);
+    }, [pages.length, previewPage]);
+
+    const scrollRef = useRef(null);
+    const pillsRef = useRef(null);
+    useEffect(() => {
+        const nav = pillsRef.current;
+        const pill = nav?.querySelector('[aria-current="step"]');
+        if (nav && pill) nav.scrollTo({ left: pill.offsetLeft - nav.clientWidth / 2 + pill.clientWidth / 2, behavior: 'smooth' });
+    }, [section]);
+    const goTo = (sectionId) => {
+        const s = sections.find(x => x.id === sectionId) || sections[0];
+        setSection(s.id);
+        if (s.page) {
+            const idx = pages.findIndex(p => p.type === s.page);
+            if (idx >= 0) setPreviewPage(idx);
+        }
+        scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    useEffect(() => {
+        if (!sections.some(s => s.id === section)) setSection('client');
+    }, [sections, section]);
+
+    const index = Math.max(0, sections.findIndex(s => s.id === section));
+    const current = sections[index];
+
+    const download = async () => {
+        if (downloading) return;
+        setDownloading(true);
         try {
-            if (refinementContext) {
-                // Field refinement
-                const refined = await refineFieldContent(
-                    'proposal',
-                    refinementContext.fieldLabel,
-                    refinementContext.currentValue,
-                    currentPrompt,
-                    aiTone
-                );
-
-                const fieldKey = refinementContext.fieldKey;
-                if (fieldKey.startsWith('deliverables[')) {
-                    const match = fieldKey.match(/deliverables\[(\d+)\]\.(item|qty|timeline)/);
-                    if (match) {
-                        const idx = parseInt(match[1]);
-                        const field = match[2];
-                        const updated = [...formData.deliverables];
-                        updated[idx] = { ...updated[idx], [field]: refined };
-                        setFormData({ ...formData, deliverables: updated });
-                    }
-                } else if (fieldKey.startsWith('clientRequirements[')) {
-                    const match = fieldKey.match(/clientRequirements\[(\d+)\]\.description/);
-                    if (match) {
-                        const idx = parseInt(match[1]);
-                        const updated = [...formData.clientRequirements];
-                        updated[idx] = { ...updated[idx], description: refined };
-                        setFormData({ ...formData, clientRequirements: updated });
-                    }
-                } else if (fieldKey.startsWith('items[')) {
-                    const match = fieldKey.match(/items\[(\d+)\]\.(description|qty|price)/);
-                    if (match) {
-                        const idx = parseInt(match[1]);
-                        const field = match[2];
-                        const newItems = [...items];
-                        let val = refined;
-                        if (field === 'qty' || field === 'price') val = Number(refined) || 0;
-                        newItems[idx] = { ...newItems[idx], [field]: val };
-                        setItems(newItems);
-                    }
-                } else {
-                    setFormData(prev => ({ ...prev, [fieldKey]: refined }));
-                }
-
-                setMessages(prev => [...prev, {
-                    id: String(Date.now()) + '-ai',
-                    sender: 'ai',
-                    text: `✓ Refinement applied to "${refinementContext.fieldLabel}"! Output updated in the preview.`
-                }]);
-                setRefinementContext(null);
-                if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
-                addToast(`"${refinementContext.fieldLabel}" refined.`, 'success');
-            } else {
-                const isBulk = isBulkMode || detectBulkMode(currentPrompt);
-                const isInitialGeneration = !singleFormData.clientName || singleFormData.clientName.trim() === '' || messages.length <= 1 || isBulk;
-
-                if (isInitialGeneration || isBulk) {
-                    const schema = isBulk ? 'bulk_proposal' : 'proposal';
-                    const data = await generateFullDocument(schema, currentPrompt, aiTone, {});
-                    
-                    setSingleFormData(prev => ({
-                        ...prev,
-                        clientName: data.clientName || prev.clientName,
-                        clientAddress: data.clientAddress || prev.clientAddress,
-                        campaignName: data.campaignName || prev.campaignName,
-                        campaignDuration: data.campaignDuration || prev.campaignDuration,
-                        coverDescription: data.coverDescription || prev.coverDescription,
-                        overview: data.overview || prev.overview,
-                        primaryGoal: data.primaryGoal || prev.primaryGoal,
-                        scopeOfWork: data.scopeOfWork || prev.scopeOfWork,
-                        terms: data.terms || prev.terms,
-                        deliverables: data.deliverables?.length 
-                            ? data.deliverables.map((d, i) => ({ 
-                                id: Date.now() + i, 
-                                item: d.item || d.name || '', 
-                                qty: d.qty || '1', 
-                                timeline: d.timeline || 'TBD' 
-                            })) 
-                            : prev.deliverables,
-                        clientRequirements: data.clientRequirements?.length 
-                            ? data.clientRequirements.map((r, i) => ({ 
-                                id: Date.now() + 100 + i, 
-                                description: r.description || r.requirement || '' 
-                            })) 
-                            : prev.clientRequirements,
-                        customPages: data.customPages?.length
-                            ? [
-                                ...(prev.customPages || []),
-                                ...data.customPages.map((cp, cpIdx) => ({
-                                    id: String(Date.now()) + '-aicp-' + cpIdx,
-                                    title: cp.title || 'AI Generated Page',
-                                    subtitle: cp.subtitle || '',
-                                    content: cp.content || '',
-                                    insertAfter: 'default'
-                                }))
-                            ]
-                            : prev.customPages,
-                    }));
-
-                    if (data.items && data.items.length > 0) {
-                        setSingleItems(data.items.map((item, idx) => ({
-                            id: Date.now() + 200 + idx,
-                            description: item.description || item.name || '',
-                            qty: Number(item.qty) || 1,
-                            unit: item.unit || 'Unit',
-                            price: Number(item.price) || 0
-                        })));
-                    }
-
-                    const extraPagesMsg = data.customPages?.length ? ` I also created ${data.customPages.length} additional custom page(s).` : '';
-                    
-                    if (isBulk) {
-                        setMessages(prev => [...prev, {
-                            id: String(Date.now()) + '-ai',
-                            sender: 'ai',
-                            text: `✓ **Pre-generated proposal text analyzed and structured!**\n\nAll fields, scope of work, deliverables (${data.deliverables?.length || 0}), financial line items (${data.items?.length || 0}), and terms have been populated directly into your proposal.${extraPagesMsg}\n\nYou can continue chatting here to modify any part, or click the tabs above to edit manually.`
-                        }]);
-                    } else {
-                        setMessages(prev => [...prev, {
-                            id: String(Date.now()) + '-ai',
-                            sender: 'ai',
-                            text: `✓ Proposal for "${data.clientName || 'Partner'}" generated successfully! I added ${data.items?.length || 0} financial line items.${extraPagesMsg}\n\nYou can continue chatting here to modify the proposal, or edit using the manual tabs.`
-                        }]);
-                    }
-
-                    if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
-                    addToast(isBulk ? 'Proposal text imported.' : 'Proposal generated.', 'success');
-                } else {
-                    const currentDoc = singleFormData;
-                    const currentDocWithItems = { ...currentDoc, items };
-                    const updatedDoc = await reviseDocument(currentDocWithItems, currentPrompt, aiTone);
-                    
-                    // Handle custom pages from revision
-                    if (updatedDoc.customPages && updatedDoc.customPages.length > 0) {
-                        updatedDoc.customPages = updatedDoc.customPages.map((cp, cpIdx) => ({
-                            id: cp.id || String(Date.now()) + '-rcp-' + cpIdx,
-                            title: cp.title || 'Page',
-                            subtitle: cp.subtitle || '',
-                            content: cp.content || '',
-                            insertAfter: cp.insertAfter || 'default'
-                        }));
-                    }
-                    
-                    setFormData(updatedDoc);
-                    if (updatedDoc.items && updatedDoc.items.length > 0) {
-                        setItems(updatedDoc.items.map((item, idx) => ({
-                            id: Date.now() + 200 + idx,
-                            description: item.description || item.name || item.item || '',
-                            qty: Number(item.qty) || 1,
-                            unit: item.unit || 'Unit',
-                            price: Number(item.price) || 0
-                        })));
-                    }
-
-                    setMessages(prev => [...prev, {
-                        id: String(Date.now()) + '-ai',
-                        sender: 'ai',
-                        text: `✓ Document refined according to request: "${currentPrompt}". You can inspect the updated preview on the right.`
-                    }]);
-                    if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
-                    addToast('Proposal updated.', 'success');
-                }
-            }
+            await exportProposalPdf(formData, items);
         } catch (err) {
-            const errCode = err.code || 'NB-500';
-            const errMsg = err.message || "Something unexpected happened. Give it another shot!";
-            setMessages(prev => [...prev, {
-                id: String(Date.now()) + '-ai-err',
-                sender: 'ai',
-                text: `⚠ **${errCode}** — ${errMsg}\n\n💡 **Tip:** Need help? Try simplifying your prompt or check your internet connection.`
-            }]);
-            if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
-            addToast(errMsg, 'error');
+            console.error(err);
+            addToast("Couldn't create the PDF. Please try again.", 'error');
         } finally {
-            setIsGenerating(false);
-            setIsBulkGenerating(false);
+            setDownloading(false);
         }
     };
 
-    const renderChatbot = (isFloating = false) => {
+    const makeCopy = async () => {
+        if (!currentId || copying) return;
+        setCopying(true);
+        try {
+            const newId = await useStore.getState().duplicateProposal(currentId);
+            pendingIdRef.current = newId;
+            dirtyRef.current = false;
+            addToast('Copied as a new draft.', 'success');
+            navigate(`/admin/edit-proposal/${newId}`);
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't copy the proposal.", 'error');
+        } finally {
+            setCopying(false);
+        }
+    };
+
+    // ── AI ──
+    const onRefine = useCallback((target) => setRefineTarget(target), []);
+    const applyAi = (mode, data) => {
+        if (mode === 'draft') {
+            setFormData(prev => applyAiDraft(prev, data));
+            if (!isV2) { const its = aiItems(data); if (its) setItems(its); }
+            goTo('client');
+        } else {
+            setFormData(prev => applyRevision(prev, data));
+            if (!isV2) { const its = aiItems(data); if (its) setItems(its); }
+        }
+    };
+    const getAiDoc = () => contentForAi(formData, items);
+
+    const checks = useMemo(() => checkBeforeSharing(formData, { totals, proposals, id: currentId }), [formData, totals, proposals, currentId]);
+    const state = live ? proposalState(live) : 'draft';
+    const stateCfg = PROPOSAL_STATE_LABEL[state];
+
+    const sectionProps = { formData, setFormData, onRefine, totals };
+    const renderSection = () => {
+        switch (section) {
+            case 'client': return <ClientSection formData={formData} setFormData={setFormData} isV2={isV2} />;
+            case 'details': return <DetailsSection formData={formData} setFormData={setFormData} />;
+            case 'cover': return isV2 ? <V2CoverEditor {...sectionProps} /> : <LegacyCoverEditor {...sectionProps} />;
+            case 'strategy': return isV2 ? <V2StrategyEditor {...sectionProps} /> : <LegacyStrategyEditor {...sectionProps} />;
+            case 'plan': return <V2BlueprintEditor {...sectionProps} />;
+            case 'scope': return <LegacyScopeEditor {...sectionProps} />;
+            case 'deliverables': return isV2 ? <V2DeliverablesEditor {...sectionProps} /> : <LegacyDeliverablesEditor {...sectionProps} />;
+            case 'pricing': return isV2 ? <V2PricingEditor {...sectionProps} /> : <LegacyPricingEditor {...sectionProps} items={items} setItems={setItems} />;
+            case 'payment': return <LegacyPaymentEditor {...sectionProps} />;
+            case 'deepdive': return <V2DeepDiveEditor {...sectionProps} />;
+            case 'terms': return <CustomPagesSection formData={formData} setFormData={setFormData} isV2={isV2} onRefine={onRefine} />;
+            case 'sign': return (
+                <div className="space-y-5">
+                    {isV2 && <V2ClosingEditor {...sectionProps} />}
+                    <SignaturesSection formData={formData} setFormData={setFormData} isV2={isV2} />
+                </div>
+            );
+            case 'files': return <AttachmentsSection formData={formData} setFormData={setFormData} />;
+            case 'review': return (
+                <ReviewSection
+                    id={currentId}
+                    formData={formData}
+                    live={live}
+                    totals={totals}
+                    checks={checks}
+                    onGoto={goTo}
+                    ensureSaved={ensureSaved}
+                    onDownload={download}
+                    downloading={downloading}
+                    locked={locked}
+                />
+            );
+            default: return null;
+        }
+    };
+
+    const saveText = locked ? 'Locked'
+        : autosaveStatus === 'saving' ? 'Saving…'
+            : autosaveStatus === 'error' ? "Couldn't save. Check your connection."
+                : autosaveStatus === 'saved' ? `Saved ${lastSaved}`
+                    : currentId ? 'Changes save automatically' : 'Saves once you start editing';
+
+    if (notFound) {
         return (
-            <div className="flex flex-col relative w-full h-full min-h-0 overflow-hidden font-['Outfit']">
-                {/* Subtle Background Glow */}
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-40 h-40 bg-neon-green/5 rounded-full blur-3xl pointer-events-none" />
-
-                {/* Minimal Sleek Header */}
-                <div className="flex items-center justify-between px-3 py-2.5 border-b border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-950/40 rounded-2xl shrink-0 relative z-10 mb-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-2 h-2 rounded-full bg-neon-green shadow-[0_0_8px_#39FF14] shrink-0 animate-pulse" />
-                        <div className="min-w-0 flex items-center gap-2">
-                            <span className="text-xs font-bold text-gray-900 dark:text-white tracking-wide truncate">
-                                AI Proposal Assistant
-                            </span>
-                            <span className="text-[9px] font-mono text-zinc-500 font-medium px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 shrink-0">
-                                {activeModel || 'Gemini'}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                        {messages.length > 1 && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setMessages([
-                                        {
-                                            id: 'init-msg',
-                                            sender: 'ai',
-                                            text: "Welcome to Newbi AI Proposal Studio. Describe the event or campaign requirements below, and I will draft a comprehensive proposal. Continue chatting to refine any details!"
-                                        }
-                                    ]);
-                                    setPromptText('');
-                                    setRefinementContext(null);
-                                    addToast('Chat cleared. You can start fresh.', 'info');
-                                }}
-                                className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
-                                title="Reset conversation"
-                            >
-                                <RotateCcw size={13} />
-                            </button>
-                        )}
-                        {isFloating && (
-                            <button
-                                type="button"
-                                onClick={() => setIsFloatingChatOpen(false)}
-                                className="p-1.5 text-zinc-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 rounded-xl transition-all"
-                                title="Close chat"
-                            >
-                                <X size={15} />
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {/* Message Stream */}
-                <div 
-                    ref={isFloating ? floatingChatContainerRef : chatContainerRef} 
-                    className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-3 scrollbar-hide py-1 relative z-10"
-                >
-                    {/* Compact Welcome Screen when only 1 message */}
-                    {messages.length === 1 && (
-                        <div className="h-full flex flex-col items-center justify-center text-center px-3 py-4 space-y-3.5 my-auto animate-fade-in">
-                            <div className="w-10 h-10 rounded-2xl bg-neon-green/10 border border-neon-green/20 flex items-center justify-center shadow-[0_0_20px_rgba(57,255,20,0.1)]">
-                                <Sparkles size={18} className="text-neon-green" />
-                            </div>
-                            <div className="space-y-1 max-w-[280px]">
-                                <h3 className="text-xs font-bold text-gray-900 dark:text-white tracking-wide">
-                                    How can I help with your proposal?
-                                </h3>
-                                <p className="text-[10px] text-zinc-400 leading-relaxed">
-                                    Describe what you want to generate, modify, or add to this quotation.
-                                </p>
-                            </div>
-
-                            {/* Quick Suggestion Chips */}
-                            <div className="flex flex-wrap justify-center gap-1.5 pt-1 max-w-[320px]">
-                                {[
-                                    'Music Festival Proposal',
-                                    'Add AV & Staging Items',
-                                    'Increase Budget by 20%',
-                                    'Add 50% Advance & Terms'
-                                ].map((s) => (
-                                    <button
-                                        key={s}
-                                        type="button"
-                                        onClick={() => setPromptText(s)}
-                                        className="px-2.5 py-1 rounded-xl bg-white/[0.03] hover:bg-neon-green/10 border border-black/10 dark:border-white/5 hover:border-neon-green/30 text-[9px] font-medium text-zinc-400 hover:text-neon-green transition-all text-left"
-                                    >
-                                        ✨ {s}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Chat Messages */}
-                    {messages.length > 1 && messages.map(m => (
-                        <div
-                            key={m.id}
-                            className={cn(
-                                "max-w-[88%] rounded-2xl p-3 text-xs leading-relaxed transition-all shadow-sm relative overflow-hidden",
-                                m.sender === 'user'
-                                    ? "bg-zinc-800/90 text-zinc-100 self-end rounded-tr-sm border border-black/10 dark:border-white/10 ml-auto"
-                                    : "bg-white/[0.03] border border-white/[0.06] text-zinc-200 self-start rounded-tl-sm mr-auto"
-                            )}
-                        >
-                            <div className="flex items-center gap-1.5 mb-1 opacity-60">
-                                <span className={cn(
-                                    "text-[8px] font-black uppercase tracking-wider",
-                                    m.sender === 'user' ? "text-zinc-400" : "text-neon-green"
-                                )}>
-                                    {m.sender === 'user' ? 'You' : (activeModel || 'AI')}
-                                </span>
-                            </div>
-                            <div className="font-medium text-[11px] leading-relaxed break-words">
-                                {renderChatMessage(m.text)}
-                            </div>
-                        </div>
-                    ))}
-
-                    {/* Generating Indicator */}
-                    {isGenerating && (
-                        <div className="bg-white/[0.03] border border-white/[0.06] text-zinc-300 self-start rounded-2xl rounded-tl-sm p-3 text-xs w-[240px] flex flex-col gap-2 shadow-sm mr-auto">
-                            <div className="flex items-center gap-2">
-                                <Sparkles size={12} className="text-neon-green animate-spin shrink-0" />
-                                <span className="font-bold uppercase tracking-wider text-[8px] text-neon-green flex-1 truncate">
-                                    {STAGE_MESSAGES[generationStage]?.text || "Generating..."}
-                                </span>
-                                <span className="text-[8px] font-mono text-zinc-500 font-bold shrink-0">
-                                    {generationTime}s
-                                </span>
-                            </div>
-                            <div className="w-full h-1 bg-gray-100 dark:bg-zinc-900 rounded-full overflow-hidden">
-                                <div 
-                                    className="h-full bg-neon-green transition-all duration-500 shadow-[0_0_8px_#39FF14]" 
-                                    style={{ width: `${generationProgress}%` }}
-                                />
-                            </div>
-                        </div>
-                    )}
-                    <div ref={chatEndRef} />
-                </div>
-
-                {/* Clean Prompt Input Bar */}
-                <div className="pt-2 shrink-0 relative z-10">
-                    <div className="bg-gray-100 dark:bg-zinc-900/90 border border-black/10 dark:border-white/10 focus-within:border-emerald-500 dark:focus-within:border-neon-green/40 rounded-2xl p-2 flex flex-col gap-1.5 shadow-lg transition-all">
-                        {/* Refinement Quote Banner */}
-                        {refinementContext && (
-                            <div className="px-2.5 py-1.5 bg-neon-green/10 border border-neon-green/20 rounded-xl flex items-center justify-between gap-2 animate-fade-in">
-                                <div className="min-w-0">
-                                    <span className="text-[8px] font-bold text-neon-green block truncate">
-                                        Refining: {refinementContext.fieldLabel}
-                                    </span>
-                                </div>
-                                <button 
-                                    type="button" 
-                                    onClick={() => setRefinementContext(null)}
-                                    className="text-zinc-500 hover:text-gray-900 dark:hover:text-white p-0.5 rounded"
-                                >
-                                    <X size={10} />
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Textarea + Send Button Row */}
-                        <div className="flex items-end gap-2">
-                            <textarea
-                                value={promptText}
-                                onChange={e => setPromptText(e.target.value)}
-                                placeholder={refinementContext ? `Instructions for "${refinementContext.fieldLabel}"...` : (isBulkMode ? "Paste requirements for bulk generation..." : "Type instructions or ask to modify anything...")}
-                                className="flex-grow bg-transparent border-none text-xs font-medium text-gray-900 dark:text-white placeholder:text-zinc-500 outline-none min-h-[36px] max-h-[90px] py-1 px-1 resize-none leading-relaxed scrollbar-hide"
-                                rows={1}
-                                disabled={isGenerating}
-                                onKeyDown={e => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        handleStudioSubmit();
-                                    }
-                                }}
-                            />
-                            <button
-                                type="button"
-                                onClick={handleStudioSubmit}
-                                disabled={!promptText.trim() || isGenerating}
-                                className="w-8 h-8 bg-neon-green text-black rounded-xl hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-20 disabled:scale-100 flex items-center justify-center shadow-[0_0_12px_rgba(57,255,20,0.25)]"
-                                title="Send"
-                            >
-                                {isGenerating ? <RefreshCw className="animate-spin" size={12} /> : <Send size={12} />}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            <div className="flex h-dvh items-center justify-center bg-[#f6f7f9] px-4 dark:bg-[#07080b]">
+                <EmptyState icon={FileText} title="Proposal not found" description="It may have been deleted, or the link is wrong." action={<Button variant="primary" as={Link} to="/admin/proposals">Back to proposals</Button>} />
             </div>
         );
-    };
-
-    const tabs = isV2 ? [
-        { id: 'ai', label: 'AI Studio', icon: Sparkles, desc: 'AI Generator & Chat' },
-        { id: '1', label: 'Cover & Index', icon: FileText, desc: 'Cover, Pill & Index Cards' },
-        { id: '2', label: 'Strategy & Objectives', icon: Target, desc: 'Executive Summary & Anchor Markets' },
-        { id: '3', label: 'Execution Blueprint', icon: ClipboardList, desc: 'Process & Blueprint Steps' },
-        { id: '4', label: 'Deliverables Table', icon: Layers, desc: 'Per-City Scope & Notes' },
-        { id: '5', label: 'Pricing & Commercials', icon: Briefcase, desc: 'Pricing Structure & Inclusions' },
-        { id: '6', label: 'City Deep-Dive', icon: Building2, desc: 'Primary Hub Management' },
-        { id: '7', label: 'Closing & Signatures', icon: ShieldCheck, desc: 'Next Steps & Digital Signatures' },
-        { id: '8', label: 'Attachments & Extras', icon: Paperclip, desc: 'Attached Sheets & PDFs' }
-    ] : [
-        { id: 'ai', label: 'AI Studio', icon: Sparkles, desc: 'AI Generator & Chat' },
-        { id: '1', label: 'Cover Page', icon: FileText, desc: 'Identity & Title', visibilityKey: 'cover' },
-        { id: '2', label: 'Strategy', icon: Target, desc: 'Strategic Framework', visibilityKey: 'strategy' },
-        { id: '3', label: 'Scope of Work', icon: ClipboardList, desc: 'Project Scope', visibilityKey: 'scopeOfWork' },
-        { id: '4', label: 'Deliverables', icon: Layers, desc: 'What we deliver', visibilityKey: 'proposal' },
-        { id: '5', label: 'Pricing Breakdown', icon: Briefcase, desc: 'Financial Details', visibilityKey: 'inventory' },
-        { id: '6', label: 'Payment & Terms', icon: CreditCard, desc: 'Settlement & Terms', visibilityKey: 'commercials' },
-        { id: '7', label: 'Custom Pages', icon: FileText, desc: 'Additional Pages', visibilityKey: 'customPages' },
-        { id: '8', label: 'Attachments', icon: Paperclip, desc: 'Attached Sheets & PDFs', visibilityKey: 'attachments' }
-    ];
-
-    // Use 'all' as a special tab ID that shows all sections at once
-    const [viewMode, setViewMode] = useState('all'); // 'all' or a specific tab id
-
-
-    // Inline bold/italic formatting
-
-    const currentTab = tabs.find(t => t.id === activeTab);
+    }
+    const waiting = Boolean(id && loadedIdRef.current !== id);
 
     return (
-        <div className="h-full w-full overflow-hidden bg-gray-50 dark:bg-[#0B0F17] text-gray-900 dark:text-white selection:bg-neon-green selection:text-black font-['Outfit'] flex flex-col admin-hub-content-container">
-            <style dangerouslySetInnerHTML={{ __html: `
-                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-                @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
-                .scrollbar-hide::-webkit-scrollbar { display: none; }
-                .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-                input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-                .font-signature { font-family: 'Caveat', cursive; }
-            `}} />
+        <div className="flex h-dvh flex-col overflow-hidden bg-[#f6f7f9] font-heading text-gray-900 dark:bg-[#07080b] dark:text-white">
+            {/* Fonts the document paper uses. */}
+            <style dangerouslySetInnerHTML={{ __html: "@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&family=Caveat:wght@400..700&display=swap'); .font-signature{font-family:'Caveat',cursive;}" }} />
 
-            {/* Top Bar */}
-            <header className="h-16 md:h-20 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/50 backdrop-blur-3xl flex items-center justify-between px-4 md:px-8 shrink-0 relative z-50">
-                <div className="flex items-center gap-2 md:gap-4 min-w-0">
-                    <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                        <Link to="/admin/proposals" className="p-2.5 md:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 group"><ArrowLeft size={16} /></Link>
-                    </div>
-                    <div className="min-w-0 flex flex-col justify-center">
-                        <h1 className="text-sm md:text-xl font-extrabold tracking-tight text-gray-900 dark:text-white truncate leading-none">Quotation <span className="text-neon-green">Engine.</span></h1>
-                        <p className="text-[7px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1 truncate">Business Summary</p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 md:gap-4 shrink-0">
-                    {autosaveStatus !== 'idle' && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 select-none">
-                            <span className={cn(
-                                "w-1.5 h-1.5 rounded-full shrink-0",
-                                autosaveStatus === 'saving' && "bg-amber-400 animate-pulse",
-                                autosaveStatus === 'saved' && "bg-emerald-400",
-                                autosaveStatus === 'error' && "bg-red-500"
-                            )} />
-                            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-400">
-                                {autosaveStatus === 'saving' && "Saving..."}
-                                {autosaveStatus === 'saved' && `Autosaved ${lastSaved}`}
-                                {autosaveStatus === 'error' && "Autosave error"}
-                            </span>
+            <header className="relative z-30 shrink-0 border-b border-black/[0.06] bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#07080b]/90">
+                <div className="flex h-14 items-center gap-1.5 px-2 sm:gap-2 sm:px-4">
+                    <button type="button" onClick={leave} aria-label="Back to proposals" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-600 hover:bg-black/5 dark:text-zinc-300 dark:hover:bg-white/10">
+                        <ArrowLeft size={18} />
+                    </button>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 items-center gap-2">
+                            <p className="truncate text-[15px] font-bold leading-tight">
+                                {waiting ? 'Loading…' : currentId ? (formData.clientName || 'Untitled proposal') : 'New proposal'}
+                                {!waiting && formData.proposalNumber && <span className="font-medium text-gray-500"> · {formData.proposalNumber}</span>}
+                            </p>
+                            <Badge tone={stateCfg.tone} className="hidden sm:inline-flex">{stateCfg.label}</Badge>
                         </div>
+                        <p className={cn('truncate text-[11.5px] font-medium', autosaveStatus === 'error' ? 'text-red-500' : 'text-gray-500')}>{saveText}</p>
+                    </div>
+                    {!locked && (
+                        <Button variant="secondary" size="sm" className="h-10" onClick={() => setAiOpen(true)} aria-label="Write with AI">
+                            <Sparkles size={15} className={a.text} /> <span className="hidden sm:inline">AI</span>
+                        </Button>
                     )}
-                    <button onClick={handleSave} className="hidden lg:flex h-10 md:h-12 px-3 md:px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl transition-all items-center gap-2">
-                        <Save size={14} className="sm:hidden" />
-                        <span className="hidden sm:inline">Save</span>
-                    </button>
-                    <button onClick={generatePDF} className="hidden lg:flex h-10 md:h-12 px-4 md:px-8 bg-neon-green text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl shadow-[0_10px_30px_rgba(57,255,20,0.3)] hover:scale-105 transition-all items-center gap-2">
-                        {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Download size={14} />} 
-                        <span className="hidden sm:inline">Export Proposal</span>
-                    </button>
+                    <Button variant="secondary" size="sm" className="h-10 lg:hidden" onClick={() => setPreviewOpen(true)} aria-label="Preview">
+                        <Eye size={15} /> <span className="hidden sm:inline">Preview</span>
+                    </Button>
+                    <Button variant="secondary" size="sm" className="hidden h-10 lg:inline-flex" onClick={download} disabled={downloading}>
+                        {downloading ? <RefreshCw size={15} className="animate-spin" /> : <Download size={15} />} PDF
+                    </Button>
+                    <Button variant="accent" size="sm" className="h-10" onClick={() => goTo('review')}>
+                        <Send size={15} /> <span className="hidden sm:inline">{locked ? 'Share' : 'Review & send'}</span>
+                    </Button>
                 </div>
+                <nav ref={pillsRef} aria-label="Proposal sections" className="flex gap-1 overflow-x-auto px-2 pb-2 [scrollbar-width:none] sm:px-4 xl:hidden [&::-webkit-scrollbar]:hidden">
+                    {sections.map((s, i) => <SectionNavButton key={s.id} s={s} index={i} active={s.id === section} onClick={() => goTo(s.id)} compact />)}
+                </nav>
             </header>
 
-            <main className="flex-1 flex overflow-hidden min-h-0">
-                {/* Sidebar - Desktop */}
-                <aside className={cn(
-                    "hidden lg:flex w-64 shrink-0 border-r border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide",
-                    isExpandedPreview && "lg:hidden"
-                )}>
-                    <div className="space-y-2">
-                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Sections</p>
-                        {/* All Sections button */}
-                        <button onClick={() => { setViewMode('all'); setActiveTab('1'); }} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", viewMode === 'all' ? "bg-white text-black shadow-xl" : "hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white")}>
-                            <div className={cn("p-2.5 rounded-xl transition-all", viewMode === 'all' ? "bg-white dark:bg-black/20" : "bg-black/5 dark:bg-white/5 group-hover:bg-black/10 dark:group-hover:bg-white/10")}><LayoutGrid size={18} /></div>
-                            <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">All Sections</p>
-                                <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", viewMode === 'all' ? "text-black" : "text-gray-600")}>Single Page Editor</p>
-                            </div>
-                        </button>
-                        {tabs.map(tab => (
-                            <button key={tab.id} onClick={() => { setViewMode('tab'); handleTabClick(tab.id); }} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", (viewMode === 'tab' && activeTab === tab.id) ? "bg-white text-black shadow-xl" : "hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white")}>
-                                <div className={cn("p-2.5 rounded-xl transition-all", (viewMode === 'tab' && activeTab === tab.id) ? "bg-white dark:bg-black/20" : "bg-black/5 dark:bg-white/5 group-hover:bg-black/10 dark:group-hover:bg-white/10")}><tab.icon size={18} /></div>
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
-                                    <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", (viewMode === 'tab' && activeTab === tab.id) ? "text-black" : "text-gray-600")}>{tab.desc}</p>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
+            <main className="flex min-h-0 flex-1 overflow-hidden">
+                <aside className="hidden w-60 shrink-0 flex-col gap-1 overflow-y-auto border-r border-black/[0.06] p-3 dark:border-white/[0.06] xl:flex">
+                    <p className="px-3 pb-1 pt-1 text-[12px] font-bold text-gray-500">{isV2 ? 'Proposal' : 'Classic proposal'}</p>
+                    {sections.map((s, i) => <SectionNavButton key={s.id} s={s} index={i} active={s.id === section} onClick={() => goTo(s.id)} />)}
                 </aside>
 
-                {/* Mobile Bottom Navigation */}
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white dark:bg-black/80 backdrop-blur-3xl border-t border-black/10 dark:border-white/10 z-[100] px-4 flex items-center justify-around no-scrollbar">
-                    {tabs.map(tab => (
-                        <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[64px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-green" : "text-gray-500")}>
-                            <tab.icon size={20} />
-                            <span className="text-[7px] font-black uppercase tracking-widest">{tab.label.split(' ')[0]}</span>
-                            {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-neon-green mt-1 shadow-[0_0_8px_#39FF14]" />}
-                        </button>
-                    ))}
-                </div>
+                <section ref={scrollRef} className="relative flex min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+                    <div className="mx-auto w-full max-w-3xl flex-1 px-4 pb-8 pt-5 sm:px-6">
+                        <div className="mb-5 flex items-start gap-3">
+                            <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl', a.chip)}><current.icon size={20} /></span>
+                            <div className="min-w-0">
+                                <h1 className="text-[22px] font-extrabold leading-tight tracking-tight">{current.label}</h1>
+                                <p className="text-[13px] text-gray-500">{current.desc}</p>
+                            </div>
+                        </div>
 
-                {/* Mobile Action Bar (Sticky above bottom nav) */}
-                <div className="lg:hidden fixed bottom-20 left-0 right-0 p-3 bg-gradient-to-t from-black via-black/90 to-transparent z-[90] flex items-center justify-end gap-2 pointer-events-none">
-                    <div className="flex gap-2 w-full pointer-events-auto">
-                        <button 
-                            onClick={() => setShowPreviewMobile(!showPreviewMobile)} 
-                            className="h-10 px-3 flex-1 bg-neon-green/10 rounded-xl border border-neon-green/20 text-neon-green flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg backdrop-blur-md"
-                        >
-                            <Eye size={14} />
-                            <span className="text-[9px] font-black uppercase tracking-widest">Preview</span>
-                        </button>
-                        <button onClick={handleSave} className="h-10 px-3 flex-1 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg backdrop-blur-md">
-                            <Save size={14} />
-                            <span>Save</span>
-                        </button>
-                        <button onClick={generatePDF} className="h-10 px-3 flex-1 bg-neon-green text-black font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(57,255,20,0.2)]">
-                            {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Download size={14} />} 
-                            <span>Export</span>
-                        </button>
-                    </div>
-                </div>
-
-                <main className={cn(
-                    "flex-grow scrollbar-hide bg-white dark:bg-[#050505] px-4 md:px-12 py-10 md:py-16 overflow-y-auto pb-32",
-                    isExpandedPreview && "hidden"
-                )}>
-                    <div className="max-w-[1600px] mx-auto w-full space-y-10 md:space-y-12">
-
-                        {/* ... */}
-                        {activeTab !== 'ai' && (
-                            <div className="flex flex-col 2xl:flex-row items-start 2xl:items-end justify-between gap-6 mb-16 pb-8 border-b border-black/10 dark:border-white/5 relative overflow-hidden">
-                                <div className="space-y-4 min-w-0 w-full 2xl:w-auto">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-[2px] bg-neon-green/40" />
-                                        <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] opacity-80 truncate">
-                                            Phase {tabs.findIndex(t => t.id === activeTab) + 1} of {tabs.length}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-2 min-w-0">
-                                        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-none truncate">
-                                            {currentTab?.label}<span className="text-neon-green">.</span>
-                                        </h2>
-                                        <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] pl-1 truncate">
-                                            {currentTab?.desc}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col items-start 2xl:items-end gap-4 w-full 2xl:w-auto shrink-0 pt-2 2xl:pt-0">
-                                    {/* Compact Progress Line */}
-                                    <div className="w-full sm:w-48 h-0.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden shrink-0">
-                                        <div 
-                                            className="h-full bg-neon-green transition-all duration-700 shadow-[0_0_10px_rgba(57,255,20,0.8)]" 
-                                            style={{ width: `${(tabs.findIndex(t => t.id === activeTab) + 1) / tabs.length * 100}%` }} 
-                                        />
-                                    </div>
-
-                                    {currentTab?.visibilityKey && (
-                                        <div className="flex flex-wrap items-center gap-2 translate-y-1">
-                                            <VisibilityToggle field={currentTab.visibilityKey} />
-                                        </div>
-                                    )}
+                        {locked && (
+                            <div className={cn('mb-5 rounded-2xl border p-4', live.status === PROPOSAL_STATUS.ACCEPTED ? 'border-emerald-500/30 bg-emerald-500/[0.06]' : 'border-red-500/30 bg-red-500/[0.06]')}>
+                                <p className="flex items-center gap-2 text-[14px] font-bold"><Lock size={15} /> {live.status === PROPOSAL_STATUS.ACCEPTED ? 'Accepted. This proposal is locked.' : 'Declined. This proposal is locked.'}</p>
+                                <p className="mt-1 text-[13px] text-gray-600 dark:text-zinc-400">
+                                    {live.status === PROPOSAL_STATUS.ACCEPTED
+                                        ? 'It stays exactly as the client signed it. To change the offer, make a copy and send that.'
+                                        : 'To send a new offer, make a copy, update it and send it.'}
+                                    {dirtyRef.current ? ' Your last unsaved edits were not applied.' : ''}
+                                </p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <Button variant="secondary" size="sm" className="h-10" onClick={makeCopy} disabled={copying}><Copy size={14} /> Make a new draft copy</Button>
+                                    {section !== 'review' && <Button variant="ghost" size="sm" className="h-10" onClick={() => goTo('review')}>Share or invoice</Button>}
                                 </div>
                             </div>
                         )}
 
-                        <AnimatePresence mode="wait">
-                            <motion.div key={viewMode === 'all' ? 'all-sections' : activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className={cn((viewMode === 'tab' && activeTab === 'ai') ? "w-full" : "space-y-16")}>
-                                {(viewMode === 'tab' && activeTab === 'ai') && (
-                                    <div className="w-full min-h-[60vh] flex flex-col items-center justify-center">
-                                        <div className="w-full max-w-2xl space-y-8">
-                                            {/* Welcome Hero */}
-                                            <div className="text-center space-y-3">
-                                                <div className="w-16 h-16 bg-neon-green/10 rounded-3xl flex items-center justify-center mx-auto border border-neon-green/20 shadow-[0_0_30px_rgba(57,255,20,0.1)]">
-                                                    <Sparkles className="w-8 h-8 text-neon-green animate-pulse" />
-                                                </div>
-                                                <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">AI Proposal Studio<span className="text-neon-green">.</span></h2>
-                                                <p className="text-sm text-gray-500 font-medium max-w-lg mx-auto leading-relaxed">
-                                                    {isBulkMode 
-                                                        ? "Paste complete pre-generated proposal text, raw drafts, meeting briefs, or unformatted quotes. AI will automatically extract, organize, and structure all sections directly into this proposal."
-                                                        : "Describe what you need and our AI will craft a complete, professional proposal in seconds. You can refine it through the chat."}
-                                                </p>
-
-                                                {/* Mode Switcher */}
-                                                <div className="flex items-center justify-center gap-1.5 p-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl w-fit mx-auto shadow-inner">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsBulkMode(false)}
-                                                        className={cn(
-                                                            "px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2",
-                                                            !isBulkMode 
-                                                                ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm border border-black/5 dark:border-white/10" 
-                                                                : "text-zinc-500 hover:text-gray-900 dark:hover:text-white"
-                                                        )}
-                                                    >
-                                                        <Sparkles size={13} className={!isBulkMode ? "text-neon-green" : "text-zinc-500"} />
-                                                        Standard Prompt
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsBulkMode(true)}
-                                                        className={cn(
-                                                            "px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2",
-                                                            isBulkMode 
-                                                                ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm border border-black/5 dark:border-white/10" 
-                                                                : "text-zinc-500 hover:text-gray-900 dark:hover:text-white"
-                                                        )}
-                                                    >
-                                                        <Zap size={13} className={isBulkMode ? "text-amber-400" : "text-zinc-500"} />
-                                                        Bulk / Pre-Generated Text
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Quick Prompt Card */}
-                                            <div className="bg-gray-100 dark:bg-zinc-900/60 border border-black/10 dark:border-white/5 rounded-[2rem] p-6 md:p-8 space-y-4 shadow-2xl">
-                                                <textarea
-                                                    value={promptText}
-                                                    onChange={e => setPromptText(e.target.value)}
-                                                    onKeyDown={e => {
-                                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                                            e.preventDefault();
-                                                            handleStudioSubmit();
-                                                        }
-                                                    }}
-                                                    className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-2xl p-5 text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-zinc-500 font-medium outline-none focus:border-neon-green/40 transition-all resize-none min-h-[140px] scrollbar-hide"
-                                                    placeholder={isBulkMode 
-                                                        ? "Paste complete pre-generated proposal text, raw brief, scope document, or quote draft here to automatically populate all proposal sections..." 
-                                                        : "e.g. Create a proposal for a 3-day music festival in Mumbai for XYZ Corp..."}
-                                                />
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-3 text-[8px] font-bold text-zinc-500 uppercase tracking-wider">
-                                                        <span>Tone: {aiTone}</span>
-                                                        <span>·</span>
-                                                        <span>Length: {aiLength}</span>
-                                                        <span>·</span>
-                                                        <span>~{promptText.length ? Math.round(promptText.length / 4) : 0} tokens</span>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleStudioSubmit}
-                                                        disabled={!promptText.trim() || isGenerating}
-                                                        className="px-6 py-3 bg-neon-green text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-20 disabled:scale-100 shadow-[0_0_20px_rgba(57,255,20,0.3)] flex items-center gap-2"
-                                                    >
-                                                        {isGenerating ? <RefreshCw className="animate-spin" size={14} /> : (isBulkMode ? <Zap size={14} /> : <Send size={14} />)}
-                                                        {isGenerating ? 'Processing...' : (isBulkMode ? 'Ingest & Populate' : 'Generate')}
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Quick Suggestion Chips */}
-                                            <div className="flex flex-wrap justify-center gap-2">
-                                                {(isBulkMode 
-                                                    ? [
-                                                        { label: 'Agency Retainer Brief', text: 'Client: Stellar Global Brand\nProject: 2026 Digital Media & Talent Retainer\nScope: Complete monthly brand strategy, 12 influencer campaigns, full content production, and monthly analytics reporting.\nDeliverables:\n1. 12x Dedicated Creator Activations (Quarterly)\n2. 40x Short-form Reels/Shorts\n3. Comprehensive Monthly Performance Audit\nPricing: Monthly Retainer Fee INR 4,50,000 + GST. 50% advance upon signature.' },
-                                                        { label: 'Festival Staging & Sound SOW', text: 'Client: Sunwaves Entertainment\nProject: Arena Staging, Light & Sound Execution\nOverview: 3-day music and cultural festival technical production.\nScope:\n- Main Stage LED Wall (60ft x 30ft)\n- Line Array Sound System (L-Acoustics K2)\n- Intelligent Lighting Rig & Laser mapping\n- Onsite Power Generator backup\nDeliverables:\n- Stage Setup & Structural Sign-off: Day -1\n- Soundcheck & Calibration: Day 0\n- Live Show Support: Day 1-3\nCommercials: Line items for Sound (INR 6,00,000), Stage (INR 4,50,000), Crew (INR 2,00,000).' },
-                                                        { label: 'Influencer Marketing Campaign', text: 'Client: Nova Skincare Ltd\nCampaign: GlowLaunch 2026\nObjective: Generate 5M+ organic impressions and 100K clicks across Tier 1 cities.\nDeliverables:\n1. 20x Top-tier Beauty Influencer Video Posts\n2. 50x Story mentions with tracked affiliate swipe-up links\n3. Full usage rights for Meta & Google ads for 90 days\nCost: Total Package INR 8,50,000.' }
-                                                    ]
-                                                    : [
-                                                        { label: 'Music Festival Proposal', text: 'Create a detailed proposal for a 3-day music festival in Mumbai for a premium brand.' },
-                                                        { label: 'Comedy Tour Budget', text: 'Create a proposal for a 10-city standup comedy tour with complete budget breakdown.' },
-                                                        { label: 'Corporate Event Plan', text: 'Create a corporate annual gala dinner proposal for 500 attendees with stage, lighting, and emcee.' },
-                                                        { label: 'Marketing Campaign', text: 'Create a comprehensive digital and offline marketing campaign proposal for a brand launch.' }
-                                                    ]
-                                                ).map(s => (
-                                                    <button
-                                                        key={s.label}
-                                                        type="button"
-                                                        onClick={() => setPromptText(s.text)}
-                                                        className="px-4 py-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-full text-[9px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 hover:text-neon-green hover:border-neon-green/20 hover:bg-neon-green/5 transition-all"
-                                                    >
-                                                        <Sparkles size={10} className="inline mr-1.5 opacity-50" />{s.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-
-                                            {/* Open Chat Hint */}
-                                            <p className="text-center text-[10px] text-gray-600 font-bold uppercase tracking-widest">
-                                                <MessageCircle size={12} className="inline mr-1 opacity-40" />
-                                                Use the chat bubble at bottom-right to refine and iterate
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                                {(viewMode === 'all' || activeTab === '1') && (
-                                    isV2 ? (
-                                        <V2CoverEditor formData={formData} setFormData={setFormData} logoOptions={logoOptions} />
-                                    ) : (
-                                    <div className="space-y-12">
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between items-center px-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Division Branding</label>
-                                            </div>
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
-                                                {logoOptions.map(logo => (
-                                                    <button key={logo.id} onClick={() => setFormData({...formData, selectedLogo: logo.id})} className={cn("p-4 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-2 overflow-hidden relative group/btn", formData.selectedLogo === logo.id ? "bg-neon-green border-neon-green text-black scale-105 shadow-xl" : "bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white")}>
-                                                        <div className="w-full aspect-[4/3] rounded-xl bg-white flex items-center justify-center p-2 relative overflow-hidden">
-                                                            <img src={logo.path} alt={logo.label} className="w-full h-full object-contain" />
-                                                            <div className="absolute inset-0 bg-white dark:bg-black/5" />
-                                                        </div>
-                                                        <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest relative z-10 leading-tight">{logo.label}</span>
-                                                        {formData.selectedLogo === logo.id && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white dark:bg-black animate-pulse" />}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
-                                            <div className="space-y-4">
-                                                <div className="flex justify-between items-center px-2">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Client Entity</label>
-                                                </div>
-                                                <div className="relative group/refine w-full">
-                                                    <input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Organization Name" />
-                                                    <button type="button" onClick={(e) => handleRefineClick('clientName', 'Client Entity', formData.clientName, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-4">
-                                                <div className="flex justify-between items-center px-2">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Project Name</label>
-                                                </div>
-                                                <div className="relative group/refine w-full">
-                                                    <input value={formData.campaignName} onChange={e => setFormData({...formData, campaignName: e.target.value})} className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Project or Event Title" />
-                                                    <button type="button" onClick={(e) => handleRefineClick('campaignName', 'Project Name', formData.campaignName, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-10">
-                                            <div className="space-y-4">
-                                                <div className="flex justify-between items-center px-2">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Client Address</label>
-                                                    <VisibilityToggle field="clientAddress" />
-                                                </div>
-                                                <div className="relative group/refine w-full">
-                                                    <input value={formData.clientAddress} onChange={e => setFormData({...formData, clientAddress: e.target.value})} className={cn("w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all", isHidden('clientAddress') && "opacity-30")} placeholder="Business Location" />
-                                                    <button type="button" onClick={(e) => handleRefineClick('clientAddress', 'Client Address', formData.clientAddress, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Timeline / Duration</label>
-                                                <div className="relative group/refine w-full">
-                                                    <input value={formData.campaignDuration} onChange={e => setFormData({...formData, campaignDuration: e.target.value})} className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="e.g. 15th - 20th Oct or 3 Months" />
-                                                    <button type="button" onClick={(e) => handleRefineClick('campaignDuration', 'Timeline / Duration', formData.campaignDuration, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                            <div className="space-y-4 relative group/editor group/refine">
-                                                <div className="flex justify-between items-center px-2">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Cover Memorandum</label>
-                                                    <div className="flex items-center gap-2">
-                                                        <VisibilityToggle field="coverDescription" />
-                                                        <button 
-                                                            type="button" 
-                                                            onClick={() => {
-                                                                setFormData(prev => {
-                                                                    const hidden = prev.hiddenFields || [];
-                                                                    const newHidden = hidden.includes('coverDescription') ? hidden : [...hidden, 'coverDescription'];
-                                                                    return { ...prev, coverDescription: '', hiddenFields: newHidden };
-                                                                });
-                                                            }}
-                                                            className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-full transition-all flex items-center gap-1"
-                                                            title="Remove Cover Memorandum"
-                                                        >
-                                                            <Trash2 size={10} /> Remove
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <div className="relative w-full">
-                                                    <StudioRichEditor 
-                                                        value={formData.coverDescription} 
-                                                        onChange={val => setFormData({...formData, coverDescription: val})} 
-                                                        placeholder="Cover page description for this proposal..." 
-                                                        minHeight="180px"
-                                                        accentColor="neon-green"
-                                                        className={cn(isHidden('coverDescription') && 'opacity-30')}
-                                                    />
-                                                    <button type="button" onClick={(e) => handleRefineClick('coverDescription', 'Cover Memorandum', formData.coverDescription, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
-                                                </div>
-                                            </div>
-                                    </div>
-                                    )
-                                )}
-                                {(viewMode === 'all' || activeTab === '2') && (
-                                    isV2 ? (
-                                        <V2StrategyEditor formData={formData} setFormData={setFormData} />
-                                    ) : (
-                                     <div className="space-y-12">
-                                         <div className="grid grid-cols-2 gap-4">
-                                             <Input label="Section Title" value={formData.strategyTitle ?? 'EXECUTIVE SUMMARY'} onChange={(e) => setFormData({ ...formData, strategyTitle: e.target.value })} placeholder="EXECUTIVE SUMMARY" />
-                                             <Input label="Section Subtitle" value={formData.strategySub ?? 'STRATEGIC OUTLINE'} onChange={(e) => setFormData({ ...formData, strategySub: e.target.value })} placeholder="STRATEGIC OUTLINE" />
-                                         </div>
-                                         <div className="space-y-4 relative group/editor group/refine">
-                                             <div className="flex justify-between items-center px-2">
-                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Executive Summary</label>
-                                                 <div className="flex items-center gap-2">
-                                                     <VisibilityToggle field="overview" />
-                                                     <button 
-                                                         type="button" 
-                                                         onClick={() => {
-                                                             setFormData(prev => {
-                                                                 const hidden = prev.hiddenFields || [];
-                                                                 const newHidden = hidden.includes('overview') ? hidden : [...hidden, 'overview'];
-                                                                 return { ...prev, overview: '', hiddenFields: newHidden };
-                                                             });
-                                                         }}
-                                                         className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-full transition-all flex items-center gap-1"
-                                                         title="Remove Executive Summary"
-                                                     >
-                                                         <Trash2 size={10} /> Remove
-                                                     </button>
-                                                 </div>
-                                             </div>
-                                             <div className="relative w-full">
-                                                 <MultiPageRichEditor 
-                                                     value={formData.overview} 
-                                                     onChange={val => setFormData({...formData, overview: val})} 
-                                                     placeholder="Strategic vision..." 
-                                                     minHeight="200px"
-                                                     accentColor="neon-green"
-                                                     className={cn(isHidden('overview') && 'opacity-30')}
-                                                 />
-                                                 <button type="button" onClick={(e) => handleRefineClick('overview', 'Executive Summary', formData.overview, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
-                                             </div>
-                                         </div>
-                                         <div className="space-y-4 relative group/editor group/refine">
-                                             <div className="flex justify-between items-center px-2">
-                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Primary Objective / Project Objectives</label>
-                                                 <div className="flex items-center gap-2">
-                                                     <VisibilityToggle field="primaryGoal" />
-                                                     <button 
-                                                         type="button" 
-                                                         onClick={() => {
-                                                             setFormData(prev => {
-                                                                 const hidden = prev.hiddenFields || [];
-                                                                 const newHidden = hidden.includes('primaryGoal') ? hidden : [...hidden, 'primaryGoal'];
-                                                                 return { ...prev, primaryGoal: '', hiddenFields: newHidden };
-                                                             });
-                                                         }} 
-                                                         className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-full transition-all flex items-center gap-1.5"
-                                                         title="Remove Project Objectives"
-                                                     >
-                                                         <Trash2 size={10} /> Remove
-                                                     </button>
-                                                 </div>
-                                             </div>
-                                             <div className="relative w-full">
-                                                 <StudioRichEditor 
-                                                     value={formData.primaryGoal} 
-                                                     onChange={val => setFormData({...formData, primaryGoal: val})} 
-                                                     placeholder="Project Goal / Objectives..." 
-                                                     minHeight="120px"
-                                                     accentColor="neon-green"
-                                                     className={cn(isHidden('primaryGoal') && 'opacity-30')}
-                                                 />
-                                                 <button type="button" onClick={(e) => handleRefineClick('primaryGoal', 'Primary Objective', formData.primaryGoal, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
-                                             </div>
-                                         </div>
-                                     </div>
-                                     )
-                                 )}
-                                 {(viewMode === 'all' || activeTab === '3') && (
-                                     isV2 ? (
-                                         <V2BlueprintEditor formData={formData} setFormData={setFormData} />
-                                     ) : (
-                                     <div className="space-y-12">
-                                         <div className="grid grid-cols-2 gap-4">
-                                             <Input label="Section Title" value={formData.scopeTitle ?? 'SCOPE OF WORK'} onChange={(e) => setFormData({ ...formData, scopeTitle: e.target.value })} placeholder="SCOPE OF WORK" />
-                                             <Input label="Section Subtitle" value={formData.scopeSub ?? 'RESOURCE DELIVERABLES'} onChange={(e) => setFormData({ ...formData, scopeSub: e.target.value })} placeholder="RESOURCE DELIVERABLES" />
-                                         </div>
-                                         <div className="space-y-4 relative group/editor group/refine">
-                                             <div className="relative w-full">
-                                                 <MultiPageRichEditor 
-                                                     label="Scope of Work"
-                                                     value={formData.scopeOfWork} 
-                                                     onChange={val => setFormData({...formData, scopeOfWork: val})} 
-                                                     placeholder="Use bullet points for each scope item. Group under headings." 
-                                                     minHeight="400px"
-                                                     accentColor="neon-green"
-                                                     className={cn(isHidden('scopeOfWork') && 'opacity-30')}
-                                                 />
-                                                 <button type="button" onClick={(e) => handleRefineClick('scopeOfWork', 'Scope of Work', formData.scopeOfWork, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
-                                             </div>
-                                         </div>
-                                     </div>
-                                     )
-                                 )}
-                                 {(viewMode === 'all' || activeTab === '4') && (
-                                     isV2 ? (
-                                         <V2DeliverablesEditor formData={formData} setFormData={setFormData} />
-                                     ) : (
-                                     <div className="space-y-16">
-                                         <div className="grid grid-cols-2 gap-4 px-2">
-                                             <Input label="Section Title" value={formData.proposalTitle ?? 'DELIVERABLES'} onChange={(e) => setFormData({ ...formData, proposalTitle: e.target.value })} placeholder="DELIVERABLES" />
-                                             <Input label="Section Subtitle" value={formData.proposalSub ?? 'PROJECT INVENTORY'} onChange={(e) => setFormData({ ...formData, proposalSub: e.target.value })} placeholder="PROJECT INVENTORY" />
-                                         </div>
-                                         {/* Deliverables Section */}
-                                         <div className="space-y-8">
-                                             <div className="flex justify-between items-center px-2">
-                                                  <div className="flex items-center gap-4">
-                                                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">What we deliver</label>
-                                                      <VisibilityToggle field="deliverables" />
-                                                  </div>
-                                                  <button onClick={() => setFormData({...formData, deliverables: [...(formData.deliverables || []), { id: Date.now(), item: '', qty: '', timeline: '' }]})} className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 transition-all shadow-xl"><Plus size={16} /></button>
-                                             </div>
-                                            <div className={cn("space-y-4 transition-opacity", isHidden('deliverables') && "opacity-30")}>
-                                                {(formData.deliverables || []).map((d, idx) => (
-                                                    <div key={d.id} className="flex items-start gap-4 bg-gray-100 dark:bg-zinc-900/40 p-5 rounded-3xl border border-black/10 dark:border-white/5 group transition-all hover:bg-gray-100 dark:hover:bg-zinc-900/60">
-                                                        <span className="text-[10px] font-black text-gray-600 mt-4 w-6 shrink-0">{String(idx + 1).padStart(2, '0')}</span>
-                                                        <div className="flex-1 space-y-3">
-                                                            <div className="relative group/refine w-full">
-                                                                <input value={d.item} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, item: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="w-full bg-transparent border-b border-black/10 dark:border-white/10 pb-2 pr-8 text-sm font-bold outline-none focus:border-neon-green/40 transition-all text-gray-900 dark:text-white placeholder:text-gray-600" placeholder="Deliverable description..." />
-                                                                <button type="button" onClick={(e) => handleRefineClick(`deliverables[${idx}].item`, `Deliverable ${idx + 1}`, d.item, e)} className="absolute right-2 bottom-2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-lg hover:scale-105 z-10" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
-                                                            </div>
-                                                            <div className="flex gap-4">
-                                                                <input value={d.qty} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, qty: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="w-32 bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 px-4 rounded-lg text-[10px] font-bold outline-none focus:border-neon-green/40 text-gray-700 dark:text-gray-300 placeholder:text-gray-600" placeholder="Qty / Unit" />
-                                                                <input value={d.timeline} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, timeline: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="flex-1 bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 px-4 rounded-lg text-[10px] font-bold outline-none focus:border-neon-green/40 text-gray-700 dark:text-gray-300 placeholder:text-gray-600" placeholder="Timeline (e.g. Week 1-2)" />
-                                                            </div>
-                                                        </div>
-                                                        <button onClick={() => setFormData({...formData, deliverables: formData.deliverables.filter(x => x.id !== d.id)})} className="p-2 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg mt-3"><Trash2 size={14} /></button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Client Requirements Section */}
-                                        <div className="space-y-8 pt-10 border-t border-black/10 dark:border-white/5">
-                                            <div className="flex justify-between items-center px-2">
-                                                 <div className="flex items-center gap-4">
-                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Requirements from Client</label>
-                                                     <VisibilityToggle field="clientRequirements" />
-                                                 </div>
-                                                 <button onClick={() => setFormData({...formData, clientRequirements: [...(formData.clientRequirements || []), { id: Date.now(), description: '' }]})} className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 transition-all shadow-xl"><Plus size={16} /></button>
-                                             </div>
-                                            <div className={cn("space-y-4 transition-opacity", isHidden('clientRequirements') && "opacity-30")}>
-                                                {(formData.clientRequirements || []).map((r, idx) => (
-                                                    <div key={r.id} className="flex items-center gap-4 bg-gray-100 dark:bg-zinc-900/40 p-4 pl-6 rounded-3xl border border-black/10 dark:border-white/5 group transition-all hover:bg-gray-100 dark:hover:bg-zinc-900/60">
-                                                        <span className="text-[10px] font-black text-gray-600 w-6 shrink-0">{String(idx + 1).padStart(2, '0')}</span>
-                                                        <div className="relative group/refine flex-1">
-                                                            <input value={r.description} onChange={e => { const updated = [...formData.clientRequirements]; updated[idx] = {...r, description: e.target.value}; setFormData({...formData, clientRequirements: updated}); }} className="w-full bg-transparent border-none pr-8 text-sm font-bold outline-none text-gray-900 dark:text-white placeholder:text-gray-600" placeholder="What the client needs to provide..." />
-                                                            <button type="button" onClick={(e) => handleRefineClick(`clientRequirements[${idx}].description`, `Client Requirement ${idx + 1}`, r.description, e)} className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-lg hover:scale-105 z-10" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
-                                                        </div>
-                                                        <button 
-                                                            disabled={isHidden('clientRequirements')}
-                                                            onClick={() => {
-                                                                const updated = (formData.clientRequirements || []).filter(item => item.id !== r.id);
-                                                                setFormData({...formData, clientRequirements: updated});
-                                                            }}
-                                                            className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-all rounded-xl opacity-0 group-hover:opacity-100"
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    )
-                                )}
-                                {(viewMode === 'all' || activeTab === '5') && (
-                                    isV2 ? (
-                                        <V2PricingEditor formData={formData} setFormData={setFormData} />
-                                    ) : (
-                                    <div className="space-y-8">
-                                        <div className="flex items-center justify-between px-4">
-                                            <div className="flex items-center gap-4">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Resource Inventory</label>
-                                                <VisibilityToggle field="inventory" />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4 px-4">
-                                            <Input label="Section Title" value={formData.inventoryTitle ?? 'RESOURCE INVENTORY'} onChange={(e) => setFormData({ ...formData, inventoryTitle: e.target.value })} placeholder="RESOURCE INVENTORY" />
-                                            <Input label="Section Subtitle" value={formData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} onChange={(e) => setFormData({ ...formData, inventorySub: e.target.value })} placeholder="COMMERCIALS BREAKDOWN" />
-                                        </div>
-
-                                        <div className={cn("space-y-8 transition-opacity", isHidden('inventory') && "opacity-30")}>
-                                            {/* Manage Columns Section */}
-                                            <div className="bg-[#0b0b0c]/40 border border-black/10 dark:border-white/5 rounded-3xl p-6 space-y-4">
-                                                <div className="flex justify-between items-center">
-                                                    <div>
-                                                        <p className="text-[10px] font-black text-neon-green uppercase tracking-widest">Table Architecture</p>
-                                                        <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">Configure Columns</h4>
-                                                    </div>
-                                                    <button 
-                                                        disabled={isHidden('inventory')}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const cols = formData.tableColumns || [...defaultColumns];
-                                                            const newColKey = `custom_${Date.now()}`;
-                                                            const updatedCols = [...cols, { key: newColKey, label: 'New Column' }];
-                                                            setFormData({ ...formData, tableColumns: updatedCols });
-                                                            const updatedItems = items.map(item => ({ ...item, [newColKey]: '' }));
-                                                            setItems(updatedItems);
-                                                        }}
-                                                        className="px-3 py-1.5 bg-neon-green/10 border border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black transition-all rounded-xl text-[9px] font-black uppercase tracking-wider disabled:opacity-30"
-                                                    >
-                                                        + Add Column
-                                                    </button>
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {(formData.tableColumns || defaultColumns).map((col, cIdx) => {
-                                                        const isProtected = ['description', 'qty', 'price'].includes(col.key);
-                                                        const colType = col.type || 'text';
-                                                        const typeInfo = COLUMN_TYPES.find(t => t.value === colType) || COLUMN_TYPES[0];
-                                                        const nextType = COLUMN_TYPES[(COLUMN_TYPES.findIndex(t => t.value === colType) + 1) % COLUMN_TYPES.length].value;
-                                                        return (
-                                                            <div 
-                                                                key={col.key} 
-                                                                draggable={!isHidden('inventory')}
-                                                                onDragStart={(e) => {
-                                                                    e.dataTransfer.setData('text/plain', cIdx);
-                                                                }}
-                                                                onDragOver={(e) => {
-                                                                    e.preventDefault();
-                                                                }}
-                                                                onDrop={(e) => {
-                                                                    e.preventDefault();
-                                                                    const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
-                                                                    if (sourceIndex === cIdx) return;
-                                                                    const cols = [...(formData.tableColumns || defaultColumns)];
-                                                                    const [draggedCol] = cols.splice(sourceIndex, 1);
-                                                                    cols.splice(cIdx, 0, draggedCol);
-                                                                    setFormData({ ...formData, tableColumns: cols });
-                                                                }}
-                                                                className={cn(
-                                                                    "inline-flex items-center gap-1 bg-white dark:bg-black/50 border border-black/10 dark:border-white/10 pl-1.5 pr-1 py-1 rounded-full transition-all group/col",
-                                                                    !isHidden('inventory') ? "cursor-grab active:cursor-grabbing hover:border-neon-green/30 hover:bg-neon-green/5" : ""
-                                                                )}
-                                                            >
-                                                                {!isHidden('inventory') && (
-                                                                    <GripVertical size={10} className="text-gray-600 shrink-0 select-none" />
-                                                                )}
-                                                                {/* Type badge — click to cycle */}
-                                                                <button
-                                                                    type="button"
-                                                                    disabled={isHidden('inventory') || isProtected}
-                                                                    onClick={() => {
-                                                                        const cols = [...(formData.tableColumns || defaultColumns)];
-                                                                        let newLabel = col.label;
-                                                                        if (nextType === 'amount' && (col.label === 'New Column' || !col.label)) {
-                                                                            newLabel = 'Amount (INR)';
-                                                                        }
-                                                                        cols[cIdx] = { ...col, type: nextType, label: newLabel };
-                                                                        setFormData({ ...formData, tableColumns: cols });
-                                                                    }}
-                                                                    title={`Type: ${typeInfo.label} — click to change`}
-                                                                    className={cn(
-                                                                        "shrink-0 w-4 h-4 flex items-center justify-center rounded-full text-[8px] font-black transition-all",
-                                                                        colType === 'amount' ? 'bg-neon-green/20 text-neon-green border border-neon-green/30' :
-                                                                        colType === 'number' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                                                                        'bg-black/5 dark:bg-white/5 text-gray-500 border border-black/10 dark:border-white/10',
-                                                                        isProtected ? 'opacity-40 cursor-default' : 'hover:scale-110 cursor-pointer'
-                                                                    )}
-                                                                >
-                                                                    {typeInfo.icon}
-                                                                </button>
-                                                                <input
-                                                                    disabled={isHidden('inventory')}
-                                                                    type="text"
-                                                                    value={col.label}
-                                                                    onChange={e => {
-                                                                        const cols = [...(formData.tableColumns || defaultColumns)];
-                                                                        cols[cIdx] = { ...col, label: e.target.value };
-                                                                        setFormData({ ...formData, tableColumns: cols });
-                                                                    }}
-                                                                    className="bg-transparent border-none text-[10px] font-bold text-gray-900 dark:text-white/80 outline-none focus:text-emerald-600 dark:focus:text-neon-green w-auto min-w-[40px]"
-                                                                    style={{ width: `${Math.max(40, col.label.length * 7)}px` }}
-                                                                    placeholder="Column"
-                                                                    draggable
-                                                                    onDragStart={(e) => {
-                                                                        e.stopPropagation();
-                                                                    }}
-                                                                />
-                                                                {!isProtected && (
-                                                                    <button
-                                                                        disabled={isHidden('inventory')}
-                                                                        type="button"
-                                                                        onClick={() => {
-                                                                            const cols = (formData.tableColumns || defaultColumns).filter(c => c.key !== col.key);
-                                                                            setFormData({ ...formData, tableColumns: cols });
-                                                                            const updatedItems = items.map(item => {
-                                                                                const copy = { ...item };
-                                                                                delete copy[col.key];
-                                                                                return copy;
-                                                                            });
-                                                                            setItems(updatedItems);
-                                                                        }}
-                                                                        className="shrink-0 w-3.5 h-3.5 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/5 text-gray-500 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-30"
-                                                                    >
-                                                                        <X size={8} />
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            {/* Resource Table Row list */}
-                                            <div className="space-y-6">
-                                                <div className="flex justify-between items-center px-4">
-                                                    <h4 className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Resource Table</h4>
-                                                    <button 
-                                                        disabled={isHidden('inventory')} 
-                                                        onClick={() => {
-                                                            const newObj = { id: Date.now(), description: '', qty: 1, price: 0 };
-                                                            const cols = formData.tableColumns || defaultColumns;
-                                                            cols.forEach(col => {
-                                                                if (!['id', 'description', 'qty', 'price'].includes(col.key)) {
-                                                                    newObj[col.key] = '';
-                                                                }
-                                                            });
-                                                            setItems([...items, newObj]);
-                                                        }} 
-                                                        className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 transition-all shadow-xl disabled:opacity-30"
-                                                    >
-                                                        <Plus size={16} />
-                                                    </button>
-                                                </div>
-                                                <div className="space-y-4">
-                                                    {items.map((item, idx) => {
-                                                        const cols = formData.tableColumns || defaultColumns;
-                                                        const descCol = cols.find(c => c.key === 'description') || { key: 'description', label: 'Resource Inventory' };
-                                                        const otherCols = cols.filter(c => c.key !== 'description');
-                                                        return (
-                                                            <div key={item.id} className="flex flex-col gap-4 bg-gray-100 dark:bg-zinc-900/40 p-5 rounded-3xl border border-black/10 dark:border-white/5 group/refine transition-all hover:bg-gray-100 dark:hover:bg-zinc-900/60 relative">
-                                                                <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
-                                                                    <div className="flex-1 relative w-full">
-                                                                        <span className="text-[8px] font-black text-neon-green uppercase tracking-widest mb-1.5 block">{descCol.label}</span>
-                                                                        <textarea 
-                                                                            disabled={isHidden('inventory')} 
-                                                                            value={item.description} 
-                                                                            onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} 
-                                                                            rows={1} 
-                                                                            className="w-full bg-transparent border-none p-0 pr-8 text-sm font-bold outline-none resize-none scrollbar-hide text-gray-900 dark:text-white placeholder:text-gray-600" 
-                                                                            placeholder={`${descCol.label}...`} 
-                                                                        />
-                                                                        <button type="button" disabled={isHidden('inventory')} onClick={(e) => handleRefineClick(`items[${idx}].description`, `${descCol.label} ${idx + 1}`, item.description, e)} className="absolute right-2 top-[22px] opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-lg hover:scale-105 z-10 disabled:opacity-0" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
-                                                                    </div>
-
-                                                                    <div className="flex flex-wrap items-center gap-4 md:gap-6 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-white/[0.03]">
-                                                                        {otherCols.length > 0 && otherCols.map(col => {
-                                                                            if (col.key === 'qty') {
-                                                                                return (
-                                                                                    <div key={col.key} className="flex flex-col items-start w-20">
-                                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">{col.label}</span>
-                                                                                        <input disabled={isHidden('inventory')} type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50 text-gray-900 dark:text-white" />
-                                                                                    </div>
-                                                                                );
-                                                                            }
-                                                                            if (col.key === 'price') {
-                                                                                return (
-                                                                                    <div key={col.key} className="flex flex-col items-start w-32">
-                                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">{col.label}</span>
-                                                                                        <div className="relative w-full">
-                                                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-green">₹</span>
-                                                                                            <input disabled={isHidden('inventory')} type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 pl-7 pr-3 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50" />
-                                                                                        </div>
-                                                                                    </div>
-                                                                                );
-                                                                            }
-                                                                            // Custom column — render based on type
-                                                                            const colType = col.type || 'text';
-                                                                            return (
-                                                                                <div key={col.key} className={cn("flex flex-col items-start", (colType === 'amount' || colType === 'number') ? 'w-32' : 'min-w-[120px] flex-1')}>
-                                                                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">{col.label}</span>
-                                                                                    {colType === 'amount' ? (
-                                                                                        <div className="relative w-full">
-                                                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-green">₹</span>
-                                                                                            <input
-                                                                                                disabled={isHidden('inventory')}
-                                                                                                type="number"
-                                                                                                value={item[col.key] || ''}
-                                                                                                onChange={e => {
-                                                                                                    const newItems = [...items];
-                                                                                                    newItems[idx][col.key] = e.target.value === '' ? '' : Number(e.target.value);
-                                                                                                    setItems(newItems);
-                                                                                                }}
-                                                                                                className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 pl-7 pr-3 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50"
-                                                                                                placeholder="0"
-                                                                                            />
-                                                                                        </div>
-                                                                                    ) : colType === 'number' ? (
-                                                                                        <input
-                                                                                            disabled={isHidden('inventory')}
-                                                                                            type="number"
-                                                                                            value={item[col.key] || ''}
-                                                                                            onChange={e => {
-                                                                                                const newItems = [...items];
-                                                                                                newItems[idx][col.key] = e.target.value === '' ? '' : Number(e.target.value);
-                                                                                                setItems(newItems);
-                                                                                            }}
-                                                                                            className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50 text-gray-900 dark:text-white"
-                                                                                            placeholder="0"
-                                                                                        />
-                                                                                    ) : (
-                                                                                        <input
-                                                                                            disabled={isHidden('inventory')}
-                                                                                            type="text"
-                                                                                            value={item[col.key] || ''}
-                                                                                            onChange={e => {
-                                                                                                const newItems = [...items];
-                                                                                                newItems[idx][col.key] = e.target.value;
-                                                                                                setItems(newItems);
-                                                                                            }}
-                                                                                            className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 px-4 rounded-lg text-xs font-bold outline-none focus:border-neon-green/50 text-gray-900 dark:text-white placeholder:text-gray-700"
-                                                                                            placeholder={`${col.label}...`}
-                                                                                        />
-                                                                                    )}
-                                                                                </div>
-                                                                            );
-                                                                        })}
-                                                                        <button disabled={isHidden('inventory')} onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2.5 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg disabled:opacity-30"><Trash2 size={16} /></button>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    )
-                                )}
-                                {(viewMode === 'all' || activeTab === '6') && (
-                                    isV2 ? (
-                                        <V2DeepDiveEditor formData={formData} setFormData={setFormData} />
-                                    ) : (
-                                     <div className="flex flex-col gap-8">
-                                         <div className="grid grid-cols-2 gap-4 bg-gray-100 dark:bg-zinc-900/20 p-6 border border-black/10 dark:border-white/5 rounded-[2rem]">
-                                             <Input label="Section Title" value={formData.commercialsTitle ?? 'COMMERCIAL TERMS'} onChange={(e) => setFormData({ ...formData, commercialsTitle: e.target.value })} placeholder="COMMERCIAL TERMS" />
-                                             <Input label="Section Subtitle" value={formData.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'} onChange={(e) => setFormData({ ...formData, commercialsSub: e.target.value })} placeholder="SETTLEMENT & SIGN-OFF" />
-                                         </div>
-                                         <style>{`
-                                             .custom-range-slider {
-                                                 -webkit-appearance: none;
-                                                 appearance: none;
-                                                 background: transparent;
-                                                 width: 100%;
-                                             }
-                                             .custom-range-slider::-webkit-slider-runnable-track {
-                                                 background: rgba(0, 0, 0, 0.6);
-                                                 border: 1px solid rgba(255, 255, 255, 0.05);
-                                                 height: 6px;
-                                                 border-radius: 9999px;
-                                             }
-                                             .custom-range-slider::-webkit-slider-thumb {
-                                                 -webkit-appearance: none;
-                                                 appearance: none;
-                                                 background: #39ff14;
-                                                 border: 3px solid #09090b;
-                                                 width: 16px;
-                                                 height: 16px;
-                                                 border-radius: 50%;
-                                                 margin-top: -6px;
-                                                 box-shadow: 0 0 10px #39ff14;
-                                                 cursor: pointer;
-                                                 transition: all 0.2s ease-in-out;
-                                             }
-                                             .custom-range-slider::-webkit-slider-thumb:hover {
-                                                 transform: scale(1.2);
-                                                 box-shadow: 0 0 15px #39ff14;
-                                             }
-                                         `}</style>
-                                         {/* Row 1: Commercial Matrix & Terms (Financial Center) */}
-                                         <div className="p-4 md:p-8 lg:p-10 bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[3rem] space-y-10 relative overflow-hidden">
-                                             <div className="flex items-center justify-between">
-                                                 <div className="space-y-1">
-                                                      <h3 className="text-2xl font-black uppercase tracking-tighter italic text-gray-900 dark:text-white">Commercial Center.</h3>
-                                                      <p className="text-[10px] font-bold text-neon-green uppercase tracking-[0.3em]">Financial Matrix & Settlement</p>
-                                                 </div>
-                                                 <div className="p-3 bg-neon-green/10 rounded-2xl border border-neon-green/20">
-                                                      <CreditCard size={20} className="text-neon-green" />
-                                                 </div>
-                                             </div>
-
-                                             <div className="flex flex-col gap-6">
-                                                  {/* Row 1: Taxation & Advance side by side */}
-                                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-sans">
-                                                       {/* Taxation (GST) Card */}
-                                                       <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-black/10 dark:border-white/10 hover:border-neon-green/20 rounded-3xl p-4 h-56 flex flex-col justify-between transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card">
-                                                           {/* Glow effect on hover */}
-                                                           <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-emerald-500 dark:card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
-                                                           
-                                                           <div className="flex items-center gap-2 z-10">
-                                                               <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-center group-hover/card:border-emerald-500 dark:card:border-neon-green/20 group-hover/card:bg-emerald-500 dark:card:bg-neon-green/5 transition-all">
-                                                                   <span className="text-xs font-black text-gray-600 dark:text-gray-400 group-hover/card:text-emerald-600 dark:card:text-neon-green transition-colors font-mono">%</span>
-                                                               </div>
-                                                               <div className="flex-1">
-                                                                   <div className="flex items-center gap-1.5">
-                                                                       <p className="text-[10px] font-black text-neon-green uppercase tracking-wider leading-none">Taxation</p>
-                                                                       <span className={cn(
-                                                                           "w-1.5 h-1.5 rounded-full transition-all duration-300",
-                                                                           formData.showGst ? "bg-neon-green animate-pulse shadow-[0_0_8px_#39ff14]" : "bg-zinc-700"
-                                                                       )} />
-                                                                   </div>
-                                                                   <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">GST Setup</p>
-                                                               </div>
-                                                           </div>
-
-                                                           <div className="flex flex-col gap-2 z-10 w-full">
-                                                               <div className="flex items-center justify-between bg-white dark:bg-white border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
-                                                                   <span className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-wider">GST Active</span>
-                                                                   <button 
-                                                                       type="button"
-                                                                       onClick={() => setFormData({...formData, showGst: !formData.showGst})} 
-                                                                       className={cn(
-                                                                           "relative w-9 h-5 rounded-full transition-all duration-300 ease-in-out flex items-center px-0.5 border shrink-0 shadow-inner",
-                                                                           formData.showGst ? "bg-neon-green/20 border-neon-green/40 shadow-[0_0_8px_rgba(57,255,20,0.2)]" : "bg-gray-100 dark:bg-zinc-950 border-black/10 dark:border-white/10"
-                                                                       )}
-                                                                   >
-                                                                       <div className={cn(
-                                                                           "w-3.5 h-3.5 rounded-full shadow-lg transition-all duration-300 ease-in-out", 
-                                                                           formData.showGst ? "translate-x-4 bg-neon-green shadow-[0_0_8px_#39ff14]" : "translate-x-0 bg-gray-600"
-                                                                       )} />
-                                                                   </button>
-                                                               </div>
-
-                                                               {formData.showGst ? (
-                                                                   <div className="space-y-1.5">
-                                                                       <div className="flex items-center justify-between bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-xl px-3 py-1 focus-within:border-emerald-500 dark:focus-within:border-neon-green/30">
-                                                                           <span className="text-[8px] font-black text-gray-500 uppercase">Rate (%)</span>
-                                                                           <input 
-                                                                               type="number" 
-                                                                               min="0" 
-                                                                               max="100" 
-                                                                               value={formData.gstRate} 
-                                                                               onChange={e => setFormData({...formData, gstRate: Math.max(0, Math.min(100, parseInt(e.target.value) || 0))})} 
-                                                                               className="bg-transparent font-mono text-xs font-black text-neon-green w-10 text-right outline-none" 
-                                                                           />
-                                                                       </div>
-                                                                       {/* Presets */}
-                                                                       <div className="flex gap-1">
-                                                                           {[5, 12, 18, 28].map((rate) => (
-                                                                               <button
-                                                                                   key={rate}
-                                                                                   type="button"
-                                                                                   onClick={() => setFormData({...formData, gstRate: rate})}
-                                                                                   className={cn(
-                                                                                       "flex-1 py-1 rounded-lg text-[9px] font-mono font-bold transition-all border",
-                                                                                       formData.gstRate === rate 
-                                                                                           ? "bg-neon-green text-black border-neon-green font-black shadow-[0_0_10px_rgba(57,255,20,0.2)]" 
-                                                                                           : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                                                                   )}
-                                                                               >
-                                                                                   {rate}%
-                                                                               </button>
-                                                                           ))}
-                                                                       </div>
-                                                                   </div>
-                                                               ) : (
-                                                                   <div className="w-full h-[58px] relative bg-white dark:bg-white rounded-xl border border-dashed border-black/10 dark:border-white/5 flex items-center justify-center gap-1.5 overflow-hidden transition-all duration-300 group-hover/card:border-black/10 dark:card:border-white/10">
-                                                                       <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] [background-size:8px_8px] pointer-events-none" />
-                                                                       <Lock size={11} className="text-gray-600" />
-                                                                       <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Tax Exempt</span>
-                                                                   </div>
-                                                               )}
-                                                           </div>
-                                                       </div>
-
-                                                       {/* Advance Request Card */}
-                                                       <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-black/10 dark:border-white/10 hover:border-neon-green/20 rounded-3xl p-4 h-56 flex flex-col justify-between transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card">
-                                                           {/* Glow effect on hover */}
-                                                           <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-emerald-500 dark:card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
-                                                           
-                                                           <div className="flex items-center gap-2 z-10">
-                                                               <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-center group-hover/card:border-emerald-500 dark:card:border-neon-green/20 group-hover/card:bg-emerald-500 dark:card:bg-neon-green/5 transition-all">
-                                                                   <Zap size={14} className="text-gray-600 dark:text-gray-400 group-hover/card:text-emerald-600 dark:card:text-neon-green transition-colors" />
-                                                               </div>
-                                                               <div className="flex-1">
-                                                                   <div className="flex items-center gap-1.5">
-                                                                       <p className="text-[10px] font-black text-neon-green uppercase tracking-wider leading-none">Advance</p>
-                                                                       <span className={cn(
-                                                                           "w-1.5 h-1.5 rounded-full transition-all duration-300",
-                                                                           formData.advanceRequested > 0 ? "bg-neon-green animate-pulse shadow-[0_0_8px_#39ff14]" : "bg-zinc-700"
-                                                                       )} />
-                                                                   </div>
-                                                                   <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">Commencement</p>
-                                                               </div>
-                                                           </div>
-
-                                                           <div className="flex flex-col gap-2 z-10 w-full">
-                                                               <div className="flex items-center justify-between bg-white dark:bg-white border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
-                                                                   <span className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-wider">Retainer</span>
-                                                                   <span className="text-[9px] font-black text-neon-green bg-neon-green/10 border border-neon-green/20 px-2 py-0.5 rounded-lg select-none font-mono tracking-widest">
-                                                                       {formData.advanceRequested}%
-                                                                   </span>
-                                                               </div>
-
-                                                               <div className="space-y-1.5">
-                                                                   <div className="relative flex items-center w-full px-1 py-1">
-                                                                       <input 
-                                                                           type="range" 
-                                                                           min="0" 
-                                                                           max="100" 
-                                                                           step="5" 
-                                                                           value={formData.advanceRequested} 
-                                                                           onChange={e => setFormData({...formData, advanceRequested: parseInt(e.target.value)})} 
-                                                                           className="w-full custom-range-slider cursor-pointer outline-none" 
-                                                                       />
-                                                                   </div>
-                                                                   {/* Presets */}
-                                                                   <div className="flex gap-1">
-                                                                       {[0, 30, 50, 100].map((pct) => (
-                                                                           <button
-                                                                               key={pct}
-                                                                               type="button"
-                                                                               onClick={() => setFormData({...formData, advanceRequested: pct})}
-                                                                               className={cn(
-                                                                                   "flex-1 py-1 rounded-lg text-[9px] font-mono font-bold transition-all border",
-                                                                                   formData.advanceRequested === pct 
-                                                                                       ? "bg-neon-green text-black border-neon-green font-black shadow-[0_0_10px_rgba(57,255,20,0.2)]" 
-                                                                                       : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                                                               )}
-                                                                           >
-                                                                               {pct}%
-                                                                           </button>
-                                                                       ))}
-                                                                   </div>
-                                                               </div>
-                                                           </div>
-                                                       </div>
-
-                                                        {/* Visibility Card */}
-                                                         <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-black/10 dark:border-white/10 hover:border-neon-green/20 rounded-3xl p-4 h-72 flex flex-col justify-between transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card">
-                                                             {/* Glow effect on hover */}
-                                                             <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-emerald-500 dark:card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
-                                                             
-                                                             <div className="flex items-center gap-2 z-10">
-                                                                 <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-center group-hover/card:border-emerald-500 dark:card:border-neon-green/20 group-hover/card:bg-emerald-500 dark:card:bg-neon-green/5 transition-all">
-                                                                     <EyeOff size={14} className="text-gray-600 dark:text-gray-400 group-hover/card:text-emerald-600 dark:card:text-neon-green transition-colors" />
-                                                                 </div>
-                                                                 <div className="flex-1">
-                                                                     <div className="flex items-center gap-1.5">
-                                                                         <p className="text-[10px] font-black text-neon-green uppercase tracking-wider leading-none">Visibility</p>
-                                                                         <span className={cn(
-                                                                             "w-1.5 h-1.5 rounded-full transition-all duration-300",
-                                                                             (formData.hideTotalColumn || formData.showPaymentDetails === false) ? "bg-neon-green animate-pulse shadow-[0_0_8px_#39ff14]" : "bg-zinc-700"
-                                                                         )} />
-                                                                     </div>
-                                                                     <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">Commercial Layouts</p>
-                                                                 </div>
-                                                             </div>
-
-                                                             <div className="flex flex-col gap-2.5 z-10 w-full">
-                                                                 <div className="flex items-center justify-between bg-white dark:bg-white border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
-                                                                     <span className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-wider">Hide Totals</span>
-                                                                     <button 
-                                                                         type="button"
-                                                                         onClick={() => setFormData({...formData, hideTotalColumn: !formData.hideTotalColumn})} 
-                                                                         className={cn(
-                                                                             "relative w-9 h-5 rounded-full transition-all duration-300 ease-in-out flex items-center px-0.5 border shrink-0 shadow-inner",
-                                                                             formData.hideTotalColumn ? "bg-neon-green/20 border-neon-green/40 shadow-[0_0_8px_rgba(57,255,20,0.2)]" : "bg-gray-100 dark:bg-zinc-950 border-black/10 dark:border-white/10"
-                                                                         )}
-                                                                     >
-                                                                         <div className={cn(
-                                                                             "w-3.5 h-3.5 rounded-full shadow-lg transition-all duration-300 ease-in-out", 
-                                                                             formData.hideTotalColumn ? "translate-x-4 bg-neon-green shadow-[0_0_8px_#39ff14]" : "translate-x-0 bg-gray-600"
-                                                                         )} />
-                                                                     </button>
-                                                                 </div>
-                                                                 <div className="flex items-center justify-between bg-white dark:bg-white border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
-                                                                     <span className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-wider">Hide Settlement</span>
-                                                                     <button 
-                                                                         type="button"
-                                                                         onClick={() => setFormData({...formData, showPaymentDetails: formData.showPaymentDetails === false ? true : false})} 
-                                                                         className={cn(
-                                                                             "relative w-9 h-5 rounded-full transition-all duration-300 ease-in-out flex items-center px-0.5 border shrink-0 shadow-inner",
-                                                                             formData.showPaymentDetails === false ? "bg-neon-green/20 border-neon-green/40 shadow-[0_0_8px_rgba(57,255,20,0.2)]" : "bg-gray-100 dark:bg-zinc-950 border-black/10 dark:border-white/10"
-                                                                         )}
-                                                                     >
-                                                                         <div className={cn(
-                                                                             "w-3.5 h-3.5 rounded-full shadow-lg transition-all duration-300 ease-in-out", 
-                                                                             formData.showPaymentDetails === false ? "translate-x-4 bg-neon-green shadow-[0_0_8px_#39ff14]" : "translate-x-0 bg-gray-600"
-                                                                         )} />
-                                                                     </button>
-                                                                 </div>
-                                                                 <div className="text-[7.5px] text-gray-500 uppercase tracking-wide leading-relaxed px-1">
-                                                                     Toggle visibility of cost summary columns and bank/UPI settlement details on the commercials page.
-                                                                 </div>
-                                                             </div>
-                                                         </div>
-                                                  </div>
-
-                                                  {/* Row 2: Live Valuation Summary */}
-                                                  <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-black/10 dark:border-white/10 hover:border-neon-green/20 rounded-3xl p-6 md:p-8 flex flex-col gap-6 transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card w-full min-w-0">
-                                                            {/* Glow */}
-                                                            <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-emerald-500 dark:card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
-
-                                                            {/* Header */}
-                                                            <div className="flex items-center gap-2.5 z-10 border-b border-black/10 dark:border-white/5 pb-4">
-                                                                <div className="w-10 h-10 rounded-2xl bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-center group-hover/card:border-emerald-500 dark:card:border-neon-green/20 group-hover/card:bg-emerald-500 dark:card:bg-neon-green/5 transition-all shrink-0">
-                                                                    <CreditCard size={18} className="text-gray-600 dark:text-gray-400 group-hover/card:text-emerald-600 dark:card:text-neon-green transition-colors" />
-                                                                </div>
-                                                                <div className="min-w-0">
-                                                                    <p className="text-xs font-black text-neon-green uppercase tracking-widest leading-none">Summary</p>
-                                                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Valuation Matrix</p>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Flat 12-column Layout */}
-                                                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 xl:gap-6 items-start z-10 w-full">
-                                                                
-                                                                {/* Column 1: Details */}
-                                                                <div className="lg:col-span-4 col-span-12 flex flex-col gap-4 min-w-0 h-full justify-between">
-                                                                    <div className="space-y-4">
-                                                                        <div className="flex flex-col">
-                                                                            <span className="text-[9px] font-black text-neon-green/60 uppercase tracking-widest">01 / Ledger Details</span>
-                                                                            <span className="text-[8px] text-gray-500 uppercase mt-0.5">Base & GST calculations</span>
-                                                                        </div>
-                                                                        
-                                                                        <div className="space-y-3">
-                                                                            {/* Subtotal */}
-                                                                            <div className="flex justify-between items-baseline py-2.5 border-b border-black/10 dark:border-white/5">
-                                                                                <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Subtotal</span>
-                                                                                <span className="font-mono text-sm font-black text-gray-900 dark:text-white">₹{subtotal.toLocaleString()}</span>
-                                                                            </div>
-
-                                                                            {/* GST */}
-                                                                            {formData.showGst ? (
-                                                                                <div className="flex justify-between items-baseline py-2.5 border-b border-black/10 dark:border-white/5">
-                                                                                    <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                                                                                        GST ({formData.gstRate}%)
-                                                                                        {hasOverride && <span className="text-amber-400 text-[8px] font-bold uppercase tracking-wider">› override</span>}
-                                                                                    </span>
-                                                                                    <span className="font-mono text-sm font-black text-gray-900 dark:text-white">₹{gstAmount.toLocaleString()}</span>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex justify-between items-baseline py-2.5 border-b border-black/10 dark:border-white/5 opacity-40">
-                                                                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">GST (Exempt)</span>
-                                                                                    <span className="font-mono text-sm font-black text-gray-500">₹0</span>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="text-[8px] text-gray-600 font-mono uppercase tracking-widest mt-2">
-                                                                        ID: {formData.campaignNumber || 'DRAFT'}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Column 2: Estimate Display */}
-                                                                <div className="lg:col-span-5 col-span-12 flex flex-col gap-4 min-w-0">
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-[9px] font-black text-neon-green/60 uppercase tracking-widest">02 / Estimate Total</span>
-                                                                        <span className="text-[8px] text-gray-500 uppercase mt-0.5">Final payable amount</span>
-                                                                    </div>
-                                                                    
-                                                                    <div className="relative overflow-hidden bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 hover:border-neon-green/30 rounded-2xl px-2.5 py-4 sm:px-4 sm:py-5 flex flex-col justify-between min-h-[120px] transition-all duration-300 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] group/estimate">
-                                                                        <div className="absolute inset-0 bg-[radial-gradient(rgba(57,255,20,0.015)_1px,transparent_1px)] [background-size:8px_8px] pointer-events-none" />
-                                                                        
-                                                                        <div className="flex justify-between items-center z-10">
-                                                                            <span className="text-[8px] font-black text-neon-green uppercase tracking-widest">
-                                                                                {hasOverride ? 'Override Total' : 'Estimate (Incl. Tax)'}
-                                                                            </span>
-                                                                            {hasOverride && (
-                                                                                <span className="text-[7px] font-black text-amber-400 uppercase bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.5 rounded-md">
-                                                                                    Manual
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-
-                                                                        <div className="mt-2 z-10">
-                                                                            {(() => {
-                                                                                const totalStr = `₹${totalAmount.toLocaleString()}`;
-                                                                                const getFontSize = (str) => {
-                                                                                    const len = str.length;
-                                                                                    if (len >= 12) return "text-sm sm:text-base lg:text-sm xl:text-lg";
-                                                                                    if (len >= 10) return "text-base sm:text-lg lg:text-base xl:text-xl";
-                                                                                    if (len >= 8) return "text-lg sm:text-xl lg:text-lg xl:text-2xl";
-                                                                                    return "text-xl sm:text-2xl lg:text-xl xl:text-3xl";
-                                                                                };
-                                                                                return (
-                                                                                    <span className={cn(
-                                                                                        "font-mono font-black text-neon-green drop-shadow-[0_0_15px_#39ff14] select-all whitespace-nowrap block tracking-tighter",
-                                                                                        getFontSize(totalStr)
-                                                                                    )}>
-                                                                                        {totalStr}
-                                                                                    </span>
-                                                                                );
-                                                                            })()}
-                                                                        </div>
-
-                                                                        {hasOverride && (
-                                                                            <div className="mt-3 pt-2 border-t border-black/10 dark:border-white/5 flex justify-between items-center text-[8px] text-gray-500 z-10 uppercase tracking-wider">
-                                                                                <span>Auto-Calc</span>
-                                                                                <span className="font-mono line-through">₹{computedTotal.toLocaleString()}</span>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Column 3: Parameters */}
-                                                                <div className="lg:col-span-3 col-span-12 flex flex-col gap-5 min-w-0">
-                                                                    
-                                                                    {/* Subtotal Source */}
-                                                                    {(() => {
-                                                                        const allCols = formData.tableColumns || defaultColumns;
-                                                                        const calcCols = allCols.filter(c => c.key !== 'description' && (c.type === 'amount' || c.type === 'number' || c.key === 'price'));
-                                                                        return (
-                                                                            <div className="space-y-2">
-                                                                                <div className="flex flex-col">
-                                                                                    <span className="text-[9px] font-black text-neon-green/60 uppercase tracking-widest">03 / Source Column</span>
-                                                                                    <span className="text-[8px] text-gray-500 uppercase mt-0.5">Summing source for subtotal</span>
-                                                                                </div>
-                                                                                <div className="flex flex-wrap gap-1.5">
-                                                                                    {calcCols.map(c => (
-                                                                                        <button
-                                                                                            key={c.key}
-                                                                                            type="button"
-                                                                                            onClick={() => setFormData({ ...formData, totalSourceColumn: c.key })}
-                                                                                            className={cn(
-                                                                                                "px-2.5 py-1 rounded-xl text-[8px] font-black transition-all border whitespace-nowrap uppercase tracking-wider",
-                                                                                                totalSrcCol === c.key
-                                                                                                    ? 'bg-neon-green text-black border-neon-green shadow-[0_0_8px_rgba(57,255,20,0.3)]'
-                                                                                                    : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                                                                                            )}
-                                                                                        >
-                                                                                            {c.label}
-                                                                                        </button>
-                                                                                    ))}
-                                                                                </div>
-                                                                            </div>
-                                                                        );
-                                                                    })()}
-
-                                                                    {/* Override subtotal */}
-                                                                    <div className="space-y-2">
-                                                                        <div className="flex items-center justify-between">
-                                                                            <div className="flex flex-col">
-                                                                                <span className="text-[9px] font-black text-neon-green/60 uppercase tracking-widest">Subtotal Override</span>
-                                                                                <span className="text-[8px] text-gray-500 uppercase mt-0.5">Manual subtotal control</span>
-                                                                            </div>
-                                                                            
-                                                                            {hasOverride && (
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => setFormData({ ...formData, totalOverride: null })}
-                                                                                    className="flex items-center gap-1 text-[8px] font-black text-red-400 hover:text-red-300 uppercase tracking-wider"
-                                                                                >
-                                                                                    <RotateCcw size={8} />
-                                                                                    <span>Reset</span>
-                                                                                </button>
-                                                                            )}
-                                                                        </div>
-
-                                                                        {hasOverride ? (
-                                                                            <div className="space-y-1.5">
-                                                                                <div className="flex items-center gap-2 bg-amber-400/5 border border-amber-400/20 rounded-xl px-3 py-1.5 focus-within:border-amber-400/40 transition-all">
-                                                                                    <span className="text-xs font-black text-amber-400 font-mono">₹</span>
-                                                                                    <input
-                                                                                        type="number"
-                                                                                        value={formData.totalOverride}
-                                                                                        onChange={e => setFormData({ ...formData, totalOverride: e.target.value === '' ? null : e.target.value })}
-                                                                                        className="bg-transparent text-xs font-black text-amber-300 font-mono outline-none w-full min-w-0"
-                                                                                        placeholder={subtotal.toString()}
-                                                                                        min="0"
-                                                                                        step="100"
-                                                                                    />
-                                                                                </div>
-                                                                                <p className="text-[7px] font-bold text-amber-400/80 uppercase tracking-wider leading-tight">
-                                                                                    ⚠️ GST updates on override base.
-                                                                                </p>
-                                                                            </div>
-                                                                        ) : (
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => setFormData({ ...formData, totalOverride: subtotal })}
-                                                                                className="w-full flex items-center justify-center gap-1.5 py-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-[8px] font-black uppercase rounded-xl transition-all tracking-wider"
-                                                                            >
-                                                                                <Pencil size={8} className="text-gray-500" />
-                                                                                <span>Activate Override</span>
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                  </div>
-
-                                                  {/* Full Width Editor */}
-                                                  <div className="space-y-6 w-full">
-                                                      <div className="relative group/editor group/refine w-full">
-                                                          <div className="relative w-full">
-                                                              <StudioRichEditor 
-                                                                  label="Settlement Terms"
-                                                                  value={formData.terms} 
-                                                                  onChange={val => setFormData({...formData, terms: val})} 
-                                                                  placeholder="Payment milestones, terms of settlement..." 
-                                                                  minHeight="260px"
-                                                                  accentColor="neon-green"
-                                                                  className={cn(isHidden('terms') && 'opacity-30')}
-                                                              />
-                                                              <button type="button" disabled={isHidden('terms')} onClick={(e) => handleRefineClick('terms', 'Settlement Terms', formData.terms, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-[70] disabled:opacity-0" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
-                                                          </div>
-                                                      </div>
-                                                      
-                                                      {/* Settlement Details */}
-                                                      <div className="space-y-4 w-full">
-                                                          <div className="flex justify-between items-center px-2">
-                                                              <span className="text-[10px] font-black text-neon-green uppercase tracking-widest">Settlement Account Details</span>
-                                                              <button 
-                                                                  type="button" 
-                                                                  onClick={() => setFormData({...formData, showPaymentDetails: formData.showPaymentDetails === false ? true : false})} 
-                                                                  className={cn(
-                                                                      "text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all", 
-                                                                      formData.showPaymentDetails !== false 
-                                                                          ? "bg-neon-green/10 text-neon-green border-neon-green/20" 
-                                                                          : "bg-red-500/10 text-red-500 border-red-500/20"
-                                                                  )}
-                                                              >
-                                                                  {formData.showPaymentDetails !== false ? 'Enabled' : 'Disabled'}
-                                                              </button>
-                                                          </div>
-                                                          <div className={cn("relative w-full transition-opacity duration-300", formData.showPaymentDetails === false && "opacity-30")}>
-                                                              <textarea 
-                                                                  value={formData.paymentDetails || ''} 
-                                                                  onChange={e => setFormData({...formData, paymentDetails: e.target.value})} 
-                                                                  disabled={formData.showPaymentDetails === false}
-                                                                  className="w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 p-6 rounded-[2rem] font-mono font-bold text-xs text-gray-900 dark:text-white outline-none focus:border-neon-green/40 transition-all min-h-[120px]" 
-                                                                  placeholder="Account Name, Number, IFSC, UPI, etc..." 
-                                                              />
-                                                          </div>
-                                                      </div>
-                                                  </div>
-                                             </div>
-                                         </div>
-                                         <div className="border border-black/10 dark:border-white/5 rounded-[3rem] overflow-hidden bg-white/[0.01]">
-                                             {/* Collapsible Header */}
-                                             <div 
-                                                 className="flex items-center justify-between p-4 md:p-8 bg-white/[0.02] cursor-pointer hover:bg-white/[0.04] transition-all"
-                                                 onClick={() => setIsSignaturesCollapsed(!isSignaturesCollapsed)}
-                                             >
-                                                 <div className="flex items-center gap-6">
-                                                     <div className="w-14 h-14 rounded-2xl bg-neon-green/10 flex items-center justify-center border border-neon-green/20 shrink-0">
-                                                         <ShieldCheck size={28} className="text-neon-green" />
-                                                     </div>
-                                                     <div className="space-y-1">
-                                                         <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em]">Authorization</p>
-                                                         <h3 className="text-2xl font-black uppercase tracking-tighter italic text-gray-900 dark:text-white leading-none">Signatures & Seals.</h3>
-                                                     </div>
-                                                 </div>
-                                                 <div className="flex items-center gap-4" onClick={e => e.stopPropagation()}>
-                                                     <VisibilityToggle field="signatures" />
-                                                     <button 
-                                                         onClick={() => setIsSignaturesCollapsed(!isSignaturesCollapsed)}
-                                                         className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                                                     >
-                                                         <span className="text-[10px] font-black uppercase tracking-widest">{isSignaturesCollapsed ? 'Expand +' : 'Collapse -'}</span>
-                                                     </button>
-                                                 </div>
-                                             </div>
-
-                                             {/* Collapsible Content */}
-                                             <div className={cn(
-                                                 "transition-all duration-500 overflow-hidden",
-                                                 isSignaturesCollapsed ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100 border-t border-black/10 dark:border-white/5"
-                                             )}>
-                                                  <div className="p-4 md:p-8 lg:p-10 space-y-10">
-                                                      {/* Sub-toggles: Official Seal and Digital Sign */}
-                                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                          <button 
-                                                              type="button"
-                                                              onClick={() => setFormData({...formData, showSeal: !formData.showSeal})} 
-                                                              className={cn(
-                                                                  "h-20 w-full rounded-[1.8rem] border transition-all duration-500 group/btn relative overflow-hidden flex items-center px-6 gap-5",
-                                                                  formData.showSeal 
-                                                                      ? "bg-gray-100 dark:bg-zinc-950/60 text-neon-green border-neon-green/30 shadow-[0_0_20px_rgba(57,255,20,0.1)]" 
-                                                                      : "bg-white/[0.02] text-gray-500 border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 hover:bg-white/[0.04]"
-                                                              )}
-                                                          >
-                                                              {formData.showSeal && (
-                                                                  <span className="absolute top-3.5 right-3.5 flex h-2 w-2">
-                                                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75"></span>
-                                                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-green"></span>
-                                                                  </span>
-                                                              )}
-                                                              <div className={cn(
-                                                                  "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0",
-                                                                  formData.showSeal ? "bg-neon-green/10 border border-neon-green/20" : "bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5"
-                                                              )}>
-                                                                  <Stamp size={22} className={cn("transition-transform duration-500 group-hover/btn:rotate-12", formData.showSeal ? "text-neon-green" : "text-gray-500")} />
-                                                              </div>
-                                                              <div className="text-left">
-                                                                  <p className={cn("text-[8px] font-black uppercase tracking-[0.2em] mb-0.5", formData.showSeal ? "text-neon-green/50" : "text-gray-600")}>Protocol</p>
-                                                                  <p className={cn("text-[11px] font-black uppercase tracking-widest", formData.showSeal ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400")}>Official Seal</p>
-                                                              </div>
-                                                          </button>
-
-                                                          <button 
-                                                              type="button"
-                                                              onClick={() => setFormData({...formData, showSignatures: !formData.showSignatures})} 
-                                                              className={cn(
-                                                                  "h-20 w-full rounded-[1.8rem] border transition-all duration-500 group/btn relative overflow-hidden flex items-center px-6 gap-5",
-                                                                  formData.showSignatures 
-                                                                      ? "bg-gray-100 dark:bg-zinc-950/60 text-neon-green border-neon-green/30 shadow-[0_0_20px_rgba(57,255,20,0.1)]" 
-                                                                      : "bg-white/[0.02] text-gray-500 border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 hover:bg-white/[0.04]"
-                                                              )}
-                                                          >
-                                                              {formData.showSignatures && (
-                                                                  <span className="absolute top-3.5 right-3.5 flex h-2 w-2">
-                                                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75"></span>
-                                                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-green"></span>
-                                                                  </span>
-                                                              )}
-                                                              <div className={cn(
-                                                                  "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0",
-                                                                  formData.showSignatures ? "bg-neon-green/10 border border-neon-green/20" : "bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5"
-                                                              )}>
-                                                                  <PenTool size={22} className={cn("transition-transform duration-500 group-hover/btn:rotate-12", formData.showSignatures ? "text-neon-green" : "text-gray-500")} />
-                                                              </div>
-                                                              <div className="text-left">
-                                                                  <p className={cn("text-[8px] font-black uppercase tracking-[0.2em] mb-0.5", formData.showSignatures ? "text-neon-green/50" : "text-gray-600")}>Protocol</p>
-                                                                  <p className={cn("text-[11px] font-black uppercase tracking-widest", formData.showSignatures ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400")}>Digital Signatures</p>
-                                                              </div>
-                                                          </button>
-                                                      </div>
-
-                                                      {/* Signatory Identity Form */}
-                                                      <div className="p-8 bg-white/[0.01] border border-black/10 dark:border-white/5 rounded-[2rem] hover:border-black/10 dark:hover:border-white/10 transition-colors">
-                                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                              <div className="relative bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus-within:border-emerald-500 dark:focus-within:border-neon-green/30 focus-within:shadow-[0_0_15px_rgba(57,255,20,0.03)] rounded-[1.2rem] px-5 pt-6 pb-2.5 transition-all duration-300">
-                                                                  <span className="absolute top-2.5 left-5 text-[8px] font-black text-gray-500 uppercase tracking-[0.25em] pointer-events-none">Authorized Representative</span>
-                                                                  <input value={formData.senderName} onChange={e => setFormData({...formData, senderName: e.target.value})} placeholder="Full Legal Name" className="w-full bg-transparent border-none text-sm font-black text-gray-900 dark:text-white outline-none p-0 pt-0.5 transition-all placeholder:text-zinc-800 caret-neon-green" />
-                                                              </div>
-                                                              <div className="relative bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus-within:border-emerald-500 dark:focus-within:border-neon-green/30 focus-within:shadow-[0_0_15px_rgba(57,255,20,0.03)] rounded-[1.2rem] px-5 pt-6 pb-2.5 transition-all duration-300">
-                                                                  <span className="absolute top-2.5 left-5 text-[8px] font-black text-gray-500 uppercase tracking-[0.25em] pointer-events-none">Designation</span>
-                                                                  <input value={formData.senderDesignation} onChange={e => setFormData({...formData, senderDesignation: e.target.value})} placeholder="e.g. Director of Operations" className="w-full bg-transparent border-none text-sm font-black text-gray-900 dark:text-white outline-none p-0 pt-0.5 transition-all placeholder:text-zinc-800 caret-neon-green" />
-                                                              </div>
-                                                          </div>
-                                                      </div>
-
-                                                      {/* Pad & Seals */}
-                                                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                                                          {/* Signature Pad */}
-                                                          <div className="p-4 md:p-8 bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] relative overflow-hidden group">
-                                                              <div className="flex items-center justify-between mb-6">
-                                                                  <h4 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tighter italic">Signature Capture.</h4>
-                                                                  {formData.providerSignature && (
-                                                                      <button onClick={() => setFormData({...formData, providerSignature: null})} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:underline">Clear Pad</button>
-                                                                  )}
-                                                              </div>
-                                                              <div onClick={() => setIsSignatureModalOpen(true)} className="h-48 bg-white dark:bg-black/80 rounded-[2rem] border border-black/10 dark:border-white/5 flex items-center justify-center cursor-pointer hover:border-neon-green/40 transition-all relative overflow-hidden group/pad">
-                                                                  {/* Dotted Grid Background */}
-                                                                  <div className="absolute inset-0 bg-[radial-gradient(rgba(57,255,20,0.05)_1px,transparent_1px)] [background-size:12px_12px] pointer-events-none" />
-                                                                  {/* Corner Brackets */}
-                                                                  <div className="absolute top-3 left-3 w-3.5 h-3.5 border-t-2 border-l-2 border-neon-green/30 rounded-tl-sm pointer-events-none" />
-                                                                  <div className="absolute top-3 right-3 w-3.5 h-3.5 border-t-2 border-r-2 border-neon-green/30 rounded-tr-sm pointer-events-none" />
-                                                                  <div className="absolute bottom-3 left-3 w-3.5 h-3.5 border-b-2 border-l-2 border-neon-green/30 rounded-bl-sm pointer-events-none" />
-                                                                  <div className="absolute bottom-3 right-3 w-3.5 h-3.5 border-b-2 border-r-2 border-neon-green/30 rounded-br-sm pointer-events-none" />
-                                                                  
-                                                                  {formData.providerSignature ? (
-                                                                      <img src={formData.providerSignature} className="max-h-[70%] object-contain invert brightness-200 drop-shadow-[0_0_30px_rgba(57,255,20,0.4)] relative z-10" alt="Signature" />
-                                                                  ) : (
-                                                                      <div className="flex flex-col items-center gap-3 text-gray-900 dark:text-white/5 group-hover/pad:text-emerald-600 dark:pad:text-neon-green/30 transition-all relative z-10">
-                                                                          <PenTool size={24} />
-                                                                          <p className="text-[9px] font-black uppercase tracking-[0.5em]">Execute Pad</p>
-                                                                      </div>
-                                                                  )}
-                                                              </div>
-                                                          </div>
-
-                                                          {/* Integrity Hub */}
-                                                          <div className="p-4 md:p-8 bg-white/[0.01] border border-black/10 dark:border-white/5 rounded-[2.5rem] flex flex-col items-center justify-center gap-6 relative overflow-hidden group">
-                                                              <div className="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                                                              <div className="relative shrink-0 flex items-center justify-center w-40 h-40">
-                                                                  <div className="relative z-10 scale-90">
-                                                                      <DocumentSeal className="w-24 h-24 drop-shadow-[0_0_35px_rgba(57,255,20,0.25)]" />
-                                                                  </div>
-                                                                  {/* Concentric Rotating Rings */}
-                                                                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 15, repeat: Infinity, ease: "linear" }} className="absolute w-32 h-32 border border-dashed border-neon-green/30 rounded-full pointer-events-none" />
-                                                                  <motion.div animate={{ rotate: -360 }} transition={{ duration: 30, repeat: Infinity, ease: "linear" }} className="absolute w-36 h-36 border border-dotted border-neon-green/15 rounded-full pointer-events-none" />
-                                                                  {/* Decorative Tech Crosshairs */}
-                                                                  <div className="absolute w-full h-[1px] bg-white/[0.03] pointer-events-none" />
-                                                                  <div className="absolute h-full w-[1px] bg-white/[0.03] pointer-events-none" />
-                                                              </div>
-                                                              <div className="text-center space-y-3.5 w-full z-10">
-                                                                  <div className="space-y-1">
-                                                                      <p className="text-[9px] font-black text-neon-green uppercase tracking-[0.4em] drop-shadow-[0_0_8px_rgba(57,255,20,0.2)]">Execution Reference</p>
-                                                                      <p className="text-[7px] font-bold text-gray-600 uppercase tracking-widest">AUTHENTICATION DECRYPT HASH</p>
-                                                                  </div>
-                                                                  <div className="relative group/ref bg-white dark:bg-black/60 px-6 py-3.5 rounded-[1.5rem] border border-black/10 dark:border-white/5 group-hover:border-neon-green/30 transition-all duration-300 inline-block w-full max-w-[260px]">
-                                                                      {/* Tech Corner Accents */}
-                                                                      <div className="absolute top-2 left-2 w-1.5 h-1.5 border-t border-l border-neon-green/30" />
-                                                                      <div className="absolute top-2 right-2 w-1.5 h-1.5 border-t border-r border-neon-green/30" />
-                                                                      <div className="absolute bottom-2 left-2 w-1.5 h-1.5 border-b border-l border-neon-green/30" />
-                                                                      <div className="absolute bottom-2 right-2 w-1.5 h-1.5 border-b border-r border-neon-green/30" />
-                                                                      
-                                                                      <h2 className="text-md lg:text-lg font-black text-gray-900 dark:text-white tracking-[0.08em] italic uppercase font-mono">
-                                                                          NB-<span className="text-neon-green">{formData.campaignNumber || 'PROPOSAL-26'}</span>
-                                                                      </h2>
-                                                                      <div className="flex items-center justify-center gap-1 mt-1.5 text-[6.5px] font-black text-gray-500 uppercase tracking-widest">
-                                                                          <span className="w-1 h-1 bg-neon-green rounded-full animate-ping" />
-                                                                          <span>SECURE SYSTEM SIGNED</span>
-                                                                      </div>
-                                                                  </div>
-                                                              </div>
-                                                          </div>
-                                                      </div>
-                                             </div>
-                                         </div>
-                                     </div>
-                                     </div>
-                                     )
-                                 )}
-                                {(viewMode === 'all' || activeTab === '7') && (
-                                    isV2 ? (
-                                        <V2ClosingEditor formData={formData} setFormData={setFormData} />
-                                    ) : (
-                                    <div className="space-y-8">
-                                        <div className="flex justify-between items-center px-4">
-                                            <div className="space-y-1">
-                                                <h4 className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Custom Proposal Pages</h4>
-                                                <p className="text-xs text-gray-600">Add blank pages with custom titles and content to your document.</p>
-                                            </div>
-                                            <button 
-                                                disabled={isHidden('customPages')}
-                                                onClick={() => {
-                                                    const currentCustom = formData.customPages || [];
-                                                    setFormData({
-                                                        ...formData,
-                                                        customPages: [
-                                                            ...currentCustom,
-                                                            { id: String(Date.now()), title: 'New Custom Page', content: '' }
-                                                        ]
-                                                    });
-                                                }}
-                                                className="flex items-center gap-2 px-4 py-2.5 bg-neon-green text-black rounded-xl font-black uppercase text-[9px] tracking-widest hover:scale-105 transition-all shadow-xl disabled:opacity-30"
-                                            >
-                                                <Plus size={14} /> Add Blank Page
-                                            </button>
-                                            {formData.customPages && formData.customPages.length > 0 && (
-                                                <button 
-                                                    disabled={isHidden('customPages')}
-                                                    onClick={duplicateAllCustomPages}
-                                                    className="flex items-center gap-2 px-4 py-2.5 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 rounded-xl font-black uppercase text-[9px] tracking-widest hover:bg-black/10 dark:hover:bg-white/10 transition-all disabled:opacity-30"
-                                                >
-                                                    <Copy size={14} /> Duplicate All Pages
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        <div className={cn("space-y-8 transition-opacity", isHidden('customPages') && "opacity-30")}>
-                                            {!(formData.customPages && formData.customPages.length > 0) ? (
-                                                <div className="p-16 border-2 border-dashed border-black/10 dark:border-white/5 rounded-[2.5rem] text-center text-gray-600 space-y-4">
-                                                    <FileText size={36} className="mx-auto text-gray-700" />
-                                                    <p className="text-[10px] font-black uppercase tracking-widest">No custom pages added yet</p>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-8">
-                                                    {(formData.customPages || []).map((cp, idx) => (
-                                                        <div key={cp.id} className="p-4 md:p-8 bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] space-y-6 relative group">
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-[10px] font-black text-neon-green/60 uppercase tracking-widest bg-neon-green/5 border border-neon-green/10 px-3 py-1 rounded-full">Custom Page {String(idx + 1).padStart(2, '0')}</span>
-                                                                <div className="flex items-center gap-1.5">
-                                                                    {/* Move Up */}
-                                                                    <button 
-                                                                        type="button" 
-                                                                        disabled={isHidden('customPages') || idx === 0}
-                                                                        onClick={() => moveCustomPage(idx, 'up')}
-                                                                        className="p-2 text-gray-500 hover:text-neon-green hover:bg-neon-green/5 transition-all rounded-xl disabled:opacity-20 disabled:hover:bg-transparent"
-                                                                        title="Move Up"
-                                                                    >
-                                                                        <ChevronUp size={16} />
-                                                                    </button>
-                                                                    
-                                                                    {/* Move Down */}
-                                                                    <button 
-                                                                        type="button" 
-                                                                        disabled={isHidden('customPages') || idx === (formData.customPages || []).length - 1}
-                                                                        onClick={() => moveCustomPage(idx, 'down')}
-                                                                        className="p-2 text-gray-500 hover:text-neon-green hover:bg-neon-green/5 transition-all rounded-xl disabled:opacity-20 disabled:hover:bg-transparent"
-                                                                        title="Move Down"
-                                                                    >
-                                                                        <ChevronDown size={16} />
-                                                                    </button>
-
-                                                                    <button 
-                                                                        disabled={isHidden('customPages')}
-                                                                        onClick={() => {
-                                                                            const updated = (formData.customPages || []).filter(p => p.id !== cp.id);
-                                                                            setFormData({ ...formData, customPages: updated });
-                                                                        }}
-                                                                        className="p-2.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-all rounded-xl"
-                                                                        title="Delete Page"
-                                                                    >
-                                                                        <Trash2 size={16} />
-                                                                    </button>
-
-                                                                    {/* Duplicate */}
-                                                                    <button 
-                                                                        disabled={isHidden('customPages')}
-                                                                        onClick={() => duplicateCustomPage(idx)}
-                                                                        className="p-2.5 text-gray-500 hover:text-neon-green hover:bg-neon-green/10 transition-all rounded-xl"
-                                                                        title="Duplicate Page"
-                                                                    >
-                                                                        <Copy size={16} />
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                                <div className="space-y-2">
-                                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-1">Page Title</label>
-                                                                    <input 
-                                                                        disabled={isHidden('customPages')}
-                                                                        value={cp.title} 
-                                                                        onChange={e => {
-                                                                            const updated = [...(formData.customPages || [])];
-                                                                            updated[idx] = { ...cp, title: e.target.value };
-                                                                            setFormData({ ...formData, customPages: updated });
-                                                                        }} 
-                                                                        placeholder="Page Title (e.g. Terms of Service, Project Timelines)" 
-                                                                        className="h-14 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-sm font-black px-5 text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-800" 
-                                                                    />
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-1">Page Subtitle</label>
-                                                                    <input 
-                                                                        disabled={isHidden('customPages')}
-                                                                        value={cp.subtitle || ''} 
-                                                                        onChange={e => {
-                                                                            const updated = [...(formData.customPages || [])];
-                                                                            updated[idx] = { ...cp, subtitle: e.target.value };
-                                                                            setFormData({ ...formData, customPages: updated });
-                                                                        }} 
-                                                                        placeholder="Page Subtitle (e.g. Additional Specifications)" 
-                                                                        className="h-14 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-sm font-black px-5 text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-800" 
-                                                                    />
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-1">Placement / Order</label>
-                                                                    <div className="relative">
-                                                                        <select
-                                                                            disabled={isHidden('customPages')}
-                                                                            value={cp.insertAfter || 'default'}
-                                                                            onChange={e => {
-                                                                                const updated = [...(formData.customPages || [])];
-                                                                                updated[idx] = { ...cp, insertAfter: e.target.value };
-                                                                                setFormData({ ...formData, customPages: updated });
-                                                                            }}
-                                                                            className="h-14 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-5 text-gray-900 dark:text-white outline-none transition-all appearance-none cursor-pointer"
-                                                                        >
-                                                                            <option value="default" className="bg-gray-100 dark:bg-zinc-950">Before Commercials (Default)</option>
-                                                                            <option value="cover" className="bg-gray-100 dark:bg-zinc-950">After Cover Page</option>
-                                                                            <option value="strategy" className="bg-gray-100 dark:bg-zinc-950">After Strategic Framework</option>
-                                                                            <option value="scope" className="bg-gray-100 dark:bg-zinc-950">After Project Scope</option>
-                                                                            <option value="proposal" className="bg-gray-100 dark:bg-zinc-950">After Deliverables</option>
-                                                                            <option value="table" className="bg-gray-100 dark:bg-zinc-950">After Resource Table</option>
-                                                                            <option value="commercials" className="bg-gray-100 dark:bg-zinc-950">After Commercials (Last Page)</option>
-                                                                        </select>
-                                                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                                                                            <ChevronDown size={14} />
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                                <div className="relative group/editor group/refine">
-                                                                    <MultiPageRichEditor 
-                                                                        label="Page Content"
-                                                                        value={cp.content} 
-                                                                        onChange={val => {
-                                                                            const updated = [...(formData.customPages || [])];
-                                                                            updated[idx] = { ...cp, content: val };
-                                                                            setFormData({ ...formData, customPages: updated });
-                                                                        }} 
-                                                                        placeholder="Enter the body of your custom page..." 
-                                                                        minHeight="260px"
-                                                                        accentColor="neon-green"
-                                                                    />
-                                                                    <div className="absolute right-4 top-12 flex items-center gap-2 opacity-0 group-hover/refine:opacity-100 focus-within/refine:opacity-100 transition-all z-[70]">
-                                                                        <button 
-                                                                            type="button" 
-                                                                            disabled={isHidden('customPages')} 
-                                                                            onClick={(e) => handleRefineClick(`customPages[${idx}].content`, `Custom Page ${idx + 1} Content`, cp.content, e)} 
-                                                                            className="p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 shadow-lg disabled:opacity-0" 
-                                                                            title="Refine with AI"
-                                                                        >
-                                                                            <Sparkles size={14} className="animate-pulse" />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    )
-                                )}
-                                {(viewMode === 'all' || activeTab === '8') && (
-                                    <div className="flex flex-col gap-10">
-                                        <div className="flex flex-col md:flex-row gap-8">
-                                            {/* Upload Card */}
-                                            <div className="flex-1 bg-gray-100 dark:bg-zinc-900/30 border border-black/10 dark:border-white/5 p-4 md:p-8 rounded-[2.5rem] flex flex-col justify-between group/card relative overflow-hidden min-h-[300px]">
-                                                <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-emerald-500 dark:card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
-                                                <div className="space-y-4 relative z-10">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="space-y-1">
-                                                            <h3 className="text-xl font-black uppercase tracking-tight italic text-gray-900 dark:text-white">Upload Documents.</h3>
-                                                            <p className="text-[9px] font-bold text-neon-green uppercase tracking-wider">Spreadsheets & PDFs</p>
-                                                        </div>
-                                                        <div className="p-3 bg-neon-green/10 rounded-2xl border border-neon-green/20">
-                                                            <Upload size={18} className="text-neon-green" />
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed font-sans">
-                                                        Directly attach supporting spreadsheets (CSV, Excel) or PDFs. These files are stored securely and rendered interactively inside the final proposal.
-                                                    </p>
-                                                </div>
-                                                
-                                                <div className="mt-8 relative z-10">
-                                                    <label 
-                                                        htmlFor="file-uploader" 
-                                                        className={cn(
-                                                            "w-full h-32 border-2 border-dashed border-black/10 dark:border-white/10 hover:border-neon-green/30 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:bg-neon-green/[0.02] group/upload",
-                                                            isUploadingFile && "opacity-50 pointer-events-none"
-                                                        )}
-                                                    >
-                                                        {isUploadingFile ? (
-                                                            <>
-                                                                <RefreshCw className="animate-spin text-neon-green" size={24} />
-                                                                <span className="text-[9px] font-black uppercase tracking-widest text-neon-green">Uploading to Storage...</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Upload className="text-gray-600 dark:text-gray-400 group-hover/upload:text-emerald-600 dark:upload:text-neon-green transition-colors" size={24} />
-                                                                <span className="text-[9px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300">Choose file or drag here</span>
-                                                                <span className="text-[8px] font-medium text-gray-500 uppercase">PDF, CSV, XLSX (Max 10MB)</span>
-                                                            </>
-                                                        )}
-                                                    </label>
-                                                    <input 
-                                                        type="file" 
-                                                        className="hidden" 
-                                                        id="file-uploader" 
-                                                        accept=".pdf,.csv,.xlsx,.xls,.tsv,.jpg,.jpeg,.png,.webp,.gif" 
-                                                        disabled={isUploadingFile}
-                                                        onChange={async (e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (!file) return;
-                                                            setIsUploadingFile(true);
-                                                            try {
-                                                                const uniqueId = Math.random().toString(36).substring(2, 9);
-                                                                const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-                                                                const storagePath = `proposals/attachments/${uniqueId}_${cleanName}`;
-                                                                
-                                                                let downloadUrl = '';
-                                                                
-                                                                try {
-                                                                    const storageRef = ref(storage, storagePath);
-                                                                    const uploadPromise = uploadBytes(storageRef, file);
-                                                                    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase upload timed out')), 1500));
-                                                                    await Promise.race([uploadPromise, timeoutPromise]);
-                                                                    downloadUrl = await getDownloadURL(storageRef);
-                                                                } catch (firebaseErr) {
-                                                                    console.warn("Firebase upload fast-fallback to Cloudinary...", firebaseErr);
-                                                                    const preset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud";
-                                                                    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
-                                                                    const data = new FormData();
-                                                                    data.append("file", file);
-                                                                    data.append("upload_preset", preset);
-                                                                    data.append("cloud_name", cloudName);
-
-                                                                    let resourceType = "raw";
-                                                                    const mimeType = file.type || '';
-                                                                    if (mimeType.startsWith("image/")) resourceType = "image";
-                                                                    else if (mimeType.startsWith("video/") || mimeType.startsWith("audio/")) resourceType = "video";
-
-                                                                    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, { 
-                                                                        method: "POST", 
-                                                                        body: data 
-                                                                    });
-                                                                    if (!res.ok) {
-                                                                        const errData = await res.json().catch(() => ({}));
-                                                                        throw new Error(errData.error?.message || "Cloudinary fallback also failed");
-                                                                    }
-                                                                    const uploadedFile = await res.json();
-                                                                    downloadUrl = uploadedFile.secure_url;
-                                                                }
-                                                                
-                                                                const ext = file.name.split('.').pop()?.toLowerCase();
-                                                                let fileType = 'other';
-                                                                if (ext === 'pdf') fileType = 'pdf';
-                                                                else if (['csv', 'xlsx', 'xls', 'tsv'].includes(ext || '')) fileType = 'spreadsheet';
-                                                                else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) fileType = 'image';
-
-                                                                const newAttachment = {
-                                                                    id: Date.now(),
-                                                                    name: file.name,
-                                                                    url: downloadUrl,
-                                                                    type: 'file',
-                                                                    fileType
-                                                                };
-
-                                                                setFormData(prev => ({
-                                                                    ...prev,
-                                                                    attachments: [...(prev.attachments || []), newAttachment]
-                                                                }));
-                                                                addToast('Attachment uploaded.', 'success');
-                                                            } catch (err) {
-                                                                console.error("Upload error:", err);
-                                                                addToast("Couldn't upload the attachment. Please try again.", 'error');
-                                                            } finally {
-                                                                setIsUploadingFile(false);
-                                                                if (e.target) e.target.value = '';
-                                                            }
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Link Card */}
-                                            <div className="flex-1 bg-gray-100 dark:bg-zinc-900/30 border border-black/10 dark:border-white/5 p-4 md:p-8 rounded-[2.5rem] flex flex-col justify-between group/card relative overflow-hidden min-h-[300px]">
-                                                <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-emerald-500 dark:card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
-                                                <div className="space-y-4 relative z-10 w-full">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="space-y-1">
-                                                            <h3 className="text-xl font-black uppercase tracking-tight italic text-gray-900 dark:text-white">Link Directories.</h3>
-                                                            <p className="text-[9px] font-bold text-neon-green uppercase tracking-wider">External Sheets & Hubs</p>
-                                                        </div>
-                                                        <div className="p-3 bg-neon-green/10 rounded-2xl border border-neon-green/20">
-                                                            <LinkIcon size={18} className="text-neon-green" />
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed font-sans">
-                                                        Attach external Google Sheets, Airtable, Notion dashboards, or web PDF links for active sync.
-                                                    </p>
-                                                </div>
-
-                                                <div className="mt-6 space-y-4 relative z-10 w-full">
-                                                    <Input 
-                                                        label="Document Title" 
-                                                        value={linkName} 
-                                                        onChange={e => setLinkName(e.target.value)} 
-                                                        placeholder="e.g. Budget Worksheet" 
-                                                    />
-                                                    <Input 
-                                                        label="Document URL" 
-                                                        value={linkUrl} 
-                                                        onChange={e => setLinkUrl(e.target.value)} 
-                                                        placeholder="e.g. https://docs.google.com/spreadsheets/..." 
-                                                    />
-                                                    <Button 
-                                                        onClick={() => {
-                                                            if (!linkName.trim() || !linkUrl.trim()) {
-                                                                addToast('Add a name and a link URL.', 'error');
-                                                                return;
-                                                            }
-                                                            let fileType = 'other';
-                                                            const urlLower = linkUrl.toLowerCase();
-                                                            if (urlLower.includes('.pdf') || urlLower.includes('pdf')) {
-                                                                fileType = 'pdf';
-                                                            } else if (urlLower.includes('spreadsheets') || urlLower.includes('csv') || urlLower.includes('excel')) {
-                                                                fileType = 'spreadsheet';
-                                                            }
-
-                                                            const newAttachment = {
-                                                                    id: Date.now(),
-                                                                    name: linkName.trim(),
-                                                                    url: linkUrl.trim(),
-                                                                    type: 'link',
-                                                                    fileType
-                                                            };
-
-                                                            setFormData(prev => ({
-                                                                ...prev,
-                                                                attachments: [...(prev.attachments || []), newAttachment]
-                                                            }));
-                                                            setLinkName('');
-                                                            setLinkUrl('');
-                                                            addToast('Link added.', 'success');
-                                                        }}
-                                                        className="w-full bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white hover:bg-neon-green hover:text-black uppercase tracking-widest text-[9px] font-black h-12"
-                                                    >
-                                                        Link Document
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Attachments List */}
-                                        <div className="space-y-4">
-                                            <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Current Attachments ({(formData.attachments || []).length})</h4>
-                                            
-                                            {(formData.attachments || []).length === 0 ? (
-                                                <div className="p-12 border border-dashed border-black/10 dark:border-white/5 rounded-[2.5rem] bg-gray-100 dark:bg-zinc-950/20 text-center">
-                                                    <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">No documents attached yet</p>
-                                                    <p className="text-gray-600 text-[10px] font-medium uppercase mt-1">Files or links added will appear here</p>
-                                                </div>
-                                            ) : (
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    {(formData.attachments || []).map((attachment, idx) => {
-                                                        const isSpreadsheet = attachment.fileType === 'spreadsheet';
-                                                        const isPdf = attachment.fileType === 'pdf';
-                                                        
-                                                        return (
-                                                            <div key={attachment.id || idx} className="p-6 bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] flex items-center justify-between group/item hover:border-black/10 dark:hover:border-white/10 transition-all">
-                                                                <div className="flex items-center gap-4 min-w-0 flex-1">
-                                                                    <div className={cn(
-                                                                        "w-12 h-12 rounded-2xl flex items-center justify-center border shrink-0",
-                                                                        isSpreadsheet && "bg-[#107C41]/10 border-[#107C41]/20 text-[#107C41]",
-                                                                        isPdf && "bg-red-500/10 border-red-500/20 text-red-500",
-                                                                        (!isSpreadsheet && !isPdf) && "bg-blue-500/10 border-blue-500/20 text-blue-500"
-                                                                    )}>
-                                                                        {isSpreadsheet ? (
-                                                                            <FileSpreadsheet size={20} />
-                                                                        ) : isPdf ? (
-                                                                            <FileText size={20} />
-                                                                        ) : (
-                                                                            <LinkIcon size={20} />
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="min-w-0 flex-1">
-                                                                        <input 
-                                                                            type="text"
-                                                                            value={attachment.name}
-                                                                            onChange={e => {
-                                                                                const updated = [...(formData.attachments || [])];
-                                                                                updated[idx] = { ...attachment, name: e.target.value };
-                                                                                setFormData({ ...formData, attachments: updated });
-                                                                            }}
-                                                                            className="bg-transparent border-b border-transparent hover:border-black/20 dark:hover:border-white/20 focus:border-neon-green/50 text-xs font-black text-gray-900 dark:text-white w-full outline-none transition-all pb-0.5"
-                                                                        />
-                                                                        <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1 truncate">
-                                                                            {attachment.type === 'file' ? 'Uploaded Storage File' : 'External Web URL'} &bull; {attachment.fileType?.toUpperCase()}
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="flex items-center gap-2 pl-4">
-                                                                    <a 
-                                                                        href={attachment.url} 
-                                                                        target="_blank" 
-                                                                        rel="noopener noreferrer" 
-                                                                        className="p-2 bg-gray-100 dark:bg-zinc-900 hover:bg-zinc-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl border border-black/10 dark:border-white/5 transition-colors"
-                                                                        title="Open Link"
-                                                                    >
-                                                                        <Maximize2 size={13} />
-                                                                    </a>
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            const updated = (formData.attachments || []).filter(a => a.id !== attachment.id);
-                                                                            setFormData({ ...formData, attachments: updated });
-                                                                            addToast('Attachment removed.', 'success');
-                                                                        }}
-                                                                        className="p-2 bg-red-500/5 hover:bg-red-500/10 text-red-400/70 hover:text-red-400 rounded-xl border border-red-500/10 transition-colors"
-                                                                        title="Delete Attachment"
-                                                                    >
-                                                                        <Trash2 size={13} />
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                             </motion.div>
-                         </AnimatePresence>
-
-                        {/* Section Navigation Footer */}
-                        {activeTab !== 'ai' && (
-                            <div className="mt-20 pt-8 border-t border-black/10 dark:border-white/5 flex items-center justify-between pb-12">
-                                <button 
-                                    onClick={() => {
-                                        const idx = tabs.findIndex(t => t.id === activeTab);
-                                        if (idx > 0) handleTabClick(tabs[idx - 1].id);
-                                    }}
-                                    disabled={activeTab === tabs[0].id}
-                                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none"
-                                >
-                                    <ChevronLeft size={16} />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Previous</span>
-                                </button>
-
-                                <button 
-                                    onClick={() => {
-                                        const idx = tabs.findIndex(t => t.id === activeTab);
-                                        if (idx < tabs.length - 1) handleTabClick(tabs[idx + 1].id);
-                                    }}
-                                    className={cn(
-                                        "flex items-center gap-2 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all",
-                                        activeTab === tabs[tabs.length - 1].id 
-                                            ? "bg-black/5 dark:bg-white/5 text-gray-500 cursor-not-allowed opacity-50" 
-                                            : "bg-neon-green text-black hover:scale-105 shadow-[0_0_20px_rgba(57,255,20,0.2)]"
-                                    )}
-                                >
-                                    <span>{activeTab === tabs[tabs.length - 1].id ? 'Final Step' : 'Next Section'}</span>
-                                    {activeTab !== tabs[tabs.length - 1].id && <ChevronRight size={16} />}
-                                </button>
+                        {waiting ? (
+                            <p className="flex items-center gap-2 py-10 text-[14px] text-gray-500"><RefreshCw size={15} className="animate-spin" /> Loading the proposal…</p>
+                        ) : (
+                            <div inert={locked && section !== 'review' ? true : undefined} className={cn(locked && section !== 'review' && 'opacity-60')}>
+                                {renderSection()}
                             </div>
                         )}
-
-
-                    </div>
-                </main>
-
-                {/* Doc Preview */}
-                <section className={cn(
-                    "lg:static lg:flex fixed inset-0 z-[60] lg:z-0 bg-white dark:bg-[#050505] lg:bg-gray-100 dark:lg:bg-zinc-900/10 flex-col overflow-hidden shrink-0 transition-transform duration-500 lg:translate-x-0",
-                    isExpandedPreview ? "w-full lg:w-full border-l-0" : "w-full lg:w-[400px] 2xl:w-[600px] border-l border-black/10 dark:border-white/5",
-                    showPreviewMobile ? "translate-x-0" : "translate-x-full lg:translate-x-0"
-                )}>
-                    <div className="h-20 lg:h-16 flex items-center justify-between px-8 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/20 shrink-0">
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => setShowPreviewMobile(false)} className="lg:hidden p-3 bg-black/5 dark:bg-white/5 rounded-xl border border-black/10 dark:border-white/5"><ArrowLeft size={18} /></button>
-                            <button 
-                                onClick={() => setIsExpandedPreview(!isExpandedPreview)} 
-                                className="hidden lg:flex p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 rounded-xl text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all items-center gap-2 text-[9px] font-black uppercase tracking-wider h-10 px-3"
-                                title={isExpandedPreview ? "Exit Fullscreen Preview" : "Fullscreen Preview"}
-                            >
-                                {isExpandedPreview ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
-                                <span>{isExpandedPreview ? "Collapse" : "Expand"}</span>
-                            </button>
-                            <p className="hidden xl:block text-[10px] font-black text-gray-500 uppercase tracking-widest whitespace-nowrap">Document Live View</p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center bg-white dark:bg-white rounded-lg p-1 border border-black/10 dark:border-white/5">
-                                <button onClick={() => setUserZoom(Math.max(0.5, userZoom - 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Minus size={12} /></button>
-                                <span className="text-[10px] font-black text-gray-500 px-2 min-w-[40px] text-center">{Math.round(userZoom * 100)}%</span>
-                                <button onClick={() => setUserZoom(Math.min(2, userZoom + 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Plus size={12} /></button>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setCurrentPreviewPage(Math.max(0, currentPreviewPage - 1))} disabled={currentPreviewPage === 0} className="p-2.5 bg-black/5 dark:bg-white/5 rounded-xl disabled:opacity-20 hover:bg-black/10 dark:hover:bg-white/10 transition-all"><ChevronLeft size={16} /></button>
-                                <span className="text-[10px] font-black text-neon-green">{currentPreviewPage + 1} / {paginatedPages.length}</span>
-                                <button onClick={() => setCurrentPreviewPage(Math.min(paginatedPages.length - 1, currentPreviewPage + 1))} disabled={currentPreviewPage === paginatedPages.length - 1} className="p-2.5 bg-black/5 dark:bg-white/5 rounded-xl disabled:opacity-20 hover:bg-black/10 dark:hover:bg-white/10 transition-all"><ChevronRight size={16} /></button>
-                            </div>
-                        </div>
                     </div>
 
-                    <div ref={previewContainerRef} className="flex-1 bg-gray-200/70 dark:bg-[#050505] flex flex-col items-center justify-start p-0 overflow-y-auto overflow-x-hidden relative scrollbar-hide">
-                        <div style={{ 
-                            width: `${794 * previewScale}px`,
-                            height: `${1123 * previewScale}px`,
-                            flexShrink: 0,
-                            position: 'relative'
-                        }}>
-                            <div style={{ 
-                                width: '794px', 
-                                height: '1123px', 
-                                transform: `scale(${previewScale})`, 
-                                transformOrigin: 'top left',
-                                position: 'absolute',
-                                top: 0,
-                                left: 0
-                            }}>
-                                <AnimatePresence mode="wait">
-                                {isV2 ? (
-                                    <motion.div key={currentPreviewPage} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                        {paginatedPages[currentPreviewPage] && (
-                                            <ProposalDocumentRenderer
-                                                page={paginatedPages[currentPreviewPage]}
-                                                pageIdx={currentPreviewPage}
-                                                totalPages={paginatedPages.length}
-                                                formData={normalizeProposalData(formData)}
-                                                currentLogo={currentLogo}
-                                                isHidden={isHidden}
-                                                renderContent={renderContent}
-                                                isExporting={false}
-                                            />
-                                        )}
-                                    </motion.div>
-                                ) : (
-                                <motion.div key={currentPreviewPage} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] shadow-2xl rounded-[2px] overflow-hidden">
-                                    <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", currentPreviewPage > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
-                                        <div className="flex flex-col gap-6 items-start">
-                                            <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", currentPreviewPage > 0 && "h-8")} crossOrigin="anonymous" />
-                                        </div>
-                                        <div className="text-right space-y-3">
-                                            <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", currentPreviewPage > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", currentPreviewPage > 0 && "text-sm")}>{formData.proposalNumber}</p></div>
-                                            {currentPreviewPage === 0 && (
-                                                <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex-1 overflow-hidden relative">
-                                        <div className="absolute inset-0 flex flex-col px-1">
-                                        {paginatedPages[currentPreviewPage]?.type === 'cover' && (
-                                            <div className="h-full flex flex-col justify-start space-y-20 py-8">
-                                                <div className="grid grid-cols-2 gap-10">
-                                                    <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{formData.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{formData.clientAddress || 'Client Address'}</p>}</div></div>
-                                                    <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Details</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{formData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-white dark:bg-black px-3 py-1 inline-block uppercase tracking-widest">Period: {formData.campaignDuration || 'TBD'}</p></div></div>
-                                                </div>
-                                                <div className="pt-16 space-y-10">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-12 h-1 bg-white dark:bg-black" />
-                                                        <p className="text-[11px] font-black uppercase tracking-[0.6em]">Project Overview</p>
-                                                    </div>
-                                                    {!isHidden('coverDescription') && (
-                                                        <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl">
-                                                            {renderContent(formData.coverDescription || 'Cover description pending...')}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{formData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Business Proposal</p></div></div>
-                                            </div>
-                                        )}
-                                        {paginatedPages[currentPreviewPage]?.type === 'strategy' && (
-                                            <div className="space-y-16 py-8">
-                                                <div className="mb-10 space-y-3">
-                                                    <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                        {formData.strategyTitle ?? 'EXECUTIVE SUMMARY'}
-                                                    </h3>
-                                                    <div className="w-20 h-1.5 bg-neon-green" />
-                                                    <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                        {formData.strategySub ?? 'STRATEGIC OUTLINE'}
-                                                    </p>
-                                                </div>
-                                                {paginatedPages[currentPreviewPage]?.overviewText && (
-                                                    <div className="text-lg font-medium leading-[1.7] text-gray-700 text-justify">
-                                                        {renderContent(paginatedPages[currentPreviewPage]?.overviewText)}
-                                                    </div>
-                                                )}
-                                                {paginatedPages[currentPreviewPage]?.primaryGoalText && !isHtmlEmpty(paginatedPages[currentPreviewPage]?.primaryGoalText) && (
-                                                    <div className="pt-12">
-                                                        <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
-                                                            <p className="text-[11px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Primary Objective</p>
-                                                            <div className="text-lg font-black text-black leading-relaxed">{renderContent(paginatedPages[currentPreviewPage]?.primaryGoalText)}</div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                        {paginatedPages[currentPreviewPage]?.type === 'scope' && (
-                                            <div className="h-full flex flex-col py-8">
-                                                <div className="mb-10 space-y-3">
-                                                    <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                        {formData.scopeTitle ?? 'SCOPE OF WORK'}
-                                                    </h3>
-                                                    <div className="w-20 h-1.5 bg-neon-green" />
-                                                    <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                        {formData.scopeSub ?? 'RESOURCE DELIVERABLES'}
-                                                    </p>
-                                                </div>
-                                                <div className="flex-1 flex flex-col">
-                                                    {renderContent(paginatedPages[currentPreviewPage]?.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
-                                                </div>
-                                            </div>
-                                        )}
-                                        {paginatedPages[currentPreviewPage]?.type === 'proposal' && (
-                                            <div className="space-y-16 py-8">
-                                                <div className="mb-10 space-y-3">
-                                                    <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                        {formData.proposalTitle ?? 'DELIVERABLES'}
-                                                    </h3>
-                                                    <div className="w-20 h-1.5 bg-neon-green" />
-                                                    <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                        {formData.proposalSub ?? 'PROJECT INVENTORY'}
-                                                    </p>
-                                                </div>
-                                                
-                                                {paginatedPages[currentPreviewPage]?.deliverables?.length > 0 && (
-                                                    <div className="space-y-6">
-                                                        <table className="w-full text-left border-collapse border border-black">
-                                                            <thead>
-                                                                <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
-                                                                    <th className="p-4 w-12 text-center border-r border-black/20 dark:border-white/20">#</th>
-                                                                    <th className="p-4 border-r border-black/20 dark:border-white/20">Deliverable</th>
-                                                                    <th className="p-4 text-center w-28 border-r border-black/20 dark:border-white/20">Qty / Unit</th>
-                                                                    <th className="p-4 text-right w-40">Timeline</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-black/10">
-                                                                {paginatedPages[currentPreviewPage]?.deliverables?.map((d, i) => (
-                                                                    <tr key={d.id || i} className="hover:bg-gray-50">
-                                                                        <td className="p-4 text-center text-[11px] font-bold text-slate-500 border-r border-black/10">
-                                                                            {String((paginatedPages[currentPreviewPage]?.startIndex || 0) + i + 1).padStart(2, '0')}
-                                                                        </td>
-                                                                        <td className="p-4 text-[12px] font-bold text-black border-r border-black/10">{d.item}</td>
-                                                                        <td className="p-4 text-center text-[12px] font-medium text-gray-600 border-r border-black/10">{d.qty || '—'}</td>
-                                                                        <td className="p-4 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                )}
-
-                                                {paginatedPages[currentPreviewPage]?.clientRequirements?.length > 0 && (
-                                                    <div className="pt-8 border-t border-gray-100">
-                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
-                                                        <div className="p-8 border-2 border-gray-200 space-y-0">
-                                                            {paginatedPages[currentPreviewPage]?.clientRequirements?.map((r, i) => (
-                                                                <div key={r.id || i} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
-                                                                    <div className="w-8 h-8 bg-white dark:bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-gray-900 dark:text-white">{String(i + 1).padStart(2, '0')}</span></div>
-                                                                    <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                        {paginatedPages[currentPreviewPage]?.type === 'table' && (
-                                            <div className="space-y-12 py-8">
-                                                <div className="mb-10 space-y-3">
-                                                    <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                        {formData.inventoryTitle ?? 'RESOURCE INVENTORY'}
-                                                    </h3>
-                                                    <div className="w-20 h-1.5 bg-neon-green" />
-                                                    <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                        {paginatedPages[currentPreviewPage]?.tablePageIdx > 1 
-                                                            ? `${formData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${paginatedPages[currentPreviewPage]?.tablePageIdx}` 
-                                                            : (formData.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
-                                                    </p>
-                                                </div>
-                                                <table className="w-full text-left border-collapse border border-black">
-                                          <thead>
-                                              <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
-                                                  {(formData.tableColumns || defaultColumns).map((col, cIdx, arr) => {
-                                                      const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
-                                                      return (
-                                                          <th 
-                                                              key={col.key} 
-                                                              className={cn(
-                                                                  "p-4",
-                                                                  cIdx < arr.length - 1 && "border-r border-black/20 dark:border-white/20",
-                                                                  colType === 'number' && "text-center w-24",
-                                                                  colType === 'amount' && "text-right w-48"
-                                                              )}
-                                                          >
-                                                              {col.label}
-                                                          </th>
-                                                      );
-                                                  })}
-                                              </tr>
-                                          </thead>
-                                          <tbody className="divide-y divide-black/10">
-                                              {paginatedPages[currentPreviewPage]?.items?.map((item, i) => {
-                                                  const cols = formData.tableColumns || defaultColumns;
-                                                  return (
-                                                      <tr key={i} className="hover:bg-gray-50">
-                                                          {cols.map((col, cIdx) => {
-                                                              const isLast = cIdx === cols.length - 1;
-                                                              const tdClass = cn(
-                                                                  "p-4",
-                                                                  !isLast && "border-r border-black/10"
-                                                              );
-                                                              const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
-                                                              if (col.key === 'description') {
-                                                                  return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
-                                                              }
-                                                              if (colType === 'number') {
-                                                                  const val = col.key === 'qty' ? item.qty : item[col.key];
-                                                                  return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{val}</td>;
-                                                              }
-                                                              if (colType === 'amount') {
-                                                                  const val = col.key === 'price' ? item.price : Number(item[col.key] || 0);
-                                                                  return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{val.toLocaleString()}</td>;
-                                                              }
-                                                              return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
-                                                          })}
-                                                      </tr>
-                                                  );
-                                              })}
-                                          </tbody>
-                                      </table>
-                                            </div>
-                                        )}
-                                        {paginatedPages[currentPreviewPage]?.type === 'custom' && (
-                                            <div className="space-y-8 py-8 h-full flex flex-col justify-start">
-                                                <div className="mb-10 space-y-3">
-                                                    <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                        {paginatedPages[currentPreviewPage]?.title ? paginatedPages[currentPreviewPage]?.title?.toUpperCase() : "CUSTOM PAGE"}
-                                                    </h3>
-                                                    <div className="w-20 h-1.5 bg-neon-green" />
-                                                    <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                        {(formData.customPages?.[paginatedPages[currentPreviewPage]?.pageIndex || 0]?.subtitle || "Additional Specifications").toUpperCase()}
-                                                    </p>
-                                                </div>
-                                                <div className="flex-1">
-                                                    {renderContent(paginatedPages[currentPreviewPage]?.content || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
-                                                </div>
-                                            </div>
-                                        )}
-                                        {paginatedPages[currentPreviewPage]?.type === 'terms_only' && (
-                                            <div className="space-y-12 py-10 px-4">
-                                                <div className="mb-10 space-y-3">
-                                                    <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                        GENERAL TERMS.
-                                                    </h3>
-                                                    <div className="w-20 h-1.5 bg-neon-green" />
-                                                    <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">Part {paginatedPages[currentPreviewPage]?.termsPageIdx}</p>
-                                                </div>
-                                                <div className="text-[12px] font-semibold text-gray-600 leading-relaxed space-y-3">
-                                                    {renderContent(paginatedPages[currentPreviewPage]?.termsText)}
-                                                </div>
-                                            </div>
-                                        )}
-                                        {paginatedPages[currentPreviewPage]?.type === 'commercials' && (
-                                            <div className="space-y-10 py-6 h-full flex flex-col justify-between">
-                                                
-                                                <div>
-                                                    <div className="mb-10 space-y-3">
-                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                            {formData.commercialsTitle ?? 'COMMERCIAL TERMS'}
-                                                        </h3>
-                                                        <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                            {formData.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
-                                                        </p>
-                                                    </div>
-                                                    <div className={cn(
-                                                        "grid gap-12 items-start",
-                                                        formData.hideTotalColumn ? "grid-cols-1" : "grid-cols-2"
-                                                    )}>
-                                                        <div className="space-y-8">
-                                                            {paginatedPages[currentPreviewPage]?.termsText && (
-                                                                <div className="space-y-3">
-                                                                    <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4>
-                                                                    <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(paginatedPages[currentPreviewPage]?.termsText)}</div>
-                                                                </div>
-                                                            )}
-                                                            {paginatedPages[currentPreviewPage]?.paymentDetailsText && (
-                                                                <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
-                                                                    <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Settlement Details</p>
-                                                                    <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{paginatedPages[currentPreviewPage]?.paymentDetailsText}</div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        {!formData.hideTotalColumn && (
-                                                        <div className="space-y-4">
-                                                            <div className="bg-gray-50/50 border border-gray-250/60 rounded-[2rem] p-8 space-y-6">
-                                                                <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                                    <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Subtotal</span>
-                                                                    <span className="text-base font-bold text-black font-mono">₹{subtotal.toLocaleString()}</span>
-                                                                </div>
-                                                                {formData.showGst && (
-                                                                    <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                                        <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">GST ({formData.gstRate}%)</span>
-                                                                        <span className="text-base font-bold text-black font-mono">₹{gstAmount.toLocaleString()}</span>
-                                                                    </div>
-                                                                )}
-                                                                <div className="p-8 bg-white dark:bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
-                                                                    <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
-                                                                    <h2 className="text-3xl font-black tracking-widest text-gray-900 dark:text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2>
-                                                                    <div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" />
-                                                                </div>
-                                                                {formData.advanceRequested > 0 && (
-                                                                    <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-[1.5rem] flex justify-between items-center">
-                                                                        <div>
-                                                                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Advance Fee ({formData.advanceRequested}%)</span>
-                                                                            <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">Due upon signature</span>
-                                                                        </div>
-                                                                        <span className="text-xl font-black text-black font-mono">₹{(totalAmount * formData.advanceRequested / 100).toLocaleString()}</span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                {/* Authentication Layer */}
-                                                {!isHidden('signatures') && (formData.showSignatures || formData.showSeal) && (
-                                                    <div className="mt-12 pt-12 border-t border-gray-100 relative">
-                                                        {formData.showSignatures ? (
-                                                            <>
-                                                                <div className="grid grid-cols-2 gap-16">
-                                                                    {/* Provider Signature */}
-                                                                    <div className="space-y-6">
-                                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
-                                                                        <div className="h-32 flex items-center justify-start relative">
-                                                                            {formData.providerSignature ? (
-                                                                                <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale" />
-                                                                            ) : (
-                                                                                <p className="text-[18px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
-                                                                            )}
-                                                                            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-white dark:bg-black/10" />
-                                                                        </div>
-                                                                        <p className="text-[9px] font-black text-black uppercase tracking-widest">{formData.senderName || 'Authorized Signatory'}</p>
-                                                                        <p className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">{formData.senderDesignation || 'Director of Operations'}</p>
-                                                                    </div>
-
-                                                                    {/* Client Signature */}
-                                                                    <div className="space-y-6 text-right">
-                                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
-                                                                        <div className="h-32 flex items-center justify-end relative">
-                                                                            {formData.clientSignature ? (
-                                                                                <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale" />
-                                                                            ) : (
-                                                                                <p className="text-[18px] font-formal italic text-black opacity-20">Type name to sign</p>
-                                                                            )}
-                                                                            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-white dark:bg-black/10" />
-                                                                        </div>
-                                                                        <p className="text-[9px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
-                                                                    </div>
-                                                                </div>
-                                                                {formData.showSeal && (
-                                                                    <div className="flex justify-center mt-6 relative z-10">
-                                                                        <DocumentSeal className="w-44 h-44" />
-                                                                    </div>
-                                                                )}
-                                                            </>
-                                                        ) : (
-                                                            formData.showSeal && (
-                                                                <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-[20px]">
-                                                                    <DocumentSeal className="w-44 h-44" />
-                                                                    <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
-                                                                </div>
-                                                            )
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                        {paginatedPages[currentPreviewPage]?.type === 'attachments' && (
-                                            <div className="space-y-12 py-10 px-4 h-full flex flex-col justify-between">
-                                                <div>
-                                                    <div className="mb-10 space-y-3">
-                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                            APPENDIX / ATTACHMENTS.
-                                                        </h3>
-                                                        <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                            SUPPORTING INSTRUMENTS & DOCUMENTATION
-                                                        </p>
-                                                    </div>
-                                                    
-                                                    <div className="grid grid-cols-2 gap-8 mt-12">
-                                                        {(paginatedPages[currentPreviewPage]?.attachments || []).map((attachment, idx) => {
-                                                            const isSpreadsheet = attachment.fileType === 'spreadsheet';
-                                                            const isPdf = attachment.fileType === 'pdf';
-                                                            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(attachment.url)}`;
-                                                            
-                                                            return (
-                                                                <div key={idx} className="p-6 border border-gray-200 rounded-[2rem] flex flex-col justify-between h-44 relative bg-gray-50/50">
-                                                                    <div className="flex items-start justify-between gap-4">
-                                                                        <div className="min-w-0">
-                                                                            <h4 className="text-xs font-black text-black uppercase tracking-wider truncate" title={attachment.name}>
-                                                                                {attachment.name}
-                                                                            </h4>
-                                                                            <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-1">
-                                                                                {attachment.type === 'file' ? 'Uploaded Storage File' : 'Linked URL'}
-                                                                            </p>
-                                                                        </div>
-                                                                        <span className={cn(
-                                                                            "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0",
-                                                                            isSpreadsheet && "bg-[#107C41]/10 border-[#107C41]/20 text-[#107C41]",
-                                                                            isPdf && "bg-red-500/10 border-red-500/20 text-red-500",
-                                                                            (!isSpreadsheet && !isPdf) && "bg-blue-500/10 border-blue-500/20 text-blue-500"
-                                                                        )}>
-                                                                            {attachment.fileType || 'Link'}
-                                                                        </span>
-                                                                    </div>
-                                                                    
-                                                                    <div className="flex items-end justify-between mt-4">
-                                                                        <a 
-                                                                            href={attachment.url} 
-                                                                            target="_blank" 
-                                                                            rel="noopener noreferrer" 
-                                                                            className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-white dark:bg-black hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-xl inline-block"
-                                                                        >
-                                                                            View Document &rarr;
-                                                                        </a>
-                                                                        
-                                                                        <div className="w-14 h-14 bg-white p-0.5 rounded-lg border border-gray-200 shadow-sm shrink-0">
-                                                                            <img src={qrCodeUrl} alt="QR Access" className="w-full h-full object-contain" />
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                        </div>
-                                    </div>
-                                    <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.4em]">
-                                        <p>© NEWBI ENTERTAINMENT & MARKETING LLP</p>
-                                        <p className="text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p>
-                                    </div>
-                                </motion.div>
-                                )}
-                            </AnimatePresence>
+                    {/* Sticky save bar */}
+                    <div className="sticky bottom-0 z-20 border-t border-black/[0.06] bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#0a0b0f]/95">
+                        <div className="mx-auto flex h-16 max-w-3xl items-center gap-2 px-3 sm:px-6">
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[11px] text-gray-500">{isV2 ? 'Deal value' : 'Total'}</p>
+                                <p className="truncate text-[16px] font-extrabold tabular-nums">{totals.totalAmount ? `₹${totals.totalAmount.toLocaleString('en-IN')}` : '—'}</p>
                             </div>
+                            <button type="button" onClick={() => goTo(sections[index - 1]?.id)} disabled={index === 0} aria-label="Previous section" className="flex h-11 w-11 items-center justify-center rounded-xl border border-black/10 disabled:opacity-30 dark:border-white/10"><ChevronLeft size={18} /></button>
+                            {index < sections.length - 1 ? (
+                                <button type="button" onClick={() => goTo(sections[index + 1].id)} className="flex h-11 items-center gap-1 rounded-xl border border-black/10 px-3 text-[13px] font-bold dark:border-white/10">
+                                    <span className="hidden sm:inline">{sections[index + 1].label}</span><span className="sm:hidden">Next</span> <ChevronRight size={16} />
+                                </button>
+                            ) : null}
+                            {!locked && (
+                                <Button variant="primary" className="h-11" onClick={() => save()} disabled={saving}>
+                                    {saving ? <RefreshCw size={15} className="animate-spin" /> : <Save size={15} />} Save
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </section>
+
+                <aside className="hidden w-[420px] shrink-0 border-l border-black/[0.06] dark:border-white/[0.06] lg:flex 2xl:w-[560px]">
+                    {waiting ? <div className="w-full bg-gray-200/70 dark:bg-[#050608]" /> : (
+                        <PreviewPane className="w-full" pages={pages} page={previewPage} onPage={setPreviewPage} formData={deferredForm} totals={previewTotals} />
+                    )}
+                </aside>
             </main>
 
+            <Sheet open={previewOpen} onClose={() => setPreviewOpen(false)} size="xl" title="Preview" subtitle={formData.proposalNumber || undefined} bodyClassName="flex flex-col p-0"
+                footer={<Button variant="secondary" className="h-11 w-full" onClick={download} disabled={downloading}>{downloading ? <RefreshCw size={15} className="animate-spin" /> : <Download size={15} />} Download PDF</Button>}>
+                <PreviewPane className="h-[70dvh]" pages={pages} page={previewPage} onPage={setPreviewPage} formData={deferredForm} totals={previewTotals} />
+            </Sheet>
 
-
-            {/* Hidden container for PDF export — renders all pages for html2canvas */}
-            <div className="pdf-export-only fixed -left-[9999px] top-0 pointer-events-none overflow-hidden bg-white">
-                {paginatedPages.map((page, idx) => (
-                    <div key={idx} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] mb-10">
-                        <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", idx > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
-                            <div className="flex flex-col gap-6 items-start">
-                                <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", idx > 0 && "h-8")} crossOrigin="anonymous" />
-                            </div>
-                            <div className="text-right space-y-3">
-                                <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", idx > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", idx > 0 && "text-sm")}>{formData.proposalNumber}</p></div>
-                                {idx === 0 && (
-                                    <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="flex-1 overflow-hidden relative">
-                            <div className="absolute inset-0 overflow-hidden flex flex-col px-1">
-                            {page.type === 'cover' && (
-                                <div className="h-full flex flex-col justify-start space-y-20 py-8">
-                                    <div className="grid grid-cols-2 gap-10">
-                                        <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{formData.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{formData.clientAddress || 'Client Address'}</p>}</div></div>
-                                        <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Specification</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{formData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-white dark:bg-black px-3 py-1 inline-block uppercase tracking-widest">Duration: {formData.campaignDuration || 'TBD'}</p></div></div>
-                                    </div>
-                                    <div className="pt-16 space-y-10">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-1 bg-white dark:bg-black" />
-                                            <p className="text-[11px] font-black uppercase tracking-[0.6em]">Official Strategic Quotation</p>
-                                        </div>
-                                        {!isHidden('coverDescription') && (
-                                            <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl">
-                                                {renderContent(formData.coverDescription || 'Cover description pending...')}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{formData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
-                                </div>
-                            )}
-                            {page.type === 'strategy' && (
-                                <div className="space-y-16 py-8">
-                                    <div className="mb-10 space-y-3">
-                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                            {formData.strategyTitle ?? 'EXECUTIVE SUMMARY'}
-                                        </h3>
-                                        <div className="w-20 h-1.5 bg-neon-green" />
-                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                            {formData.strategySub ?? 'STRATEGIC OUTLINE'}
-                                        </p>
-                                    </div>
-                                    {page.overviewText && (
-                                        <div className="text-lg font-medium leading-[1.7] text-gray-700 text-justify">
-                                            {renderContent(page.overviewText)}
-                                        </div>
-                                    )}
-                                    {page.primaryGoalText && !isHtmlEmpty(page.primaryGoalText) && (
-                                        <div className="pt-12">
-                                            <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
-                                                <p className="text-[11px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Primary Objective</p>
-                                                <div className="text-lg font-black text-black leading-relaxed">{renderContent(page.primaryGoalText)}</div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            {page.type === 'scope' && (
-                                <div className="h-full flex flex-col py-8">
-                                    <div className="mb-10 space-y-3">
-                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                            {formData.scopeTitle ?? 'SCOPE OF WORK'}
-                                        </h3>
-                                        <div className="w-20 h-1.5 bg-neon-green" />
-                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                            {formData.scopeSub ?? 'RESOURCE DELIVERABLES'}
-                                        </p>
-                                    </div>
-                                    <div className="flex-1 flex flex-col">
-                                        {renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
-                                    </div>
-                                </div>
-                            )}
-                            {page.type === 'proposal' && (
-                                <div className="space-y-16 py-8">
-                                    <div className="mb-10 space-y-3">
-                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                            {formData.proposalTitle ?? 'DELIVERABLES'}
-                                        </h3>
-                                        <div className="w-20 h-1.5 bg-neon-green" />
-                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                            {formData.proposalSub ?? 'PROJECT INVENTORY'}
-                                        </p>
-                                    </div>
-                                    {page.deliverables?.length > 0 && (
-                                        <div className="space-y-6">
-                                            <table className="w-full text-left border-collapse border border-black">
-                                                <thead>
-                                                    <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
-                                                        <th className="p-4 w-12 text-center border-r border-black/20 dark:border-white/20">#</th>
-                                                        <th className="p-4 border-r border-black/20 dark:border-white/20">Deliverable</th>
-                                                        <th className="p-4 text-center w-28 border-r border-black/20 dark:border-white/20">Qty / Unit</th>
-                                                        <th className="p-4 text-right w-40">Timeline</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-black/10">
-                                                    {page.deliverables.map((d, i) => (
-                                                        <tr key={d.id || i} className="hover:bg-gray-50">
-                                                            <td className="p-4 text-center text-[11px] font-bold text-slate-500 border-r border-black/10">
-                                                                {String((page.startIndex || 0) + i + 1).padStart(2, '0')}
-                                                            </td>
-                                                            <td className="p-4 text-[12px] font-bold text-black border-r border-black/10">{d.item}</td>
-                                                            <td className="p-4 text-center text-[12px] font-medium text-gray-600 border-r border-black/10">{d.qty || '—'}</td>
-                                                            <td className="p-4 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )}
-                                    {page.clientRequirements?.length > 0 && (
-                                        <div className="pt-8 border-t border-gray-100">
-                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
-                                            <div className="p-8 border-2 border-gray-200 space-y-0">
-                                                {page.clientRequirements.map((r, i) => (
-                                                    <div key={r.id || i} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
-                                                        <div className="w-8 h-8 bg-white dark:bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-gray-900 dark:text-white">{String(i + 1).padStart(2, '0')}</span></div>
-                                                        <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            {page.type === 'table' && (
-                                <div className="space-y-12 py-8">
-                                    <div className="mb-10 space-y-3">
-                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                            {formData.inventoryTitle ?? 'RESOURCE INVENTORY'}
-                                        </h3>
-                                        <div className="w-20 h-1.5 bg-neon-green" />
-                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                            {page.tablePageIdx > 1 
-                                                ? `${formData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${page.tablePageIdx}` 
-                                                : (formData.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
-                                        </p>
-                                    </div>
-                                    <table className="w-full text-left border-collapse border border-black">
-                                          <thead>
-                                              <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
-                                                  {(formData.tableColumns || defaultColumns).map((col, cIdx, arr) => {
-                                                      const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
-                                                      return (
-                                                          <th 
-                                                              key={col.key} 
-                                                              className={cn(
-                                                                  "p-4",
-                                                                  cIdx < arr.length - 1 && "border-r border-black/20 dark:border-white/20",
-                                                                  colType === 'number' && "text-center w-24",
-                                                                  colType === 'amount' && "text-right w-48"
-                                                              )}
-                                                          >
-                                                              {col.label}
-                                                          </th>
-                                                      );
-                                                  })}
-                                              </tr>
-                                          </thead>
-                                          <tbody className="divide-y divide-black/10">
-                                              {page.items.map((item, i) => {
-                                                  const cols = formData.tableColumns || defaultColumns;
-                                                  return (
-                                                      <tr key={i} className="hover:bg-gray-50">
-                                                          {cols.map((col, cIdx) => {
-                                                              const isLast = cIdx === cols.length - 1;
-                                                              const tdClass = cn(
-                                                                  "p-4",
-                                                                  !isLast && "border-r border-black/10"
-                                                              );
-                                                              const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
-                                                              if (col.key === 'description') {
-                                                                  return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
-                                                              }
-                                                              if (colType === 'number') {
-                                                                  const val = col.key === 'qty' ? item.qty : item[col.key];
-                                                                  return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{val}</td>;
-                                                              }
-                                                              if (colType === 'amount') {
-                                                                  const val = col.key === 'price' ? item.price : Number(item[col.key] || 0);
-                                                                  return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{val.toLocaleString()}</td>;
-                                                              }
-                                                              return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
-                                                          })}
-                                                      </tr>
-                                                  );
-                                              })}
-                                          </tbody>
-                                      </table>
-                                </div>
-                            )}
-                            {page.type === 'custom' && (
-                                <div className="space-y-8 py-8 h-full flex flex-col justify-start">
-                                    <div className="mb-10 space-y-3">
-                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                            {page.title ? page.title.toUpperCase() : "CUSTOM PAGE"}
-                                        </h3>
-                                        <div className="w-20 h-1.5 bg-neon-green" />
-                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                            {(formData.customPages?.[page.pageIndex]?.subtitle || "Additional Specifications").toUpperCase()}
-                                        </p>
-                                    </div>
-                                    <div className="flex-1">
-                                        {renderContent(page.content || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
-                                    </div>
-                                </div>
-                            )}
-                            {page.type === 'terms_only' && (
-                                <div className="space-y-12 py-10 px-4">
-                                    <div className="mb-10 space-y-3">
-                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                            GENERAL TERMS.
-                                        </h3>
-                                        <div className="w-20 h-1.5 bg-neon-green" />
-                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">Part {page.termsPageIdx}</p>
-                                    </div>
-                                    <div className="text-[12px] font-semibold text-gray-600 leading-relaxed space-y-3">
-                                        {renderContent(page.termsText)}
-                                    </div>
-                                </div>
-                            )}
-                            {page.type === 'commercials' && (
-                                 <div className="space-y-10 py-6 h-full flex flex-col justify-between">
-                                     <div>
-                                         <div className="mb-10 space-y-3">
-                                             <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                 {formData.commercialsTitle ?? 'COMMERCIAL TERMS'}
-                                             </h3>
-                                             <div className="w-20 h-1.5 bg-neon-green" />
-                                             <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                 {formData.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
-                                             </p>
-                                         </div>
-                                         <div className={cn(
-                                             "grid gap-12 items-start",
-                                             formData.hideTotalColumn ? "grid-cols-1" : "grid-cols-2"
-                                         )}>
-                                             <div className="space-y-8">
-                                                 {page.termsText && (
-                                                     <div className="space-y-3">
-                                                         <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4>
-                                                         <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(page.termsText)}</div>
-                                                     </div>
-                                                 )}
-                                                 {page.paymentDetailsText && (
-                                                     <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
-                                                         <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Settlement Details</p>
-                                                         <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{page.paymentDetailsText}</div>
-                                                     </div>
-                                                 )}
-                                             </div>
-                                             {!formData.hideTotalColumn && (
-                                             <div className="space-y-4">
-                                                 <div className="bg-gray-50/50 border border-gray-250/60 rounded-[2rem] p-8 space-y-6">
-                                                     <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                         <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Subtotal</span>
-                                                         <span className="text-base font-bold text-black font-mono">₹{subtotal.toLocaleString()}</span>
-                                                     </div>
-                                                     {formData.showGst && (
-                                                         <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                             <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">GST ({formData.gstRate}%)</span>
-                                                             <span className="text-base font-bold text-black font-mono">₹{gstAmount.toLocaleString()}</span>
-                                                         </div>
-                                                     )}
-                                                     <div className="p-8 bg-white dark:bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
-                                                         <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
-                                                         <h2 className="text-3xl font-black tracking-widest text-gray-900 dark:text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2>
-                                                         <div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" />
-                                                     </div>
-                                                     {formData.advanceRequested > 0 && (
-                                                         <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-[1.5rem] flex justify-between items-center">
-                                                             <div>
-                                                                 <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Advance Fee ({formData.advanceRequested}%)</span>
-                                                                 <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">Due upon signature</span>
-                                                             </div>
-                                                             <span className="text-xl font-black text-black font-mono">₹{(totalAmount * formData.advanceRequested / 100).toLocaleString()}</span>
-                                                         </div>
-                                                     )}
-                                                 </div>
-                                             </div>
-                                             )}
-                                         </div>
-                                     </div>
-
-                                    {/* Authentication Layer (Export) */}
-                                    {(formData.showSeal || formData.showSignatures) && (
-                                        <div className="mt-20 pt-12 border-t-2 border-black/5 relative">
-                                            {formData.showSignatures ? (
-                                                <>
-                                                    <div className="grid grid-cols-2 gap-20">
-                                                        {/* Provider Signature */}
-                                                        <div className="space-y-6">
-                                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
-                                                            <div className="h-40 flex items-center justify-start relative">
-                                                                {formData.providerSignature ? (
-                                                                    <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                ) : (
-                                                                    <p className="text-[24px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
-                                                                )}
-                                                                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white dark:bg-black" />
-                                                            </div>
-                                                            <p className="text-[11px] font-black text-black uppercase tracking-widest">{formData.senderName || 'Authorized Signatory'}</p>
-                                                            <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">{formData.senderDesignation || 'Director of Operations'}</p>
-                                                        </div>
-
-                                                        {/* Client Signature */}
-                                                        <div className="space-y-6 text-right">
-                                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
-                                                            <div className="h-40 flex items-center justify-end relative">
-                                                                {formData.clientSignature ? (
-                                                                    <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                ) : (
-                                                                    <p className="text-[24px] font-formal italic text-black opacity-10">Type name to sign</p>
-                                                                )}
-                                                                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white dark:bg-black" />
-                                                            </div>
-                                                            <p className="text-[11px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
-                                                        </div>
-                                                    </div>
-                                                    {formData.showSeal && (
-                                                        <div className="flex justify-center mt-6 relative z-10">
-                                                            <DocumentSeal className="w-56 h-56" />
-                                                        </div>
-                                                    )}
-                                                </>
-                                            ) : (
-                                                formData.showSeal && (
-                                                    <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-[20px]">
-                                                        <DocumentSeal className="w-56 h-56" />
-                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
-                                                    </div>
-                                                )
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            {page.type === 'attachments' && (
-                                <div className="space-y-12 py-10 px-4 h-full flex flex-col justify-between">
-                                    <div>
-                                        <div className="mb-10 space-y-3">
-                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                APPENDIX / ATTACHMENTS.
-                                            </h3>
-                                            <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                SUPPORTING INSTRUMENTS & DOCUMENTATION
-                                            </p>
-                                        </div>
-                                        
-                                        <div className="flex flex-col gap-10 mt-12 pb-10">
-                                            {(page.attachments || []).map((attachment, idx) => {
-                                                const isSpreadsheet = attachment.fileType === 'spreadsheet';
-                                                const isPdf = attachment.fileType === 'pdf';
-                                                const isImage = attachment.fileType === 'image';
-                                                const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(attachment.url)}`;
-                                                
-                                                if (isImage) {
-                                                    return (
-                                                        <div key={idx} className="w-full relative rounded-2xl overflow-hidden border border-gray-200">
-                                                            <img src={attachment.url} alt={attachment.name} className="w-full h-auto object-contain" />
-                                                            <div className="absolute top-4 left-4 bg-white dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-wider">
-                                                                {attachment.name}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }
-                                                
-                                                if (isPdf) {
-                                                    return (
-                                                        <div key={idx} className="w-full h-[600px] relative rounded-2xl overflow-hidden border border-gray-200">
-                                                            <iframe src={attachment.url} title={attachment.name} className="w-full h-full border-none bg-gray-50" />
-                                                            <div className="absolute top-4 left-4 bg-white dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-wider pointer-events-none">
-                                                                {attachment.name}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                return (
-                                                    <div key={idx} className="p-6 border border-gray-200 rounded-[2rem] flex flex-col justify-between h-44 relative bg-gray-50/50">
-                                                        <div className="flex items-start justify-between gap-4">
-                                                            <div className="min-w-0">
-                                                                <h4 className="text-xs font-black text-black uppercase tracking-wider truncate" title={attachment.name}>
-                                                                    {attachment.name}
-                                                                </h4>
-                                                                <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-1">
-                                                                    {attachment.type === 'file' ? 'Uploaded Storage File' : 'Linked URL'}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-end justify-between mt-4">
-                                                            <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-white dark:bg-black px-3 py-1.5 rounded-xl inline-block">
-                                                                View Document &rarr;
-                                                            </a>
-                                                            <div className="w-14 h-14 bg-white p-0.5 rounded-lg border border-gray-200 shadow-sm shrink-0">
-                                                                <img src={qrCodeUrl} alt="QR Access" className="w-full h-full object-contain" />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            </div>
-                        </div>
-                        <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.4em]">
-                            <p>© NEWBI ENTERTAINMENT & MARKETING LLP</p>
-                            <p className="text-black">Page {idx + 1} of {paginatedPages.length}</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            <SignatureModal 
-                isOpen={isSignatureModalOpen} 
-                onClose={() => setIsSignatureModalOpen(false)} 
-                onSave={(sig) => {
-                    setFormData(prev => ({...prev, providerSignature: sig}));
-                }}
-                initialName="Authorized Signatory"
-            />
-
-            {/* Floating Action Button for AI Chat (Available across all tabs) */}
-            <div className="fixed bottom-24 right-4 sm:right-6 lg:bottom-8 lg:right-8 z-[120]">
-                <button
-                    type="button"
-                    onClick={() => {
-                        setIsFloatingChatOpen(!isFloatingChatOpen);
-                        setUnreadChatCount(0);
-                    }}
-                    className={cn(
-                        "w-14 h-14 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 active:scale-95 relative",
-                        isFloatingChatOpen
-                            ? "bg-gray-100 dark:bg-zinc-900 border border-neon-green/50 text-neon-green shadow-[0_0_25px_rgba(57,255,20,0.3)]"
-                            : "bg-neon-green/10 text-neon-green hover:bg-neon-green/20 border border-neon-green/30 hover:border-neon-green/60 shadow-[0_0_20px_rgba(57,255,20,0.2)] hover:shadow-[0_0_30px_rgba(57,255,20,0.4)] hover:scale-105"
-                    )}
-                    title="Open AI Proposal Assistant"
-                >
-                    {isFloatingChatOpen ? (
-                        <X className="w-5 h-5" />
-                    ) : (
-                        <>
-                            <MessageCircle className="w-6 h-6" />
-                            {unreadChatCount > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-neon-green text-black font-black text-[9px] w-5 h-5 rounded-full flex items-center justify-center shadow-[0_0_10px_rgba(57,255,20,0.8)] animate-bounce">
-                                    {unreadChatCount}
-                                </span>
-                            )}
-                        </>
-                    )}
-                </button>
-            </div>
-
-            {/* Floating AI Chat Pop-up Overlay (Resizable & Persistent) */}
-            {isFloatingChatOpen && (
-                <div 
-                    className="fixed bottom-40 right-4 sm:right-6 lg:bottom-24 lg:right-8 bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-2xl border border-neon-green/20 rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(57,255,20,0.1)] overflow-hidden flex flex-col p-4 z-[120] animate-fade-in"
-                    style={{
-                        width: `${Math.min(chatPopupSize.width, window.innerWidth - 32)}px`,
-                        height: `${Math.min(chatPopupSize.height, window.innerHeight - 100)}px`,
-                        maxWidth: '96vw',
-                        maxHeight: '85vh'
-                    }}
-                >
-                    {/* Top-Left Corner Resize Handle */}
-                    <div 
-                        onMouseDown={handleStartResize}
-                        onTouchStart={handleTouchStartResize}
-                        className="absolute top-0 left-0 w-8 h-8 cursor-nwse-resize z-50 flex items-start justify-start p-2 opacity-40 hover:opacity-100 transition-opacity"
-                        title="Drag to resize chat window"
-                    >
-                        <div className="w-3.5 h-3.5 border-t-2 border-l-2 border-neon-green/70 rounded-tl-sm" />
-                    </div>
-
-                    {renderChatbot(true)}
-                </div>
-            )}
-
-            {/* Inline AI Field Refinement Popup */}
-            {renderInlineRefinePopup()}
+            <AiSheet open={aiOpen} onClose={() => setAiOpen(false)} onApply={applyAi} getDoc={getAiDoc} activeModel={activeModel}
+                hasContent={Boolean(currentId || dirtyRef.current)} />
+            <RefineSheet target={refineTarget} onClose={() => setRefineTarget(null)} />
         </div>
     );
 };

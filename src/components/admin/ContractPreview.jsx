@@ -1,6 +1,9 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
 import DocumentSeal from '../ui/DocumentSeal';
+import { formatContractDate, partyIds, termSentence, deliverablesOf, milestoneRows, gstNote, formatMoney } from './contracts/contractRules';
+
+const LOGOS = { entertainment: '/logo_document.png', media: '/logo_media.png', marketing: '/logo_marketing.png' };
 
 const inlineFmt = (t) => t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
 
@@ -77,6 +80,24 @@ const renderFormatted = (text, baseClass = 'text-[12px] font-serif text-black le
 const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
   const page = paginatedPages[currentPage];
   if (!page) return null;
+  // Older or partial records may miss whole sections; never crash the paper.
+  const parties = {
+    firstParty: formData.parties?.firstParty || {},
+    secondParty: formData.parties?.secondParty || {},
+  };
+  const details = formData.details || {};
+  const commercials = formData.commercials || {};
+  const effectiveLong = formatContractDate(formData.effectiveDate) || '[date]';
+  const effectiveShort = formatContractDate(formData.effectiveDate, 'short') || '—';
+  const firstIds = partyIds(parties.firstParty);
+  const secondIds = partyIds(parties.secondParty);
+  const term = termSentence(formData);
+  const deliverables = deliverablesOf(formData);
+  const milestones = milestoneRows(formData);
+  const taxNote = gstNote(formData);
+  const signed = formData.status === 'Executed' || Boolean(formData.clientSignature || formData.approvalMetadata?.clientSignature);
+  const clientSig = formData.approvalMetadata?.clientSignature || formData.clientSignature;
+  const clientSigner = formData.approvalMetadata?.signedBy || parties.secondParty.signatoryName || parties.secondParty.name;
 
   return (
     <div
@@ -85,7 +106,7 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
       {/* Formal Header */}
       <div className={cn("flex justify-between items-end mb-8 pb-3 relative z-10", currentPage > 0 && "opacity-40")}>
         <img 
-          src={formData.selectedLogo === 'marketing' ? '/logo_marketing.png' : '/logo_document.png'} 
+          src={LOGOS[formData.selectedLogo] || LOGOS.entertainment} 
           alt="Logo" 
           className="h-8 w-auto object-contain grayscale opacity-80" 
           crossOrigin="anonymous" 
@@ -97,7 +118,7 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
           </div>
           <div className="space-y-0.5 border-l border-black/10 pl-6">
             <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest block">Effective Date</span>
-            <span className="text-[10px] font-bold text-black uppercase tracking-wider block">{new Date(formData.effectiveDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+            <span className="text-[10px] font-bold text-black uppercase tracking-wider block">{effectiveShort}</span>
           </div>
         </div>
       </div>
@@ -114,31 +135,31 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
             
             <div className="space-y-8 text-[12px] leading-relaxed text-justify">
                 <p className="font-bold border-b border-black/5 pb-2">
-                  This {(formData.template || 'SERVICE AGREEMENT').toUpperCase()} (the "Agreement") is entered into as of {new Date(formData.effectiveDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })} (the "Effective Date").
+                  This {(formData.template || 'SERVICE AGREEMENT').toUpperCase()} (the "Agreement") is entered into as of {effectiveLong} (the "Effective Date").{term ? ` ${term}` : ''}
                 </p>
 
                 <div className="grid grid-cols-1 gap-6">
                   <div className="space-y-3 border-l border-black/10 pl-6">
                     <p className="font-bold uppercase tracking-widest text-[8px] text-gray-600 dark:text-gray-400">By and Between:</p>
                     <div className="space-y-1">
-                      <p><span className="font-bold uppercase">{formData.parties.firstParty.name}</span>, a company incorporated under the laws of India, having its principal place of business at {formData.parties.firstParty.address || '[Address]'} (hereinafter referred to as the <span className="font-bold">"{formData.parties.firstParty.role || 'Provider'}"</span>);</p>
+                      <p><span className="font-bold uppercase">{parties.firstParty.name}</span>, a company incorporated under the laws of India, having its principal place of business at {parties.firstParty.address || '[Address]'}{firstIds ? ` (${firstIds})` : ''} (hereinafter referred to as the <span className="font-bold">"{parties.firstParty.role || 'Provider'}"</span>);</p>
                     </div>
                     <p className="font-bold uppercase tracking-widest text-[8px] text-gray-600 dark:text-gray-400 mt-2">And:</p>
                     <div className="space-y-1">
-                      <p><span className="font-bold uppercase">{formData.parties.secondParty.name || '[Client Name]'}</span>, {formData.parties.secondParty.address ? `located at ${formData.parties.secondParty.address}` : 'having its registered address as specified in the execution block'} (hereinafter referred to as the <span className="font-bold">"{formData.parties.secondParty.role || 'Client'}"</span>).</p>
+                      <p><span className="font-bold uppercase">{parties.secondParty.name || '[Client Name]'}</span>, {parties.secondParty.address ? `located at ${parties.secondParty.address}` : 'having its registered address as specified in the execution block'}{secondIds ? ` (${secondIds})` : ''} (hereinafter referred to as the <span className="font-bold">"{parties.secondParty.role || 'Client'}"</span>).</p>
                     </div>
                   </div>
                 </div>
 
                 <p className="italic text-gray-500 py-3 text-center border-y border-black/5">
-                  (The {formData.parties.firstParty.role || 'Provider'} and the {formData.parties.secondParty.role || 'Client'} are referred to individually as a <span className="font-bold text-black">"Party"</span> and collectively as the <span className="font-bold text-black">"Parties"</span>).
+                  (The {parties.firstParty.role || 'Provider'} and the {parties.secondParty.role || 'Client'} are referred to individually as a <span className="font-bold text-black">"Party"</span> and collectively as the <span className="font-bold text-black">"Parties"</span>).
                 </p>
 
                 <div className="space-y-5">
                   <p className="font-bold uppercase tracking-widest text-[10px]">RECITALS:</p>
                   <div className="space-y-3 text-[12px]">
-                    <p className="flex gap-4"><span>(A)</span> <span className="flex-1">{formData.parties.firstParty.role || 'Provider'} is engaged in the business of providing <span className="font-bold italic">{formData.details.projectName || 'professional strategic services'}</span>.</span></p>
-                    <p className="flex gap-4"><span>(B)</span> <span className="flex-1">{formData.parties.secondParty.role || 'Client'} desires to engage {formData.parties.firstParty.role || 'Provider'} to perform certain services for the Client.</span></p>
+                    <p className="flex gap-4"><span>(A)</span> <span className="flex-1">{parties.firstParty.role || 'Provider'} is engaged in the business of providing <span className="font-bold italic">{details.projectName || 'professional strategic services'}</span>.</span></p>
+                    <p className="flex gap-4"><span>(B)</span> <span className="flex-1">{parties.secondParty.role || 'Client'} desires to engage {parties.firstParty.role || 'Provider'} to perform certain services for the Client.</span></p>
                     <p className="flex gap-4"><span>(C)</span> <span className="flex-1">The Parties wish to record the terms and conditions on which the Services will be provided.</span></p>
                   </div>
                   <p className="pt-6 font-bold uppercase tracking-widest text-center text-[10px]">NOW THEREFORE THE PARTIES AGREE AS FOLLOWS:</p>
@@ -153,8 +174,18 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
               <h3 className="text-base font-bold uppercase tracking-widest text-black">1. Scope of Engagement</h3>
             </div>
             <div className="text-[12px] leading-relaxed text-black text-justify px-4">
-              {renderFormatted(formData.details.purpose || 'Project objectives and purpose.')}
+              {renderFormatted(details.purpose || 'Project objectives and purpose.')}
             </div>
+            {deliverables.length > 0 && (
+              <div className="space-y-4 px-4">
+                <p className="text-[11px] font-bold text-black uppercase tracking-widest border-l-4 border-black pl-4">Deliverables</p>
+                <div className="pl-8 space-y-2">
+                  {deliverables.map((d, i) => (
+                    <p key={i} className="flex gap-3 text-[12px] leading-relaxed text-black"><span>({String.fromCharCode(97 + i)})</span><span className="flex-1">{d}</span></p>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -166,12 +197,24 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
             <div className="space-y-10 mt-8 px-4">
               <div className="border border-black p-8 text-center bg-gray-50/50">
                 <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-2">Total Contract Value</p>
-                <h2 className="text-4xl font-bold tracking-tight text-black">{formData.commercials.currency} {formData.commercials.totalValue || '0.00'}</h2>
+                <h2 className="text-4xl font-bold tracking-tight text-black">{commercials.currency} {commercials.totalValue || '0.00'}</h2>
+                {taxNote && <p className="mt-3 text-[11px] text-gray-600">{taxNote}</p>}
               </div>
               <div className="space-y-4">
                 <p className="text-[11px] font-bold text-black uppercase tracking-widest border-l-4 border-black pl-4">Payment Schedule</p>
+                {milestones.length > 0 && (
+                  <div className="pl-8 space-y-2">
+                    {milestones.map((m, i) => (
+                      <p key={m.id || i} className="flex gap-3 text-[12px] leading-relaxed text-black">
+                        <span>({String.fromCharCode(97 + i)})</span>
+                        <span className="flex-1">{m.label || `Instalment ${i + 1}`}{m.due ? `, ${m.due}` : ''}</span>
+                        <span className="font-bold whitespace-nowrap">{m.percent ? `${m.percent}% · ` : ''}{formatMoney(m.amount, commercials.currency)}</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
                 <div className="pl-8">
-                  {renderFormatted(formData.commercials.paymentSchedule, 'text-[12px] font-medium text-black leading-relaxed')}
+                  {renderFormatted(commercials.paymentSchedule, 'text-[12px] font-medium text-black leading-relaxed')}
                 </div>
               </div>
             </div>
@@ -206,7 +249,7 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
               <h3 className="text-base font-bold uppercase tracking-widest text-black">Execution</h3>
             </div>
             <div className="flex-1 flex flex-col justify-start space-y-20">
-              {formData.showSignatures ? (
+              {formData.showSignatures || signed ? (
                 <>
                   <p className="text-[12px] text-gray-700 text-center max-w-xl mx-auto leading-relaxed">
                     IN WITNESS WHEREOF, the Parties have executed this Agreement as of the date first above written.
@@ -229,15 +272,18 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
                     <div className="space-y-8 text-right">
                       <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest border-b border-black/10 pb-2">Signed for and on behalf of Client:</p>
                       <div className="h-20 flex items-end justify-end">
-                        {formData.clientSignature ? (
-                          <img src={formData.clientSignature} className="h-full w-auto object-contain grayscale mix-blend-multiply" alt="Client Signature" crossOrigin="anonymous" />
+                        {clientSig ? (
+                          <img src={clientSig} className="h-full w-auto object-contain grayscale mix-blend-multiply" alt="Client Signature" crossOrigin="anonymous" />
+                        ) : signed && formData.approvalMetadata?.signedBy ? (
+                          <p className="text-4xl font-signature text-black leading-none">{formData.approvalMetadata.signedBy}</p>
                         ) : (
                           <div className="w-full h-px bg-white dark:bg-black/10 border-dashed border-t" />
                         )}
                       </div>
                       <div className="pt-4">
-                        <p className="text-[11px] font-bold uppercase">{formData.parties.secondParty.name || '________________'}</p>
-                        <p className="text-[8px] text-gray-500 uppercase tracking-widest">Authorized Signatory</p>
+                        <p className="text-[11px] font-bold uppercase">{clientSigner || '________________'}</p>
+                        <p className="text-[8px] text-gray-500 uppercase tracking-widest">{parties.secondParty.signatoryDesignation || 'Authorized Signatory'}{parties.secondParty.signatoryName && parties.secondParty.name ? `, ${parties.secondParty.name}` : ''}</p>
+                        {formData.approvalMetadata?.signedAt && <p className="text-[8px] text-gray-500 uppercase tracking-widest">Signed {formatContractDate(formData.approvalMetadata.signedAt, 'short')}</p>}
                       </div>
                     </div>
                   </div>
@@ -261,7 +307,7 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
                 <p className="text-[9px] font-black text-black uppercase tracking-[0.2em]">Digital Authentication</p>
                 <div className="text-[7px] font-bold text-gray-500 uppercase tracking-widest leading-tight">
                   <p>Reference: {formData.agreementNumber}</p>
-                  <p>Timestamp: {new Date().toISOString()}</p>
+                  <p>Timestamp: {formData.executedAt || formData.updatedAt || new Date().toISOString()}</p>
                   <p>Origin: Forensic Node/NB-102</p>
                 </div>
               </div>

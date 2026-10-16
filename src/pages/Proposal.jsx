@@ -38,6 +38,7 @@ import SignaturePad from '../components/ui/SignaturePad';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
+import { isProposalExpired, proposalExpiry } from '../lib/proposals';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { safeLocalStorage } from '../lib/storage';
 import { Card } from '../components/ui/Card';
@@ -346,6 +347,7 @@ const Proposal = () => {
 
     const loading = localLoading;
     const proposalRef = useRef(null);
+    const loggedVisitRef = useRef(null);
     const [scale, setScale] = useState(1);
     const [isExporting, setIsExporting] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
@@ -361,6 +363,9 @@ const Proposal = () => {
     const [signatureName, setSignatureName] = useState('');
     const [clientSignature, setClientSignature] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // In-page decline dialog (window.prompt returns null inside WhatsApp/Instagram browsers).
+    const [declineOpen, setDeclineOpen] = useState(false);
+    const [declineReason, setDeclineReason] = useState('');
     const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const [isSignaturesCollapsed, setIsSignaturesCollapsed] = useState(true);
     const [isAttachmentDrawerOpen, setIsAttachmentDrawerOpen] = useState(false);
@@ -380,7 +385,7 @@ const Proposal = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const isAdmin = (safeLocalStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
+    const isAdmin = ['super_admin', 'developer', 'founder'].includes(user?.role);
 
     const displayProposal = proposal || {
         id: "DEMO-PROP-001",
@@ -435,6 +440,10 @@ const Proposal = () => {
 
     useEffect(() => {
         if (isAdmin || !proposal) return;
+        // Log once per visit; live snapshot updates must not trigger more writes.
+        const visitKey = `${id}${location.search}`;
+        if (loggedVisitRef.current === visitKey) return;
+        loggedVisitRef.current = visitKey;
 
         const fetchIpAndLog = async () => {
             let detectedIp = 'Hidden/Protected';
@@ -495,6 +504,21 @@ const Proposal = () => {
         );
     }
 
+    // A deleted or mistyped link used to render a fake "demo" proposal with sign buttons.
+    if (!proposal) {
+        return (
+            <div className="min-h-dvh flex items-center justify-center bg-gray-50 px-6 text-center dark:bg-black">
+                <div className="max-w-sm space-y-3">
+                    <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Proposal not found</h1>
+                    <p className="text-sm text-gray-500">This link may be wrong, or the proposal was withdrawn. Please ask the sender for a new link.</p>
+                    <Link to="/" className="inline-block rounded-xl bg-gray-900 px-5 py-3 text-xs font-bold uppercase tracking-wider text-white dark:bg-white dark:text-black">Go to Newbi</Link>
+                </div>
+            </div>
+        );
+    }
+
+    const proposalExpired = isProposalExpired(displayProposal);
+
     const logoOptions = [
         { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
         { id: 'media', label: 'Newbi Media', path: '/logo_media.png', color: '#00D1FF' },
@@ -510,8 +534,8 @@ const Proposal = () => {
     }, 0);
     const hasOverride = displayProposal.totalOverride !== null && displayProposal.totalOverride !== undefined && displayProposal.totalOverride !== '';
     const overrideBase = hasOverride ? Number(displayProposal.totalOverride) : subtotal;
-    const gstAmount = displayProposal.showGst ? (overrideBase * (displayProposal.gstRate || 18)) / 100 : 0;
-    const computedTotal = subtotal + (displayProposal.showGst ? (subtotal * (displayProposal.gstRate || 18)) / 100 : 0);
+    const gstAmount = displayProposal.showGst ? (overrideBase * (displayProposal.gstRate ?? 18)) / 100 : 0;
+    const computedTotal = subtotal + (displayProposal.showGst ? (subtotal * (displayProposal.gstRate ?? 18)) / 100 : 0);
     const totalAmount = hasOverride ? (overrideBase + gstAmount) : computedTotal;
 
     const handleDownloadPDF = async (blobUrl) => {
@@ -564,6 +588,10 @@ const Proposal = () => {
 
     const handleApproveProposal = async () => {
         if (displayProposal.status === 'Accepted' || displayProposal.status === 'Rejected') return;
+        if (proposalExpired) {
+            useStore.getState().addToast('This proposal has expired. Please ask us for an updated one.', 'error');
+            return;
+        }
         if (!signatureName.trim()) {
             useStore.getState().addToast('Enter your full name to sign this quotation.', 'error');
             return;
@@ -627,46 +655,48 @@ const Proposal = () => {
                 approvalMetadata
             };
 
-            // 1. Immediately update local component state for instant UI update
+            // Saved in one transaction that re-checks the proposal is still open,
+            // then shown — so the page never claims a signature that didn't save.
+            await useStore.getState().respondToProposal(id, 'Accepted', {
+                clientSignature: updates.clientSignature,
+                approvalMetadata: updates.approvalMetadata
+            });
             setLocalProposal(prev => ({
                 ...(prev || displayProposal),
                 ...updates
             }));
 
-            // 2. Persist to Firestore & Zustand store
-            await updateProposalStatus(id, 'Accepted');
-            await useStore.getState().updateProposal(id, updates);
-
             setIsVerifying(false);
             useStore.getState().addToast('Proposal signed and accepted.', 'success');
         } catch (error) {
             console.error('Error approving proposal:', error);
-            useStore.getState().addToast("Couldn't sign the proposal. Please try again or contact support.", 'error');
+            useStore.getState().addToast(error?.code ? error.message : "Couldn't sign the proposal. Please try again or contact support.", 'error');
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleRefuseProposal = async () => {
+    const handleRefuseProposal = () => {
         if (displayProposal.status === 'Accepted' || displayProposal.status === 'Rejected') return;
-        const reason = prompt("Please provide a reason for declining this proposal (optional):");
-        if (reason === null) return; // User cancelled prompt
+        setDeclineReason('');
+        setDeclineOpen(true);
+    };
 
+    const confirmDecline = async () => {
         setIsSubmitting(true);
         try {
-            await updateProposalStatus(id, 'Rejected');
-            await useStore.getState().updateProposal(id, {
-                status: 'Rejected',
-                rejectionMetadata: {
-                    reason: reason || 'No reason provided',
-                    rejectedAt: new Date().toISOString(),
-                    ip: ipAddress
-                }
-            });
-            useStore.getState().addToast('Proposal declined.', 'success');
+            const rejectionMetadata = {
+                reason: declineReason.trim() || 'No reason provided',
+                rejectedAt: new Date().toISOString(),
+                ip: ipAddress
+            };
+            await useStore.getState().respondToProposal(id, 'Rejected', { rejectionMetadata });
+            setLocalProposal(prev => ({ ...(prev || displayProposal), status: 'Rejected', rejectionMetadata }));
+            setDeclineOpen(false);
+            useStore.getState().addToast('Thanks for letting us know. The proposal has been declined.', 'success');
         } catch (error) {
             console.error('Error refusing proposal:', error);
-            useStore.getState().addToast('Couldn\'t update the status. Please try again.', 'error');
+            useStore.getState().addToast(error?.code ? error.message : "Couldn't update the status. Please try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -1250,6 +1280,44 @@ const Proposal = () => {
 
     return (
         <>
+            {proposalExpired && (
+                <div role="status" className="fixed inset-x-0 top-0 z-[120] bg-amber-400 px-4 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))] text-center text-[13px] font-semibold text-black">
+                    This proposal expired on {proposalExpiry(displayProposal)?.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Please contact us for an updated one.
+                </div>
+            )}
+            <AnimatePresence>
+                {declineOpen && (
+                    <div className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center sm:p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !isSubmitting && setDeclineOpen(false)} className="absolute inset-0 bg-black/60" />
+                        <motion.div
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Decline proposal"
+                            initial={{ y: 40, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 40, opacity: 0 }}
+                            className="relative w-full max-w-md rounded-t-3xl bg-white p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-gray-900 shadow-2xl dark:bg-zinc-950 dark:text-white sm:rounded-3xl sm:pb-6"
+                        >
+                            <h2 className="text-lg font-extrabold">Decline this proposal?</h2>
+                            <p className="mt-1 text-sm text-gray-500">Telling us why helps us send a better one. This is optional.</p>
+                            <textarea
+                                value={declineReason}
+                                onChange={(e) => setDeclineReason(e.target.value)}
+                                rows={4}
+                                maxLength={1000}
+                                placeholder="e.g. Budget is lower this quarter"
+                                className="mt-4 w-full resize-none rounded-2xl border border-black/10 bg-transparent p-3 text-base outline-none focus:border-red-400 dark:border-white/10"
+                            />
+                            <div className="mt-4 flex gap-2">
+                                <button type="button" onClick={() => setDeclineOpen(false)} disabled={isSubmitting} className="h-12 flex-1 rounded-xl border border-black/10 text-sm font-bold dark:border-white/10">Cancel</button>
+                                <button type="button" onClick={confirmDecline} disabled={isSubmitting} className="h-12 flex-1 rounded-xl bg-red-600 text-sm font-bold text-white disabled:opacity-60">
+                                    {isSubmitting ? 'Declining…' : 'Decline proposal'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
             <SharedDocumentViewer
                 documentData={viewerData}
                 type="proposal"

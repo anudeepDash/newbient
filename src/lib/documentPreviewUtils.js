@@ -41,7 +41,9 @@ export const getPdfPreviewImageUrl = (fileUrl, options = {}) => {
     return null;
 };
 
-export const getDocumentShareMeta = (documentData = {}, type = 'proposal') => {
+export const getDocumentShareMeta = (rawDocument, type = 'proposal') => {
+    // Pages call this before their document has loaded (null), so never assume an object.
+    const documentData = rawDocument || {};
     const docNumber = documentData.proposalNumber || documentData.invoiceNumber || documentData.agreementNumber || documentData.id || 'NB-DOC';
     const clientName = documentData.clientName || documentData.parties?.secondParty?.name || 'Valued Partner';
     const campaignName = documentData.campaignName || documentData.proposalName || documentData.title || '';

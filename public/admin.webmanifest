@@ -1,0 +1,14 @@
+{
+  "name": "Newbi Admin",
+  "short_name": "Newbi Admin",
+  "description": "Invoices, proposals, events, creators and more.",
+  "id": "/admin",
+  "start_url": "/admin",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#07080b",
+  "theme_color": "#07080b",
+  "icons": [
+    { "src": "/favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

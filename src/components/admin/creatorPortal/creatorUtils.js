@@ -1,3 +1,5 @@
+import { summarize } from '../campaigns/campaignModel';
+
 // Small helpers shared by the admin Creator Portal screens.
 
 // Creators are keyed inconsistently across the app: some documents use the auth
@@ -28,11 +30,15 @@ export const isBangaloreVariant = (city) => /^bang[al]*o?re$/i.test(String(city 
 
 export const isOpenCampaign = (c) => !c?.status || String(c.status).toLowerCase() === 'open';
 
-export const countPendingSubmissions = (campaign) =>
-    (campaign?.tasks || []).reduce(
-        (acc, t) => acc + Object.values(t?.submissions || {}).filter(sub => sub?.status === 'submitted').length,
-        0
-    );
+/**
+ * Task submissions waiting for review on a campaign, counted the same way as
+ * the campaigns screens (campaigns/campaignModel.js): one per applicant per
+ * task, even when a submission was saved under both the creator's uid and
+ * profile id. Pass the creators who applied to (or were selected for) it;
+ * use campaignModel's indexApplicants to get them for many campaigns.
+ */
+export const countPendingSubmissions = (campaign, applicantCreators = []) =>
+    summarize(campaign, applicantCreators).toReview;
 
 export const toMillis = (raw) => {
     if (!raw) return 0;

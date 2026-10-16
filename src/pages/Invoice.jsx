@@ -11,6 +11,7 @@ import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
 import Settings from 'lucide-react/dist/esm/icons/settings';
 import LogOut from 'lucide-react/dist/esm/icons/log-out';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import SharedDocumentViewer from '../components/ui/SharedDocumentViewer';
 import DocumentSeal from '../components/ui/DocumentSeal';
 import html2canvas from 'html2canvas';
@@ -26,6 +27,8 @@ import MarkAsPaidModal from '../components/invoice/MarkAsPaidModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
 import { notifyAdmins } from '../lib/notificationTriggers';
+import { invoiceReceived, invoiceAmounts, invoiceLineAmount } from '../lib/invoicing';
+import { invoiceTaxLines, placeOfSupply, panOfGstin, amountInWords } from '../components/admin/invoices/builder/gst';
 
 
 const Invoice = () => {
@@ -62,14 +65,16 @@ const Invoice = () => {
     }, [id, invoices, storeLoading]);
 
     const loading = localLoading;
-    const isAdmin = (safeLocalStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
+    const isAdmin = ['super_admin', 'developer', 'founder'].includes(user?.role);
     const location = useLocation();
     const invoiceRef = useRef(null);
     const printFrameRef = useRef(null);
+    const loggedVisitRef = useRef(null);
     const [scale, setScale] = React.useState(1);
     const [isExporting, setIsExporting] = React.useState(false);
     const [pdfBlobUrl, setPdfBlobUrl] = React.useState('');
     const [showMarkAsPaid, setShowMarkAsPaid] = React.useState(false);
+    const [showAttachments, setShowAttachments] = React.useState(false);
 
     React.useEffect(() => {
         if (invoice?.pdfUrl) {
@@ -130,6 +135,10 @@ const Invoice = () => {
 
     React.useEffect(() => {
         if (!invoice || isAdmin) return;
+        // Log once per visit; live snapshot updates must not trigger more writes.
+        const visitKey = `${id}${location.search}`;
+        if (loggedVisitRef.current === visitKey) return;
+        loggedVisitRef.current = visitKey;
 
         const fetchIpAndLog = async () => {
             let detectedIp = 'Hidden/Protected';
@@ -188,27 +197,24 @@ const Invoice = () => {
         const paymentStatus = searchParams.get('status');
         const txid = searchParams.get('txid');
 
-        if (paymentStatus === 'success' && invoice && invoice.status !== 'Paid') {
-            const verifyAndMarkPaid = async () => {
-                try {
-                    await updateInvoiceStatus(id, 'Paid');
-                    // Add a payment log
-                    const logs = invoice.paymentLogs || [];
-                    await useStore.getState().updateInvoice(id, {
-                        paymentLogs: [...logs, {
-                            type: 'PayU',
-                            transactionId: txid || 'AUTO-VERIFIED',
-                            timestamp: new Date().toISOString(),
-                            amount: invoice.total || invoice.amount
-                        }]
-                    });
-                } catch (err) {
-                    console.error("Verification update failed:", err);
+        // A redirect URL is not proof of payment (anyone can type ?status=success),
+        // so record it as a claim for an admin to verify instead of marking it paid.
+        const alreadyClaimed = invoice?.paymentClaim?.status === 'pending' || invoice?.status === 'Verification Pending';
+        if (paymentStatus === 'success' && invoice && invoice.status !== 'Paid' && !alreadyClaimed && !isAdmin) {
+            useStore.getState().updateInvoice(id, {
+                status: 'Verification Pending',
+                paymentClaim: {
+                    name: 'Online payment (redirect)',
+                    email: '',
+                    method: 'gateway',
+                    transactionId: txid || null,
+                    userAgent: navigator.userAgent,
+                    claimedAt: new Date().toISOString(),
+                    status: 'pending'
                 }
-            };
-            verifyAndMarkPaid();
+            }).catch(err => console.error("Payment claim update failed:", err));
         }
-    }, [id, invoice, location.search, updateInvoiceStatus]);
+    }, [id, invoice, location.search, isAdmin]);
 
     const isQuickUpload = invoice?.pdfUrl && (!invoice.items || invoice.items.length === 0);
 
@@ -236,6 +242,19 @@ const Invoice = () => {
         return (
             <div className="min-h-screen flex items-center justify-center text-gray-900 dark:text-white">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-blue"></div>
+            </div>
+        );
+    }
+
+    // A deleted or mistyped link used to render a fake "demo" invoice.
+    if (!invoice) {
+        return (
+            <div className="min-h-dvh flex items-center justify-center bg-gray-50 px-6 text-center dark:bg-black">
+                <div className="max-w-sm space-y-3">
+                    <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Invoice not found</h1>
+                    <p className="text-sm text-gray-500">This link may be wrong, or the invoice was withdrawn. Please ask the sender for a new link.</p>
+                    <Link to="/" className="inline-block rounded-xl bg-gray-900 px-5 py-3 text-xs font-bold uppercase tracking-wider text-white dark:bg-white dark:text-black">Go to Newbi</Link>
+                </div>
             </div>
         );
     }
@@ -449,11 +468,18 @@ const Invoice = () => {
     };
 
     const items = displayInvoice.items || [];
-    const subtotal = items.reduce((sum, item) => sum + ((item.qty || 1) * (item.price || 0)), 0);
-    const gstAmount = invoice?.showGst ? (subtotal * (invoice.gstPercentage || 0)) / 100 : 0;
-    const totalAmount = isQuickUpload ? (displayInvoice.amount || 0) : (subtotal + gstAmount);
+    // Same maths as the invoice builder (GST rounded to paise).
+    const { subtotal, gstAmount, total: computedTotal } = invoiceAmounts(displayInvoice);
+    const totalAmount = isQuickUpload ? (displayInvoice.amount || 0) : computedTotal;
+    // GST rows (CGST + SGST or IGST), place of supply and PAN, as the builder prints them.
+    const taxLines = invoiceTaxLines(displayInvoice, gstAmount).lines;
+    const supply = placeOfSupply(displayInvoice);
+    const sellerPan = panOfGstin(displayInvoice.senderGst);
     const advancePaid = Number(displayInvoice.advancePaid) || 0;
-    const toBePaid = totalAmount - advancePaid;
+    // Part-payments recorded by the team since the invoice was issued.
+    const paymentsReceived = displayInvoice.status === 'Paid' ? 0 : invoiceReceived(displayInvoice);
+    // Rounded to paise: this amount goes into the UPI link and QR.
+    const toBePaid = Math.max(0, Math.round((totalAmount - (displayInvoice.showAdvance ? advancePaid : 0) - paymentsReceived) * 100) / 100);
 
     const logoOptions = [
         { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
@@ -569,6 +595,7 @@ const Invoice = () => {
         // Functional blocks that impact vertical space significantly
         const functionalBlocksCount = [
             displayInvoice.showGst,
+            taxLines.length > 1,
             displayInvoice.showAdvance && (displayInvoice.advanceAmount > 0),
             displayInvoice.paymentLink,
             displayInvoice.upiId && displayInvoice.showUPI !== false
@@ -615,6 +642,23 @@ const Invoice = () => {
     );
 
 
+    // Files and links attached in the invoice builder. One opens directly; several are listed in the side panel.
+    const attachments = (Array.isArray(displayInvoice.attachments) ? displayInvoice.attachments : []).filter(att => att?.url);
+    const openAttachments = attachments.length === 1
+        ? () => window.open(attachments[0].url, '_blank', 'noopener')
+        : () => setShowAttachments(v => !v);
+    const attachmentsPanel = showAttachments && attachments.length > 1 ? (
+        <div className="rounded-2xl border border-black/5 bg-black/[0.02] p-2 dark:border-white/10 dark:bg-white/[0.03]">
+            {attachments.map((att, idx) => (
+                <a key={att.id || idx} href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-gray-800 hover:bg-black/5 dark:text-zinc-200 dark:hover:bg-white/5">
+                    <span className="truncate">{att.name || `Attachment ${idx + 1}`}</span>
+                    <ExternalLink size={14} className="shrink-0 text-gray-400" />
+                </a>
+            ))}
+        </div>
+    ) : null;
+    const payPanel = (displayInvoice.status !== 'Paid' && (isAdmin || displayInvoice.status !== 'Verification Pending')) ? actionPanel : null;
+
     // Adapt displayInvoice to be compatible with SharedDocumentViewer
     const viewerData = {
         ...displayInvoice,
@@ -631,7 +675,8 @@ const Invoice = () => {
                 isExporting={isExporting}
                 onDownloadPDF={handleDownloadPDF}
                 pdfBlobUrl={pdfBlobUrl}
-                actionPanel={(displayInvoice.status !== 'Paid' && (isAdmin || displayInvoice.status !== 'Verification Pending')) ? actionPanel : null}
+                actionPanel={(payPanel || attachmentsPanel) ? <>{attachmentsPanel}{payPanel}</> : null}
+                onOpenAttachments={attachments.length ? openAttachments : null}
             >
                 <style dangerouslySetInnerHTML={{ __html: `
                     @media print {
@@ -695,6 +740,7 @@ const Invoice = () => {
                                                                     <p>Contact: {displayInvoice.senderContact}</p>
                                                                     <p>Email: {displayInvoice.senderEmail}</p>
                                                                     {displayInvoice.senderGst && <p>GSTIN: {displayInvoice.senderGst}</p>}
+                                                                    {sellerPan && <p>PAN: {sellerPan}</p>}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -709,6 +755,7 @@ const Invoice = () => {
                                                                     {displayInvoice.dueDate && <p className="font-black italic" style={{ color: brandColor }}>Due Date: {new Date(displayInvoice.dueDate).toLocaleDateString('en-GB')}</p>}
                                                                     {displayInvoice.clientAddress && <p className="whitespace-pre-line">{displayInvoice.clientAddress}</p>}
                                                                     {displayInvoice.clientGst && <p className="mt-1 pt-1 border-t border-gray-200 inline-block">GST: {displayInvoice.clientGst}</p>}
+                                                                    {supply && <p>Place of Supply: {supply.name} ({supply.code})</p>}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -733,13 +780,13 @@ const Invoice = () => {
                                                             <tbody className="divide-y divide-gray-200">
                                                                 {pageItems.map((item, idx) => (
                                                                     <tr key={idx} className="hover:bg-black/5 transition-colors">
-                                                                        <td className="py-2 px-6 text-[11px] font-bold uppercase border-r border-dashed border-gray-200 leading-relaxed font-heading italic">{item.description || "SERVICE"}</td>
+                                                                        <td className="py-2 px-6 text-[11px] font-bold uppercase border-r border-dashed border-gray-200 leading-relaxed font-heading italic">{item.name ? (<><span className="block">{item.name}</span>{item.description && <span className="mt-0.5 block text-[10px] font-medium normal-case not-italic text-gray-500 whitespace-pre-wrap">{item.description}</span>}</>) : (item.description || "SERVICE")}</td>
                                                                         {(displayInvoice.customColumns || []).map(col => (
                                                                             <td key={col.id} className="py-2 px-4 text-center text-[10px] font-semibold border-r border-dashed border-gray-200 leading-relaxed">{item.customValues?.[col.id] || "-"}</td>
                                                                         ))}
                                                                         <td className="py-2 px-4 text-center text-[11px] font-black border-r border-dashed border-gray-200 leading-relaxed">{item.qty || 1}</td>
                                                                         <td className="py-2 px-4 text-center text-[11px] font-black border-r border-dashed border-gray-200 leading-relaxed">₹{(item.price || 0).toLocaleString()}</td>
-                                                                        <td className="py-2 px-6 text-right text-[11px] font-black leading-relaxed">₹{( (item.qty || 1) * (item.price || 0) ).toLocaleString()}</td>
+                                                                        <td className="py-2 px-6 text-right text-[11px] font-black leading-relaxed">₹{invoiceLineAmount(item).toLocaleString()}</td>
                                                                     </tr>
                                                                 ))}
                                                             </tbody>
@@ -784,22 +831,31 @@ const Invoice = () => {
                                                                     <span>SUBTOTAL</span>
                                                                     <span className="text-black text-[11px] font-bold italic">₹{subtotal.toLocaleString()}</span>
                                                                 </div>
-                                                                {invoice?.showGst && (
-                                                                    <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest text-black">
-                                                                        <span>GST ({displayInvoice.gstPercentage}%)</span>
-                                                                        <span className="text-black text-[11px] font-bold italic">₹{gstAmount.toLocaleString()}</span>
+                                                                {taxLines.map(line => (
+                                                                    <div key={line.label} className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest text-black">
+                                                                        <span>{line.label}</span>
+                                                                        <span className="text-black text-[11px] font-bold italic">₹{line.amount.toLocaleString()}</span>
                                                                     </div>
-                                                                )}
+                                                                ))}
                                                                 <div className="flex justify-between items-center py-2 px-3 text-black border border-black/5 mt-1 rounded-lg" style={{ backgroundColor: `${brandColor}66` }}>
                                                                     <span className="text-[9px] font-black uppercase italic">TOTAL</span>
                                                                     <span className="text-lg font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
                                                                 </div>
-                                                                {displayInvoice.showAdvance && advancePaid > 0 && (
+                                                                {totalAmount > 0 && <p className="text-right text-[9px] font-bold italic leading-snug text-gray-600">{amountInWords(totalAmount)}</p>}
+                                                                {((displayInvoice.showAdvance && advancePaid > 0) || paymentsReceived > 0) && (
                                                                     <>
-                                                                        <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest mt-1">
-                                                                            <span>ADVANCE PAID</span>
-                                                                            <span className="text-black text-[11px] font-bold italic">₹{advancePaid.toLocaleString()}</span>
-                                                                        </div>
+                                                                        {displayInvoice.showAdvance && advancePaid > 0 && (
+                                                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest mt-1">
+                                                                                <span>ADVANCE PAID</span>
+                                                                                <span className="text-black text-[11px] font-bold italic">₹{advancePaid.toLocaleString()}</span>
+                                                                            </div>
+                                                                        )}
+                                                                        {paymentsReceived > 0 && (
+                                                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest mt-1">
+                                                                                <span>PAYMENTS RECEIVED</span>
+                                                                                <span className="text-black text-[11px] font-bold italic">₹{paymentsReceived.toLocaleString()}</span>
+                                                                            </div>
+                                                                        )}
                                                                         <div className="flex justify-between items-center py-2 px-4 text-black border border-black/10 rounded-xl shadow-lg mt-1" style={{ backgroundColor: `${brandColor}66` }}>
                                                                             <span className="text-[10px] font-black uppercase italic">BALANCE DUE</span>
                                                                             <span className="text-2xl font-black italic tracking-tighter">₹{toBePaid.toLocaleString()}</span>
@@ -822,7 +878,9 @@ const Invoice = () => {
                                                                     <div className="flex flex-col items-center gap-2 shrink-0">
                                                                         <div className="bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center w-[90px]">
                                                                             <img 
-                                                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`} 
+                                                                                src={displayInvoice.qrType === 'custom' && displayInvoice.customQrImage
+                                                                                    ? displayInvoice.customQrImage
+                                                                                    : `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`}
                                                                                 alt="Payment QR" 
                                                                                 className="w-[70px] h-[70px] grayscale contrast-125 mx-auto"
                                                                                 crossOrigin="anonymous"
@@ -911,9 +969,8 @@ const Invoice = () => {
                 <MarkAsPaidModal 
                     isOpen={showMarkAsPaid} 
                     onClose={() => setShowMarkAsPaid(false)} 
-                    invoiceId={id} 
-                    invoiceData={invoice}
-                    adminAuth={isAdmin}
+                    invoice={displayInvoice}
+                    onSubmit={handlePaymentClaim}
                 />
             )}
         </>

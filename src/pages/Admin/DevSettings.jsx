@@ -1,19 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import Shield from 'lucide-react/dist/esm/icons/shield';
+import Settings from 'lucide-react/dist/esm/icons/settings';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
-import Terminal from 'lucide-react/dist/esm/icons/terminal';
-import Cpu from 'lucide-react/dist/esm/icons/cpu';
-import Activity from 'lucide-react/dist/esm/icons/activity';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import HardDrive from 'lucide-react/dist/esm/icons/hard-drive';
-import Settings from 'lucide-react/dist/esm/icons/settings';
-import Users from 'lucide-react/dist/esm/icons/users';
+import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
 import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import Users from 'lucide-react/dist/esm/icons/users';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
+import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import Calendar from 'lucide-react/dist/esm/icons/calendar';
 import Mail from 'lucide-react/dist/esm/icons/mail';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
@@ -24,58 +18,279 @@ import BookOpen from 'lucide-react/dist/esm/icons/book-open';
 import Gift from 'lucide-react/dist/esm/icons/gift';
 import Star from 'lucide-react/dist/esm/icons/star';
 import Mic2 from 'lucide-react/dist/esm/icons/mic-2';
+import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
+import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
+import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
+import Shield from 'lucide-react/dist/esm/icons/shield';
+import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
+import Home from 'lucide-react/dist/esm/icons/home';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Info from 'lucide-react/dist/esm/icons/info';
+import Building2 from 'lucide-react/dist/esm/icons/building-2';
+import ShoppingCart from 'lucide-react/dist/esm/icons/shopping-cart';
+import Power from 'lucide-react/dist/esm/icons/power';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import Save from 'lucide-react/dist/esm/icons/save';
-import Instagram from 'lucide-react/dist/esm/icons/instagram';
-import Phone from 'lucide-react/dist/esm/icons/phone';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Target from 'lucide-react/dist/esm/icons/target';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import Terminal from 'lucide-react/dist/esm/icons/terminal';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
-import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
-import Power from 'lucide-react/dist/esm/icons/power';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import { useStore } from '../../lib/store';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { cn } from '../../lib/utils';
+import { Card, Button, Badge, StatTile } from '../../components/admin/ui';
+import { accent } from '../../components/admin/theme';
+import { Field, fieldCls, areaCls, Toggle } from '../../components/admin/uploads/UploadKit';
+import ConfirmSheet from '../../components/admin/workspace/ConfirmSheet';
+import AccessNotice from '../../components/admin/workspace/AccessNotice';
+
+/*
+ * System: maintenance switches (stored in app_state/maintenance, or
+ * maintenance_local on localhost), site-wide feature settings
+ * (site_settings/general) and the site's contact details
+ * (site_settings/contact_info). A switch that is "on" means the thing is live.
+ */
+
+// `cat` is the maintenance map the switch lives in; true there = switched off.
+const SWITCH_GROUPS = [
+    {
+        key: 'pages',
+        title: 'Public pages',
+        hint: 'Visitors see a "back soon" page instead. Developers can still open them.',
+        icon: Globe,
+        tone: 'blue',
+        items: [
+            { cat: 'pages', id: 'home', label: 'Home page', icon: Home, hint: 'newbi.live itself' },
+            { cat: 'pages', id: 'concerts', label: 'Concert Zone', icon: Mic2, hint: 'The blog and its articles' },
+            { cat: 'pages', id: 'community', label: 'Community', icon: Users, hint: 'Community and join pages' },
+            { cat: 'pages', id: 'influencer_public', label: 'Creator pages', icon: Star, hint: 'Creator landing, sign-up and creator dashboard' },
+            { cat: 'pages', id: 'giveaways_public', label: 'Giveaways', icon: Gift, hint: 'Public giveaway pages' },
+            { cat: 'pages', id: 'forms_public', label: 'Forms', icon: ClipboardList, hint: 'Public forms people fill in' },
+            { cat: 'pages', id: 'contact', label: 'Contact page', icon: MessageSquare, hint: 'The contact form that fills your Inbox' },
+            { cat: 'pages', id: 'ticketing', label: 'Digital tickets', icon: Ticket, hint: "People can't open their ticket links (needed at the gate)" },
+            { cat: 'features', id: 'tickets', label: 'Online ticket sales', icon: ShoppingCart, hint: 'Ticket checkout on event pages pauses' },
+            { cat: 'pages', id: 'docs', label: 'Shared proposals and contracts', icon: FileSpreadsheet, hint: "Links you've sent clients stop opening" },
+            { cat: 'pages', id: 'artistant_public', label: 'Artistant page', icon: Sparkles, hint: 'The old /artistant page on this site' },
+        ],
+    },
+    {
+        key: 'features',
+        title: 'Admin modules',
+        hint: 'Hidden from the admin menu, and their screens show a maintenance notice. Developers keep access.',
+        icon: Briefcase,
+        tone: 'violet',
+        items: [
+            { cat: 'features', id: 'invoices', label: 'Finance and invoices', icon: IndianRupee, hint: 'Finance board, invoices, spends, payees' },
+            { cat: 'features', id: 'docs', label: 'Proposals and contracts', icon: FileText, hint: 'Also documents and AI studio' },
+            { cat: 'features', id: 'influencer', label: 'Creators', icon: Star, hint: 'Creator portal and campaigns' },
+            { cat: 'features', id: 'community', label: 'Volunteer gigs', icon: Users },
+            { cat: 'features', id: 'forms_public', label: 'Forms', icon: ClipboardList, hint: 'Form builder and responses' },
+            { cat: 'features', id: 'giveaways', label: 'Giveaways', icon: Gift },
+            { cat: 'features', id: 'mailing', label: 'Mailing', icon: Megaphone },
+            { cat: 'features', id: 'upcoming_events', label: 'Events', icon: Calendar },
+            { cat: 'features', id: 'ticketing', label: 'Ticketing and gate scanner', icon: ScanLine },
+            { cat: 'features', id: 'guestlists', label: 'Guestlists', icon: ListChecks },
+            { cat: 'features', id: 'blog_announcements', label: 'Blog and announcements', icon: BookOpen },
+            { cat: 'features', id: 'concerts', label: 'Portfolio', icon: Image },
+            { cat: 'features', id: 'messages', label: 'Inbox', icon: Mail },
+            { cat: 'features', id: 'admins', label: 'Members', icon: Shield, hint: 'Team, access requests and member list' },
+        ],
+    },
+    {
+        key: 'sections',
+        title: 'Home page sections',
+        hint: 'The section stays in place behind a "being improved" cover.',
+        icon: LayoutGrid,
+        tone: 'pink',
+        items: [
+            { cat: 'sections', id: 'home_why', label: 'Why Newbi', icon: Sparkles },
+            { cat: 'sections', id: 'home_about', label: 'About us', icon: Info },
+            { cat: 'sections', id: 'home_creators', label: 'Creators', icon: Star },
+            { cat: 'sections', id: 'home_upcoming', label: 'Upcoming events', icon: Calendar },
+            { cat: 'sections', id: 'home_portfolio', label: 'Portfolio', icon: Image },
+            { cat: 'sections', id: 'blog_featured', label: 'Featured blog posts', icon: BookOpen },
+            { cat: 'sections', id: 'home_clients', label: 'Client logos', icon: Building2 },
+        ],
+    },
+];
+
+// site_settings/general flags. `isOn` mirrors how the website reads each one.
+const SITE_FEATURES = [
+    { key: 'showUpcomingEvents', label: 'Upcoming events on the home page', hint: 'The events strip near the top of the home page', isOn: (s) => Boolean(s.showUpcomingEvents) },
+    { key: 'enableTribeForm', label: 'Tribe sign-up form', hint: 'The join form on the community page', isOn: (s) => s.enableTribeForm !== false },
+    { key: 'showVolunteerGigs', label: 'Volunteer gigs board', hint: 'Open gigs on the community page', isOn: (s) => s.showVolunteerGigs !== false },
+    { key: 'showPastClients', label: 'Client logos', hint: 'The brands we have worked with, on the home and creator pages', isOn: (s) => s.showPastClients !== false },
+    { key: 'hideMaintenancePages', label: 'Hide switched-off pages from the menu', hint: 'Otherwise they stay in the menu, greyed out', isOn: (s) => s.hideMaintenancePages === true, notAFeature: true },
+];
+
+const DETAIL_FIELDS = [
+    { name: 'title', label: 'Site name', placeholder: 'Newbi Entertainment' },
+    { name: 'tagline', label: 'Tagline', placeholder: 'One line about Newbi' },
+    { name: 'email', label: 'Contact email', placeholder: 'hello@newbi.live', type: 'email' },
+    { name: 'phone', label: 'Phone', placeholder: '+91…', type: 'tel' },
+    { name: 'whatsappCommunity', label: 'WhatsApp community link', placeholder: 'https://chat.whatsapp.com/…', type: 'url' },
+    { name: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/newbi.live' },
+    { name: 'linkedin', label: 'LinkedIn', placeholder: 'https://linkedin.com/company/…' },
+    { name: 'address', label: 'Address', placeholder: 'City, state' },
+];
+
+const ERROR_CODES = [
+    { code: 'TKT-VAL-*', module: 'Ticketing', scenario: 'Something the buyer typed was not valid (phone, name, ticket choice)' },
+    { code: 'TKT-OTP-01', module: 'Ticketing', scenario: "The phone verification code couldn't be sent" },
+    { code: 'TKT-OTP-02', module: 'Ticketing', scenario: 'The buyer entered the wrong verification code' },
+    { code: 'TKT-PAY-01', module: 'Ticketing', scenario: "Serious: the order couldn't be saved after a payment attempt" },
+    { code: 'TKT-CPN-01', module: 'Ticketing', scenario: "A coupon couldn't be checked" },
+    { code: 'TKT-GST-01', module: 'Ticketing', scenario: "A guestlist entry couldn't be saved" },
+    { code: 'ANN-01', module: 'Announcements', scenario: "A new announcement couldn't be saved" },
+    { code: 'EVT-01', module: 'Events', scenario: "An event couldn't be created or updated" },
+];
+
+const SectionHeader = ({ icon: Icon, tone, title, hint, right }) => (
+    <div className="flex items-start gap-3 px-4 pb-3 pt-4 sm:px-5">
+        <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', accent(tone).chip)}><Icon size={18} /></span>
+        <div className="min-w-0 flex-1">
+            <h2 className="text-[15px] font-bold">{title}</h2>
+            {hint && <p className="text-[12.5px] leading-snug text-gray-500 dark:text-zinc-400">{hint}</p>}
+        </div>
+        {right}
+    </div>
+);
 
 const SystemControlCenter = () => {
-    const { 
-        user, maintenanceState = {}, toggleMaintenanceFeature, toggleGlobalMaintenance,
-        siteDetails = {}, updateSiteDetails, siteSettings = {}, updateGeneralSettings, addToast
-    } = useStore();
-    
-    const [formData, setFormData] = useState({ ...siteDetails });
-    const [isConfigExpanded, setIsConfigExpanded] = useState(false);
-    const [showKillConfirm, setShowKillConfirm] = useState(false);
-    const [isDirty, setIsDirty] = useState(false);
+    const user = useStore(s => s.user);
+    const maintenanceState = useStore(s => s.maintenanceState) || {};
+    const toggleMaintenanceFeature = useStore(s => s.toggleMaintenanceFeature);
+    const toggleGlobalMaintenance = useStore(s => s.toggleGlobalMaintenance);
+    const siteDetails = useStore(s => s.siteDetails) || {};
+    const updateSiteDetails = useStore(s => s.updateSiteDetails);
+    const siteSettings = useStore(s => s.siteSettings) || {};
+    const updateGeneralSettings = useStore(s => s.updateGeneralSettings);
+    const addToast = useStore(s => s.addToast);
+
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const isAdmin = user && ['developer', 'super_admin', 'founder'].includes(user.role);
+
+    const [formData, setFormData] = useState({ ...siteDetails });
+    const [isDirty, setIsDirty] = useState(false);
+    const [savingDetails, setSavingDetails] = useState(false);
+    const [saving, setSaving] = useState({});
+    const [confirm, setConfirm] = useState(null);
+    const [showCodes, setShowCodes] = useState(false);
+    const refs = { pages: useRef(null), features: useRef(null), sections: useRef(null), danger: useRef(null) };
 
     useEffect(() => {
         if (siteDetails && !isDirty && Object.keys(siteDetails).length > 0) setFormData({ ...siteDetails });
     }, [siteDetails, isDirty]);
 
-    const isAdmin = user && ['developer', 'super_admin', 'founder'].includes(user.role);
+    const offCount = useMemo(() => Object.fromEntries(SWITCH_GROUPS.map(g => [g.key, g.items.filter(i => maintenanceState[i.cat]?.[i.id]).length])), [maintenanceState]);
 
     if (!isAdmin) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-[#020202] flex items-center justify-center text-gray-900 dark:text-white p-4">
-                <Card className="max-w-md w-full p-8 border-red-500/30 bg-red-500/5 text-center shadow-2xl backdrop-blur-xl">
-                    <Shield size={64} className="mx-auto mb-6 text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse" />
-                    <h1 className="text-3xl font-black font-heading tracking-tighter uppercase italic mb-3">ACCESS DENIED</h1>
-                    <p className="text-gray-600 dark:text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em] leading-relaxed mb-8">
-                        System handshake failed.<br/>Required clearance missing.
-                    </p>
-                    <Link to="/admin">
-                        <Button variant="outline" className="w-full h-12 border-red-500/30 text-red-500 text-[10px] hover:bg-red-500 hover:text-white transition-all font-black tracking-widest uppercase rounded-xl">
-                            RETURN TO DASHBOARD
-                        </Button>
-                    </Link>
-                </Card>
-            </div>
+            <AccessNotice
+                icon={Lock}
+                tone="gray"
+                title="System is for founders and super admins"
+                actions={<Button as={Link} to="/admin" variant="primary" className="h-12 w-full"><LayoutDashboard size={15} /> Back to the dashboard</Button>}
+            >
+                These switches can take parts of the site offline, so only founders, super admins and developers can open them.
+            </AccessNotice>
         );
     }
+
+    const busyKey = (item) => `${item.cat}.${item.id}`;
+
+    const writeSwitch = async (item, off) => {
+        const key = busyKey(item);
+        setSaving(s => ({ ...s, [key]: true }));
+        try {
+            await toggleMaintenanceFeature(item.cat, item.id, off);
+            addToast(off ? `${item.label} switched off.` : `${item.label} is back on.`, 'success');
+        } catch (err) {
+            console.error(err);
+            const msg = `Couldn't switch ${item.label} ${off ? 'off' : 'on'}. Please try again.`;
+            throw Object.assign(new Error(msg), { userMessage: msg });
+        } finally {
+            setSaving(s => ({ ...s, [key]: false }));
+        }
+    };
+
+    const onSwitch = (item, nextOn) => {
+        if (saving[busyKey(item)]) return;
+        if (nextOn) { writeSwitch(item, false).catch(err => addToast(err.userMessage, 'error')); return; }
+        const group = SWITCH_GROUPS.find(g => g.items.includes(item));
+        setConfirm({
+            title: `Switch off ${item.label}?`,
+            description: (
+                <>
+                    <p>{item.hint ? `${item.hint}. ` : ''}{group?.hint}</p>
+                    <p className="mt-2">You can switch it back on here at any time.</p>
+                </>
+            ),
+            confirmLabel: 'Switch off',
+            busyLabel: 'Switching off…',
+            tone: 'warning',
+            icon: Power,
+            onConfirm: () => writeSwitch(item, true),
+        });
+    };
+
+    const writeSiteFeature = async (feature, on) => {
+        setSaving(s => ({ ...s, [feature.key]: true }));
+        try {
+            await updateGeneralSettings({ [feature.key]: on });
+            addToast(on ? `${feature.label} turned on.` : `${feature.label} turned off.`, 'success');
+        } catch (err) {
+            console.error(err);
+            const msg = "Couldn't save that setting. Please try again.";
+            throw Object.assign(new Error(msg), { userMessage: msg });
+        } finally {
+            setSaving(s => ({ ...s, [feature.key]: false }));
+        }
+    };
+
+    const onSiteFeature = (feature, nextOn) => {
+        if (saving[feature.key]) return;
+        if (nextOn || feature.notAFeature) { writeSiteFeature(feature, nextOn).catch(err => addToast(err.userMessage, 'error')); return; }
+        setConfirm({
+            title: `Turn off ${feature.label.toLowerCase()}?`,
+            description: `${feature.hint} will be hidden from visitors until you turn it back on.`,
+            confirmLabel: 'Turn off',
+            busyLabel: 'Saving…',
+            tone: 'warning',
+            icon: EyeOff,
+            onConfirm: () => writeSiteFeature(feature, false),
+        });
+    };
+
+    const askGlobal = (turnOn) => setConfirm(turnOn ? {
+        title: 'Put the whole site in maintenance mode?',
+        description: (
+            <>
+                <p>Every visitor sees the maintenance page straight away, on every page of newbi.live. Ticket links and shared documents stop opening too.</p>
+                <p className="mt-2">Inside the admin, everyone except developers sees a maintenance notice on most screens. This page and the dashboard stay open so you can switch it back off.</p>
+                {isLocal && <p className="mt-2 font-semibold">You're on a local copy, so this only changes the test switch.</p>}
+            </>
+        ),
+        confirmLabel: 'Turn on maintenance mode',
+        busyLabel: 'Turning on…',
+        tone: 'danger',
+        icon: Power,
+        onConfirm: async () => {
+            await toggleGlobalMaintenance(true).catch(() => { throw Object.assign(new Error("Couldn't turn on maintenance mode. Please try again."), { userMessage: "Couldn't turn on maintenance mode. Please try again." }); });
+            addToast('Maintenance mode is on. The site is offline for visitors.', 'warning');
+        },
+    } : {
+        title: 'Bring the site back online?',
+        description: 'Visitors can use newbi.live again straight away. Pages you switched off one by one stay off.',
+        confirmLabel: 'Bring it back online',
+        busyLabel: 'Bringing it back…',
+        tone: 'primary',
+        icon: Power,
+        onConfirm: async () => {
+            await toggleGlobalMaintenance(false).catch(() => { throw Object.assign(new Error("Couldn't bring the site back online. Please try again."), { userMessage: "Couldn't bring the site back online. Please try again." }); });
+            addToast('The site is back online.', 'success');
+        },
+    });
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -84,452 +299,199 @@ const SystemControlCenter = () => {
     };
 
     const handleSaveConfig = async (e) => {
-        e.preventDefault();
+        e?.preventDefault();
+        if (savingDetails) return;
+        setSavingDetails(true);
         try {
             await updateSiteDetails(formData);
             setIsDirty(false);
-            addToast('Site settings saved.', 'success');
+            addToast('Site details saved.', 'success');
         } catch (error) {
-            addToast("Couldn't save the site settings. Please try again.", 'error');
+            console.error(error);
+            addToast("Couldn't save the site details. Please try again.", 'error');
+        } finally {
+            setSavingDetails(false);
         }
     };
 
-    const categories = useMemo(() => [
-        {
-            title: "Public Interfaces",
-            subtitle: "User-facing Pages",
-            icon: Globe,
-            key: "pages",
-            items: [
-                { label: "Home", id: "home", icon: LayoutGrid },
-                { label: "Concerts", id: "concerts", icon: Mic2 },
-                { label: "Artist Ant", id: "artistant_public", icon: Star },
-                { label: "Community", id: "community", icon: Users },
-                { label: "Creators", id: "influencer_public", icon: Zap },
-                { label: "Giveaways", id: "giveaways_public", icon: Gift },
-                { label: "Contact", id: "contact", icon: MessageSquare },
-                { label: "Forms", id: "forms_public", icon: FileText },
-                { label: "Tickets", id: "ticketing", icon: ScanLine },
-            ]
-        },
-        {
-            title: "System Engines",
-            subtitle: "Admin Modules",
-            icon: Briefcase,
-            key: "features",
-            items: [
-                { label: "Invoices", id: "invoices", icon: HardDrive },
-                { label: "Documents", id: "docs", icon: FileText },
-                { label: "Portfolio", id: "concerts", icon: Image },
-                { label: "Artists", id: "artists", icon: Users },
-                { label: "Requests", id: "client_requests", icon: Activity },
-                { label: "Guestlists", id: "guestlists", icon: Ticket },
-                { label: "Events", id: "upcoming_events", icon: Calendar },
-                { label: "Influencer", id: "influencer", icon: Zap },
-                { label: "Giveaways", id: "giveaways", icon: Gift },
-                { label: "Newsletter", id: "blog_announcements", icon: BookOpen },
-                { label: "Ticketing", id: "ticketing", icon: ScanLine },
-                { label: "Mailing", id: "mailing", icon: Mail },
-                { label: "Messages", id: "messages", icon: MessageSquare },
-                { label: "Members", id: "admins", icon: Shield },
-                { label: "Community", id: "community", icon: Users },
-            ]
-        },
-        {
-            title: "UI Modules",
-            subtitle: "Sections",
-            icon: LayoutGrid,
-            key: "sections",
-            items: [
-                { label: "Home Events", id: "home_upcoming", icon: Calendar },
-                { label: "Home Portfolio", id: "home_portfolio", icon: Image },
-                { label: "Blog Featured", id: "blog_featured", icon: Star },
-            ]
-        }
-    ], []);
+    const discard = () => { setFormData({ ...siteDetails }); setIsDirty(false); };
+    const scrollTo = (key) => refs[key]?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const global = Boolean(maintenanceState.global);
 
     return (
         <AdminCommunityHubLayout
-            studioHeader={{
-                title: 'System',
-                subtitle: 'Command',
-                icon: Terminal,
-                accentClass: 'text-neon-blue'
-            }}
-            accentColor="neon-blue"
-            hideTabs={true}
-            action={
-                <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                    <div className="flex items-center gap-2 bg-white dark:bg-black/40 px-4 py-2 rounded-xl border border-black/10 dark:border-white/10 shadow-sm">
-                        <div className={`w-2 h-2 rounded-full animate-pulse ${isLocal ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]' : 'bg-neon-green shadow-[0_0_8px_rgba(57,255,20,0.5)]'}`} />
-                        {isLocal ? 'Development Env' : 'Production Env'}
-                    </div>
-                </div>
-            }
+            studioHeader={{ title: 'System', icon: Settings, description: 'Maintenance switches, site features and contact details' }}
+            hideTabs
+            action={(
+                <Badge tone={isLocal ? 'amber' : 'green'} className="h-8 px-3 text-[12px]">
+                    <span className={cn('h-1.5 w-1.5 rounded-full', accent(isLocal ? 'amber' : 'green').dot)} />
+                    {isLocal ? 'Local copy: test switches' : 'Live site'}
+                </Badge>
+            )}
         >
-            <div className="space-y-8 md:space-y-12">
-                {/* Global Kill Switch */}
-                <Card className={`relative overflow-hidden border-2 transition-all duration-500 ${maintenanceState.global ? 'border-red-500/50 bg-red-500/10 shadow-[0_0_30px_rgba(239,68,68,0.2)]' : 'border-black/5 dark:border-white/5 bg-white dark:bg-[#080808]'}`}>
-                    <div className="flex flex-col md:flex-row items-center justify-between p-6 md:p-10 gap-8">
-                        <div className="flex items-center gap-6 w-full md:w-auto">
-                            <div className={`shrink-0 flex items-center justify-center w-16 h-16 rounded-2xl shadow-inner ${maintenanceState.global ? 'bg-red-500 text-white' : 'bg-gray-100 dark:bg-zinc-900 text-gray-400 dark:text-gray-500'}`}>
-                                <Power size={32} className={maintenanceState.global ? 'animate-pulse' : ''} />
-                            </div>
-                            <div>
-                                <h2 className="text-xl md:text-2xl font-black uppercase italic tracking-tighter leading-none mb-2 text-gray-900 dark:text-white">Global Lockdown</h2>
-                                <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 uppercase tracking-widest font-bold">Instantly pause all public traffic</p>
-                            </div>
+            <div className="space-y-6">
+                {global && (
+                    <div className={cn('flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center', accent('red').border, accent('red').soft)}>
+                        <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', accent('red').solid)}><Power size={20} /></span>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[15px] font-bold text-red-700 dark:text-red-300">The whole site is in maintenance mode</p>
+                            <p className="text-[13px] text-gray-600 dark:text-zinc-400">Visitors see the maintenance page everywhere until you bring it back.</p>
                         </div>
-                        
-                        <Button
-                            onClick={() => setShowKillConfirm(true)}
-                            className={cn(
-                                "h-14 px-8 w-full md:w-auto text-xs font-black italic tracking-widest rounded-2xl transition-all duration-300 shadow-xl",
-                                maintenanceState.global 
-                                    ? "bg-red-500 text-white hover:bg-red-600 hover:scale-105" 
-                                    : "bg-gray-900 dark:bg-white text-white dark:text-black hover:scale-105"
-                            )}
-                        >
-                            {maintenanceState.global ? 'TERMINATE LOCKDOWN' : 'ACTIVATE LOCKDOWN'}
-                        </Button>
+                        <Button variant="primary" onClick={() => askGlobal(false)} className="h-11 w-full sm:w-auto"><Power size={15} /> Bring the site back online</Button>
                     </div>
-                </Card>
+                )}
 
-                {/* Main Control Deck */}
-                <div className="space-y-12">
-                    <div className="mb-8">
-                        <h2 className="text-xl md:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-2">Page-Wise Maintenance.</h2>
-                        <p className="text-[10px] md:text-xs font-black text-gray-500 uppercase tracking-[0.2em]">Toggle individual modules on or off instantly</p>
+                {isLocal && (
+                    <div className="flex gap-2.5 rounded-2xl bg-amber-500/[0.08] px-4 py-3 text-[13px] text-amber-800 dark:bg-amber-400/[0.08] dark:text-amber-200">
+                        <Info size={16} className="mt-0.5 shrink-0" />
+                        <p>You're running the site locally, so maintenance switches here change a test copy and don't touch the live site. Site features and contact details below are shared with the live site.</p>
                     </div>
+                )}
 
-                    {categories.map((cat, idx) => (
-                        <div key={cat.key} className="bg-white dark:bg-[#080808] border border-black/5 dark:border-white/5 rounded-3xl p-6 md:p-8 shadow-sm">
-                            <div className="flex items-center gap-4 mb-8">
-                                <div className="p-3 bg-neon-blue/10 text-neon-blue rounded-xl">
-                                    <cat.icon size={20} />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm md:text-base font-black text-gray-900 dark:text-white uppercase tracking-widest leading-none mb-1">{cat.title}</h3>
-                                    <p className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest">{cat.subtitle}</p>
-                                </div>
-                            </div>
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <StatTile icon={Power} tone={global ? 'red' : 'green'} label="Site status" value={global ? 'Offline' : 'Online'} hint={global ? 'Maintenance mode is on' : 'Open to everyone'} onClick={() => scrollTo('danger')} />
+                    <StatTile icon={Globe} tone={offCount.pages ? 'amber' : 'blue'} label="Pages off" value={offCount.pages} hint={offCount.pages ? 'Showing "back soon"' : 'All pages live'} onClick={() => scrollTo('pages')} />
+                    <StatTile icon={Briefcase} tone={offCount.features ? 'orange' : 'violet'} label="Modules off" value={offCount.features} hint={offCount.features ? 'Hidden from the menu' : 'All modules on'} onClick={() => scrollTo('features')} />
+                    <StatTile icon={LayoutGrid} tone={offCount.sections ? 'amber' : 'pink'} label="Sections off" value={offCount.sections} hint={offCount.sections ? 'Behind a cover' : 'All sections showing'} onClick={() => scrollTo('sections')} />
+                </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {cat.items.map((item, itemIdx) => {
-                                    const isOffline = maintenanceState[cat.key]?.[item.id];
-                                    const isOnline = !isOffline;
-                                    
+                {SWITCH_GROUPS.map(group => (
+                    <section key={group.key} ref={refs[group.key]} className="scroll-mt-24">
+                        <Card className="overflow-hidden rounded-2xl">
+                            <SectionHeader
+                                icon={group.icon}
+                                tone={group.tone}
+                                title={group.title}
+                                hint={group.hint}
+                                right={offCount[group.key] > 0 ? <Badge tone="amber">{offCount[group.key]} off</Badge> : <Badge tone="green">All on</Badge>}
+                            />
+                            <ul className="grid grid-cols-1 border-t border-black/[0.05] dark:border-white/[0.05] md:grid-cols-2">
+                                {group.items.map(item => {
+                                    const on = !maintenanceState[item.cat]?.[item.id];
+                                    const busy = saving[busyKey(item)];
                                     return (
-                                        <motion.div
-                                            key={item.id}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: (idx * 0.05) + (itemIdx * 0.02) }}
-                                        >
-                                            <div 
-                                                onClick={() => toggleMaintenanceFeature(cat.key, item.id)}
-                                                className={cn(
-                                                    "flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all duration-300 border shadow-sm hover:shadow-md",
-                                                    isOnline 
-                                                        ? "bg-gray-50 dark:bg-zinc-900/50 border-black/5 dark:border-white/5 hover:border-neon-green/30" 
-                                                        : "bg-red-500/5 border-red-500/20 hover:border-red-500/40"
-                                                )}
-                                            >
-                                                <div className="flex items-center gap-4">
-                                                    <div className={cn(
-                                                        "p-2.5 rounded-xl transition-colors",
-                                                        isOnline ? "bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400" : "bg-red-500/20 text-red-500"
-                                                    )}>
-                                                        <item.icon size={16} />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className={cn(
-                                                            "text-[11px] font-black uppercase tracking-widest mb-0.5 transition-colors",
-                                                            isOnline ? "text-gray-900 dark:text-white" : "text-gray-500"
-                                                        )}>
-                                                            {item.label}
-                                                        </h4>
-                                                        <p className="text-[8px] font-mono text-gray-500 uppercase">{item.id}</p>
-                                                    </div>
-                                                </div>
-
-                                                {/* iOS Style Toggle Switch */}
-                                                <div className={cn(
-                                                    "w-11 h-6 rounded-full p-1 flex items-center transition-colors duration-300",
-                                                    isOnline ? "bg-neon-green justify-end" : "bg-zinc-300 dark:bg-zinc-700 justify-start"
-                                                )}>
-                                                    <motion.div 
-                                                        layout
-                                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                                        className="w-4 h-4 bg-white rounded-full shadow-md"
+                                        <li key={busyKey(item)} className={cn('border-b border-black/[0.05] px-4 py-2.5 dark:border-white/[0.05] sm:px-5 md:odd:border-r', !on && accent('amber').soft, busy && 'opacity-60')}>
+                                            <div className="flex items-center gap-3">
+                                                <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', on ? accent(group.tone).chip : accent('amber').chip)}><item.icon size={16} /></span>
+                                                <div className="min-w-0 flex-1">
+                                                    <Toggle
+                                                        label={<span className="flex items-center gap-2">{item.label}{!on && <Badge tone="amber">Off</Badge>}</span>}
+                                                        hint={item.hint}
+                                                        checked={on}
+                                                        onChange={(next) => onSwitch(item, next)}
                                                     />
                                                 </div>
                                             </div>
-                                        </motion.div>
+                                        </li>
                                     );
                                 })}
-                            </div>
+                            </ul>
+                        </Card>
+                    </section>
+                ))}
+
+                <Card className="overflow-hidden rounded-2xl">
+                    <SectionHeader icon={Sparkles} tone="teal" title="Site features" hint="Parts of the public pages you can show or hide without switching anything off." />
+                    <ul className="border-t border-black/[0.05] dark:border-white/[0.05]">
+                        {SITE_FEATURES.map(feature => {
+                            const on = feature.isOn(siteSettings);
+                            return (
+                                <li key={feature.key} className={cn('border-b border-black/[0.05] px-4 py-2.5 last:border-0 dark:border-white/[0.05] sm:px-5', saving[feature.key] && 'opacity-60')}>
+                                    <Toggle label={feature.label} hint={feature.hint} checked={on} onChange={(next) => onSiteFeature(feature, next)} />
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </Card>
+
+                <Card className="overflow-hidden rounded-2xl">
+                    <SectionHeader icon={Building2} tone="green" title="Site details" hint="Used in the footer, contact page, emails and search results." />
+                    <form id="site-details" onSubmit={handleSaveConfig} className="space-y-4 border-t border-black/[0.05] p-4 dark:border-white/[0.05] sm:p-5">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            {DETAIL_FIELDS.map(f => (
+                                <Field key={f.name} label={f.label}>
+                                    <input name={f.name} type={f.type || 'text'} value={formData[f.name] || ''} onChange={handleChange} placeholder={f.placeholder} className={fieldCls} autoCapitalize={f.type ? 'off' : undefined} />
+                                </Field>
+                            ))}
                         </div>
-                    ))}
+                        <Field label="Description for search engines" hint="One or two sentences. Shown under the site's name in Google results.">
+                            <textarea name="description" rows={3} value={formData.description || ''} onChange={handleChange} className={cn(areaCls, 'resize-none')} placeholder="What Newbi does, in a sentence or two" />
+                        </Field>
+                        {!isDirty && <p className="text-[12px] text-gray-500">Change anything above and a save bar appears.</p>}
+                    </form>
+                </Card>
 
-                    {/* System Configuration Section */}
-                    <div className="bg-white dark:bg-[#080808] border border-black/5 dark:border-white/5 rounded-3xl overflow-hidden shadow-sm">
-                        <div 
-                            className="flex items-center justify-between p-6 md:p-8 cursor-pointer hover:bg-black/5 dark:hover:bg-white/[0.02] transition-colors"
-                            onClick={() => setIsConfigExpanded(!isConfigExpanded)}
-                            role="button"
-                            tabIndex={0}
-                            aria-expanded={isConfigExpanded}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsConfigExpanded(!isConfigExpanded); } }}
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-neon-blue/10 text-neon-blue rounded-xl">
-                                    <Settings size={20} />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm md:text-base font-black text-gray-900 dark:text-white uppercase tracking-widest leading-none mb-1">Global Configuration</h3>
-                                    <p className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest">Metadata, Contacts & Feature Flags</p>
-                                </div>
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-500">
-                                {isConfigExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                            </div>
-                        </div>
-
-                        <AnimatePresence>
-                            {isConfigExpanded && (
-                                <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    className="border-t border-black/5 dark:border-white/5"
-                                >
-                                    <form onSubmit={handleSaveConfig} className="p-6 md:p-8">
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                                            {/* Brand Identity */}
-                                            <div className="space-y-6">
-                                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-neon-blue flex items-center gap-2">
-                                                    <Sparkles size={14} /> Identity & SEO
-                                                </h4>
-                                                <div className="space-y-5">
-                                                    <ConfigInput label="System Title" name="title" icon={Settings} value={formData.title} onChange={handleChange} />
-                                                    <ConfigInput label="Strategic Tagline" name="tagline" icon={Zap} value={formData.tagline} onChange={handleChange} />
-                                                    <div className="space-y-2">
-                                                        <label className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1">Global Meta Description</label>
-                                                        <textarea
-                                                            name="description"
-                                                            value={formData.description || ''}
-                                                            onChange={handleChange}
-                                                            className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-xl p-4 text-[11px] font-medium h-28 focus:border-neon-blue/50 outline-none transition-all text-gray-900 dark:text-white resize-none"
-                                                            placeholder="SEO Meta data..."
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Channels & Outreach */}
-                                            <div className="space-y-6">
-                                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-neon-pink flex items-center gap-2">
-                                                    <Mail size={14} /> Communications
-                                                </h4>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                                    <ConfigInput label="Official Email" name="email" icon={Mail} value={formData.email} onChange={handleChange} />
-                                                    <ConfigInput label="Hotline / Contact" name="phone" icon={Phone} value={formData.phone} onChange={handleChange} />
-                                                    <ConfigInput label="WhatsApp Group" name="whatsappCommunity" icon={Globe} value={formData.whatsappCommunity} onChange={handleChange} />
-                                                    <ConfigInput label="Instagram Handle" name="instagram" icon={Instagram} value={formData.instagram} onChange={handleChange} />
-                                                </div>
-
-                                                <div className="pt-6">
-                                                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-neon-green mb-4 flex items-center gap-2">
-                                                        <Target size={14} /> Feature Flags
-                                                    </h4>
-                                                    <div className="flex flex-col gap-3">
-                                                        <FeaturePill 
-                                                            label="Tribe Onboarding Form" 
-                                                            active={siteSettings.enableTribeForm !== false} 
-                                                            onClick={() => updateGeneralSettings({ enableTribeForm: !siteSettings.enableTribeForm })}
-                                                        />
-                                                        <FeaturePill 
-                                                            label="Volunteer Gigs Board" 
-                                                            active={siteSettings.showVolunteerGigs !== false} 
-                                                            onClick={() => updateGeneralSettings({ showVolunteerGigs: !siteSettings.showVolunteerGigs })}
-                                                        />
-                                                        <FeaturePill 
-                                                            label="Client Marquee Display" 
-                                                            active={siteSettings.showPastClients !== false} 
-                                                            onClick={() => updateGeneralSettings({ showPastClients: !siteSettings.showPastClients })}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-10 pt-8 border-t border-black/5 dark:border-white/5 flex justify-end">
-                                            <Button type="submit" disabled={!isDirty} className="h-12 md:h-14 px-8 md:px-12 bg-neon-blue text-black font-black uppercase tracking-widest text-[10px] md:text-xs italic rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg disabled:opacity-50 disabled:hover:scale-100">
-                                                <Save size={16} className="mr-3" /> Push System Update
-                                            </Button>
-                                        </div>
-                                    </form>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </div>
-
-                {/* Diagnostics */}
-                <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-                    <div className="lg:col-span-2 p-6 md:p-8 bg-white dark:bg-[#080808] border border-black/5 dark:border-white/5 rounded-3xl shadow-sm">
-                        <div className="flex items-center gap-3 mb-6">
-                            <Shield size={18} className="text-neon-blue" />
-                            <h4 className="text-xs font-black uppercase tracking-[0.3em] text-gray-900 dark:text-white">Error Code Registry</h4>
-                        </div>
-                        
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-[10px] font-mono whitespace-nowrap md:whitespace-normal">
-                                <thead className="text-gray-500 border-b border-black/5 dark:border-white/5">
-                                    <tr>
-                                        <th className="pb-4 pr-6 font-black uppercase tracking-widest">Code</th>
-                                        <th className="pb-4 pr-6 font-black uppercase tracking-widest">Module</th>
-                                        <th className="pb-4 font-black uppercase tracking-widest">Scenario</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="text-gray-700 dark:text-gray-400">
-                                    <ErrorRow code="TKT-VAL-*" module="Ticketing" scenario="User input validation (Phone, Name, Selection)" />
-                                    <ErrorRow code="TKT-OTP-01" module="Ticketing" scenario="FCM/Auth Handshake - Code Send failure" />
-                                    <ErrorRow code="TKT-OTP-02" module="Ticketing" scenario="Incorrect OTP verification attempt" />
-                                    <ErrorRow code="TKT-PAY-01" module="Ticketing" scenario="Critical: Order commit failure after payment attempt" />
-                                    <ErrorRow code="TKT-CPN-01" module="Ticketing" scenario="Coupon validation/lookup error" />
-                                    <ErrorRow code="TKT-GST-01" module="Ticketing" scenario="Guestlist entry commit failure" />
-                                    <ErrorRow code="ANN-01" module="Announcements" scenario="Database write failure for new announcement" />
-                                    <ErrorRow code="EVT-01" module="Events" scenario="Event creation/update synchronization error" />
-                                </tbody>
-                            </table>
+                {isDirty && (
+                    <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 lg:bottom-4">
+                        <div className="flex items-center gap-2 rounded-2xl border border-black/[0.08] bg-white/95 p-3 shadow-xl backdrop-blur dark:border-white/[0.1] dark:bg-[#0d0f15]/95">
+                            <p className="hidden min-w-0 flex-1 truncate pl-1 text-[13px] font-semibold text-gray-600 dark:text-zinc-300 sm:block">Unsaved changes to the site details</p>
+                            <Button variant="ghost" onClick={discard} disabled={savingDetails} className="h-11 flex-1 sm:flex-none">Discard</Button>
+                            <Button variant="primary" type="submit" form="site-details" disabled={savingDetails} className="h-11 flex-1 sm:flex-none"><Save size={15} /> {savingDetails ? 'Saving…' : 'Save details'}</Button>
                         </div>
                     </div>
-
-                    <div className="p-6 md:p-8 bg-white dark:bg-[#080808] border border-black/5 dark:border-white/5 rounded-3xl shadow-sm flex flex-col justify-between">
-                        <div>
-                            <div className="flex items-center gap-3 mb-6">
-                                <Cpu size={18} className="text-neon-purple" />
-                                <h4 className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">Core Diagnostics</h4>
-                            </div>
-
-                            <div className="space-y-6 font-mono text-[10px]">
-                                <div>
-                                    <p className="text-gray-500 uppercase tracking-widest mb-1.5">Host Identity</p>
-                                    <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-zinc-900 p-3 rounded-xl border border-black/5 dark:border-white/5 truncate">{window.location.hostname}</p>
-                                </div>
-                                <div>
-                                    <p className="text-gray-500 uppercase tracking-widest mb-1.5">Registry Vector</p>
-                                    <p className="text-neon-blue bg-neon-blue/10 p-3 rounded-xl truncate font-black">Local_Storage_Sync</p>
-                                </div>
-                                <div>
-                                    <p className="text-gray-500 uppercase tracking-widest mb-1.5">State Flux</p>
-                                    <div className="h-2 bg-gray-100 dark:bg-zinc-900 rounded-full overflow-hidden mt-2">
-                                        <motion.div 
-                                            animate={{ width: ['20%', '80%', '20%'] }}
-                                            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                                            className="h-full bg-neon-purple"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <span className="text-[10px] font-mono font-bold text-gray-400 dark:text-gray-600 text-right mt-8">NB_SYS_772_NODE</span>
-                    </div>
-                </div>
-
-                {/* Kill Switch Modal */}
-                {createPortal(
-                    <AnimatePresence>
-                        {showKillConfirm && (
-                            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-                                <motion.div 
-                                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                                    className="bg-white dark:bg-zinc-900 rounded-3xl p-6 md:p-8 max-w-md w-full border border-red-500/30 shadow-2xl"
-                                >
-                                    <div className="text-center space-y-4">
-                                        <div className="w-20 h-20 mx-auto rounded-full bg-red-500/10 flex items-center justify-center">
-                                            <AlertTriangle size={40} className="text-red-500" />
-                                        </div>
-                                        <h3 className="text-2xl font-black text-gray-900 dark:text-white uppercase italic tracking-tighter">
-                                            {maintenanceState.global ? 'Deactivate Lockdown?' : 'Activate Lockdown?'}
-                                        </h3>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            {maintenanceState.global 
-                                                ? 'This will immediately bring the site back online and allow public traffic.'
-                                                : 'This will immediately lock down the entire site. All non-developer users will see the maintenance page.'}
-                                        </p>
-                                        <div className="flex flex-col sm:flex-row gap-3 pt-6">
-                                            <button 
-                                                onClick={() => setShowKillConfirm(false)}
-                                                className="flex-1 px-6 py-4 rounded-2xl bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
-                                            >
-                                                Cancel
-                                            </button>
-                                            <button 
-                                                onClick={() => { toggleGlobalMaintenance(); setShowKillConfirm(false); }}
-                                                className={`flex-1 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] text-white transition-all shadow-lg ${
-                                                    maintenanceState.global ? 'bg-neon-green text-black hover:scale-105' : 'bg-red-600 hover:bg-red-500 hover:scale-105'
-                                                }`}
-                                            >
-                                                {maintenanceState.global ? 'Bring Online' : 'Activate Lockdown'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            </div>
-                        )}
-                    </AnimatePresence>,
-                    document.body
                 )}
+
+                <Card className="overflow-hidden rounded-2xl">
+                    <button type="button" onClick={() => setShowCodes(v => !v)} aria-expanded={showCodes} className="flex w-full items-center text-left">
+                        <SectionHeader
+                            icon={Terminal}
+                            tone="cyan"
+                            title="Error codes"
+                            hint="What the codes people quote from error messages mean."
+                            right={<ChevronDown size={18} className={cn('mt-2 shrink-0 text-gray-400 transition-transform', showCodes && 'rotate-180')} />}
+                        />
+                    </button>
+                    {showCodes && (
+                        <ul className="divide-y divide-black/[0.05] border-t border-black/[0.05] dark:divide-white/[0.05] dark:border-white/[0.05]">
+                            {ERROR_CODES.map(e => (
+                                <li key={e.code} className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:gap-4 sm:px-5">
+                                    <code className="w-32 shrink-0 font-mono text-[13px] font-bold text-cyan-700 dark:text-cyan-300">{e.code}</code>
+                                    <Badge tone={e.module === 'Ticketing' ? 'orange' : e.module === 'Events' ? 'green' : 'amber'} className="w-fit">{e.module}</Badge>
+                                    <span className="text-[13px] text-gray-600 dark:text-zinc-300">{e.scenario}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                    <div className="grid grid-cols-1 gap-x-6 gap-y-1 border-t border-black/[0.05] px-4 py-3 text-[12.5px] text-gray-500 dark:border-white/[0.05] sm:grid-cols-3 sm:px-5">
+                        <p>Host <span className="font-mono font-semibold text-gray-700 dark:text-zinc-300">{window.location.hostname}</span></p>
+                        <p>Switch record <span className="font-mono font-semibold text-gray-700 dark:text-zinc-300">app_state/{isLocal ? 'maintenance_local' : 'maintenance'}</span></p>
+                        <p>Signed in as <span className="font-semibold text-gray-700 dark:text-zinc-300">{String(user.role).replace(/_/g, ' ')}</span></p>
+                    </div>
+                </Card>
+
+                <section ref={refs.danger} className="scroll-mt-24">
+                    <div className={cn('overflow-hidden rounded-2xl border bg-white dark:bg-white/[0.03]', accent('red').border)}>
+                        <SectionHeader icon={AlertTriangle} tone="red" title="Danger zone" hint="Switches that affect the whole site at once." />
+                        <div className="flex flex-col gap-3 border-t border-red-500/20 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[14px] font-bold">Maintenance mode for the whole site</p>
+                                <p className="text-[12.5px] leading-snug text-gray-500 dark:text-zinc-400">
+                                    {global ? 'On now. Visitors see the maintenance page everywhere.' : 'Takes every public page offline at once. Use it for big updates or emergencies.'}
+                                </p>
+                            </div>
+                            {global ? (
+                                <Button variant="primary" onClick={() => askGlobal(false)} className="h-11 w-full sm:w-auto"><Power size={15} /> Bring back online</Button>
+                            ) : (
+                                <Button variant="danger" onClick={() => askGlobal(true)} className="h-11 w-full sm:w-auto"><Power size={15} /> Turn on maintenance mode</Button>
+                            )}
+                        </div>
+                    </div>
+                </section>
             </div>
+
+            <ConfirmSheet
+                open={Boolean(confirm)}
+                onClose={() => setConfirm(null)}
+                title={confirm?.title}
+                description={confirm?.description}
+                confirmLabel={confirm?.confirmLabel}
+                busyLabel={confirm?.busyLabel}
+                tone={confirm?.tone}
+                icon={confirm?.icon}
+                onConfirm={confirm?.onConfirm}
+            />
         </AdminCommunityHubLayout>
     );
 };
-
-const ConfigInput = ({ label, name, icon: Icon, value, onChange }) => (
-    <div className="space-y-2">
-        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">{label}</label>
-        <div className="relative">
-            <Icon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <Input
-                name={name}
-                value={value || ''}
-                onChange={onChange}
-                className="h-14 pl-12 bg-gray-50 dark:bg-zinc-900 border border-black/5 dark:border-white/10 rounded-xl text-xs font-bold focus:border-neon-blue/50 transition-all text-gray-900 dark:text-white w-full"
-                placeholder="..."
-            />
-        </div>
-    </div>
-);
-
-const FeaturePill = ({ label, active, onClick }) => (
-    <button
-        type="button"
-        onClick={onClick}
-        className={cn(
-            "w-full flex items-center justify-between p-4 rounded-xl border transition-all duration-300",
-            active 
-                ? "bg-neon-green/10 border-neon-green/30 text-neon-green hover:bg-neon-green/20" 
-                : "bg-gray-50 dark:bg-zinc-900 border-black/5 dark:border-white/10 text-gray-500 hover:text-gray-900 dark:hover:text-white"
-        )}
-    >
-        <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
-        <div className={cn("w-8 h-4 rounded-full flex items-center p-0.5 transition-colors", active ? "bg-neon-green justify-end" : "bg-gray-300 dark:bg-zinc-700 justify-start")}>
-            <div className="w-3 h-3 bg-white rounded-full shadow-sm" />
-        </div>
-    </button>
-);
-
-const ErrorRow = ({ code, module, scenario }) => (
-    <tr className="border-b border-black/5 dark:border-white/5 last:border-0 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
-        <td className="py-4 pr-6 text-neon-blue font-black tracking-tighter">{code}</td>
-        <td className="py-4 pr-6 text-gray-900 dark:text-gray-300 uppercase italic font-bold">{module}</td>
-        <td className="py-4 text-gray-500 italic whitespace-normal">{scenario}</td>
-    </tr>
-);
 
 export default SystemControlCenter;

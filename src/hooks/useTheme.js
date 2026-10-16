@@ -43,12 +43,12 @@ export function useTheme() {
       root.classList.remove('dark');
     }
 
-    // Dynamically update theme-color meta tags so Safari titlebar & mobile statusbars match instantly
-    const targetColor = t === 'dark' ? '#000000' : '#F8F9FA';
-    const metaThemes = document.querySelectorAll('meta[name="theme-color"]');
-    metaThemes.forEach((el) => {
-      el.setAttribute('content', targetColor);
-    });
+    // Safari's bars follow the colour at the top of the page (see useSafariChrome);
+    // re-sample now and again once the colour transition has finished.
+    if (typeof window !== 'undefined' && window.__nbUpdateChrome) {
+      setTimeout(window.__nbUpdateChrome, 60);
+      setTimeout(window.__nbUpdateChrome, 420);
+    }
   }, []);
 
   // On mount: apply initial theme + listen for OS changes and cross-instance theme changes

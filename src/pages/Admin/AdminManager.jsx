@@ -1,1464 +1,905 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import {
-    LayoutGrid, UserPlus, Trash2, Shield, Clock, CheckCircle,
-    Users, Search, ShieldAlert, UserCheck, X, LogOut,
-    FileText, ChevronLeft, ChevronRight, RefreshCw, Zap,
-    Sparkles, Star, Ticket, Activity, Edit3, KeyRound
-} from 'lucide-react';
+import Shield from 'lucide-react/dist/esm/icons/shield';
+import Users from 'lucide-react/dist/esm/icons/users';
+import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
+import UserCheck from 'lucide-react/dist/esm/icons/user-check';
+import UserMinus from 'lucide-react/dist/esm/icons/user-minus';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import Activity from 'lucide-react/dist/esm/icons/activity';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import ShieldAlert from 'lucide-react/dist/esm/icons/shield-alert';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
+import KeyRound from 'lucide-react/dist/esm/icons/key-round';
+import LogOut from 'lucide-react/dist/esm/icons/log-out';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import Check from 'lucide-react/dist/esm/icons/check';
+import X from 'lucide-react/dist/esm/icons/x';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
 import { collection, addDoc, deleteDoc, doc, updateDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Card } from '../../components/ui/Card';
 import { useStore } from '../../lib/store';
 import { useConsolidatedMembers } from '../../hooks/useConsolidatedMembers';
 import { cn } from '../../lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
-import StudioSelect from '../../components/ui/StudioSelect';
 import GlobalLoader from '../../components/ui/GlobalLoader';
 import { sendStaffAuthorizedEmail } from '../../lib/email';
+import { exportSubtitle } from '../../lib/xlsx';
+import {
+    Card, Button, Badge, StatTile, SearchInput, Select, SegmentedTabs, EmptyState,
+    Pagination, Avatar, Menu, MenuItem, useViewMode, ViewToggle,
+} from '../../components/admin/ui';
+import { accent } from '../../components/admin/theme';
+import ExportMenu from '../../components/admin/ExportMenu';
+import ConfirmSheet from '../../components/admin/workspace/ConfirmSheet';
+import AccessNotice from '../../components/admin/workspace/AccessNotice';
+import { InviteSheet, RoleSheet, RenameSheet, TeamMemberSheet } from '../../components/admin/workspace/TeamSheets';
+import MemberSheet, { MemberTags, memberTags } from '../../components/admin/workspace/MemberSheet';
+import { RoleBadge, assignableRoles, roleInfo, TOP_ROLES } from '../../components/admin/workspace/roles';
+import { toDate, formatDay, relativeTime } from '../../components/admin/workspace/format';
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
+/*
+ * Members: the team (roles and access), access requests, who has been active,
+ * and everyone with an account. Tabs live in the URL (?tab=admins|requests|
+ * active|members) so the dashboard can link straight to each one.
+ */
 
-const getAdminRoleOptions = (currentRole, canManageDevelopers, canManageFounders) => {
-    const opts = [
-        { value: 'content_admin', label: 'Content Admin' },
-        { value: 'gate_manager', label: 'Ticketing Admin' },
-        { value: 'blog_writer', label: 'Blog Writer' },
-        { value: 'super_admin', label: 'Super Admin' }
-    ];
-    if (canManageFounders) opts.push({ value: 'founder', label: 'Founder' });
-    if (canManageDevelopers) opts.push({ value: 'developer', label: 'Developer' });
-    if (currentRole === 'editor' && !opts.some(o => o.value === 'editor'))
-        opts.push({ value: 'editor', label: 'Content Admin (Legacy)' });
-    if (currentRole === 'scanner' && !opts.some(o => o.value === 'scanner'))
-        opts.push({ value: 'scanner', label: 'Ticketing Admin (Legacy)' });
-    return opts;
+const PAGE_SIZE = 24;
+const TABS = ['admins', 'requests', 'active', 'members'];
+const ROLE_ORDER = ['founder', 'developer', 'super_admin', 'content_admin', 'editor', 'blog_writer', 'gate_manager', 'scanner', 'admin'];
+const DAY = 86400000;
+const WINDOWS = [
+    { value: 'today', label: 'Today' },
+    { value: 'week', label: '7 days' },
+    { value: 'month', label: '30 days' },
+    { value: 'all', label: 'Everyone' },
+];
+const MEMBER_FILTERS = [
+    { value: 'all', label: 'Everyone' },
+    { value: 'accounts', label: 'With an account' },
+    { value: 'team', label: 'Team' },
+    { value: 'creators', label: 'Creators' },
+    { value: 'tribe', label: 'Tribe' },
+    { value: 'tickets', label: 'Ticket buyers' },
+    { value: 'subscribers', label: 'Newsletter' },
+    { value: 'suspended', label: 'Suspended' },
+];
+
+// Errors thrown with a message people can read in the sheet that triggered them.
+const friendly = (message) => Object.assign(new Error(message), { userMessage: message });
+
+const sameEmail = (a, b) => Boolean(a && b) && String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+
+const windowStart = (win) => {
+    if (win === 'today') { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); }
+    if (win === 'week') return Date.now() - 7 * DAY;
+    if (win === 'month') return Date.now() - 30 * DAY;
+    return null;
 };
 
-const getRoleBadgeStyle = (role) => {
-    switch (role) {
-        case 'developer':
-            return { label: 'Developer', bg: 'bg-white/10', border: 'border-white/20', text: 'text-white', bar: 'from-gray-200 to-zinc-400' };
-        case 'founder':
-            return { label: 'Founder', bg: 'bg-[#FFD700]/10', border: 'border-[#FFD700]/30', text: 'text-[#FFD700]', bar: 'from-[#FFD700] to-amber-500' };
-        case 'super_admin':
-            return { label: 'Super Admin', bg: 'bg-neon-pink/10', border: 'border-neon-pink/30', text: 'text-neon-pink', bar: 'from-neon-pink to-purple-500' };
-        case 'content_admin':
-        case 'editor':
-            return { label: 'Content Admin', bg: 'bg-neon-green/10', border: 'border-neon-green/30', text: 'text-neon-green', bar: 'from-neon-green to-emerald-500' };
-        case 'gate_manager':
-        case 'scanner':
-            return { label: 'Ticketing Admin', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-400', bar: 'from-yellow-400 to-amber-500' };
-        case 'blog_writer':
-            return { label: 'Blog Writer', bg: 'bg-neon-blue/10', border: 'border-neon-blue/30', text: 'text-neon-blue', bar: 'from-neon-blue to-indigo-500' };
-        default:
-            return { label: role || 'Staff', bg: 'bg-black/5 dark:bg-white/5', border: 'border-black/10 dark:border-white/10', text: 'text-gray-400', bar: 'from-gray-500 to-zinc-700' };
-    }
+const SeenDot = ({ date }) => {
+    const mins = date ? (Date.now() - date.getTime()) / 60000 : Infinity;
+    const tone = mins < 15 ? 'green' : mins < 60 * 24 ? 'teal' : mins < 60 * 24 * 7 ? 'amber' : 'gray';
+    return <span className={cn('inline-block h-2 w-2 shrink-0 rounded-full', accent(tone).dot)} aria-hidden="true" />;
 };
-
-const getPageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-    const delta = 2;
-    if (totalPages <= 7) {
-        for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-        const left = currentPage - delta;
-        const right = currentPage + delta;
-        const range = [];
-        let l;
-        for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= left && i <= right)) {
-                range.push(i);
-            }
-        }
-        for (let i of range) {
-            if (l) {
-                if (i - l === 2) pages.push(l + 1);
-                else if (i - l > 2) pages.push('...');
-            }
-            pages.push(i);
-            l = i;
-        }
-    }
-    return pages;
-};
-
-const getRelativeTimeString = (timestamp) => {
-    if (!timestamp) return 'Never synced';
-    const elapsedSecs = Math.floor((Date.now() - timestamp) / 1000);
-    if (elapsedSecs < 10) return 'Just now';
-    if (elapsedSecs < 60) return `${elapsedSecs}s ago`;
-    const elapsedMins = Math.floor(elapsedSecs / 60);
-    if (elapsedMins < 60) return `${elapsedMins}m ago`;
-    const elapsedHours = Math.floor(elapsedMins / 60);
-    return `${elapsedHours}h ago`;
-};
-
-// ─── Member Card Component ─────────────────────────────────────────────────────
-
-const MemberCard = ({ member, creators, artists, onBlock, onUnblock, onRevokeSessions }) => {
-    const isTribe = member.hasJoinedTribe;
-    const isCreator = member.isCreator || creators?.some(c => c.uid === member.id || c.email === member.email);
-    const isArtist = member.isArtist || artists?.some(a => (a.uid === member.id || a.email === member.email) && a.profileStatus === 'approved');
-    const isTicketHolder = member.isTicketHolder;
-    const isSubscriber = member.isSubscriber;
-    const isAdmin = member.isAdmin || (member.role && member.role !== 'Member' && member.role !== 'member');
-
-    const typeLabel = isArtist ? 'Artist' : isCreator ? 'Creator' : isAdmin ? (member.role || 'Admin') : isTribe ? 'Tribe' : isTicketHolder ? 'Ticket Holder' : isSubscriber ? 'Subscriber' : 'Member';
-    
-    const typeStyle = isArtist ? 'bg-[#FF6B6B]/10 border-[#FF6B6B]/20 text-[#FF6B6B]'
-        : isCreator ? 'bg-neon-pink/10 border-neon-pink/20 text-neon-pink'
-        : isAdmin ? 'bg-purple-500/10 border-purple-500/20 text-purple-400'
-        : isTribe ? 'bg-neon-blue/10 border-neon-blue/20 text-neon-blue'
-        : isTicketHolder ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
-        : isSubscriber ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400'
-        : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 text-gray-500';
-
-    const avatarStyle = member.isBlocked
-        ? 'bg-red-500/10 border-red-500/20 text-red-500'
-        : isArtist ? 'bg-[#FF6B6B]/10 border-[#FF6B6B]/30 text-[#FF6B6B]'
-        : isCreator ? 'bg-neon-pink/10 border-neon-pink/30 text-neon-pink'
-        : isAdmin ? 'bg-purple-500/10 border-purple-500/30 text-purple-400'
-        : isTribe ? 'bg-neon-blue/10 border-neon-blue/30 text-neon-blue'
-        : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-700 dark:text-white/60';
-
-    const barStyle = member.isBlocked
-        ? 'from-red-500/70 to-orange-500/50'
-        : isArtist ? 'from-[#FF6B6B]/70 to-pink-500/40'
-        : isCreator ? 'from-neon-pink/70 to-purple-500/40'
-        : isAdmin ? 'from-purple-500/70 to-indigo-500/40'
-        : isTribe ? 'from-neon-blue/70 to-indigo-500/40'
-        : 'from-neon-green/60 to-transparent';
-
-    return (
-        <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="group relative flex flex-col h-full">
-            <div className={cn(
-                "absolute inset-0 rounded-[2.5rem] opacity-0 group-hover:opacity-15 transition-opacity blur-2xl duration-700 pointer-events-none bg-gradient-to-br",
-                member.isBlocked ? "from-red-500 to-orange-500" : "from-neon-green to-neon-blue"
-            )} />
-            <Card className={cn(
-                "relative p-6 sm:p-7 bg-gray-100 dark:bg-zinc-950/60 group-hover:bg-gray-50 dark:group-hover:bg-zinc-900/50 border-black/10 dark:border-white/5 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-md hover:shadow-xl flex flex-col h-full min-h-[350px] overflow-hidden border hover:-translate-y-1 gap-4",
-                member.isBlocked && "border-red-500/20 hover:border-red-500/30"
-            )}>
-                <div className={cn("absolute top-0 left-0 w-full h-[2.5px] rounded-t-[2.5rem] bg-gradient-to-r", barStyle)} />
-
-                {/* Header */}
-                <div className="flex justify-between items-start gap-2">
-                    <div className="flex items-center gap-3">
-                        <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-black italic border shrink-0 shadow-sm select-none", avatarStyle)}>
-                            {(member.displayName || member.email || 'U').slice(0, 2).toUpperCase()}
-                        </div>
-                        <span className={cn("px-2.5 py-1 rounded-full border font-black uppercase tracking-widest text-[8px]", typeStyle)}>
-                            {typeLabel}
-                        </span>
-                    </div>
-                    {member.isBlocked ? (
-                        <span className="px-2.5 py-1 bg-red-500/10 text-red-500 border border-red-500/20 rounded-full text-[8px] font-black uppercase tracking-widest shrink-0 flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                            SUSPENDED
-                        </span>
-                    ) : (
-                        <span className="px-2.5 py-1 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-full text-[8px] font-black uppercase tracking-widest shrink-0 flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
-                            ACTIVE
-                        </span>
-                    )}
-                </div>
-
-                {/* Name + Email */}
-                <div className="flex-1 min-w-0">
-                    <h3 className="font-heading font-black text-xl sm:text-2xl text-gray-900 dark:text-white group-hover:text-neon-green transition-colors duration-300 uppercase italic tracking-tighter leading-tight line-clamp-2">
-                        {member.displayName || 'UNNAMED MEMBER'}
-                    </h3>
-                    <p className="text-[10px] text-gray-500 font-mono mt-1 break-all leading-relaxed select-all">{member.email || '—'}</p>
-                    {member.phone && <p className="text-[10px] text-gray-600 dark:text-gray-400 font-mono mt-0.5">{member.phone}</p>}
-                </div>
-
-                {/* Meta Pills */}
-                <div className="flex flex-wrap gap-1.5">
-                    <span className="flex items-center gap-1.5 text-[9px] text-gray-500 font-black uppercase tracking-wide bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 px-3 py-1.5 rounded-xl">
-                        <span className="text-gray-400">JOINED</span>
-                        <span className="text-gray-700 dark:text-gray-300 font-mono">
-                            {member.createdAt ? new Date(member.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'N/A'}
-                        </span>
-                    </span>
-                    {member.lastActive && (
-                        <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wide bg-neon-blue/5 border border-neon-blue/15 px-3 py-1.5 rounded-xl text-neon-blue">
-                            <span className="text-neon-blue/50">SEEN</span>
-                            <span className="font-mono">{new Date(member.lastActive).toLocaleDateString(undefined, { dateStyle: 'short' })}</span>
-                        </span>
-                    )}
-                </div>
-
-                {/* Actions */}
-                <div className="pt-4 border-t border-black/10 dark:border-white/5 flex flex-col gap-2 mt-auto">
-                    {member.isBlocked ? (
-                        <button
-                            onClick={() => onUnblock(member)}
-                            className="w-full h-11 bg-neon-green text-black font-black uppercase tracking-widest text-[9px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(57,255,20,0.2)]"
-                        >
-                            <CheckCircle size={13} /> Reinstate Access
-                        </button>
-                    ) : (
-                        <>
-                            <button
-                                onClick={() => onBlock(member)}
-                                className="w-full h-11 bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 font-black uppercase tracking-widest text-[9px] rounded-xl border border-red-500/20 hover:border-transparent transition-all flex items-center justify-center gap-2 duration-300 active:scale-95"
-                            >
-                                <ShieldAlert size={13} /> Suspend Clearance
-                            </button>
-                            <button
-                                onClick={() => onRevokeSessions(member)}
-                                className="w-full h-10 bg-black/5 dark:bg-white/5 hover:bg-red-500/10 text-gray-500 hover:text-red-400 font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/5 hover:border-red-500/20 transition-all flex items-center justify-center gap-2 duration-200 active:scale-95"
-                            >
-                                <LogOut size={12} /> Log Out All Devices
-                            </button>
-                        </>
-                    )}
-                </div>
-            </Card>
-        </motion.div>
-    );
-};
-
-// ─── Main AdminManager Component ───────────────────────────────────────────────
 
 const AdminManager = () => {
     const [searchParams, setSearchParams] = useSearchParams();
-    const {
-        user,
-        blockUser,
-        unblockUser,
-        authInitialized,
-        admins: storeAdmins = [],
-        isSyncingUsers,
-        lastAuthUsersSyncedAt,
-        syncAuthUsers
-    } = useStore();
+    const user = useStore(s => s.user);
+    const authInitialized = useStore(s => s.authInitialized);
+    const storeAdmins = useStore(s => s.admins);
+    const allUsers = useStore(s => s.allUsers);
+    const isSyncingUsers = useStore(s => s.isSyncingUsers);
+    const lastAuthUsersSyncedAt = useStore(s => s.lastAuthUsersSyncedAt);
+    const syncAuthUsers = useStore(s => s.syncAuthUsers);
+    const blockUser = useStore(s => s.blockUser);
+    const unblockUser = useStore(s => s.unblockUser);
+    const addToast = useStore(s => s.addToast);
 
-    // Use consolidated members as the high-integrity, real-time registry
-    const {
-        members,
-        activeMembers,
-        suspendedMembers,
-        totalCount,
-        activeCount,
-        suspendedCount,
-        creators = [],
-        artists = []
-    } = useConsolidatedMembers();
+    const { members, totalCount, suspendedCount } = useConsolidatedMembers();
 
-    // Tab state from URL query param or default to 'members'
-    const initialTab = searchParams.get('tab') || 'members';
-    const [activeTab, setActiveTab] = useState(initialTab);
+    const role = user?.role;
+    const canAuthorizeStaff = role === 'developer' || role === 'founder';
+    const canEditRoles = canAuthorizeStaff;
+    const canSeePage = ['super_admin', 'developer', 'founder', 'content_admin'].includes(role);
 
-    // Auto-update tab if URL changes
-    const currentTabParam = searchParams.get('tab') || 'members';
+    // ── URL state ──
+    const rawTab = searchParams.get('tab');
+    const tab = TABS.includes(rawTab) && (rawTab !== 'requests' || canAuthorizeStaff) ? rawTab : 'admins';
+    const memberFilter = MEMBER_FILTERS.some(f => f.value === searchParams.get('filter')) ? searchParams.get('filter') : 'all';
+    const activeWindow = WINDOWS.some(w => w.value === searchParams.get('window')) ? searchParams.get('window') : 'month';
+    const setParams = useCallback((patch) => {
+        const next = new URLSearchParams(searchParams);
+        Object.entries(patch).forEach(([k, v]) => (v == null || v === '' ? next.delete(k) : next.set(k, v)));
+        setSearchParams(next, { replace: true });
+    }, [searchParams, setSearchParams]);
+
+    const [search, setSearch] = useState('');
+    const [roleFilter, setRoleFilter] = useState('all');
+    const [page, setPage] = useState(1);
+    const [teamView, setTeamView] = useViewMode('team', 'cards');
+    const [memberView, setMemberView] = useViewMode('members', 'list');
+    useEffect(() => { setSearch(''); setPage(1); }, [tab]);
+    useEffect(() => { setPage(1); }, [search, memberFilter, activeWindow, roleFilter]);
+
+    // ── keep the account list fresh (silent sync every 3 minutes, as before) ──
+    const [, setTick] = useState(0);
     useEffect(() => {
-        if (currentTabParam && currentTabParam !== activeTab) {
-            setActiveTab(currentTabParam);
-        }
-    }, [currentTabParam]);
-
-    // Live relative sync time updater
-    const [relativeSyncTime, setRelativeSyncTime] = useState('');
+        const id = setInterval(() => setTick(t => t + 1), 30000);
+        return () => clearInterval(id);
+    }, []);
     useEffect(() => {
-        setRelativeSyncTime(getRelativeTimeString(lastAuthUsersSyncedAt));
-        const interval = setInterval(() => {
-            setRelativeSyncTime(getRelativeTimeString(useStore.getState().lastAuthUsersSyncedAt));
-        }, 10000);
-        return () => clearInterval(interval);
-    }, [lastAuthUsersSyncedAt]);
-
-    // Background Auto-Sync Automation (on mount, 3-min interval, and tab refocus)
-    useEffect(() => {
-        const canSync = user?.role === 'developer' || user?.role === 'founder' || user?.role === 'super_admin' || user?.role === 'content_admin';
-        if (!canSync) return;
-
+        const canSync = ['developer', 'founder', 'super_admin', 'content_admin'].includes(role);
+        if (!canSync) return undefined;
         const THREE_MINUTES = 3 * 60 * 1000;
-        const lastSync = useStore.getState().lastAuthUsersSyncedAt || 0;
-
-        // Initial background sync on mount if stale
-        if (Date.now() - lastSync > THREE_MINUTES) {
-            syncAuthUsers({ silent: true }).catch(() => {});
-        }
-
-        // Periodic background interval sync
-        const syncInterval = setInterval(() => {
-            syncAuthUsers({ silent: true }).catch(() => {});
-        }, THREE_MINUTES);
-
-        // Tab refocus sync
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                const currentLastSync = useStore.getState().lastAuthUsersSyncedAt || 0;
-                if (Date.now() - currentLastSync > THREE_MINUTES) {
-                    syncAuthUsers({ silent: true }).catch(() => {});
-                }
+        if (Date.now() - (useStore.getState().lastAuthUsersSyncedAt || 0) > THREE_MINUTES) syncAuthUsers({ silent: true }).catch(() => {});
+        const interval = setInterval(() => syncAuthUsers({ silent: true }).catch(() => {}), THREE_MINUTES);
+        const onVisible = () => {
+            if (document.visibilityState === 'visible' && Date.now() - (useStore.getState().lastAuthUsersSyncedAt || 0) > THREE_MINUTES) {
+                syncAuthUsers({ silent: true }).catch(() => {});
             }
         };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
+        document.addEventListener('visibilitychange', onVisible);
+        return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVisible); };
+    }, [role, syncAuthUsers]);
 
-        return () => {
-            clearInterval(syncInterval);
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-        };
-    }, [user?.role, syncAuthUsers]);
-
-    // Sync tab changes with URL search params
-    const handleTabChange = (newTab) => {
-        setActiveTab(newTab);
-        setSearchParams({ tab: newTab });
-        setMemberSearch('');
-        setAdminSearch('');
-        setCurrentPage(1);
-    };
-
-    // ── Admin management state ──
+    // ── team records (live listener via the store; direct read as a fallback) ──
     const [localAdmins, setLocalAdmins] = useState([]);
     const [loadingAdmins, setLoadingAdmins] = useState(false);
-    const [newAdminEmail, setNewAdminEmail] = useState('');
-    const [newAdminRole, setNewAdminRole] = useState('content_admin');
-    const [isInviteOpen, setIsInviteOpen] = useState(false);
-    const [adminSearch, setAdminSearch] = useState('');
-    const [adminFilter, setAdminFilter] = useState('all');
-
-    // ── Members roster search & filters ──
-    const [memberSearch, setMemberSearch] = useState('');
-    const [memberFilter, setMemberFilter] = useState('all');
-    const [viewMode, setViewMode] = useState('grid');
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 24;
-
-    // ── Sync & Refresh state ──
-    const [isRefreshing, setIsRefreshing] = useState(false);
-
-    // Fetch admins directly from Firestore collection
     const fetchAdmins = useCallback(async () => {
         setLoadingAdmins(true);
         try {
             const snapshot = await getDocs(collection(db, 'admins'));
-            setLocalAdmins(snapshot.docs.map(d => ({ ...d.data(), id: d.id, uid: d.id })));
+            setLocalAdmins(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
         } catch (err) {
             console.error('Error fetching admins:', err);
         } finally {
             setLoadingAdmins(false);
         }
     }, []);
-
-    useEffect(() => {
-        if (user?.uid) {
-            fetchAdmins();
-        }
-    }, [user?.uid, fetchAdmins]);
+    useEffect(() => { if (user?.uid) fetchAdmins(); }, [user?.uid, fetchAdmins]);
 
     const admins = useMemo(() => {
-        const source = (storeAdmins && storeAdmins.length > 0) ? storeAdmins : localAdmins;
-        return (source || []).map(a => ({ ...a, id: a.id || a.uid, uid: a.uid || a.id }));
+        const source = storeAdmins?.length ? storeAdmins : localAdmins;
+        // `authUid` is only a real sign-in id when the record has its own uid field;
+        // the document id is a Firestore id and must never be used as one.
+        return (source || []).map(a => ({ ...a, id: a.id || a.uid, authUid: a.uid && a.uid !== a.id ? a.uid : null }));
     }, [storeAdmins, localAdmins]);
 
-    const pendingRequests = useMemo(() => admins.filter(a => a.role === 'pending'), [admins]);
-
-    // Derived permissions
-    const canAuthorizeStaff = user?.role === 'developer' || user?.role === 'founder';
-    const canManageDevelopers = user?.role === 'developer' || user?.role === 'founder';
-    const canManageFounders = user?.role === 'developer' || user?.role === 'founder';
-    const canEditRoles = user?.role === 'developer' || user?.role === 'founder';
+    const pendingRequests = useMemo(() => admins
+        .filter(a => a.role === 'pending')
+        .sort((a, b) => (toDate(b.createdAt)?.getTime() || 0) - (toDate(a.createdAt)?.getTime() || 0)), [admins]);
 
     const displayAdmins = useMemo(() => {
-        if (user?.role === 'developer' || user?.role === 'founder') return admins;
-        if (user?.role === 'super_admin') return admins.filter(a => a.role !== 'developer');
+        if (role === 'developer' || role === 'founder') return admins;
+        if (role === 'super_admin') return admins.filter(a => a.role !== 'developer');
         return admins.filter(a => a.role !== 'developer' && a.role !== 'founder');
-    }, [admins, user?.role]);
+    }, [admins, role]);
 
-    // ── Filtered Members Calculation across the entire registry ──
-    const filteredMembers = useMemo(() => {
-        let baseList = members;
+    const team = useMemo(() => displayAdmins
+        .filter(a => a.role !== 'pending')
+        .sort((a, b) => {
+            const ra = ROLE_ORDER.indexOf(a.role); const rb = ROLE_ORDER.indexOf(b.role);
+            return (ra === -1 ? 99 : ra) - (rb === -1 ? 99 : rb) || String(a.displayName || a.email).localeCompare(String(b.displayName || b.email));
+        }), [displayAdmins]);
 
-        if (memberFilter === 'suspended') {
-            baseList = suspendedMembers;
-        } else if (activeTab === 'active' || memberFilter === 'active') {
-            baseList = activeMembers;
+    const founderCount = useMemo(() => admins.filter(a => a.role === 'founder').length, [admins]);
+    const isSelf = (a) => sameEmail(a?.email, user?.email);
+    const lastFounder = (a) => a?.role === 'founder' && founderCount <= 1;
+
+    // ── everyone, joined with their sign-in account and team role ──
+    const enriched = useMemo(() => {
+        const byId = new Map();
+        const byEmail = new Map();
+        (allUsers || []).forEach(u => {
+            byId.set(u.id, u);
+            if (u.email) byEmail.set(String(u.email).toLowerCase(), u);
+        });
+        const teamByEmail = new Map();
+        admins.forEach(a => { if (a.email && a.role !== 'pending') teamByEmail.set(String(a.email).toLowerCase(), a); });
+        return members.map(m => {
+            const email = String(m.email || '').toLowerCase();
+            const account = byId.get(m.id) || (email ? byEmail.get(email) : null) || null;
+            const adm = email ? teamByEmail.get(email) : null;
+            return {
+                ...m,
+                key: m.id || email,
+                hasAccount: Boolean(account),
+                accountId: account?.id || null,
+                lastSeen: account ? toDate(account.lastActive) : null,
+                createdAt: m.createdAt || account?.createdAt || null,
+                isBlocked: account ? Boolean(account.isBlocked) : Boolean(m.isBlocked),
+                teamRole: adm?.role || null,
+                displayName: (m.displayName && m.displayName !== 'UNNAMED_MEMBER') ? m.displayName : (account?.displayName || (email ? email.split('@')[0] : '')),
+                phone: m.phone || account?.phone || account?.phoneNumber || '',
+                photoURL: account?.photoURL || m.photoURL || null,
+            };
+        });
+    }, [members, allUsers, admins]);
+
+    const activeThisWeek = useMemo(() => {
+        const weekAgo = Date.now() - 7 * DAY;
+        return enriched.filter(m => m.hasAccount && m.lastSeen && m.lastSeen.getTime() >= weekAgo).length;
+    }, [enriched]);
+
+    // ── filtered lists ──
+    const q = search.trim().toLowerCase();
+    const matches = (...fields) => !q || fields.some(f => String(f || '').toLowerCase().includes(q));
+
+    const teamRows = useMemo(() => team.filter(a => {
+        if (roleFilter !== 'all') {
+            if (roleFilter === 'content_admin' && !(a.role === 'content_admin' || a.role === 'editor')) return false;
+            if (roleFilter === 'gate_manager' && !(a.role === 'gate_manager' || a.role === 'scanner')) return false;
+            if (!['content_admin', 'gate_manager'].includes(roleFilter) && a.role !== roleFilter) return false;
         }
+        return matches(a.displayName, a.email, roleInfo(a.role).label);
+    }), [team, roleFilter, q]); // eslint-disable-line react-hooks/exhaustive-deps
 
-        const searchLower = memberSearch.trim().toLowerCase();
+    const requestRows = useMemo(() => pendingRequests.filter(a => matches(a.displayName, a.email)), [pendingRequests, q]); // eslint-disable-line react-hooks/exhaustive-deps
 
-        return baseList.filter(m => {
-            if (searchLower) {
-                const matches = (
-                    (m.email || '').toLowerCase().includes(searchLower) ||
-                    (m.displayName || '').toLowerCase().includes(searchLower) ||
-                    (m.phone || '').toLowerCase().includes(searchLower) ||
-                    (m.role || '').toLowerCase().includes(searchLower) ||
-                    (m.id || '').toLowerCase().includes(searchLower)
-                );
-                if (!matches) return false;
-            }
+    const activeRows = useMemo(() => {
+        const start = windowStart(activeWindow);
+        return enriched
+            .filter(m => m.hasAccount)
+            .filter(m => start == null || (m.lastSeen && m.lastSeen.getTime() >= start))
+            .filter(m => matches(m.displayName, m.email, m.phone))
+            .sort((a, b) => (b.lastSeen?.getTime() || 0) - (a.lastSeen?.getTime() || 0));
+    }, [enriched, activeWindow, q]); // eslint-disable-line react-hooks/exhaustive-deps
 
-            if (memberFilter === 'tribe') return m.hasJoinedTribe;
-            if (memberFilter === 'creators') return m.isCreator || creators.some(c => c.uid === m.id || c.email === m.email);
-            if (memberFilter === 'artists') return m.isArtist || artists.some(a => (a.uid === m.id || a.email === m.email) && a.profileStatus === 'approved');
-            if (memberFilter === 'tickets') return m.isTicketHolder;
-            if (memberFilter === 'subscribers') return m.isSubscriber;
-            if (memberFilter === 'admins') return m.isAdmin || admins.some(a => a.email === m.email);
+    const memberRows = useMemo(() => enriched.filter(m => {
+        if (memberFilter === 'accounts' && !m.hasAccount) return false;
+        if (memberFilter === 'suspended' && !m.isBlocked) return false;
+        if (memberFilter === 'team' && !m.teamRole) return false;
+        if (memberFilter === 'creators' && !m.isCreator) return false;
+        if (memberFilter === 'tribe' && !m.hasJoinedTribe) return false;
+        if (memberFilter === 'tickets' && !m.isTicketHolder) return false;
+        if (memberFilter === 'subscribers' && !m.isSubscriber) return false;
+        return matches(m.displayName, m.email, m.phone, m.id);
+    }), [enriched, memberFilter, q]); // eslint-disable-line react-hooks/exhaustive-deps
 
-            return true;
+    const pageOf = (rows) => rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    const pageCount = (rows) => Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+
+    // ── sheets ──
+    const [inviteOpen, setInviteOpen] = useState(false);
+    const [teamSheet, setTeamSheet] = useState({ open: false, admin: null });
+    const [roleSheet, setRoleSheet] = useState({ open: false, admin: null, mode: 'change' });
+    const [renameSheet, setRenameSheet] = useState({ open: false, admin: null });
+    const [memberSheet, setMemberSheet] = useState({ open: false, key: null });
+    const [confirm, setConfirm] = useState(null);
+    const [signOutToo, setSignOutTooState] = useState(true);
+    const signOutTooRef = useRef(true); // read by the remove confirm, which is built before the box is ticked
+    const setSignOutToo = (v) => { signOutTooRef.current = v; setSignOutTooState(v); };
+
+    // Keep open sheets showing live data after a save.
+    const teamSheetAdmin = teamSheet.admin ? (admins.find(a => a.id === teamSheet.admin.id) || teamSheet.admin) : null;
+    const memberSheetMember = memberSheet.key ? enriched.find(m => m.key === memberSheet.key) : null;
+
+    // ── team actions ──
+    const handleInvite = async (email, newRole) => {
+        if (!canAuthorizeStaff) throw friendly('Only founders and developers can add people to the team.');
+        if (TOP_ROLES.includes(newRole) && !canAuthorizeStaff) throw friendly('Only founders and developers can hand out that role.');
+        const found = await getDocs(query(collection(db, 'admins'), where('email', '==', email)));
+        const existing = found.docs[0] || admins.find(a => sameEmail(a.email, email));
+        if (existing) {
+            const data = existing.data ? existing.data() : existing;
+            if (data.role !== 'pending') throw friendly(`${email} is already on the team as ${roleInfo(data.role).label}.`);
+            await updateDoc(doc(db, 'admins', existing.id), { role: newRole, approvedBy: user.email, approvedAt: new Date().toISOString() });
+        } else {
+            await addDoc(collection(db, 'admins'), {
+                email,
+                role: newRole,
+                addedBy: user.email,
+                createdAt: new Date().toISOString(),
+            });
+        }
+        await fetchAdmins();
+        const mail = await sendStaffAuthorizedEmail(email, newRole).catch(() => ({ success: false }));
+        if (mail?.success) addToast(`${email} added as ${roleInfo(newRole).label}. We've emailed them.`, 'success');
+        else addToast(`${email} added as ${roleInfo(newRole).label}. The email didn't go through, so let them know yourself.`, 'warning');
+    };
+
+    const handleRoleSave = async (admin, newRole, mode) => {
+        if (!canEditRoles) throw friendly('Only founders and developers can change roles.');
+        if (mode === 'change' && isSelf(admin)) throw friendly("You can't change your own role. Ask another founder.");
+        if (mode === 'change' && lastFounder(admin) && newRole !== 'founder') throw friendly("They're the only founder. Make someone else a founder first.");
+        await updateDoc(doc(db, 'admins', admin.id), {
+            role: newRole,
+            roleUpdatedAt: new Date().toISOString(),
+            roleUpdatedBy: user.email,
+            ...(mode === 'approve' ? { approvedBy: user.email, approvedAt: new Date().toISOString() } : {}),
         });
-    }, [members, activeMembers, suspendedMembers, activeTab, memberFilter, memberSearch, creators, artists, admins]);
+        await fetchAdmins();
+        const name = admin.displayName || admin.email;
+        if (mode === 'approve') {
+            const mail = admin.email ? await sendStaffAuthorizedEmail(admin.email, newRole).catch(() => ({ success: false })) : { success: false };
+            addToast(mail?.success ? `${name} approved as ${roleInfo(newRole).label}. We've emailed them.` : `${name} approved as ${roleInfo(newRole).label}.`, 'success');
+        } else {
+            addToast(`${name} is now ${roleInfo(newRole).label}.`, 'success');
+        }
+    };
 
-    // Reset pagination on search or filter change
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [memberSearch, memberFilter, activeTab]);
+    const handleRename = async (admin, displayName) => {
+        if (!(isSelf(admin) || canEditRoles)) throw friendly('Only founders and developers can rename teammates.');
+        await useStore.getState().updateAdminProfile(null, admin.email, { displayName });
+        await fetchAdmins();
+        addToast('Name saved.', 'success');
+    };
 
-    const totalPages = Math.ceil(filteredMembers.length / itemsPerPage) || 1;
-    const paginatedMembers = useMemo(() => {
-        const start = (currentPage - 1) * itemsPerPage;
-        return filteredMembers.slice(start, start + itemsPerPage);
-    }, [filteredMembers, currentPage, itemsPerPage]);
-
-    // ── Filtered Admins Calculation ──
-    const filteredAdmins = useMemo(() => {
-        const searchLower = adminSearch.trim().toLowerCase();
-        return displayAdmins.filter(a => {
-            if (a.role === 'pending') return false;
-            if (searchLower) {
-                const matches = (
-                    (a.email || '').toLowerCase().includes(searchLower) ||
-                    (a.displayName || '').toLowerCase().includes(searchLower) ||
-                    (a.role || '').toLowerCase().includes(searchLower)
-                );
-                if (!matches) return false;
+    const askResetPassword = (admin) => setConfirm({
+        title: 'Send a password reset?',
+        description: `${admin.email} will get an email with a link to set a new password. Their current password keeps working until they change it.`,
+        confirmLabel: 'Send reset email',
+        busyLabel: 'Sending…',
+        tone: 'primary',
+        icon: KeyRound,
+        onConfirm: async () => {
+            try {
+                await useStore.getState().resetPassword(admin.email);
+            } catch (err) {
+                throw friendly(err?.message || "Couldn't send the reset email. Please try again.");
             }
-            if (adminFilter !== 'all') {
-                if (adminFilter === 'content_admin') return a.role === 'content_admin' || a.role === 'editor';
-                if (adminFilter === 'gate_manager') return a.role === 'gate_manager' || a.role === 'scanner';
-                return a.role === adminFilter;
+            addToast('Password reset email sent.', 'success');
+        },
+    });
+
+    const askSignOutAdmin = (admin) => setConfirm({
+        title: `Sign ${admin.displayName || admin.email} out everywhere?`,
+        description: "Every session on every device ends now. They can sign straight back in, so use Remove from team if they shouldn't.",
+        confirmLabel: 'Sign out everywhere',
+        busyLabel: 'Signing out…',
+        tone: 'warning',
+        icon: LogOut,
+        onConfirm: async () => {
+            try {
+                await useStore.getState().revokeSessions(admin.authUid, admin.email);
+            } catch (err) {
+                throw friendly(err?.message || "Couldn't sign them out. Please try again.");
             }
-            return true;
+            addToast(`${admin.displayName || admin.email} has been signed out of all devices.`, 'success');
+        },
+    });
+
+    const askRemove = (admin) => {
+        setSignOutToo(true);
+        const blocked = isSelf(admin) ? "You can't remove yourself. Ask another founder." : lastFounder(admin) ? "They're the only founder, so they can't be removed. Make someone else a founder first." : '';
+        setConfirm({
+            kind: 'remove',
+            title: `Remove ${admin.displayName || admin.email} from the team?`,
+            description: blocked || `They lose access to the admin straight away. Their account and anything they made stay as they are. You can add them back later.`,
+            confirmLabel: 'Remove from team',
+            busyLabel: 'Removing…',
+            tone: 'danger',
+            icon: UserMinus,
+            disabled: Boolean(blocked),
+            onConfirm: async () => {
+                if (!canEditRoles) throw friendly('Only founders and developers can remove people.');
+                if (blocked) throw friendly(blocked);
+                await deleteDoc(doc(db, 'admins', admin.id));
+                await fetchAdmins();
+                setTeamSheet(s => ({ ...s, open: false }));
+                let note = '';
+                if (signOutTooRef.current) {
+                    try { await useStore.getState().revokeSessions(admin.authUid, admin.email); } catch (err) { console.error(err); note = " Couldn't sign them out of their devices, but they won't be able to open the admin after a reload."; }
+                }
+                addToast(`${admin.displayName || admin.email} removed from the team.${note}`, note ? 'warning' : 'success');
+            },
         });
-    }, [displayAdmins, adminSearch, adminFilter]);
+    };
 
-    const filteredRequests = useMemo(() => {
-        const searchLower = adminSearch.trim().toLowerCase();
-        return pendingRequests.filter(a => (a.email || '').toLowerCase().includes(searchLower));
-    }, [pendingRequests, adminSearch]);
+    const askDeny = (admin) => setConfirm({
+        title: `Turn down ${admin.displayName || admin.email}?`,
+        description: "Their request is removed. They won't get admin access, and they can ask again later.",
+        confirmLabel: 'Turn down',
+        busyLabel: 'Removing…',
+        tone: 'danger',
+        icon: X,
+        onConfirm: async () => {
+            if (!canAuthorizeStaff) throw friendly('Only founders and developers can answer access requests.');
+            await deleteDoc(doc(db, 'admins', admin.id));
+            await fetchAdmins();
+            addToast('Request turned down.', 'success');
+        },
+    });
 
-    // ── Action Handlers ──
+    // ── member actions ──
+    const canModerate = (m) => {
+        if (!m?.hasAccount) return false;
+        if (sameEmail(m.email, user?.email)) return false;
+        if (m.teamRole && !canEditRoles) return false; // only founders/developers act on teammates
+        return true;
+    };
 
-    const handleManualSync = async () => {
+    const askSuspend = (m) => setConfirm({
+        title: `Suspend ${m.displayName || m.email}?`,
+        description: "They're signed out right away and can't sign back in until you restore access. Nothing they made is deleted.",
+        confirmLabel: 'Suspend',
+        busyLabel: 'Suspending…',
+        tone: 'danger',
+        icon: ShieldAlert,
+        onConfirm: async () => {
+            if (!canModerate(m)) throw friendly("You can't suspend this account.");
+            await blockUser(m.accountId);
+            addToast(`${m.displayName || m.email} has been suspended.`, 'success');
+        },
+    });
+
+    const reinstate = async (m) => {
+        try {
+            await unblockUser(m.accountId);
+            addToast(`Access restored for ${m.displayName || m.email}.`, 'success');
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't restore their access. Please try again.", 'error');
+        }
+    };
+
+    const askSignOutMember = (m) => setConfirm({
+        title: `Sign ${m.displayName || m.email} out everywhere?`,
+        description: 'Every session on every device ends now. They can sign back in.',
+        confirmLabel: 'Sign out everywhere',
+        busyLabel: 'Signing out…',
+        tone: 'warning',
+        icon: LogOut,
+        onConfirm: async () => {
+            try {
+                await useStore.getState().revokeSessions(m.accountId, m.email);
+            } catch (err) {
+                throw friendly(err?.message || "Couldn't sign them out. Please try again.");
+            }
+            addToast(`${m.displayName || m.email} has been signed out of all devices.`, 'success');
+        },
+    });
+
+    const handleSync = async () => {
         try {
             await syncAuthUsers({ silent: false });
             await fetchAdmins();
-        } catch (error) {
-            console.error("Manual sync error:", error);
-        }
-    };
-
-    const handleRefresh = async () => {
-        setIsRefreshing(true);
-        try {
-            await fetchAdmins();
-            useStore.getState().addToast('Member list refreshed.', 'success');
-        } catch (error) {
-            console.error('Refresh error:', error);
-        } finally {
-            setIsRefreshing(false);
-        }
-    };
-
-    const handleBlockUser = async (member) => {
-        if (window.confirm(`Suspend clearance for ${member.email || member.displayName}? They will lose account access immediately.`)) {
-            try {
-                await blockUser(member.id);
-                useStore.getState().addToast(`${member.displayName || member.email} has been suspended.`, 'success');
-            } catch (error) {
-                console.error('Suspend error:', error);
-                useStore.getState().addToast("Couldn't suspend this member. Please try again.", 'error');
-            }
-        }
-    };
-
-    const handleUnblockUser = async (member) => {
-        try {
-            await unblockUser(member.id);
-            useStore.getState().addToast(`Access restored for ${member.displayName || member.email}.`, 'success');
-        } catch (error) {
-            console.error('Reinstate error:', error);
-            useStore.getState().addToast("Couldn't restore this member's access. Please try again.", 'error');
-        }
-    };
-
-    const handleRevokeMemberSessions = async (member) => {
-        if (window.confirm(`Log ${member.displayName || member.email} out of all active devices?`)) {
-            try {
-                await useStore.getState().revokeSessions(member.id, member.email);
-                useStore.getState().addToast(`${member.displayName || member.email} has been signed out of all devices.`, 'success');
-            } catch (error) {
-                useStore.getState().addToast("Couldn't sign them out of their devices. Please try again.", 'error');
-            }
-        }
-    };
-
-    const handleRevokeAdminSessions = async (admin) => {
-        if (window.confirm(`Log operative ${admin.displayName || admin.email} out of all active devices?`)) {
-            try {
-                await useStore.getState().revokeSessions(admin.uid || null, admin.email);
-                useStore.getState().addToast(`${admin.displayName || admin.email} has been signed out of all devices.`, 'success');
-            } catch (error) {
-                useStore.getState().addToast("Couldn't sign them out of their devices. Please try again.", 'error');
-            }
-        }
-    };
-
-    const handleAddAdmin = async (e) => {
-        e.preventDefault();
-        if (!canAuthorizeStaff) {
-            useStore.getState().addToast("You don't have permission to add new admins.", 'error');
-            return;
-        }
-        try {
-            const q = query(collection(db, 'admins'), where('email', '==', newAdminEmail.trim()));
-            const existing = await getDocs(q);
-            if (!existing.empty) {
-                useStore.getState().addToast('This person is already an admin.', 'info');
-                return;
-            }
-            await addDoc(collection(db, 'admins'), {
-                email: newAdminEmail.trim().toLowerCase(),
-                role: newAdminRole,
-                addedBy: user.email,
-                createdAt: new Date().toISOString()
-            });
-            const emailSentTo = newAdminEmail.trim().toLowerCase();
-            const roleAssigned = newAdminRole;
-            setNewAdminEmail('');
-            setIsInviteOpen(false);
-            await fetchAdmins();
-            useStore.getState().addToast("Admin added. They'll get an email with their access details.", 'success');
-            sendStaffAuthorizedEmail(emailSentTo, roleAssigned).catch(err => console.error('Failed to send authorization email:', err));
         } catch (err) {
-            console.error('Failed to add admin:', err);
-            useStore.getState().addToast("Couldn't add the admin. Please try again.", 'error');
+            console.error('Manual sync error:', err);
         }
     };
 
-    const handleApprove = async (id, role) => {
-        if (!canAuthorizeStaff) {
-            useStore.getState().addToast("You don't have permission to approve admin requests.", 'error');
-            return;
-        }
-        try {
-            const adminDoc = admins.find(a => a.id === id);
-            await updateDoc(doc(db, 'admins', id), { role });
-            await fetchAdmins();
-            useStore.getState().addToast(`Request approved. Role set to ${role}.`, 'success');
-            if (adminDoc?.email) sendStaffAuthorizedEmail(adminDoc.email, role).catch(err => console.error('Failed to send authorization email:', err));
-        } catch (err) {
-            console.error('Failed to approve request:', err);
-            useStore.getState().addToast("Couldn't approve the request. Please try again.", 'error');
-        }
-    };
+    // ── exports ──
+    const teamExport = () => ({
+        filename: 'newbi_team',
+        sheetName: 'Team',
+        title: 'Team',
+        subtitle: exportSubtitle(teamRows.length, 'person'),
+        rows: teamRows,
+        columns: [
+            { header: 'Name', value: a => a.displayName || '' },
+            { header: 'Email', value: a => a.email || '' },
+            { header: 'Role', value: a => roleInfo(a.role).label },
+            { header: 'Added', type: 'date', value: a => toDate(a.createdAt) },
+            { header: 'Added by', value: a => a.addedBy || a.approvedBy || '' },
+        ],
+    });
+    const peopleExport = (rows, name) => () => ({
+        filename: `newbi_${name.toLowerCase().replace(/\s+/g, '_')}`,
+        sheetName: name,
+        title: name,
+        subtitle: exportSubtitle(rows.length, 'person'),
+        rows,
+        columns: [
+            { header: 'Name', value: m => m.displayName || '' },
+            { header: 'Email', value: m => m.email || '' },
+            { header: 'Phone', value: m => m.phone || '' },
+            { header: 'Tags', value: m => memberTags(m).map(t => t.label).join(', ') },
+            { header: 'Joined', type: 'date', value: m => toDate(m.createdAt) },
+            { header: 'Last seen', type: 'datetime', value: m => m.lastSeen || null },
+        ],
+    });
 
-    const handleUpdateRole = async (id, newRole) => {
-        if (!canEditRoles) {
-            useStore.getState().addToast("You don't have permission to change this admin's role.", 'error');
-            return;
-        }
-        try {
-            await updateDoc(doc(db, 'admins', id), { role: newRole });
-            await fetchAdmins();
-            useStore.getState().addToast(`Role updated to ${newRole}.`, 'success');
-        } catch (err) {
-            console.error('Failed to update role:', err);
-            useStore.getState().addToast("Couldn't update the role. Please try again.", 'error');
-        }
-    };
-
-    const handleRemoveAdmin = async (id, targetRole) => {
-        if (!canEditRoles) {
-            useStore.getState().addToast("You don't have permission to remove admins.", 'error');
-            return;
-        }
-        if (window.confirm('Revoke all admin clearances for this account? They will lose dashboard access immediately.')) {
-            try {
-                await deleteDoc(doc(db, 'admins', id));
-                await fetchAdmins();
-                useStore.getState().addToast("Admin removed.", 'success');
-            } catch (err) {
-                console.error('Failed to remove admin:', err);
-                useStore.getState().addToast("Couldn't remove the admin. Please try again.", 'error');
-            }
-        }
-    };
-
-    // ── Access Guard ──
+    // ── access ──
     if (!authInitialized) return <GlobalLoader />;
-
-    if (user?.role !== 'super_admin' && user?.role !== 'developer' && user?.role !== 'founder' && user?.role !== 'content_admin') {
+    if (!canSeePage) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#020202]">
-                <div className="text-center p-12 bg-white dark:bg-zinc-900/40 backdrop-blur-3xl border border-gray-200 dark:border-white/5 rounded-[3rem] max-w-md mx-auto shadow-xl">
-                    <ShieldAlert size={48} className="mx-auto mb-6 text-red-500" />
-                    <h1 className="text-3xl font-black uppercase tracking-tighter italic text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-black dark:to-white">ACCESS DENIED</h1>
-                    <p className="text-gray-500 mt-4 text-sm font-medium">You don't have permission to view the Members & Access Command.</p>
-                    <Link to="/admin" className="text-neon-blue mt-8 inline-block font-black uppercase text-[10px] tracking-widest hover:underline">Return to Dashboard</Link>
-                </div>
-            </div>
+            <AccessNotice
+                icon={Lock}
+                tone="indigo"
+                title="Members is for founders and admins"
+                actions={<Button as={Link} to="/admin" variant="primary" className="h-12 w-full"><LayoutDashboard size={15} /> Back to the dashboard</Button>}
+            >
+                Your role can't open the team and member list. Ask a founder if you need something here.
+            </AccessNotice>
         );
     }
 
+    const syncLabel = isSyncingUsers ? 'Syncing…' : lastAuthUsersSyncedAt ? `Synced ${relativeTime(lastAuthUsersSyncedAt)}` : 'Not synced yet';
+    const syncButton = (
+        <Button variant="ghost" onClick={handleSync} disabled={isSyncingUsers} className="h-11 shrink-0" title="Pull new sign-ups from Firebase now">
+            <RefreshCw size={14} className={cn(isSyncingUsers && 'animate-spin')} />
+            <span className="hidden sm:inline">{syncLabel}</span>
+            <span className="sm:hidden">Sync</span>
+        </Button>
+    );
+
+    const teamMenu = (a) => {
+        const self = isSelf(a);
+        return (
+            <Menu trigger={({ toggle }) => (
+                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); toggle(e); }} aria-label={`Actions for ${a.displayName || a.email}`} className="h-10 w-10 px-0"><MoreHorizontal size={16} /></Button>
+            )}>
+                <MenuItem icon={Eye} onClick={() => setTeamSheet({ open: true, admin: a })}>Details and access</MenuItem>
+                {canEditRoles && !self && <MenuItem icon={ShieldCheck} onClick={() => setRoleSheet({ open: true, admin: a, mode: 'change' })}>Change role</MenuItem>}
+                {(self || canEditRoles) && <MenuItem icon={Pencil} onClick={() => setRenameSheet({ open: true, admin: a })}>Change display name</MenuItem>}
+                <MenuItem as="a" href={`mailto:${a.email}`} icon={Mail}>Send an email</MenuItem>
+                {canEditRoles && !self && <MenuItem icon={KeyRound} onClick={() => askResetPassword(a)}>Send password reset</MenuItem>}
+                {canEditRoles && !self && <MenuItem icon={LogOut} onClick={() => askSignOutAdmin(a)}>Sign out of all devices</MenuItem>}
+                {canEditRoles && !self && <MenuItem icon={UserMinus} danger onClick={() => askRemove(a)}>Remove from team</MenuItem>}
+            </Menu>
+        );
+    };
+
+    const memberMenu = (m) => (
+        <Menu trigger={({ toggle }) => (
+            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); toggle(e); }} aria-label={`Actions for ${m.displayName || m.email}`} className="h-10 w-10 px-0"><MoreHorizontal size={16} /></Button>
+        )}>
+            <MenuItem icon={Eye} onClick={() => setMemberSheet({ open: true, key: m.key })}>Details</MenuItem>
+            {m.email && <MenuItem as="a" href={`mailto:${m.email}`} icon={Mail}>Send an email</MenuItem>}
+            {canModerate(m) && !m.isBlocked && <MenuItem icon={LogOut} onClick={() => askSignOutMember(m)}>Sign out of all devices</MenuItem>}
+            {canModerate(m) && (m.isBlocked
+                ? <MenuItem icon={ShieldCheck} onClick={() => reinstate(m)}>Restore access</MenuItem>
+                : <MenuItem icon={ShieldAlert} danger onClick={() => askSuspend(m)}>Suspend</MenuItem>)}
+        </Menu>
+    );
+
+    const tabs = [
+        { value: 'admins', label: 'Team', count: team.length, icon: Shield },
+        ...(canAuthorizeStaff ? [{ value: 'requests', label: 'Requests', count: pendingRequests.length, highlight: pendingRequests.length > 0, icon: Clock }] : []),
+        { value: 'active', label: 'Active users', icon: Activity },
+        { value: 'members', label: 'All members', count: totalCount, icon: Users },
+    ];
+
+    const peopleList = (rows, { showSeen }) => (
+        <Card className="overflow-hidden rounded-2xl">
+            <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                {pageOf(rows).map(m => (
+                    <li key={m.key} className="relative transition-colors hover:bg-black/[0.015] dark:hover:bg-white/[0.02]">
+                        <div className="flex items-center gap-3 px-4 py-3 sm:px-5">
+                            <Avatar src={m.photoURL} name={m.displayName || m.email} size={40} />
+                            <button type="button" onClick={() => setMemberSheet({ open: true, key: m.key })} className="min-w-0 flex-1 text-left after:absolute after:inset-0">
+                                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                    <span className="truncate text-[15px] font-bold">{m.displayName || 'No name'}</span>
+                                    <MemberTags member={m} max={3} />
+                                </span>
+                                <span className="mt-0.5 block truncate text-[12.5px] text-gray-500">
+                                    {m.email || m.phone || '—'}
+                                    {!showSeen && m.createdAt ? <span className="hidden sm:inline"> · joined {formatDay(m.createdAt)}</span> : null}
+                                </span>
+                            </button>
+                            {showSeen && (
+                                <span className="hidden shrink-0 items-center gap-2 text-right text-[13px] font-semibold text-gray-600 dark:text-zinc-300 sm:flex">
+                                    <SeenDot date={m.lastSeen} />
+                                    {m.lastSeen ? relativeTime(m.lastSeen) : 'Never'}
+                                </span>
+                            )}
+                            <div className="relative z-10 flex shrink-0 items-center">{memberMenu(m)}</div>
+                        </div>
+                        {showSeen && (
+                            <p className="flex items-center gap-2 px-4 pb-3 pl-[68px] text-[12px] font-semibold text-gray-500 sm:hidden">
+                                <SeenDot date={m.lastSeen} /> {m.lastSeen ? `Seen ${relativeTime(m.lastSeen)}` : 'Never seen'}
+                            </p>
+                        )}
+                    </li>
+                ))}
+            </ul>
+            <Pagination page={page} pageCount={pageCount(rows)} onChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} total={rows.length} pageSize={PAGE_SIZE} />
+        </Card>
+    );
+
+    const peopleCards = (rows) => (
+        <>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {pageOf(rows).map(m => (
+                    <Card key={m.key} className="relative flex flex-col rounded-2xl p-4 transition-colors hover:border-black/15 dark:hover:border-white/15">
+                        <div className="flex items-start gap-3">
+                            <Avatar src={m.photoURL} name={m.displayName || m.email} size={44} />
+                            <button type="button" onClick={() => setMemberSheet({ open: true, key: m.key })} className="min-w-0 flex-1 text-left after:absolute after:inset-0">
+                                <span className="block truncate text-[15px] font-bold">{m.displayName || 'No name'}</span>
+                                <span className="block truncate text-[12.5px] text-gray-500">{m.email || m.phone || '—'}</span>
+                            </button>
+                            <div className="relative z-10 -mr-1 -mt-1">{memberMenu(m)}</div>
+                        </div>
+                        <MemberTags member={m} max={4} className="mt-3" />
+                        <div className="mt-3 flex items-center justify-between border-t border-black/[0.06] pt-3 text-[12px] text-gray-500 dark:border-white/[0.06]">
+                            <span>{m.createdAt ? `Joined ${formatDay(m.createdAt)}` : 'Join date unknown'}</span>
+                            <span className="flex items-center gap-1.5"><SeenDot date={m.lastSeen} />{m.lastSeen ? relativeTime(m.lastSeen) : m.hasAccount ? 'Never seen' : 'No account'}</span>
+                        </div>
+                    </Card>
+                ))}
+            </div>
+            {pageCount(rows) > 1 && (
+                <Card className="rounded-2xl">
+                    <Pagination page={page} pageCount={pageCount(rows)} onChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} total={rows.length} pageSize={PAGE_SIZE} />
+                </Card>
+            )}
+        </>
+    );
+
+    const roleTarget = roleSheet.admin ? (admins.find(a => a.id === roleSheet.admin.id) || roleSheet.admin) : null;
+
     return (
         <AdminCommunityHubLayout
-            studioHeader={{
-                title: 'Members & Access',
-                subtitle: 'Command Center',
-                icon: Shield,
-                accentClass: 'text-neon-green'
-            }}
-            accentColor="neon-green"
-            hideTabs={true}
-            action={
-                <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
-                    {/* Live Auto-Sync Status Badge */}
-                    <div className="flex items-center gap-2 px-3.5 h-11 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-wider select-none">
-                        <span className="relative flex h-2 w-2">
-                            <span className={cn(
-                                "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
-                                isSyncingUsers ? "bg-neon-blue" : "bg-neon-green"
-                            )} />
-                            <span className={cn(
-                                "relative inline-flex rounded-full h-2 w-2",
-                                isSyncingUsers ? "bg-neon-blue" : "bg-neon-green"
-                            )} />
-                        </span>
-                        <span className="text-gray-700 dark:text-gray-300">
-                            {isSyncingUsers ? "Auto-Syncing..." : "Auto-Sync Active"}
-                        </span>
-                        <span className="text-gray-500 font-mono text-[8px] pl-1 border-l border-black/10 dark:border-white/10">
-                            {isSyncingUsers ? 'In progress' : (relativeSyncTime || 'Active')}
-                        </span>
-                    </div>
-
-                    {/* Instant Manual Sync Trigger */}
-                    <button
-                        onClick={handleManualSync}
-                        disabled={isSyncingUsers}
-                        className={cn(
-                            "flex-1 sm:flex-initial flex items-center justify-center gap-2 h-11 px-4 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all duration-300 border",
-                            isSyncingUsers
-                                ? "bg-neon-blue/20 text-neon-blue border-neon-blue/30 cursor-wait opacity-80"
-                                : "bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white border-black/10 dark:border-white/10 hover:border-neon-blue/40"
-                        )}
-                        title="Trigger instant user synchronization from Firebase Authentication"
-                    >
-                        <RefreshCw size={13} className={cn("text-neon-blue", isSyncingUsers && "animate-spin")} />
-                        {isSyncingUsers ? 'Syncing...' : 'Sync Now'}
-                    </button>
-
-                    <button
-                        onClick={handleRefresh}
-                        disabled={isRefreshing}
-                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 h-11 px-4 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 border border-black/10 dark:border-white/10 disabled:opacity-50"
-                        title="Reload latest records"
-                    >
-                        <RefreshCw size={13} className={cn("text-gray-400", isRefreshing && "animate-spin")} />
-                        {isRefreshing ? 'Refreshing...' : 'Refresh'}
-                    </button>
-
-                    {canAuthorizeStaff && (
-                        <button
-                            onClick={() => {
-                                setActiveTab('admins');
-                                setIsInviteOpen(!isInviteOpen);
-                            }}
-                            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-neon-green text-black font-black uppercase text-[9px] tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-[0_4px_15px_rgba(57,255,20,0.2)]"
-                        >
-                            <UserPlus size={13} />
-                            Dispatch Credential
-                        </button>
-                    )}
-                </div>
-            }
+            studioHeader={{ title: 'Members', icon: Shield, description: 'Your team, who can open what, and everyone with an account' }}
+            hideTabs
+            action={canAuthorizeStaff ? (
+                <Button variant="primary" onClick={() => setInviteOpen(true)} className="h-11 w-full sm:w-auto"><UserPlus size={15} /> Invite teammate</Button>
+            ) : null}
         >
-            {/* ── DASHBOARD-STYLE METRICS WIDGETS ──────────────────────────────── */}
-            <div className="relative mb-10 md:mb-14">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                    {[
-                        {
-                            label: 'Total Registered',
-                            value: totalCount.toLocaleString(),
-                            icon: Users,
-                            color: 'neon-blue',
-                            detail: 'All platform registered accounts',
-                            onClick: () => { handleTabChange('members'); setMemberFilter('all'); },
-                            isActive: activeTab === 'members' && memberFilter === 'all'
-                        },
-                        {
-                            label: 'Active Users',
-                            value: activeCount.toLocaleString(),
-                            icon: UserCheck,
-                            color: 'neon-green',
-                            detail: `${totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 100}% Active Clearance Rate`,
-                            onClick: () => { handleTabChange('active'); setMemberFilter('all'); },
-                            isActive: activeTab === 'active'
-                        },
-                        {
-                            label: 'Administrators',
-                            value: admins.filter(a => a.role !== 'pending').length,
-                            icon: Shield,
-                            color: 'neon-pink',
-                            detail: `${pendingRequests.length} Pending Clearance Requests`,
-                            onClick: () => { handleTabChange('admins'); },
-                            isActive: activeTab === 'admins'
-                        },
-                        {
-                            label: 'Suspended Access',
-                            value: suspendedCount,
-                            icon: ShieldAlert,
-                            color: 'neon-purple',
-                            detail: suspendedCount > 0 ? `${suspendedCount} Restricted Accounts` : 'Zero Restricted Accounts',
-                            onClick: () => { handleTabChange('members'); setMemberFilter('suspended'); },
-                            isActive: activeTab === 'members' && memberFilter === 'suspended'
-                        }
-                    ].map((stat, i) => {
-                        const hoverBorder = stat.color === 'neon-green' ? 'hover:border-emerald-500/50 dark:hover:border-neon-green/30' :
-                                            (stat.color === 'neon-blue' ? 'hover:border-sky-500/50 dark:hover:border-neon-blue/30' :
-                                            (stat.color === 'neon-pink' ? 'hover:border-rose-500/50 dark:hover:border-neon-pink/30' : 'hover:border-purple-500/50 dark:hover:border-neon-purple/30'));
-
-                        return (
-                            <motion.div
-                                key={stat.label}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.06 }}
-                                onClick={stat.onClick}
-                                className="group relative w-full flex flex-col items-stretch cursor-pointer select-none"
-                            >
-                                <div className={cn("absolute -inset-px rounded-3xl opacity-0 group-hover:opacity-15 transition-opacity blur-xl bg-gradient-to-br", 
-                                    stat.color === 'neon-green' ? 'from-neon-green to-emerald-500' : 
-                                    stat.color === 'neon-blue' ? 'from-neon-blue to-cyan-500' : 
-                                    stat.color === 'neon-pink' ? 'from-neon-pink to-purple-500' : 'from-purple-500 to-indigo-500'
-                                )} />
-                                <div className={cn(
-                                    "p-6 md:p-8 h-full bg-white dark:bg-zinc-950/35 backdrop-blur-3xl border transition-all duration-500 rounded-3xl flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-xl dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
-                                    stat.isActive
-                                        ? "border-neon-green/40 shadow-[0_0_20px_rgba(57,255,20,0.15)] ring-1 ring-neon-green/30"
-                                        : "border-gray-200 dark:border-white/5",
-                                    hoverBorder
-                                )}>
-                                    <div className="flex items-start justify-between mb-8">
-                                        <div className={cn("p-4 rounded-2xl border flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500", 
-                                            stat.color === 'neon-green' ? 'text-emerald-600 dark:text-[#39FF14] bg-emerald-50 dark:bg-[#39FF14]/5 border-emerald-200 dark:border-[#39FF14]/10 group-hover:border-emerald-400 dark:group-hover:border-[#39FF14]/30' : 
-                                            (stat.color === 'neon-blue' ? 'text-sky-600 dark:text-[#00F0FF] bg-sky-50 dark:bg-[#00F0FF]/5 border-sky-200 dark:border-[#00F0FF]/10 group-hover:border-sky-400 dark:group-hover:border-[#00F0FF]/30' : 
-                                            (stat.color === 'neon-pink' ? 'text-rose-600 dark:text-[#FF4F8B] bg-rose-50 dark:bg-[#FF4F8B]/5 border-rose-200 dark:border-[#FF4F8B]/10 group-hover:border-rose-400 dark:group-hover:border-[#FF4F8B]/30' : 'text-purple-600 dark:text-[#A855F7] bg-purple-50 dark:bg-[#A855F7]/5 border-purple-200 dark:border-[#A855F7]/10 group-hover:border-purple-400 dark:group-hover:border-[#A855F7]/30'))
-                                        )}>
-                                            <stat.icon size={24} />
-                                        </div>
-                                        {stat.isActive && (
-                                            <span className="px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest bg-neon-green/10 text-neon-green border border-neon-green/30 animate-pulse">
-                                                ACTIVE VIEW
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <h3 className="text-4xl md:text-5xl font-extrabold font-heading tracking-tight text-gray-900 dark:text-white mb-2 leading-none">{stat.value}</h3>
-                                        <p className="text-gray-500 text-[10px] md:text-[9px] font-black uppercase tracking-[0.3em]">{stat.label}</p>
-                                        <div className="mt-6 pt-6 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
-                                            <p className="text-gray-600 dark:text-gray-400 text-[10px] md:text-[9px] font-bold uppercase tracking-widest">{stat.detail}</p>
-                                        </div>
-                                    </div>
-                                    <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-[0.03] transition-opacity pointer-events-none transform translate-x-4 -translate-y-4">
-                                        <stat.icon size={160} />
-                                    </div>
-                                </div>
-                            </motion.div>
-                        );
-                    })}
+            <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <StatTile icon={Shield} tone="indigo" label="Team" value={team.length} hint={`${founderCount} ${founderCount === 1 ? 'founder' : 'founders'}`} active={tab === 'admins'} onClick={() => setParams({ tab: 'admins', filter: null, window: null })} />
+                    {canAuthorizeStaff ? (
+                        <StatTile icon={Clock} tone={pendingRequests.length ? 'amber' : 'gray'} label="Requests" value={pendingRequests.length} hint={pendingRequests.length ? 'Waiting for you' : 'Nothing waiting'} active={tab === 'requests'} onClick={() => setParams({ tab: 'requests', filter: null, window: null })} />
+                    ) : (
+                        <StatTile icon={ShieldAlert} tone={suspendedCount ? 'red' : 'gray'} label="Suspended" value={suspendedCount} hint="Accounts on hold" active={tab === 'members' && memberFilter === 'suspended'} onClick={() => setParams({ tab: 'members', filter: 'suspended', window: null })} />
+                    )}
+                    <StatTile icon={UserCheck} tone="green" label="Active" value={activeThisWeek.toLocaleString('en-IN')} hint="Signed in this week" active={tab === 'active' && activeWindow === 'week'} onClick={() => setParams({ tab: 'active', window: 'week', filter: null })} />
+                    <StatTile icon={Users} tone="blue" label="All members" value={totalCount.toLocaleString('en-IN')} hint={suspendedCount ? `${suspendedCount} suspended` : 'Everyone we know'} active={tab === 'members' && memberFilter === 'all'} onClick={() => setParams({ tab: 'members', filter: null, window: null })} />
                 </div>
-            </div>
 
-            {/* ── PRIMARY TAB SELECTOR ─────────────────────────────────────────── */}
-            <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
-                <div className="flex items-center gap-1.5 p-1.5 bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/10 rounded-2xl w-full sm:w-auto backdrop-blur-xl overflow-x-auto no-scrollbar">
-                    {[
-                        { id: 'members', label: 'Registered Members', count: totalCount, icon: Users, color: 'text-neon-blue' },
-                        { id: 'active', label: 'Active Personnel', count: activeCount, icon: UserCheck, color: 'text-neon-green' },
-                        { id: 'admins', label: 'Command Staff', count: admins.filter(a => a.role !== 'pending').length, icon: Shield, color: 'text-neon-pink' },
-                        ...(canAuthorizeStaff ? [{ id: 'requests', label: 'Pending Clearances', count: pendingRequests.length, icon: Clock, color: 'text-yellow-400' }] : [])
-                    ].map(tab => {
-                        const isActive = activeTab === tab.id;
-                        const TabIcon = tab.icon;
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => handleTabChange(tab.id)}
-                                className={cn(
-                                    "flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap shrink-0",
-                                    isActive
-                                        ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm border border-black/10 dark:border-white/10 scale-[1.02]"
-                                        : "text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
-                                )}
-                            >
-                                <TabIcon size={14} className={isActive ? tab.color : "text-gray-400"} />
-                                <span>{tab.label}</span>
-                                {tab.count !== undefined && (
-                                    <span className={cn(
-                                        "px-1.5 py-0.5 rounded-md text-[8px] font-mono font-bold",
-                                        isActive ? "bg-neon-green/15 text-neon-green" : "bg-black/5 dark:bg-white/5 text-gray-500"
-                                    )}>
-                                        {tab.count.toLocaleString()}
-                                    </span>
-                                )}
+                <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+                    <SegmentedTabs value={tab} onChange={(v) => setParams({ tab: v, filter: null, window: null })} items={tabs} />
+                </div>
+
+                {/* ── Team ── */}
+                {tab === 'admins' && (
+                    <>
+                        {canAuthorizeStaff && pendingRequests.length > 0 && (
+                            <button type="button" onClick={() => setParams({ tab: 'requests' })} className={cn('flex w-full items-center gap-3 rounded-2xl border p-3.5 text-left', accent('amber').soft, accent('amber').border)}>
+                                <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', accent('amber').chip)}><Clock size={18} /></span>
+                                <span className="min-w-0 flex-1">
+                                    <span className="block text-[14px] font-bold">{pendingRequests.length} {pendingRequests.length === 1 ? 'person is' : 'people are'} waiting for access</span>
+                                    <span className="block truncate text-[12.5px] text-gray-600 dark:text-zinc-400">{pendingRequests.slice(0, 3).map(a => a.displayName || a.email).join(', ')}</span>
+                                </span>
+                                <span className={cn('flex items-center gap-1 text-[13px] font-bold', accent('amber').text)}>Review <ArrowRight size={14} /></span>
                             </button>
-                        );
-                    })}
-                </div>
+                        )}
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                            <SearchInput value={search} onChange={setSearch} placeholder="Name, email or role" className="lg:w-80" />
+                            <div className="flex flex-1 items-center gap-2">
+                                <Select value={roleFilter} onChange={setRoleFilter} label="Role" className="flex-1 lg:w-52 lg:flex-none" options={[
+                                    { value: 'all', label: 'All roles' },
+                                    ...['founder', 'developer', 'super_admin', 'content_admin', 'blog_writer', 'gate_manager']
+                                        .filter(r => team.some(a => a.role === r || (r === 'content_admin' && a.role === 'editor') || (r === 'gate_manager' && a.role === 'scanner')))
+                                        .map(r => ({ value: r, label: roleInfo(r).label })),
+                                ]} />
+                                <ExportMenu getSpec={teamExport} />
+                                <ViewToggle value={teamView} onChange={setTeamView} />
+                            </div>
+                        </div>
 
-                {/* View Mode Toggle for Member views */}
-                {(activeTab === 'members' || activeTab === 'active') && (
-                    <div className="flex items-center p-1.5 bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/10 rounded-2xl gap-1 shrink-0">
-                        <button
-                            onClick={() => setViewMode('grid')}
-                            className={cn(
-                                "p-2 rounded-xl transition-all",
-                                viewMode === 'grid' ? "bg-neon-green text-black shadow-sm" : "text-gray-500 hover:text-gray-800 dark:hover:text-white"
-                            )}
-                            title="Grid Card View"
-                        >
-                            <LayoutGrid size={15} />
-                        </button>
-                        <button
-                            onClick={() => setViewMode('table')}
-                            className={cn(
-                                "p-2 rounded-xl transition-all",
-                                viewMode === 'table' ? "bg-neon-green text-black shadow-sm" : "text-gray-500 hover:text-gray-800 dark:hover:text-white"
-                            )}
-                            title="Table Grid View"
-                        >
-                            <Activity size={15} />
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {/* ── TAB CONTENT ───────────────────────────────────────────────────── */}
-            <AnimatePresence mode="wait">
-
-                {/* TAB: MEMBERS (ALL) or ACTIVE PERSONNEL */}
-                {(activeTab === 'members' || activeTab === 'active') && (
-                    <motion.div
-                        key={activeTab}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-6"
-                    >
-                        {/* Search + Filter Bar */}
-                        <div className="flex flex-col xl:flex-row gap-3 items-stretch xl:items-center">
-                            {/* Search Box */}
-                            <div className="relative flex-1 group">
-                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-neon-green transition-colors" size={16} />
-                                <input
-                                    value={memberSearch}
-                                    onChange={e => setMemberSearch(e.target.value)}
-                                    placeholder={activeTab === 'active' ? "Search active personnel by name, email, role, phone..." : "Search registered members by name, email, role, phone..."}
-                                    className="w-full bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/10 focus:border-neon-green/30 h-12 pl-12 pr-10 rounded-2xl text-[11px] font-semibold outline-none transition-all placeholder:text-gray-400 placeholder:font-normal"
+                        {loadingAdmins && !team.length ? (
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                {[0, 1, 2].map(i => <div key={i} className="h-40 rounded-2xl bg-black/[0.04] dark:bg-white/[0.04]" />)}
+                            </div>
+                        ) : teamRows.length === 0 ? (
+                            <Card className="rounded-2xl">
+                                <EmptyState
+                                    icon={Shield}
+                                    title={team.length ? 'Nobody matches' : 'No teammates yet'}
+                                    description={team.length ? 'Try another name or role.' : 'Invite the people who run Newbi with you.'}
+                                    action={!team.length && canAuthorizeStaff && <Button variant="primary" onClick={() => setInviteOpen(true)}><UserPlus size={14} /> Invite teammate</Button>}
                                 />
-                                {memberSearch && (
-                                    <button onClick={() => setMemberSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
-                                        <X size={13} />
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Sub-Filters */}
-                            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar p-1.5 bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/10 rounded-2xl shrink-0">
-                                {(activeTab === 'active' ? [
-                                    { id: 'all', label: `All Active (${activeCount})` },
-                                    { id: 'admins', label: `Staff (${admins.filter(a => a.role !== 'pending').length})` },
-                                    { id: 'creators', label: `Creators (${creators.length})` },
-                                    { id: 'artists', label: `Artists (${artists.length})` },
-                                    { id: 'tribe', label: 'Tribe' },
-                                    { id: 'tickets', label: 'Tickets' },
-                                    { id: 'subscribers', label: 'Subscribers' }
-                                ] : [
-                                    { id: 'all', label: `All (${totalCount})` },
-                                    { id: 'active', label: `Active (${activeCount})` },
-                                    { id: 'admins', label: `Staff (${admins.filter(a => a.role !== 'pending').length})` },
-                                    { id: 'suspended', label: `Suspended (${suspendedCount})` },
-                                    { id: 'creators', label: `Creators (${creators.length})` },
-                                    { id: 'artists', label: `Artists (${artists.length})` },
-                                    { id: 'tribe', label: 'Tribe' },
-                                    { id: 'tickets', label: 'Tickets' },
-                                    { id: 'subscribers', label: 'Subscribers' }
-                                ]).map(f => (
-                                    <button
-                                        key={f.id}
-                                        onClick={() => setMemberFilter(f.id)}
-                                        className={cn(
-                                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                                            memberFilter === f.id
-                                                ? "bg-neon-green/15 text-neon-green border border-neon-green/25 font-extrabold"
-                                                : "text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border border-transparent"
-                                        )}
-                                    >
-                                        {f.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Results Count & Quick Stats Bar */}
-                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">
-                            <p>
-                                {memberSearch || memberFilter !== 'all'
-                                    ? `Found ${filteredMembers.length} matching result${filteredMembers.length !== 1 ? 's' : ''}`
-                                    : `Showing ${filteredMembers.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0}–${Math.min(currentPage * itemsPerPage, filteredMembers.length)} of ${filteredMembers.length} records`
-                                }
-                            </p>
-                            {totalPages > 1 && (
-                                <p className="font-mono text-gray-400">Page {currentPage} of {totalPages}</p>
-                            )}
-                        </div>
-
-                        {/* Main Records Display */}
-                        {filteredMembers.length === 0 ? (
-                            <div className="py-24 text-center bg-gray-100/50 dark:bg-white/[0.01] border border-dashed border-black/10 dark:border-white/5 rounded-[2.5rem]">
-                                <Users size={36} className="mx-auto text-gray-400 mb-4 animate-pulse" />
-                                <h3 className="text-sm font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest">No matching personnel records found</h3>
-                                <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-                                    {memberSearch || memberFilter !== 'all'
-                                        ? "No members matched your specific search term or filter filter selection."
-                                        : "No user accounts have been loaded yet. You can synchronize accounts from Firebase Auth."
-                                    }
-                                </p>
-                                <div className="mt-5 flex items-center justify-center gap-3">
-                                    {(memberSearch || memberFilter !== 'all') && (
-                                        <button
-                                            onClick={() => { setMemberSearch(''); setMemberFilter('all'); }}
-                                            className="px-4 py-2 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-neon-green hover:text-black transition-all"
-                                        >
-                                            Clear Filters
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={handleManualSync}
-                                        disabled={isSyncingUsers}
-                                        className="px-4 py-2 bg-neon-blue/10 text-neon-blue border border-neon-blue/20 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-neon-blue hover:text-black transition-all disabled:opacity-50"
-                                    >
-                                        {isSyncingUsers ? 'Syncing...' : 'Sync Auth Members'}
-                                    </button>
-                                </div>
-                            </div>
-                        ) : viewMode === 'grid' ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                                {paginatedMembers.map(member => (
-                                    <MemberCard
-                                        key={member.id || member.email}
-                                        member={member}
-                                        creators={creators}
-                                        artists={artists}
-                                        onBlock={handleBlockUser}
-                                        onUnblock={handleUnblockUser}
-                                        onRevokeSessions={handleRevokeMemberSessions}
-                                    />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-4">
-                                <Card className="min-w-[900px] bg-gray-100 dark:bg-zinc-950/60 border-black/10 dark:border-white/5 rounded-[2rem] p-0 border overflow-hidden">
-                                    <table className="w-full text-left">
-                                        <thead>
-                                            <tr className="border-b border-black/10 dark:border-white/5 text-[9px] font-black uppercase tracking-widest text-gray-500">
-                                                <th className="p-5">Operative</th>
-                                                <th className="p-5">Clearance</th>
-                                                <th className="p-5">Affiliation</th>
-                                                <th className="p-5">Registered</th>
-                                                <th className="p-5">Last Seen</th>
-                                                <th className="p-5 text-right">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-black/5 dark:divide-white/5">
-                                            {paginatedMembers.map(member => {
-                                                const isArtist = member.isArtist || artists?.some(a => (a.uid === member.id || a.email === member.email) && a.profileStatus === 'approved');
-                                                const isCreator = member.isCreator || creators?.some(c => c.uid === member.id || c.email === member.email);
-                                                const isTribe = member.hasJoinedTribe;
-                                                const isAdmin = member.isAdmin || (member.role && member.role !== 'Member' && member.role !== 'member');
-
-                                                const typeLabel = isArtist ? 'Artist' : isCreator ? 'Creator' : isAdmin ? (member.role || 'Admin') : isTribe ? 'Tribe' : member.isTicketHolder ? 'Ticket' : member.isSubscriber ? 'Subscriber' : 'Member';
-                                                
-                                                const typeStyle = isArtist ? 'bg-[#FF6B6B]/10 border-[#FF6B6B]/20 text-[#FF6B6B]'
-                                                    : isCreator ? 'bg-neon-pink/10 border-neon-pink/20 text-neon-pink'
-                                                    : isAdmin ? 'bg-purple-500/10 border-purple-500/20 text-purple-400'
-                                                    : isTribe ? 'bg-neon-blue/10 border-neon-blue/20 text-neon-blue'
-                                                    : member.isTicketHolder ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
-                                                    : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 text-gray-500';
-
-                                                return (
-                                                    <tr key={member.id || member.email} className="group hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
-                                                        <td className="p-5">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className={cn(
-                                                                    "w-9 h-9 rounded-xl flex items-center justify-center text-[10px] font-black italic border shrink-0 select-none",
-                                                                    member.isBlocked
-                                                                        ? "bg-red-500/10 border-red-500/20 text-red-500"
-                                                                        : "bg-neon-green/10 border-neon-green/20 text-neon-green"
-                                                                )}>
-                                                                    {(member.displayName || member.email || 'U').slice(0, 2).toUpperCase()}
-                                                                </div>
-                                                                <div className="min-w-0">
-                                                                    <div className="text-xs font-black uppercase tracking-tight text-gray-900 dark:text-white group-hover:text-neon-green transition-colors truncate max-w-[200px]">
-                                                                        {member.displayName || 'UNNAMED'}
-                                                                    </div>
-                                                                    <div className="text-[10px] text-gray-500 font-mono mt-0.5 truncate max-w-[240px]">
-                                                                        {member.email || '—'}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="p-5">
-                                                            {member.isBlocked ? (
-                                                                <span className="px-2.5 py-1 bg-red-500/10 text-red-500 border border-red-500/20 rounded-full text-[8px] font-black uppercase tracking-wider flex items-center gap-1.5 w-fit">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                                                    SUSPENDED
-                                                                </span>
-                                                            ) : (
-                                                                <span className="px-2.5 py-1 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-full text-[8px] font-black uppercase tracking-wider flex items-center gap-1.5 w-fit">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
-                                                                    ACTIVE
-                                                                </span>
-                                                            )}
-                                                        </td>
-                                                        <td className="p-5">
-                                                            <span className={cn("px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-wider border", typeStyle)}>
-                                                                {typeLabel}
-                                                            </span>
-                                                        </td>
-                                                        <td className="p-5">
-                                                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest font-mono">
-                                                                {member.createdAt ? new Date(member.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'N/A'}
-                                                            </span>
-                                                        </td>
-                                                        <td className="p-5">
-                                                            {member.lastActive ? (
-                                                                <span className="text-[10px] font-bold text-neon-blue uppercase tracking-widest font-mono">
-                                                                    {new Date(member.lastActive).toLocaleDateString(undefined, { dateStyle: 'short' })}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-gray-500 text-[10px] font-mono">—</span>
-                                                            )}
-                                                        </td>
-                                                        <td className="p-5">
-                                                            <div className="flex justify-end gap-1.5">
-                                                                {member.isBlocked ? (
-                                                                    <button
-                                                                        onClick={() => handleUnblockUser(member)}
-                                                                        className="px-3 h-8 bg-neon-green/10 hover:bg-neon-green text-neon-green hover:text-black border border-neon-green/20 hover:border-transparent rounded-lg text-[8px] font-black uppercase tracking-wider transition-all flex items-center gap-1"
-                                                                    >
-                                                                        <CheckCircle size={11} /> Reinstate
-                                                                    </button>
-                                                                ) : (
-                                                                    <>
-                                                                        <button
-                                                                            onClick={() => handleBlockUser(member)}
-                                                                            className="px-3 h-8 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 hover:border-transparent rounded-lg text-[8px] font-black uppercase tracking-wider transition-all flex items-center gap-1"
-                                                                        >
-                                                                            <ShieldAlert size={11} /> Suspend
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleRevokeMemberSessions(member)}
-                                                                            className="px-3 h-8 bg-black/5 dark:bg-white/5 hover:bg-red-500/15 text-gray-500 hover:text-red-400 border border-black/10 dark:border-white/5 rounded-lg text-[8px] font-black uppercase tracking-wider transition-all flex items-center gap-1"
-                                                                        >
-                                                                            <LogOut size={11} /> Logout
-                                                                        </button>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </Card>
-                            </div>
-                        )}
-
-                        {/* Pagination Bar */}
-                        {totalPages > 1 && (
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-black/10 dark:border-white/5">
-                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredMembers.length)} of {filteredMembers.length} records
-                                </p>
-                                <div className="flex items-center gap-1.5">
-                                    <button
-                                        disabled={currentPage === 1}
-                                        onClick={() => {
-                                            setCurrentPage(prev => Math.max(prev - 1, 1));
-                                            window.scrollTo({ top: 300, behavior: 'smooth' });
-                                        }}
-                                        className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 text-gray-900 dark:text-white rounded-xl transition-all"
-                                    >
-                                        <ChevronLeft size={16} />
-                                    </button>
-                                    {getPageNumbers(currentPage, totalPages).map((p, idx) => (
-                                        <button
-                                            key={idx}
-                                            onClick={() => {
-                                                if (typeof p === 'number') {
-                                                    setCurrentPage(p);
-                                                    window.scrollTo({ top: 300, behavior: 'smooth' });
-                                                }
-                                            }}
-                                            disabled={typeof p !== 'number'}
-                                            className={cn(
-                                                "min-w-[38px] h-9 px-2 rounded-xl text-[10px] font-black font-mono transition-all",
-                                                currentPage === p
-                                                    ? "bg-neon-green text-black font-extrabold shadow-sm"
-                                                    : "bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-black/10 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
-                                            )}
-                                        >
-                                            {p}
-                                        </button>
-                                    ))}
-                                    <button
-                                        disabled={currentPage === totalPages}
-                                        onClick={() => {
-                                            setCurrentPage(prev => Math.min(prev + 1, totalPages));
-                                            window.scrollTo({ top: 300, behavior: 'smooth' });
-                                        }}
-                                        className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 text-gray-900 dark:text-white rounded-xl transition-all"
-                                    >
-                                        <ChevronRight size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </motion.div>
-                )}
-
-                {/* TAB: COMMAND STAFF (ADMINS) */}
-                {activeTab === 'admins' && (
-                    <motion.div
-                        key="admins"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-8"
-                    >
-                        {/* Invite / Credential Dispatch Panel */}
-                        <AnimatePresence>
-                            {isInviteOpen && (
-                                <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    style={{ overflow: 'clip' }}
-                                >
-                                    <div className="relative p-0.5 rounded-[2.5rem] bg-gradient-to-r from-neon-green/30 via-neon-blue/20 to-purple-500/30 mb-6">
-                                        <Card className="p-8 sm:p-10 bg-white dark:bg-[#0B0F17]/95 border-none rounded-[2.4rem]">
-                                            <div className="flex items-center justify-between mb-7 pb-4 border-b border-black/10 dark:border-white/5">
-                                                <h2 className="text-base font-heading font-black italic uppercase tracking-tight flex items-center gap-3 text-gray-900 dark:text-white">
-                                                    <Shield className="text-neon-green animate-pulse" size={18} /> DISPATCH OPERATIVE CREDENTIALS
-                                                </h2>
-                                                <button
-                                                    onClick={() => setIsInviteOpen(false)}
-                                                    className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-xl text-gray-500 hover:text-gray-800 dark:hover:text-white transition-all"
-                                                >
-                                                    <X size={14} />
+                            </Card>
+                        ) : teamView === 'cards' ? (
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                {teamRows.map(a => {
+                                    const info = roleInfo(a.role);
+                                    return (
+                                        <Card key={a.id} className={cn('relative flex flex-col overflow-hidden rounded-2xl p-4 transition-colors hover:border-black/15 dark:hover:border-white/15')}>
+                                            <span className={cn('absolute inset-x-0 top-0 h-1', accent(info.tone).dot)} aria-hidden="true" />
+                                            <div className="flex items-start gap-3 pt-1">
+                                                <Avatar name={a.displayName || a.email} size={44} />
+                                                <button type="button" onClick={() => setTeamSheet({ open: true, admin: a })} className="min-w-0 flex-1 text-left after:absolute after:inset-0">
+                                                    <span className="block truncate text-[15px] font-bold">{a.displayName || a.email.split('@')[0]}</span>
+                                                    <span className="block truncate text-[12.5px] text-gray-500">{a.email}</span>
                                                 </button>
+                                                <div className="relative z-10 -mr-1 -mt-1">{teamMenu(a)}</div>
                                             </div>
-                                            <form onSubmit={handleAddAdmin} className="grid grid-cols-1 md:grid-cols-12 gap-5 items-end">
-                                                <div className="md:col-span-6 space-y-2">
-                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Address</label>
-                                                    <input
-                                                        type="email"
-                                                        value={newAdminEmail}
-                                                        onChange={e => setNewAdminEmail(e.target.value)}
-                                                        required
-                                                        placeholder="operative@newbi.live"
-                                                        className="w-full h-12 bg-gray-100 dark:bg-black/40 border border-black/10 dark:border-white/5 focus:border-neon-green/30 rounded-2xl px-5 text-xs font-semibold text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 placeholder:font-normal"
-                                                    />
-                                                </div>
-                                                <div className="md:col-span-4 space-y-2 relative z-30">
-                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Clearance Level</label>
-                                                    <StudioSelect
-                                                        value={newAdminRole}
-                                                        onChange={val => setNewAdminRole(val)}
-                                                        options={getAdminRoleOptions('', canManageDevelopers, canManageFounders)}
-                                                        accentColor="neon-green"
-                                                        className="h-12"
-                                                    />
-                                                </div>
-                                                <button
-                                                    type="submit"
-                                                    className="md:col-span-2 w-full h-12 bg-neon-green text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_8px_20px_rgba(57,255,20,0.2)] flex items-center justify-center gap-2"
-                                                >
-                                                    <UserPlus size={13} /> Dispatch
-                                                </button>
-                                            </form>
+                                            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                                                <RoleBadge role={a.role} />
+                                                {isSelf(a) && <Badge tone="gray">You</Badge>}
+                                            </div>
+                                            <p className="mt-2 line-clamp-2 text-[12.5px] leading-snug text-gray-500 dark:text-zinc-400">{info.summary}</p>
+                                            <p className="mt-3 border-t border-black/[0.06] pt-3 text-[12px] text-gray-500 dark:border-white/[0.06]">
+                                                {a.createdAt ? `Added ${formatDay(a.createdAt)}` : 'Added before records began'}{a.addedBy ? ` by ${a.addedBy.split('@')[0]}` : ''}
+                                            </p>
                                         </Card>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Search + Role Filters for Command Staff */}
-                        <div className="flex flex-col md:flex-row gap-3">
-                            <div className="relative flex-1 group">
-                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-neon-green transition-colors" size={16} />
-                                <input
-                                    value={adminSearch}
-                                    onChange={e => setAdminSearch(e.target.value)}
-                                    placeholder="Search command staff by email, name, role..."
-                                    className="w-full bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/10 focus:border-neon-green/30 h-12 pl-12 pr-10 rounded-2xl text-[11px] font-semibold outline-none transition-all placeholder:text-gray-400 placeholder:font-normal"
-                                />
-                                {adminSearch && (
-                                    <button onClick={() => setAdminSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
-                                        <X size={13} />
-                                    </button>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-1.5 p-1.5 bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/10 rounded-2xl overflow-x-auto no-scrollbar shrink-0">
-                                {[
-                                    { id: 'all', label: 'All' },
-                                    { id: 'content_admin', label: 'Content' },
-                                    { id: 'gate_manager', label: 'Ticketing' },
-                                    { id: 'blog_writer', label: 'Blog' },
-                                    { id: 'super_admin', label: 'Super Admin' },
-                                    ...(canManageFounders ? [{ id: 'founder', label: 'Founder' }] : []),
-                                    ...(canManageDevelopers ? [{ id: 'developer', label: 'Dev' }] : [])
-                                ].map(f => (
-                                    <button
-                                        key={f.id}
-                                        onClick={() => setAdminFilter(f.id)}
-                                        className={cn(
-                                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                                            adminFilter === f.id
-                                                ? "bg-neon-green/15 text-neon-green border border-neon-green/25 font-extrabold"
-                                                : "text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border border-transparent"
-                                        )}
-                                    >
-                                        {f.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Admin Cards Grid */}
-                        <section className="space-y-4">
-                            <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/5">
-                                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-2 italic">
-                                    <Shield size={13} className="text-neon-green" /> Active Command Staff ({filteredAdmins.length})
-                                </h3>
-                            </div>
-
-                            {loadingAdmins ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                                    {Array.from({ length: 3 }).map((_, i) => (
-                                        <div key={i} className="h-64 rounded-[2.5rem] bg-gray-200 dark:bg-white/5 animate-pulse" />
-                                    ))}
-                                </div>
-                            ) : filteredAdmins.length === 0 ? (
-                                <div className="py-20 text-center bg-gray-100/50 dark:bg-white/[0.01] border border-dashed border-black/10 dark:border-white/5 rounded-[2rem]">
-                                    <Shield size={32} className="mx-auto text-gray-400 mb-3" />
-                                    <p className="text-xs font-black text-gray-500 uppercase tracking-widest">No matching command staff found</p>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                                    {filteredAdmins.map(admin => {
-                                        const isSelf = admin.email === user.email;
-                                        const badge = getRoleBadgeStyle(admin.role);
-
-                                        return (
-                                            <motion.div key={admin.id} layout initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="group relative has-[.select-open]:z-50">
-                                                <Card className="relative p-7 bg-gray-100 dark:bg-zinc-950/60 group-hover:bg-gray-50 dark:group-hover:bg-zinc-900/50 border-black/10 dark:border-white/5 hover:border-black/15 dark:hover:border-white/10 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-md hover:shadow-xl flex flex-col gap-5 border hover:-translate-y-1 min-h-[300px]">
-                                                    <div className={cn("absolute top-0 left-0 w-full h-[2.5px] bg-gradient-to-r rounded-t-[2.5rem]", badge.bar)} />
-
-                                                    <div className="flex justify-between items-start">
-                                                        <span className={cn("px-2.5 py-1 rounded-full border font-black uppercase tracking-widest text-[8px]", badge.bg, badge.border, badge.text)}>
-                                                            {badge.label}
-                                                        </span>
-                                                        <div className="flex items-center gap-1.5">
-                                                            {isSelf && (
-                                                                <span className="px-2 py-0.5 bg-white dark:bg-white/10 text-black dark:text-white border border-black/10 dark:border-white/10 rounded-md text-[7px] font-black uppercase tracking-widest">
-                                                                    You
-                                                                </span>
-                                                            )}
-                                                            <span className="px-2.5 py-1 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-full text-[8px] font-black uppercase tracking-widest">
-                                                                ACTIVE
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex-1">
-                                                        <h3 className="font-heading font-black text-xl sm:text-2xl text-gray-900 dark:text-white group-hover:text-neon-green transition-colors uppercase italic tracking-tighter leading-tight line-clamp-2">
-                                                            {admin.displayName || 'UNIDENTIFIED OPERATIVE'}
-                                                        </h3>
-                                                        <p className="text-[10px] text-gray-500 font-mono mt-1 break-all select-all">{admin.email}</p>
-                                                    </div>
-
-                                                    <div className="space-y-1.5 relative z-30">
-                                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Clearance Level</p>
-                                                        {canEditRoles ? (
-                                                            <StudioSelect
-                                                                value={admin.role}
-                                                                onChange={val => handleUpdateRole(admin.id, val)}
-                                                                options={getAdminRoleOptions(admin.role, canManageDevelopers, canManageFounders)}
-                                                                disabled={isSelf}
-                                                                accentColor="neon-green"
-                                                                className="h-11"
-                                                            />
-                                                        ) : (
-                                                            <span className={cn("px-3 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest border inline-flex items-center justify-center w-full", badge.bg, badge.border, badge.text)}>
-                                                                {badge.label}
-                                                            </span>
-                                                        )}
-                                                    </div>
-
-                                                    <span className="text-[9px] text-gray-500 font-black uppercase tracking-wide">
-                                                        Authorized: <span className="font-mono text-gray-600 dark:text-gray-400">{admin.createdAt ? new Date(admin.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'N/A'}</span>
-                                                    </span>
-
-                                                    <div className="pt-3 border-t border-black/10 dark:border-white/5 flex flex-wrap gap-2">
-                                                        {(isSelf || user.role === 'developer' || user.role === 'founder') && (
-                                                            <button
-                                                                onClick={() => {
-                                                                    const n = prompt(`Rename ${admin.email}:`, admin.displayName || "");
-                                                                    if (n !== null && n.trim() !== "") {
-                                                                        useStore.getState().updateAdminProfile(null, admin.email, { displayName: n.trim() }).then(() => fetchAdmins());
-                                                                    }
-                                                                }}
-                                                                className="flex-1 h-10 bg-black/5 dark:bg-white/5 hover:bg-neon-blue/10 text-gray-500 hover:text-neon-blue border border-black/10 dark:border-white/5 hover:border-neon-blue/20 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5"
-                                                            >
-                                                                <Edit3 size={11} /> Rename
-                                                            </button>
-                                                        )}
-
-                                                        {!isSelf && canEditRoles && (
-                                                            <>
-                                                                <button
-                                                                    onClick={async () => {
-                                                                        if (window.confirm(`Send password reset credentials to ${admin.email}?`)) {
-                                                                            await useStore.getState().resetPassword(admin.email);
-                                                                            useStore.getState().addToast("Password reset email sent.", 'success');
-                                                                        }
-                                                                    }}
-                                                                    className="flex-1 h-10 bg-black/5 dark:bg-white/5 hover:bg-neon-pink/10 text-gray-500 hover:text-neon-pink border border-black/10 dark:border-white/5 hover:border-neon-pink/20 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5"
-                                                                >
-                                                                    <KeyRound size={11} /> Reset
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleRemoveAdmin(admin.id, admin.role)}
-                                                                    className="flex-1 h-10 bg-black/5 dark:bg-white/5 hover:bg-red-500/10 text-gray-500 hover:text-red-500 border border-black/10 dark:border-white/5 hover:border-red-500/20 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5"
-                                                                >
-                                                                    <Trash2 size={11} /> Remove
-                                                                </button>
-                                                            </>
-                                                        )}
-
-                                                        {!isSelf && (user?.role === 'developer' || user?.role === 'founder') && (
-                                                            <button
-                                                                onClick={() => handleRevokeAdminSessions(admin)}
-                                                                className="w-full h-10 bg-black/5 dark:bg-white/5 hover:bg-red-500/10 text-gray-500 hover:text-red-400 border border-black/10 dark:border-white/5 hover:border-red-500/15 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5"
-                                                            >
-                                                                <LogOut size={11} /> Log Out All Devices
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </Card>
-                                            </motion.div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </section>
-                    </motion.div>
-                )}
-
-                {/* TAB: PENDING CLEARANCE REQUESTS */}
-                {activeTab === 'requests' && canAuthorizeStaff && (
-                    <motion.div
-                        key="requests"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-6"
-                    >
-                        <div className="relative group max-w-md">
-                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-yellow-500 transition-colors" size={16} />
-                            <input
-                                value={adminSearch}
-                                onChange={e => setAdminSearch(e.target.value)}
-                                placeholder="Search pending requests..."
-                                className="w-full bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/10 focus:border-yellow-500/30 h-12 pl-12 pr-10 rounded-2xl text-[11px] font-semibold outline-none transition-all placeholder:text-gray-400 placeholder:font-normal"
-                            />
-                            {adminSearch && (
-                                <button onClick={() => setAdminSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
-                                    <X size={13} />
-                                </button>
-                            )}
-                        </div>
-
-                        {filteredRequests.length === 0 ? (
-                            <div className="py-28 bg-gray-100/50 dark:bg-white/[0.01] rounded-[2.5rem] border border-dashed border-black/10 dark:border-white/5 text-center">
-                                <Clock size={36} className="mx-auto text-gray-400 mb-4" />
-                                <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">No pending clearance requests</h4>
-                                <p className="text-[10px] text-gray-400 mt-1">All staff access requests have been audited.</p>
+                                    );
+                                })}
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                {filteredRequests.map(admin => (
-                                    <motion.div key={admin.id} layout initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="group relative has-[.select-open]:z-50">
-                                        <div className="absolute inset-0 rounded-[2.5rem] bg-yellow-500/5 blur-xl pointer-events-none" />
-                                        <Card className="relative p-7 bg-gray-100 dark:bg-zinc-950/60 border-yellow-500/15 hover:border-yellow-500/30 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-md hover:-translate-y-1 flex flex-col gap-5 border">
-                                            <div className="absolute top-0 left-0 w-full h-[2.5px] bg-gradient-to-r from-yellow-500/60 to-amber-500/40 rounded-t-[2.5rem]" />
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="w-10 h-10 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center shrink-0">
-                                                    <Clock size={16} className="text-yellow-500 animate-pulse" />
-                                                </div>
-                                                <span className="px-2.5 py-1 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 rounded-full text-[8px] font-black uppercase tracking-widest">
-                                                    Awaiting Clearance
-                                                </span>
+                            <Card className="overflow-hidden rounded-2xl">
+                                <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                                    {teamRows.map(a => (
+                                        <li key={a.id} className="relative transition-colors hover:bg-black/[0.015] dark:hover:bg-white/[0.02]">
+                                            <div className="flex items-center gap-3 px-4 py-3 sm:px-5">
+                                                <Avatar name={a.displayName || a.email} size={40} />
+                                                <button type="button" onClick={() => setTeamSheet({ open: true, admin: a })} className="min-w-0 flex-1 text-left after:absolute after:inset-0">
+                                                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                                        <span className="truncate text-[15px] font-bold">{a.displayName || a.email.split('@')[0]}</span>
+                                                        <RoleBadge role={a.role} />
+                                                        {isSelf(a) && <Badge tone="gray">You</Badge>}
+                                                    </span>
+                                                    <span className="mt-0.5 block truncate text-[12.5px] text-gray-500">{a.email}</span>
+                                                </button>
+                                                <span className="hidden shrink-0 text-[12.5px] text-gray-500 md:block">{a.createdAt ? `Added ${formatDay(a.createdAt)}` : ''}</span>
+                                                <div className="relative z-10 shrink-0">{teamMenu(a)}</div>
                                             </div>
-                                            <div>
-                                                <h3 className="font-mono font-bold text-base text-gray-900 dark:text-white break-all">{admin.email}</h3>
-                                                <p className="text-[9px] text-yellow-500/60 font-black uppercase tracking-widest mt-1">
-                                                    Requested {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'N/A'}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </Card>
+                        )}
+                    </>
+                )}
+
+                {/* ── Access requests ── */}
+                {tab === 'requests' && canAuthorizeStaff && (
+                    <>
+                        {pendingRequests.length > 3 && <SearchInput value={search} onChange={setSearch} placeholder="Search requests" className="lg:w-80" />}
+                        {requestRows.length === 0 ? (
+                            <Card className="rounded-2xl">
+                                <EmptyState icon={Check} tone="green" title="No requests waiting" description="When someone signs in and asks for admin access, they'll show up here for you to approve or turn down." />
+                            </Card>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                                {requestRows.map(a => (
+                                    <Card key={a.id} className="flex flex-col rounded-2xl p-4">
+                                        <div className="flex items-start gap-3">
+                                            <Avatar name={a.displayName || a.email} size={44} />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-[15px] font-bold">{a.displayName || a.email.split('@')[0]}</p>
+                                                <p className="truncate text-[12.5px] text-gray-500">{a.email}</p>
+                                                <p className="mt-1 flex items-center gap-1.5 text-[12px] font-semibold text-amber-700 dark:text-amber-300">
+                                                    <Clock size={12} /> Asked {a.createdAt ? relativeTime(a.createdAt) : 'a while ago'}
                                                 </p>
                                             </div>
-                                            <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-black/10 dark:border-white/5 relative z-30">
-                                                <button
-                                                    onClick={() => handleRemoveAdmin(admin.id, admin.role)}
-                                                    className="flex-1 h-11 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 hover:border-transparent rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5"
-                                                >
-                                                    Deny Request
-                                                </button>
-                                                <div className="flex-1 relative z-30">
-                                                    <StudioSelect
-                                                        value=""
-                                                        onChange={val => handleApprove(admin.id, val)}
-                                                        options={getAdminRoleOptions('', canManageDevelopers, canManageFounders)}
-                                                        placeholder="APPROVE & ASSIGN ROLE"
-                                                        accentColor="neon-green"
-                                                        className="h-11"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </Card>
-                                    </motion.div>
+                                        </div>
+                                        <div className="mt-4 flex gap-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+                                            <Button variant="secondary" onClick={() => askDeny(a)} className="h-11 flex-1"><X size={14} /> Turn down</Button>
+                                            <Button variant="primary" onClick={() => setRoleSheet({ open: true, admin: a, mode: 'approve' })} className="h-11 flex-1"><Check size={14} /> Approve…</Button>
+                                        </div>
+                                    </Card>
                                 ))}
                             </div>
                         )}
-                    </motion.div>
+                    </>
                 )}
 
-            </AnimatePresence>
+                {/* ── Active users ── */}
+                {tab === 'active' && (
+                    <>
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                            <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+                                <SegmentedTabs value={activeWindow} onChange={(v) => setParams({ window: v === 'month' ? null : v })} items={WINDOWS} />
+                            </div>
+                            <div className="flex flex-1 flex-wrap items-center gap-2">
+                                <SearchInput value={search} onChange={setSearch} placeholder="Name, email or phone" className="basis-full sm:basis-0 sm:flex-1" />
+                                <ExportMenu getSpec={peopleExport(activeRows, 'Active users')} />
+                                {syncButton}
+                            </div>
+                        </div>
+                        <p className="text-[13px] text-gray-500">
+                            {activeRows.length.toLocaleString('en-IN')} {activeRows.length === 1 ? 'person' : 'people'}
+                            {activeWindow === 'all' ? ' with an account, most recent first.' : ` signed in ${activeWindow === 'today' ? 'today' : `in the last ${activeWindow === 'week' ? '7' : '30'} days`}.`}
+                        </p>
+                        {activeRows.length === 0 ? (
+                            <Card className="rounded-2xl">
+                                <EmptyState icon={Activity} tone="green" title="Nobody in this window" description={q ? 'Try another search.' : 'Pick a longer time range to see more people.'} action={activeWindow !== 'all' && <Button variant="secondary" onClick={() => setParams({ window: 'all' })}>Show everyone</Button>} />
+                            </Card>
+                        ) : peopleList(activeRows, { showSeen: true })}
+                    </>
+                )}
+
+                {/* ── All members ── */}
+                {tab === 'members' && (
+                    <>
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                            <SearchInput value={search} onChange={setSearch} placeholder="Name, email or phone" className="lg:w-80" />
+                            <div className="flex flex-1 flex-wrap items-center gap-2">
+                                <Select value={memberFilter} onChange={(v) => setParams({ filter: v === 'all' ? null : v })} label="Show" className="min-w-[10rem] flex-1 lg:w-52 lg:flex-none" options={MEMBER_FILTERS.map(f => ({ ...f, label: f.value === 'suspended' ? `Suspended (${suspendedCount})` : f.label }))} />
+                                <ExportMenu getSpec={peopleExport(memberRows, 'Members')} />
+                                <ViewToggle value={memberView} onChange={setMemberView} />
+                                {syncButton}
+                            </div>
+                        </div>
+                        <p className="text-[13px] text-gray-500">
+                            {memberRows.length.toLocaleString('en-IN')} {memberRows.length === 1 ? 'person' : 'people'}
+                            {memberFilter === 'all' && !q && totalCount > memberRows.length ? ` loaded · ${totalCount.toLocaleString('en-IN')} sign-in accounts in total` : ''}
+                        </p>
+                        {memberRows.length === 0 ? (
+                            <Card className="rounded-2xl">
+                                <EmptyState
+                                    icon={Users}
+                                    tone="blue"
+                                    title={members.length ? 'Nobody matches' : 'No members loaded yet'}
+                                    description={members.length ? 'Try another search or filter.' : 'Sync accounts to pull everyone who has signed up.'}
+                                    action={members.length
+                                        ? (q || memberFilter !== 'all') && <Button variant="secondary" onClick={() => { setSearch(''); setParams({ filter: null }); }}>Clear filters</Button>
+                                        : <Button variant="primary" onClick={handleSync} disabled={isSyncingUsers}><RefreshCw size={14} /> Sync accounts</Button>}
+                                />
+                            </Card>
+                        ) : memberView === 'cards' ? peopleCards(memberRows) : peopleList(memberRows, { showSeen: false })}
+                    </>
+                )}
+            </div>
+
+            <InviteSheet open={inviteOpen} onClose={() => setInviteOpen(false)} roles={assignableRoles(role)} onInvite={handleInvite} />
+
+            <TeamMemberSheet
+                open={teamSheet.open}
+                onClose={() => setTeamSheet(s => ({ ...s, open: false }))}
+                admin={teamSheetAdmin}
+                isSelf={isSelf(teamSheetAdmin)}
+                perms={{ canEditRoles }}
+                onChangeRole={() => setRoleSheet({ open: true, admin: teamSheetAdmin, mode: 'change' })}
+                onRename={() => setRenameSheet({ open: true, admin: teamSheetAdmin })}
+                onResetPassword={() => askResetPassword(teamSheetAdmin)}
+                onSignOut={() => askSignOutAdmin(teamSheetAdmin)}
+                onRemove={() => askRemove(teamSheetAdmin)}
+            />
+
+            <RoleSheet
+                open={roleSheet.open}
+                onClose={() => setRoleSheet(s => ({ ...s, open: false }))}
+                person={roleTarget}
+                mode={roleSheet.mode}
+                roles={assignableRoles(role, roleSheet.mode === 'change' ? roleTarget?.role : null)}
+                blockedReason={roleSheet.mode === 'change' && roleTarget
+                    ? (isSelf(roleTarget) ? "You can't change your own role. Ask another founder."
+                        : lastFounder(roleTarget) ? "They're the only founder. Make someone else a founder before changing this role." : '')
+                    : ''}
+                onSave={(newRole) => handleRoleSave(roleTarget, newRole, roleSheet.mode)}
+            />
+
+            <RenameSheet
+                open={renameSheet.open}
+                onClose={() => setRenameSheet(s => ({ ...s, open: false }))}
+                person={renameSheet.admin}
+                onSave={(name) => handleRename(renameSheet.admin, name)}
+            />
+
+            <MemberSheet
+                open={memberSheet.open}
+                onClose={() => setMemberSheet(s => ({ ...s, open: false }))}
+                member={memberSheetMember}
+                canModerate={canModerate(memberSheetMember)}
+                onSuspend={askSuspend}
+                onReinstate={reinstate}
+                onSignOut={askSignOutMember}
+            />
+
+            <ConfirmSheet
+                open={Boolean(confirm)}
+                onClose={() => setConfirm(null)}
+                title={confirm?.title}
+                description={confirm?.description}
+                confirmLabel={confirm?.confirmLabel}
+                busyLabel={confirm?.busyLabel}
+                tone={confirm?.tone}
+                icon={confirm?.icon}
+                disabled={confirm?.disabled}
+                onConfirm={confirm?.onConfirm}
+            >
+                {confirm?.kind === 'remove' && !confirm.disabled && (
+                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-black/[0.08] p-3 dark:border-white/[0.08]">
+                        <input type="checkbox" checked={signOutToo} onChange={(e) => setSignOutToo(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-red-600" />
+                        <span>
+                            <span className="block text-[14px] font-semibold text-gray-900 dark:text-white">Also sign them out of every device now</span>
+                            <span className="block text-[12.5px] text-gray-500">Otherwise an open admin tab keeps working until they reload it.</span>
+                        </span>
+                    </label>
+                )}
+            </ConfirmSheet>
         </AdminCommunityHubLayout>
     );
 };

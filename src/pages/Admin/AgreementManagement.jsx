@@ -1,680 +1,413 @@
-import React, { useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { Link, useNavigate } from 'react-router-dom';
-import Plus from 'lucide-react/dist/esm/icons/plus';
-import Search from 'lucide-react/dist/esm/icons/search';
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Copy from 'lucide-react/dist/esm/icons/copy';
-import Eye from 'lucide-react/dist/esm/icons/eye';
+import React, { useMemo, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
-import Calendar from 'lucide-react/dist/esm/icons/calendar';
-import Users from 'lucide-react/dist/esm/icons/users';
+import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import Scale from 'lucide-react/dist/esm/icons/scale';
-import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
-import X from 'lucide-react/dist/esm/icons/x';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Upload from 'lucide-react/dist/esm/icons/upload';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Send from 'lucide-react/dist/esm/icons/send';
-import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
-import History from 'lucide-react/dist/esm/icons/history';
-import Share2 from 'lucide-react/dist/esm/icons/share-2';
-import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
-import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
-import Activity from 'lucide-react/dist/esm/icons/activity';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import PenLine from 'lucide-react/dist/esm/icons/pen-line';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Edit from 'lucide-react/dist/esm/icons/edit';
 import Mail from 'lucide-react/dist/esm/icons/mail';
-import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
-import FolderOpen from 'lucide-react/dist/esm/icons/folder-open';
-import Globe from 'lucide-react/dist/esm/icons/globe';
-import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
-import Upload from 'lucide-react/dist/esm/icons/upload';
-import AgreementEmailModal from '../../components/admin/AgreementEmailModal';
-import UploadAgreementModal from '../../components/admin/UploadAgreementModal';
+import Link2 from 'lucide-react/dist/esm/icons/link-2';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import CopyPlus from 'lucide-react/dist/esm/icons/copy-plus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Share2 from 'lucide-react/dist/esm/icons/share-2';
+import Inbox from 'lucide-react/dist/esm/icons/inbox';
+import { AnimatePresence } from 'framer-motion';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
+import { copyToClipboard } from '../../lib/clipboard';
 import { cn } from '../../lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { exportSubtitle, fileDate } from '../../lib/xlsx';
+import ExportMenu from '../../components/admin/ExportMenu';
+import { FINANCE_ROLES } from '../../constants/roles';
+import { contractState, CONTRACT_STATE_LABEL, contractValue, contractViews, contractLastViewed, contractParty, contractTitle } from '../../lib/contracts';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import { Card, Button, Badge, SearchInput, SegmentedTabs, EmptyState, Select, Menu, MenuItem, ViewToggle, useViewMode } from '../../components/admin/ui';
+import AgreementEmailModal from '../../components/admin/AgreementEmailModal';
+import UploadAgreementModal from '../../components/admin/UploadAgreementModal';
+import ContractDetailPanel from '../../components/admin/contracts/ContractDetailPanel';
+import { inr, toDate } from '../../components/admin/ticketing/format';
 
+const FILTERS = ['all', 'draft', 'ready', 'viewed', 'signed'];
+const PAGE = 48;
+const LEGACY_STATUS = { Draft: 'draft', Final: 'ready', Executed: 'signed' };
 
-const ContractManagement = () => {
+const formatDay = (d) => (d ? d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+const relative = (d) => {
+    if (!d) return '';
+    const mins = Math.round((Date.now() - d.getTime()) / 60000);
+    if (mins < 60) return `${Math.max(1, mins)}m ago`;
+    const hours = Math.round(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.round(hours / 24);
+    return days < 30 ? `${days}d ago` : formatDay(d);
+};
+
+const Kpi = ({ icon: Icon, label, value, hint, tone, active, onClick }) => {
+    const tones = {
+        gray: 'bg-black/5 text-gray-700 dark:bg-white/5 dark:text-zinc-300',
+        blue: 'bg-neon-blue/10 text-sky-700 dark:text-neon-blue',
+        green: 'bg-neon-green/10 text-emerald-700 dark:text-neon-green',
+        violet: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
+    };
+    return (
+        <button type="button" onClick={onClick} className="text-left">
+            <Card className={cn('h-full rounded-2xl p-4 transition-colors hover:border-black/15 dark:hover:border-white/15', active && 'border-gray-900 dark:border-white/60')}>
+                <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', tones[tone])}><Icon size={17} /></span>
+                <p className="mt-3 truncate text-[20px] font-extrabold leading-none tracking-tight tabular-nums sm:text-[24px]">{value}</p>
+                <p className="mt-1.5 truncate text-[12px] font-bold text-gray-700 dark:text-zinc-300">{label}</p>
+                <p className="truncate text-[11px] text-gray-500">{hint}</p>
+            </Card>
+        </button>
+    );
+};
+
+const AgreementManagement = () => {
     useStoreSubscription(['agreements']);
     const navigate = useNavigate();
-    const { agreements, deleteAgreement, updateAgreement, duplicateAgreement, user } = useStore();
-    const [viewMode, setViewMode] = useState('grid');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState('All');
-    const [showDeleteModal, setShowDeleteModal] = useState(null);
-    const [selectedAnalytics, setSelectedAnalytics] = useState(null);
-    const [activeAnalyticsTab, setActiveAnalyticsTab] = useState('email');
-    const [sharingAgreement, setSharingAgreement] = useState(null);
-    const [emailModalAgreement, setEmailModalAgreement] = useState(null);
-    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-    const [editingUploadedAgreement, setEditingUploadedAgreement] = useState(null);
+    const agreements = useStore(s => s.agreements) || [];
+    const user = useStore(s => s.user);
+    const addToast = useStore(s => s.addToast);
+    const [params, setParams] = useSearchParams();
 
-    const getDeviceDetails = (ua) => {
-        if (!ua) return { browser: 'Browser', os: 'OS', type: 'Device' };
-        
-        let browser = 'Browser';
-        if (ua.includes('Firefox/')) browser = 'Firefox';
-        else if (ua.includes('Edg/')) browser = 'Edge';
-        else if (ua.includes('Chrome/') || ua.includes('CriOS/')) browser = 'Chrome';
-        else if (ua.includes('Safari/')) browser = 'Safari';
-
-        let os = 'OS';
-        if (ua.includes('iPhone')) os = 'iOS';
-        else if (ua.includes('iPad')) os = 'iPadOS';
-        else if (ua.includes('Android')) os = 'Android';
-        else if (ua.includes('Windows')) os = 'Windows';
-        else if (ua.includes('Macintosh') || ua.includes('Mac OS X')) os = 'macOS';
-        else if (ua.includes('Linux')) os = 'Linux';
-
-        let type = 'Desktop';
-        if (os === 'iOS' || os === 'Android') type = 'Mobile';
-        else if (os === 'iPadOS') type = 'Tablet';
-
-        return { browser, os, type };
+    const legacy = LEGACY_STATUS[params.get('status')];
+    const filter = FILTERS.includes(params.get('filter')) ? params.get('filter') : (legacy || 'all');
+    const openId = params.get('contract');
+    const setParam = (key, value, push = false) => {
+        const next = new URLSearchParams(params);
+        if (value) next.set(key, value); else next.delete(key);
+        if (key === 'filter') next.delete('status');
+        setParams(next, { replace: !push });
     };
 
-    const vaultTabs = [
-        ...(['developer', 'founder'].includes(user?.role) ? [{ name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' }] : []),
-        { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet, color: 'text-neon-green' },
-        { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck, color: 'text-neon-purple' },
-        ];
+    const [view, setView] = useViewMode('contracts', 'cards');
+    const [search, setSearch] = useState('');
+    const [sort, setSort] = useState('newest');
+    const [limit, setLimit] = useState(PAGE);
+    const [emailContract, setEmailContract] = useState(null);
+    const [uploadOpen, setUploadOpen] = useState(false);
+    const [editingUpload, setEditingUpload] = useState(null);
 
+    const isEditor = user?.role === 'editor' || user?.role === 'content_admin';
+    const canManage = !isEditor;
+    const canInvoice = FINANCE_ROLES.includes(user?.role);
 
+    const visible = useMemo(() => (isEditor ? agreements.filter(a => a.createdBy === user?.uid) : agreements), [agreements, isEditor, user?.uid]);
 
-    const filtered = useMemo(() => agreements
-        .filter(a => {
-            if (user?.role === 'editor' || user?.role === 'content_admin') {
-                return a.createdBy === user?.uid;
+    const enriched = useMemo(() => visible.map(a => ({
+        a,
+        state: contractState(a),
+        value: contractValue(a),
+        party: contractParty(a),
+        title: contractTitle(a),
+        created: toDate(a.createdAt),
+        viewed: contractLastViewed(a),
+        views: contractViews(a).length,
+    })), [visible]);
+
+    const counts = useMemo(() => {
+        const c = Object.fromEntries(FILTERS.map(f => [f, 0]));
+        enriched.forEach(e => { c.all += 1; c[e.state] += 1; });
+        return c;
+    }, [enriched]);
+
+    const kpis = useMemo(() => {
+        const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+        let awaitingValue = 0, signedMonth = 0, signedMonthValue = 0;
+        enriched.forEach(e => {
+            if (e.state === 'ready') awaitingValue += e.value;
+            if (e.state === 'signed') {
+                const when = toDate(e.a.approvalMetadata?.signedAt || e.a.executedAt);
+                if (when && when >= monthStart) { signedMonth += 1; signedMonthValue += e.value; }
             }
-            return true;
-        })
-        .filter(a => {
-            const s = searchQuery.toLowerCase();
-            const match = a.parties?.secondParty?.name?.toLowerCase().includes(s) || a.details?.projectName?.toLowerCase().includes(s) || a.agreementNumber?.toLowerCase().includes(s);
-            return match && (statusFilter === 'All' || a.status === statusFilter);
-        }), [agreements, searchQuery, statusFilter, user]);
+        });
+        return { awaitingValue, signedMonth, signedMonthValue };
+    }, [enriched]);
 
-    const handleDelete = async (id) => { 
-        if (user?.role === 'editor' || user?.role === 'content_admin') {
-            useStore.getState().addToast("Editors and content admins can't delete agreements.", 'error');
-            return;
+    const rows = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        const list = enriched.filter(e => {
+            if (filter !== 'all' && e.state !== filter) return false;
+            if (!q) return true;
+            return [e.party, e.title, e.a.agreementNumber, e.a.parties?.secondParty?.email, e.a.fileName].some(v => String(v || '').toLowerCase().includes(q));
+        });
+        const by = {
+            newest: (x, y) => (y.created?.getTime() || 0) - (x.created?.getTime() || 0),
+            value: (x, y) => y.value - x.value,
+            viewed: (x, y) => (y.viewed?.getTime() || 0) - (x.viewed?.getTime() || 0),
+            party: (x, y) => x.party.localeCompare(y.party),
+        }[sort];
+        return list.sort(by);
+    }, [enriched, filter, search, sort]);
+
+    // ── actions ──
+    const urlFor = (a, via) => `${window.location.origin}/agreement/${a.id}?via=${via}`;
+    const markShared = (a, via) => useStore.getState().markAgreementShared(a.id, via).catch(err => console.warn('Share not recorded', err));
+
+    const copyLink = async (a) => {
+        const ok = await copyToClipboard(urlFor(a, 'link'));
+        addToast(ok ? 'Contract link copied.' : "Couldn't copy the link.", ok ? 'success' : 'error');
+        if (ok) markShared(a, 'link');
+    };
+    const share = async (a) => {
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: `Contract for ${contractParty(a) || 'you'}`, text: 'Your contract from Newbi Entertainment.', url: urlFor(a, 'share') });
+                markShared(a, 'share');
+                return;
+            } catch (err) {
+                if (err?.name === 'AbortError') return;
+            }
         }
-        try { await deleteAgreement(id); setShowDeleteModal(null); } catch (e) { useStore.getState().addToast("Couldn't delete the agreement. Please try again.", 'error'); } 
+        copyLink(a);
     };
-    const handleDuplicate = async (id) => { try { await duplicateAgreement(id); } catch (e) { useStore.getState().addToast("Couldn't duplicate the agreement. Please try again.", 'error'); } };
-    const handleCopyLink = (id) => { navigator.clipboard.writeText(`${window.location.origin}/agreement/${id}?via=link`); useStore.getState().addToast('Link copied.', 'success'); };
-    const handleWhatsApp = (a) => { const url = `${window.location.origin}/agreement/${a.id}?via=whatsapp`; window.open(`https://wa.me/?text=${encodeURIComponent(`Contract from Newbi Entertainment: ${url}`)}`, '_blank'); };
-    const handleNativeShare = async (a) => {
-        const url = `${window.location.origin}/agreement/${a.id}?via=share`;
-        if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
-            try { await navigator.share({ title: `Contract - ${a.parties?.secondParty?.name}`, text: 'View your contract from Newbi Entertainment.', url }); return; } catch {}
-        }
-        setSharingAgreement(a);
+    const whatsapp = (a) => {
+        const name = contractParty(a);
+        const text = `Hi${name ? ` ${name}` : ''}, here is your contract from Newbi Entertainment: ${urlFor(a, 'whatsapp')}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+        markShared(a, 'whatsapp');
     };
-
-    const handleSendEmail = (agreement) => {
-        setEmailModalAgreement(agreement);
+    const edit = (a) => {
+        if (a.isUploaded) { setEditingUpload(a); setUploadOpen(true); }
+        else navigate(`/admin/agreements/edit/${a.id}`);
     };
-
-    const handleDispatchEmail = async ({ to, cc, bcc, subject, html }) => {
+    const duplicate = async (a) => {
+        if (!window.confirm(`Make a new draft copy of ${a.agreementNumber || 'this contract'}?`)) return;
         try {
-            const { auth } = await import('../../lib/firebase');
-            const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
-            const response = await fetch('/api/mail', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token ? `Bearer ${token}` : '',
-                },
-                body: JSON.stringify({ 
-                    to, 
-                    cc,
-                    bcc,
-                    subject, 
-                    html,
-                    fromName: 'Newbi Legal',
-                    fromEmail: 'partnership@newbi.live'
-                }),
-            });
-            const result = await response.json();
-            if (result.success) {
-                useStore.getState().addToast('Contract email sent.', 'success');
-            } else {
-                throw new Error(result.error);
-            }
+            const newId = await useStore.getState().duplicateAgreement(a.id);
+            addToast('Copied as a new draft.', 'success');
+            const id = typeof newId === 'string' ? newId : newId?.id;
+            if (id) setParam('contract', id, true);
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast("Couldn't send the email. Please try again.", 'error');
-            throw err;
+            addToast("Couldn't duplicate the contract.", 'error');
         }
     };
-
-    const handleRevokeSignature = async (agreementId) => {
-        if (window.confirm('CRITICAL: Are you sure you want to revoke this signature? This will unlock the contract and void the current authorization.')) {
-            try {
-                await updateAgreement(agreementId, {
-                    status: 'Final',
-                    approvalMetadata: null
-                });
-                useStore.getState().addToast('Signature revoked. The contract is active again.', 'success');
-                setSelectedAnalytics(null);
-            } catch (err) {
-                console.error(err);
-                useStore.getState().addToast("Couldn't revoke the signature. Please try again.", 'error');
-            }
+    const remove = async (a) => {
+        if (!canManage) { addToast("Editors can't delete contracts.", 'info'); return; }
+        const signed = a.status === 'Executed';
+        if (!window.confirm(`Delete ${a.agreementNumber || 'this contract'} with ${contractParty(a) || 'this party'}?${signed ? ' It has been SIGNED — the signed record will be lost.' : ''} The link will stop working. This can't be undone.`)) return;
+        try {
+            await useStore.getState().deleteAgreement(a.id);
+            if (openId === a.id) setParam('contract', null);
+            addToast('Contract deleted.', 'success');
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't delete the contract.", 'error');
         }
     };
+    const sendEmail = async ({ to, cc, bcc, subject, html }) => {
+        const { auth } = await import('../../lib/firebase');
+        const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+        const res = await fetch('/api/mail', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
+            body: JSON.stringify({ to, cc, bcc, subject, html, fromName: 'Newbi Legal', fromEmail: 'partnership@newbi.live' }),
+        });
+        const result = await res.json().catch(() => ({}));
+        if (!result.success) throw new Error(result.error || 'Send failed');
+        if (emailContract) markShared(emailContract, 'email');
+    };
 
-    const statusColor = (s) => ({ Draft: 'text-amber-500 bg-amber-500/10 border-amber-500/20', Final: 'text-blue-500 bg-blue-500/10 border-blue-500/20', Executed: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' }[s] || 'text-gray-500 bg-gray-500/10 border-gray-500/20');
+    const exportSpec = () => ({
+        filename: `contracts_${filter}_${fileDate()}`,
+        sheetName: 'Contracts',
+        title: 'Contracts',
+        subtitle: exportSubtitle(rows.length, 'contract', filter !== 'all' ? CONTRACT_STATE_LABEL[filter]?.label : null),
+        rows,
+        totals: { value: true },
+        columns: [
+            { header: 'Contract No', value: r => r.a.agreementNumber || '' },
+            { header: 'Other Party', value: r => r.party || '' },
+            { header: 'Project', value: r => r.title || '' },
+            { header: 'Value', key: 'value', type: 'money', value: r => r.value },
+            { header: 'Status', value: r => CONTRACT_STATE_LABEL[r.state].label },
+            { header: 'Effective Date', type: 'date', value: r => (r.a.effectiveDate ? String(r.a.effectiveDate).slice(0, 10) : null) },
+            { header: 'Created', type: 'date', value: r => r.created || null },
+            { header: 'Views', type: 'number', value: r => r.views || 0 },
+            { header: 'Last Viewed', type: 'datetime', value: r => r.viewed || null },
+            { header: 'Signed By', value: r => r.a.approvalMetadata?.signedBy || '' },
+            { header: 'Signed At', type: 'datetime', value: r => r.a.approvalMetadata?.signedAt || null },
+            { header: 'Link', value: r => `${window.location.origin}/agreement/${r.a.id}` },
+        ],
+    });
+
+    const shown = rows.slice(0, limit);
+
+    const actionsMenu = (a) => (
+        <Menu trigger={({ toggle }) => (
+            <Button size="sm" variant="ghost" onClick={toggle} aria-label="More actions" className="w-9 px-0"><MoreHorizontal size={15} /></Button>
+        )}>
+            <MenuItem icon={FileText} onClick={() => setParam('contract', a.id, true)}>Details & activity</MenuItem>
+            <MenuItem as="a" href={`/agreement/${a.id}`} target="_blank" rel="noopener noreferrer" icon={ExternalLink}>Open contract</MenuItem>
+            {canManage && <MenuItem icon={Edit} onClick={() => edit(a)}>Edit</MenuItem>}
+            <MenuItem icon={Mail} onClick={() => setEmailContract(a)}>Email for signature</MenuItem>
+            <MenuItem icon={MessageCircle} onClick={() => whatsapp(a)}>Send on WhatsApp</MenuItem>
+            <MenuItem icon={Link2} onClick={() => copyLink(a)}>Copy link</MenuItem>
+            {canManage && <MenuItem icon={CopyPlus} onClick={() => duplicate(a)}>Duplicate as draft</MenuItem>}
+            {canManage && <MenuItem icon={Trash2} danger onClick={() => remove(a)}>Delete</MenuItem>}
+        </Menu>
+    );
 
     return (
         <AdminCommunityHubLayout
-            studioHeader={{
-                title: 'CONTRACT',
-                subtitle: 'VAULT',
-                accentClass: 'text-neon-purple',
-                icon: Scale
-            }}
-            tabs={vaultTabs}
-            accentColor="neon-purple"
-            action={
-                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full md:w-auto">
-                    <button 
-                        onClick={() => {
-                            setEditingUploadedAgreement(null);
-                            setIsUploadModalOpen(true);
-                        }}
-                        className="w-full sm:w-auto bg-white dark:bg-white/10 hover:bg-black/5 dark:hover:bg-neon-purple/20 text-gray-900 dark:text-white hover:text-black dark:hover:text-neon-purple border border-black/10 dark:border-white/15 hover:border-black/20 dark:hover:border-neon-purple/40 font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-5 md:px-7 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-sm dark:shadow-lg flex items-center justify-center gap-2"
-                    >
-                        <Upload className="h-4 w-4 text-neon-purple" /> Upload Contract
-                    </button>
-                    <Link to="/admin/agreements/new" className="w-full sm:w-auto">
-                        <Button className="w-full sm:w-auto bg-neon-purple text-black font-black uppercase tracking-widest text-[10px] sm:text-xs h-12 md:h-14 px-6 md:px-10 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_4px_12px_rgba(168,85,247,0.4)] flex items-center justify-center">
-                            <Plus className="mr-2 h-4 w-4" /> New Contract
-                        </Button>
-                    </Link>
+            studioHeader={{ title: 'Contracts', icon: Scale, accentClass: 'text-purple-600 dark:text-purple-400', description: 'Agreements, signatures and who has opened what' }}
+            tabs={[
+                ...(canInvoice ? [{ name: 'Invoices', path: '/admin/invoices', icon: FileText }] : []),
+                { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet },
+                { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck },
+            ]}
+            action={(
+                // Phones: the main action gets its own full-width row, the other two share one.
+                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+                    <Button as={Link} to="/admin/agreements/new" variant="primary" className="col-span-2 sm:order-last"><Plus size={14} /> New contract</Button>
+                    <Button variant="secondary" onClick={() => { setEditingUpload(null); setUploadOpen(true); }}><Upload size={14} /> Add PDF</Button>
+                    <Button as={Link} to="/admin/ai-studio?type=contract" variant="secondary"><Sparkles size={14} /> Draft with AI</Button>
                 </div>
-            }
+            )}
         >
-            <style dangerouslySetInnerHTML={{ __html: `@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');.scrollbar-hide::-webkit-scrollbar{display:none}.scrollbar-hide{-ms-overflow-style:none;scrollbar-width:none}` }} />
-            <div className="relative z-10">
+            <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <Kpi icon={PenLine} tone="gray" label="Drafts" value={counts.draft} hint={counts.draft ? 'Still being written' : 'No drafts'} active={filter === 'draft'} onClick={() => setParam('filter', filter === 'draft' ? null : 'draft')} />
+                    <Kpi icon={Send} tone="blue" label="Ready to sign" value={counts.ready} hint={kpis.awaitingValue ? `${inr(kpis.awaitingValue)} awaiting signature` : 'Not opened yet'} active={filter === 'ready'} onClick={() => setParam('filter', filter === 'ready' ? null : 'ready')} />
+                    <Kpi icon={Eye} tone="violet" label="Viewed, not signed" value={counts.viewed} hint={counts.viewed ? 'Good time to follow up' : 'No open views'} active={filter === 'viewed'} onClick={() => setParam('filter', filter === 'viewed' ? null : 'viewed')} />
+                    <Kpi icon={CheckCircle2} tone="green" label="Signed this month" value={kpis.signedMonth} hint={kpis.signedMonthValue ? inr(kpis.signedMonthValue) : `${counts.signed} signed in total`} active={filter === 'signed'} onClick={() => setParam('filter', filter === 'signed' ? null : 'signed')} />
+                </div>
 
-
-
-                {/* Search & Filters */}
-                <div className="bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-2xl md:rounded-[2.5rem] p-1.5 md:p-2 mb-8 md:mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4">
-                    <div className="relative flex-1 w-full group">
-                        <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-purple transition-colors" size={18} />
-                        <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search contracts..." className="w-full bg-transparent h-14 md:h-16 pl-16 md:pl-20 pr-6 rounded-2xl text-[10px] md:text-[11px] font-black uppercase tracking-widest outline-none placeholder:text-gray-600" />
-                    </div>
-                    <div className="flex flex-col sm:flex-row items-center gap-2 w-full xl:w-auto">
-                        <div className="flex bg-white dark:bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-black/10 dark:border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
-                            <div className="flex flex-1">
-                                {['All', 'Draft', 'Final', 'Executed'].map(s => (
-                                    <button key={s} onClick={() => setStatusFilter(s)} className={cn("flex-1 px-3 sm:px-6 md:px-10 py-2.5 rounded-lg md:rounded-xl text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all min-w-[70px] sm:min-w-[100px] md:min-w-[120px]", statusFilter === s ? "bg-neon-purple text-black shadow-[0_10px_25px_rgba(168,85,247,0.5)]" : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5")}>{s}</button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="flex bg-white dark:bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-black/10 dark:border-white/5 w-full sm:w-auto justify-center">
-                            <button onClick={() => setViewMode('grid')} className={cn("flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all", viewMode === 'grid' ? "bg-neon-purple text-black shadow-[0_5px_15px_rgba(168,85,247,0.3)]" : "text-gray-500 hover:text-gray-900 dark:hover:text-white")}><LayoutGrid size={16} /></button>
-                            <button onClick={() => setViewMode('list')} className={cn("flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all", viewMode === 'list' ? "bg-neon-purple text-black shadow-[0_5px_15px_rgba(168,85,247,0.3)]" : "text-gray-500 hover:text-gray-900 dark:hover:text-white")}><FileText size={16} /></button>
-                        </div>
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                    <SearchInput value={search} onChange={(v) => { setSearch(v); setLimit(PAGE); }} placeholder="Party, project or contract number" className="lg:w-80" />
+                    <div className="flex flex-1 items-center gap-2">
+                        <Select value={sort} onChange={setSort} label="Sort" className="flex-1 lg:w-48 lg:flex-none" options={[
+                            { value: 'newest', label: 'Newest first' },
+                            { value: 'viewed', label: 'Recently viewed' },
+                            { value: 'value', label: 'Largest value' },
+                            { value: 'party', label: 'Party A–Z' },
+                        ]} />
+                        <ExportMenu getSpec={exportSpec} />
+                        <ViewToggle value={view} onChange={setView} />
                     </div>
                 </div>
 
-                {/* Grid/List */}
-                <AnimatePresence mode="wait">
-                    {viewMode === 'grid' ? (
-                        <motion.div key="grid" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex overflow-x-auto lg:overflow-x-visible md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide snap-x snap-mandatory pb-8 md:pb-0">
-                            {filtered.map((a, i) => (
-                                <motion.div key={a.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} className="min-w-[85vw] md:min-w-0 snap-center h-full flex flex-col">
-                                    <Card className="group relative p-6 md:p-8 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 transition-all rounded-[2.5rem] h-full flex flex-col justify-between overflow-hidden border">
-                                        <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform pointer-events-none"><Scale size={100} /></div>
-                                        <div>
-                                            <div className="flex justify-between items-start mb-6">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-black font-mono tracking-widest text-neon-purple bg-neon-purple/10 px-3 py-1 rounded-full border border-neon-purple/20">{a.agreementNumber}</span>
-                                                    {a.isUploaded && (
-                                                        <span className="text-[9px] font-black tracking-wider text-neon-purple bg-neon-purple/10 px-2 py-0.5 rounded-full border border-neon-purple/20 flex items-center gap-1">
-                                                            <Upload size={10} /> PRE-MADE
-                                                        </span>
-                                                    )}
-                                                    <div className={cn("w-2 h-2 rounded-full animate-pulse", a.status === 'Executed' ? 'bg-emerald-500' : a.status === 'Final' ? 'bg-blue-500' : 'bg-gray-600')} />
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <button onClick={() => handleDuplicate(a.id)} className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-500 rounded-xl border border-black/10 dark:border-white/5" title="Duplicate"><History size={14} /></button>
-                                                    {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                        <>
-                                                            <button onClick={() => setSelectedAnalytics(a)} className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-neon-purple/20 hover:text-neon-purple text-gray-500 rounded-xl border border-black/10 dark:border-white/5" title="Analytics"><Activity size={14} /></button>
-                                                            <button onClick={() => setShowDeleteModal(a.id)} className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl border border-black/10 dark:border-white/5" title="Delete"><Trash2 size={14} /></button>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <h3 className="text-xl md:text-2xl font-black tracking-tighter uppercase italic text-gray-900 dark:text-white mb-2 leading-none">{a.parties?.secondParty?.name || 'Untitled'}</h3>
-                                            <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 mb-2"><Scale size={12} /> {a.template || a.type || 'Service Agreement'}</p>
-                                            <div className="flex items-center justify-between text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-8">
-                                                <span className="flex items-center gap-1.5"><Calendar size={12} /> {a.effectiveDate ? new Date(a.effectiveDate).toLocaleDateString() : 'No date'}</span>
-                                                {a.commercials?.totalValue && (
-                                                    <span className="text-neon-purple font-mono font-black">
-                                                        {a.commercials.currency || 'INR'} {a.commercials.totalValue}
-                                                    </span>
-                                                )}
-                                            </div>
+                <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+                    <SegmentedTabs
+                        value={filter}
+                        onChange={(v) => { setParam('filter', v === 'all' ? null : v); setLimit(PAGE); }}
+                        items={FILTERS.filter(f => f === 'all' || f === filter || counts[f] > 0).map(f => ({
+                            value: f, label: f === 'all' ? 'All' : CONTRACT_STATE_LABEL[f].label, count: counts[f], highlight: f === 'viewed' && counts[f] > 0,
+                        }))}
+                    />
+                </div>
+
+                {shown.length === 0 ? (
+                    <Card className="rounded-2xl">
+                        <EmptyState
+                            icon={Inbox}
+                            title={visible.length ? 'No matching contracts' : 'No contracts yet'}
+                            description={visible.length ? 'Try another filter or search.' : 'Draft one, or add a signed PDF you already have.'}
+                            action={!visible.length && <Button as={Link} to="/admin/agreements/new" variant="primary"><Plus size={14} /> New contract</Button>}
+                        />
+                    </Card>
+                ) : view === 'cards' ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {shown.map(({ a, state, value, party, title, created, viewed, views }) => {
+                            const cfg = CONTRACT_STATE_LABEL[state];
+                            return (
+                                <Card key={a.id} className="relative flex flex-col rounded-2xl p-4 transition-colors hover:border-black/15 dark:hover:border-white/15">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            <Badge tone={cfg.tone}>{cfg.label}</Badge>
+                                            {a.isUploaded && <Badge tone="gray">PDF</Badge>}
                                         </div>
-                                        <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-black/10 dark:border-white/5">
-                                            {a.isUploaded ? (
-                                                <button 
-                                                    onClick={() => {
-                                                        setEditingUploadedAgreement(a);
-                                                        setIsUploadModalOpen(true);
-                                                    }}
-                                                    className="flex-1 min-w-[25%] py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl border border-black/10 dark:border-white/5"
-                                                >
-                                                    Edit
-                                                </button>
-                                            ) : (
-                                                <Link to={`/admin/agreements/edit/${a.id}`} className="flex-1 min-w-[25%]">
-                                                    <button className="w-full py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl border border-black/10 dark:border-white/5">
-                                                        Edit
-                                                    </button>
-                                                </Link>
-                                            )}
-                                            <button onClick={() => handleNativeShare(a)} className="flex-1 min-w-[25%] py-3 bg-neon-purple/10 hover:bg-neon-purple/20 text-neon-purple text-[10px] font-black uppercase tracking-widest rounded-xl border border-neon-purple/10 flex items-center justify-center gap-2"><Share2 size={12} /> Share</button>
-                                            <button
-                                                onClick={() => setEmailModalAgreement(a)}
-                                                className="h-12 w-12 bg-black/5 dark:bg-white/5 hover:bg-neon-purple/20 hover:text-neon-purple text-gray-500 rounded-xl border border-black/10 dark:border-white/5 flex items-center justify-center"
-                                                title="Email Contract"
-                                            >
-                                                <Mail size={16} />
-                                            </button>
-                                            <Link to={`/agreement/${a.id}`} className="p-3 bg-black/5 dark:bg-white/5 hover:bg-neon-purple/20 hover:text-neon-purple text-gray-500 rounded-xl border border-black/10 dark:border-white/5 flex items-center justify-center"><Eye size={16} /></Link>
-                                        </div>
-                                    </Card>
-                                </motion.div>
-                            ))}
-                            {filtered.length === 0 && (
-                                <div className="col-span-full py-20 text-center border-2 border-dashed border-black/10 dark:border-white/5 rounded-[3rem] p-8 flex flex-col items-center justify-center">
-                                    <Scale className="mx-auto text-gray-800 mb-6" size={64} />
-                                    <h3 className="text-xl font-black text-gray-600 uppercase italic">No Contracts Found</h3>
-                                    <p className="text-gray-700 text-xs font-bold uppercase tracking-widest mt-2 mb-6">Deploy your first contract or host a pre-made agreement.</p>
-                                    <div className="flex flex-wrap items-center justify-center gap-3">
-                                        <button
-                                            onClick={() => {
-                                                setEditingUploadedAgreement(null);
-                                                setIsUploadModalOpen(true);
-                                            }}
-                                            className="px-6 py-3 bg-white dark:bg-white/10 hover:bg-black/5 dark:hover:bg-neon-purple/20 text-gray-900 dark:text-white hover:text-black dark:hover:text-neon-purple border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-neon-purple/40 font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-2"
-                                        >
-                                            <Upload size={14} className="text-neon-purple" /> Upload Pre-Made Contract
+                                        <span className="shrink-0 truncate font-mono text-[11px] text-gray-500">{a.agreementNumber || ''}</span>
+                                    </div>
+                                    <button type="button" onClick={() => setParam('contract', a.id, true)} className="mt-3 min-w-0 text-left after:absolute after:inset-0">
+                                        <p className="line-clamp-2 text-[17px] font-extrabold leading-snug">{party || 'Untitled'}</p>
+                                        <p className="mt-0.5 truncate text-[12px] text-gray-500">{title || a.fileName || ' '}</p>
+                                    </button>
+                                    <p className="mt-3 text-[22px] font-extrabold tracking-tight tabular-nums">{value ? inr(value) : '—'}</p>
+                                    <div className="mt-1 space-y-0.5 text-[12px] text-gray-500">
+                                        <p>{a.effectiveDate ? `Effective ${formatDay(toDate(a.effectiveDate))}` : `Created ${formatDay(created)}`}</p>
+                                        {state === 'signed'
+                                            ? <p className="text-emerald-700 dark:text-neon-green">Signed by {a.approvalMetadata?.signedBy || 'the other party'}{a.approvalMetadata?.signedAt ? ` · ${formatDay(toDate(a.approvalMetadata.signedAt))}` : ''}</p>
+                                            : <p className={cn(viewed && 'font-semibold text-purple-700 dark:text-purple-400')}>{viewed ? `Viewed ${relative(viewed)} · ${views} ${views === 1 ? 'view' : 'views'}` : state === 'draft' ? 'Not shared yet' : 'Not opened yet'}</p>}
+                                    </div>
+                                    <div className="relative z-10 mt-4 flex items-center gap-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+                                        <Button size="sm" variant="secondary" onClick={() => share(a)} className="flex-1"><Share2 size={13} /> Share</Button>
+                                        <Button size="sm" as="a" href={`/agreement/${a.id}`} target="_blank" rel="noopener noreferrer" variant="secondary" aria-label="Open contract" className="w-9 px-0"><ExternalLink size={14} /></Button>
+                                        {actionsMenu(a)}
+                                    </div>
+                                </Card>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <Card className="overflow-hidden rounded-2xl">
+                        <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                            {shown.map(({ a, state, value, party, title, created, viewed }) => {
+                                const cfg = CONTRACT_STATE_LABEL[state];
+                                return (
+                                    <li key={a.id} className="relative flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-black/[0.015] dark:hover:bg-white/[0.02] sm:px-5">
+                                        <button type="button" onClick={() => setParam('contract', a.id, true)} className="min-w-0 flex-1 text-left after:absolute after:inset-0">
+                                            <span className="flex flex-wrap items-center gap-2">
+                                                <span className="truncate text-[15px] font-bold">{party || 'Untitled'}</span>
+                                                <Badge tone={cfg.tone}>{cfg.label}</Badge>
+                                                {a.isUploaded && <Badge tone="gray">PDF</Badge>}
+                                            </span>
+                                            <span className="mt-0.5 block truncate text-[12px] text-gray-500">
+                                                {[a.agreementNumber, title, formatDay(created), viewed && state !== 'signed' ? `viewed ${relative(viewed)}` : null].filter(Boolean).join(' · ')}
+                                            </span>
                                         </button>
-                                        <Link to="/admin/agreements/new">
-                                            <button className="px-6 py-3 bg-neon-purple text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-2">
-                                                <Plus size={14} /> New Contract
-                                            </button>
-                                        </Link>
-                                    </div>
-                                </div>
-                            )}
-                        </motion.div>
-                    ) : (
-                        <motion.div key="table" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-                            <Card className="md:min-w-[800px] bg-gray-100 dark:bg-zinc-900/40 border-black/10 dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border overflow-hidden">
-                                <table className="w-full text-left hidden md:table">
-                                    <thead><tr className="border-b border-black/10 dark:border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500"><th className="p-6 md:p-8">Document</th><th className="p-6 md:p-8">Client</th><th className="p-6 md:p-8">Type</th><th className="p-6 md:p-8">Created</th><th className="p-6 md:p-8">Status</th><th className="p-6 md:p-8 text-right">Actions</th></tr></thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {filtered.map(a => (
-                                            <tr key={a.id} className="group hover:bg-white/[0.02] transition-colors">
-                                                <td className="p-6 md:p-8"><div className="flex items-center gap-4"><div className="w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center text-neon-purple"><Scale size={20} /></div><div><div className="text-xs font-black uppercase tracking-widest flex items-center gap-2">{a.agreementNumber}{a.isUploaded && <span className="text-[8px] font-black tracking-wider text-neon-purple bg-neon-purple/10 px-1.5 py-0.5 rounded border border-neon-purple/20">PRE-MADE</span>}</div><div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">CONTRACT</div></div></div></td>
-                                                <td className="p-6 md:p-8 text-sm font-black uppercase tracking-tight">{a.parties?.secondParty?.name}</td>
-                                                <td className="p-6 md:p-8 text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase">{a.template || a.type || 'Service'}</td>
-                                                <td className="p-6 md:p-8 text-[10px] font-bold text-gray-500 uppercase tracking-widest">{a.effectiveDate ? new Date(a.effectiveDate).toLocaleDateString() : '—'}</td>
-                                                <td className="p-6 md:p-8"><div className={cn("inline-flex px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-[0.2em]", statusColor(a.status))}>{a.status}</div></td>
-                                                <td className="p-6 md:p-8"><div className="flex justify-end gap-2">
-                                                    <Link to={`/agreement/${a.id}`} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white"><Eye size={18} /></Link>
-                                                    <button onClick={() => setEmailModalAgreement(a)} className="p-2 text-gray-500 hover:text-neon-purple" title="Email Contract"><Mail size={18} /></button>
-                                                    <button onClick={() => handleNativeShare(a)} className="p-2 text-gray-500 hover:text-neon-purple"><Share2 size={18} /></button>
-                                                    <button onClick={() => handleDuplicate(a.id)} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white"><History size={18} /></button>
-                                                    {a.isUploaded ? (
-                                                        <button 
-                                                            onClick={() => {
-                                                                setEditingUploadedAgreement(a);
-                                                                setIsUploadModalOpen(true);
-                                                            }}
-                                                            className="p-2 text-gray-500 hover:text-neon-purple"
-                                                            title="Edit Contract"
-                                                        >
-                                                            <Edit size={18} />
-                                                        </button>
-                                                    ) : (
-                                                        <Link to={`/admin/agreements/edit/${a.id}`} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white" title="Edit Contract"><Edit size={18} /></Link>
-                                                    )}
-                                                    {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                        <>
-                                                            <button onClick={() => setSelectedAnalytics(a)} className="p-2 text-gray-500 hover:text-neon-purple transition-colors"><Activity size={18} /></button>
-                                                            <button onClick={() => setShowDeleteModal(a.id)} className="p-2 text-gray-500 hover:text-red-500"><Trash2 size={18} /></button>
-                                                        </>
-                                                    )}
-                                                </div></td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                                
-                                {/* Mobile Stacked Cards */}
-                                <div className="flex md:hidden flex-col gap-4 p-4">
-                                    {filtered.map((a) => (
-                                        <div key={a.id} className="bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl p-4 flex flex-col gap-4">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center text-neon-purple">
-                                                        <Scale size={20} />
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white flex items-center gap-1.5">
-                                                            {a.agreementNumber}
-                                                            {a.isUploaded && (
-                                                                <span className="text-[8px] font-black tracking-wider text-neon-purple bg-neon-purple/10 px-1.5 py-0.5 rounded border border-neon-purple/20">
-                                                                    PRE-MADE
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">CONTRACT</div>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
-                                                        {a.effectiveDate ? new Date(a.effectiveDate).toLocaleDateString() : '—'}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="flex justify-between items-center bg-black/5 dark:bg-white/5 rounded-xl p-3">
-                                                <div>
-                                                    <div className="text-xs font-black uppercase tracking-tight text-gray-900 dark:text-white">{a.parties?.secondParty?.name}</div>
-                                                    <div className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase mt-0.5">{a.template || a.type || 'Service'}</div>
-                                                </div>
-                                                <div className={cn("inline-flex px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-[0.2em]", statusColor(a.status))}>
-                                                    {a.status}
-                                                </div>
-                                            </div>
-
-                                            <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-black/10 dark:border-white/5">
-                                                <Link to={`/agreement/${a.id}`} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><Eye size={16} /></Link>
-                                                <button onClick={() => setEmailModalAgreement(a)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-purple" title="Email Contract"><Mail size={16} /></button>
-                                                <button onClick={() => handleNativeShare(a)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-purple"><Share2 size={16} /></button>
-                                                <button onClick={() => handleDuplicate(a.id)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><History size={16} /></button>
-                                                {a.isUploaded ? (
-                                                    <button 
-                                                        onClick={() => {
-                                                            setEditingUploadedAgreement(a);
-                                                            setIsUploadModalOpen(true);
-                                                        }}
-                                                        className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-purple"
-                                                    >
-                                                        <Edit size={16} />
-                                                    </button>
-                                                ) : (
-                                                    <Link to={`/admin/agreements/edit/${a.id}`} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><Edit size={16} /></Link>
-                                                )}
-                                                {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                    <>
-                                                        <button onClick={() => setSelectedAnalytics(a)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-purple transition-colors"><Activity size={16} /></button>
-                                                        <button onClick={() => setShowDeleteModal(a.id)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-red-500"><Trash2 size={16} /></button>
-                                                    </>
-                                                )}
-                                            </div>
+                                        <p className="shrink-0 text-right text-[15px] font-extrabold tabular-nums">{value ? inr(value) : '—'}</p>
+                                        <div className="relative z-10 flex shrink-0 items-center gap-1">
+                                            <Button size="sm" variant="secondary" onClick={() => share(a)} aria-label="Share contract" className="hidden w-9 px-0 sm:inline-flex"><Share2 size={14} /></Button>
+                                            {actionsMenu(a)}
                                         </div>
-                                    ))}
-                                </div>
-                                {filtered.length === 0 && <div className="py-20 text-center"><Scale className="mx-auto text-gray-700 mb-4" size={40} /><p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-600">No contracts found.</p></div>}
-                            </Card>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* Delete Modal */}
-                {createPortal(
-                    <AnimatePresence>
-                        {showDeleteModal && (
-                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowDeleteModal(null)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
-                                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-md bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2rem] md:rounded-[2.5rem] p-6 sm:p-10 text-center space-y-6 md:space-y-8">
-                                    <div className="w-16 h-16 md:w-20 md:h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto text-red-500 border border-red-500/20"><Trash2 size={24} /></div>
-                                    <div><h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic">Purge Contract?</h3><p className="text-gray-500 text-[11px] md:text-sm mt-2 md:mt-4">This action permanently removes this contract from the vault. This is irreversible.</p></div>
-                                    <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-                                        <button onClick={() => setShowDeleteModal(null)} className="flex-1 h-12 md:h-14 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 font-black uppercase tracking-widest text-[10px] md:text-xs rounded-xl">Cancel</button>
-                                        <button onClick={() => handleDelete(showDeleteModal)} className="flex-1 h-12 md:h-14 bg-red-500 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] md:text-xs rounded-xl shadow-lg shadow-red-500/20">Purge</button>
-                                    </div>
-                                </motion.div>
-                            </div>
-                        )}
-                    </AnimatePresence>,
-                    document.body
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </Card>
                 )}
-
-                {/* Analytics Modal */}
-                {createPortal(
-                    <AnimatePresence>
-                        {selectedAnalytics && (
-                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAnalytics(null)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
-                                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-2xl bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden max-h-[90vh] flex flex-col">
-                                    <div className="p-6 md:p-8 border-b border-black/10 dark:border-white/5 flex justify-between items-center shrink-0">
-                                        <div><h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic">Contract Analytics.</h3><p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">{selectedAnalytics.agreementNumber}</p></div>
-                                        <button onClick={() => setSelectedAnalytics(null)} className="p-2 md:p-3 hover:bg-black/5 dark:hover:bg-white/5 rounded-full"><X size={18} /></button>
-                                    </div>
-                                    <div className="p-6 md:p-8 overflow-y-auto space-y-6 scrollbar-hide">
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
-                                            {[{ l: 'Status', v: selectedAnalytics.status, icon: ShieldCheck }, { l: 'Risk', v: selectedAnalytics.risk || 'N/A', icon: AlertCircle }, { l: 'Type', v: selectedAnalytics.template || selectedAnalytics.type || 'Service', icon: FileText }].map((s, i) => (
-                                                <div key={i} className="p-4 md:p-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-2xl"><s.icon className="text-neon-purple mb-2 md:mb-3" size={14} /><p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">{s.l}</p><p className="text-[11px] md:text-sm font-black uppercase">{s.v}</p></div>
-                                            ))}
-                                        </div>
-                                        {selectedAnalytics.status === 'Executed' && selectedAnalytics.approvalMetadata && (
-                                            <>
-                                                <div className="p-4 md:p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-start gap-3 md:gap-4">
-                                                    <ShieldCheck className="text-emerald-500 shrink-0" size={20} />
-                                                    <div>
-                                                        <p className="text-[9px] md:text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Authorization Details</p>
-                                                        <p className="text-[11px] md:text-sm font-bold text-gray-900 dark:text-white mb-2">Signed by {selectedAnalytics.approvalMetadata.signedBy}</p>
-                                                        <div className="flex flex-wrap gap-2 md:gap-4 text-[8px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest">
-                                                            <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(selectedAnalytics.approvalMetadata.signedAt).toLocaleString()}</span>
-                                                            <span className="flex items-center gap-1"><Globe size={10} /> {selectedAnalytics.approvalMetadata.ip}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <button 
-                                                    onClick={() => handleRevokeSignature(selectedAnalytics.id)}
-                                                    className="w-full py-3 md:py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl md:rounded-2xl border border-red-500/10 transition-all"
-                                                >
-                                                    Revoke Authorization
-                                                </button>
-                                            </>
-                                        )}
-                                        <div className="space-y-4">
-                                            <p className="text-[9px] md:text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Access Logs</p>
-                                            
-                                            <div className="flex border-b border-black/10 dark:border-white/10">
-                                                <button 
-                                                    onClick={() => setActiveAnalyticsTab('email')}
-                                                    className={cn(
-                                                        "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2",
-                                                        activeAnalyticsTab === 'email' 
-                                                            ? "border-neon-purple text-neon-purple bg-neon-purple/5" 
-                                                            : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                                    )}
-                                                >
-                                                    Email Opens (Personalized)
-                                                </button>
-                                                <button 
-                                                    onClick={() => setActiveAnalyticsTab('general')}
-                                                    className={cn(
-                                                        "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2",
-                                                        activeAnalyticsTab === 'general' 
-                                                            ? "border-neon-purple text-neon-purple bg-neon-purple/5" 
-                                                            : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                                    )}
-                                                >
-                                                    Direct / Link Opens
-                                                </button>
-                                            </div>
-
-                                            {(() => {
-                                                const logs = selectedAnalytics.accessLogs || [];
-                                                const emailLogs = logs.filter(log => log.via === 'email');
-                                                const generalLogs = logs.filter(log => log.via !== 'email');
-                                                const activeLogs = activeAnalyticsTab === 'email' ? emailLogs : generalLogs;
-
-                                                if (activeLogs.length > 0) {
-                                                    return (
-                                                        <div className="space-y-3">
-                                                            {[...activeLogs].reverse().map((log, i) => {
-                                                                const device = getDeviceDetails(log.userAgent);
-                                                                return (
-                                                                    <div key={i} className="p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-xl space-y-3 group hover:bg-white/[0.05] transition-all">
-                                                                        <div className="flex items-start justify-between">
-                                                                            <div className="flex items-center gap-3">
-                                                                                <div className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400">
-                                                                                    {activeAnalyticsTab === 'email' ? <Mail size={14} /> : <Globe size={14} />}
-                                                                                </div>
-                                                                                <div>
-                                                                                    {activeAnalyticsTab === 'email' ? (
-                                                                                        <>
-                                                                                            <p className="text-[11px] font-bold text-gray-900 dark:text-white">
-                                                                                                {log.shareName || 'Anonymous Email Recipient'}
-                                                                                            </p>
-                                                                                            <p className="text-[9px] font-semibold text-gray-600 dark:text-gray-400 mt-0.5">
-                                                                                                {log.shareEmail || 'No email log'}
-                                                                                            </p>
-                                                                                        </>
-                                                                                    ) : (
-                                                                                        <>
-                                                                                            <p className="text-[11px] font-bold text-gray-900 dark:text-white">
-                                                                                                {log.via === 'whatsapp' ? 'WhatsApp Link Share' : log.via === 'link' ? 'Direct Copy Link' : log.via === 'share' ? 'Native Device Share' : 'General Link Access'}
-                                                                                            </p>
-                                                                                            {log.shareEmail && (
-                                                                                                <p className="text-[9px] font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
-                                                                                                    {log.shareEmail}
-                                                                                                </p>
-                                                                                            )}
-                                                                                        </>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="text-right">
-                                                                                <p className="text-[10px] font-black text-neon-purple uppercase tracking-widest">
-                                                                                    {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                                </p>
-                                                                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
-                                                                                    {new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-black/10 dark:border-white/5 text-[9px] text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider">
-                                                                            <div>
-                                                                                <span className="text-gray-600 font-bold block text-[8px]">IP ADDRESS</span>
-                                                                                <span className="text-gray-900 dark:text-white font-mono">{log.ip || 'Protected'}</span>
-                                                                            </div>
-                                                                            <div>
-                                                                                <span className="text-gray-600 font-bold block text-[8px]">DEVICE / RESOLUTION</span>
-                                                                                <span>{device.type} ({device.os}) - {device.browser} - {log.screen || 'N/A'}</span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    );
-                                                } else {
-                                                    return (
-                                                        <div className="py-12 text-center border border-dashed border-black/10 dark:border-white/10 rounded-2xl">
-                                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
-                                                                 {activeAnalyticsTab === 'email' ? 'No email opens recorded.' : 'No general link views recorded.'}
-                                                            </p>
-                                                        </div>
-                                                    );
-                                                }
-                                            })()}
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            </div>
-                        )}
-                    </AnimatePresence>,
-                    document.body
-                )}
-
-                {/* Share Modal */}
-                {createPortal(
-                    <AnimatePresence>
-                        {sharingAgreement && (
-                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSharingAgreement(null)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
-                                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-sm bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[3rem] overflow-hidden">
-                                    <div className="p-8 text-center space-y-1 border-b border-black/10 dark:border-white/5">
-                                        <h3 className="text-2xl font-black uppercase tracking-[0.2em] italic">SHARE</h3>
-                                        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{sharingAgreement.parties?.secondParty?.name}</p>
-                                    </div>
-                                    <div className="p-8 grid grid-cols-1 gap-3">
-                                        <button onClick={() => { handleCopyLink(sharingAgreement.id); setSharingAgreement(null); }} className="p-4 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-4 group">
-                                            <div className="w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center text-neon-purple group-hover:scale-110 transition-transform"><Copy size={16} /></div>
-                                            <p className="text-[11px] font-black uppercase tracking-widest">Copy Link</p>
-                                        </button>
-                                        <button onClick={() => { handleWhatsApp(sharingAgreement); setSharingAgreement(null); }} className="p-4 bg-black/5 dark:bg-white/5 hover:bg-[#25D366]/10 border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-4 group">
-                                            <div className="w-10 h-10 rounded-xl bg-[#25D366]/10 flex items-center justify-center text-neon-purple group-hover:scale-110 transition-transform"><MessageCircle size={16} /></div>
-                                            <p className="text-[11px] font-black uppercase tracking-widest">WhatsApp</p>
-                                        </button>
-                                        <button onClick={() => { handleSendEmail(sharingAgreement); setSharingAgreement(null); }} className="p-4 bg-black/5 dark:bg-white/5 hover:bg-neon-purple/10 border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-4 group">
-                                            <div className="w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center text-neon-purple group-hover:scale-110 transition-transform"><Send size={16} /></div>
-                                            <p className="text-[11px] font-black uppercase tracking-widest">Email</p>
-                                        </button>
-                                    </div>
-                                    <button onClick={() => setSharingAgreement(null)} className="w-full py-5 text-[9px] font-black uppercase tracking-[0.4em] text-gray-600 hover:text-gray-900 dark:hover:text-white bg-white/[0.02]">Cancel</button>
-                                </motion.div>
-                            </div>
-                        )}
-                    </AnimatePresence>,
-                    document.body
+                {rows.length > limit && (
+                    <div className="text-center">
+                        <Button variant="ghost" onClick={() => setLimit(l => l + PAGE)}>Show {Math.min(PAGE, rows.length - limit)} more of {rows.length - limit}</Button>
+                    </div>
                 )}
             </div>
 
-            {/* Agreement Email Modal */}
+            <ContractDetailPanel
+                contractId={openId}
+                onClose={() => setParam('contract', null)}
+                canManage={canManage}
+                onEdit={edit}
+                onEmail={setEmailContract}
+                onShare={share}
+                onWhatsApp={whatsapp}
+                onDuplicate={duplicate}
+                onDelete={remove}
+            />
             <AnimatePresence>
-                {emailModalAgreement && (
-                    <AgreementEmailModal
-                        isOpen={!!emailModalAgreement}
-                        onClose={() => setEmailModalAgreement(null)}
-                        agreement={emailModalAgreement}
-                        onSend={handleDispatchEmail}
-                    />
+                {emailContract && (
+                    <AgreementEmailModal isOpen={Boolean(emailContract)} onClose={() => setEmailContract(null)} agreement={emailContract} onSend={sendEmail} />
                 )}
             </AnimatePresence>
-
-            {/* Upload Pre-Made Contract Modal */}
-            <AnimatePresence>
-                {isUploadModalOpen && (
-                    <UploadAgreementModal
-                        isOpen={isUploadModalOpen}
-                        onClose={() => {
-                            setIsUploadModalOpen(false);
-                            setEditingUploadedAgreement(null);
-                        }}
-                        onSuccess={(id) => {
-                            navigate(`/agreement/${id}`);
-                        }}
-                        editingAgreement={editingUploadedAgreement}
-                    />
-                )}
-            </AnimatePresence>
+            <UploadAgreementModal
+                isOpen={uploadOpen}
+                onClose={() => { setUploadOpen(false); setEditingUpload(null); }}
+                onSuccess={(id) => { setUploadOpen(false); setEditingUpload(null); if (id) setParam('contract', id, true); }}
+                editingAgreement={editingUpload}
+            />
         </AdminCommunityHubLayout>
     );
 };
 
-export default ContractManagement;
+export default AgreementManagement;

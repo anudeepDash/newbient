@@ -138,16 +138,12 @@ export default function MarkAsPaidModal({ isOpen, onClose, invoice, onSubmit }) 
       setIsSuccess(true);
     } catch {
       setIsSubmitting(false);
+      setErrors((prev) => ({ ...prev, submit: "We couldn't send that. Check your connection and try again." }));
     }
   };
 
-  const formatCurrency = (amount) => {
-    if (amount == null) return '$0.00';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(Number(amount) || 0);
 
   return createPortal(
     <AnimatePresence>
@@ -342,6 +338,10 @@ export default function MarkAsPaidModal({ isOpen, onClose, invoice, onSubmit }) 
                         </p>
                       )}
                     </div>
+
+                    {errors.submit && (
+                      <p role="alert" className="text-[11px] font-bold text-red-400">{errors.submit}</p>
+                    )}
 
                     {/* Submit Button */}
                     <button

@@ -1,3341 +1,753 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate, Link, useParams, useLocation } from 'react-router-dom';
-import Plus from 'lucide-react/dist/esm/icons/plus';
-import Minus from 'lucide-react/dist/esm/icons/minus';
-import Maximize2 from 'lucide-react/dist/esm/icons/maximize-2';
-import Minimize2 from 'lucide-react/dist/esm/icons/minimize-2';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Save from 'lucide-react/dist/esm/icons/save';
-import Download from 'lucide-react/dist/esm/icons/download';
-import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
-import X from 'lucide-react/dist/esm/icons/x';
-import Send from 'lucide-react/dist/esm/icons/send';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
-import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
-import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
-import Target from 'lucide-react/dist/esm/icons/target';
-import Users from 'lucide-react/dist/esm/icons/users';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
-import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
-import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
-import Settings from 'lucide-react/dist/esm/icons/settings';
-import Layers from 'lucide-react/dist/esm/icons/layers';
-import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
+import History from 'lucide-react/dist/esm/icons/history';
+import Save from 'lucide-react/dist/esm/icons/save';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Cpu from 'lucide-react/dist/esm/icons/cpu';
-import Stamp from 'lucide-react/dist/esm/icons/stamp';
-import Gavel from 'lucide-react/dist/esm/icons/gavel';
-import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
-import Shield from 'lucide-react/dist/esm/icons/shield';
-import Scale from 'lucide-react/dist/esm/icons/scale';
-import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
-import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
-import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
+import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
+import Undo2 from 'lucide-react/dist/esm/icons/undo-2';
+import Download from 'lucide-react/dist/esm/icons/download';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import Wand2 from 'lucide-react/dist/esm/icons/wand-2';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
-import SignatureModal from '../../components/ui/SignatureModal';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../../lib/firebase';
 import { cn } from '../../lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
-import DocumentSeal from '../../components/ui/DocumentSeal';
-import StudioRichEditor, { MultiPageRichEditor } from '../../components/ui/StudioRichEditor';
-
-// Legal Sub-components
-import useContractGenerator from '../../components/admin/useContractGenerator';
-import ClauseMarketplace from '../../components/admin/ClauseMarketplace';
-import ContractPreview from '../../components/admin/ContractPreview';
-
-// AI utilities
 import { generateFullDocument, reviseDocument } from '../../lib/ai';
+import { nextProposalNumber } from '../../lib/proposals';
+import { accent, useAccent } from '../../components/admin/theme';
+import { Badge, Button, SegmentedTabs } from '../../components/admin/ui';
+import Sheet from '../../components/admin/Sheet';
+import AIPromptBox, { GenerationProgress, useElapsed } from '../../components/admin/AIPromptBox';
+import useContractGenerator from '../../components/admin/useContractGenerator';
+import DocumentPreview, { ExportPages, exportPaperPdf } from '../../components/admin/ai/DocumentPreview';
+import ProposalEditSheet from '../../components/admin/ai/ProposalEditSheet';
+import ContractEditSheet from '../../components/admin/ai/ContractEditSheet';
+import HistorySheet, { HistoryRow, timeAgo } from '../../components/admin/ai/HistorySheet';
+import useStudioHistory, { newEntryId } from '../../components/admin/ai/useStudioHistory';
+import {
+    KIND_ORDER, MAX_BRIEF_CHARS, STUDIO_KINDS, TONES,
+    CONTRACT_PROTECTED_FIELDS, PROPOSAL_PROTECTED_FIELDS,
+    blankContract, buildContract, buildProposal, contractForRevision, documentStats, documentSubtitle, documentTitle,
+    mergeRevisedContract, proposalForRevision, syncProposalSections,
+} from '../../components/admin/ai/studioDocuments';
 
-const logoOptions = [
-    { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
-    { id: 'media', label: 'Newbi Media', path: '/logo_media.png', color: '#00D1FF' },
-    { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
-];
+/*
+ * AI studio (/admin/ai-studio): describe a proposal or contract, let the AI
+ * draft it, check it on the real paper, edit or ask for changes, then save it
+ * as a draft into Proposals or Contracts. Every generation is kept in this
+ * browser's history until it's saved, so nothing is lost on refresh.
+ *
+ * Deep link: ?type=proposal|notes|contract picks what to make.
+ */
 
-    const inlineFmt = (text) => {
-        if (!text) return '';
-        return text
-            .replace(/\*\*(.*?)\*\*/g, '<strong class="font-black">$1</strong>')
-            .replace(/__(.*?)__/g, '<strong class="font-black">$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-            .replace(/_(.*?)_/g, '<em class="italic">$1</em>');
-    };
-
-    const htmlToPlainText = (html) => {
-        if (!html) return '';
-        if (!html.includes('<') || !html.includes('>')) return html;
-        let text = html;
-        text = text.replace(/<\/(p|div|li|h1|h2|h3|h4|h5|h6|ul|ol)>/gi, '\n');
-        text = text.replace(/<br\s*\/?>/gi, '\n');
-        text = text.replace(/<[^>]+>/g, '');
-        text = text.replace(/&nbsp;|\u00a0/g, ' ');
-        text = text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-        return text;
-    };
-
-    const getHtmlBlocks = (html) => {
-        if (!html) return [];
-        try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            let root = doc.body;
-            // Unpack single wrapper div if present (like ProseMirror or class-based editors)
-            if (root.children.length === 1 && root.firstElementChild.tagName.toLowerCase() === 'div') {
-                root = root.firstElementChild;
-            }
-            const blocks = [];
-            Array.from(root.children).forEach(child => {
-                const tagName = child.tagName.toLowerCase();
-                if (tagName === 'ul' || tagName === 'ol') {
-                    const lis = Array.from(child.children);
-                    if (lis.length > 0) {
-                        lis.forEach(li => {
-                            blocks.push(`<${tagName} class="space-y-1">${li.outerHTML}</${tagName}>`);
-                        });
-                    } else {
-                        blocks.push(child.outerHTML);
-                    }
-                } else {
-                    blocks.push(child.outerHTML);
-                }
-            });
-            if (blocks.length === 0) return [html];
-            return blocks;
-        } catch (e) {
-            console.error("DOMParser error, fallback to regex:", e);
-            const regex = /<(p|div|ul|ol|h[1-6])\b[^>]*?>([\s\S]*?)<\/\1>/gi;
-            const blocks = [];
-            let match;
-            while ((match = regex.exec(html)) !== null) {
-                const tag = match[1].toLowerCase();
-                const content = match[2];
-                const fullMatch = match[0];
-                if (tag === 'ul' || tag === 'ol') {
-                    const liRegex = /<li\b[^>]*?>([\s\S]*?)<\/li>/gi;
-                    let liMatch;
-                    let liCount = 0;
-                    while ((liMatch = liRegex.exec(content)) !== null) {
-                        blocks.push(`<${tag} class="space-y-1">${liMatch[0]}</${tag}>`);
-                        liCount++;
-                    }
-                    if (liCount === 0) {
-                        blocks.push(fullMatch);
-                    }
-                } else {
-                    blocks.push(fullMatch);
-                }
-            }
-            if (blocks.length === 0) return [html];
-            return blocks;
-        }
-    };
-
-    const processHtmlHeadings = (html) => {
-        if (!html) return html;
-        return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
-            const level = hashes.length;
-            const headingClass = level === 1
-                ? "text-[18px] font-black text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
-                : level === 2
-                ? "text-[15px] font-bold text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
-                : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
-            const headingTag = `h${Math.min(level + 1, 6)}`;
-            return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
-        });
-    };
-
-    const renderChatMessage = (text) => {
-        if (!text) return null;
-        const lines = text.split('\n');
-        const elements = [];
-        let i = 0;
-        
-        const formatInline = (t) => {
-            if (!t) return '';
-            return t
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>');
-        };
-
-        while (i < lines.length) {
-            const line = lines[i];
-            if (line.trim() === '') {
-                elements.push(<div key={`spacer-${i}`} className="h-1.5" />);
-                i++;
-                continue;
-            }
-
-            const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
-            if (headingMatch) {
-                const level = headingMatch[1].length;
-                const headingText = headingMatch[2];
-                const sizeClass = level === 1 ? "text-[13px] font-bold" : level === 2 ? "text-[12px] font-bold" : "text-[11px] font-semibold text-zinc-400";
-                elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-gray-900 dark:text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
-            } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
-                const items = [];
-                while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
-                    items.push(lines[i].replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, '').trim());
-                    i++;
-                }
-                elements.push(
-                    <ul key={`ul-${i}`} className="list-disc ml-4 my-1.5 space-y-1 text-zinc-300">
-                        {items.map((item, j) => (
-                            <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
-                        ))}
-                    </ul>
-                );
-                continue;
-            } else if (line.match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
-                const items = [];
-                while (i < lines.length && lines[i].match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
-                    items.push(lines[i].replace(/^\d+\.(?:\s|&nbsp;|\u00a0)+/, '').trim());
-                    i++;
-                }
-                elements.push(
-                    <ol key={`ol-${i}`} className="list-decimal ml-4 my-1.5 space-y-1 text-zinc-300">
-                        {items.map((item, j) => (
-                            <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
-                        ))}
-                    </ol>
-                );
-                continue;
-            } else {
-                elements.push(<p key={i} className="mb-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatInline(line) }} />);
-            }
-            i++;
-        }
-        return <div className="space-y-0.5">{elements}</div>;
-    };
-
-    const renderFormatted = (text, baseClass = '') => {
-        if (!text) return null;
-        const rawLines = text.split('\n');
-        const lines = [];
-        rawLines.forEach(rl => {
-            const parts = rl.split(/\s(?=\d+\.\s)/);
-            if (parts.length > 1) lines.push(...parts);
-            else lines.push(rl);
-        });
-
-        const elements = [];
-        let i = 0;
-        while (i < lines.length) {
-            const line = lines[i].trim();
-            if (!line && i < lines.length - 1) {
-                const lastElement = elements[elements.length - 1];
-                const isLastSpacer = lastElement && lastElement.key && String(lastElement.key).startsWith('spacer-');
-                if (!isLastSpacer) {
-                    elements.push(<div key={`spacer-${i}`} className="h-3" />);
-                }
-                i++;
-                continue;
-            }
-
-            if (line.match(/^[-*_]{3,}$/)) {
-                elements.push(<div key={`hr-${i}`} className="h-[1.5px] bg-white dark:bg-black/10 my-8 w-full" />);
-                i++;
-                continue;
-            }
-
-            const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
-            if (headingMatch) {
-                const level = headingMatch[1].length;
-                const headingText = headingMatch[2];
-                const headingClass = level === 1
-                    ? "text-[18px] font-black text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
-                    : level === 2
-                    ? "text-[15px] font-bold text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
-                    : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
-                const headingTag = level === 1 ? 'h2' : level === 2 ? 'h3' : 'h4';
-                const Tag = headingTag;
-                elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: inlineFmt(headingText) }} />);
-            } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
-                const items = [];
-                while (i < lines.length && lines[i].trim().match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
-                    items.push(lines[i].trim().replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, ''));
-                    i++;
-                }
-                elements.push(
-                    <div key={`ul-${i}`} className="pl-4 space-y-1.5 my-3">
-                        {items.map((item, j) => (
-                            <div key={j} className="flex items-start gap-3">
-                                <span className="text-neon-green mt-[7px] text-[8px] select-none shrink-0">●</span>
-                                <span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />
-                            </div>
-                        ))}
-                    </div>
-                );
-                continue;
-            } else if (line.match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
-                const items = [];
-                while (i < lines.length && lines[i].trim().match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
-                    const l = lines[i].trim();
-                    const match = l.match(/^(\d+)\.(?:\s|&nbsp;|\u00a0)+(.*)/);
-                    if (match) {
-                        items.push({ num: match[1], text: match[2].trim() });
-                    } else {
-                        items.push({ num: '•', text: l.replace(/^\d+\.(?:\s|&nbsp;|\u00a0)+/, '').trim() });
-                    }
-                    i++;
-                }
-                elements.push(
-                    <div key={`ol-${i}`} className="pl-4 space-y-2 my-4">
-                        {items.map((item, j) => (
-                            <div key={j} className="flex items-start gap-3">
-                                <span className="text-[11px] font-black text-gray-600 dark:text-gray-400 mt-0.5 w-6 shrink-0">{item.num}.</span>
-                                <span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item.text) }} />
-                            </div>
-                        ))}
-                    </div>
-                );
-                continue;
-            } else if (line) {
-                elements.push(<p key={i} className={cn("text-[13px] font-medium text-black leading-[1.9] text-justify", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
-            }
-            i++;
-        }
-        return <div>{elements}</div>;
-    };
-
-    const renderContent = (content, baseClass = '') => {
-        if (!content) return null;
-        const isHtml = content.includes('<') && content.includes('>');
-        if (isHtml) {
-            return <div className={cn("article-content", baseClass)} dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} />;
-        }
-        return renderFormatted(content, baseClass);
-    };
-
-const isHtmlEmpty = (html) => {
-    if (!html) return true;
-    const clean = String(html).replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
-    return clean.length === 0;
+const MODULE_LINKS = {
+    proposal: { list: '/admin/proposals', edit: (id) => `/admin/edit-proposal/${id}`, name: 'Proposals' },
+    contract: { list: '/admin/agreements', edit: (id) => `/admin/agreements/edit/${id}`, name: 'Contracts' },
 };
 
-const estimateBlockHeight = (rawText) => {
-    if (!rawText) return 0;
-    const isHtml = rawText.includes('<') && rawText.includes('>');
-    
-    const estimateTextNodeHeight = (text) => {
-        if (!text) return 0;
-        const paragraphs = text.split('\n');
-        let h = 0;
-        paragraphs.forEach(p => {
-            const trimmed = p.trim();
-            if (!trimmed) {
-                h += 28; // Empty paragraph height (1.2rem + margin)
-            } else if (trimmed.match(/^[-*_]{3,}$/)) {
-                h += 40; // Horizontal rule
-            } else {
-                const headingMatch = trimmed.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
-                if (headingMatch) {
-                    const level = headingMatch[1].length;
-                    const hText = headingMatch[2];
-                    const lineCount = Math.max(1, Math.ceil(hText.length / 85));
-                    h += level <= 2 ? (lineCount * 22 + 28) : (lineCount * 18 + 16);
-                } else if (trimmed.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
-                    const liText = trimmed.replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, '');
-                    const lineCount = Math.max(1, Math.ceil(liText.length / 90));
-                    h += (lineCount * 20) + 4;
-                } else {
-                    const lineCount = Math.max(1, Math.ceil(trimmed.length / 95));
-                    h += (lineCount * 21) + 8;
-                }
-            }
-        });
-        return h;
-    };
-
-    if (!isHtml) {
-        return estimateTextNodeHeight(rawText);
-    }
-
-    try {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(`<div>${rawText}</div>`, 'text/html');
-        const container = doc.body.firstElementChild || doc.body;
-        let totalH = 0;
-
-        const processNode = (node) => {
-            if (node.nodeType === Node.TEXT_NODE) {
-                const text = node.textContent.trim();
-                if (text) {
-                    totalH += estimateTextNodeHeight(text);
-                }
-                return;
-            }
-
-            if (node.nodeType !== Node.ELEMENT_NODE) return;
-
-            const tag = node.tagName.toLowerCase();
-            if (tag === 'p' || tag === 'div') {
-                const html = node.innerHTML.trim();
-                if (!html || html === '<br>' || html === '<br/>' || html === '<br />') {
-                    totalH += 28;
-                } else {
-                    const parts = html.split(/<br\s*\/?>/gi);
-                    parts.forEach((part, partIdx) => {
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = part;
-                        const text = tempDiv.textContent.trim();
-                        if (text) {
-                            const lineCount = Math.max(1, Math.ceil(text.length / 95));
-                            totalH += (lineCount * 21);
-                        } else {
-                            if (partIdx > 0 || parts.length > 1) {
-                                totalH += 21; // Empty line via br
-                            }
-                        }
-                    });
-                    totalH += 8; // Margin bottom
-                }
-            } else if (tag.startsWith('h') && tag.length === 2) {
-                const level = parseInt(tag.substring(1)) || 2;
-                const text = node.textContent.trim();
-                const lineCount = Math.max(1, Math.ceil(text.length / 85));
-                totalH += level <= 2 ? (lineCount * 22 + 28) : (lineCount * 18 + 16);
-            } else if (tag === 'ul' || tag === 'ol') {
-                totalH += 12; // Wrapper margin
-                const lis = node.querySelectorAll('li');
-                if (lis.length > 0) {
-                    lis.forEach(li => {
-                        const liText = li.textContent.trim();
-                        const lineCount = Math.max(1, Math.ceil(liText.length / 90));
-                        totalH += (lineCount * 20) + 4;
-                    });
-                } else {
-                    const text = node.textContent.trim();
-                    const lineCount = Math.max(1, Math.ceil(text.length / 90));
-                    totalH += (lineCount * 20) + 4;
-                }
-            } else if (tag === 'br') {
-                totalH += 21;
-            } else {
-                const hasBlockChildren = Array.from(node.children).some(c => 
-                    ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol'].includes(c.tagName.toLowerCase())
-                );
-                if (hasBlockChildren) {
-                    Array.from(node.childNodes).forEach(processNode);
-                } else {
-                    const text = node.textContent.trim();
-                    if (text) {
-                        const lineCount = Math.max(1, Math.ceil(text.length / 95));
-                        totalH += (lineCount * 21) + 8;
-                    }
-                }
-            }
-        };
-
-        Array.from(container.childNodes).forEach(processNode);
-        return totalH;
-    } catch (e) {
-        console.error("HTML estimation failed, fallback:", e);
-        return estimateTextNodeHeight(htmlToPlainText(rawText));
-    }
+const REVISION_IDEAS = {
+    proposal: ['Make it shorter and punchier', 'Add a timeline to every deliverable', 'Change the price to ₹80,000 per city', 'Write it for a college fest audience'],
+    contract: ['Add a cancellation clause with 15 days notice', 'Make payment 40% advance, 60% on delivery', 'Make the confidentiality clause stricter', 'Add a force majeure clause'],
 };
 
-const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
-    if (!rawText) return [''];
-    
-    // First, split by manual page breaks
-    const pageBreakRegex = /<div[^>]*class="[^"]*page-break[^"]*"[^>]*><\/div>/gi;
-    const manualPages = rawText.split(pageBreakRegex);
-    
-    const finalPages = [];
-    
-    const splitSinglePageByHeight = (pageContent) => {
-        if (!pageContent) return [''];
-        if (estimateBlockHeight(pageContent) <= maxPageHeight) {
-            return [pageContent];
-        }
-        
-        const isHtml = pageContent.includes('<') && pageContent.includes('>');
-        
-        if (!isHtml) {
-            const lines = pageContent.split('\n');
-            const pages = [];
-            let currentPageText = '';
-            
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const testText = currentPageText ? currentPageText + '\n' + line : line;
-                if (estimateBlockHeight(testText) > maxPageHeight) {
-                    if (currentPageText) {
-                        pages.push(currentPageText);
-                        currentPageText = line;
-                    } else {
-                        pages.push(line);
-                        currentPageText = '';
-                    }
-                } else {
-                    currentPageText = testText;
-                }
-            }
-            if (currentPageText) {
-                pages.push(currentPageText);
-            }
-            return pages;
-        }
-        
-        try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(`<div>${pageContent}</div>`, 'text/html');
-            const container = doc.body.firstElementChild || doc.body;
-            const blocks = Array.from(container.childNodes);
-            
-            const pages = [];
-            let currentPageDiv = document.createElement('div');
-            
-            for (let i = 0; i < blocks.length; i++) {
-                const block = blocks[i].cloneNode(true);
-                const testDiv = currentPageDiv.cloneNode(true);
-                testDiv.appendChild(block.cloneNode(true));
-                
-                if (estimateBlockHeight(testDiv.innerHTML) > maxPageHeight) {
-                    const blockTag = block.nodeType === Node.ELEMENT_NODE ? block.tagName.toLowerCase() : '';
-                    if (blockTag === 'p' || blockTag === 'div') {
-                        const html = block.innerHTML;
-                        const brParts = html.split(/<br\s*\/?>/gi);
-                        
-                        if (brParts.length > 1) {
-                            let partDiv = document.createElement(blockTag);
-                            for (let j = 0; j < brParts.length; j++) {
-                                const part = brParts[j];
-                                const lineTestDiv = currentPageDiv.cloneNode(true);
-                                const lineTestBlock = partDiv.cloneNode(true);
-                                if (j > 0) lineTestBlock.innerHTML += '<br>' + part;
-                                else lineTestBlock.innerHTML = part;
-                                lineTestDiv.appendChild(lineTestBlock);
-                                
-                                if (estimateBlockHeight(lineTestDiv.innerHTML) > maxPageHeight) {
-                                    if (currentPageDiv.innerHTML.trim()) {
-                                        if (partDiv.innerHTML.trim()) {
-                                            currentPageDiv.appendChild(partDiv);
-                                        }
-                                        pages.push(currentPageDiv.innerHTML);
-                                        currentPageDiv = document.createElement('div');
-                                    }
-                                    partDiv = document.createElement(blockTag);
-                                    partDiv.innerHTML = part;
-                                } else {
-                                    if (j > 0) partDiv.innerHTML += '<br>' + part;
-                                    else partDiv.innerHTML = part;
-                                }
-                            }
-                            if (partDiv.innerHTML.trim()) {
-                                currentPageDiv.appendChild(partDiv);
-                            }
-                            continue;
-                        }
-                    }
-                    
-                    if (currentPageDiv.innerHTML.trim()) {
-                        pages.push(currentPageDiv.innerHTML);
-                        currentPageDiv = document.createElement('div');
-                        currentPageDiv.appendChild(block);
-                    } else {
-                        currentPageDiv.appendChild(block);
-                        pages.push(currentPageDiv.innerHTML);
-                        currentPageDiv = document.createElement('div');
-                    }
-                } else {
-                    currentPageDiv.appendChild(block);
-                }
-            }
-            
-            if (currentPageDiv.innerHTML.trim()) {
-                pages.push(currentPageDiv.innerHTML);
-            }
-            
-            return pages.length > 0 ? pages : [pageContent];
-        } catch (e) {
-            console.error("HTML split failed, fallback:", e);
-            return [pageContent];
-        }
-    };
-
-    manualPages.forEach(part => {
-        const subPages = splitSinglePageByHeight(part);
-        finalPages.push(...subPages);
-    });
-
-    return finalPages.length > 0 ? finalPages : [''];
+const composeBrief = (prompt, files = []) => {
+    const ready = files.filter(f => f.status === 'ready' && f.text);
+    const text = prompt.trim();
+    if (!ready.length) return text;
+    return `${text}\n\nReference material from attached files:\n${ready.map(f => `--- ${f.name} ---\n${f.text}`).join('\n\n')}`;
 };
 
+const clone = (v) => JSON.parse(JSON.stringify(v ?? null));
+const fileSafe = (s) => String(s || '').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').slice(0, 60) || 'Draft';
+const isAbort = (e) => e?.name === 'AbortError';
+// Firestore 'not-found' (updateDoc on a deleted doc) or the store's NOT_FOUND.
+const isMissing = (e) => e?.code === 'not-found' || e?.code === 'NOT_FOUND';
+
+const hasContent = (module, doc) => {
+    if (!doc) return false;
+    if (module === 'contract') return Boolean(doc.parties?.secondParty?.name || doc.details?.projectName || doc.details?.purpose || (doc.clauses || []).length);
+    return Boolean(doc.clientName || doc.campaignName || (doc.executiveParagraphs || []).length || (doc.blueprintSteps || []).length || doc.introParagraph);
+};
 
 const AIStudio = () => {
-    useStoreSubscription(['proposals', 'agreements']);
-    const { id } = useParams();
+    useStoreSubscription(['proposals']);
     const navigate = useNavigate();
-    const location = useLocation();
-    const { addProposal, updateProposal, proposals, addAgreement, updateAgreement, agreements, user, addToast } = useStore();
+    const [params, setParams] = useSearchParams();
+    const { addProposal, updateProposal, proposals = [], addAgreement, updateAgreement, user, addToast } = useStore();
+    const moduleAccent = useAccent();
+    const history = useStudioHistory();
 
-    // ────────────────────────────────────────────────────────────────────────
-    // ENGINE CONTEXT SELECTION
-    // ────────────────────────────────────────────────────────────────────────
-    // Auto-detect engine based on URL or defaults.
-    const isProposalRoute = location.pathname.includes('proposal');
-    const isAgreementRoute = location.pathname.includes('agreement') || location.pathname.includes('contract');
-    
-    const initialEngine = isProposalRoute ? 'proposal' : (isAgreementRoute ? 'agreement' : 'proposal');
-    const [activeEngine, setActiveEngine] = useState(initialEngine);
+    // ── Brief ──────────────────────────────────────────────────────────
+    const [kind, setKind] = useState(() => (STUDIO_KINDS[params.get('type')] ? params.get('type') : 'proposal'));
+    const [prompt, setPrompt] = useState('');
+    const [tone, setTone] = useState('Premium');
+    const [files, setFiles] = useState([]);
+    const cfg = STUDIO_KINDS[kind];
 
-    // Lock engine choice if editing an existing document
-    const isEditing = !!id;
+    const chooseKind = (k) => {
+        setKind(k);
+        const next = new URLSearchParams(params);
+        next.set('type', k);
+        setParams(next, { replace: true });
+    };
 
-    // React to route changes if not locked by an ID
+    // ── Result ─────────────────────────────────────────────────────────
+    const [phase, setPhase] = useState('compose'); // compose | result
+    const [resultKind, setResultKind] = useState('proposal');
+    const resultCfg = STUDIO_KINDS[resultKind];
+    const module = resultCfg.module;
+    const [proposalDoc, setProposalDoc] = useState(null);
+    const contract = useContractGenerator(null);
+    const doc = module === 'contract' ? contract.formData : proposalDoc;
+    const setDoc = useCallback((next) => {
+        if (module === 'contract') contract.setFormData(next);
+        else setProposalDoc(next);
+    }, [module, contract.setFormData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const [entryId, setEntryId] = useState(null);
+    const [brief, setBrief] = useState(null); // { prompt, tone, text, files: [names] }
+    const [changes, setChanges] = useState([]);
+    const [undoStack, setUndoStack] = useState([]);
+    const [saved, setSaved] = useState(null); // { id, at }
+    const [createdAt, setCreatedAt] = useState(null);
+    const [mobileTab, setMobileTab] = useState('preview');
+
+    // Unsaved-change tracking: count doc changes, remember the count at save.
+    const [version, setVersion] = useState(0);
+    const [savedVersion, setSavedVersion] = useState(-1);
+    const cleanNext = useRef(false);
     useEffect(() => {
-        if (!isEditing) {
-            if (isProposalRoute) setActiveEngine('proposal');
-            if (isAgreementRoute) setActiveEngine('agreement');
-        }
-    }, [location.pathname, isEditing, isProposalRoute, isAgreementRoute]);
+        if (phase !== 'result') return;
+        setVersion(v => {
+            const next = v + 1;
+            if (cleanNext.current) { cleanNext.current = false; setSavedVersion(next); }
+            return next;
+        });
+    }, [doc]); // eslint-disable-line react-hooks/exhaustive-deps
+    const dirty = Boolean(saved) && version !== savedVersion;
 
-    // Accent maps depending on current engine
-    const engineColor = activeEngine === 'proposal' ? 'neon-green' : 'neon-purple';
-    
-    // UI Visual Zoom/Scale states
-    const [previewScale, setPreviewScale] = useState(0.55);
-    const [userZoom, setUserZoom] = useState(1);
-    const [isExpandedPreview, setIsExpandedPreview] = useState(false);
-    const [currentPreviewPage, setCurrentPreviewPage] = useState(0);
-    const [isSaving, setIsSaving] = useState(false);
-    const [autosaveStatus, setAutosaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
-    const [lastSaved, setLastSaved] = useState('');
-    const [showDraftBanner, setShowDraftBanner] = useState(false);
-    const isDirtyRef = useRef(false);
-    const initialProposalLoadedRef = useRef(false);
-    const initialAgreementLoadedRef = useRef(false);
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [showPreviewMobile, setShowPreviewMobile] = useState(false);
-    const previewContainerRef = useRef(null);
-    const [leftPanelMode, setLeftPanelMode] = useState('ai'); // 'ai' | 'manual'
+    // ── Busy state, cancel and errors ─────────────────────────────────
+    const [busy, setBusy] = useState(null); // 'generate' | 'revise' | null
+    const [error, setError] = useState(null); // { message, retry }
+    const abortRef = useRef(null);
+    const runRef = useRef(0);
+    useEffect(() => () => abortRef.current?.abort(), []);
 
-    // ────────────────────────────────────────────────────────────────────────
-    // 1. PROPOSAL ENGINE STATE & FUNCTIONS
-    // ────────────────────────────────────────────────────────────────────────
-    const [proposalActiveTab, setProposalActiveTab] = useState('1');
-    const [isBulkMode, setIsBulkMode] = useState(false);
-    const [bulkRawText, setBulkRawText] = useState('');
-    const [bulkProposals, setBulkProposals] = useState([]);
-    const [isBulkGenerating, setIsBulkGenerating] = useState(false);
-    const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
-    const [selectedBulkIndex, setSelectedBulkIndex] = useState(0);
+    const cancel = () => {
+        runRef.current += 1;
+        abortRef.current?.abort();
+        abortRef.current = null;
+        setBusy(null);
+        addToast('Stopped. Nothing was changed.', 'info');
+    };
 
-    const parsedPrompts = useMemo(() => {
-        if (!promptText || !promptText.trim()) return [];
-        let list = [];
-        if (promptText.includes('---') || promptText.includes('___')) {
-            list = promptText.split(/\n?[-_]{3,}\n?/).map(p => p.trim()).filter(p => p.length > 5);
-        } else {
-            list = promptText.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 10);
-        }
-        return list.length > 0 ? list : [promptText.trim()];
-    }, [promptText]);
+    // ── History autosave: the working copy follows every edit ──────────
+    useEffect(() => {
+        if (phase !== 'result' || !entryId || !doc) return;
+        history.upsert({ id: entryId, kind: resultKind, doc, brief, changes, savedId: saved?.id || null, savedAt: saved?.at || null, createdAt: createdAt || new Date().toISOString() });
+    }, [doc, saved, changes]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const [proposalFormData, setProposalFormData] = useState({
-        clientName: '',
-        clientAddress: '',
-        campaignName: '',
-        campaignDuration: '',
-        proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
-        coverDescription: 'This comprehensive commercial instrument details the strategic execution architecture and deployment framework proposed by Newbi Entertainment.',
-        overview: '',
-        primaryGoal: '',
-        deliverables: [{ id: 1, item: '', qty: '', timeline: '' }],
-        clientRequirements: [{ id: 1, description: '' }],
-        scopeOfWork: '',
-        terms: '1. 50% Advance Fee required.\n2. Balance on delivery.\n3. Taxes as applicable (18% GST).\n4. Quote valid for 14 days.',
-        paymentDetails: 'Account Name: YOUR NAME\nAccount Number: 0000000000\nIFSC: YOUR000000\nUPI: yourname@upi',
-        gstRate: 18,
-        advanceRequested: 50,
-        showGst: true,
-        showPaymentDetails: true,
-        showSeal: false,
-        showSignatures: false,
-        signatureType: 'handwritten',
-        providerSignature: '',
-        clientSignature: '',
-        senderName: 'Authorized Signatory',
-        senderDesignation: 'Director of Operations',
-        status: 'Draft',
-        hiddenFields: [],
-        selectedLogo: 'entertainment',
-        hideTotalColumn: false,
-        strategyTitle: 'EXECUTIVE SUMMARY',
-        strategySub: 'STRATEGIC OUTLINE',
-        scopeTitle: 'SCOPE OF WORK',
-        scopeSub: 'RESOURCE DELIVERABLES',
-        proposalTitle: 'DELIVERABLES',
-        proposalSub: 'PROJECT INVENTORY',
-        inventoryTitle: 'RESOURCE INVENTORY',
-        inventorySub: 'COMMERCIALS BREAKDOWN',
-        commercialsTitle: 'COMMERCIAL TERMS',
-        commercialsSub: 'SETTLEMENT & SIGN-OFF'
-    });
+    const loadResult = (k, nextDoc, extra = {}) => {
+        const m = STUDIO_KINDS[k].module;
+        setResultKind(k);
+        if (m === 'contract') contract.setFormData(nextDoc);
+        else setProposalDoc(nextDoc);
+        setEntryId(extra.id);
+        setBrief(extra.brief || null);
+        setChanges(extra.changes || []);
+        setSaved(extra.savedId ? { id: extra.savedId, at: extra.savedAt } : null);
+        setCreatedAt(extra.createdAt || new Date().toISOString());
+        setUndoStack([]);
+        if (extra.savedId) cleanNext.current = true;
+        setPhase('result');
+        setMobileTab('preview');
+    };
 
-    const [proposalItems, setProposalItems] = useState([
-        { id: 1, description: 'Project Phase 01: Initial Strategic Planning', qty: 1, unit: 'Phase', price: 0 }
-    ]);
+    // ── Generate ───────────────────────────────────────────────────────
+    const generate = async (fromBrief) => {
+        const useKind = fromBrief?.kind || kind;
+        const useCfg = STUDIO_KINDS[useKind];
+        const text = fromBrief?.text ?? composeBrief(prompt, files);
+        const useTone = fromBrief?.tone || tone;
+        if (text.trim().length < 5) { setError({ message: 'Add a little more detail to the brief first.' }); return; }
+        if (text.length > MAX_BRIEF_CHARS) { setError({ message: 'The brief is too long. Trim it or remove an attachment.' }); return; }
 
-    // Active working states for Proposal (taking bulk index if bulk mode active)
-    const activeProposalData = (isBulkMode && bulkProposals.length > 0 && bulkProposals[selectedBulkIndex]) ? bulkProposals[selectedBulkIndex] : proposalFormData;
-    const activeProposalItems = (isBulkMode && bulkProposals.length > 0 && bulkProposals[selectedBulkIndex]) ? (bulkProposals[selectedBulkIndex]?.items || []) : proposalItems;
-    const isFieldHidden = (f) => (activeProposalData.hiddenFields || []).includes(f);
-
-    const setProposalDataState = (updater) => {
-        if (isBulkMode && bulkProposals.length > 0) {
-            setBulkProposals(prevBulk => {
-                const updatedBulk = [...prevBulk];
-                const current = updatedBulk[selectedBulkIndex];
-                const nextState = typeof updater === 'function' ? updater(current) : updater;
-                updatedBulk[selectedBulkIndex] = { ...current, ...nextState };
-                return updatedBulk;
-            });
-        } else {
-            setProposalFormData(updater);
+        abortRef.current?.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
+        const run = ++runRef.current;
+        setBusy('generate');
+        setError(null);
+        try {
+            const ai = await generateFullDocument(useCfg.aiType, text, useTone, { strict: true, signal: controller.signal });
+            if (run !== runRef.current) return;
+            const built = useCfg.module === 'contract' ? buildContract(ai) : buildProposal(ai);
+            if (!hasContent(useCfg.module, built)) throw new Error("The AI's answer was empty. Please try again, or add more detail to the brief.");
+            const newBrief = fromBrief || { prompt: prompt.trim(), tone: useTone, text, files: files.filter(f => f.status === 'ready').map(f => f.name) };
+            loadResult(useKind, built, { id: newEntryId(), brief: { ...newBrief, kind: useKind } });
+        } catch (e) {
+            if (run !== runRef.current || isAbort(e)) return;
+            setError({ message: e?.message || "Couldn't generate the draft. Please try again.", retry: () => generate(fromBrief) });
+        } finally {
+            if (run === runRef.current) { setBusy(null); abortRef.current = null; }
         }
     };
 
-    const toggleFieldHidden = (field) => {
-        setProposalDataState(prev => {
-            const current = prev.hiddenFields || [];
-            const updated = current.includes(field)
-                ? current.filter(f => f !== field)
-                : [...current, field];
-            return { ...prev, hiddenFields: updated };
+    const regenerate = () => {
+        if (!brief) { setPhase('compose'); return; }
+        generate({ ...brief, kind: resultKind });
+    };
+
+    // ── Ask for changes ────────────────────────────────────────────────
+    const [instruction, setInstruction] = useState('');
+    const instructionRef = useRef(null);
+    const revise = async (text = instruction) => {
+        const ask = text.trim();
+        if (ask.length < 3 || !doc) return;
+        abortRef.current?.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
+        const run = ++runRef.current;
+        const before = clone(doc);
+        setBusy('revise');
+        setError(null);
+        try {
+            const current = module === 'contract' ? contractForRevision(doc) : proposalForRevision(doc);
+            const revised = await reviseDocument(current, ask, brief?.tone || tone, { strict: true, signal: controller.signal });
+            if (run !== runRef.current) return;
+            let next;
+            if (module === 'contract') {
+                next = mergeRevisedContract(revised, before);
+            } else {
+                // Fields the AI returned replace ours, even when it emptied them.
+                const cleared = { ...before };
+                Object.keys(current).forEach(k => { if (k in revised) cleared[k] = Array.isArray(before[k]) ? [] : ''; });
+                next = buildProposal({ ...current, ...revised }, cleared);
+            }
+            setUndoStack(s => [...s.slice(-9), { doc: before, label: `“${ask.length > 40 ? `${ask.slice(0, 40)}…` : ask}”` }]);
+            setDoc(next);
+            setChanges(c => [...c, { id: Date.now(), text: ask, at: new Date().toISOString() }]);
+            setInstruction('');
+        } catch (e) {
+            if (run !== runRef.current || isAbort(e)) return;
+            setError({ message: e?.message || "Couldn't apply that change. Please try again.", retry: () => revise(ask) });
+        } finally {
+            if (run === runRef.current) { setBusy(null); abortRef.current = null; }
+        }
+    };
+
+    const undo = () => {
+        setUndoStack(s => {
+            if (!s.length) return s;
+            const last = s[s.length - 1];
+            setDoc(last.doc);
+            return s.slice(0, -1);
         });
     };
 
-    const setProposalItemsState = (updater) => {
-        if (isBulkMode && bulkProposals.length > 0) {
-            setBulkProposals(prevBulk => {
-                const updatedBulk = [...prevBulk];
-                const current = updatedBulk[selectedBulkIndex];
-                const nextItems = typeof updater === 'function' ? updater(current.items || []) : updater;
-                updatedBulk[selectedBulkIndex] = { ...current, items: nextItems };
-                return updatedBulk;
-            });
-        } else {
-            setProposalItems(updater);
+    // ── Edit by hand ───────────────────────────────────────────────────
+    const [editOpen, setEditOpen] = useState(false);
+    const editSnapshot = useRef(null);
+    const openEdit = () => {
+        editSnapshot.current = JSON.stringify(doc);
+        setEditOpen(true);
+    };
+    const closeEdit = () => {
+        setEditOpen(false);
+        const before = editSnapshot.current;
+        editSnapshot.current = null;
+        if (before && before !== JSON.stringify(doc)) {
+            setUndoStack(s => [...s.slice(-9), { doc: JSON.parse(before), label: 'your edits' }]);
         }
     };
 
-    // Initialize existing proposal when editing
-    const hasInitializedProposalRef = useRef(false);
-    const hasInitializedAgreementRef = useRef(false);
-    
-    useEffect(() => {
-        hasInitializedProposalRef.current = false;
-        hasInitializedAgreementRef.current = false;
-        initialProposalLoadedRef.current = false;
-        initialAgreementLoadedRef.current = false;
-    }, [id]);
-
-    useEffect(() => {
-        if (!id) {
-            initialProposalLoadedRef.current = true;
-            initialAgreementLoadedRef.current = true;
-        }
-    }, [id]);
-
-    useEffect(() => {
-        if (activeEngine === 'proposal' && id && proposals.length > 0 && !hasInitializedProposalRef.current) {
-            const proposal = proposals.find(p => p.id === id);
-            if (proposal) {
-                setProposalFormData({ 
-                    ...proposal, 
-                    hiddenFields: proposal.hiddenFields || [], 
-                    selectedLogo: proposal.selectedLogo || 'entertainment',
-                    hideTotalColumn: proposal.hideTotalColumn || false,
-                    strategyTitle: proposal.strategyTitle ?? 'EXECUTIVE SUMMARY',
-                    strategySub: proposal.strategySub ?? 'STRATEGIC OUTLINE',
-                    scopeTitle: proposal.scopeTitle ?? 'SCOPE OF WORK',
-                    scopeSub: proposal.scopeSub ?? 'RESOURCE DELIVERABLES',
-                    proposalTitle: proposal.proposalTitle ?? 'DELIVERABLES',
-                    proposalSub: proposal.proposalSub ?? 'PROJECT INVENTORY',
-                    inventoryTitle: proposal.inventoryTitle ?? 'RESOURCE INVENTORY',
-                    inventorySub: proposal.inventorySub ?? 'COMMERCIALS BREAKDOWN',
-                    commercialsTitle: proposal.commercialsTitle ?? 'COMMERCIAL TERMS',
-                    commercialsSub: proposal.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'
-                });
-                setProposalItems(proposal.items || []);
-                hasInitializedProposalRef.current = true;
-                setTimeout(() => {
-                    initialProposalLoadedRef.current = true;
-                }, 200);
+    // ── Save as draft (one record per generation: later saves update it) ─
+    const [saving, setSaving] = useState(false);
+    const saveRef = useRef(null);
+    const save = async () => {
+        if (!doc || busy) return;
+        if (saveRef.current) return;
+        const links = MODULE_LINKS[module];
+        const startVersion = version;
+        setSaving(true);
+        const job = (async () => {
+            const now = new Date().toISOString();
+            if (module === 'proposal') {
+                const data = clone({ ...syncProposalSections(doc), templateVersion: 'v2', updatedAt: now });
+                if (saved?.id) {
+                    const update = { ...data };
+                    PROPOSAL_PROTECTED_FIELDS.forEach(k => { delete update[k]; });
+                    try {
+                        await updateProposal(saved.id, update);
+                        return { id: saved.id, created: false };
+                    } catch (e) {
+                        if (!isMissing(e)) throw e;
+                        // Deleted from Proposals since; save it again as a new draft.
+                    }
+                }
+                data.status = 'Draft';
+                if (!String(data.proposalNumber || '').trim()) data.proposalNumber = nextProposalNumber(proposals);
+                const id = await addProposal(data);
+                if (data.proposalNumber !== doc.proposalNumber) setProposalDoc(d => ({ ...d, proposalNumber: data.proposalNumber }));
+                return { id, created: true, bumpsVersion: data.proposalNumber !== doc.proposalNumber };
             }
-        }
-    }, [id, proposals, activeEngine]);
-
-    useEffect(() => {
-        if (activeEngine === 'agreement' && id && agreements.length > 0 && !hasInitializedAgreementRef.current) {
-            const agreement = agreements.find(a => a.id === id);
-            if (agreement) {
-                setAgreementFormData(agreement);
-                hasInitializedAgreementRef.current = true;
-                setTimeout(() => {
-                    initialAgreementLoadedRef.current = true;
-                }, 200);
+            const data = clone({ ...doc, updatedAt: now });
+            if (saved?.id) {
+                const update = { ...data };
+                CONTRACT_PROTECTED_FIELDS.forEach(k => { delete update[k]; });
+                try {
+                    // Never overwrite a contract the client has signed meanwhile.
+                    await updateAgreement(saved.id, update, { unlessSigned: true });
+                    return { id: saved.id, created: false };
+                } catch (e) {
+                    if (e?.code === 'LOCKED') throw Object.assign(new Error("This contract has been signed, so it can't be changed here."), { friendly: true });
+                    if (!isMissing(e)) throw e;
+                }
             }
-        }
-    }, [id, agreements, activeEngine]);
-
-    useEffect(() => {
-        if (initialProposalLoadedRef.current && activeEngine === 'proposal') {
-            isDirtyRef.current = true;
-        }
-    }, [proposalFormData, proposalItems]);
-
-    useEffect(() => {
-        if (initialAgreementLoadedRef.current && activeEngine === 'agreement') {
-            isDirtyRef.current = true;
-        }
-    }, [agreementFormData]);
-
-    // Check for localStorage draft on mount
-    useEffect(() => {
-        if (id) return;
-        const draftProposal = localStorage.getItem('newbi_aistudio_draft_proposal_form');
-        const draftMessages = localStorage.getItem('newbi_aistudio_draft_messages');
-        if (draftProposal || draftMessages) {
-            setShowDraftBanner(true);
-        }
-    }, [id]);
-
-    const handleRestoreDraft = () => {
+            data.status = 'Draft';
+            data.createdBy = user?.uid || null;
+            const id = await addAgreement(data);
+            return { id, created: true };
+        })();
+        saveRef.current = job;
         try {
-            const form = localStorage.getItem('newbi_aistudio_draft_proposal_form');
-            const items = localStorage.getItem('newbi_aistudio_draft_proposal_items');
-            const agreement = localStorage.getItem('newbi_aistudio_draft_agreement_form');
-            const msgs = localStorage.getItem('newbi_aistudio_draft_messages');
-            const eng = localStorage.getItem('newbi_aistudio_draft_engine');
-
-            if (form) setProposalFormData(JSON.parse(form));
-            if (items) setProposalItems(JSON.parse(items));
-            if (agreement) setAgreementFormData(JSON.parse(agreement));
-            if (msgs) setMessages(JSON.parse(msgs));
-            if (eng) setActiveEngine(eng);
-
-            addToast("Your draft has been restored.", "success");
+            const res = await job;
+            if (!res?.id) throw new Error('No id');
+            setSaved({ id: res.id, at: new Date().toISOString() });
+            // A number filled in on first save changes the doc once more; count that as saved.
+            if (res.bumpsVersion) cleanNext.current = true;
+            setSavedVersion(startVersion);
+            addToast(res.created ? `Saved as a draft in ${links.name}.` : 'Changes saved.', 'success');
         } catch (e) {
-            console.error("Failed to restore draft:", e);
-            addToast("Couldn't restore your draft. You can start a new one.", "error");
+            console.error('[AI studio] save failed', e);
+            addToast(e?.friendly ? e.message : "Couldn't save. Please try again.", 'error');
         } finally {
-            setShowDraftBanner(false);
+            saveRef.current = null;
+            setSaving(false);
         }
     };
 
-    const handleClearDraft = () => {
-        localStorage.removeItem('newbi_aistudio_draft_proposal_form');
-        localStorage.removeItem('newbi_aistudio_draft_proposal_items');
-        localStorage.removeItem('newbi_aistudio_draft_agreement_form');
-        localStorage.removeItem('newbi_aistudio_draft_messages');
-        localStorage.removeItem('newbi_aistudio_draft_engine');
-        setShowDraftBanner(false);
-        addToast("Draft cleared.", "info");
-    };
-
+    // ── PDF ────────────────────────────────────────────────────────────
+    const [exporting, setExporting] = useState(false);
+    const exportRef = useRef(null);
     useEffect(() => {
-        if (!id) {
-            isDirtyRef.current = true;
-        }
-    }, [messages]);
-
-    // Firestore Autosave for editing existing documents
-    useEffect(() => {
-        if (!id) return;
-        if (!isDirtyRef.current) return;
-
-        if (activeEngine === 'proposal' && !initialProposalLoadedRef.current) return;
-        if (activeEngine === 'agreement' && !initialAgreementLoadedRef.current) return;
-
-        let active = true;
-        const timer = setTimeout(async () => {
-            if (!active) return;
-            setAutosaveStatus('saving');
+        if (!exporting) return undefined;
+        let alive = true;
+        const t = setTimeout(async () => {
             try {
-                if (activeEngine === 'proposal') {
-                    const rawProposalData = { 
-                        ...proposalFormData, 
-                        items: proposalItems, 
-                        totalAmount: proposalTotalAmount, 
-                        subtotal: proposalSubtotal, 
-                        updatedAt: new Date().toISOString() 
-                    };
-                    const proposalData = JSON.parse(JSON.stringify(rawProposalData));
-                    await updateProposal(id, proposalData);
-                } else if (activeEngine === 'agreement') {
-                    const rawData = { 
-                        ...agreementFormData, 
-                        updatedAt: new Date().toISOString(),
-                        createdBy: agreementFormData.createdBy || user?.uid || null 
-                    };
-                    const data = JSON.parse(JSON.stringify(rawData));
-                    await updateAgreement(id, data);
-                }
-                if (active) {
-                    setAutosaveStatus('saved');
-                    setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-                    isDirtyRef.current = false;
-                }
-            } catch (err) {
-                console.error("AIStudio autosave failed:", err);
-                if (active) {
-                    setAutosaveStatus('error');
-                }
-            }
-        }, 5000);
-
-        return () => {
-            active = false;
-            clearTimeout(timer);
-        };
-    }, [id, activeEngine, proposalFormData, proposalItems, agreementFormData, proposalTotalAmount, proposalSubtotal]);
-
-    // LocalStorage Autosave for new documents
-    useEffect(() => {
-        if (id) return;
-        if (!isDirtyRef.current) return;
-
-        const timer = setTimeout(() => {
-            try {
-                localStorage.setItem('newbi_aistudio_draft_proposal_form', JSON.stringify(proposalFormData));
-                localStorage.setItem('newbi_aistudio_draft_proposal_items', JSON.stringify(proposalItems));
-                localStorage.setItem('newbi_aistudio_draft_agreement_form', JSON.stringify(agreementFormData));
-                localStorage.setItem('newbi_aistudio_draft_messages', JSON.stringify(messages));
-                localStorage.setItem('newbi_aistudio_draft_engine', activeEngine);
-                
-                setAutosaveStatus('saved');
-                setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-                isDirtyRef.current = false;
+                const name = module === 'contract'
+                    ? `Newbi-Contract-${fileSafe(doc?.parties?.secondParty?.name || doc?.details?.projectName)}.pdf`
+                    : `Newbi-Proposal-${fileSafe(doc?.clientName || doc?.campaignName)}.pdf`;
+                await exportPaperPdf(exportRef.current, name);
             } catch (e) {
-                console.error("Failed to save draft session:", e);
-                setAutosaveStatus('error');
+                console.error('[AI studio] PDF failed', e);
+                if (alive) addToast("Couldn't create the PDF. Please try again.", 'error');
+            } finally {
+                if (alive) setExporting(false);
             }
-        }, 3000);
+        }, 700);
+        return () => { alive = false; clearTimeout(t); };
+    }, [exporting]); // eslint-disable-line react-hooks/exhaustive-deps
 
-        return () => clearTimeout(timer);
-    }, [id, proposalFormData, proposalItems, agreementFormData, messages, activeEngine]);
+    // ── History actions ────────────────────────────────────────────────
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const [confirm, setConfirm] = useState(null); // { title, body, action, label }
+    const openEntry = (entry) => {
+        if (busy) cancel();
+        const k = STUDIO_KINDS[entry.kind] ? entry.kind : 'proposal';
+        const d = STUDIO_KINDS[k].module === 'contract' ? { ...blankContract(), ...clone(entry.doc) } : syncProposalSections(clone(entry.doc));
+        loadResult(k, d, entry);
+        setError(null);
+    };
+    const askRemove = (entry) => setConfirm({
+        title: 'Remove from history?',
+        body: entry.savedId
+            ? 'It is only removed from this list. The saved draft stays where it is.'
+            : "This draft was never saved, so it will be gone for good.",
+        label: 'Remove',
+        action: () => {
+            history.remove(entry.id);
+            if (entry.id === entryId) startNew();
+        },
+    });
+    const askClear = () => setConfirm({
+        title: 'Clear all history?',
+        body: `${history.entries.filter(e => !e.savedId).length || 'No'} unsaved drafts will be gone for good. Saved drafts stay in Proposals and Contracts.`,
+        label: 'Clear history',
+        action: () => { history.clear(); setHistoryOpen(false); if (phase === 'result') startNew(); },
+    });
 
-    const proposalSubtotal = activeProposalItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
-    const proposalGstAmount = activeProposalData.showGst ? (proposalSubtotal * activeProposalData.gstRate) / 100 : 0;
-    const proposalTotalAmount = proposalSubtotal + proposalGstAmount;
-
-    // Proposal pagination height estimators
-    const getProposalPaginatedPages = useCallback(() => {
-        const pages = [];
-
-        const insertCustomPagesFor = (placement) => {
-            if (!isFieldHidden('customPages') && activeProposalData.customPages && activeProposalData.customPages.length > 0) {
-                activeProposalData.customPages.forEach((cp, cpIdx) => {
-                    const target = cp.insertAfter || 'default';
-                    if (target === placement) {
-                        const cpPages = splitTextIntoPages(cp.content || '', 800);
-                        cpPages.forEach((cpText, cpSubIdx) => {
-                            pages.push({
-                                type: 'custom',
-                                items: [],
-                                title: cpPages.length > 1 ? `${cp.title} (Part ${cpSubIdx + 1})` : cp.title,
-                                content: cpText,
-                                pageIndex: cpIdx,
-                                customSubIdx: cpSubIdx
-                            });
-                        });
-                    }
-                });
-            }
-        };
-
-        if (!isFieldHidden('cover')) {
-            pages.push({ type: 'cover', items: [] });
-        }
-        insertCustomPagesFor('cover');
-
-        if (!isFieldHidden('strategy') && (!isFieldHidden('overview') || !isFieldHidden('primaryGoal'))) {
-            const overviewHtml = !isFieldHidden('overview') ? (activeProposalData.overview || '') : '';
-            const primaryGoalHtml = (!isFieldHidden('primaryGoal') && !isHtmlEmpty(activeProposalData.primaryGoal)) ? (activeProposalData.primaryGoal || '') : '';
-            
-            const overviewPages = splitTextIntoPages(overviewHtml, 800);
-            const lastOverviewPage = overviewPages[overviewPages.length - 1] || '';
-            const goalContainerHeight = primaryGoalHtml ? estimateBlockHeight(primaryGoalHtml) + 120 : 0;
-            
-            if (estimateBlockHeight(lastOverviewPage) + goalContainerHeight <= 800) {
-                overviewPages.forEach((opText, opIdx) => {
-                    if (opIdx === overviewPages.length - 1) {
-                        pages.push({
-                            type: 'strategy',
-                            overviewText: opText,
-                            primaryGoalText: primaryGoalHtml,
-                            strategyPage: opIdx + 1,
-                            isLastStrategy: true
-                        });
-                    } else {
-                        pages.push({
-                            type: 'strategy',
-                            overviewText: opText,
-                            primaryGoalText: '',
-                            strategyPage: opIdx + 1,
-                            isLastStrategy: false
-                        });
-                    }
-                });
-            } else {
-                overviewPages.forEach((opText, opIdx) => {
-                    pages.push({
-                        type: 'strategy',
-                        overviewText: opText,
-                        primaryGoalText: '',
-                        strategyPage: opIdx + 1,
-                        isLastStrategy: false
-                    });
-                });
-                pages.push({
-                    type: 'strategy',
-                    overviewText: '',
-                    primaryGoalText: primaryGoalHtml,
-                    strategyPage: overviewPages.length + 1,
-                    isLastStrategy: true
-                });
-            }
-        }
-        insertCustomPagesFor('strategy');
-
-        if (!isFieldHidden('scopeOfWork') && activeProposalData.scopeOfWork) {
-            const scopePages = splitTextIntoPages(activeProposalData.scopeOfWork, 800);
-            scopePages.forEach((spText, spIdx) => {
-                pages.push({
-                    type: 'scope',
-                    items: [],
-                    scopeText: spText,
-                    scopePage: spIdx + 1,
-                    isLastScope: spIdx === scopePages.length - 1
-                });
-            });
-        }
-        insertCustomPagesFor('scope');
-
-        if (!isFieldHidden('proposal')) {
-            const activeDeliverables = (activeProposalData.deliverables || []).filter(d => d.item);
-            const clientReqs = (activeProposalData.clientRequirements || []).filter(r => r.description);
-            
-            if (activeDeliverables.length === 0) {
-                pages.push({
-                    type: 'proposal',
-                    deliverables: [],
-                    clientRequirements: clientReqs,
-                    proposalPage: 1,
-                    isLastProposal: true
-                });
-            } else {
-                let delsRemaining = [...activeDeliverables];
-                let pageIdx = 1;
-                while (delsRemaining.length > 0) {
-                    const chunk = delsRemaining.splice(0, 10);
-                    const isLast = delsRemaining.length === 0;
-                    pages.push({
-                        type: 'proposal',
-                        deliverables: chunk,
-                        clientRequirements: isLast ? clientReqs : [],
-                        proposalPage: pageIdx++,
-                        isLastProposal: isLast,
-                        startIndex: (pageIdx - 2) * 10
-                    });
-                }
-            }
-        }
-        insertCustomPagesFor('proposal');
-
-        if (!isFieldHidden('inventory')) {
-            let itemsRemaining = [...activeProposalItems];
-            if (itemsRemaining.length === 0) pages.push({ type: 'table', items: [] });
-            else {
-                let pIdx = 1;
-                while (itemsRemaining.length > 0) {
-                    pages.push({ 
-                        type: 'table', 
-                        items: itemsRemaining.splice(0, 10),
-                        tablePageIdx: pIdx++ 
-                    });
-                }
-            }
-        }
-        insertCustomPagesFor('table');
-
-        insertCustomPagesFor('default');
-
-        if (!isFieldHidden('commercials')) {
-            const termsHtml = activeProposalData.terms || '';
-            const paymentDetailsHtml = (activeProposalData.showPaymentDetails !== false && !isFieldHidden('paymentDetails')) ? (activeProposalData.paymentDetails || '') : '';
-            
-            if (termsHtml) {
-                const termsPages = splitTextIntoPages(termsHtml, 800);
-                const lastTermsPageText = termsPages[termsPages.length - 1];
-                const finalPageStaticHeight = 550;
-                const lastTermsHeight = estimateBlockHeight(lastTermsPageText) + (paymentDetailsHtml ? 100 : 0);
-                
-                if (lastTermsHeight + finalPageStaticHeight <= 800) {
-                    for (let i = 0; i < termsPages.length - 1; i++) {
-                        pages.push({
-                            type: 'terms_only',
-                            termsText: termsPages[i],
-                            termsPageIdx: i + 1
-                        });
-                    }
-                    pages.push({
-                        type: 'commercials',
-                        termsText: lastTermsPageText,
-                        paymentDetailsText: paymentDetailsHtml,
-                        items: []
-                    });
-                } else {
-                    for (let i = 0; i < termsPages.length; i++) {
-                        pages.push({
-                            type: 'terms_only',
-                            termsText: termsPages[i],
-                            termsPageIdx: i + 1
-                        });
-                    }
-                    pages.push({
-                        type: 'commercials',
-                        termsText: '',
-                        paymentDetailsText: paymentDetailsHtml,
-                        items: []
-                    });
-                }
-            } else {
-                pages.push({
-                    type: 'commercials',
-                    termsText: '',
-                    paymentDetailsText: paymentDetailsHtml,
-                    items: []
-                });
-            }
-        }
-        insertCustomPagesFor('commercials');
-        return pages;
-    }, [activeProposalData, activeProposalItems]);
-
-    const proposalPaginatedPages = useMemo(() => getProposalPaginatedPages(), [getProposalPaginatedPages]);
-
-    const saveProposalDoc = async () => {
-        setIsSaving(true);
-        try {
-            if (isBulkMode && bulkProposals.length > 0) {
-                for (const prop of bulkProposals) {
-                    const proposalData = JSON.parse(JSON.stringify({
-                        ...prop,
-                        createdAt: prop.createdAt || new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    }));
-                    await addProposal(proposalData);
-                }
-                addToast(`All proposals saved.`, 'success');
-                navigate('/admin/proposals');
-            } else {
-                const rawProposalData = { 
-                    ...proposalFormData, 
-                    items: proposalItems, 
-                    totalAmount: proposalTotalAmount, 
-                    subtotal: proposalSubtotal, 
-                    updatedAt: new Date().toISOString() 
-                };
-                const proposalData = JSON.parse(JSON.stringify(rawProposalData));
-                if (id) await updateProposal(id, proposalData);
-                else await addProposal({ ...proposalData, createdAt: new Date().toISOString() });
-                
-                localStorage.removeItem('newbi_aistudio_draft_proposal_form');
-                localStorage.removeItem('newbi_aistudio_draft_proposal_items');
-                localStorage.removeItem('newbi_aistudio_draft_agreement_form');
-                localStorage.removeItem('newbi_aistudio_draft_messages');
-                localStorage.removeItem('newbi_aistudio_draft_engine');
-                isDirtyRef.current = false;
-
-                addToast(`Proposal saved.`, 'success');
-                navigate('/admin/proposals');
-            }
-        } catch (error) {
-            addToast("Couldn't save the proposal. Please try again.", 'error');
-        } finally {
-            setIsSaving(false);
-        }
+    const startNew = () => {
+        if (busy) cancel();
+        setPhase('compose');
+        setEntryId(null);
+        setError(null);
+        setUndoStack([]);
+        setInstruction('');
     };
 
-    // ────────────────────────────────────────────────────────────────────────
-    // 2. AGREEMENT ENGINE STATE & FUNCTIONS
-    // ────────────────────────────────────────────────────────────────────────
-    const [agreementActiveTab, setAgreementActiveTab] = useState('1');
-    const existingAgreement = (activeEngine === 'agreement' && id) ? agreements.find(a => a.id === id) : null;
-    
-    // Inject hook logic for Contract Generator
-    const {
-        formData: agreementFormData, 
-        setFormData: setAgreementFormData, 
-        updateField: updateAgreementField,
-        toggleClause: toggleAgreementClause, 
-        updateClause: updateAgreementClause, 
-        removeClause: removeAgreementClause, 
-        addCustomClause: addAgreementCustomClause,
-        paginatedPages: agreementPaginatedPages
-    } = useContractGenerator(existingAgreement);
-
-    const saveAgreementDoc = async () => {
-        setIsSaving(true);
-        try {
-            const rawData = { 
-                ...agreementFormData, 
-                updatedAt: new Date().toISOString(),
-                createdBy: agreementFormData.createdBy || user?.uid || null 
-            };
-            const data = JSON.parse(JSON.stringify(rawData));
-            if (id) await updateAgreement(id, data);
-            else await addAgreement(data);
-            
-            localStorage.removeItem('newbi_aistudio_draft_proposal_form');
-            localStorage.removeItem('newbi_aistudio_draft_proposal_items');
-            localStorage.removeItem('newbi_aistudio_draft_agreement_form');
-            localStorage.removeItem('newbi_aistudio_draft_messages');
-            localStorage.removeItem('newbi_aistudio_draft_engine');
-            isDirtyRef.current = false;
-
-            addToast("Agreement saved.", "success");
-            navigate('/admin/agreements');
-        } catch (error) {
-            addToast("Couldn't save the agreement. Please try again.", 'error');
-        } finally {
-            setIsSaving(false);
+    const editBrief = () => {
+        if (brief) {
+            setPrompt(brief.prompt || '');
+            setTone(brief.tone || 'Premium');
+            setKind(brief.kind || resultKind);
         }
+        setFiles([]);
+        startNew();
     };
 
-    // ────────────────────────────────────────────────────────────────────────
-    // 3. UNIFIED GENERATOR FLOW & CHAT INTEGRATION
-    // ────────────────────────────────────────────────────────────────────────
-    const [promptText, setPromptText] = useState('');
-    const [chatInput, setChatInput] = useState('');
-    
-    // Suggestion configurations
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const [suggestionCategory, setSuggestionCategory] = useState(0);
+    const elapsed = useElapsed(busy === 'revise');
+    const genElapsed = useElapsed(busy === 'generate' && phase === 'result');
+    const attachedChars = useMemo(() => files.reduce((n, f) => n + (f.text ? f.text.length + f.name.length + 10 : 0), 0), [files]);
+    const recent = history.entries.slice(0, 4);
+    const links = MODULE_LINKS[module];
+    const ra = accent(resultCfg.tone);
 
-    const suggestions = useMemo(() => {
-        if (activeEngine === 'proposal') {
-            return [
-                "Event production proposal for a 2-day music festival, including stage, sound, and lighting setup",
-                "Artist logistics and hospitality proposal for a multi-city stand-up comedy tour",
-                "Proposal for 50 event volunteers and site management for a corporate marathon",
-                "Strategic event consultation for a brand's 10th-anniversary gala dinner",
-                "Complete digital marketing and social media coverage for a product launch event",
-                "Technical production and stage management proposal for a TEDx event"
-            ];
-        } else {
-            return [
-                "Draft a service contract for social media management services for 12 months, ₹50,000 total value",
-                "Create an NDA and service contract for a brand collaboration with Sunrise Studios",
-                "Generate an MOU for a joint venture between Newbi Entertainment and a production house",
-                "Write a freelancer contract for video editing services, 6-month engagement",
-                "Draft a content licensing contract for YouTube channel management"
-            ];
-        }
-    }, [activeEngine]);
-
-    // Messages array inside chat
-    const [messages, setMessages] = useState([
-        {
-            id: 'init-msg',
-            sender: 'ai',
-            text: activeEngine === 'proposal'
-                ? "Welcome to Newbi AI Proposal Studio. Describe the event or campaign requirements in the prompt box above, and I will generate a fully detailed proposal and cost estimate for you. You can refine it at any time using this chat!"
-                : "Welcome to Newbi Legal Suite. Provide details about the contracting parties and commercials above. I will draft a legally-precise agreement. You can ask me to revise terms or clauses right in the chat stream."
-        }
-    ]);
-
-    const chatEndRef = useRef(null);
-    const chatContainerRef = useRef(null);
-
-    const [generationStage, setGenerationStage] = useState(0);
-    const [generationProgress, setGenerationProgress] = useState(0);
-    const [generationTime, setGenerationTime] = useState(0);
-
-    const STAGE_MESSAGES = useMemo(() => [
-        { text: "Establishing connection to neural node...", progress: 15 },
-        { text: "Analyzing prompt & structural constraints...", progress: 40 },
-        { text: "Synthesizing document data fields...", progress: 65 },
-        { text: "Formulating line items & pricing dynamics...", progress: 85 },
-        { text: "Polishing final layout parameters...", progress: 95 }
-    ], []);
-
-    useEffect(() => {
-        let timer;
-        let stageTimer;
-        if (isGenerating) {
-            setGenerationStage(0);
-            setGenerationProgress(15);
-            setGenerationTime(0);
-            
-            timer = setInterval(() => {
-                setGenerationTime(prev => prev + 1);
-            }, 1000);
-
-            stageTimer = setInterval(() => {
-                setGenerationStage(prev => {
-                    const next = Math.min(prev + 1, STAGE_MESSAGES.length - 1);
-                    setGenerationProgress(STAGE_MESSAGES[next].progress);
-                    return next;
-                });
-            }, 2500);
-        } else {
-            setGenerationStage(0);
-            setGenerationProgress(0);
-            setGenerationTime(0);
-        }
-        return () => {
-            clearInterval(timer);
-            clearInterval(stageTimer);
-        };
-    }, [isGenerating, STAGE_MESSAGES]);
-
-    useEffect(() => {
-        if (chatContainerRef.current) {
-            chatContainerRef.current.scrollTo({
-                top: chatContainerRef.current.scrollHeight,
-                behavior: 'smooth'
-            });
-        }
-    }, [messages]);
-
-    // Update greeting message when switching engine
-    useEffect(() => {
-        setMessages([
-            {
-                id: 'init-msg-' + activeEngine,
-                sender: 'ai',
-                text: activeEngine === 'proposal'
-                    ? "Welcome to Newbi AI Proposal Studio. Describe the event or campaign requirements in the prompt box above, and I will generate a fully detailed proposal and cost estimate for you. You can refine it at any time using this chat!"
-                    : "Welcome to Newbi Legal Suite. Provide details about the contracting parties and commercials above. I will draft a legally-precise agreement. You can ask me to revise terms or clauses right in the chat stream."
-            }
-        ]);
-        setCurrentPreviewPage(0);
-    }, [activeEngine]);
-
-    // Single trigger to handle full document generation
-    const handleMainGenerate = async () => {
-        if (!promptText.trim()) return;
-        setIsGenerating(true);
-        setShowSuggestions(false);
-        
-        // Add chat representation of user instruction
-        const userMsg = { id: Date.now() + '-user', sender: 'user', text: `Generate new ${activeEngine === 'proposal' ? 'proposal' : 'agreement'}: "${promptText}"` };
-        setMessages(prev => [...prev, userMsg]);
-
-        try {
-            if (activeEngine === 'proposal') {
-                if (isBulkMode) {
-                    const data = await generateFullDocument('bulk_proposal', promptText, 'Premium', {});
-                    setProposalFormData(prev => ({
-                        ...prev,
-                        clientName: data.clientName || prev.clientName,
-                        clientAddress: data.clientAddress || prev.clientAddress,
-                        campaignName: data.campaignName || prev.campaignName,
-                        campaignDuration: data.campaignDuration || prev.campaignDuration,
-                        coverDescription: data.coverDescription || prev.coverDescription,
-                        overview: data.overview || prev.overview,
-                        primaryGoal: data.primaryGoal || prev.primaryGoal,
-                        scopeOfWork: data.scopeOfWork || prev.scopeOfWork,
-                        terms: data.terms || prev.terms,
-                        deliverables: data.deliverables?.length 
-                            ? data.deliverables.map((d, i) => ({ 
-                                id: Date.now() + i, 
-                                item: d.item || d.name || '', 
-                                qty: d.qty || '1', 
-                                timeline: d.timeline || 'TBD' 
-                            })) 
-                            : prev.deliverables,
-                        clientRequirements: data.clientRequirements?.length 
-                            ? data.clientRequirements.map((r, i) => ({ 
-                                id: Date.now() + 100 + i, 
-                                description: r.description || r.requirement || r.name || '' 
-                            })) 
-                            : prev.clientRequirements,
-                        customPages: data.customPages?.length
-                            ? [
-                                ...(prev.customPages || []),
-                                ...data.customPages.map((cp, cpIdx) => ({
-                                    id: String(Date.now()) + '-cp-' + cpIdx,
-                                    title: cp.title || 'Additional Page',
-                                    subtitle: cp.subtitle || '',
-                                    content: cp.content || '',
-                                    insertAfter: 'default'
-                                }))
-                            ]
-                            : (prev.customPages || [])
-                    }));
-                    if (data.items && data.items.length > 0) {
-                        setProposalItems(data.items.map((item, idx) => ({
-                            id: Date.now() + 200 + idx,
-                            description: item.description || item.name || '',
-                            qty: Number(item.qty) || 1,
-                            unit: item.unit || 'Unit',
-                            price: Number(item.price) || 0
-                        })));
-                    }
-                    setMessages(prev => [...prev, {
-                        id: Date.now() + '-ai',
-                        sender: 'ai',
-                        text: `✓ Pre-generated proposal text analyzed and structured! All fields, scope of work, deliverables (${data.deliverables?.length || 0}), financial line items (${data.items?.length || 0}), and custom pages have been automatically populated into your proposal. Preview the compiled A4 sheet on the right, or click save to persist.`
-                    }]);
-                } else {
-                    const data = await generateFullDocument('proposal', promptText, 'Premium', {});
-                    setProposalFormData(prev => ({
-                        ...prev,
-                        clientName: data.clientName || prev.clientName,
-                        clientAddress: data.clientAddress || prev.clientAddress,
-                        campaignName: data.campaignName || prev.campaignName,
-                        campaignDuration: data.campaignDuration || prev.campaignDuration,
-                        coverDescription: data.coverDescription || prev.coverDescription,
-                        overview: data.overview || prev.overview,
-                        primaryGoal: data.primaryGoal || prev.primaryGoal,
-                        scopeOfWork: data.scopeOfWork || prev.scopeOfWork,
-                        terms: data.terms || prev.terms,
-                        deliverables: data.deliverables?.length 
-                            ? data.deliverables.map((d, i) => ({ 
-                                id: Date.now() + i, 
-                                item: d.item || d.name || '', 
-                                qty: d.qty || '1', 
-                                timeline: d.timeline || 'TBD' 
-                            })) 
-                            : prev.deliverables,
-                        clientRequirements: data.clientRequirements?.length 
-                            ? data.clientRequirements.map((r, i) => ({ 
-                                id: Date.now() + i, 
-                                description: r.description || r.name || '' 
-                            })) 
-                            : prev.clientRequirements,
-                    }));
-                    if (data.items) {
-                        setProposalItems(data.items.map((item, i) => ({
-                            id: Date.now() + i,
-                            description: item.description || item.name || '',
-                            qty: Number(item.qty) || 1,
-                            unit: item.unit || 'Event',
-                            price: Number(item.price) || 0
-                        })));
-                    }
-                    setMessages(prev => [...prev, {
-                        id: Date.now() + '-ai',
-                        sender: 'ai',
-                        text: `✓ Successfully created proposal for "${data.clientName || 'Partner'}". Added ${data.items?.length || 0} line items and deliverables. Let me know if you want to revise any sections!`
-                    }]);
-                }
-            } else {
-                // Agreement Engine
-                const data = await generateFullDocument('agreement', promptText, 'Premium', {});
-                setAgreementFormData(prev => ({
-                    ...prev,
-                    agreementNumber: prev.agreementNumber || `NB-AGR-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
-                    parties: {
-                        firstParty: { 
-                            name: data.parties?.firstParty?.name || 'Newbi Entertainment',
-                            address: data.parties?.firstParty?.address || 'Bangalore, India',
-                            role: data.parties?.firstParty?.role || 'Service Provider',
-                            email: data.parties?.firstParty?.email || ''
-                        },
-                        secondParty: {
-                            name: data.parties?.secondParty?.name || '',
-                            address: data.parties?.secondParty?.address || '',
-                            role: data.parties?.secondParty?.role || 'Client',
-                            email: data.parties?.secondParty?.email || ''
-                        }
-                    },
-                    details: {
-                        projectName: data.details?.projectName || prev.details.projectName,
-                        purpose: data.details?.purpose || prev.details.purpose,
-                        duration: data.details?.duration || prev.details.duration,
-                        territory: data.details?.territory || prev.details.territory
-                    },
-                    commercials: {
-                        totalValue: data.commercials?.totalValue || prev.commercials.totalValue,
-                        paymentSchedule: data.commercials?.paymentSchedule || prev.commercials.paymentSchedule,
-                        currency: data.commercials?.currency || 'INR',
-                        gstIncluded: data.commercials?.gstIncluded !== false
-                    },
-                    clauses: data.clauses?.length 
-                        ? data.clauses.map((c, i) => ({
-                            id: `ai-${Date.now()}-${i}`,
-                            title: c.title || 'Clause',
-                            content: c.content || '',
-                            isActive: true,
-                            category: 'general'
-                        }))
-                        : prev.clauses
-                }));
-                setMessages(prev => [...prev, {
-                    id: Date.now() + '-ai',
-                    sender: 'ai',
-                    text: `✓ Agreement drafted successfully for "${data.parties?.secondParty?.name || 'Client'}". Total Value is set to ${data.commercials?.currency || 'INR'} ${data.commercials?.totalValue || '0'}. Added ${data.clauses?.length || 0} legal clauses. What would you like to refine?`
-                }]);
-            }
-        } catch (err) {
-            setMessages(prev => [...prev, {
-                id: Date.now() + '-ai-err',
-                sender: 'ai',
-                text: `⚠ Error during generation: ${err.message}`
-            }]);
-            addToast(`Couldn't generate the document. Check the chat for details and try again.`, 'error');
-        } finally {
-            setIsGenerating(false);
-            setIsBulkGenerating(false);
-        }
-    };
-
-    // Chat refinement trigger (calls reviseDocument)
-    const handleChatRefinement = async (e) => {
-        e?.preventDefault();
-        if (!chatInput.trim()) return;
-
-        const command = chatInput.trim();
-        setChatInput('');
-
-        // Append user bubble
-        const userBubble = { id: Date.now() + '-user-chat', sender: 'user', text: command };
-        setMessages(prev => [...prev, userBubble]);
-        setIsGenerating(true);
-
-        const activeDocState = activeEngine === 'proposal' 
-            ? { ...activeProposalData, items: activeProposalItems } 
-            : agreementFormData;
-
-        try {
-            const revisedJSON = await reviseDocument(activeDocState, command, 'Premium');
-            
-            if (activeEngine === 'proposal') {
-                setProposalFormData(prev => ({
-                    ...prev,
-                    ...revisedJSON,
-                    deliverables: revisedJSON.deliverables?.length 
-                        ? revisedJSON.deliverables.map((d, i) => ({ id: d.id || Date.now() + i, item: d.item || '', qty: d.qty || '1', timeline: d.timeline || 'TBD' }))
-                        : prev.deliverables,
-                    clientRequirements: revisedJSON.clientRequirements?.length 
-                        ? revisedJSON.clientRequirements.map((r, i) => ({ id: r.id || Date.now() + i, description: r.description || '' }))
-                        : prev.clientRequirements,
-                }));
-                if (revisedJSON.items) {
-                    setProposalItems(revisedJSON.items.map((item, i) => ({
-                        id: item.id || Date.now() + i,
-                        description: item.description || '',
-                        qty: Number(item.qty) || 1,
-                        unit: item.unit || 'Event',
-                        price: Number(item.price) || 0
-                    })));
-                }
-            } else {
-                setAgreementFormData(prev => ({
-                    ...prev,
-                    ...revisedJSON,
-                    parties: {
-                        firstParty: { ...prev.parties.firstParty, ...(revisedJSON.parties?.firstParty || {}) },
-                        secondParty: { ...prev.parties.secondParty, ...(revisedJSON.parties?.secondParty || {}) }
-                    },
-                    details: { ...prev.details, ...(revisedJSON.details || {}) },
-                    commercials: { ...prev.commercials, ...(revisedJSON.commercials || {}) },
-                    clauses: revisedJSON.clauses?.length
-                        ? revisedJSON.clauses.map((c, i) => ({ id: c.id || `clause-${Date.now()}-${i}`, title: c.title || '', content: c.content || '', isActive: c.isActive !== false }))
-                        : prev.clauses
-                }));
-            }
-
-            setMessages(prev => [...prev, {
-                id: Date.now() + '-ai-refine',
-                sender: 'ai',
-                text: `✓ I have refined the document state based on your instruction: "${command}". The live preview and edit fields have been updated.`
-            }]);
-        } catch (err) {
-            setMessages(prev => [...prev, {
-                id: Date.now() + '-ai-refine-err',
-                sender: 'ai',
-                text: `⚠ Failed to refine document: ${err.message}`
-            }]);
-            addToast(`Couldn't refine the document. Check the chat for details and try again.`, 'error');
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-
-    // ────────────────────────────────────────────────────────────────────────
-    // PDF DOWNLOADING FLOW
-    // ────────────────────────────────────────────────────────────────────────
-    const generatePDF = async () => {
-        setIsSaving(true);
-        const originalScale = previewScale;
-        setPreviewScale(1);
-        await new Promise(r => setTimeout(r, 800));
-        try {
-            const [jsPDFModule, html2canvasModule] = await Promise.all([
-                import('jspdf'),
-                import('html2canvas')
-            ]);
-            const jsPDF = jsPDFModule.default;
-            const html2canvas = html2canvasModule.default;
-
-            const pdf = new jsPDF('p', 'mm', 'a4');
-
-            if (activeEngine === 'proposal') {
-                const pages = document.querySelectorAll('.pdf-export-only .proposal-page-render');
-                if (pages.length === 0) {
-                    const singlePage = document.querySelector('.proposal-page-render');
-                    if (singlePage) {
-                        const canvas = await html2canvas(singlePage, { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' });
-                        pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297, '', 'FAST');
-                    }
-                } else {
-                    for (let i = 0; i < pages.length; i++) {
-                        const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' });
-                        if (i > 0) pdf.addPage();
-                        pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297, '', 'FAST');
-                    }
-                }
-                pdf.save(`Newbi-Quotation-${activeProposalData.clientName || 'Proposal'}.pdf`);
-            } else {
-                const pages = document.querySelectorAll('.pdf-export-only .agreement-page-render');
-                for (let i = 0; i < pages.length; i++) {
-                    const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' });
-                    if (i > 0) pdf.addPage();
-                    pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297, '', 'FAST');
-                }
-                pdf.save(`Newbi-Contract-${agreementFormData.parties.secondParty.name || 'Agreement'}.pdf`);
-            }
-        } catch (error) {
-            console.error("PDF Export failed:", error);
-            addToast("Couldn't create the PDF. Please try again.", "error");
-        } finally {
-            setPreviewScale(originalScale);
-            setIsSaving(false);
-        }
-    };
-
-    useEffect(() => {
-        const handleResize = () => {
-            if (previewContainerRef.current) {
-                const containerWidth = previewContainerRef.current.clientWidth - 48; // padding
-                const containerHeight = previewContainerRef.current.clientHeight - 48; // padding
-                const scaleWidth = containerWidth / 794;
-                const scaleHeight = containerHeight / 1123;
-                const autoScale = isExpandedPreview ? Math.min(scaleWidth, scaleHeight) : scaleWidth;
-                setPreviewScale(Math.max(0.1, Math.min(2.0, autoScale)) * userZoom);
-            }
-        };
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [userZoom, activeEngine, activeProposalData, agreementFormData, isExpandedPreview]);
-
-    // ────────────────────────────────────────────────────────────────────────
-    // PREVIEW RENDERING UTILITIES
-    // ────────────────────────────────────────────────────────────────────────
-
-    // Signature Modal hooks
-    const [isSigModalOpen, setIsSigModalOpen] = useState(false);
-    const [sigTarget, setSigTarget] = useState('provider'); // 'provider' | 'client'
-    const [isSignaturesCollapsed, setIsSignaturesCollapsed] = useState(true);
-
-    const handleSigSave = (dataUrl) => {
-        if (activeEngine === 'proposal') {
-            setProposalDataState(prev => ({
-                ...prev,
-                showSignatures: true,
-                providerSignature: sigTarget === 'provider' ? dataUrl : prev.providerSignature,
-                clientSignature: sigTarget === 'client' ? dataUrl : prev.clientSignature
-            }));
-        } else {
-            setAgreementFormData(prev => ({
-                ...prev,
-                showSignatures: true,
-                providerSignature: sigTarget === 'provider' ? dataUrl : prev.providerSignature,
-                clientSignature: sigTarget === 'client' ? dataUrl : prev.clientSignature
-            }));
-        }
-    };
-
-    const currentLogo = logoOptions.find(l => l.id === (activeEngine === 'proposal' ? activeProposalData.selectedLogo : agreementFormData.selectedLogo)) || logoOptions[0];
-    const paginatedPages = activeEngine === 'proposal' ? proposalPaginatedPages : agreementPaginatedPages;
-
-    useEffect(() => {
-        if (paginatedPages.length > 0 && currentPreviewPage >= paginatedPages.length) {
-            setCurrentPreviewPage(paginatedPages.length - 1);
-        }
-    }, [paginatedPages.length, currentPreviewPage]);
-
-    return (
-        <div className="h-screen overflow-hidden bg-gray-50 dark:bg-[#020202] text-gray-900 dark:text-white font-['Outfit'] flex flex-col">
-            <style dangerouslySetInnerHTML={{ __html: `
-                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-                @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
-                .scrollbar-hide::-webkit-scrollbar { display: none; }
-                .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-                .font-signature { font-family: 'Caveat', cursive; }
-            `}} />
-
-            {/* TOP BAR BAR */}
-            <header className="h-16 md:h-20 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/50 backdrop-blur-3xl flex items-center justify-between px-4 md:px-8 shrink-0 relative z-50">
-                <div className="flex items-center gap-4">
-                    <Link 
-                        to={activeEngine === 'proposal' ? '/admin/proposals' : '/admin/agreements'} 
-                        className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-zinc-400 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all border border-black/10 dark:border-white/5 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
-                    >
-                        <ArrowLeft size={14} />
-                        <span className="hidden sm:inline">Vault</span>
-                    </Link>
-                    <AdminDashboardLink />
+    // ── Header ─────────────────────────────────────────────────────────
+    const header = (
+        <header className="relative z-30 shrink-0 border-b border-black/[0.06] bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#07080b]/90">
+            <div className="flex h-14 items-center gap-2 px-2 sm:px-4">
+                <Link to={phase === 'result' ? links.list : '/admin/proposals'} aria-label="Back" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-600 hover:bg-black/5 dark:text-zinc-300 dark:hover:bg-white/10">
+                    <ArrowLeft size={18} />
+                </Link>
+                <div className={cn('hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:flex', moduleAccent.chip)}><Sparkles size={17} /></div>
+                <div className="min-w-0 flex-1">
+                    <p className="truncate text-[15px] font-bold leading-tight">
+                        {phase === 'result' ? documentTitle(resultKind, doc) : 'AI studio'}
+                    </p>
+                    <p className={cn('truncate text-[11.5px] font-medium', dirty ? 'text-amber-600 dark:text-amber-300' : 'text-gray-500')}>
+                        {phase !== 'result' && 'Draft proposals and contracts from a short brief'}
+                        {phase === 'result' && !saved && 'Not saved yet · kept on this device'}
+                        {phase === 'result' && saved && !dirty && `Saved to ${links.name.toLowerCase()} · ${timeAgo(saved.at) || 'earlier'}`}
+                        {phase === 'result' && dirty && 'Unsaved changes'}
+                    </p>
                 </div>
-
-                {/* UNIFIED ENGINE TOGGLE TABS */}
-                <div className="bg-black/5 dark:bg-[#0D0D0D] border border-black/10 dark:border-white/[0.04] p-1 rounded-2xl flex items-center gap-1">
-                    <button
-                        onClick={() => !isEditing && setActiveEngine('proposal')}
-                        disabled={isEditing && activeEngine !== 'proposal'}
-                        className={cn(
-                            "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all flex items-center gap-2",
-                            activeEngine === 'proposal'
-                                ? "bg-[#39FF14]/10 text-[#39FF14] border border-[#39FF14]/20 shadow-[0_0_15px_rgba(57,255,20,0.15)]"
-                                : "text-zinc-500 hover:text-zinc-300 disabled:opacity-20"
-                        )}
-                    >
-                        <Layers size={12} />
-                        Proposal Engine
-                    </button>
-                    <button
-                        onClick={() => !isEditing && setActiveEngine('agreement')}
-                        disabled={isEditing && activeEngine !== 'agreement'}
-                        className={cn(
-                            "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all flex items-center gap-2",
-                            activeEngine === 'agreement'
-                                ? "bg-[#A855F7]/10 text-[#A855F7] border border-[#A855F7]/20 shadow-[0_0_15px_rgba(168,85,247,0.15)]"
-                                : "text-zinc-500 hover:text-zinc-300 disabled:opacity-20"
-                        )}
-                    >
-                        <Scale size={12} />
-                        Agreement Engine
-                    </button>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    {autosaveStatus !== 'idle' && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 select-none">
-                            <span className={cn(
-                                "w-1.5 h-1.5 rounded-full shrink-0",
-                                autosaveStatus === 'saving' && "bg-amber-400 animate-pulse",
-                                autosaveStatus === 'saved' && "bg-emerald-400",
-                                autosaveStatus === 'error' && "bg-red-500"
-                            )} />
-                            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-400">
-                                {autosaveStatus === 'saving' && "Saving..."}
-                                {autosaveStatus === 'saved' && `Autosaved ${lastSaved}`}
-                                {autosaveStatus === 'error' && "Autosave error"}
-                            </span>
-                        </div>
-                    )}
-                    <button
-                        onClick={generatePDF}
-                        disabled={isSaving}
-                        className="px-4 py-2.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-wider"
-                    >
-                        <Download size={14} />
-                        <span>Export</span>
-                    </button>
-                    <button
-                        onClick={activeEngine === 'proposal' ? saveProposalDoc : saveAgreementDoc}
-                        disabled={isSaving}
-                        className={cn(
-                            "px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2",
-                            activeEngine === 'proposal'
-                                ? "bg-[#39FF14] text-black hover:shadow-[0_0_20px_rgba(57,255,20,0.4)]"
-                                : "bg-[#A855F7] text-gray-900 dark:text-white hover:shadow-[0_0_20px_rgba(168,85,247,0.4)]"
-                        )}
-                    >
-                        {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-                        <span>Save {isEditing ? "Changes" : "Draft"}</span>
-                    </button>
-                </div>
-            </header>
-
-            {/* SPLIT LAYOUT CONTAINER */}
-            <div className="flex-1 flex min-h-0 relative overflow-hidden">
-                
-                {/* LEFT CONTROL PANEL (AI, CHAT, FORMS) */}
-                <div className={cn(
-                    "w-full lg:w-[52%] border-r border-black/10 dark:border-white/5 bg-white dark:bg-[#050505] flex flex-col min-h-0 overflow-hidden",
-                    isExpandedPreview && "hidden"
-                )}>
-                    {showDraftBanner && (
-                        <div className="mx-6 mt-6 p-4 rounded-2xl bg-gray-100 dark:bg-zinc-900/90 border border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.05)] flex flex-col gap-3 relative overflow-hidden animate-fade-in shrink-0 z-30">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-amber-600" />
-                            <div className="flex items-start gap-3">
-                                <AlertTriangle size={18} className="text-amber-400 mt-0.5 shrink-0" />
-                                <div className="space-y-1">
-                                    <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">Unsaved Session Draft Detected</h4>
-                                    <p className="text-[10px] text-zinc-400 font-medium leading-relaxed">
-                                        We found an incomplete draft from your previous AI sandbox session. Would you like to restore your work or clear this draft?
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 justify-end">
-                                <button 
-                                    onClick={handleClearDraft}
-                                    className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider text-zinc-500 hover:text-zinc-300 transition-all"
-                                >
-                                    Dismiss Draft
-                                </button>
-                                <button 
-                                    onClick={handleRestoreDraft}
-                                    className="px-3.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 text-[9px] font-black uppercase tracking-wider transition-all shadow-[0_0_10px_rgba(245,158,11,0.05)]"
-                                >
-                                    Restore Session
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {/* TOP BRANDING PANEL: GEMINI 3.5 FLASH ACTIVE */}
-                    <div className="p-6 border-b border-black/10 dark:border-white/5 relative overflow-hidden shrink-0">
-                        
-                        {/* Scanning horizontal laser bar */}
-                        {isGenerating && (
-                            <div className={cn(
-                                "absolute left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-ai-scan z-20 pointer-events-none",
-                                activeEngine === 'proposal' ? "via-[#39FF14]" : "via-[#A855F7]"
-                            )} />
-                        )}
-
-                        <div className="relative z-10 flex items-center justify-between">
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                    <Sparkles size={16} className={cn("animate-pulse", activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]")} />
-                                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-gray-900 dark:text-white">Gemini 3.5 Flash Active</h3>
-                                </div>
-                                <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">Cognitive Documents Orchestration Platform</p>
-                            </div>
-                            
-                            {/* Orbital Tuning Visualization */}
-                            <div className="relative w-14 h-14 rounded-full flex items-center justify-center border border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-900/40">
-                                <div className={cn(
-                                    "absolute w-12 h-12 rounded-full border border-dashed opacity-25 animate-orbit-1",
-                                    activeEngine === 'proposal' ? "border-[#39FF14]" : "border-[#A855F7]"
-                                )} />
-                                <div className={cn(
-                                    "absolute w-10 h-10 rounded-full border border-dashed opacity-45 animate-orbit-2",
-                                    activeEngine === 'proposal' ? "border-[#39FF14]" : "border-[#A855F7]"
-                                )} />
-                                <div className={cn(
-                                    "absolute w-7 h-7 rounded-full border border-dashed opacity-65 animate-orbit-3",
-                                    activeEngine === 'proposal' ? "border-[#39FF14]" : "border-[#A855F7]"
-                                )} />
-                                <div className={cn(
-                                    "w-3.5 h-3.5 rounded-full z-10 animate-ping absolute",
-                                    activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7]"
-                                )} />
-                                <div className={cn(
-                                    "w-2.5 h-2.5 rounded-full z-10 relative",
-                                    activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7]"
-                                )} />
-                            </div>
-                        </div>
-
-                        {/* Dynamic Step Status Bar */}
-                        {isGenerating && (
-                            <div className="mt-4 pt-3 border-t border-black/10 dark:border-white/5 flex flex-col gap-2 relative z-10 animate-pulse">
-                                <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider">
-                                    <span className={activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]"}>
-                                        {STAGE_MESSAGES[generationStage]?.text || "Synthesizing parameters..."}
-                                    </span>
-                                    <span className="text-zinc-500 font-mono font-bold">{generationTime}s elapsed</span>
-                                </div>
-                                <div className="w-full h-1 bg-gray-100 dark:bg-zinc-950 rounded-full overflow-hidden">
-                                    <div 
-                                        className={cn("h-full transition-all duration-500", activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7]")} 
-                                        style={{ width: `${generationProgress}%` }}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* SEGMENTED MODE SWITCHER */}
-                    <div className="px-6 py-3 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/20 flex gap-2 shrink-0">
-                        <button
-                            type="button"
-                            onClick={() => setLeftPanelMode('ai')}
-                            className={cn(
-                                "flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2",
-                                leftPanelMode === 'ai'
-                                    ? (activeEngine === 'proposal'
-                                        ? "bg-[#39FF14]/10 text-[#39FF14] border border-[#39FF14]/20 shadow-[0_0_15px_rgba(57,255,20,0.05)]"
-                                        : "bg-[#A855F7]/10 text-[#A855F7] border border-[#A855F7]/20 shadow-[0_0_15px_rgba(168,85,247,0.05)]")
-                                    : "text-zinc-500 hover:text-zinc-300 border border-transparent"
-                            )}
-                        >
-                            <Sparkles size={12} className={cn(leftPanelMode === 'ai' && (activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]"))} />
-                            AI Assist Mode
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setLeftPanelMode('manual')}
-                            className={cn(
-                                "flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2",
-                                leftPanelMode === 'manual'
-                                    ? (activeEngine === 'proposal'
-                                        ? "bg-[#39FF14]/10 text-[#39FF14] border border-[#39FF14]/20 shadow-[0_0_15px_rgba(57,255,20,0.05)]"
-                                        : "bg-[#A855F7]/10 text-[#A855F7] border border-[#A855F7]/20 shadow-[0_0_15px_rgba(168,85,247,0.05)]")
-                                    : "text-zinc-500 hover:text-zinc-300 border border-transparent"
-                            )}
-                        >
-                            <Settings size={12} className={cn(leftPanelMode === 'manual' && (activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]"))} />
-                            Manual Calibration
-                        </button>
-                    </div>
-
-                    {leftPanelMode === 'ai' && (
-                        <>
-                            {/* CORE SINGLE PROMPT BOX */}
-                            <div className="p-6 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/40 relative">
-                        <div className="flex items-center justify-between mb-4">
-                            <span className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Document Intent</span>
-                            
-                            {/* Toggle Bulk Mode (Proposal Engine Only) */}
-                            {activeEngine === 'proposal' && (
-                                <div className="flex items-center gap-3">
-                                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Bulk / Pre-Generated Text</span>
-                                    <button
-                                        onClick={() => setIsBulkMode(!isBulkMode)}
-                                        className={cn(
-                                            "w-10 h-5 rounded-full p-0.5 transition-all relative",
-                                            isBulkMode ? "bg-[#39FF14]" : "bg-zinc-800"
-                                        )}
-                                    >
-                                        <div className={cn(
-                                            "w-4 h-4 rounded-full bg-white dark:bg-black transition-all",
-                                            isBulkMode ? "translate-x-5" : "translate-x-0"
-                                        )} />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* TextArea & Suggestion controls */}
-                        <div className={cn(
-                            "border border-black/10 dark:border-white/5 rounded-3xl p-3 bg-gray-100 dark:bg-zinc-950 flex flex-col relative",
-                            isGenerating && `border-${activeEngine === 'proposal' ? '[#39FF14]' : '[#A855F7]'}/30 shadow-[0_0_20px_rgba(57,255,20,0.05)]`
-                        )}>
-                            <textarea
-                                value={promptText}
-                                onChange={(e) => setPromptText(e.target.value)}
-                                placeholder={
-                                    isBulkMode
-                                        ? "Paste complete pre-generated proposal text, raw brief, scope document, or quote draft here to automatically populate all proposal sections..."
-                                        : `Describe the ${activeEngine === 'proposal' ? 'proposal' : 'agreement'} requirements in natural language...`
-                                }
-                                className="w-full bg-transparent text-sm text-gray-900 dark:text-white placeholder-zinc-600 outline-none border-none resize-none py-2 px-1 min-h-[70px]"
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        handleMainGenerate();
-                                    }
-                                }}
-                            />
-
-                            {isBulkMode && (
-                                <div className="flex items-center gap-2 p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-[10px] text-amber-400 font-bold mt-2 animate-fade-in relative z-10">
-                                    <Zap size={14} className="shrink-0 text-amber-400" />
-                                    <span>Bulk Ingestion Active: Paste complete raw drafts, briefs, or quotes to extract & structure all sections directly into this proposal.</span>
-                                </div>
-                            )}
-
-                            <div className="flex items-center justify-between mt-2 pt-2 border-t border-black/10 dark:border-white/5">
-                                <button
-                                    onClick={() => setShowSuggestions(!showSuggestions)}
-                                    className="px-3 py-1 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-zinc-500 hover:text-gray-900 dark:hover:text-white transition-all text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5"
-                                >
-                                    <Zap size={10} />
-                                    Inspiration
-                                </button>
-
-                                <button
-                                    onClick={handleMainGenerate}
-                                    disabled={isGenerating || !promptText.trim()}
-                                    className={cn(
-                                        "px-5 py-2.5 rounded-2xl font-black uppercase tracking-widest text-[9px] flex items-center gap-2 transition-all",
-                                        activeEngine === 'proposal'
-                                            ? "bg-[#39FF14] text-black disabled:bg-zinc-800 disabled:text-zinc-600"
-                                            : "bg-[#A855F7] text-gray-900 dark:text-white disabled:bg-zinc-800 disabled:text-zinc-600"
-                                    )}
-                                >
-                                    {isGenerating ? <RefreshCw size={12} className="animate-spin" /> : (isBulkMode ? <Zap size={12} /> : <Sparkles size={12} />)}
-                                    <span>{isBulkMode ? "Ingest & Populate" : "Generate"}</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Prompt Suggestions */}
-                        <AnimatePresence>
-                            {showSuggestions && (
-                                <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    className="mt-3 overflow-hidden bg-gray-100 dark:bg-zinc-950/80 border border-black/10 dark:border-white/5 rounded-2xl p-2"
-                                >
-                                    <div className="flex items-center justify-between px-3 py-2 border-b border-black/10 dark:border-white/5 text-[9px] font-black uppercase text-zinc-500 tracking-wider">
-                                        <span>Sample Requests</span>
-                                        <button onClick={() => setSuggestionCategory(c => (c + 1) % 2)} className="hover:text-gray-900 dark:hover:text-white flex items-center gap-1">
-                                            <RefreshCw size={8} /> Next
-                                        </button>
-                                    </div>
-                                    <div className="space-y-1 mt-2">
-                                        {suggestions.map((s, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => { setPromptText(s); setShowSuggestions(false); }}
-                                                className="w-full text-left px-3 py-2 rounded-xl text-[11px] text-zinc-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-all truncate"
-                                            >
-                                                → {s}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-
-                    {/* INTERACTIVE CHAT STREAM */}
-                    <div className="p-6 border-b border-black/10 dark:border-white/5 bg-gray-50/50 dark:bg-[#080808] flex flex-col gap-4 flex-1 min-h-0 overflow-hidden">
-                        <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Interactive refinement stream</span>
-                        
-                        <div ref={chatContainerRef} className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto pr-2">
-                            {messages.map((m) => (
-                                <div
-                                    key={m.id}
-                                    className={cn(
-                                        "max-w-[85%] rounded-3xl p-4 text-[12px] leading-relaxed",
-                                        m.sender === 'user'
-                                            ? "bg-zinc-800 text-zinc-100 self-end rounded-tr-none"
-                                            : "bg-gray-100 dark:bg-zinc-900/60 border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
-                                    )}
-                                >
-                                    <div className="flex items-center gap-1.5 mb-1.5">
-                                        <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500">
-                                            {m.sender === 'user' ? 'Client / Admin' : 'Gemini 3.5 Flash'}
-                                        </span>
-                                    </div>
-                                    <div className="leading-relaxed">{renderChatMessage(m.text)}</div>
-                                </div>
-                            ))}
-
-                            {/* Generating Bubble */}
-                            {isGenerating && (
-                                <div className="max-w-[85%] rounded-3xl p-4 text-[12px] leading-relaxed self-start rounded-tl-none bg-white/[0.02] border border-white/[0.04] text-zinc-300 flex flex-col gap-2.5 w-[260px] sm:w-[280px]">
-                                    <div className="flex items-center gap-2">
-                                        <Sparkles size={12} className={cn("animate-spin shrink-0", activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]")} />
-                                        <span className="font-bold uppercase tracking-wider text-[10px] text-zinc-400 flex-1 truncate">
-                                            {STAGE_MESSAGES[generationStage]?.text || "Processing..."}
-                                        </span>
-                                        <span className="text-[9px] font-mono text-zinc-500 font-bold shrink-0">
-                                            {generationTime}s
-                                        </span>
-                                    </div>
-                                    <div className="w-full h-1 bg-gray-100 dark:bg-zinc-950 rounded-full overflow-hidden">
-                                        <div 
-                                            className={cn("h-full transition-all duration-500", activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7]")} 
-                                            style={{ width: `${generationProgress}%` }}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                            <div ref={chatEndRef} />
-                        </div>
-
-                        {/* Interactive Chat Input */}
-                        <form onSubmit={handleChatRefinement} className="flex items-center gap-2 mt-2">
-                            <input
-                                type="text"
-                                value={chatInput}
-                                onChange={(e) => setChatInput(e.target.value)}
-                                placeholder="Instruct AI to refine document (e.g. 'Add a confidentiality clause')"
-                                className="flex-1 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/5 rounded-2xl px-4 py-2.5 text-[12px] placeholder-zinc-600 outline-none focus:border-black/20 dark:focus:border-white/20 transition-all text-gray-900 dark:text-white"
-                            />
-                            <button
-                                type="submit"
-                                disabled={!chatInput.trim() || isGenerating}
-                                className={cn(
-                                    "p-3 rounded-2xl text-black transition-all flex items-center justify-center shrink-0 disabled:opacity-20",
-                                    activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7] text-gray-900 dark:text-white"
-                                )}
-                            >
-                                <Send size={12} />
-                            </button>
-                        </form>
-                    </div>
-                        </>
-                    )}
-
-                    {/* Collapsible Forms Section -> spacious scrollable container */}
-                    {leftPanelMode === 'manual' && (
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-24 scrollbar-hide bg-white dark:bg-black/20">
-                            <div className="flex-1 flex flex-col min-h-0">
-                                {/* Engine Form switcher */}
-                                {activeEngine === 'proposal' ? (
-                            // PROPOSAL ENGINE FORMS
-                            <div className="flex-1 flex flex-col min-h-0">
-                                {/* Proposal Local form Tabs */}
-                                <div className="flex gap-2 border-b border-black/10 dark:border-white/5 pb-2 mb-4 overflow-x-auto scrollbar-hide shrink-0">
-                                    {[
-                                        { id: '1', label: 'Identity' },
-                                        { id: '2', label: 'Strategy' },
-                                        { id: '3', label: 'Scope' },
-                                        { id: '4', label: 'Deliverables' },
-                                        { id: '5', label: 'Commercials' },
-                                        { id: '6', label: 'Settlement' },
-                                        { id: '7', label: 'Signatures' }
-                                    ].map(tab => (
-                                        <button
-                                            key={tab.id}
-                                            onClick={() => setProposalActiveTab(tab.id)}
-                                            className={cn(
-                                                "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap",
-                                                proposalActiveTab === tab.id
-                                                    ? "bg-[#39FF14]/10 text-[#39FF14] border border-[#39FF14]/20"
-                                                    : "text-zinc-500 hover:text-zinc-300"
-                                            )}
-                                        >
-                                    {tab.label}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <div className="flex-1 space-y-6">
-                                    {proposalActiveTab === '1' && (
-                                        <div className="space-y-4">
-                                            <Input label="Client Name" value={activeProposalData.clientName} onChange={(e) => setProposalDataState({ clientName: e.target.value })} placeholder="Client Corporate Name" />
-                                            <Input label="Client Address" value={activeProposalData.clientAddress} onChange={(e) => setProposalDataState({ clientAddress: e.target.value })} placeholder="Corporate HQ Location" textarea />
-                                            <Input label="Campaign Name" value={activeProposalData.campaignName} onChange={(e) => setProposalDataState({ campaignName: e.target.value })} placeholder="e.g. Neon Horizon Festival" />
-                                            <Input label="Campaign Duration" value={activeProposalData.campaignDuration} onChange={(e) => setProposalDataState({ campaignDuration: e.target.value })} placeholder="e.g. 3 Months / Dates" />
-                                            <Input label="Proposal Number" value={activeProposalData.proposalNumber} onChange={(e) => setProposalDataState({ proposalNumber: e.target.value })} />
-                                            <Input label="Cover Summary" value={activeProposalData.coverDescription} onChange={(e) => setProposalDataState({ coverDescription: e.target.value })} textarea />
-                                        </div>
-                                    )}
-
-                                    {proposalActiveTab === '2' && (
-                                        <div className="space-y-4">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <Input label="Section Title" value={activeProposalData.strategyTitle} onChange={(e) => setProposalDataState({ strategyTitle: e.target.value })} placeholder="EXECUTIVE SUMMARY" />
-                                                <Input label="Section Subtitle" value={activeProposalData.strategySub} onChange={(e) => setProposalDataState({ strategySub: e.target.value })} placeholder="STRATEGIC OUTLINE" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between items-center px-1">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Executive Overview</label>
-                                                    <div className="flex items-center gap-2">
-                                                        <button 
-                                                            type="button" 
-                                                            onClick={() => {
-                                                                const hidden = activeProposalData.hiddenFields || [];
-                                                                const newHidden = hidden.includes('overview') 
-                                                                    ? hidden.filter(f => f !== 'overview') 
-                                                                    : [...hidden, 'overview'];
-                                                                setProposalDataState({ hiddenFields: newHidden });
-                                                            }}
-                                                            className={cn(
-                                                                "flex items-center gap-1 px-2.5 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider transition-all",
-                                                                isFieldHidden('overview')
-                                                                    ? "bg-red-500/10 border-red-500/20 text-red-400"
-                                                                    : "bg-[#39FF14]/10 border-[#39FF14]/20 text-[#39FF14]"
-                                                            )}
-                                                        >
-                                                            {isFieldHidden('overview') ? <EyeOff size={10} /> : <Eye size={10} />}
-                                                            {isFieldHidden('overview') ? 'Hidden' : 'Live'}
-                                                        </button>
-                                                        <button 
-                                                            type="button" 
-                                                            onClick={() => {
-                                                                const hidden = activeProposalData.hiddenFields || [];
-                                                                const newHidden = hidden.includes('overview') ? hidden : [...hidden, 'overview'];
-                                                                setProposalDataState({ overview: '', hiddenFields: newHidden });
-                                                            }}
-                                                            className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-full transition-all flex items-center gap-1"
-                                                            title="Remove Executive Overview"
-                                                        >
-                                                            <Trash2 size={10} /> Remove
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <MultiPageRichEditor 
-                                                    value={activeProposalData.overview} 
-                                                    onChange={(val) => setProposalDataState({ overview: val })} 
-                                                    minHeight="200px" 
-                                                    accentColor="neon-green" 
-                                                    className={cn(isFieldHidden('overview') && 'opacity-30')}
-                                                />
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between items-center px-1">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Primary Objective / Project Objectives</label>
-                                                    <div className="flex items-center gap-2">
-                                                        <button 
-                                                            type="button" 
-                                                            onClick={() => {
-                                                                const hidden = activeProposalData.hiddenFields || [];
-                                                                const newHidden = hidden.includes('primaryGoal') 
-                                                                    ? hidden.filter(f => f !== 'primaryGoal') 
-                                                                    : [...hidden, 'primaryGoal'];
-                                                                setProposalDataState({ hiddenFields: newHidden });
-                                                            }}
-                                                            className={cn(
-                                                                "flex items-center gap-1 px-2.5 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider transition-all",
-                                                                isFieldHidden('primaryGoal')
-                                                                    ? "bg-red-500/10 border-red-500/20 text-red-400"
-                                                                    : "bg-[#39FF14]/10 border-[#39FF14]/20 text-[#39FF14]"
-                                                            )}
-                                                        >
-                                                            {isFieldHidden('primaryGoal') ? <EyeOff size={10} /> : <Eye size={10} />}
-                                                            {isFieldHidden('primaryGoal') ? 'Hidden' : 'Live'}
-                                                        </button>
-                                                        <button 
-                                                            type="button" 
-                                                            onClick={() => {
-                                                                const hidden = activeProposalData.hiddenFields || [];
-                                                                const newHidden = hidden.includes('primaryGoal') ? hidden : [...hidden, 'primaryGoal'];
-                                                                setProposalDataState({ primaryGoal: '', hiddenFields: newHidden });
-                                                            }}
-                                                            className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-full transition-all flex items-center gap-1"
-                                                            title="Remove Project Objectives"
-                                                        >
-                                                            <Trash2 size={10} /> Remove
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <Input 
-                                                    value={activeProposalData.primaryGoal} 
-                                                    onChange={(e) => setProposalDataState({ primaryGoal: e.target.value })} 
-                                                    placeholder="Dominant marketing or brand statement / Project Goal..." 
-                                                    textarea 
-                                                    className={cn(isFieldHidden('primaryGoal') && 'opacity-30')}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {proposalActiveTab === '3' && (
-                                        <div className="space-y-4">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <Input label="Section Title" value={activeProposalData.scopeTitle} onChange={(e) => setProposalDataState({ scopeTitle: e.target.value })} placeholder="SCOPE OF WORK" />
-                                                <Input label="Section Subtitle" value={activeProposalData.scopeSub} onChange={(e) => setProposalDataState({ scopeSub: e.target.value })} placeholder="RESOURCE DELIVERABLES" />
-                                            </div>
-                                            <MultiPageRichEditor label="Scope of Work" value={activeProposalData.scopeOfWork} onChange={(val) => setProposalDataState({ scopeOfWork: val })} minHeight="250px" accentColor="neon-green" />
-                                        </div>
-                                    )}
-
-                                    {proposalActiveTab === '4' && (
-                                        <div className="space-y-6">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <Input label="Section Title" value={activeProposalData.proposalTitle} onChange={(e) => setProposalDataState({ proposalTitle: e.target.value })} placeholder="DELIVERABLES" />
-                                                <Input label="Section Subtitle" value={activeProposalData.proposalSub} onChange={(e) => setProposalDataState({ proposalSub: e.target.value })} placeholder="PROJECT INVENTORY" />
-                                            </div>
-                                            <div className="space-y-4">
-                                                <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase text-zinc-400">Deliverables List</span><button onClick={() => setProposalDataState(prev => ({ deliverables: [...prev.deliverables, { id: Date.now(), item: '', qty: '1', timeline: '' }] }))} className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-[#39FF14]"><Plus size={14} /></button></div>
-                                                {activeProposalData.deliverables.map((d, index) => (
-                                                    <div key={d.id} className="flex gap-2 items-center bg-gray-100 dark:bg-zinc-950 p-3 rounded-2xl border border-black/10 dark:border-white/5">
-                                                        <input type="text" value={d.item} onChange={(e) => setProposalDataState(prev => ({ deliverables: prev.deliverables.map((item, idx) => idx === index ? { ...item, item: e.target.value } : item) }))} placeholder="Specification" className="flex-1 bg-transparent border-none text-xs text-gray-900 dark:text-white outline-none" />
-                                                        <input type="text" value={d.qty} onChange={(e) => setProposalDataState(prev => ({ deliverables: prev.deliverables.map((item, idx) => idx === index ? { ...item, qty: e.target.value } : item) }))} placeholder="Qty" className="w-16 bg-transparent border-none text-xs text-zinc-400 text-center outline-none" />
-                                                        <input type="text" value={d.timeline} onChange={(e) => setProposalDataState(prev => ({ deliverables: prev.deliverables.map((item, idx) => idx === index ? { ...item, timeline: e.target.value } : item) }))} placeholder="Timeline" className="w-24 bg-transparent border-none text-xs text-zinc-400 text-right outline-none" />
-                                                        <button onClick={() => setProposalDataState(prev => ({ deliverables: prev.deliverables.filter((_, idx) => idx !== index) }))} className="text-red-400 hover:text-red-500"><Trash2 size={12} /></button>
-                                                    </div>
-                                                ))}
-                                            </div>
-
-                                            <div className="space-y-4 pt-4 border-t border-black/10 dark:border-white/5">
-                                                <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase text-zinc-400">Prerequisites</span><button onClick={() => setProposalDataState(prev => ({ clientRequirements: [...prev.clientRequirements, { id: Date.now(), description: '' }] }))} className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-[#39FF14]"><Plus size={14} /></button></div>
-                                                {activeProposalData.clientRequirements.map((r, index) => (
-                                                    <div key={r.id} className="flex gap-2 items-center bg-gray-100 dark:bg-zinc-950 p-2 rounded-2xl border border-black/10 dark:border-white/5">
-                                                        <input type="text" value={r.description} onChange={(e) => setProposalDataState(prev => ({ clientRequirements: prev.clientRequirements.map((req, idx) => idx === index ? { ...req, description: e.target.value } : req) }))} placeholder="Prerequisite item" className="flex-1 bg-transparent border-none text-xs text-gray-900 dark:text-white outline-none" />
-                                                        <button onClick={() => setProposalDataState(prev => ({ clientRequirements: prev.clientRequirements.filter((_, idx) => idx !== index) }))} className="text-red-400 hover:text-red-500"><Trash2 size={12} /></button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {proposalActiveTab === '5' && (
-                                        <div className="space-y-4">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <Input label="Section Title" value={activeProposalData.inventoryTitle} onChange={(e) => setProposalDataState({ inventoryTitle: e.target.value })} placeholder="RESOURCE INVENTORY" />
-                                                <Input label="Section Subtitle" value={activeProposalData.inventorySub} onChange={(e) => setProposalDataState({ inventorySub: e.target.value })} placeholder="COMMERCIALS BREAKDOWN" />
-                                            </div>
-                                            <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase text-zinc-400">Line items (Estimated Cost)</span><button onClick={() => setProposalItemsState(prev => [...prev, { id: Date.now(), description: '', qty: 1, unit: 'Phase', price: 0 }])} className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-[#39FF14]"><Plus size={14} /></button></div>
-                                            {activeProposalItems.map((item, index) => (
-                                                <div key={item.id} className="bg-gray-100 dark:bg-zinc-950 p-3 border border-black/10 dark:border-white/5 rounded-2xl flex flex-col gap-2">
-                                                    <input type="text" value={item.description} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, description: e.target.value } : it))} placeholder="Description" className="bg-transparent border-none text-xs text-gray-900 dark:text-white outline-none w-full" />
-                                                    <div className="flex items-center justify-between gap-3 mt-1.5">
-                                                        <div className="flex items-center gap-2">
-                                                            <input type="number" value={item.qty} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, qty: Number(e.target.value) } : it))} placeholder="Qty" className="w-16 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 text-center text-xs text-zinc-300 rounded-lg py-1 px-2" />
-                                                            <input type="text" value={item.unit} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, unit: e.target.value } : it))} placeholder="Unit" className="w-16 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 text-center text-xs text-zinc-300 rounded-lg py-1 px-2" />
-                                                        </div>
-                                                        <div className="flex items-center gap-3">
-                                                            <input type="number" value={item.price} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, price: Number(e.target.value) } : it))} placeholder="Price" className="w-32 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 text-right text-xs text-[#39FF14] font-mono rounded-lg py-1 px-2" />
-                                                            <button onClick={() => setProposalItemsState(prev => prev.filter((_, idx) => idx !== index))} className="text-red-400 hover:text-red-500"><Trash2 size={12} /></button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {proposalActiveTab === '6' && (
-                                        <div className="space-y-4">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <Input label="Section Title" value={activeProposalData.commercialsTitle} onChange={(e) => setProposalDataState({ commercialsTitle: e.target.value })} placeholder="COMMERCIAL TERMS" />
-                                                <Input label="Section Subtitle" value={activeProposalData.commercialsSub} onChange={(e) => setProposalDataState({ commercialsSub: e.target.value })} placeholder="SETTLEMENT & SIGN-OFF" />
-                                            </div>
-                                            <Input label="Conditions & Terms" value={activeProposalData.terms} onChange={(e) => setProposalDataState({ terms: e.target.value })} textarea rows={4} />
-                                            <Input label="Settlement Details" value={activeProposalData.paymentDetails} onChange={(e) => setProposalDataState({ paymentDetails: e.target.value })} textarea rows={4} />
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <Input label="GST Rate (%)" type="number" value={activeProposalData.gstRate} onChange={(e) => setProposalDataState({ gstRate: Number(e.target.value) })} />
-                                                <Input label="Advance Requested (%)" type="number" value={activeProposalData.advanceRequested} onChange={(e) => setProposalDataState({ advanceRequested: Number(e.target.value) })} />
-                                            </div>
-                                            <div className="flex flex-wrap items-center gap-6 mt-4">
-                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
-                                                    <input type="checkbox" checked={activeProposalData.showGst} onChange={(e) => setProposalDataState({ showGst: e.target.checked })} className="rounded bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
-                                                    Show GST breakdown
-                                                </label>
-                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
-                                                    <input type="checkbox" checked={activeProposalData.hideTotalColumn} onChange={(e) => setProposalDataState({ hideTotalColumn: e.target.checked })} className="rounded bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
-                                                    Hide Totals Column
-                                                </label>
-                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
-                                                    <input type="checkbox" checked={activeProposalData.showPaymentDetails === false} onChange={(e) => setProposalDataState({ showPaymentDetails: !e.target.checked })} className="rounded bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
-                                                    Hide Settlement Details
-                                                </label>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {proposalActiveTab === '7' && (
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-6">
-                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
-                                                    <input type="checkbox" checked={activeProposalData.showSeal} onChange={(e) => setProposalDataState({ showSeal: e.target.checked })} className="rounded bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-[#39FF14]" />
-                                                    Render Document Seal
-                                                </label>
-                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
-                                                    <input type="checkbox" checked={activeProposalData.showSignatures} onChange={(e) => setProposalDataState({ showSignatures: e.target.checked })} className="rounded bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-[#39FF14]" />
-                                                    Show Signatures block
-                                                </label>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4 pt-4">
-                                                <button
-                                                    onClick={() => { setSigTarget('provider'); setIsSigModalOpen(true); }}
-                                                    className="py-3 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 hover:border-[#39FF14]/30 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
-                                                >
-                                                    Sign for Provider
-                                                </button>
-                                                <button
-                                                    onClick={() => { setSigTarget('client'); setIsSigModalOpen(true); }}
-                                                    className="py-3 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 hover:border-[#39FF14]/30 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
-                                                >
-                                                    Sign for Client
-                                                </button>
-                                            </div>
-                                            <div className="space-y-3 pt-4 border-t border-black/10 dark:border-white/5">
-                                                <Input label="Sender Signatory Name" value={activeProposalData.senderName} onChange={(e) => setProposalDataState({ senderName: e.target.value })} />
-                                                <Input label="Sender Designation" value={activeProposalData.senderDesignation} onChange={(e) => setProposalDataState({ senderDesignation: e.target.value })} />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ) : (
-                            // AGREEMENT ENGINE FORMS
-                            <div className="flex-1 flex flex-col min-h-0">
-                                <div className="flex gap-2 border-b border-black/10 dark:border-white/5 pb-2 mb-4 overflow-x-auto scrollbar-hide shrink-0">
-                                    {[
-                                        { id: '1', label: 'Entities' },
-                                        { id: '2', label: 'Scope' },
-                                        { id: '3', label: 'Commercials' },
-                                        { id: '4', label: 'Clauses' },
-                                        { id: '5', label: 'Execution' }
-                                    ].map(tab => (
-                                        <button
-                                            key={tab.id}
-                                            onClick={() => setAgreementActiveTab(tab.id)}
-                                            className={cn(
-                                                "px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap",
-                                                agreementActiveTab === tab.id
-                                                    ? "bg-[#A855F7]/10 text-[#A855F7] border border-[#A855F7]/20"
-                                                    : "text-zinc-500 hover:text-zinc-300"
-                                            )}
-                                        >
-                                            {tab.label}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <div className="flex-1 space-y-6">
-                                    {agreementActiveTab === '1' && (
-                                        <div className="space-y-4">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <Input label="Agreement No." value={agreementFormData.agreementNumber} onChange={(e) => updateAgreementField('agreementNumber', e.target.value)} />
-                                                <Input label="Template Type" value={agreementFormData.template} onChange={(e) => updateAgreementField('template', e.target.value)} />
-                                            </div>
-                                            <div className="space-y-3 pt-2 border-t border-black/10 dark:border-white/5">
-                                                <p className="text-[10px] font-black uppercase text-zinc-500 tracking-wider">Party 1 (Provider)</p>
-                                                <Input label="Name" value={agreementFormData.parties.firstParty.name} onChange={(e) => updateAgreementField('parties.firstParty.name', e.target.value)} />
-                                                <Input label="Address" value={agreementFormData.parties.firstParty.address} onChange={(e) => updateAgreementField('parties.firstParty.address', e.target.value)} textarea />
-                                            </div>
-                                            <div className="space-y-3 pt-2 border-t border-black/10 dark:border-white/5">
-                                                <p className="text-[10px] font-black uppercase text-zinc-500 tracking-wider">Party 2 (Client)</p>
-                                                <Input label="Name" value={agreementFormData.parties.secondParty.name} onChange={(e) => updateAgreementField('parties.secondParty.name', e.target.value)} />
-                                                <Input label="Address" value={agreementFormData.parties.secondParty.address} onChange={(e) => updateAgreementField('parties.secondParty.address', e.target.value)} textarea />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {agreementActiveTab === '2' && (
-                                        <div className="space-y-4">
-                                            <Input label="Project Name" value={agreementFormData.details.projectName} onChange={(e) => updateAgreementField('details.projectName', e.target.value)} />
-                                            <Input label="Agreement Purpose" value={agreementFormData.details.purpose} onChange={(e) => updateAgreementField('details.purpose', e.target.value)} textarea rows={6} />
-                                        </div>
-                                    )}
-
-                                    {agreementActiveTab === '3' && (
-                                        <div className="space-y-4">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <Input label="Contract Value" value={agreementFormData.commercials.totalValue} onChange={(e) => updateAgreementField('commercials.totalValue', e.target.value)} />
-                                                <Input label="Currency" value={agreementFormData.commercials.currency} onChange={(e) => updateAgreementField('commercials.currency', e.target.value)} />
-                                            </div>
-                                            <Input label="Payment Schedule" value={agreementFormData.commercials.paymentSchedule} onChange={(e) => updateAgreementField('commercials.paymentSchedule', e.target.value)} textarea rows={4} />
-                                        </div>
-                                    )}
-
-                                    {agreementActiveTab === '4' && (
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-[10px] font-black uppercase text-zinc-400">Legal Clauses</span>
-                                                <button onClick={() => addAgreementCustomClause('New Custom Clause', 'Clause terms details go here.')} className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-[#A855F7]"><Plus size={14} /></button>
-                                            </div>
-
-                                            {/* Clause List */}
-                                            <div className="space-y-3">
-                                                {agreementFormData.clauses.map((clause) => (
-                                                    <div key={clause.id} className="bg-gray-100 dark:bg-zinc-950 p-3 rounded-2xl border border-black/10 dark:border-white/5 space-y-2">
-                                                        <div className="flex items-center justify-between">
-                                                            <input
-                                                                type="text"
-                                                                value={clause.title}
-                                                                onChange={(e) => updateAgreementClause(clause.id, { title: e.target.value })}
-                                                                className="bg-transparent border-none text-xs font-black text-gray-900 dark:text-white outline-none flex-1"
-                                                            />
-                                                            <button onClick={() => removeAgreementClause(clause.id)} className="text-red-400 hover:text-red-500"><Trash2 size={12} /></button>
-                                                        </div>
-                                                        <textarea
-                                                            value={clause.content}
-                                                            onChange={(e) => updateAgreementClause(clause.id, { content: e.target.value })}
-                                                            className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 rounded-xl p-2 text-xs text-zinc-400 outline-none h-20 resize-none leading-relaxed"
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
-
-                                            {/* Standard clauses marketplace integration */}
-                                            <div className="pt-4 border-t border-black/10 dark:border-white/5">
-                                                <p className="text-[10px] font-black uppercase text-zinc-500 mb-2">Clause Library Additions</p>
-                                                <ClauseMarketplace activeClauses={agreementFormData.clauses} onToggleClause={toggleAgreementClause} />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {agreementActiveTab === '5' && (
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-6">
-                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
-                                                    <input type="checkbox" checked={agreementFormData.showSeal} onChange={(e) => updateAgreementField('showSeal', e.target.checked)} className="rounded bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-[#A855F7]" />
-                                                    Render Document Seal
-                                                </label>
-                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
-                                                    <input type="checkbox" checked={agreementFormData.showSignatures} onChange={(e) => updateAgreementField('showSignatures', e.target.checked)} className="rounded bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-[#A855F7]" />
-                                                    Show Signatures block
-                                                </label>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4 pt-4">
-                                                <button
-                                                    onClick={() => { setSigTarget('provider'); setIsSigModalOpen(true); }}
-                                                    className="py-3 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 hover:border-[#A855F7]/30 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
-                                                >
-                                                    Sign for Provider
-                                                </button>
-                                                <button
-                                                    onClick={() => { setSigTarget('client'); setIsSigModalOpen(true); }}
-                                                    className="py-3 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 hover:border-[#A855F7]/30 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
-                                                >
-                                                    Sign for Client
-                                                </button>
-                                            </div>
-                                            <div className="space-y-3 pt-4 border-t border-black/10 dark:border-white/5">
-                                                <Input label="Provider Signatory Name" value={agreementFormData.providerName} onChange={(e) => updateAgreementField('providerName', e.target.value)} />
-                                                <Input label="Provider Designation" value={agreementFormData.providerDesignation} onChange={(e) => updateAgreementField('providerDesignation', e.target.value)} />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* RIGHT COLUMN (INTERACTIVE A4 PREVIEW) */}
-                <div className="hidden lg:flex flex-1 bg-gray-100 dark:bg-zinc-900/30 flex-col overflow-y-auto min-h-0 relative items-center justify-start p-10 scrollbar-hide" ref={previewContainerRef}>
-                    
-                    {/* Floating Zoom & Page indicators */}
-                    <div className="absolute top-4 right-4 z-40 bg-white dark:bg-black/60 backdrop-blur-md p-2 rounded-2xl border border-black/10 dark:border-white/5 flex items-center gap-3">
-                        <button 
-                            onClick={() => setIsExpandedPreview(!isExpandedPreview)} 
-                            className="hidden lg:flex p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-all items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2.5 h-8"
-                            title={isExpandedPreview ? "Exit Fullscreen Preview" : "Fullscreen Preview"}
-                        >
-                            {isExpandedPreview ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
-                            <span>{isExpandedPreview ? "Collapse" : "Expand"}</span>
-                        </button>
-                        <div className="flex items-center gap-1.5 border-r border-black/10 dark:border-white/10 pr-3">
-                            <button onClick={() => setUserZoom(z => Math.max(0.5, z - 0.05))} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-zinc-400 hover:text-gray-900 dark:hover:text-white"><Minus size={12} /></button>
-                            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-300 font-mono">{Math.round(userZoom * 100)}%</span>
-                            <button onClick={() => setUserZoom(z => Math.min(1.5, z + 0.05))} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-zinc-400 hover:text-gray-900 dark:hover:text-white"><Plus size={12} /></button>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setCurrentPreviewPage(p => Math.max(0, p - 1))} disabled={currentPreviewPage === 0} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-zinc-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-20"><ChevronLeft size={14} /></button>
-                            <span className={cn("text-[10px] font-black font-mono", activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]")}>{currentPreviewPage + 1} / {paginatedPages.length}</span>
-                            <button onClick={() => setCurrentPreviewPage(p => Math.min(paginatedPages.length - 1, p + 1))} disabled={currentPreviewPage === paginatedPages.length - 1} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-zinc-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-20"><ChevronRight size={14} /></button>
-                        </div>
-                    </div>
-
-                    {/* Scale Wrapper to fit A4 container */}
-                    <div style={{ width: '794px', height: '1123px', position: 'relative', flexShrink: 0 }}>
-                        <div style={{
-                            width: '794px',
-                            height: '1123px',
-                            transform: `scale(${previewScale})`,
-                            transformOrigin: 'top left',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0
-                        }}>
-                            {activeEngine === 'proposal' ? (
-                                // PROPOSAL PREVIEW RENDERER
-                                <AnimatePresence mode="wait">
-                                    <motion.div key={currentPreviewPage} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] shadow-2xl rounded-[2px] overflow-hidden">
-                                        <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", currentPreviewPage > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
-                                            <div className="flex flex-col gap-6 items-start">
-                                                <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", currentPreviewPage > 0 && "h-8")} crossOrigin="anonymous" />
-                                            </div>
-
-                                            <div className="text-right space-y-3">
-                                                <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", currentPreviewPage > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", currentPreviewPage > 0 && "text-sm")}>{activeProposalData.proposalNumber}</p></div>
-                                                {currentPreviewPage === 0 && (
-                                                    <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex-1 overflow-hidden relative">
-                                            <div className="absolute inset-0 overflow-hidden flex flex-col px-1">
-                                            {paginatedPages[currentPreviewPage]?.type === 'cover' && (
-                                                <div className="h-full flex flex-col justify-start space-y-20 py-8">
-                                                    <div className="grid grid-cols-2 gap-10">
-                                                        <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{activeProposalData.clientName || 'Valued Partner'}</h2>{!isFieldHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{activeProposalData.clientAddress || 'Client Address'}</p>}</div></div>
-                                                        <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Specification</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{activeProposalData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-white dark:bg-black px-3 py-1 inline-block uppercase tracking-widest">Duration: {activeProposalData.campaignDuration || 'TBD'}</p></div></div>
-                                                    </div>
-                                                    <div className="pt-16 space-y-10">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-1 bg-white dark:bg-black" />
-                                                            <p className="text-[11px] font-black uppercase tracking-[0.6em]">Official Strategic Quotation</p>
-                                                        </div>
-                                                        {!isFieldHidden('coverDescription') && (
-                                                            <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl">
-                                                                {renderContent(activeProposalData.coverDescription || 'Cover description pending...')}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{activeProposalData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
-                                                </div>
-                                            )}
-                                            {paginatedPages[currentPreviewPage]?.type === 'strategy' && (
-                                                <div className="space-y-16 py-8">
-                                                    <div className="mb-10 space-y-3">
-                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                            {activeProposalData.strategyTitle ?? 'EXECUTIVE SUMMARY'}
-                                                        </h3>
-                                                        <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                            {activeProposalData.strategySub ?? 'STRATEGIC OUTLINE'}
-                                                        </p>
-                                                    </div>
-                                                    {paginatedPages[currentPreviewPage]?.overviewText && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(paginatedPages[currentPreviewPage]?.overviewText)}</div>}
-                                                    {paginatedPages[currentPreviewPage]?.primaryGoalText && !isHtmlEmpty(paginatedPages[currentPreviewPage]?.primaryGoalText) && (
-                                                        <div className="pt-12">
-                                                            <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
-                                                                <p className="text-[11px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Primary Objective</p>
-                                                                <div className="text-lg font-black text-black leading-relaxed">{renderContent(paginatedPages[currentPreviewPage]?.primaryGoalText)}</div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                            {paginatedPages[currentPreviewPage]?.type === 'scope' && (
-                                                <div className="h-full flex flex-col py-8">
-                                                    <div className="mb-10 space-y-3">
-                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                            {activeProposalData.scopeTitle ?? 'SCOPE OF WORK'}
-                                                        </h3>
-                                                        <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                            {activeProposalData.scopeSub ?? 'RESOURCE DELIVERABLES'}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex-1 flex flex-col">
-    {renderContent(paginatedPages[currentPreviewPage]?.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
-</div>
-                                                </div>
-                                            )}
-                                            {paginatedPages[currentPreviewPage]?.type === 'proposal' && (
-                                                <div className="space-y-16 py-8">
-                                                    <div className="mb-10 space-y-3">
-                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                            {activeProposalData.proposalTitle ?? 'DELIVERABLES'}
-                                                        </h3>
-                                                        <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                            {activeProposalData.proposalSub ?? 'PROJECT INVENTORY'}
-                                                        </p>
-                                                    </div>
-                                                    {paginatedPages[currentPreviewPage]?.deliverables?.length > 0 && (
-                                                        <div className="space-y-6">
-                                                            <table className="w-full text-left border-collapse border border-black">
-                                                                <thead>
-                                                                    <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
-                                                                        <th className="p-4 w-12 text-center border-r border-black/20 dark:border-white/20">#</th>
-                                                                        <th className="p-4 border-r border-black/20 dark:border-white/20">Deliverable</th>
-                                                                        <th className="p-4 text-center w-28 border-r border-black/20 dark:border-white/20">Qty / Unit</th>
-                                                                        <th className="p-4 text-right w-40">Timeline</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody className="divide-y divide-black/10">
-                                                                    {paginatedPages[currentPreviewPage]?.deliverables?.map((d, i) => (
-                                                                        <tr key={d.id || i} className="hover:bg-gray-50">
-                                                                            <td className="p-4 text-center text-[11px] font-bold text-slate-500 border-r border-black/10">
-                                                                                {String((paginatedPages[currentPreviewPage]?.startIndex || 0) + i + 1).padStart(2, '0')}
-                                                                            </td>
-                                                                            <td className="p-4 text-[12px] font-bold text-black border-r border-black/10">{d.item}</td>
-                                                                            <td className="p-4 text-center text-[12px] font-medium text-gray-600 border-r border-black/10">{d.qty || '—'}</td>
-                                                                            <td className="p-4 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
-                                                                        </tr>
-                                                                    ))}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    )}
-                                                    {paginatedPages[currentPreviewPage]?.clientRequirements?.length > 0 && (
-                                                        <div className="space-y-6 pt-4">
-                                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
-                                                            <div className="p-8 border-2 border-gray-200 space-y-0">
-                                                                {paginatedPages[currentPreviewPage]?.clientRequirements?.map((r, i) => (
-                                                                    <div key={r.id || i} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
-                                                                        <div className="w-8 h-8 bg-white dark:bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-gray-900 dark:text-white">{String(i + 1).padStart(2, '0')}</span></div>
-                                                                        <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                            {paginatedPages[currentPreviewPage]?.type === 'table' && (
-                                                <div className="space-y-12 py-8">
-                                                    <div className="mb-10 space-y-3">
-                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                            {activeProposalData.inventoryTitle ?? 'RESOURCE INVENTORY'}
-                                                        </h3>
-                                                        <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                            {paginatedPages[currentPreviewPage]?.tablePageIdx > 1 
-                                                                ? `${activeProposalData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${paginatedPages[currentPreviewPage]?.tablePageIdx}` 
-                                                                : (activeProposalData.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
-                                                        </p>
-                                                    </div>
-                                                    <table className="w-full text-left border-collapse border border-black">
-                                                          <thead>
-                                                              <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
-                                                                  {(activeProposalData.tableColumns || [
-                                                                      { key: 'description', label: 'Resource Inventory', type: 'text' },
-                                                                      { key: 'qty', label: 'Qty', type: 'number' },
-                                                                      { key: 'price', label: 'Value (INR)', type: 'amount' }
-                                                                  ]).map((col, cIdx, arr) => {
-                                                                      const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
-                                                                      return (
-                                                                          <th 
-                                                                              key={col.key} 
-                                                                              className={cn(
-                                                                                  "p-4",
-                                                                                  cIdx < arr.length - 1 && "border-r border-black/20 dark:border-white/20",
-                                                                                  colType === 'number' && "text-center w-24",
-                                                                                  colType === 'amount' && "text-right w-48"
-                                                                              )}
-                                                                          >
-                                                                              {col.label}
-                                                                          </th>
-                                                                      );
-                                                                  })}
-                                                              </tr>
-                                                          </thead>
-                                                          <tbody className="divide-y divide-black/10">
-                                                              {paginatedPages[currentPreviewPage]?.items?.map((item, i) => {
-                                                                  const cols = activeProposalData.tableColumns || [
-                                                                      { key: 'description', label: 'Resource Inventory', type: 'text' },
-                                                                      { key: 'qty', label: 'Qty', type: 'number' },
-                                                                      { key: 'price', label: 'Value (INR)', type: 'amount' }
-                                                                  ];
-                                                                  return (
-                                                                      <tr key={i} className="hover:bg-gray-50">
-                                                                          {cols.map((col, cIdx) => {
-                                                                              const isLast = cIdx === cols.length - 1;
-                                                                              const tdClass = cn(
-                                                                                  "p-4",
-                                                                                  !isLast && "border-r border-black/10"
-                                                                              );
-                                                                              const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
-                                                                              if (col.key === 'description') {
-                                                                                  return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
-                                                                              }
-                                                                              if (colType === 'number') {
-                                                                                  const val = col.key === 'qty' ? item.qty : item[col.key];
-                                                                                  return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{val}</td>;
-                                                                              }
-                                                                              if (colType === 'amount') {
-                                                                                  const val = col.key === 'price' ? item.price : Number(item[col.key] || 0);
-                                                                                  return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{val.toLocaleString()}</td>;
-                                                                              }
-                                                                              return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
-                                                                          })}
-                                                                      </tr>
-                                                                  );
-                                                              })}
-                                                          </tbody>
-                                                      </table>
-                                                </div>
-                                            )}
-                                            {paginatedPages[currentPreviewPage]?.type === 'custom' && (
-                                                <div className="space-y-8 py-8 h-full flex flex-col justify-start">
-                                                    <div className="mb-10 space-y-3">
-                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                            {paginatedPages[currentPreviewPage]?.title ? paginatedPages[currentPreviewPage]?.title?.toUpperCase() : "CUSTOM PAGE"}
-                                                        </h3>
-                                                        <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                            {(activeProposalData.customPages?.[paginatedPages[currentPreviewPage]?.pageIndex || 0]?.subtitle || "Additional Specifications").toUpperCase()}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        {renderContent(paginatedPages[currentPreviewPage]?.content || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {paginatedPages[currentPreviewPage]?.type === 'terms_only' && (
-                                                <div className="space-y-12 py-10 px-4">
-                                                    <div className="mb-10 space-y-3">
-                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                            GENERAL TERMS.
-                                                        </h3>
-                                                        <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">Part {paginatedPages[currentPreviewPage]?.termsPageIdx}</p>
-                                                    </div>
-                                                    <div className="text-[12px] font-semibold text-gray-600 leading-relaxed space-y-3">
-                                                        {renderContent(paginatedPages[currentPreviewPage]?.termsText)}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {paginatedPages[currentPreviewPage]?.type === 'commercials' && (
-                                                 <div className="space-y-10 py-6 h-full flex flex-col justify-between">
-                                                     <div>
-                                                         <div className="mb-10 space-y-3">
-                                                             <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                                 {activeProposalData.commercialsTitle ?? 'COMMERCIAL TERMS'}
-                                                             </h3>
-                                                             <div className="w-20 h-1.5 bg-neon-green" />
-                                                             <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                                 {activeProposalData.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
-                                                             </p>
-                                                         </div>
-                                                         <div className={cn("grid gap-12 items-start", activeProposalData.hideTotalColumn ? "grid-cols-1" : "grid-cols-2")}>
-                                                             <div className="space-y-8">
-                                                                 {paginatedPages[currentPreviewPage]?.termsText && (
-                                                                     <div className="space-y-3">
-                                                                         <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4>
-                                                                         <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(paginatedPages[currentPreviewPage]?.termsText)}</div>
-                                                                     </div>
-                                                                 )}
-                                                                 {paginatedPages[currentPreviewPage]?.paymentDetailsText && (
-                                                                     <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
-                                                                         <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Settlement Details</p>
-                                                                         <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{paginatedPages[currentPreviewPage]?.paymentDetailsText}</div>
-                                                                     </div>
-                                                                 )}
-                                                             </div>
-                                                             {!activeProposalData.hideTotalColumn && (<div className="space-y-4">
-                                                                 <div className="bg-gray-50/50 border border-gray-250/60 rounded-[2rem] p-8 space-y-6">
-                                                                     <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                                         <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Subtotal</span>
-                                                                         <span className="text-base font-bold text-black font-mono">₹{proposalSubtotal.toLocaleString()}</span>
-                                                                     </div>
-                                                                     {activeProposalData.showGst && (
-                                                                         <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                                             <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">GST ({activeProposalData.gstRate}%)</span>
-                                                                             <span className="text-base font-bold text-black font-mono">₹{proposalGstAmount.toLocaleString()}</span>
-                                                                         </div>
-                                                                     )}
-                                                                     <div className="p-8 bg-white dark:bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
-                                                                         <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
-                                                                         <h2 className="text-3xl font-black tracking-widest text-gray-900 dark:text-white font-mono leading-none">₹{proposalTotalAmount.toLocaleString()}</h2>
-                                                                         <div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" />
-                                                                     </div>
-                                                                     {activeProposalData.advanceRequested > 0 && (
-                                                                         <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-[1.5rem] flex justify-between items-center">
-                                                                             <div>
-                                                                                 <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Advance Fee ({activeProposalData.advanceRequested}%)</span>
-                                                                                 <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">Due upon signature</span>
-                                                                             </div>
-                                                                             <span className="text-xl font-black text-black font-mono">₹{(proposalTotalAmount * activeProposalData.advanceRequested / 100).toLocaleString()}</span>
-                                                                         </div>
-                                                                     )}
-                                                                 </div>
-                                                             </div>)}
-                                                         </div>
-                                                     </div>
-
-                                                     {/* Authentication Layer (Preview) */}
-                                                     {currentPreviewPage === paginatedPages.length - 1 && (activeProposalData.showSeal || activeProposalData.showSignatures) && (
-                                                          <div className="mt-20 pt-12 border-t-2 border-black/5 relative">
-                                                              {activeProposalData.showSignatures ? (
-                                                                  <>
-                                                                      <div className="grid grid-cols-2 gap-20">
-                                                                          {/* Provider Signature */}
-                                                                          <div className="space-y-6">
-                                                                              <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
-                                                                              <div className="h-40 flex items-center justify-start relative">
-                                                                                  {activeProposalData.providerSignature ? (
-                                                                                      <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                                  ) : (
-                                                                                      <p className="text-[24px] font-signature text-black opacity-40">{activeProposalData.senderName || 'Authorized Signatory'}</p>
-                                                                                  )}
-                                                                                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white dark:bg-black" />
-                                                                              </div>
-                                                                              <p className="text-[11px] font-black text-black uppercase tracking-widest">{activeProposalData.senderName || 'Authorized Signatory'}</p>
-                                                                              <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
-                                                                          </div>
-
-                                                                          {/* Client Signature */}
-                                                                          <div className="space-y-6 text-right">
-                                                                              <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
-                                                                              <div className="h-40 flex items-center justify-end relative">
-                                                                                  {activeProposalData.clientSignature ? (
-                                                                                      <img src={activeProposalData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                                  ) : (
-                                                                                      <p className="text-[24px] font-signature text-black opacity-10">Type name to sign</p>
-                                                                                  )}
-                                                                                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white dark:bg-black" />
-                                                                              </div>
-                                                                              <p className="text-[11px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
-                                                                          </div>
-                                                                      </div>
-                                                                      {activeProposalData.showSeal && (
-                                                                          <div className="flex justify-center mt-6 relative z-10">
-                                                                              <DocumentSeal className="w-56 h-56" />
-                                                                          </div>
-                                                                      )}
-                                                                  </>
-                                                              ) : (
-                                                                  activeProposalData.showSeal && (
-                                                                      <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-[20px]">
-                                                                          <DocumentSeal className="w-56 h-56" />
-                                                                          <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
-                                                                      </div>
-                                                                  )
-                                                              )}
-                                                          </div>
-                                                      )}
-                                                 </div>
-                                            )}
-                                            </div>
-                                        </div>
-                                        <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.4em]">
-                                            <p className="w-1/3 text-left">© NEWBI ENTERTAINMENT & MARKETING LLP</p>
-                                            <p className="w-1/3 text-center text-gray-600 truncate px-2"></p>
-                                            <p className="w-1/3 text-right text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p>
-                                        </div>
-                                    </motion.div>
-                                </AnimatePresence>
-                            ) : (
-                                // AGREEMENT PREVIEW RENDERER
-                                <ContractPreview
-                                    formData={agreementFormData}
-                                    paginatedPages={agreementPaginatedPages}
-                                    currentPage={currentPreviewPage}
-                                />
-                            )}
-                        </div>
-                    </div>
-                </div>
+                <Button variant="ghost" onClick={() => setHistoryOpen(true)} className="h-10 px-3" aria-label="History">
+                    <History size={16} /> <span className="hidden sm:inline">History</span>
+                    {history.entries.length > 0 && <span className="rounded-full bg-black/[0.06] px-1.5 text-[11px] font-bold tabular-nums dark:bg-white/10">{history.entries.length}</span>}
+                </Button>
+                {phase === 'result' && (
+                    <Button variant="accent" onClick={save} disabled={saving || Boolean(busy) || (saved && !dirty)} className="h-10">
+                        {saving ? <Loader2 size={15} className="animate-spin" /> : saved && !dirty ? <CheckCircle2 size={15} /> : <Save size={15} />}
+                        <span>{saving ? 'Saving…' : !saved ? 'Save as draft' : dirty ? 'Save changes' : 'Saved'}</span>
+                    </Button>
+                )}
             </div>
+        </header>
+    );
 
-            {/* HIDDEN RENDER CONTAINER FOR EXPORTING HIGHER QUALITY PDFS */}
-            <div className="pdf-export-only fixed -left-[9999px] top-0 pointer-events-none overflow-hidden bg-white">
-                {activeEngine === 'proposal' ? (
-                    proposalPaginatedPages.map((page, idx) => (
-                        <div key={idx} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] mb-10">
-                            <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", idx > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
-                                <div className="flex flex-col gap-6 items-start">
-                                    <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", idx > 0 && "h-8")} crossOrigin="anonymous" />
-                                </div>
+    const errorBox = error && (
+        <div className="flex items-start gap-3 rounded-2xl border border-red-500/30 bg-red-500/[0.06] p-4" role="alert">
+            <AlertTriangle size={18} className="mt-0.5 shrink-0 text-red-500" />
+            <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-bold text-red-700 dark:text-red-300">Something went wrong</p>
+                <p className="text-[13px] text-red-700/90 dark:text-red-200/90">{error.message}</p>
+            </div>
+            <div className="flex shrink-0 gap-1">
+                {error.retry && <Button size="sm" variant="secondary" onClick={() => { const r = error.retry; setError(null); r(); }}>Try again</Button>}
+                <Button size="sm" variant="ghost" onClick={() => setError(null)}>Dismiss</Button>
+            </div>
+        </div>
+    );
 
-                                <div className="text-right space-y-3">
-                                    <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", idx > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", idx > 0 && "text-sm")}>{activeProposalData.proposalNumber}</p></div>
-                                    {idx === 0 && (
-                                        <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
+    // ── Compose view ───────────────────────────────────────────────────
+    const composeView = (
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <div className="mx-auto w-full max-w-3xl space-y-6 px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 sm:pt-10">
+                <div>
+                    <h1 className="text-[22px] font-extrabold tracking-tight sm:text-[26px]">What do you want to make?</h1>
+                    <p className="mt-1 text-[14px] text-gray-500">Pick a document, describe it, and get a first draft on the real template in under a minute.</p>
+                </div>
+
+                <div className="space-y-2">
+                    <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Document type">
+                        {KIND_ORDER.map(k => {
+                            const c = STUDIO_KINDS[k];
+                            const a = accent(c.tone);
+                            const active = kind === k;
+                            const Icon = c.icon;
+                            return (
+                                <button
+                                    key={k}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={active}
+                                    disabled={Boolean(busy)}
+                                    onClick={() => chooseKind(k)}
+                                    className={cn(
+                                        'flex min-h-[4.5rem] flex-col items-start gap-2 rounded-2xl border p-3 text-left transition-colors disabled:opacity-60 sm:flex-row sm:gap-3 sm:p-3.5',
+                                        active ? cn(a.border, a.soft) : 'border-black/[0.08] bg-white hover:border-black/20 dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-white/20'
                                     )}
-                                </div>
-                            </div>
+                                >
+                                    <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', a.chip)}><Icon size={18} /></span>
+                                    <span className="min-w-0">
+                                        <span className={cn('block text-[13.5px] font-bold leading-snug sm:text-[14px]', active && a.text)}>{c.label}</span>
+                                        <span className="hidden text-[12.5px] leading-snug text-gray-500 sm:block">{c.hint}</span>
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <p className="text-[13px] text-gray-500 sm:hidden">{cfg.hint}</p>
+                </div>
 
-                            <div className="flex-1 overflow-hidden relative">
-                                <div className="absolute inset-0 overflow-hidden flex flex-col px-1">
-                                {page.type === 'cover' && (
-                                    <div className="h-full flex flex-col justify-start space-y-20 py-8">
-                                        <div className="grid grid-cols-2 gap-10">
-                                            <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{activeProposalData.clientName || 'Valued Partner'}</h2>{!isFieldHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{activeProposalData.clientAddress || 'Client Address'}</p>}</div></div>
-                                            <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Specification</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{activeProposalData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-white dark:bg-black px-3 py-1 inline-block uppercase tracking-widest">Duration: {activeProposalData.campaignDuration || 'TBD'}</p></div></div>
-                                        </div>
-                                        <div className="pt-16 space-y-10">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-1 bg-white dark:bg-black" />
-                                                <p className="text-[11px] font-black uppercase tracking-[0.6em]">Official Strategic Quotation</p>
-                                            </div>
-                                            {!isFieldHidden('coverDescription') && (
-                                                <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl">
-                                                    {renderContent(activeProposalData.coverDescription || 'Cover description pending...')}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{activeProposalData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
-                                    </div>
-                                )}
-                                {page.type === 'strategy' && (
-                                    <div className="space-y-16 py-8">
-                                        <div className="mb-10 space-y-3">
-                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                {activeProposalData.strategyTitle ?? 'EXECUTIVE SUMMARY'}
-                                            </h3>
-                                            <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                {activeProposalData.strategySub ?? 'STRATEGIC OUTLINE'}
-                                            </p>
-                                        </div>
-                                        {page.overviewText && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(page.overviewText)}</div>}
-                                        {page.primaryGoalText && !isHtmlEmpty(page.primaryGoalText) && (
-                                            <div className="pt-12">
-                                                <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
-                                                    <p className="text-[11px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Primary Objective</p>
-                                                    <div className="text-lg font-black text-black leading-relaxed">{renderContent(page.primaryGoalText)}</div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                                {page.type === 'scope' && (
-                                    <div className="h-full flex flex-col py-8">
-                                        <div className="mb-10 space-y-3">
-                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                {activeProposalData.scopeTitle ?? 'SCOPE OF WORK'}
-                                            </h3>
-                                            <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                {activeProposalData.scopeSub ?? 'RESOURCE DELIVERABLES'}
-                                            </p>
-                                        </div>
-                                        <div className="flex-1 flex flex-col">
-    {renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
-</div>
-                                    </div>
-                                )}
-                                {page.type === 'proposal' && (
-                                    <div className="space-y-16 py-8">
-                                        <div className="mb-10 space-y-3">
-                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                {activeProposalData.proposalTitle ?? 'DELIVERABLES'}
-                                            </h3>
-                                            <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                {activeProposalData.proposalSub ?? 'PROJECT INVENTORY'}
-                                            </p>
-                                        </div>
-                                        {page.deliverables?.length > 0 && (
-                                            <div className="space-y-6">
-                                                <table className="w-full text-left border-collapse border border-black">
-                                                    <thead>
-                                                        <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
-                                                            <th className="p-4 w-12 text-center border-r border-black/20 dark:border-white/20">#</th>
-                                                            <th className="p-4 border-r border-black/20 dark:border-white/20">Deliverable</th>
-                                                            <th className="p-4 text-center w-28 border-r border-black/20 dark:border-white/20">Qty / Unit</th>
-                                                            <th className="p-4 text-right w-40">Timeline</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-black/10">
-                                                        {page.deliverables.map((d, i) => (
-                                                            <tr key={d.id || i} className="hover:bg-gray-50">
-                                                                <td className="p-4 text-center text-[11px] font-bold text-slate-500 border-r border-black/10">
-                                                                    {String((page.startIndex || 0) + i + 1).padStart(2, '0')}
-                                                                </td>
-                                                                <td className="p-4 text-[12px] font-bold text-black border-r border-black/10">{d.item}</td>
-                                                                <td className="p-4 text-center text-[12px] font-medium text-gray-600 border-r border-black/10">{d.qty || '—'}</td>
-                                                                <td className="p-4 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        )}
-                                        {page.clientRequirements?.length > 0 && (
-                                            <div className="space-y-6 pt-4">
-                                                <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
-                                                <div className="p-8 border-2 border-gray-200 space-y-0">
-                                                    {page.clientRequirements.map((r, i) => (
-                                                        <div key={r.id || i} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
-                                                            <div className="w-8 h-8 bg-white dark:bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-gray-900 dark:text-white">{String(i + 1).padStart(2, '0')}</span></div>
-                                                            <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                                {page.type === 'table' && (
-                                    <div className="space-y-12 py-8">
-                                        <div className="mb-10 space-y-3">
-                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                {activeProposalData.inventoryTitle ?? 'RESOURCE INVENTORY'}
-                                            </h3>
-                                            <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                {page.tablePageIdx > 1 
-                                                    ? `${activeProposalData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${page.tablePageIdx}` 
-                                                    : (activeProposalData.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
-                                            </p>
-                                        </div>
-                                        <table className="w-full text-left border-collapse border border-black">
-                                                          <thead>
-                                                              <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
-                                                                  {(activeProposalData.tableColumns || [
-                                                                      { key: 'description', label: 'Resource Inventory', type: 'text' },
-                                                                      { key: 'qty', label: 'Qty', type: 'number' },
-                                                                      { key: 'price', label: 'Value (INR)', type: 'amount' }
-                                                                  ]).map((col, cIdx, arr) => {
-                                                                      const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
-                                                                      return (
-                                                                          <th 
-                                                                              key={col.key} 
-                                                                              className={cn(
-                                                                                  "p-4",
-                                                                                  cIdx < arr.length - 1 && "border-r border-black/20 dark:border-white/20",
-                                                                                  colType === 'number' && "text-center w-24",
-                                                                                  colType === 'amount' && "text-right w-48"
-                                                                              )}
-                                                                          >
-                                                                              {col.label}
-                                                                          </th>
-                                                                      );
-                                                                  })}
-                                                              </tr>
-                                                          </thead>
-                                                          <tbody className="divide-y divide-black/10">
-                                                              {page.items.map((item, i) => {
-                                                                  const cols = activeProposalData.tableColumns || [
-                                                                      { key: 'description', label: 'Resource Inventory', type: 'text' },
-                                                                      { key: 'qty', label: 'Qty', type: 'number' },
-                                                                      { key: 'price', label: 'Value (INR)', type: 'amount' }
-                                                                  ];
-                                                                  return (
-                                                                      <tr key={i} className="hover:bg-gray-50">
-                                                                          {cols.map((col, cIdx) => {
-                                                                              const isLast = cIdx === cols.length - 1;
-                                                                              const tdClass = cn(
-                                                                                  "p-4",
-                                                                                  !isLast && "border-r border-black/10"
-                                                                              );
-                                                                              const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
-                                                                              if (col.key === 'description') {
-                                                                                  return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
-                                                                              }
-                                                                              if (colType === 'number') {
-                                                                                  const val = col.key === 'qty' ? item.qty : item[col.key];
-                                                                                  return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{val}</td>;
-                                                                              }
-                                                                              if (colType === 'amount') {
-                                                                                  const val = col.key === 'price' ? item.price : Number(item[col.key] || 0);
-                                                                                  return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{val.toLocaleString()}</td>;
-                                                                              }
-                                                                              return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
-                                                                          })}
-                                                                      </tr>
-                                                                  );
-                                                              })}
-                                                          </tbody>
-                                                      </table>
-                                    </div>
-                                )}
-                                {page.type === 'custom' && (
-                                    <div className="space-y-8 py-8 h-full flex flex-col justify-start">
-                                        <div className="mb-10 space-y-3">
-                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                {page.title ? page.title.toUpperCase() : "CUSTOM PAGE"}
-                                            </h3>
-                                            <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                {(activeProposalData.customPages?.[page.pageIndex]?.subtitle || "Additional Specifications").toUpperCase()}
-                                            </p>
-                                        </div>
-                                        <div className="flex-1">
-                                            {renderContent(page.content || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
-                                        </div>
-                                    </div>
-                                )}
-                                {page.type === 'terms_only' && (
-                                    <div className="space-y-12 py-10 px-4">
-                                        <div className="mb-10 space-y-3">
-                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                GENERAL TERMS.
-                                            </h3>
-                                            <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">Part {page.termsPageIdx}</p>
-                                        </div>
-                                        <div className="text-[12px] font-semibold text-gray-600 leading-relaxed space-y-3">
-                                            {renderContent(page.termsText)}
-                                        </div>
-                                    </div>
-                                )}
-                                {page.type === 'commercials' && (
-                                     <div className="space-y-10 py-6 h-full flex flex-col justify-between">
-                                         <div>
-                                             <div className="mb-10 space-y-3">
-                                                 <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                     {activeProposalData.commercialsTitle ?? 'COMMERCIAL TERMS'}
-                                                 </h3>
-                                                 <div className="w-20 h-1.5 bg-neon-green" />
-                                                 <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                     {activeProposalData.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
-                                                 </p>
-                                             </div>
-                                             <div className={cn("grid gap-12 items-start", activeProposalData.hideTotalColumn ? "grid-cols-1" : "grid-cols-2")}>
-                                                 <div className="space-y-8">
-                                                     {page.termsText && (
-                                                         <div className="space-y-3">
-                                                             <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4>
-                                                             <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(page.termsText)}</div>
-                                                         </div>
-                                                     )}
-                                                     {page.paymentDetailsText && (
-                                                         <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
-                                                             <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Settlement Details</p>
-                                                             <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{page.paymentDetailsText}</div>
-                                                         </div>
-                                                     )}
-                                                 </div>
-                                                 {!activeProposalData.hideTotalColumn && (<div className="space-y-4">
-                                                     <div className="bg-gray-50/50 border border-gray-250/60 rounded-[2rem] p-8 space-y-6">
-                                                         <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                             <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Subtotal</span>
-                                                             <span className="text-base font-bold text-black font-mono">₹{proposalSubtotal.toLocaleString()}</span>
-                                                         </div>
-                                                         {activeProposalData.showGst && (
-                                                             <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                                 <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">GST ({activeProposalData.gstRate}%)</span>
-                                                                 <span className="text-base font-bold text-black font-mono">₹{proposalGstAmount.toLocaleString()}</span>
-                                                             </div>
-                                                         )}
-                                                         <div className="p-8 bg-white dark:bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
-                                                             <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
-                                                             <h2 className="text-3xl font-black tracking-widest text-gray-900 dark:text-white font-mono leading-none">₹{proposalTotalAmount.toLocaleString()}</h2>
-                                                             <div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" />
-                                                         </div>
-                                                         {activeProposalData.advanceRequested > 0 && (
-                                                             <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-[1.5rem] flex justify-between items-center">
-                                                                 <div>
-                                                                     <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Advance Fee ({activeProposalData.advanceRequested}%)</span>
-                                                                     <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">Due upon signature</span>
-                                                                 </div>
-                                                                 <span className="text-xl font-black text-black font-mono">₹{(proposalTotalAmount * activeProposalData.advanceRequested / 100).toLocaleString()}</span>
-                                                             </div>
-                                                         )}
-                                                     </div>
-                                                 </div>)}
-                                             </div>
-                                         </div>
+                <AIPromptBox
+                    key={kind}
+                    type={cfg.module}
+                    value={prompt}
+                    onChange={setPrompt}
+                    placeholder={cfg.placeholder}
+                    examples={cfg.examples}
+                    attachments={files}
+                    onAttachmentsChange={setFiles}
+                    tones={TONES}
+                    tone={tone}
+                    onToneChange={setTone}
+                    isGenerating={busy === 'generate'}
+                    onGenerate={() => generate()}
+                    onCancel={cancel}
+                    submitLabel={kind === 'notes' ? 'Lay it out' : `Draft ${cfg.label.toLowerCase()}`}
+                    generatingLabel={`Drafting your ${cfg.module === 'contract' ? 'contract' : 'proposal'}`}
+                    maxChars={MAX_BRIEF_CHARS}
+                    extraChars={attachedChars}
+                    accentTone={cfg.tone}
+                />
 
-                                         {/* Authentication Layer (Export) */}
-                                         {(activeProposalData.showSeal || activeProposalData.showSignatures) && (
-                                              <div className="mt-20 pt-12 border-t-2 border-black/5 relative">
-                                                  {activeProposalData.showSignatures ? (
-                                                      <>
-                                                          <div className="grid grid-cols-2 gap-20">
-                                                              {/* Provider Signature */}
-                                                              <div className="space-y-6">
-                                                                  <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
-                                                                  <div className="h-40 flex items-center justify-start relative">
-                                                                      {activeProposalData.providerSignature ? (
-                                                                          <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                      ) : (
-                                                                          <p className="text-[24px] font-signature text-black opacity-40">{activeProposalData.senderName || 'Authorized Signatory'}</p>
-                                                                      )}
-                                                                      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white dark:bg-black" />
-                                                                  </div>
-                                                                  <p className="text-[11px] font-black text-black uppercase tracking-widest">{activeProposalData.senderName || 'Authorized Signatory'}</p>
-                                                                  <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
-                                                              </div>
+                {errorBox}
 
-                                                              {/* Client Signature */}
-                                                              <div className="space-y-6 text-right">
-                                                                  <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
-                                                                  <div className="h-40 flex items-center justify-end relative">
-                                                                      {activeProposalData.clientSignature ? (
-                                                                          <img src={activeProposalData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                      ) : (
-                                                                          <p className="text-[24px] font-signature text-black opacity-10">Type name to sign</p>
-                                                                      )}
-                                                                      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white dark:bg-black" />
-                                                                  </div>
-                                                                  <p className="text-[11px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
-                                                              </div>
-                                                          </div>
-                                                          {activeProposalData.showSeal && (
-                                                              <div className="flex justify-center mt-6 relative z-10">
-                                                                  <DocumentSeal className="w-56 h-56" />
-                                                              </div>
-                                                          )}
-                                                      </>
-                                                  ) : (
-                                                      activeProposalData.showSeal && (
-                                                          <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-[20px]">
-                                                              <DocumentSeal className="w-56 h-56" />
-                                                              <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
-                                                          </div>
-                                                      )
-                                                  )}
-                                              </div>
-                                          )}
-                                     </div>
-                                )}
-                                </div>
-                            </div>
-                            <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.4em]">
-                                <p className="w-1/3 text-left">© NEWBI ENTERTAINMENT & MARKETING LLP</p>
-                                <p className="w-1/3 text-center text-gray-600 truncate px-2"></p>
-                                <p className="w-1/3 text-right text-black">Page {idx + 1} of {proposalPaginatedPages.length}</p>
-                            </div>
+                <p className="text-[12px] text-gray-500">
+                    Drafts stay on this device until you save them. AI can get facts and figures wrong, so check names, dates and prices before you send anything.
+                </p>
+
+                {recent.length > 0 && (
+                    <section className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-[15px] font-bold">Pick up where you left off</h2>
+                            {history.entries.length > recent.length && (
+                                <Button size="sm" variant="ghost" onClick={() => setHistoryOpen(true)}>See all</Button>
+                            )}
                         </div>
-                    ))
+                        <div className="space-y-2">
+                            {recent.map(e => <HistoryRow key={e.id} entry={e} onOpen={openEntry} onRemove={askRemove} />)}
+                        </div>
+                    </section>
+                )}
+            </div>
+        </div>
+    );
+
+    // ── Result view ────────────────────────────────────────────────────
+    const stats = documentStats(resultKind, doc);
+    const ResultIcon = resultCfg.icon;
+    const resultPanel = (
+        <div className="space-y-5 px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-5 sm:px-5">
+            {/* What was made */}
+            <div className="rounded-2xl border border-black/[0.06] bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.03]">
+                <div className="flex items-start gap-3">
+                    <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', ra.chip)}><ResultIcon size={19} /></span>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            <Badge tone={resultCfg.tone}>{resultCfg.label}</Badge>
+                            {saved ? <Badge tone="green">Saved</Badge> : <Badge tone="amber">Not saved</Badge>}
+                        </div>
+                        <h2 className="mt-1.5 break-words text-[17px] font-extrabold leading-snug">{documentTitle(resultKind, doc)}</h2>
+                        {documentSubtitle(resultKind, doc) && <p className="text-[13px] text-gray-500">{documentSubtitle(resultKind, doc)}</p>}
+                    </div>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                    {stats.map(s => (
+                        <div key={s.label} className={cn('min-w-0 rounded-xl px-3 py-2', accent(s.tone).soft)}>
+                            <p className="truncate text-[11.5px] font-semibold text-gray-500">{s.label}</p>
+                            <p className={cn('truncate text-[16px] font-extrabold tabular-nums', accent(s.tone).text)}>{s.value}</p>
+                        </div>
+                    ))}
+                </div>
+                {saved ? (
+                    <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-emerald-500/[0.07] p-3 dark:bg-neon-green/[0.06]">
+                        <CheckCircle2 size={16} className="shrink-0 text-emerald-600 dark:text-neon-green" />
+                        <p className="min-w-0 flex-1 text-[13px] font-semibold text-emerald-800 dark:text-emerald-200">
+                            {dirty ? 'Saved earlier. Save again to keep your latest changes.' : `In ${links.name} as a draft.`}
+                        </p>
+                        <Button size="sm" variant="secondary" onClick={() => navigate(links.edit(saved.id))} disabled={dirty} title={dirty ? 'Save your changes first' : undefined}>
+                            <ExternalLink size={14} /> Open in editor
+                        </Button>
+                    </div>
                 ) : (
-                    agreementPaginatedPages.map((page, idx) => (
-                        <div key={idx} className="agreement-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[25mm] rounded-[1px] font-formal border-[0.5px] border-black/10 shrink-0">
-                            {/* Renders exact full agreement PDF pages */}
-                            <div className="flex justify-between items-end mb-8 pb-3 relative z-10">
-                                <img src={agreementFormData.selectedLogo === 'marketing' ? '/logo_marketing.png' : '/logo_document.png'} alt="Logo" className="h-8 w-auto object-contain grayscale opacity-80" crossOrigin="anonymous" />
-                                <div className="flex items-center gap-6 text-right">
-                                    <div className="space-y-0.5"><span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest block">Agreement ID</span><span className="text-[10px] font-bold text-black tracking-widest block">{agreementFormData.agreementNumber}</span></div>
-                                </div>
-                            </div>
-                            <div className="flex-1 relative z-10 flex flex-col px-2">
-                                {page.type === 'intro' && (
-                                    <div className="space-y-8">
-                                        <div className="text-center py-8"><h1 className="text-3xl font-bold uppercase tracking-widest text-black underline underline-offset-8">{(agreementFormData.template || 'Service Agreement').toUpperCase()}</h1></div>
-                                        <div className="space-y-8 text-[12px] leading-relaxed text-justify">
-                                            <p className="font-bold border-b border-black/5 pb-2">This {(agreementFormData.template || 'SERVICE AGREEMENT').toUpperCase()} (the "Agreement") is entered into as of {new Date(agreementFormData.effectiveDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}.</p>
-                                            <div className="space-y-1"><p><span className="font-bold uppercase">{agreementFormData.parties.firstParty.name}</span> (the <span className="font-bold">"{agreementFormData.parties.firstParty.role || 'Provider'}"</span>);</p></div>
-                                            <div className="space-y-1"><p><span className="font-bold uppercase">{agreementFormData.parties.secondParty.name || '[Client Name]'}</span> (the <span className="font-bold">"{agreementFormData.parties.secondParty.role || 'Client'}"</span>).</p></div>
-                                        </div>
-                                    </div>
-                                )}
-                                {page.type === 'mission' && (
-                                    <div className="space-y-8 py-4">
-                                        <div className="space-y-2 border-b border-black pb-2"><h3 className="text-base font-bold uppercase tracking-widest text-black">1. Scope of Engagement</h3></div>
-                                        <div className="text-[12px] leading-relaxed text-black text-justify px-4">{renderFormatted(agreementFormData.details.purpose)}</div>
-                                    </div>
-                                )}
-                                {page.type === 'commercials' && (
-                                    <div className="space-y-12 py-4">
-                                        <div className="space-y-2 border-b border-black pb-2"><h3 className="text-base font-bold uppercase tracking-widest text-black">2. Consideration and Payment</h3></div>
-                                        <div className="space-y-10 mt-8 px-4">
-                                            <div className="border border-black p-8 text-center bg-gray-50/50"><h2 className="text-4xl font-bold tracking-tight text-black">{agreementFormData.commercials.currency} {agreementFormData.commercials.totalValue || '0.00'}</h2></div>
-                                            <div className="pl-8">{renderFormatted(agreementFormData.commercials.paymentSchedule)}</div>
-                                        </div>
-                                    </div>
-                                )}
-                                {page.type === 'clauses' && (
-                                    <div className="space-y-8 py-4">
-                                        <div className="space-y-2 border-b border-black pb-2"><h3 className="text-base font-bold uppercase tracking-widest text-black">3. Terms and Conditions</h3></div>
-                                        <div className="space-y-8 mt-6 px-4">
-                                            {(page.items || []).map((clause, idx) => (
-                                                <div key={clause.id} className="space-y-3">
-                                                    <p className="text-[11px] font-bold text-black uppercase tracking-widest">3.{(idx + 1 + (page.pageIndex - 1) * 3).toString().padStart(2, '0')} {clause.title}</p>
-                                                    <div className="text-[12px] leading-relaxed text-black text-justify pl-8 border-l border-black/5">{renderFormatted(clause.content)}</div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                                {page.type === 'execution' && (
-                                    <div className="h-full flex flex-col py-4">
-                                        <div className="grid grid-cols-2 gap-20 mt-12">
-                                            <div>
-                                                <div className="h-20 flex items-end">
-                                                    {agreementFormData.showSignatures && agreementFormData.providerSignature && (
-                                                        <img src={agreementFormData.providerSignature} className="h-full object-contain grayscale" alt="Provider Sig" />
-                                                    )}
-                                                </div>
-                                                <p className="text-[11px] font-bold uppercase mt-4">{agreementFormData.providerName}</p>
-                                            </div>
-                                            <div>
-                                                <div className="h-20 flex items-end">
-                                                    {agreementFormData.showSignatures && agreementFormData.clientSignature && (
-                                                        <img src={agreementFormData.clientSignature} className="h-full object-contain grayscale" alt="Client Sig" />
-                                                    )}
-                                                </div>
-                                                <p className="text-[11px] font-bold uppercase mt-4">{agreementFormData.parties.secondParty.name || 'Client'}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ))
+                    <p className="mt-4 text-[12.5px] text-gray-500">
+                        Check it over, then <span className="font-semibold text-gray-700 dark:text-zinc-300">Save as draft</span> to add it to {links.name}. For custom pages, attachments and sending, open it in the full editor after saving.
+                    </p>
                 )}
             </div>
 
-            {/* Signature Pad Modal Overlay */}
-            <SignatureModal isOpen={isSigModalOpen} onClose={() => setIsSigModalOpen(false)} onSave={handleSigSave} title={sigTarget === 'provider' ? 'Provider Authentication Seal' : 'Client Execution Seal'} />
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-2">
+                <Button variant="secondary" className="h-11" onClick={openEdit} disabled={Boolean(busy)}><Pencil size={15} /> Edit details</Button>
+                <Button variant="secondary" className="h-11" onClick={regenerate} disabled={Boolean(busy) || !brief}><RotateCcw size={15} /> Regenerate</Button>
+                <Button variant="secondary" className="h-11" onClick={() => setExporting(true)} disabled={exporting || Boolean(busy)}>
+                    {exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} {exporting ? 'Preparing…' : 'Download PDF'}
+                </Button>
+                <Button variant="secondary" className="h-11" onClick={startNew} disabled={busy === 'revise'}><Plus size={15} /> New draft</Button>
+            </div>
+
+            {undoStack.length > 0 && !busy && (
+                <button type="button" onClick={undo} className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-black/[0.08] px-3 py-2 text-left text-[13px] font-semibold text-gray-700 hover:border-black/20 dark:border-white/[0.08] dark:text-zinc-300 dark:hover:border-white/20">
+                    <Undo2 size={15} className="shrink-0" />
+                    <span className="min-w-0 flex-1 truncate">Undo {undoStack[undoStack.length - 1].label}</span>
+                </button>
+            )}
+
+            {errorBox}
+
+            {busy === 'generate' && (
+                <GenerationProgress label="Regenerating" seconds={genElapsed} onCancel={cancel} tone={resultCfg.tone} />
+            )}
+
+            {/* Ask for changes */}
+            <div className="rounded-2xl border border-black/[0.06] bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.03]">
+                <div className="mb-3 flex items-center gap-2">
+                    <span className={cn('flex h-8 w-8 items-center justify-center rounded-lg', moduleAccent.chip)}><Wand2 size={15} /></span>
+                    <h3 className="text-[15px] font-bold">Ask for changes</h3>
+                </div>
+                {busy === 'revise' ? (
+                    <GenerationProgress label="Applying your change" seconds={elapsed} onCancel={cancel} tone={resultCfg.tone} />
+                ) : (
+                    <>
+                        <textarea
+                            ref={instructionRef}
+                            value={instruction}
+                            onChange={(e) => setInstruction(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); revise(); } }}
+                            rows={3}
+                            disabled={Boolean(busy)}
+                            placeholder={module === 'contract' ? 'e.g. Add a 15-day cancellation notice' : 'e.g. Add a second price option for 5 cities'}
+                            aria-label="Change to make"
+                            className="block w-full resize-y rounded-xl border border-black/10 bg-white px-3.5 py-3 text-[15px] leading-relaxed outline-none placeholder:text-gray-400 focus:border-black/25 dark:border-white/10 dark:bg-white/[0.03] dark:placeholder:text-zinc-500 dark:focus:border-white/25"
+                        />
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                            {REVISION_IDEAS[module].map(idea => (
+                                <button key={idea} type="button" onClick={() => setInstruction(idea)} className="min-h-10 rounded-lg bg-black/[0.04] px-2.5 py-1.5 text-left text-[12.5px] font-medium text-gray-600 hover:bg-black/[0.07] hover:text-gray-900 dark:bg-white/[0.05] dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white">
+                                    {idea}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="mt-3 flex justify-end">
+                            <Button variant="accent" onClick={() => revise()} disabled={instruction.trim().length < 3 || Boolean(busy)}>
+                                <Sparkles size={15} /> Apply change
+                            </Button>
+                        </div>
+                    </>
+                )}
+                {changes.length > 0 && (
+                    <ul className="mt-4 space-y-1.5 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+                        {changes.slice().reverse().map(c => (
+                            <li key={c.id} className="flex items-start gap-2 text-[13px]">
+                                <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-500" />
+                                <span className="min-w-0 flex-1 break-words text-gray-700 dark:text-zinc-300">{c.text}</span>
+                                <span className="shrink-0 text-[11.5px] text-gray-400">{timeAgo(c.at)}</span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+
+            {/* The brief */}
+            {brief && (
+                <details className="group rounded-2xl border border-black/[0.06] bg-white dark:border-white/[0.08] dark:bg-white/[0.03]">
+                    <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 text-[14px] font-bold [&::-webkit-details-marker]:hidden">
+                        <span className="flex-1">Your brief</span>
+                        <ChevronDown size={16} className="text-gray-400 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="space-y-3 px-4 pb-4">
+                        <p className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words text-[13px] leading-relaxed text-gray-600 dark:text-zinc-400">{brief.prompt || '—'}</p>
+                        <p className="text-[12px] text-gray-500">
+                            Tone: {TONES.find(t => t.value === brief.tone)?.label || brief.tone}
+                            {brief.files?.length ? ` · Files: ${brief.files.join(', ')}` : ''}
+                        </p>
+                        <Button size="sm" variant="secondary" onClick={editBrief} disabled={Boolean(busy)}><Pencil size={14} /> Change the brief</Button>
+                    </div>
+                </details>
+            )}
+        </div>
+    );
+
+    const resultView = (
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+            <div className="shrink-0 border-b border-black/[0.06] px-4 py-2 dark:border-white/[0.06] lg:hidden">
+                <SegmentedTabs
+                    value={mobileTab}
+                    onChange={setMobileTab}
+                    items={[{ value: 'preview', label: 'Preview' }, { value: 'details', label: 'Edit and save' }]}
+                    className="w-full [&>button]:flex-1 [&>button]:justify-center"
+                />
+            </div>
+            <aside className={cn(
+                'min-h-0 overflow-y-auto overscroll-contain border-black/[0.06] dark:border-white/[0.06] lg:block lg:w-[440px] lg:shrink-0 lg:border-r',
+                mobileTab === 'details' ? 'flex-1' : 'hidden'
+            )}>
+                {resultPanel}
+            </aside>
+            <main className={cn('min-h-0 flex-1 flex-col bg-[#eceef2] dark:bg-black/40 lg:flex', mobileTab === 'preview' ? 'flex' : 'hidden')}>
+                {busy && (
+                    <div className={cn('mx-4 mt-3 flex items-center gap-2 rounded-xl px-3 py-2 text-[12.5px] font-semibold lg:hidden', ra.soft, ra.text)}>
+                        <Loader2 size={14} className="animate-spin" /> {busy === 'revise' ? 'Applying your change…' : 'Regenerating…'}
+                        <button type="button" onClick={cancel} className="ml-auto h-8 rounded-lg px-2 underline">Cancel</button>
+                    </div>
+                )}
+                {doc && <DocumentPreview module={module} doc={doc} contractPages={contract.paginatedPages} className={cn('flex-1', busy && 'opacity-60')} />}
+            </main>
+        </div>
+    );
+
+    return (
+        <div className="flex h-dvh flex-col overflow-hidden bg-[#f6f7f9] font-heading text-gray-900 dark:bg-[#07080b] dark:text-white">
+            {header}
+            {phase === 'result' && doc ? resultView : composeView}
+
+            {phase === 'result' && module === 'proposal' && (
+                <ProposalEditSheet open={editOpen} onClose={closeEdit} doc={proposalDoc} onChange={setProposalDoc} />
+            )}
+            {phase === 'result' && module === 'contract' && (
+                <ContractEditSheet
+                    open={editOpen}
+                    onClose={closeEdit}
+                    contract={contract}
+                    onRefine={(title) => { closeEdit(); setInstruction(`Rewrite the "${title || 'selected'}" clause so that `); setMobileTab('details'); setTimeout(() => instructionRef.current?.focus(), 350); }}
+                />
+            )}
+
+            <HistorySheet
+                open={historyOpen}
+                onClose={() => setHistoryOpen(false)}
+                entries={history.entries}
+                activeId={phase === 'result' ? entryId : null}
+                onOpen={openEntry}
+                onRemove={askRemove}
+                onClear={askClear}
+            />
+
+            <Sheet
+                open={Boolean(confirm)}
+                onClose={() => setConfirm(null)}
+                variant="dialog"
+                size="sm"
+                title={confirm?.title}
+                footer={(
+                    <div className="flex gap-2">
+                        <Button variant="secondary" className="h-11 flex-1" onClick={() => setConfirm(null)}>Keep</Button>
+                        <Button variant="danger" className="h-11 flex-1" onClick={() => { const fn = confirm?.action; setConfirm(null); fn?.(); }}>{confirm?.label}</Button>
+                    </div>
+                )}
+            >
+                <p className="text-[14px] text-gray-600 dark:text-zinc-300">{confirm?.body}</p>
+            </Sheet>
+
+            {exporting && doc && <ExportPages ref={exportRef} module={module} doc={doc} contractPages={contract.paginatedPages} />}
         </div>
     );
 };

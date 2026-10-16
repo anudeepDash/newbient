@@ -1,634 +1,387 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Plus, Trash2, Pin, LayoutGrid, Save, Sparkles, ChevronUp, ChevronDown, X, Clock, Eye, Edit, Mail, Megaphone, Calendar, Radio, FileText, Music, RotateCcw } from 'lucide-react';
+import React, { useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Radio from 'lucide-react/dist/esm/icons/radio';
+import Pin from 'lucide-react/dist/esm/icons/pin';
+import PinOff from 'lucide-react/dist/esm/icons/pin-off';
+import Edit from 'lucide-react/dist/esm/icons/edit-3';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Copy from 'lucide-react/dist/esm/icons/copy';
+import Bell from 'lucide-react/dist/esm/icons/bell';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up';
+import ArrowDown from 'lucide-react/dist/esm/icons/arrow-down';
+import CalendarClock from 'lucide-react/dist/esm/icons/calendar-clock';
+import CircleOff from 'lucide-react/dist/esm/icons/circle-off';
+import Play from 'lucide-react/dist/esm/icons/play';
+import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
+import Archive from 'lucide-react/dist/esm/icons/archive';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { notifyAllUsers } from '../../lib/notificationTriggers';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { cn } from '../../lib/utils';
-import LivePreview from '../../components/admin/LivePreview';
-import { motion, AnimatePresence } from 'framer-motion';
-
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import { Card, Button, Badge, StatTile, SearchInput, SegmentedTabs, EmptyState, Menu, MenuItem, ViewToggle, useViewMode } from '../../components/admin/ui';
+import ExportMenu from '../../components/admin/ExportMenu';
+import { CONTENT_TABS, ConfirmSheet, framedBackground } from '../../components/admin/content/ContentKit';
+import AnnouncementComposer, { sendAnnouncementNotification } from '../../components/admin/content/AnnouncementComposer';
+import {
+    announcementCategory, announcementState, announcementWindow, ANNOUNCEMENT_STATE_LABEL, ANNOUNCEMENT_PRIORITIES,
+    formatDay, formatDayTime, relativeTime, stripHtml,
+} from '../../components/admin/content/contentRules';
+
+const FILTERS = [
+    { value: 'all', label: 'All' },
+    { value: 'live', label: 'Live' },
+    { value: 'pinned', label: 'In the banner' },
+    { value: 'scheduled', label: 'Scheduled' },
+    { value: 'ended', label: 'Ended' },
+];
+
+const windowText = (a) => {
+    const { start, end } = announcementWindow(a);
+    const state = announcementState(a);
+    if (state === 'scheduled') return `Starts ${formatDayTime(start)}${end ? ` · ends ${formatDay(end)}` : ''}`;
+    if (state === 'ended') return `Ended ${formatDay(end)}`;
+    return end ? `Live until ${formatDay(end)}` : 'Live, no end date';
+};
 
 const AnnouncementsManager = () => {
     useStoreSubscription(['announcements']);
-    const { announcements, addAnnouncement, updateAnnouncement, togglePinAnnouncement, deleteAnnouncement, reorderAnnouncements, cleanupExpiredAnnouncements } = useStore();
-    const [isAdding, setIsAdding] = useState(false);
-    const [editingId, setEditingId] = useState(null);
-    const [showPreviewMobile, setShowPreviewMobile] = useState(false);
-    const [activeEditorTab, setActiveEditorTab] = useState('content');
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [uploading, setUploading] = useState(false);
+    const { announcements, updateAnnouncement, togglePinAnnouncement, deleteAnnouncement, reorderAnnouncements, addToast } = useStore();
+    const navigate = useNavigate();
+    const [params, setParams] = useSearchParams();
+    const [search, setSearch] = useState('');
+    const [view, setView] = useViewMode('announcements', 'cards');
+    const [composer, setComposer] = useState(null); // { record } | { copyOf } | {}
+    const [confirm, setConfirm] = useState(null); // { kind, item }
+    const [busy, setBusy] = useState(false);
+    const busyRef = useRef(false);
 
-    useEffect(() => {
-        cleanupExpiredAnnouncements();
-    }, [cleanupExpiredAnnouncements]);
+    const filter = FILTERS.some(f => f.value === params.get('filter')) ? params.get('filter') : 'all';
+    const setFilter = (v) => { const next = new URLSearchParams(params); if (v === 'all') next.delete('filter'); else next.set('filter', v); setParams(next, { replace: true }); };
 
-    const [newAnnouncement, setNewAnnouncement] = useState({
-        title: '',
-        tagline: '',
-        date: new Date().toISOString().split('T')[0],
-        content: '',
-        image: '',
-        imageTransform: { scale: 1, x: 0, y: 0 },
-        link: '',
-        buttonText: 'READ MORE',
-        category: 'NEWS',
-        priority: 'Normal',
-        isPinned: false
+    // Deep links: ?new=1 opens the composer, ?id= opens one announcement.
+    const deepId = params.get('id');
+    const deepNew = params.get('new');
+    const deepRecord = deepId ? announcements.find(a => a.id === deepId) : null;
+    const composerOpen = Boolean(composer) || Boolean(deepRecord) || deepNew === '1';
+    const composerRecord = composer ? (composer.record || (composer.copyOf ? composer : null)) : deepRecord || null;
+    const closeComposer = () => {
+        setComposer(null);
+        if (deepId || deepNew) { const next = new URLSearchParams(params); next.delete('id'); next.delete('new'); setParams(next, { replace: true }); }
+    };
+
+    const rows = useMemo(() => {
+        let bannerFound = false;
+        return announcements.map(a => {
+            const state = announcementState(a);
+            const inBanner = !bannerFound && a.isPinned && state === 'live';
+            if (inBanner) bannerFound = true;
+            return { a, state, inBanner };
+        });
+    }, [announcements]);
+
+    const counts = useMemo(() => ({
+        all: rows.length,
+        live: rows.filter(r => r.state === 'live').length,
+        pinned: rows.filter(r => r.a.isPinned && r.state !== 'ended').length,
+        scheduled: rows.filter(r => r.state === 'scheduled').length,
+        ended: rows.filter(r => r.state === 'ended').length,
+    }), [rows]);
+    const banner = rows.find(r => r.inBanner);
+
+    const shown = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        return rows.filter(({ a, state }) => {
+            if (filter === 'live' && state !== 'live') return false;
+            if (filter === 'scheduled' && state !== 'scheduled') return false;
+            if (filter === 'ended' && state !== 'ended') return false;
+            if (filter === 'pinned' && !(a.isPinned && state !== 'ended')) return false;
+            if (!q) return true;
+            return [a.title, a.tagline, a.content, a.category].some(v => String(v || '').toLowerCase().includes(q));
+        });
+    }, [rows, filter, search]);
+    const canReorder = !search.trim();
+
+    const guard = async (fn) => {
+        if (busyRef.current) return;
+        busyRef.current = true;
+        setBusy(true);
+        try { await fn(); } finally { busyRef.current = false; setBusy(false); }
+    };
+
+    const togglePin = (a) => guard(async () => {
+        try {
+            await togglePinAnnouncement(a.id);
+            addToast(a.isPinned ? 'Removed from the website banner.' : 'Pinned to the website banner.', 'success');
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't update the banner. Please try again.", 'error');
+        }
     });
 
-    const coreContentTabs = [
-        { name: 'Upcoming', path: '/admin/upcoming-events', icon: Calendar, color: 'text-neon-green' },
-        { name: 'Announcements', path: '/admin/announcements', icon: Radio, color: 'text-neon-pink' },
-        { name: 'Blog', path: '/admin/blog', icon: FileText, color: 'text-neon-blue' },
-        { name: 'Portfolio', path: '/admin/concertzone', icon: Music, color: 'text-neon-purple' },
-    ];
-
-    const handlePaste = (e) => {
-        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-        for (let index in items) {
-            const item = items[index];
-            if (item.kind === 'file' && item.type.startsWith('image/')) {
-                const file = item.getAsFile();
-                setSelectedFile(file);
-                useStore.getState().addToast("Image pasted.", 'success');
-                e.preventDefault();
-            }
-        }
-    };
-
-    const handleFileUpload = async (file) => {
-        if (!file) return null;
-        const data = new FormData();
-        data.append("file", file);
-        data.append("upload_preset", "maw1e4ud");
-        data.append("cloud_name", "dgtalrz4n");
-
+    // Move within its group (pinned ones always sort first).
+    const move = (a, dir) => guard(async () => {
+        const list = [...announcements];
+        const i = list.findIndex(x => x.id === a.id);
+        let j = i + dir;
+        while (j >= 0 && j < list.length && !!list[j].isPinned !== !!a.isPinned) j += dir;
+        if (j < 0 || j >= list.length) return;
+        [list[i], list[j]] = [list[j], list[i]];
         try {
-            const res = await fetch("https://api.cloudinary.com/v1_1/dgtalrz4n/image/upload", { method: "POST", body: data });
-            const uploadedImage = await res.json();
-            return uploadedImage.secure_url;
-        } catch (error) {
-            throw new Error("Upload failed.");
+            await reorderAnnouncements(list);
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't save the new order. Please try again.", 'error');
         }
-    };
+    });
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setUploading(true);
+    const endNow = (a) => guard(async () => {
         try {
-            let imageUrl = newAnnouncement.image;
-            if (selectedFile) imageUrl = await handleFileUpload(selectedFile);
-
-            if (editingId) {
-                await updateAnnouncement(editingId, { ...newAnnouncement, image: imageUrl });
-            } else {
-                await addAnnouncement({ ...newAnnouncement, image: imageUrl });
-                await notifyAllUsers(
-                    `New announcement: ${newAnnouncement.title}`,
-                    newAnnouncement.content,
-                    newAnnouncement.link,
-                    imageUrl
-                );
-            }
-            resetForm();
-        } catch (error) {
-            console.error("Save failed:", error);
-            useStore.getState().addToast("Couldn't save the announcement. Please try again.", 'error', 'ANN-01');
+            const { start } = announcementWindow(a);
+            await updateAnnouncement(a.id, { endsAt: new Date().toISOString(), startsAt: start ? start.toISOString() : '', updatedAt: new Date().toISOString() });
+            addToast('Ended. It no longer shows on the site.', 'success');
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't end it. Please try again.", 'error');
         }
-    };
-    const resetForm = () => {
-        setActiveEditorTab('details');
-        setShowPreviewMobile(false);
-        setIsAdding(false);
-        setEditingId(null);
-        setSelectedFile(null);
-        setUploading(false);
-        setNewAnnouncement({
-            title: '',
-            tagline: '',
-            date: new Date().toISOString().split('T')[0],
-            content: '',
-            image: '',
-            imageTransform: { scale: 1, x: 0, y: 0 },
-            link: '',
-            buttonText: 'READ MORE',
-            category: 'NEWS',
-            priority: 'Normal',
-            isPinned: false
+    });
+
+    const showAgain = (a) => guard(async () => {
+        try {
+            await updateAnnouncement(a.id, { endsAt: '', startsAt: '', updatedAt: new Date().toISOString() });
+            addToast('Live again.', 'success');
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't update it. Please try again.", 'error');
+        }
+    });
+
+    const runConfirm = () => guard(async () => {
+        const { kind, item } = confirm || {};
+        if (!item) return;
+        try {
+            if (kind === 'delete') {
+                await deleteAnnouncement(item.id);
+                addToast('Announcement deleted.', 'success');
+            } else if (kind === 'notify') {
+                const claimed = await useStore.getState().claimContentNotification('announcements', item.id, { force: !!item.notifiedAt });
+                if (!claimed) { addToast('It was already sent a moment ago.', 'info'); }
+                else {
+                    await sendAnnouncementNotification(item, !!confirm.email);
+                    addToast(confirm.email ? 'Notification and email sent.' : 'Notification sent to everyone.', 'success');
+                }
+            }
+            setConfirm(null);
+        } catch (err) {
+            console.error(err);
+            addToast(kind === 'delete' ? "Couldn't delete it. Please try again." : "Couldn't send the notification. Please try again.", 'error');
+        }
+    });
+
+    const emailViaMailing = (a) => {
+        const qs = new URLSearchParams({
+            subject: a.title || 'Announcement',
+            header: a.title || '',
+            body: stripHtml(a.content),
+            heroImage: a.image || '',
+            ctaText: a.buttonText || 'Read more',
+            ctaUrl: a.link ? (a.link.startsWith('/') ? `${window.location.origin}${a.link}` : a.link) : window.location.origin,
         });
+        navigate(`/admin/mailing?${qs.toString()}`);
     };
 
-    const handleEdit = (item) => {
-        setNewAnnouncement({
-            title: item.title || '',
-            tagline: item.tagline || '',
-            date: item.date || new Date().toISOString().split('T')[0],
-            content: item.content || '',
-            image: item.image || '',
-            imageTransform: item.imageTransform || { scale: 1, x: 0, y: 0 },
-            link: item.link || '',
-            buttonText: item.buttonText || 'READ MORE',
-            category: item.category || 'NEWS',
-            priority: item.priority || 'Normal',
-            isPinned: item.isPinned || false
-        });
-        setEditingId(item.id);
-        setIsAdding(true);
-        setActiveEditorTab('details');
+    const exportSpec = () => ({
+        filename: `announcements_${filter}`,
+        sheetName: 'Announcements',
+        title: 'Announcements',
+        subtitle: `${shown.length} announcement${shown.length === 1 ? '' : 's'}`,
+        rows: shown,
+        columns: [
+            { header: 'Headline', value: r => r.a.title || '' },
+            { header: 'Message', value: r => stripHtml(r.a.content) },
+            { header: 'Category', value: r => announcementCategory(r.a.category).label },
+            { header: 'Priority', value: r => r.a.priority || 'Normal' },
+            { header: 'Status', value: r => ANNOUNCEMENT_STATE_LABEL[r.state].label },
+            { header: 'In banner', value: r => (r.inBanner ? 'Showing now' : r.a.isPinned ? 'Pinned' : 'No') },
+            { header: 'Starts', type: 'datetime', value: r => announcementWindow(r.a).start || null },
+            { header: 'Ends', type: 'datetime', value: r => announcementWindow(r.a).end || null },
+            { header: 'Notified', type: 'datetime', value: r => r.a.notifiedAt || null },
+            { header: 'Link', value: r => r.a.link || '' },
+        ],
+    });
+
+    const actions = (a, state) => (
+        <Menu trigger={({ toggle }) => (
+            <Button size="sm" variant="ghost" onClick={toggle} aria-label="More actions" className="h-10 w-10 px-0"><MoreHorizontal size={16} /></Button>
+        )}>
+            <MenuItem icon={Edit} onClick={() => setComposer({ record: a })}>Edit</MenuItem>
+            <MenuItem icon={a.isPinned ? PinOff : Pin} onClick={() => togglePin(a)} hint={a.isPinned ? 'Take it out of the website banner' : 'Show it at the top of every page'}>{a.isPinned ? 'Unpin from banner' : 'Pin to banner'}</MenuItem>
+            {state === 'live' && (
+                <MenuItem icon={Bell} onClick={() => setConfirm({ kind: 'notify', item: a, email: false })} hint={a.notifiedAt ? `Already sent ${relativeTime(a.notifiedAt)}` : 'In-app and phone notification'}>
+                    {a.notifiedAt ? 'Send notification again' : 'Send notification'}
+                </MenuItem>
+            )}
+            <MenuItem icon={Mail} onClick={() => emailViaMailing(a)} hint="Opens Mailing with this filled in">Email as a campaign</MenuItem>
+            <MenuItem icon={Copy} onClick={() => setComposer({ copyOf: a })}>Duplicate</MenuItem>
+            {canReorder && <MenuItem icon={ArrowUp} onClick={() => move(a, -1)}>Move up</MenuItem>}
+            {canReorder && <MenuItem icon={ArrowDown} onClick={() => move(a, 1)}>Move down</MenuItem>}
+            {state === 'ended'
+                ? <MenuItem icon={Play} onClick={() => showAgain(a)} hint="Removes the end date">Show again</MenuItem>
+                : <MenuItem icon={CircleOff} onClick={() => endNow(a)} hint="Hides it from the site, keeps it here">End now</MenuItem>}
+            <MenuItem icon={Trash2} danger onClick={() => setConfirm({ kind: 'delete', item: a })}>Delete</MenuItem>
+        </Menu>
+    );
+
+    const badges = (a, state, inBanner) => {
+        const cat = announcementCategory(a.category);
+        const pr = ANNOUNCEMENT_PRIORITIES.find(p => p.value === a.priority);
+        return (
+            <div className="flex flex-wrap items-center gap-1.5">
+                <Badge tone={ANNOUNCEMENT_STATE_LABEL[state].tone}>{ANNOUNCEMENT_STATE_LABEL[state].label}</Badge>
+                {inBanner && <Badge tone="amber"><Megaphone size={10} /> In the banner now</Badge>}
+                {!inBanner && a.isPinned && state !== 'ended' && <Badge tone="amber"><Pin size={10} /> Pinned</Badge>}
+                <Badge tone={cat.tone}>{cat.label}</Badge>
+                {pr && pr.value !== 'Normal' && <Badge tone={pr.tone}>{pr.label}</Badge>}
+                {a.linkedEventId && <Badge tone="green">From an event</Badge>}
+                {a.linkedGiveawayId && <Badge tone="rose">From a giveaway</Badge>}
+            </div>
+        );
     };
 
-    const handleMoveUp = (index) => {
-        if (index === 0) return;
-        const newItems = [...announcements];
-        [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
-        reorderAnnouncements(newItems);
-    };
-
-    const handleMoveDown = (index) => {
-        if (index === announcements.length - 1) return;
-        const newItems = [...announcements];
-        [newItems[index], newItems[index + 1]] = [newItems[index + 1], newItems[index]];
-        reorderAnnouncements(newItems);
-    };
+    const notifiedText = (a) => a.notifiedAt ? `Notified ${relativeTime(a.notifiedAt)}` : 'Not notified';
 
     return (
         <AdminCommunityHubLayout
-            studioHeader={{
-                title: "ANNOUNCEMENT",
-                subtitle: "MANAGER",
-                accentClass: "text-neon-pink",
-                icon: Megaphone
-            }}
-            tabs={coreContentTabs}
-            accentColor="neon-pink"
-            action={!isAdding && (
-                <Button onClick={() => { setIsAdding(true); setActiveEditorTab('details'); }} className="h-12 md:h-14 px-6 md:px-10 bg-neon-pink text-black font-black uppercase tracking-widest rounded-xl md:rounded-2xl shadow-[0_10px_30px_rgba(255,46,144,0.2)] w-full sm:w-auto">
-                    <Plus className="mr-2" size={18} /> New Announcement
-                </Button>
-            )}
+            studioHeader={{ title: 'Announcements', icon: Radio, description: 'The website banner and notifications to everyone' }}
+            tabs={CONTENT_TABS}
+            action={<Button variant="accent" onClick={() => setComposer({})} className="w-full sm:w-auto"><Plus size={15} /> New announcement</Button>}
         >
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-10">
-
-                {/* Mobile Preview Toggle */}
-                {isAdding && (
-                    <div className="lg:hidden fixed bottom-24 right-6 z-[200]">
-                        <button 
-                            onClick={() => setShowPreviewMobile(!showPreviewMobile)}
-                            className={cn(
-                                "w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all border animate-in zoom-in duration-300",
-                                showPreviewMobile ? "bg-white text-black border-white" : "bg-neon-pink text-black border-neon-pink"
-                            )}
-                        >
-                            {showPreviewMobile ? <X size={24} /> : <Eye size={24} />}
-                        </button>
-                    </div>
-                )}
-
-                {/* Stats Bar */}
-                {!isAdding && (
-                    <div className="flex items-center gap-6 mb-10 overflow-x-auto pb-4 scrollbar-hide">
-                        <div className="text-center shrink-0">
-                            <p className="text-3xl font-black text-gray-900 dark:text-white font-heading leading-none">{announcements.length}</p>
-                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mt-1">Total Announcements</p>
-                        </div>
-                        <div className="w-px h-10 bg-black/5 dark:bg-white/5 shrink-0" />
-                        <div className="text-center shrink-0">
-                            <p className="text-3xl font-black text-neon-pink font-heading leading-none">{announcements.filter(a => a.isPinned).length}</p>
-                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mt-1">Pinned</p>
-                        </div>
-                        <div className="w-px h-10 bg-black/5 dark:bg-white/5 shrink-0" />
-                        <div className="text-center shrink-0">
-                            <p className="text-3xl font-black text-gray-900 dark:text-white font-heading leading-none">{announcements.filter(a => a.priority === 'High').length}</p>
-                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mt-1">High Priority</p>
-                        </div>
-                        <div className="w-px h-10 bg-black/5 dark:bg-white/5 shrink-0" />
-                        <div className="text-center shrink-0">
-                            <p className="text-3xl font-black text-neon-pink font-heading leading-none">{announcements.filter(a => a.priority === 'Critical').length}</p>
-                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mt-1">Critical</p>
-                        </div>
-                    </div>
-                )}
-
-                {/* Content */}
-                <div className="relative z-0">
-                        {isAdding ? (
-                            <div className="flex flex-col lg:flex-row gap-10 items-stretch pb-32">
-                                <div className="flex-1 w-full relative">
-                                    <AnimatePresence mode="wait">
-                                        {showPreviewMobile ? (
-                                            <motion.div key="mobile-preview" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="lg:hidden">
-                                                <LivePreview type="announcement" data={newAnnouncement} hideDecorations={true} />
-                                            </motion.div>
-                                        ) : (
-                                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 items-stretch">
-                                                <div className="xl:col-span-7">
-                                                    <Card className="p-6 md:p-10 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem] md:rounded-[3rem] overflow-hidden">
-                                                        {/* Header */}
-                                                        <div className="flex justify-between items-center mb-10">
-                                                            <div className="space-y-1">
-                                                                <h2 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white flex items-center gap-3 leading-none">
-                                                                    ANNOUNCEMENT <span className="text-neon-pink">EDITOR.</span>
-                                                                </h2>
-                                                                <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-1">Announcement Management v2.0</p>
-                                                            </div>
-                                                            <button onClick={resetForm} className="px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 text-[10px] font-black text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest border border-black/10 dark:border-white/5 transition-all">Abort</button>
-                                                        </div>
-
-                                                        {/* Tabs */}
-                                                        <div className="flex gap-2 mb-12 p-1.5 bg-white dark:bg-black/40 rounded-2xl border border-black/10 dark:border-white/5 w-fit">
-                                                            {['details', 'content', 'media', 'publish'].map((tab) => (
-                                                                <button
-                                                                    key={tab}
-                                                                    onClick={() => setActiveEditorTab(tab)}
-                                                                    className={cn(
-                                                                        "px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                                                                        activeEditorTab === tab 
-                                                                            ? "bg-neon-pink text-black shadow-[0_0_20px_rgba(255,46,144,0.3)]" 
-                                                                            : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
-                                                                    )}
-                                                                >
-                                                                    {tab}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-
-                                                        <form onSubmit={handleSubmit} className="space-y-10">
-                                                            <AnimatePresence mode="wait">
-                                                                {activeEditorTab === 'details' && (
-                                                                    <motion.div key="details" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
-                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                                            <div className="space-y-3">
-                                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Headline</label>
-                                                                                <Input placeholder="ENTER HEADLINE..." value={newAnnouncement.title} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })} required className="h-16 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
-                                                                            </div>
-                                                                            <div className="space-y-3">
-                                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Tagline (Optional)</label>
-                                                                                <Input placeholder="BRIEF HOOK..." value={newAnnouncement.tagline} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, tagline: e.target.value })} className="h-16 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                                            <div className="space-y-3">
-                                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Category</label>
-                                                                                <select 
-                                                                                    value={newAnnouncement.category} 
-                                                                                    onChange={(e) => setNewAnnouncement({ ...newAnnouncement, category: e.target.value })}
-                                                                                    className="w-full h-16 bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6 text-gray-900 dark:text-white uppercase appearance-none focus:outline-none focus:border-neon-pink/30"
-                                                                                >
-                                                                                    {['NEWS', 'UPDATE', 'ALERT', 'EVENT', 'OPPORTUNITY'].map(cat => (
-                                                                                        <option key={cat} value={cat}>{cat}</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            </div>
-                                                                            <div className="space-y-3">
-                                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Release Date</label>
-                                                                                <Input type="date" value={newAnnouncement.date} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, date: e.target.value })} required className="h-16 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" />
-                                                                            </div>
-                                                                        </div>
-                                                                    </motion.div>
-                                                                )}
-
-                                                                {activeEditorTab === 'content' && (
-                                                                    <motion.div key="content" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-6">
-                                                                        <div className="space-y-3">
-                                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Message Body</label>
-                                                                            <textarea 
-                                                                                className="w-full bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-[2.5rem] p-8 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:border-neon-pink/30 transition-all min-h-[300px] resize-none shadow-inner custom-scrollbar" 
-                                                                                placeholder="ENTER MESSAGE CONTENT..." 
-                                                                                value={newAnnouncement.content} 
-                                                                                onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })} 
-                                                                                required 
-                                                                            />
-                                                                        </div>
-                                                                    </motion.div>
-                                                                )}
-
-                                                                {activeEditorTab === 'media' && (
-                                                                    <motion.div key="media" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
-                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                                            <div className="space-y-3">
-                                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Cover Image (URL)</label>
-                                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                                                    <div className="md:col-span-2">
-                                                                                        <Input 
-                                                                                            placeholder="PASTE URL OR CTRL+V IMAGE" 
-                                                                                            value={newAnnouncement.image} 
-                                                                                            onChange={(e) => setNewAnnouncement({ ...newAnnouncement, image: e.target.value })} 
-                                                                                            onPaste={handlePaste}
-                                                                                            className="h-16 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" 
-                                                                                        />
-                                                                                    </div>
-                                                                                    <div className="relative group">
-                                                                                        <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                                                        <div className={cn("h-16 border-2 border-dashed border-black/10 dark:border-white/5 rounded-2xl flex items-center justify-center gap-3 bg-white dark:bg-black/20 group-hover:border-neon-pink/30 transition-all", selectedFile && "border-neon-pink/50 bg-neon-pink/5")}>
-                                                                                            <Sparkles className={cn("text-gray-500 group-hover:text-neon-pink", selectedFile && "text-neon-pink")} size={18} />
-                                                                                            <span className="text-[8px] font-black text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest">{selectedFile ? 'READY' : 'UPLOAD'}</span>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="space-y-3">
-                                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">CTA Action Text</label>
-                                                                                <Input placeholder="READ MORE..." value={newAnnouncement.buttonText} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, buttonText: e.target.value })} className="h-16 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* Visual Calibration */}
-                                                                        <div className="bg-black/5 dark:bg-white/5 p-8 rounded-3xl border border-black/10 dark:border-white/5 space-y-6">
-                                                                            <div className="flex justify-between items-center mb-4">
-                                                                                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-neon-pink">Image Adjustment</h4>
-                                                                                <button 
-                                                                                    type="button"
-                                                                                    onClick={() => setNewAnnouncement({ 
-                                                                                        ...newAnnouncement, 
-                                                                                        imageTransform: { scale: 1, x: 0, y: 0 } 
-                                                                                    })}
-                                                                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 text-[8px] font-black uppercase tracking-widest text-gray-500 hover:text-neon-pink hover:bg-neon-pink/5 hover:border-neon-pink/20 transition-all"
-                                                                                >
-                                                                                    <RotateCcw size={10} />
-                                                                                    Reset
-                                                                                </button>
-                                                                            </div>
-                                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                                                                {[
-                                                                                    { label: 'Scale', key: 'scale', min: -3, max: 3, step: 0.01, unit: 'x' },
-                                                                                    { label: 'X-Position', key: 'x', min: -100, max: 100, step: 1, unit: '%' },
-                                                                                    { label: 'Y-Position', key: 'y', min: -100, max: 100, step: 1, unit: '%' }
-                                                                                ].map(adjust => (
-                                                                                    <div key={adjust.key} className="space-y-3">
-                                                                                        <div className="flex justify-between">
-                                                                                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{adjust.label}</span>
-                                                                                            <span className="text-[8px] font-black text-gray-900 dark:text-white">{(newAnnouncement.imageTransform?.[adjust.key] ?? (adjust.key === 'scale' ? 1 : 0)).toFixed(adjust.step < 1 ? 2 : 0)}{adjust.unit}</span>
-                                                                                        </div>
-                                                                                        <input type="range" min={adjust.min} max={adjust.max} step={adjust.step} value={newAnnouncement.imageTransform?.[adjust.key] ?? (adjust.key === 'scale' ? 1 : 0)} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, imageTransform: { ...newAnnouncement.imageTransform, [adjust.key]: parseFloat(e.target.value) } })} className="w-full h-1 rounded-full appearance-none cursor-pointer bg-black/10 dark:bg-white/10 accent-neon-pink" />
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="space-y-3">
-                                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Target Link (External or Relative)</label>
-                                                                            <Input placeholder="HTTPS://..." value={newAnnouncement.link} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, link: e.target.value })} className="h-16 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" />
-                                                                        </div>
-                                                                    </motion.div>
-                                                                )}
-
-                                                                {activeEditorTab === 'publish' && (
-                                                                    <motion.div key="publish" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
-                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                                            <div className="space-y-3">
-                                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Announcement Priority</label>
-                                                                                <select 
-                                                                                    value={newAnnouncement.priority} 
-                                                                                    onChange={(e) => setNewAnnouncement({ ...newAnnouncement, priority: e.target.value })}
-                                                                                    className="w-full h-16 bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6 text-gray-900 dark:text-white uppercase appearance-none focus:outline-none focus:border-neon-pink/30"
-                                                                                >
-                                                                                    {['Normal', 'High', 'Critical'].map(p => (
-                                                                                        <option key={p} value={p}>{p}</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            </div>
-                                                                            <div className="pt-7">
-                                                                                <div className="flex items-center gap-4 bg-black/5 dark:bg-white/5 p-4 rounded-2xl border border-black/10 dark:border-white/10 group cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-all" onClick={() => setNewAnnouncement({ ...newAnnouncement, isPinned: !newAnnouncement.isPinned })}>
-                                                                                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all", newAnnouncement.isPinned ? "bg-neon-pink text-black shadow-[0_0_15px_rgba(255,46,144,0.4)]" : "bg-white dark:bg-black text-gray-500")}>
-                                                                                        <Pin size={18} className={newAnnouncement.isPinned ? "fill-current" : ""} />
-                                                                                    </div>
-                                                                                    <div className="flex-1">
-                                                                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white leading-none mb-1">PIN ANNOUNCEMENT</p>
-                                                                                        <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Pin to global dashboard</p>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                        
-                                                                        <div className="p-6 rounded-2xl bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/5 space-y-4">
-                                                                            <div className="flex items-center gap-3">
-                                                                                <Sparkles size={14} className="text-neon-pink" />
-                                                                                <h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Publishing Policy</h4>
-                                                                            </div>
-                                                                            <p className="text-[9px] font-medium text-gray-500 leading-relaxed uppercase tracking-widest">Publishing this announcement will automatically notify users and update the app across all devices.</p>
-                                                                        </div>
-                                                                    </motion.div>
-                                                                )}
-                                                            </AnimatePresence>
-
-                                                            <div className="flex flex-col sm:flex-row gap-4 pt-10 border-t border-black/10 dark:border-white/5">
-                                                                <button 
-                                                                    type="button" 
-                                                                    onClick={() => {
-                                                                        const tabs = ['details', 'content', 'media', 'publish'];
-                                                                        const currentIndex = tabs.indexOf(activeEditorTab);
-                                                                        if (currentIndex > 0) setActiveEditorTab(tabs[currentIndex - 1]);
-                                                                        else resetForm();
-                                                                    }} 
-                                                                    className="h-16 px-12 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all font-black uppercase tracking-widest text-[10px] flex-1"
-                                                                >
-                                                                    {activeEditorTab === 'details' ? 'Cancel' : 'Back'}
-                                                                </button>
-                                                                <Button 
-                                                                    type={activeEditorTab === 'publish' ? 'submit' : 'button'}
-                                                                    onClick={() => {
-                                                                        if (activeEditorTab !== 'publish') {
-                                                                            const tabs = ['details', 'content', 'media', 'publish'];
-                                                                            const currentIndex = tabs.indexOf(activeEditorTab);
-                                                                            setActiveEditorTab(tabs[currentIndex + 1]);
-                                                                        }
-                                                                    }}
-                                                                    className="h-14 px-12 sm:px-24 bg-neon-pink text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_15px_40px_rgba(255,46,144,0.3)] text-[11px] hover:scale-105 active:scale-95 transition-all w-full sm:w-auto"
-                                                                >
-                                                                    {activeEditorTab === 'publish' ? (editingId ? 'SAVE CHANGES' : 'PUBLISH ANNOUNCEMENT') : 'Next Component'}
-                                                                </Button>
-                                                            </div>
-                                                        </form>
-                                                    </Card>
-                                                </div>
-
-                                                <div className="xl:col-span-5 hidden xl:block lg:sticky lg:top-32">
-                                                    <div className="space-y-6">
-                                                        <div className="flex items-center justify-between">
-                                                            <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] flex items-center gap-3">
-                                                                <div className="w-8 h-px bg-black/10 dark:bg-white/10" /> LIVE PREVIEW
-                                                            </h3>
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-pulse" />
-                                                                <span className="text-[8px] font-black text-neon-pink uppercase tracking-widest">Live Link Active</span>
-                                                            </div>
-                                                        </div>
-                                                        <LivePreview type="announcement" data={newAnnouncement} hideDecorations={true} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="space-y-6">
-                                {announcements.length === 0 ? (
-                                    <div className="py-32 text-center bg-gray-100 dark:bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-black/10 dark:border-white/5 flex flex-col items-center gap-6">
-                                        <div className="w-20 h-20 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-700">
-                                            <Clock size={40} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <h3 className="text-xl font-black uppercase tracking-tighter text-gray-500 italic">No announcements yet.</h3>
-                                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600">Your announcement list is empty.</p>
-                                        </div>
-                                        <Button onClick={() => setIsAdding(true)} className="h-14 px-10 bg-neon-pink text-black font-black uppercase tracking-widest rounded-2xl mt-4">
-                                            CREATE ANNOUNCEMENT
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <div className="flex md:grid md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory no-scrollbar px-6 md:px-0">
-                                        <AnimatePresence mode="popLayout">
-                                        {announcements.map((item, index) => {
-                                            return (
-                                                <motion.div
-                                                    key={item.id}
-                                                    layout
-                                                    initial={{ opacity: 0, scale: 0.92 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    exit={{ opacity: 0, scale: 0.92 }}
-                                                    transition={{ duration: 0.4 }}
-                                                    className={cn(
-                                                        "group relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/5 hover:border-neon-pink/20 transition-all duration-500 shadow-[0_20px_60px_rgba(0,0,0,0.5)] shrink-0 w-[85vw] md:w-auto snap-center",
-                                                        item.isPinned && "border-neon-pink/40 shadow-[0_0_30px_rgba(255,46,144,0.1)]"
-                                                    )}
-                                                >
-                                                    {/* Background Image */}
-                                                    <div className="absolute inset-0 z-0">
-                                                        {item.image ? (
-                                                            <div
-                                                                className="absolute inset-0 bg-cover transition-transform duration-700 group-hover:scale-110"
-                                                                style={{
-                                                                    backgroundImage: `url(${item.image})`,
-                                                                    transform: `scale(${item.imageTransform?.scale || 1})`,
-                                                                    backgroundPosition: `calc(50% + ${(item.imageTransform?.x || 0)}%) calc(50% + ${(item.imageTransform?.y || 0)}%)`
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-zinc-900">
-                                                                <Megaphone size={40} className="text-gray-800" />
-                                                            </div>
-                                                        )}
-                                                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/10 z-10" />
-                                                        <div className="absolute inset-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-                                                            style={{ background: 'radial-gradient(ellipse at bottom, rgba(255,46,144,0.1) 0%, transparent 70%)' }} />
-                                                    </div>
-
-                                                    {/* Top Toolbar */}
-                                                    <div className="absolute top-5 left-5 right-5 z-30 flex justify-between items-start opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 transition-all duration-400">
-                                                        <div className="flex gap-2">
-                                                            <button onClick={() => handleMoveUp(index)} disabled={index === 0}
-                                                                className="w-9 h-9 rounded-xl bg-white dark:bg-black/70 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-neon-pink hover:text-black transition-all disabled:opacity-0">
-                                                                <ChevronUp size={16} />
-                                                            </button>
-                                                            <button onClick={() => handleMoveDown(index)} disabled={index === announcements.length - 1}
-                                                                className="w-9 h-9 rounded-xl bg-white dark:bg-black/70 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-neon-pink hover:text-black transition-all disabled:opacity-0">
-                                                                <ChevronDown size={16} />
-                                                            </button>
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            <button
-                                                                onClick={() => {
-                                                                    const params = new URLSearchParams({
-                                                                        subject: `[${item.category || 'ANNOUNCEMENT'}] ${item.title}`,
-                                                                        header: item.title,
-                                                                        body: item.content,
-                                                                        heroImage: item.image || '',
-                                                                        ctaText: item.buttonText || 'READ MORE',
-                                                                        ctaUrl: item.link || `${window.location.origin}/announcements`
-                                                                    });
-                                                                    window.location.href = `/admin/mailing?${params.toString()}`;
-                                                                }}
-                                                                className="w-9 h-9 rounded-xl bg-white dark:bg-black/70 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-neon-green hover:text-black transition-all"
-                                                                title="Email Blast"
-                                                            >
-                                                                <Mail size={15} />
-                                                            </button>
-                                                            <button
-                                                                onClick={async () => {
-                                                                    if (window.confirm(`Resend notification for "${item.title}"?`)) {
-                                                                        await notifyAllUsers(item.title, item.content, item.link || `/announcements`, item.image);
-                                                                        useStore.getState().addToast("Notification sent to all users.", 'success');
-                                                                    }
-                                                                }}
-                                                                className="w-9 h-9 rounded-xl bg-neon-pink/20 backdrop-blur-md border border-neon-pink/30 flex items-center justify-center text-neon-pink hover:bg-neon-pink hover:text-black transition-all"
-                                                                title="Push Signal"
-                                                            >
-                                                                <Sparkles size={15} />
-                                                            </button>
-                                                            <button onClick={() => handleEdit(item)}
-                                                                className="w-9 h-9 rounded-xl bg-white dark:bg-black/70 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-neon-pink hover:text-black transition-all">
-                                                                <Edit size={15} />
-                                                            </button>
-                                                            <button onClick={() => deleteAnnouncement(item.id)}
-                                                                className="w-9 h-9 rounded-xl bg-white dark:bg-black/70 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-red-500 transition-all">
-                                                                <Trash2 size={15} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* PIN Indicator */}
-                                                    {item.isPinned && (
-                                                        <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30">
-                                                            <div className="px-3 py-1.5 rounded-full bg-neon-pink/20 backdrop-blur-md border border-neon-pink/40 flex items-center gap-2">
-                                                                <Pin size={10} className="text-neon-pink fill-current" />
-                                                                <span className="text-[8px] font-black text-neon-pink uppercase tracking-widest">Anchored</span>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Bottom Content Slab */}
-                                                    <div className="absolute inset-x-6 bottom-6 z-20 space-y-3">
-                                                        <div className="flex flex-wrap gap-2">
-                                                            <span className="px-2.5 py-1 text-[7px] font-black uppercase tracking-widest border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 rounded-full backdrop-blur-md text-gray-900 dark:text-white/70">
-                                                                {item.category || 'ANNOUNCEMENT'}
-                                                            </span>
-                                                            {item.priority !== 'Normal' && (
-                                                                <span className={cn(
-                                                                    "px-2.5 py-1 text-[7px] font-black uppercase tracking-widest border rounded-full backdrop-blur-md",
-                                                                    item.priority === 'Critical' ? "bg-red-500/10 border-red-500/30 text-red-500" : "bg-yellow-500/10 border-yellow-500/30 text-yellow-500"
-                                                                )}>
-                                                                    {item.priority}
-                                                                </span>
-                                                            )}
-                                                        </div>
-
-                                                        <h3 className="text-xl font-black font-heading tracking-tight uppercase italic text-gray-900 dark:text-white group-hover:text-neon-pink transition-colors duration-500 leading-tight line-clamp-2">
-                                                            {item.title}
-                                                        </h3>
-
-                                                        <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <Clock size={10} className="text-gray-900 dark:text-white/30" />
-                                                                <span className="text-[8px] font-black text-gray-900 dark:text-white/40 uppercase tracking-widest">{item.date}</span>
-                                                            </div>
-                                                            <button 
-                                                                onClick={() => togglePinAnnouncement(item.id)}
-                                                                className={cn(
-                                                                    "p-2 rounded-lg transition-all",
-                                                                    item.isPinned ? "text-neon-pink" : "text-gray-900 dark:text-white/20 hover:text-gray-900 dark:hover:text-white"
-                                                                )}
-                                                            >
-                                                                <Pin size={12} className={item.isPinned ? "fill-current" : ""} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </motion.div>
-                                            );
-                                        })}
-                                        </AnimatePresence>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+            <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <StatTile icon={Radio} tone="green" label="Live" value={counts.live} hint={counts.live ? 'Inside their show dates' : 'Nothing live'} active={filter === 'live'} onClick={() => setFilter(filter === 'live' ? 'all' : 'live')} />
+                    <StatTile icon={Megaphone} tone="amber" label="Website banner" value={banner ? 'On' : 'Off'} hint={banner ? banner.a.title : 'Pin one to show it'} active={filter === 'pinned'} onClick={() => setFilter(filter === 'pinned' ? 'all' : 'pinned')} />
+                    <StatTile icon={CalendarClock} tone="blue" label="Scheduled" value={counts.scheduled} hint={counts.scheduled ? 'Start on their own' : 'None waiting'} active={filter === 'scheduled'} onClick={() => setFilter(filter === 'scheduled' ? 'all' : 'scheduled')} />
+                    <StatTile icon={Archive} tone="gray" label="Ended" value={counts.ended} hint="Hidden from the site" active={filter === 'ended'} onClick={() => setFilter(filter === 'ended' ? 'all' : 'ended')} />
                 </div>
 
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                    <SearchInput value={search} onChange={setSearch} placeholder="Search headlines and messages" className="lg:w-80" />
+                    <div className="flex flex-1 items-center justify-end gap-2">
+                        <ExportMenu getSpec={exportSpec} />
+                        <ViewToggle value={view} onChange={setView} />
+                    </div>
+                </div>
+
+                <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+                    <SegmentedTabs value={filter} onChange={setFilter} items={FILTERS.map(f => ({ ...f, count: counts[f.value] }))} />
+                </div>
+
+                {shown.length === 0 ? (
+                    <Card className="rounded-2xl">
+                        <EmptyState
+                            icon={Megaphone}
+                            title={rows.length ? 'Nothing matches' : 'No announcements yet'}
+                            description={rows.length ? 'Try another filter or search.' : 'Post news, pin it to the website banner, and notify everyone in one go.'}
+                            action={!rows.length && <Button variant="accent" onClick={() => setComposer({})}><Plus size={14} /> New announcement</Button>}
+                        />
+                    </Card>
+                ) : view === 'cards' ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {shown.map(({ a, state, inBanner }) => (
+                            <Card key={a.id} className={cn('relative flex flex-col overflow-hidden rounded-2xl transition-colors hover:border-black/15 dark:hover:border-white/15', inBanner && 'border-amber-500/40 dark:border-amber-300/40', state === 'ended' && 'opacity-75')}>
+                                <div className="relative aspect-[16/7] overflow-hidden bg-amber-500/[0.07] dark:bg-amber-400/[0.06]">
+                                    {a.image
+                                        ? <div className="absolute inset-0" style={framedBackground(a.image, a.imageTransform)} />
+                                        : <div className="absolute inset-0 flex items-center justify-center text-amber-600/60 dark:text-amber-300/50"><Megaphone size={30} /></div>}
+                                </div>
+                                <div className="flex flex-1 flex-col p-4">
+                                    {badges(a, state, inBanner)}
+                                    <button type="button" onClick={() => setComposer({ record: a })} className="mt-2.5 min-w-0 text-left">
+                                        <p className="line-clamp-2 text-[16px] font-extrabold leading-snug">{a.title || 'Untitled'}</p>
+                                        <p className="mt-1 line-clamp-2 text-[13px] text-gray-500 dark:text-zinc-400">{stripHtml(a.content) || a.tagline || ' '}</p>
+                                    </button>
+                                    <div className="mt-3 space-y-0.5 text-[12px] text-gray-500">
+                                        <p className={cn(state === 'scheduled' && 'font-semibold text-sky-600 dark:text-neon-blue')}>{windowText(a)}</p>
+                                        <p>{notifiedText(a)}</p>
+                                    </div>
+                                    <div className="flex-1" />
+                                    <div className="mt-4 flex items-center gap-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+                                        <Button size="sm" variant="secondary" onClick={() => setComposer({ record: a })} className="h-10 flex-1"><Edit size={13} /> Edit</Button>
+                                        <Button size="sm" variant={a.isPinned ? 'accent' : 'secondary'} onClick={() => togglePin(a)} disabled={busy} aria-pressed={!!a.isPinned} className="h-10 flex-1">
+                                            {a.isPinned ? <><PinOff size={13} /> Unpin</> : <><Pin size={13} /> Pin</>}
+                                        </Button>
+                                        {actions(a, state)}
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <Card className="overflow-hidden rounded-2xl">
+                        <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                            {shown.map(({ a, state, inBanner }) => (
+                                <li key={a.id} className={cn('flex items-center gap-3 px-4 py-3 sm:px-5', state === 'ended' && 'opacity-75')}>
+                                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-amber-500/[0.08] dark:bg-amber-400/[0.08]">
+                                        {a.image ? <div className="absolute inset-0" style={framedBackground(a.image, a.imageTransform)} /> : <div className="flex h-full w-full items-center justify-center text-amber-600 dark:text-amber-300"><Megaphone size={18} /></div>}
+                                    </div>
+                                    <button type="button" onClick={() => setComposer({ record: a })} className="min-w-0 flex-1 text-left">
+                                        <span className="flex flex-wrap items-center gap-2">
+                                            <span className="truncate text-[15px] font-bold">{a.title || 'Untitled'}</span>
+                                            <Badge tone={ANNOUNCEMENT_STATE_LABEL[state].tone}>{ANNOUNCEMENT_STATE_LABEL[state].label}</Badge>
+                                            {inBanner && <Badge tone="amber"><Megaphone size={10} /> Banner</Badge>}
+                                            {!inBanner && a.isPinned && state !== 'ended' && <Badge tone="amber"><Pin size={10} /> Pinned</Badge>}
+                                        </span>
+                                        <span className="mt-0.5 block truncate text-[12px] text-gray-500">{[announcementCategory(a.category).label, windowText(a), notifiedText(a)].join(' · ')}</span>
+                                    </button>
+                                    <div className="flex shrink-0 items-center gap-1">
+                                        <Button size="sm" variant="ghost" onClick={() => togglePin(a)} disabled={busy} aria-label={a.isPinned ? 'Unpin from banner' : 'Pin to banner'} className={cn('hidden h-10 w-10 px-0 sm:inline-flex', a.isPinned && 'text-amber-600 dark:text-amber-300')}>
+                                            {a.isPinned ? <Pin size={15} className="fill-current" /> : <Pin size={15} />}
+                                        </Button>
+                                        {actions(a, state)}
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </Card>
+                )}
+                {rows.some(r => r.a.isPinned && r.state === 'live' && !r.inBanner) && (
+                    <p className="text-[12px] text-gray-500">More than one announcement is pinned. The website shows only the top one; use Move up to change which.</p>
+                )}
             </div>
+
+            <AnnouncementComposer open={composerOpen} onClose={closeComposer} record={composerRecord} />
+
+            <ConfirmSheet
+                open={confirm?.kind === 'delete'}
+                onClose={() => setConfirm(null)}
+                title="Delete this announcement?"
+                confirmLabel="Delete"
+                busy={busy}
+                onConfirm={runConfirm}
+            >
+                <p><span className="font-semibold text-gray-900 dark:text-white">{confirm?.item?.title}</span> will be removed{confirm?.item?.isPinned ? ' and taken out of the website banner' : ''}. This can't be undone.</p>
+                {confirm?.item?.linkedEventId && <p>It was made from an event. The event itself stays as it is.</p>}
+                <p>To hide it but keep it here, use <span className="font-semibold">End now</span> instead.</p>
+            </ConfirmSheet>
+
+            <ConfirmSheet
+                open={confirm?.kind === 'notify'}
+                onClose={() => setConfirm(null)}
+                title={confirm?.item?.notifiedAt ? 'Notify everyone again?' : 'Notify everyone?'}
+                confirmLabel={confirm?.email ? 'Send notification and email' : 'Send notification'}
+                tone="accent"
+                busy={busy}
+                onConfirm={runConfirm}
+            >
+                <p>Everyone gets <span className="font-semibold text-gray-900 dark:text-white">{confirm?.item?.title}</span> as an in-app and phone notification.</p>
+                {confirm?.item?.notifiedAt && <p className="font-semibold text-amber-600 dark:text-amber-400">It was already sent {formatDayTime(confirm.item.notifiedAt)}. People will get it twice.</p>}
+                <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-black/10 px-3 dark:border-white/10">
+                    <input type="checkbox" className="h-5 w-5 accent-amber-500" checked={!!confirm?.email} onChange={(e) => setConfirm(c => ({ ...c, email: e.target.checked }))} />
+                    <span className="text-[13px] font-semibold text-gray-800 dark:text-zinc-200">Also email all registered users</span>
+                </label>
+            </ConfirmSheet>
         </AdminCommunityHubLayout>
     );
 };

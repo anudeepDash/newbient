@@ -1,683 +1,435 @@
-import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../../lib/utils';
+import React, { useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import ArrowDownLeft from 'lucide-react/dist/esm/icons/arrow-down-left';
+import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
+import Scale from 'lucide-react/dist/esm/icons/scale';
+import Hourglass from 'lucide-react/dist/esm/icons/hourglass';
+import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import Wallet from 'lucide-react/dist/esm/icons/wallet';
+import HandCoins from 'lucide-react/dist/esm/icons/hand-coins';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Activity from 'lucide-react/dist/esm/icons/activity';
+import Inbox from 'lucide-react/dist/esm/icons/inbox';
+
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
+import { cn } from '../../lib/utils';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import { Card, Button, Badge, Select, StatTile, EmptyState } from '../../components/admin/ui';
+import { accent } from '../../components/admin/theme';
+import { inr } from '../../components/admin/ticketing/format';
+import { isInvoiceOverdue, invoiceBalance, invoiceState, todayKey } from '../../lib/invoicing';
+import {
+    FINANCE_TABS, SPEND_TYPES, buildLedger, sumRange, monthRange, shiftMonth, monthLabel, todayIST,
+    change, formatDay, isSpendPending, isIncomePending, amountOf, spendDay, spendType, spendPayee,
+} from '../../components/admin/finance/money';
+import { CashflowBars, BreakdownBars, SplitBar, Legend, IN_TONE, OUT_TONE } from '../../components/admin/finance/Charts';
 
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
-import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
-import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
-import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
-import TrendingDown from 'lucide-react/dist/esm/icons/trending-down';
-import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
-import ArrowDownRight from 'lucide-react/dist/esm/icons/arrow-down-right';
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import Calendar from 'lucide-react/dist/esm/icons/calendar';
-import User from 'lucide-react/dist/esm/icons/user';
-import Info from 'lucide-react/dist/esm/icons/info';
-import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
-import Wallet from 'lucide-react/dist/esm/icons/wallet';
-import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
-import PieChart from 'lucide-react/dist/esm/icons/pie-chart';
-import Activity from 'lucide-react/dist/esm/icons/activity';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import Target from 'lucide-react/dist/esm/icons/target';
-import Layers from 'lucide-react/dist/esm/icons/layers';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import CircleDot from 'lucide-react/dist/esm/icons/circle-dot';
-import Clock from 'lucide-react/dist/esm/icons/clock';
+const legacyMonth = (key) => {
+    const [y, m] = key.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, 15)).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+};
 
-const FinanceDashboard = () => {
-    useStoreSubscription(['invoices', 'spends', 'otherIncomes']);
-    const { invoices, spends, otherIncomes } = useStore();
+const INCOME_TONES = ['cyan', 'indigo', 'fuchsia', 'amber', 'green', 'blue', 'pink'];
 
-    const financeTabs = [
-        { name: 'Overview', path: '/admin/finance', icon: LayoutGrid, color: 'text-neon-green' },
-        { name: 'Expense Ledger', path: '/admin/spends', icon: IndianRupee, color: 'text-neon-pink' },
-        { name: 'Other Revenue', path: '/admin/other-income', icon: FileSpreadsheet, color: 'text-neon-green' },
-        { name: 'Payee Database', path: '/admin/payees', icon: User, color: 'text-neon-blue' }
-    ];
-
-    const getMonthLabel = (dateStr) => {
-        if (!dateStr) return '';
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return '';
-        return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    };
-
-    const currentMonthDefault = useMemo(() => {
-        return new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    }, []);
-
-    const [selectedMonth, setSelectedMonth] = useState(currentMonthDefault);
-
-    const monthOptions = useMemo(() => {
-        const months = new Set();
-        months.add(currentMonthDefault);
-
-        invoices.forEach(inv => {
-            const label = getMonthLabel(inv.createdAt || inv.issueDate);
-            if (label) months.add(label);
-        });
-
-        spends.forEach(sp => {
-            const label = getMonthLabel(sp.createdAt || sp.date);
-            if (label) months.add(label);
-        });
-
-        otherIncomes.forEach(inc => {
-            const label = getMonthLabel(inc.createdAt || inc.date);
-            if (label) months.add(label);
-        });
-
-        for (let i = 0; i < 6; i++) {
-            const d = new Date();
-            d.setDate(1);
-            d.setMonth(d.getMonth() - i);
-            months.add(d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
-        }
-
-        const sorted = Array.from(months).sort((a, b) => {
-            return new Date(b) - new Date(a);
-        });
-
-        return ['All Time', ...sorted];
-    }, [invoices, spends, otherIncomes, currentMonthDefault]);
-
-    const filterBySelectedMonth = (itemDate) => {
-        if (selectedMonth === 'All Time') return true;
-        return getMonthLabel(itemDate) === selectedMonth;
-    };
-
-    const metrics = useMemo(() => {
-        const systemPaid = invoices
-            .filter(inv => inv.status === 'Paid' && filterBySelectedMonth(inv.createdAt || inv.issueDate))
-            .reduce((sum, inv) => sum + Number(inv.total || inv.amount || 0), 0);
-
-        const systemPending = invoices
-            .filter(inv => (inv.status === 'Pending' || inv.status === 'Verification Pending') && filterBySelectedMonth(inv.createdAt || inv.issueDate))
-            .reduce((sum, inv) => sum + Number(inv.total || inv.amount || 0), 0);
-
-        const otherPaid = otherIncomes
-            .filter(inc => inc.status === 'Paid' && filterBySelectedMonth(inc.createdAt || inc.date))
-            .reduce((sum, inc) => sum + Number(inc.amount || 0), 0);
-
-        const otherPending = otherIncomes
-            .filter(inc => inc.status === 'Pending' && filterBySelectedMonth(inc.createdAt || inc.date))
-            .reduce((sum, inc) => sum + Number(inc.amount || 0), 0);
-
-        const spendsPaid = spends
-            .filter(sp => (sp.status === 'Paid' || sp.status === 'Cleared') && filterBySelectedMonth(sp.createdAt || sp.date))
-            .reduce((sum, sp) => sum + Number(sp.amount || 0), 0);
-
-        const spendsPending = spends
-            .filter(sp => (sp.status === 'Pending' || sp.status === 'Unpaid') && filterBySelectedMonth(sp.createdAt || sp.date))
-            .reduce((sum, sp) => sum + Number(sp.amount || 0), 0);
-
-        const totalRevenue = systemPaid + otherPaid;
-        const totalExpenses = spendsPaid;
-        const netCashFlow = totalRevenue - totalExpenses;
-        const outstandingReceivables = systemPending + otherPending;
-        const pendingSpends = spendsPending;
-
-        return {
-            totalRevenue,
-            totalExpenses,
-            netCashFlow,
-            outstandingReceivables,
-            pendingSpends,
-            systemPaid,
-            systemPending,
-            otherPaid,
-            otherPending,
-            spendsPaid,
-            spendsPending
-        };
-    }, [invoices, spends, otherIncomes, selectedMonth]);
-
-    const chartData = useMemo(() => {
-        const last6Months = [];
-        for (let i = 5; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(1);
-            d.setMonth(d.getMonth() - i);
-            const label = d.toLocaleDateString('en-US', { month: 'short' });
-            const year = d.getFullYear();
-            const optionLabel = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-            last6Months.push({
-                label: `${label} ${year}`,
-                optionLabel,
-                monthNum: d.getMonth(),
-                year,
-                income: 0,
-                spends: 0
-            });
-        }
-
-        invoices.forEach(inv => {
-            if (inv.status !== 'Paid') return;
-            const dateStr = inv.createdAt || inv.issueDate;
-            if (!dateStr) return;
-            const d = new Date(dateStr);
-            const match = last6Months.find(m => m.monthNum === d.getMonth() && m.year === d.getFullYear());
-            if (match) match.income += Number(inv.total || inv.amount || 0);
-        });
-
-        otherIncomes.forEach(inc => {
-            if (inc.status !== 'Paid') return;
-            const dateStr = inc.createdAt || inc.date;
-            if (!dateStr) return;
-            const d = new Date(dateStr);
-            const match = last6Months.find(m => m.monthNum === d.getMonth() && m.year === d.getFullYear());
-            if (match) match.income += Number(inc.amount || 0);
-        });
-
-        spends.forEach(sp => {
-            if (sp.status !== 'Paid' && sp.status !== 'Cleared') return;
-            const dateStr = sp.createdAt || sp.date;
-            if (!dateStr) return;
-            const d = new Date(dateStr);
-            const match = last6Months.find(m => m.monthNum === d.getMonth() && m.year === d.getFullYear());
-            if (match) match.spends += Number(sp.amount || 0);
-        });
-
-        return last6Months;
-    }, [invoices, spends, otherIncomes]);
-
-    const chartMax = useMemo(() => {
-        const maxVal = Math.max(...chartData.map(d => Math.max(d.income, d.spends)), 10000);
-        return Math.ceil(maxVal / 10000) * 10000;
-    }, [chartData]);
-
-    const categorySpends = useMemo(() => {
-        const totals = {};
-        let grandTotal = 0;
-        spends.forEach(sp => {
-            if (sp.status !== 'Paid' && sp.status !== 'Cleared') return;
-            if (!filterBySelectedMonth(sp.createdAt || sp.date)) return;
-            
-            const type = sp.payoutType || sp.category || 'Misc';
-            const amt = Number(sp.amount || 0);
-            totals[type] = (totals[type] || 0) + amt;
-            grandTotal += amt;
-        });
-
-        return Object.entries(totals)
-            .map(([category, amount]) => ({
-                category,
-                amount,
-                percentage: grandTotal > 0 ? Math.round((amount / grandTotal) * 100) : 0
-            }))
-            .sort((a, b) => b.amount - a.amount);
-    }, [spends, selectedMonth]);
-
-    const categoryIncome = useMemo(() => {
-        const totals = {};
-        let grandTotal = 0;
-
-        invoices.forEach(inv => {
-            if (inv.status !== 'Paid') return;
-            if (!filterBySelectedMonth(inv.createdAt || inv.issueDate)) return;
-            const cat = inv.category || 'Client Invoices';
-            const amt = Number(inv.total || inv.amount || 0);
-            totals[cat] = (totals[cat] || 0) + amt;
-            grandTotal += amt;
-        });
-
-        otherIncomes.forEach(inc => {
-            if (inc.status !== 'Paid') return;
-            if (!filterBySelectedMonth(inc.createdAt || inc.date)) return;
-            const cat = inc.category || 'Other Revenue';
-            const amt = Number(inc.amount || 0);
-            totals[cat] = (totals[cat] || 0) + amt;
-            grandTotal += amt;
-        });
-
-        return Object.entries(totals)
-            .map(([category, amount]) => ({
-                category,
-                amount,
-                percentage: grandTotal > 0 ? Math.round((amount / grandTotal) * 100) : 0
-            }))
-            .sort((a, b) => b.amount - a.amount);
-    }, [invoices, otherIncomes, selectedMonth]);
-
-    const recentActivity = useMemo(() => {
-        const list = [];
-
-        invoices.forEach(inv => {
-            if (!filterBySelectedMonth(inv.createdAt || inv.issueDate)) return;
-            list.push({
-                id: inv.id,
-                type: 'invoice',
-                title: `Invoice #${inv.invoiceNumber || 'NEWBI'} — ${inv.clientName}`,
-                amount: Number(inv.total || inv.amount || 0),
-                date: inv.createdAt || inv.issueDate,
-                status: inv.status,
-                account: 'Company Account',
-                handler: inv.createdByEmail || 'Admin'
-            });
-        });
-
-        otherIncomes.forEach(inc => {
-            if (!filterBySelectedMonth(inc.createdAt || inc.date)) return;
-            list.push({
-                id: inc.id,
-                type: 'income',
-                title: `Revenue: ${inc.sourceName || 'Other Revenue'}`,
-                amount: Number(inc.amount || 0),
-                date: inc.createdAt || inc.date,
-                status: inc.status,
-                account: inc.accountType === 'personal' ? `Personal (${inc.receiverName || 'Partner'})` : 'Company Account',
-                handler: inc.receiverName || 'Finance Team'
-            });
-        });
-
-        spends.forEach(sp => {
-            if (!filterBySelectedMonth(sp.createdAt || sp.date)) return;
-            
-            let displayTitle = `Expense: ${sp.title}`;
-            if (sp.payoutType === 'Salary') displayTitle = `Salary: ${sp.receiverName} (${sp.notes || 'Staff Payout'})`;
-            else if (sp.payoutType === 'Volunteer Payout') displayTitle = `Volunteer Payout: ${sp.receiverName} (${sp.title})`;
-            else if (sp.payoutType === 'Vendor Payout') displayTitle = `Vendor Payout: ${sp.paidTo} (${sp.title})`;
-
-            list.push({
-                id: sp.id,
-                type: 'spend',
-                title: displayTitle,
-                amount: Number(sp.amount || 0),
-                date: sp.createdAt || sp.date,
-                status: sp.status,
-                account: sp.accountType === 'personal' ? `Personal (${sp.receiverName || sp.paidBy})` : 'Company Account',
-                handler: sp.paidBy || 'Finance Team'
-            });
-        });
-
-        return list
-            .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
-            .slice(0, 10);
-    }, [invoices, spends, otherIncomes, selectedMonth]);
-
-    const navPills = [
-        { name: 'Overview', path: '/admin/finance', icon: LayoutGrid, isActive: true },
-        { name: 'Expense Ledger', path: '/admin/spends', icon: IndianRupee, isActive: false },
-        { name: 'Other Revenue', path: '/admin/other-income', icon: FileSpreadsheet, isActive: false },
-        { name: 'Payee Database', path: '/admin/payees', icon: User, isActive: false }
-    ];
-
+// "+12% vs Sep" with a colour that says whether it's good news.
+const Delta = ({ now, before, goodWhenUp = true, label }) => {
+    const pct = change(now, before);
+    if (pct === null) return <span className="text-[12px] text-gray-400">No {label} to compare</span>;
+    const up = pct > 0;
+    const good = pct === 0 ? null : (up === goodWhenUp);
     return (
-        <AdminCommunityHubLayout
-            studioHeader={{
-                title: 'Financial',
-                subtitle: 'Dashboard',
-                accentClass: 'text-neon-green',
-                icon: IndianRupee
-            }}
-            tabs={financeTabs}
-            accentColor="neon-green"
-            action={
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 shrink-0">
-                        <Calendar size={14} className="text-neon-green" /> Select Month:
-                    </span>
-                    <select
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="appearance-none bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 h-11 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-neon-green/40 focus:ring-1 focus:ring-neon-green/10 shadow-xl cursor-pointer hover:border-black/20 dark:hover:border-white/20 transition-all font-mono"
-                    >
-                        {monthOptions.map(opt => (
-                            <option key={opt} value={opt} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white font-semibold">{opt}</option>
-                        ))}
-                    </select>
-                </div>
-            }
-        >
-            <div className="space-y-6 lg:space-y-8 pb-10">
-
-                {/* Section 1: Quick Nav Pills */}
-                <motion.div 
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                    className="flex flex-wrap gap-3"
-                >
-                    {navPills.map((pill) => {
-                        const Icon = pill.icon;
-                        return (
-                            <Link 
-                                key={pill.name} 
-                                to={pill.path}
-                                className={cn(
-                                    "flex items-center gap-2 px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all duration-300 group",
-                                    pill.isActive 
-                                        ? "bg-neon-green text-black border-neon-green shadow-[0_0_15px_rgba(57,255,20,0.3)]" 
-                                        : "bg-white/[0.03] text-zinc-400 border-black/10 dark:border-white/10 hover:border-white/30 hover:text-gray-900 dark:hover:text-white hover:bg-white/[0.05]"
-                                )}
-                            >
-                                <Icon size={14} className={cn("transition-transform group-hover:scale-110", pill.isActive ? "text-black" : "text-neon-green")} />
-                                {pill.name}
-                            </Link>
-                        )
-                    })}
-                </motion.div>
-
-                {/* Section 2: Hero Metrics Row */}
-                <motion.div 
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                    className="bg-gray-100 dark:bg-zinc-950/35 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
-                >
-                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-center border-b md:border-b-0 md:border-r border-black/10 dark:border-white/5 relative group">
-                        <div className="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Net Position</span>
-                        <div className={cn(
-                            "text-3xl md:text-4xl font-mono font-black tracking-tighter flex items-center gap-1",
-                            metrics.netCashFlow >= 0 ? "text-neon-green drop-shadow-[0_0_10px_rgba(57,255,20,0.3)]" : "text-neon-pink drop-shadow-[0_0_10px_rgba(255,79,139,0.3)]"
-                        )}>
-                            <IndianRupee className="size-6 stroke-[3]" />
-                            {metrics.netCashFlow.toLocaleString('en-IN')}
-                        </div>
-                        <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mt-2 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded self-start border border-black/10 dark:border-white/5">
-                            {selectedMonth}
-                        </span>
-                    </div>
-                    
-                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-center border-b md:border-b-0 md:border-r border-black/10 dark:border-white/5 relative group">
-                        <div className="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-                            Revenue <TrendingUp size={12} className="text-neon-green" />
-                        </span>
-                        <div className="text-2xl md:text-3xl font-mono font-black tracking-tighter text-gray-900 dark:text-white flex items-center gap-1">
-                            <IndianRupee className="size-5 stroke-[3] text-neon-green" />
-                            {metrics.totalRevenue.toLocaleString('en-IN')}
-                        </div>
-                        <div className="text-[9px] font-bold text-zinc-400 mt-2 uppercase tracking-widest">
-                            <span className="text-gray-900 dark:text-white">₹{metrics.systemPaid.toLocaleString('en-IN')}</span> Inv / <span className="text-gray-900 dark:text-white">₹{metrics.otherPaid.toLocaleString('en-IN')}</span> Other
-                        </div>
-                    </div>
-
-                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-center border-b md:border-b-0 md:border-r border-black/10 dark:border-white/5 relative group">
-                        <div className="absolute inset-0 bg-neon-pink/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-                            Expenditure <TrendingDown size={12} className="text-neon-pink" />
-                        </span>
-                        <div className="text-2xl md:text-3xl font-mono font-black tracking-tighter text-gray-900 dark:text-white flex items-center gap-1">
-                            <IndianRupee className="size-5 stroke-[3] text-neon-pink" />
-                            {metrics.totalExpenses.toLocaleString('en-IN')}
-                        </div>
-                        <div className="text-[9px] font-bold text-zinc-400 mt-2 uppercase tracking-widest">
-                            <span className="text-gray-900 dark:text-white">₹{metrics.spendsPaid.toLocaleString('en-IN')}</span> Paid Out
-                        </div>
-                    </div>
-
-                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-center relative group">
-                        <div className="absolute inset-0 bg-neon-blue/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-                            Receivables <Clock size={12} className="text-neon-blue" />
-                        </span>
-                        <div className="text-2xl md:text-3xl font-mono font-black tracking-tighter text-gray-900 dark:text-white flex items-center gap-1">
-                            <IndianRupee className="size-5 stroke-[3] text-neon-blue" />
-                            {metrics.outstandingReceivables.toLocaleString('en-IN')}
-                        </div>
-                        <div className="text-[9px] font-bold text-zinc-400 mt-2 uppercase tracking-widest">
-                            Pending Collection
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* Section 5: Pending Alert Banner */}
-                <AnimatePresence>
-                    {metrics.pendingSpends > 0 && (
-                        <motion.div 
-                            initial={{ opacity: 0, height: 0, marginTop: 0 }} 
-                            animate={{ opacity: 1, height: 'auto', marginTop: 24 }} 
-                            exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                            className="bg-neon-pink/10 border border-neon-pink/20 rounded-2xl p-4 flex items-center justify-between overflow-hidden relative"
-                        >
-                            <div className="flex items-center gap-4 relative z-10">
-                                <div className="size-2 rounded-full bg-neon-pink animate-pulse shadow-[0_0_8px_#FF4F8B]" />
-                                <div>
-                                    <h4 className="text-[10px] font-black uppercase text-neon-pink tracking-widest">Action Required: Pending Outflows</h4>
-                                    <p className="text-[9px] font-bold text-zinc-300 tracking-wider">Unsettled spends queue requires clearance.</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4 relative z-10">
-                                <div className="text-right hidden sm:block">
-                                    <div className="text-sm font-mono font-black text-gray-900 dark:text-white">₹{metrics.pendingSpends.toLocaleString('en-IN')}</div>
-                                </div>
-                                <Link to="/admin/spends" className="size-8 rounded-full bg-neon-pink text-black flex items-center justify-center hover:scale-110 transition-transform">
-                                    <ArrowRight size={14} strokeWidth={3} />
-                                </Link>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* Section 3: Cashflow Visualization */}
-                <motion.div 
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                    className="bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl p-6 md:p-8"
-                >
-                    <div className="flex justify-between items-end mb-8">
-                        <div>
-                            <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Cashflow Dynamics</h3>
-                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">6-Month Liquidity Trend</p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 rounded bg-gradient-to-r from-[#39FF14] to-[#00F0FF]" />
-                                <span className="text-[9px] font-black uppercase text-zinc-400 tracking-widest">Income</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 rounded bg-gradient-to-r from-[#FF4F8B] to-[#FF6B6B]" />
-                                <span className="text-[9px] font-black uppercase text-zinc-400 tracking-widest">Spend</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="w-full">
-                        <div className="w-full h-64 md:h-72 relative">
-                            <svg className="w-full h-full" viewBox="0 0 1000 300" preserveAspectRatio="none">
-                                <defs>
-                                    <linearGradient id="incomeGrad" x1="0" y1="1" x2="0" y2="0">
-                                        <stop offset="0%" stopColor="#39FF14" stopOpacity="0.3" />
-                                        <stop offset="100%" stopColor="#00F0FF" />
-                                    </linearGradient>
-                                    <linearGradient id="spendGrad" x1="0" y1="1" x2="0" y2="0">
-                                        <stop offset="0%" stopColor="#FF4F8B" stopOpacity="0.3" />
-                                        <stop offset="100%" stopColor="#FF6B6B" />
-                                    </linearGradient>
-                                </defs>
-
-                                {/* Grid Lines */}
-                                {[0, 1, 2, 3].map((lineIndex) => (
-                                    <g key={lineIndex}>
-                                        <line x1="50" y1={300 - (lineIndex * 75) - 20} x2="1000" y2={300 - (lineIndex * 75) - 20} stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
-                                        <text x="40" y={300 - (lineIndex * 75) - 20} className="fill-zinc-600 text-[10px] font-mono font-bold" textAnchor="end" alignmentBaseline="middle">
-                                            {lineIndex === 0 ? 0 : `${(chartMax / 3 * lineIndex / 1000).toFixed(0)}k`}
-                                        </text>
-                                    </g>
-                                ))}
-
-                                {chartData.map((data, index) => {
-                                    const colWidth = 900 / 6;
-                                    const startX = 100 + index * colWidth;
-                                    
-                                    const displayIncomeHeight = Math.max((data.income / chartMax) * 200, 4);
-                                    const displaySpendsHeight = Math.max((data.spends / chartMax) * 200, 4);
-
-                                    const incomeY = 280 - displayIncomeHeight;
-                                    const spendsY = 280 - displaySpendsHeight;
-                                    const isCurrentSelection = selectedMonth === data.optionLabel;
-
-                                    return (
-                                        <g key={data.label} className="group/bar cursor-pointer" onClick={() => setSelectedMonth(data.optionLabel)}>
-                                            {isCurrentSelection && (
-                                                <rect x={startX - 20} y="0" width="80" height="280" rx="12" fill="rgba(255,255,255,0.02)" />
-                                            )}
-                                            
-                                            {/* Hover info tooltip */}
-                                            <g className="opacity-0 group-hover/bar:opacity-100 transition-opacity">
-                                                <rect x={startX - 30} y={Math.min(incomeY, spendsY) - 40} width="100" height="30" rx="6" fill="#18181b" stroke="rgba(255,255,255,0.1)" />
-                                                <text x={startX + 20} y={Math.min(incomeY, spendsY) - 20} className="fill-white text-[9px] font-mono font-bold" textAnchor="middle">
-                                                    +{Math.round(data.income/1000)}k / -{Math.round(data.spends/1000)}k
-                                                </text>
-                                            </g>
-
-                                            {/* Income Bar */}
-                                            <rect
-                                                x={startX}
-                                                y={incomeY}
-                                                width="16"
-                                                height={displayIncomeHeight}
-                                                rx="8"
-                                                fill="url(#incomeGrad)"
-                                                className={cn("transition-all duration-300", isCurrentSelection ? "opacity-100" : "opacity-70 group-hover/bar:opacity-100")}
-                                            />
-                                            {/* Spend Bar */}
-                                            <rect
-                                                x={startX + 24}
-                                                y={spendsY}
-                                                width="16"
-                                                height={displaySpendsHeight}
-                                                rx="8"
-                                                fill="url(#spendGrad)"
-                                                className={cn("transition-all duration-300", isCurrentSelection ? "opacity-100" : "opacity-70 group-hover/bar:opacity-100")}
-                                            />
-                                        </g>
-                                    );
-                                })}
-                            </svg>
-                        </div>
-                        {/* Labels Below */}
-                        <div className="flex pl-[50px] pr-0 mt-4 relative z-10 w-full justify-between">
-                            {chartData.map((data, index) => {
-                                const isCurrentSelection = selectedMonth === data.optionLabel;
-                                return (
-                                    <div 
-                                        key={data.label} 
-                                        className="flex-1 flex justify-center cursor-pointer group"
-                                        onClick={() => setSelectedMonth(data.optionLabel)}
-                                    >
-                                        <span className={cn(
-                                            "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all",
-                                            isCurrentSelection 
-                                                ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" 
-                                                : "text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white"
-                                        )}>
-                                            {data.label.split(' ')[0]}
-                                        </span>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* Section 4: Two-Column Intelligence Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-                    
-                    {/* Left: Transaction Feed */}
-                    <motion.div 
-                        initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}
-                        className="lg:col-span-2 bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl p-6 md:p-8 flex flex-col h-[500px]"
-                    >
-                        <div className="mb-6">
-                            <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Chronicle Feed</h3>
-                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">Real-time ledger events</p>
-                        </div>
-                        <div className="flex-1 overflow-y-auto pr-2 space-y-1 scrollbar-hide">
-                            {recentActivity.length === 0 ? (
-                                <div className="h-full flex items-center justify-center">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">No activity logged</span>
-                                </div>
-                            ) : (
-                                recentActivity.map((act, i) => {
-                                    const isSpend = act.type === 'spend';
-                                    const dotColor = isSpend ? 'bg-neon-pink shadow-[0_0_8px_#FF4F8B]' : 'bg-neon-green shadow-[0_0_8px_#39FF14]';
-                                    const amountColor = isSpend ? 'text-neon-pink' : 'text-neon-green';
-                                    
-                                    return (
-                                        <div key={i} className="group flex items-center justify-between p-3 rounded-xl hover:bg-white/[0.04] transition-colors border border-transparent hover:border-black/10 dark:hover:border-white/5">
-                                            <div className="flex items-center gap-4">
-                                                <div className={cn("size-2 rounded-full", dotColor)} />
-                                                <div>
-                                                    <div className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{act.title}</div>
-                                                    <div className="text-[9px] font-mono text-zinc-500 mt-0.5">{new Date(act.date).toLocaleDateString()} • {act.handler}</div>
-                                                </div>
-                                            </div>
-                                            <div className={cn("text-xs font-mono font-black", amountColor)}>
-                                                {isSpend ? '-' : '+'}₹{act.amount.toLocaleString('en-IN')}
-                                            </div>
-                                        </div>
-                                    )
-                                })
-                            )}
-                        </div>
-                    </motion.div>
-
-                    {/* Right: Spend & Revenue DNA */}
-                    <div className="flex flex-col gap-6 lg:gap-8 h-[500px]">
-                        {/* Spend DNA */}
-                        <motion.div 
-                            initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}
-                            className="flex-1 bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl p-6 flex flex-col"
-                        >
-                            <div className="mb-4">
-                                <h3 className="text-[11px] font-black uppercase tracking-widest text-gray-900 dark:text-white">Spend DNA</h3>
-                            </div>
-                            <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
-                                {categorySpends.length === 0 ? (
-                                    <div className="h-full flex items-center justify-center text-[9px] font-black uppercase text-zinc-600 tracking-widest">No Data</div>
-                                ) : (
-                                    categorySpends.map(cat => (
-                                        <div key={cat.category}>
-                                            <div className="flex justify-between text-[9px] font-bold uppercase tracking-widest mb-1.5">
-                                                <span className="text-zinc-400">{cat.category}</span>
-                                                <span className="text-neon-pink font-mono">{cat.percentage}%</span>
-                                            </div>
-                                            <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
-                                                <div className="h-full bg-gradient-to-r from-neon-pink to-rose-500 rounded-full" style={{ width: `${cat.percentage}%` }} />
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </motion.div>
-
-                        {/* Revenue DNA */}
-                        <motion.div 
-                            initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}
-                            className="flex-1 bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl p-6 flex flex-col"
-                        >
-                            <div className="mb-4">
-                                <h3 className="text-[11px] font-black uppercase tracking-widest text-gray-900 dark:text-white">Revenue DNA</h3>
-                            </div>
-                            <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
-                                {categoryIncome.length === 0 ? (
-                                    <div className="h-full flex items-center justify-center text-[9px] font-black uppercase text-zinc-600 tracking-widest">No Data</div>
-                                ) : (
-                                    categoryIncome.map(cat => (
-                                        <div key={cat.category}>
-                                            <div className="flex justify-between text-[9px] font-bold uppercase tracking-widest mb-1.5">
-                                                <span className="text-zinc-400">{cat.category}</span>
-                                                <span className="text-neon-green font-mono">{cat.percentage}%</span>
-                                            </div>
-                                            <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
-                                                <div className="h-full bg-gradient-to-r from-neon-green to-[#00F0FF] rounded-full" style={{ width: `${cat.percentage}%` }} />
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </motion.div>
-                    </div>
-
-                </div>
-            </div>
-        </AdminCommunityHubLayout>
+        <span className={cn('text-[12px] font-semibold', good === null ? 'text-gray-500' : good ? accent('green').text : accent('red').text)}>
+            {pct === 0 ? 'Same as' : `${up ? '▲' : '▼'} ${Math.abs(pct)}% vs`} {label}
+        </span>
     );
 };
 
+const Panel = ({ title, subtitle, action, children, className }) => (
+    <section className={cn('rounded-2xl border border-black/[0.06] bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.03] sm:p-5', className)}>
+        {(title || action) && (
+            <div className="mb-4 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <h3 className="text-[15px] font-bold text-gray-900 dark:text-white">{title}</h3>
+                    {subtitle && <p className="mt-0.5 text-[12.5px] text-gray-500 dark:text-zinc-400">{subtitle}</p>}
+                </div>
+                {action}
+            </div>
+        )}
+        {children}
+    </section>
+);
+
+const SOURCE_META = {
+    invoice: { tone: 'blue', label: 'Invoice' },
+    income: { tone: 'cyan', label: 'Other income' },
+    spend: { tone: OUT_TONE, label: 'Spend' },
+};
+
+const linkFor = (row) => {
+    if (row.source === 'invoice') return `/admin/invoices?invoice=${row.record.id}`;
+    if (row.source === 'income') return `/admin/other-income?month=all&q=${encodeURIComponent(row.record.sourceName || '')}`;
+    return `/admin/spends?month=all&q=${encodeURIComponent(row.record.title || row.who || '')}`;
+};
+
+const FinanceDashboard = () => {
+    useStoreSubscription(['invoices', 'spends', 'otherIncomes']);
+    const invoices = useStore(s => s.invoices) || [];
+    const spends = useStore(s => s.spends) || [];
+    const otherIncomes = useStore(s => s.otherIncomes) || [];
+
+    const [params, setParams] = useSearchParams();
+    const thisMonth = todayIST().slice(0, 7);
+    const rawMonth = params.get('month');
+    const period = rawMonth === 'all' ? 'all' : (/^\d{4}-\d{2}$/.test(rawMonth || '') ? rawMonth : thisMonth);
+    const setPeriod = (value) => {
+        const next = new URLSearchParams(params);
+        if (!value || value === thisMonth) next.delete('month'); else next.set('month', value);
+        setParams(next, { replace: true });
+    };
+
+    const ledger = useMemo(() => buildLedger({ invoices, spends, otherIncomes }), [invoices, spends, otherIncomes]);
+
+    // Months that have anything in them, newest first, always including the last 6.
+    const monthOptions = useMemo(() => {
+        const set = new Set();
+        for (let i = 0; i < 6; i++) set.add(shiftMonth(thisMonth, -i));
+        ledger.forEach(r => { if (r.day && r.day.slice(0, 7) <= thisMonth) set.add(r.day.slice(0, 7)); });
+        return [...set].sort().reverse();
+    }, [ledger, thisMonth]);
+
+    const [from, to] = period === 'all' ? [null, null] : monthRange(period);
+    const prevMonth = period === 'all' ? null : shiftMonth(period, -1);
+    const totals = useMemo(() => sumRange(ledger, from, to), [ledger, from, to]);
+    const prevTotals = useMemo(() => (prevMonth ? sumRange(ledger, ...monthRange(prevMonth)) : null), [ledger, prevMonth]);
+    const inPeriod = (day) => Boolean(day) && (!from || day >= from) && (!to || day <= to);
+
+    // Where things stand today, whatever period is picked.
+    const now = useMemo(() => {
+        const today = todayKey();
+        const openInvoices = invoices.filter(inv => invoiceBalance(inv) > 0);
+        const overdue = openInvoices.filter(inv => isInvoiceOverdue(inv, today));
+        const verifying = invoices.filter(inv => invoiceState(inv, today) === 'verifying');
+        const pendingIncome = otherIncomes.filter(isIncomePending);
+        const pendingSpends = spends.filter(isSpendPending);
+        const sum = (list, fn) => list.reduce((a, x) => a + fn(x), 0);
+        return {
+            invoiceDue: sum(openInvoices, invoiceBalance),
+            invoiceCount: openInvoices.length,
+            overdue: sum(overdue, invoiceBalance),
+            overdueCount: overdue.length,
+            verifyingCount: verifying.length,
+            incomeDue: sum(pendingIncome, i => amountOf(i.amount)),
+            incomeCount: pendingIncome.length,
+            toPay: sum(pendingSpends, s => amountOf(s.amount)),
+            toPayCount: pendingSpends.length,
+            pendingSpends: [...pendingSpends].sort((a, b) => (spendDay(a) || '').localeCompare(spendDay(b) || '')),
+            overdueList: overdue.sort((a, b) => invoiceBalance(b) - invoiceBalance(a)),
+        };
+    }, [invoices, otherIncomes, spends]);
+
+    // Six months ending at the picked month (or this month for all time).
+    const chart = useMemo(() => {
+        const end = period === 'all' ? thisMonth : period;
+        return Array.from({ length: 6 }, (_, i) => {
+            const key = shiftMonth(end, i - 5);
+            const t = sumRange(ledger, ...monthRange(key));
+            return { key, label: monthLabel(key), short: monthLabel(key, { month: 'short' }), income: t.income, out: t.out, net: t.net };
+        });
+    }, [ledger, period, thisMonth]);
+
+    const periodRows = useMemo(() => ledger.filter(r => r.settled && inPeriod(r.day)), [ledger, from, to]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const spendBreakdown = useMemo(() => {
+        const byType = {};
+        periodRows.filter(r => r.direction === 'out').forEach(r => { byType[r.type] = (byType[r.type] || 0) + r.amount; });
+        return Object.entries(byType)
+            .map(([type, amount]) => ({ label: SPEND_TYPES[type].label, tone: SPEND_TYPES[type].tone, amount, type }))
+            .sort((a, b) => b.amount - a.amount);
+    }, [periodRows]);
+
+    const incomeBreakdown = useMemo(() => {
+        const byCat = {};
+        periodRows.filter(r => r.direction === 'in').forEach(r => { byCat[r.category] = (byCat[r.category] || 0) + r.amount; });
+        return Object.entries(byCat)
+            .sort((a, b) => b[1] - a[1])
+            .map(([label, amount], i) => ({ label, amount, tone: label === 'Client invoices' ? 'blue' : INCOME_TONES[i % INCOME_TONES.length] }));
+    }, [periodRows]);
+
+    const topPayees = useMemo(() => {
+        const by = {};
+        periodRows.filter(r => r.direction === 'out' && r.who).forEach(r => {
+            const key = r.who.trim();
+            by[key] = by[key] || { name: key, amount: 0, count: 0 };
+            by[key].amount += r.amount;
+            by[key].count += 1;
+        });
+        return Object.values(by).sort((a, b) => b.amount - a.amount).slice(0, 5);
+    }, [periodRows]);
+
+    // Paid from someone's own account (to reimburse) and income that landed in a personal account.
+    const personal = useMemo(() => {
+        const out = { spent: 0, spentCount: 0, held: 0, heldCount: 0, people: {} };
+        spends.forEach(sp => {
+            if (sp.accountType !== 'personal' || !inPeriod(spendDay(sp))) return;
+            const amt = amountOf(sp.amount);
+            out.spent += amt; out.spentCount += 1;
+            const who = (sp.paidBy || '').trim() || 'Team member';
+            out.people[who] = (out.people[who] || 0) + amt;
+        });
+        ledger.forEach(r => {
+            if (r.source === 'income' && r.account === 'personal' && r.settled && inPeriod(r.day)) { out.held += r.amount; out.heldCount += 1; }
+        });
+        out.peopleList = Object.entries(out.people).sort((a, b) => b[1] - a[1]).slice(0, 4);
+        return out;
+    }, [spends, ledger, from, to]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const recent = useMemo(() => [...ledger]
+        .filter(r => inPeriod(r.day) && (r.settled || r.source === 'spend'))
+        .sort((a, b) => (b.day || '').localeCompare(a.day || '') || (b.direction === 'out') - (a.direction === 'out'))
+        .slice(0, 12), [ledger, from, to]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const periodName = period === 'all' ? 'All time' : monthLabel(period, { month: 'long', year: 'numeric' });
+    const prevName = prevMonth ? monthLabel(prevMonth, { month: 'short' }) : '';
+    const empty = invoices.length + spends.length + otherIncomes.length === 0;
+    const owedIn = now.invoiceDue + now.incomeDue;
+    // Spends and Other income take the month as "Oct 2026" (en-US short month).
+    const periodQuery = period === 'all' ? 'month=all' : (period === thisMonth ? '' : `month=${encodeURIComponent(legacyMonth(period))}`);
+
+    return (
+        <AdminCommunityHubLayout
+            studioHeader={{ title: 'Finance board', icon: TrendingUp, description: 'Money in, money out and what is still owed' }}
+            tabs={FINANCE_TABS}
+            action={(
+                <div className="flex w-full gap-2 sm:w-auto">
+                    <Select
+                        value={period}
+                        onChange={setPeriod}
+                        label="Period"
+                        className="min-w-0 flex-1 sm:w-48 sm:flex-none"
+                        options={[
+                            ...monthOptions.map(m => ({ value: m, label: m === thisMonth ? `This month (${monthLabel(m, { month: 'short' })})` : monthLabel(m, { month: 'long', year: 'numeric' }) })),
+                            { value: 'all', label: 'All time' },
+                        ]}
+                    />
+                </div>
+            )}
+        >
+            {empty ? (
+                <Card className="rounded-2xl">
+                    <EmptyState
+                        icon={Wallet}
+                        title="No money recorded yet"
+                        description="Log a spend, add income, or create an invoice and it will show up here."
+                        action={(
+                            <div className="flex flex-wrap justify-center gap-2">
+                                <Button as={Link} to="/admin/spends" variant="accent"><Plus size={14} /> Log spend</Button>
+                                <Button as={Link} to="/admin/other-income" variant="secondary">Add income</Button>
+                            </div>
+                        )}
+                    />
+                </Card>
+            ) : (
+                <div className="space-y-5">
+                    {/* Period KPIs */}
+                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                        <StatTile icon={ArrowDownLeft} tone={IN_TONE} label="Money in" value={inr(totals.income)} hint={`${inr(totals.invoiceIn)} invoices · ${inr(totals.otherIn)} other`} />
+                        <StatTile icon={ArrowUpRight} tone={OUT_TONE} label="Money out" value={inr(totals.out)} hint={`${periodRows.filter(r => r.direction === 'out').length} payouts made`} to={`/admin/spends${periodQuery ? `?${periodQuery}&status=Paid` : '?status=Paid'}`} />
+                        <StatTile icon={Scale} tone={totals.net >= 0 ? 'green' : 'red'} label="Net" value={`${totals.net < 0 ? '−' : ''}${inr(Math.abs(totals.net))}`} hint={totals.net >= 0 ? 'More came in than went out' : 'More went out than came in'} />
+                        <StatTile icon={Hourglass} tone="amber" label="Still to collect" value={inr(owedIn)} hint={`${now.invoiceCount} invoices · ${now.incomeCount} other`} to="/admin/invoices?filter=unpaid" />
+                    </div>
+
+                    {/* Compared with last month */}
+                    {prevTotals && (
+                        <Panel title={`${periodName} vs ${monthLabel(prevMonth, { month: 'long' })}`} subtitle="Money that actually moved, by the day it was paid or received">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                {[
+                                    { label: 'Money in', now: totals.income, before: prevTotals.income, tone: IN_TONE, good: true },
+                                    { label: 'Money out', now: totals.out, before: prevTotals.out, tone: OUT_TONE, good: false },
+                                    { label: 'Net', now: totals.net, before: prevTotals.net, tone: totals.net >= 0 ? 'green' : 'red', good: true },
+                                ].map(k => (
+                                    <div key={k.label} className={cn('rounded-xl p-3.5', accent(k.tone).soft)}>
+                                        <p className="text-[12px] font-bold text-gray-500 dark:text-zinc-400">{k.label}</p>
+                                        <p className={cn('mt-0.5 text-[20px] font-extrabold tabular-nums', accent(k.tone).text)}>{k.now < 0 ? '−' : ''}{inr(Math.abs(k.now))}</p>
+                                        <p className="mt-0.5 text-[12px] text-gray-500 dark:text-zinc-400">{prevName}: {k.before < 0 ? '−' : ''}{inr(Math.abs(k.before))}</p>
+                                        <Delta now={k.now} before={k.before} goodWhenUp={k.good} label={prevName} />
+                                    </div>
+                                ))}
+                            </div>
+                        </Panel>
+                    )}
+
+                    {/* Right now */}
+                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                        <StatTile icon={Wallet} tone={now.toPayCount ? 'orange' : 'gray'} label="To pay out" value={inr(now.toPay)} hint={now.toPayCount ? `${now.toPayCount} pending` : 'Nothing pending'} to="/admin/spends?month=all&status=Pending" />
+                        <StatTile icon={AlertCircle} tone={now.overdueCount ? 'red' : 'gray'} label="Overdue" value={inr(now.overdue)} hint={now.overdueCount ? `${now.overdueCount} past due` : 'Nothing overdue'} to="/admin/invoices?filter=overdue" />
+                        <StatTile icon={Clock} tone={now.verifyingCount ? 'amber' : 'gray'} label="Claims to check" value={now.verifyingCount} hint={now.verifyingCount ? 'Clients say they paid' : 'No claims waiting'} to="/admin/invoices?filter=verifying" />
+                        <StatTile icon={HandCoins} tone={personal.spent ? 'violet' : 'gray'} label="Team paid" value={inr(personal.spent)} hint={personal.spentCount ? `${personal.spentCount} to reimburse` : 'Nothing this period'} to={`/admin/spends?account=personal${periodQuery ? `&${periodQuery}` : ''}`} />
+                    </div>
+
+                    {/* Cashflow */}
+                    <Panel
+                        title="Cashflow"
+                        subtitle="Six months of money in and out. Tap a month to see it."
+                        action={<Legend items={[{ label: 'In', tone: IN_TONE }, { label: 'Out', tone: OUT_TONE }]} className="hidden sm:flex" />}
+                    >
+                        <CashflowBars months={chart} selected={period} onSelect={setPeriod} />
+                        <Legend items={[{ label: 'Money in', tone: IN_TONE }, { label: 'Money out', tone: OUT_TONE }]} className="mt-3 sm:hidden" />
+                    </Panel>
+
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                        <Panel title="Where money came from" subtitle={periodName}>
+                            {incomeBreakdown.length > 0 && (
+                                <div className="mb-4">
+                                    <SplitBar parts={incomeBreakdown} />
+                                </div>
+                            )}
+                            <BreakdownBars items={incomeBreakdown} empty="Nothing received in this period." />
+                        </Panel>
+                        <Panel title="Where money went" subtitle={periodName}>
+                            {spendBreakdown.length > 0 && (
+                                <div className="mb-4">
+                                    <SplitBar parts={spendBreakdown} />
+                                </div>
+                            )}
+                            <BreakdownBars items={spendBreakdown} empty="Nothing paid out in this period." />
+                        </Panel>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+                        {/* Needs attention */}
+                        <Panel title="Needs attention" subtitle="Open right now">
+                            {now.pendingSpends.length === 0 && now.overdueList.length === 0 && personal.held === 0 ? (
+                                <p className="py-6 text-center text-[13px] text-gray-500">All clear. Nothing waiting on you.</p>
+                            ) : (
+                                <ul className="-mx-2 space-y-0.5">
+                                    {now.overdueList.slice(0, 4).map(inv => (
+                                        <li key={`o-${inv.id}`}>
+                                            <Link to={`/admin/invoices?invoice=${inv.id}`} className="flex min-h-[48px] items-center gap-3 rounded-xl px-2 py-2 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]">
+                                                <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', accent('red').chip)}><AlertCircle size={15} /></span>
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="block truncate text-[13.5px] font-semibold">{inv.clientName || 'Client'}</span>
+                                                    <span className="block truncate text-[12px] text-gray-500">Overdue · {inv.invoiceNumber || 'invoice'}</span>
+                                                </span>
+                                                <span className="shrink-0 text-[13.5px] font-bold tabular-nums">{inr(invoiceBalance(inv))}</span>
+                                            </Link>
+                                        </li>
+                                    ))}
+                                    {now.pendingSpends.slice(0, 5).map(sp => (
+                                        <li key={`s-${sp.id}`}>
+                                            <Link to={`/admin/spends?month=all&status=Pending&q=${encodeURIComponent(sp.title || spendPayee(sp))}`} className="flex min-h-[48px] items-center gap-3 rounded-xl px-2 py-2 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]">
+                                                <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', accent('orange').chip)}><Wallet size={15} /></span>
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="block truncate text-[13.5px] font-semibold">{spendPayee(sp) || sp.title || 'Payout'}</span>
+                                                    <span className="block truncate text-[12px] text-gray-500">To pay · {SPEND_TYPES[spendType(sp)].label}{spendDay(sp) ? ` · ${formatDay(spendDay(sp))}` : ''}</span>
+                                                </span>
+                                                <span className="shrink-0 text-[13.5px] font-bold tabular-nums">{inr(amountOf(sp.amount))}</span>
+                                            </Link>
+                                        </li>
+                                    ))}
+                                    {personal.held > 0 && (
+                                        <li>
+                                            <Link to={`/admin/other-income?account=personal${periodQuery ? `&${periodQuery}` : ''}`} className="flex min-h-[48px] items-center gap-3 rounded-xl px-2 py-2 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]">
+                                                <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', accent('violet').chip)}><HandCoins size={15} /></span>
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="block truncate text-[13.5px] font-semibold">Income in personal accounts</span>
+                                                    <span className="block truncate text-[12px] text-gray-500">{personal.heldCount} {personal.heldCount === 1 ? 'entry' : 'entries'} to move to Newbi</span>
+                                                </span>
+                                                <span className="shrink-0 text-[13.5px] font-bold tabular-nums">{inr(personal.held)}</span>
+                                            </Link>
+                                        </li>
+                                    )}
+                                </ul>
+                            )}
+                            {(now.pendingSpends.length > 5 || now.overdueList.length > 4) && (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {now.pendingSpends.length > 5 && <Button as={Link} to="/admin/spends?month=all&status=Pending" size="sm" variant="secondary">All {now.pendingSpends.length} payouts <ChevronRight size={13} /></Button>}
+                                    {now.overdueList.length > 4 && <Button as={Link} to="/admin/invoices?filter=overdue" size="sm" variant="secondary">All overdue <ChevronRight size={13} /></Button>}
+                                </div>
+                            )}
+                        </Panel>
+
+                        {/* Recent */}
+                        <Panel title="Recent money movements" subtitle={periodName} className="xl:col-span-2">
+                            {recent.length === 0 ? (
+                                <EmptyState icon={Inbox} title="Nothing moved" description="No payments in or out in this period." />
+                            ) : (
+                                <ul className="-mx-2 divide-y divide-black/[0.04] dark:divide-white/[0.05]">
+                                    {recent.map(r => {
+                                        const meta = SOURCE_META[r.source];
+                                        const isOut = r.direction === 'out';
+                                        return (
+                                            <li key={r.id}>
+                                                <Link to={linkFor(r)} className="flex min-h-[52px] items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]">
+                                                    <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', accent(isOut ? OUT_TONE : IN_TONE).chip)}>
+                                                        {isOut ? <ArrowUpRight size={15} /> : <ArrowDownLeft size={15} />}
+                                                    </span>
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="flex min-w-0 items-center gap-2">
+                                                            <span className="truncate text-[13.5px] font-semibold">{r.source === 'invoice' ? r.who : (isOut ? (r.who || r.title) : r.title)}</span>
+                                                            {!r.settled && <Badge tone="amber">To pay</Badge>}
+                                                            {r.account === 'personal' && <Badge tone="violet">Personal</Badge>}
+                                                        </span>
+                                                        <span className="block truncate text-[12px] text-gray-500">
+                                                            {meta.label}{r.source === 'spend' ? ` · ${r.category}` : r.source === 'invoice' ? ` · ${r.title}` : r.category !== r.title ? ` · ${r.category}` : ''}{r.day ? ` · ${formatDay(r.day)}` : ''}
+                                                        </span>
+                                                    </span>
+                                                    <span className={cn('shrink-0 text-[13.5px] font-bold tabular-nums', isOut ? accent(OUT_TONE).text : accent(IN_TONE).text)}>
+                                                        {isOut ? '−' : '+'}{inr(r.amount)}
+                                                    </span>
+                                                </Link>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
+                        </Panel>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                        <Panel title="Biggest payees" subtitle={periodName} action={<Button as={Link} to="/admin/payees" size="sm" variant="ghost">Payees <ChevronRight size={13} /></Button>}>
+                            {topPayees.length === 0 ? (
+                                <p className="py-6 text-center text-[13px] text-gray-500">No payouts in this period.</p>
+                            ) : (
+                                <BreakdownBars items={topPayees.map((p, i) => ({ label: p.name, amount: p.amount, tone: ['rose', 'orange', 'amber', 'violet', 'pink'][i], hint: `${p.count} ${p.count === 1 ? 'payout' : 'payouts'}` }))} total={totals.out} />
+                            )}
+                        </Panel>
+                        <Panel title="Personal accounts" subtitle={`${periodName} · money that went through a team member's own account`}>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Link to={`/admin/spends?account=personal${periodQuery ? `&${periodQuery}` : ''}`} className={cn('rounded-xl p-3.5 transition-colors hover:opacity-90', accent('violet').soft)}>
+                                    <p className="text-[12px] font-bold text-gray-500 dark:text-zinc-400">Paid by the team</p>
+                                    <p className={cn('mt-0.5 text-[20px] font-extrabold tabular-nums', accent('violet').text)}>{inr(personal.spent)}</p>
+                                    <p className="text-[12px] text-gray-500">{personal.spentCount} {personal.spentCount === 1 ? 'spend' : 'spends'} to reimburse</p>
+                                </Link>
+                                <Link to={`/admin/other-income?account=personal${periodQuery ? `&${periodQuery}` : ''}`} className={cn('rounded-xl p-3.5 transition-colors hover:opacity-90', accent('fuchsia').soft)}>
+                                    <p className="text-[12px] font-bold text-gray-500 dark:text-zinc-400">Received by the team</p>
+                                    <p className={cn('mt-0.5 text-[20px] font-extrabold tabular-nums', accent('fuchsia').text)}>{inr(personal.held)}</p>
+                                    <p className="text-[12px] text-gray-500">{personal.heldCount} {personal.heldCount === 1 ? 'entry' : 'entries'} to move to Newbi</p>
+                                </Link>
+                            </div>
+                            {personal.peopleList.length > 0 && (
+                                <ul className="mt-4 space-y-2">
+                                    {personal.peopleList.map(([name, amount]) => (
+                                        <li key={name} className="flex items-center justify-between gap-3 text-[13px]">
+                                            <span className="flex min-w-0 items-center gap-2"><Activity size={13} className="shrink-0 text-gray-400" /><span className="truncate font-semibold">{name}</span> <span className="shrink-0 text-gray-500">paid</span></span>
+                                            <span className="shrink-0 font-bold tabular-nums">{inr(amount)}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </Panel>
+                    </div>
+
+                    <p className="px-1 text-[12px] text-gray-500 dark:text-zinc-400">
+                        Invoices count when money is received (advance on the issue date, each payment on its date). Spends and income count on the date entered, in India time. Pending entries are not in the totals.
+                    </p>
+                </div>
+            )}
+        </AdminCommunityHubLayout>
+    );
+};
 
 export default FinanceDashboard;

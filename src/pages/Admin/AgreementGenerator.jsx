@@ -1,2015 +1,1001 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { createPortal } from 'react-dom';
-import { useNavigate, Link, useParams } from 'react-router-dom';
-import Plus from 'lucide-react/dist/esm/icons/plus';
-import Minus from 'lucide-react/dist/esm/icons/minus';
-import Maximize2 from 'lucide-react/dist/esm/icons/maximize-2';
-import Minimize2 from 'lucide-react/dist/esm/icons/minimize-2';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Save from 'lucide-react/dist/esm/icons/save';
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
-import Download from 'lucide-react/dist/esm/icons/download';
-import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
-import X from 'lucide-react/dist/esm/icons/x';
-import Send from 'lucide-react/dist/esm/icons/send';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
+import { useNavigate, useParams } from 'react-router-dom';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
-import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
-import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
-import Target from 'lucide-react/dist/esm/icons/target';
-import Users from 'lucide-react/dist/esm/icons/users';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
-import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
-import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import Download from 'lucide-react/dist/esm/icons/download';
 import Eye from 'lucide-react/dist/esm/icons/eye';
-import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
-import Settings from 'lucide-react/dist/esm/icons/settings';
-import Building2 from 'lucide-react/dist/esm/icons/building-2';
-import Layers from 'lucide-react/dist/esm/icons/layers';
-import ImageIcon from 'lucide-react/dist/esm/icons/image';
-import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
-import Undo2 from 'lucide-react/dist/esm/icons/undo-2';
-import Scale from 'lucide-react/dist/esm/icons/scale';
-import Stamp from 'lucide-react/dist/esm/icons/stamp';
-import Gavel from 'lucide-react/dist/esm/icons/gavel';
-import Lock from 'lucide-react/dist/esm/icons/lock';
-import History from 'lucide-react/dist/esm/icons/history';
-import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
-import Share2 from 'lucide-react/dist/esm/icons/share-2';
-import Shield from 'lucide-react/dist/esm/icons/shield';
-import Upload from 'lucide-react/dist/esm/icons/upload';
+import Save from 'lucide-react/dist/esm/icons/save';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Target from 'lucide-react/dist/esm/icons/target';
+import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
+import Gavel from 'lucide-react/dist/esm/icons/gavel';
 import PenTool from 'lucide-react/dist/esm/icons/pen-tool';
+import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import CopyPlus from 'lucide-react/dist/esm/icons/copy-plus';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Link2 from 'lucide-react/dist/esm/icons/link-2';
+import Send from 'lucide-react/dist/esm/icons/send';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
-import Check from 'lucide-react/dist/esm/icons/check';
-import Copy from 'lucide-react/dist/esm/icons/copy';
-import SlidersHorizontal from 'lucide-react/dist/esm/icons/sliders-horizontal';
-import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
-import Cpu from 'lucide-react/dist/esm/icons/cpu';
-import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import SignatureModal from '../../components/ui/SignatureModal';
-import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { copyToClipboard } from '../../lib/clipboard';
 import DocumentSeal from '../../components/ui/DocumentSeal';
-import StudioRichEditor from '../../components/ui/StudioRichEditor';
-
-// Contract Vault Sub-components
-import useContractGenerator from '../../components/admin/useContractGenerator';
-import ClauseMarketplace from '../../components/admin/ClauseMarketplace';
-import ContractPreview from '../../components/admin/ContractPreview';
+import { contractState, CONTRACT_STATE_LABEL, CONTRACT_STATUS } from '../../lib/contracts';
 import { generateFullDocument, reviseDocument, refineFieldContent } from '../../lib/ai';
 
-const renderChatMessage = (text) => {
-    if (!text) return null;
-    const lines = text.split('\n');
-    const elements = [];
-    let i = 0;
-    
-    const formatInline = (t) => {
-        if (!t) return '';
-        return t
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>');
-    };
+import useContractGenerator, { normalizeContract, paginateContract, newAgreementNumber } from '../../components/admin/useContractGenerator';
+import ClauseMarketplace from '../../components/admin/ClauseMarketplace';
+import ContractPreview from '../../components/admin/ContractPreview';
+import RichEditor from '../../components/admin/RichEditor';
+import Sheet from '../../components/admin/Sheet';
+import { Button, Badge } from '../../components/admin/ui';
+import { useAccent } from '../../components/admin/theme';
+import { BuilderCard } from '../../components/admin/events/EditorParts';
+import { fieldCls, areaCls, Field, Toggle, Choice, SignatureField } from '../../components/admin/uploads/UploadKit';
+import PaperViewer from '../../components/admin/contracts/PaperViewer';
+import { AIDraftSheet, AIRefineSheet } from '../../components/admin/contracts/ContractAISheets';
+import {
+    contractIssues, milestoneCheck, gstSummary, formatMoney, tidyAmountText, contractTotal,
+    formatContractDate, parseContractDate,
+} from '../../components/admin/contracts/contractRules';
+import ThemedSelect from '../../components/admin/ThemedSelect';
 
-    while (i < lines.length) {
-        const line = lines[i];
-        if (line.trim() === '') {
-            elements.push(<div key={`spacer-${i}`} className="h-1.5" />);
-            i++;
-            continue;
-        }
+const STEPS = [
+    { id: 'parties', label: 'Parties', icon: Users, desc: 'Who the contract is between', page: 'intro' },
+    { id: 'project', label: 'Project & scope', icon: Target, desc: 'Dates, term, scope of work and deliverables', page: 'mission' },
+    { id: 'commercials', label: 'Commercials', icon: CreditCard, desc: 'Contract value, GST and when each payment is due', page: 'commercials' },
+    { id: 'clauses', label: 'Clauses', icon: Gavel, desc: 'Terms and conditions, in the order they appear', page: 'clauses' },
+    { id: 'signatures', label: 'Signatures', icon: PenTool, desc: 'Who signs, your signature and the seal', page: 'execution' },
+    { id: 'review', label: 'Review', icon: ListChecks, desc: 'Check everything, then send it for signing' },
+];
 
-        const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
-        if (headingMatch) {
-            const level = headingMatch[1].length;
-            const headingText = headingMatch[2];
-            const sizeClass = level === 1 ? "text-[13px] font-bold" : level === 2 ? "text-[12px] font-bold" : "text-[11px] font-semibold text-zinc-400";
-            elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-gray-900 dark:text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
-        } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
-            const items = [];
-            while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
-                items.push(lines[i].replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, '').trim());
-                i++;
-            }
-            elements.push(
-                <ul key={`ul-${i}`} className="list-disc ml-4 my-1.5 space-y-1 text-zinc-300">
-                    {items.map((item, j) => (
-                        <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
-                    ))}
-                </ul>
-            );
-            continue;
-        } else if (line.match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
-            const items = [];
-            while (i < lines.length && lines[i].match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
-                items.push(lines[i].replace(/^\d+\.(?:\s|&nbsp;|\u00a0)+/, '').trim());
-                i++;
-            }
-            elements.push(
-                <ol key={`ol-${i}`} className="list-decimal ml-4 my-1.5 space-y-1 text-zinc-300">
-                    {items.map((item, j) => (
-                        <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
-                    ))}
-                </ol>
-            );
-            continue;
-        } else {
-            elements.push(<p key={i} className="mb-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatInline(line) }} />);
-        }
-        i++;
+const LOGOS = [
+    { id: 'entertainment', label: 'Entertainment', path: '/logo_document.png' },
+    { id: 'media', label: 'Media', path: '/logo_media.png' },
+    { id: 'marketing', label: 'Marketing', path: '/logo_marketing.png' },
+];
+
+const TERM_PRESETS = ['One event', '1 month', '3 months', '6 months', '12 months'];
+
+// Fields the client or the system owns. The editor never writes its (possibly stale) copy back.
+const CLIENT_OWNED_FIELDS = ['id', 'status', 'approvalMetadata', 'clientSignature', 'accessLogs', 'lastOpened', 'createdAt', 'createdByEmail', 'executedAt', 'lastSharedAt', 'lastSharedVia', 'versions', 'negotiationHistory'];
+
+const PROVIDER_KEY = 'newbi_contract_provider';
+const readProvider = () => {
+    try { return JSON.parse(window.localStorage.getItem(PROVIDER_KEY) || 'null'); } catch { return null; }
+};
+
+const plain = (html) => String(html || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').trim();
+
+/** After a save, swap images that were uploaded (data URL → link) into the form, but only where the value hasn't changed since. */
+const swapUploaded = (cur, sent, written) => {
+    if (typeof sent === 'string') return (cur === sent && typeof written === 'string' && written !== sent) ? written : cur;
+    if (Array.isArray(cur) && Array.isArray(sent) && Array.isArray(written)) return cur.map((c, i) => swapUploaded(c, sent[i], written[i]));
+    if (cur && sent && written && typeof cur === 'object' && typeof sent === 'object' && typeof written === 'object') {
+        const out = { ...cur };
+        Object.keys(cur).forEach(k => { if (k in sent && k in written) out[k] = swapUploaded(cur[k], sent[k], written[k]); });
+        return out;
     }
-    return <div className="space-y-0.5">{elements}</div>;
+    return cur;
+};
+
+const dataUrlToFile = async (dataUrl, name) => {
+    const blob = await (await fetch(dataUrl)).blob();
+    return new File([blob], name, { type: blob.type || 'image/png' });
 };
 
 const ContractGenerator = () => {
     useStoreSubscription(['agreements']);
     const { id } = useParams();
     const navigate = useNavigate();
-    const { addAgreement, updateAgreement, agreements, user, addToast, activeModel } = useStore();
-    
-    // Autosave & Persistence State
-    const [autosaveStatus, setAutosaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
-    const [lastSaved, setLastSaved] = useState('');
-    const isDirtyRef = useRef(false);
-    const initialDataLoadedRef = useRef(false);
-    
-    // View Mode: 'all' (Single page continuous document editor) vs 'tab' (focused step-by-step)
-    const [viewMode, setViewMode] = useState('all');
-    const [activeTab, setActiveTab] = useState('1'); // Default to Parties when in tab mode
-    
-    // Preview & Zoom State
-    const [previewScale, setPreviewScale] = useState(0.6);
-    const [userZoom, setUserZoom] = useState(1);
-    const [isExpandedPreview, setIsExpandedPreview] = useState(false);
-    const [currentPage, setCurrentPage] = useState(0);
-    const [isSaving, setIsSaving] = useState(false);
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-    const [showPreviewMobile, setShowPreviewMobile] = useState(false);
-    const [copiedAgreementId, setCopiedAgreementId] = useState(false);
-    const previewContainerRef = useRef(null);
+    const a = useAccent();
+    const { addAgreement, updateAgreement, agreements, user, addToast } = useStore();
+    const agreementsLoaded = useStore(s => Boolean(s.subscriptionsLoaded?.agreements));
 
-    // AI Studio State
-    const [isBulkMode, setIsBulkMode] = useState(false);
-    const [messages, setMessages] = useState([
-        {
-            id: 'init-msg',
-            sender: 'ai',
-            text: "Welcome to Newbi Contract Vault Studio. Describe your engagement terms or legal clauses in the prompt console below, or paste complete draft text in Bulk Mode to auto-populate all sections."
-        }
-    ]);
-    const [promptText, setPromptText] = useState('');
-    const [suggestionCategory, setSuggestionCategory] = useState(0);
-    const [refinementContext, setRefinementContext] = useState(null);
-    const [refinementPrompt, setRefinementPrompt] = useState('');
-    const [isRefining, setIsRefining] = useState(false);
-    const [isFloatingChatOpen, setIsFloatingChatOpen] = useState(false);
-    const floatingChatContainerRef = useRef(null);
-    const chatContainerRef = useRef(null);
-    const chatEndRef = useRef(null);
-    const [aiTone, setAiTone] = useState('formal'); // 'creative' | 'balanced' | 'formal'
-    const [aiLength, setAiLength] = useState('balanced'); // 'concise' | 'balanced' | 'detailed'
+    const live = useMemo(() => (id ? (agreements || []).find(x => x.id === id) : null), [agreements, id]);
+    const locked = live?.status === CONTRACT_STATUS.EXECUTED;
+    const lockedRef = useRef(false);
+    lockedRef.current = locked;
 
-    const htmlToPlainText = (html) => {
-        if (!html) return '';
-        if (!html.includes('<') || !html.includes('>')) return html;
-        let text = html;
-        text = text.replace(/<\/(p|div|li|h1|h2|h3|h4|h5|h6|ul|ol)>/gi, '\n');
-        text = text.replace(/<br\s*\/?>/gi, '\n');
-        text = text.replace(/<[^>]+>/g, '');
-        text = text.replace(/&nbsp;/gi, ' ').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&amp;/gi, '&');
-        return text.trim();
-    };
-
-    const handleRefineClick = (fieldKey, fieldLabel, currentValue) => {
-        setRefinementContext({
-            fieldKey,
-            fieldLabel,
-            currentValue: currentValue || ''
-        });
-    };
-
-    const handleInlineRefineSubmit = async () => {
-        if (!refinementPrompt.trim() || isRefining || !refinementContext) return;
-        setIsRefining(true);
-        try {
-            const refined = await refineFieldContent(
-                'contract',
-                refinementContext.fieldLabel,
-                refinementContext.currentValue,
-                refinementPrompt.trim(),
-                'Premium'
-            );
-
-            const fieldKey = refinementContext.fieldKey;
-            if (fieldKey.startsWith('clauses[')) {
-                const match = fieldKey.match(/clauses\[([^\]]+)\]/);
-                if (match) {
-                    const clauseId = match[1];
-                    updateClause(clauseId, { content: refined });
-                }
-            } else {
-                updateField(fieldKey, refined);
-            }
-
-            addToast(`"${refinementContext.fieldLabel}" has been refined.`, 'success');
-            setRefinementContext(null);
-            setRefinementPrompt('');
-        } catch (err) {
-            console.error(err);
-            addToast("Couldn't refine that field. Please try again.", 'error');
-        } finally {
-            setIsRefining(false);
-        }
-    };
-
-    const [generationStage, setGenerationStage] = useState(0);
-    const [generationProgress, setGenerationProgress] = useState(0);
-    const [generationTime, setGenerationTime] = useState(0);
-
-    const STAGE_MESSAGES = useMemo(() => [
-        { text: "Connecting to neural legal model...", progress: 15 },
-        { text: "Structuring recitals & entity identities...", progress: 40 },
-        { text: "Formulating scope & financial milestones...", progress: 65 },
-        { text: "Generating enforceable legal clauses...", progress: 85 },
-        { text: "Finalizing agreement layout & seal...", progress: 95 }
-    ], []);
-
-    useEffect(() => {
-        let timer;
-        let stageTimer;
-        if (isGenerating) {
-            setGenerationStage(0);
-            setGenerationProgress(15);
-            setGenerationTime(0);
-            
-            timer = setInterval(() => {
-                setGenerationTime(prev => prev + 1);
-            }, 1000);
-
-            stageTimer = setInterval(() => {
-                setGenerationStage(prev => {
-                    const next = Math.min(prev + 1, STAGE_MESSAGES.length - 1);
-                    setGenerationProgress(STAGE_MESSAGES[next].progress);
-                    return next;
-                });
-            }, 2500);
-        } else {
-            setGenerationStage(0);
-            setGenerationProgress(0);
-            setGenerationTime(0);
-        }
-        return () => {
-            clearInterval(timer);
-            clearInterval(stageTimer);
-        };
-    }, [isGenerating, STAGE_MESSAGES]);
-
-    useEffect(() => {
-        if (chatContainerRef.current) {
-            chatContainerRef.current.scrollTo({
-                top: chatContainerRef.current.scrollHeight,
-                behavior: 'smooth'
-            });
-        }
-        if (floatingChatContainerRef.current) {
-            floatingChatContainerRef.current.scrollTo({
-                top: floatingChatContainerRef.current.scrollHeight,
-                behavior: 'smooth'
-            });
-        }
-    }, [messages]);
-
-    const suggestions = useMemo(() => {
-        const agreementSuggestions = [
-            [
-                { label: "Master Service Agreement", category: "MSA", text: "Master Service Agreement for ongoing talent management, digital marketing, and event production services with standard indemnity and IP clauses." },
-                { label: "Non-Disclosure Agreement", category: "NDA", text: "Mutual Non-Disclosure Agreement for confidential event logistics data, proprietary artist rosters, and technical production designs." },
-                { label: "Partnership MoU", category: "MOU", text: "Memorandum of Understanding for co-producing an annual campus music and cultural tech festival with revenue sharing and slot allocations." },
-                { label: "Talent Booking Contract", category: "Talent", text: "Exclusive talent booking agreement for a headliner live performance at a corporate gala with rider compliance and advance payment." }
-            ],
-            [
-                { label: "Influencer Marketing Retainer", category: "Marketing", text: "Annual creator and influencer retainer agreement covering 12 dedicated campaigns, usage rights for paid ads, and monthly deliverables." },
-                { label: "Venue & Production SOW", category: "Production", text: "Venue licensing and technical AV production agreement including staging, lighting rigs, safety certifications, and insurance requirements." },
-                { label: "Brand Sponsorship Agreement", category: "Sponsorship", text: "Brand title sponsorship agreement granting digital rights, on-ground activation booths, VIP passes, and stage naming privileges." },
-                { label: "Security & Facility SOW", category: "Operations", text: "Comprehensive on-ground event security and bouncer deployment contract with strict liability caps and emergency response protocols." }
-            ]
-        ];
-        return agreementSuggestions[suggestionCategory] || agreementSuggestions[0];
-    }, [suggestionCategory]);
-
-    const toggleFieldVisibility = (field) => {
-        setFormData(prev => {
-            const current = prev.hiddenFields || [];
-            const updated = current.includes(field) ? current.filter(f => f !== field) : [...current, field];
-            return { ...prev, hiddenFields: updated };
-        });
-    };
-
-    const isHidden = (f) => (formData.hiddenFields || []).includes(f);
-
-    const VisibilityToggle = ({ field, label }) => (
-        <button 
-            type="button"
-            onClick={() => toggleFieldVisibility(field)}
-            className={cn(
-                "flex items-center gap-1.5 px-3 py-1 rounded-full border transition-all text-[8px] font-black uppercase tracking-[0.1em]",
-                isHidden(field) 
-                    ? "bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20" 
-                    : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
-            )}
-        >
-            {isHidden(field) ? <EyeOff size={10} /> : <Eye size={10} />}
-            {label || (isHidden(field) ? "Hidden in Export" : "Included in Export")}
-        </button>
-    );
-
-    const logoOptions = [
-        { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#A855F7' },
-        { id: 'media', label: 'Newbi Media', path: '/logo_media.png', color: '#00D1FF' },
-        { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
-    ];
-
-    // Hook logic
-    const existingData = id ? agreements.find(a => a.id === id) : null;
     const {
         formData, setFormData, updateField,
         toggleClause, updateClause, removeClause, addCustomClause,
-        paginatedPages
-    } = useContractGenerator(existingData);
+        paginatedPages,
+    } = useContractGenerator(live, { withDefaultClauses: !id });
 
+    const [step, setStep] = useState('parties');
+    const [previewPage, setPreviewPage] = useState(0);
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [autosaveStatus, setAutosaveStatus] = useState('idle');
+    const [lastSaved, setLastSaved] = useState('');
+    const [busy, setBusy] = useState('');  // 'save' | 'ready' | 'pdf' | 'copy' | 'leave'
+    const [showIssues, setShowIssues] = useState(false);
+    const [aiOpen, setAiOpen] = useState(false);
+    const [aiBusy, setAiBusy] = useState(false);
+    const [refineTarget, setRefineTarget] = useState(null);
+    const [refineBusy, setRefineBusy] = useState(false);
+    const [sigUploading, setSigUploading] = useState(false);
+    const editorScrollRef = useRef(null);
+    const pdfRef = useRef(null);
+
+    // ── Loading and autosave (same pattern as the invoice builder) ──
+    const isDirtyRef = useRef(false);
+    const initialDataLoadedRef = useRef(false);
     const hasInitializedRef = useRef(false);
+    const justCreatedIdRef = useRef(null);
+    const revisionRef = useRef(0);
+    const createPromiseRef = useRef(null);
+    const idRef = useRef(id);
+    idRef.current = id || justCreatedIdRef.current;
+
     useEffect(() => {
+        if (id && id === justCreatedIdRef.current) return;
         hasInitializedRef.current = false;
         initialDataLoadedRef.current = false;
     }, [id]);
 
+    // A new contract: Newbi's remembered details, signature on, GST stated, a unique number.
     useEffect(() => {
-        if (!id) {
-            initialDataLoadedRef.current = true;
-        }
-    }, [id]);
+        if (id) return;
+        const saved = readProvider();
+        setFormData(prev => ({
+            ...prev,
+            showSignatures: true,
+            parties: { ...prev.parties, firstParty: { ...prev.parties.firstParty, ...(saved?.firstParty || {}) } },
+            providerName: saved?.providerName || prev.providerName,
+            providerDesignation: saved?.providerDesignation || prev.providerDesignation,
+            providerSignature: saved?.providerSignature || prev.providerSignature,
+            details: { ...prev.details, deliverables: [] },
+            commercials: { ...prev.commercials, gstMode: 'extra', gstRate: 18, milestones: [] },
+        }));
+        initialDataLoadedRef.current = true;
+    }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
-        if (id && agreements.length > 0 && !hasInitializedRef.current) {
-            const agreement = agreements.find(a => a.id === id);
-            if (agreement) {
-                setFormData(agreement);
-                hasInitializedRef.current = true;
-                setTimeout(() => {
-                    initialDataLoadedRef.current = true;
-                }, 200);
-            }
+        if (id || !agreementsLoaded) return;
+        const taken = new Set((agreements || []).map(x => String(x.agreementNumber || '').toUpperCase()));
+        if (taken.has(String(formData.agreementNumber || '').toUpperCase())) {
+            let next = newAgreementNumber();
+            while (taken.has(next)) next = newAgreementNumber();
+            updateField('agreementNumber', next);
         }
-    }, [id, agreements]);
+    }, [id, agreementsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
+        if (!id || hasInitializedRef.current || !live) return;
+        setFormData(normalizeContract(live));
+        hasInitializedRef.current = true;
+        const t = setTimeout(() => { initialDataLoadedRef.current = true; }, 200);
+        return () => clearTimeout(t);
+    }, [id, live, setFormData]);
+
+    const notFound = Boolean(id) && agreementsLoaded && !live && id !== justCreatedIdRef.current;
 
     useEffect(() => {
         if (initialDataLoadedRef.current) {
             isDirtyRef.current = true;
+            revisionRef.current += 1;
         }
     }, [formData]);
 
-    // Autosave debounced
+    // Remember Newbi's details (and a saved signature link) for the next contract.
     useEffect(() => {
-        if (!initialDataLoadedRef.current || !isDirtyRef.current) return;
+        if (locked || !initialDataLoadedRef.current) return;
+        const fp = formData.parties?.firstParty || {};
+        try {
+            window.localStorage.setItem(PROVIDER_KEY, JSON.stringify({
+                firstParty: { name: fp.name || '', address: fp.address || '', email: fp.email || '', pan: fp.pan || '', gstin: fp.gstin || '', role: fp.role || '' },
+                providerName: formData.providerName || '',
+                providerDesignation: formData.providerDesignation || '',
+                providerSignature: typeof formData.providerSignature === 'string' && /^https?:/.test(formData.providerSignature) ? formData.providerSignature : (readProvider()?.providerSignature || null),
+            }));
+        } catch { /* private mode */ }
+    }, [formData.parties?.firstParty, formData.providerName, formData.providerDesignation, formData.providerSignature, locked]); // eslint-disable-line react-hooks/exhaustive-deps
 
-        let active = true;
+    const hasContent = Boolean(
+        String(formData.parties?.secondParty?.name || '').trim() ||
+        String(formData.details?.projectName || '').trim() ||
+        plain(formData.details?.purpose)
+    );
+
+    const buildPayload = () => {
+        const data = JSON.parse(JSON.stringify({ ...formData, updatedAt: new Date().toISOString(), createdBy: formData.createdBy || user?.uid || null }));
+        if (idRef.current) CLIENT_OWNED_FIELDS.forEach(key => { delete data[key]; });
+        else data.status = CONTRACT_STATUS.DRAFT;
+        return data;
+    };
+
+    // One save path for autosave and the buttons. Concurrent first saves share one
+    // create promise, so a slow network can never make two contracts.
+    const persist = async (extra = {}) => {
+        if (lockedRef.current) throw Object.assign(new Error('locked'), { code: 'LOCKED' });
+        const revision = revisionRef.current;
+        const sent = { ...buildPayload(), ...extra };
+        const currentId = idRef.current;
+        let savedId = currentId;
+        if (currentId) {
+            const written = await updateAgreement(currentId, sent, { unlessSigned: true });
+            if (written && JSON.stringify(sent).includes(';base64,')) setFormData(prev => swapUploaded(prev, sent, written));
+        } else {
+            if (!createPromiseRef.current) {
+                createPromiseRef.current = addAgreement(sent).catch(err => { createPromiseRef.current = null; throw err; });
+            }
+            savedId = await createPromiseRef.current;
+            justCreatedIdRef.current = savedId;
+            idRef.current = savedId;
+            hasInitializedRef.current = true;
+            initialDataLoadedRef.current = true;
+            navigate(`/admin/agreements/edit/${savedId}`, { replace: true });
+        }
+        if (revisionRef.current === revision) isDirtyRef.current = false;
+        setAutosaveStatus('saved');
+        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        return savedId;
+    };
+
+    const saveError = (err) => {
+        if (err?.code === 'LOCKED') {
+            lockedRef.current = true;
+            addToast("This contract was just signed, so it's locked. Your latest edits weren't saved.", 'error');
+        } else {
+            addToast("Couldn't save the contract. Please try again.", 'error');
+        }
+    };
+
+    useEffect(() => {
+        if (!initialDataLoadedRef.current || !isDirtyRef.current || locked) return undefined;
+        if (!idRef.current && !hasContent) return undefined;
         const timer = setTimeout(async () => {
-            if (!active) return;
             setAutosaveStatus('saving');
             try {
-                const rawData = { 
-                    ...formData, 
-                    updatedAt: new Date().toISOString(),
-                    createdBy: formData.createdBy || user?.uid || null 
-                };
-                const data = JSON.parse(JSON.stringify(rawData));
-                
-                if (id) {
-                    await updateAgreement(id, data);
-                    if (active) {
-                        setAutosaveStatus('saved');
-                        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-                        isDirtyRef.current = false;
-                    }
-                } else {
-                    const newDocId = await addAgreement(data);
-                    if (active) {
-                        setAutosaveStatus('saved');
-                        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-                        isDirtyRef.current = false;
-                        hasInitializedRef.current = true;
-                        initialDataLoadedRef.current = true;
-                        navigate(`/admin/agreements/edit/${newDocId}`, { replace: true });
-                    }
-                }
+                await persist();
             } catch (err) {
-                console.error("Agreement autosave failed:", err);
-                if (active) {
-                    setAutosaveStatus('error');
-                }
+                console.error('Contract autosave failed:', err);
+                setAutosaveStatus(err?.code === 'LOCKED' ? 'locked' : 'error');
+                if (err?.code === 'LOCKED') saveError(err);
             }
         }, 4000);
+        return () => clearTimeout(timer);
+    }, [formData, id, locked]); // eslint-disable-line react-hooks/exhaustive-deps
 
-        return () => {
-            active = false;
-            clearTimeout(timer);
-        };
-    }, [formData, id]);
-
-    // Responsive Preview Zoom auto-fit
+    // Warn before closing the tab with unsaved edits.
     useEffect(() => {
-        const handleResize = () => {
-            if (previewContainerRef.current) {
-                const containerWidth = previewContainerRef.current.clientWidth - 48; // padding
-                const containerHeight = previewContainerRef.current.clientHeight - 48;
-                const scaleWidth = containerWidth / 794;
-                const scaleHeight = containerHeight / 1123;
-                const autoScale = isExpandedPreview ? Math.min(scaleWidth, scaleHeight) : scaleWidth;
-                setPreviewScale(Math.max(0.2, Math.min(2.0, autoScale)) * userZoom);
-            }
+        const onBeforeUnload = (e) => {
+            if (isDirtyRef.current && !lockedRef.current && (idRef.current || hasContent)) { e.preventDefault(); e.returnValue = ''; }
         };
+        window.addEventListener('beforeunload', onBeforeUnload);
+        return () => window.removeEventListener('beforeunload', onBeforeUnload);
+    }, [hasContent]);
 
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [userZoom, isExpandedPreview]);
+    const leave = async () => {
+        if (isDirtyRef.current && !lockedRef.current && (idRef.current || hasContent)) {
+            setBusy('leave');
+            try { await persist(); } catch (err) {
+                setBusy('');
+                if (!window.confirm("Couldn't save your latest changes. Leave anyway and lose them?")) return;
+            }
+        }
+        navigate('/admin/agreements');
+    };
 
     const handleSave = async () => {
-        setIsSaving(true);
+        setBusy('save');
         try {
-            const rawData = { 
-                ...formData, 
-                updatedAt: new Date().toISOString(),
-                createdBy: formData.createdBy || user?.uid || null 
-            };
-            const data = JSON.parse(JSON.stringify(rawData));
-            if (id) {
-                await updateAgreement(id, data);
-                isDirtyRef.current = false;
-                setAutosaveStatus('saved');
-                setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-                addToast("Agreement draft saved.", "success");
-            } else {
-                const newDocId = await addAgreement(data);
-                isDirtyRef.current = false;
-                setAutosaveStatus('saved');
-                setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-                addToast("Agreement created.", "success");
-                navigate(`/admin/agreements/edit/${newDocId}`, { replace: true });
-            }
-        } catch (error) {
-            addToast("Couldn't save the agreement. Please try again.", 'error');
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    const handleStudioSubmit = async () => {
-        if (!promptText.trim() || isGenerating) return;
-        const currentPrompt = promptText.trim();
-        setPromptText('');
-
-        setMessages(prev => [...prev, { id: String(Date.now()) + '-user', sender: 'user', text: currentPrompt }]);
-        setIsGenerating(true);
-
-        try {
-            if (refinementContext) {
-                const refined = await refineFieldContent(
-                    'contract',
-                    refinementContext.fieldLabel,
-                    refinementContext.currentValue,
-                    currentPrompt,
-                    'Premium'
-                );
-
-                const fieldKey = refinementContext.fieldKey;
-                if (fieldKey.startsWith('clauses[')) {
-                    const match = fieldKey.match(/clauses\[([^\]]+)\]/);
-                    if (match) {
-                        const clauseId = match[1];
-                        updateClause(clauseId, { content: refined });
-                    }
-                } else {
-                    updateField(fieldKey, refined);
-                }
-
-                setMessages(prev => [...prev, {
-                    id: String(Date.now()) + '-ai',
-                    sender: 'ai',
-                    text: `✓ Refinement applied to "${refinementContext.fieldLabel}"! Output updated in the preview.`
-                }]);
-                setRefinementContext(null);
-                addToast(`"${refinementContext.fieldLabel}" has been refined.`, 'success');
-            } else {
-                const isInitialGeneration = !formData.parties?.secondParty?.name || formData.parties.secondParty.name.trim() === '' || messages.length <= 1;
-                if (isInitialGeneration) {
-                    const data = await generateFullDocument('contract', currentPrompt, 'Premium', {});
-                    setFormData(prev => ({
-                        ...prev,
-                        parties: {
-                            firstParty: {
-                                ...prev.parties.firstParty,
-                                ...(data.parties?.firstParty || {}),
-                                name: data.parties?.firstParty?.name || prev.parties.firstParty.name || 'Newbi Entertainment',
-                                role: data.parties?.firstParty?.role || prev.parties.firstParty.role || 'Service Provider',
-                            },
-                            secondParty: {
-                                ...prev.parties.secondParty,
-                                ...(data.parties?.secondParty || {}),
-                            }
-                        },
-                        details: {
-                            ...prev.details,
-                            ...(data.details || {}),
-                        },
-                        commercials: {
-                            ...prev.commercials,
-                            ...(data.commercials || {}),
-                        },
-                        clauses: (data.clauses?.length > 0) 
-                            ? data.clauses.map((c, i) => ({
-                                id: c.id || `ai-clause-${Date.now()}-${i}`,
-                                title: c.title || `Clause ${i + 1}`,
-                                content: c.content || '',
-                                isActive: c.isActive !== false,
-                                isCustom: true,
-                                strictness: 'medium',
-                                category: 'custom'
-                            }))
-                            : prev.clauses,
-                        template: data.template || prev.template,
-                    }));
-
-                    setMessages(prev => [...prev, {
-                        id: String(Date.now()) + '-ai',
-                        sender: 'ai',
-                        text: `✓ Agreement for "${data.parties?.secondParty?.name || 'Client'}" drafted successfully with ${data.clauses?.length || 0} legal clauses!\n\nYou can switch to the document editor to customize every field, or continue chatting to refine.`
-                    }]);
-                    addToast('Agreement generated. Open the Document Editor to review every field.', 'success');
-                } else {
-                    const updatedDoc = await reviseDocument(formData, currentPrompt, 'Premium');
-                    setFormData(prev => ({
-                        ...prev,
-                        ...updatedDoc,
-                        parties: {
-                            firstParty: { ...prev.parties.firstParty, ...(updatedDoc.parties?.firstParty || {}) },
-                            secondParty: { ...prev.parties.secondParty, ...(updatedDoc.parties?.secondParty || {}) }
-                        },
-                        details: { ...prev.details, ...(updatedDoc.details || {}) },
-                        commercials: { ...prev.commercials, ...(updatedDoc.commercials || {}) },
-                        clauses: updatedDoc.clauses?.length > 0 
-                            ? updatedDoc.clauses.map((c, i) => ({
-                                id: c.id || `ai-clause-${Date.now()}-${i}`,
-                                title: c.title || `Clause ${i + 1}`,
-                                content: c.content || '',
-                                isActive: c.isActive !== false,
-                                isCustom: true,
-                                strictness: 'medium',
-                                category: 'custom'
-                            }))
-                            : prev.clauses
-                    }));
-
-                    setMessages(prev => [...prev, {
-                        id: String(Date.now()) + '-ai',
-                        sender: 'ai',
-                        text: `✓ Document refined according to request: "${currentPrompt}". Live preview updated.`
-                    }]);
-                    addToast('Document refined.', 'success');
-                }
-            }
+            await persist();
+            addToast('Contract saved.', 'success');
+            navigate('/admin/agreements');
         } catch (err) {
-            setMessages(prev => [...prev, {
-                id: String(Date.now()) + '-ai-err',
-                sender: 'ai',
-                text: `⚠ Failed to process request: ${err.message}`
-            }]);
-            addToast("Couldn't process your request. Please try again.", 'error');
-        } finally {
-            setIsGenerating(false);
-        }
+            saveError(err);
+        } finally { setBusy(''); }
     };
 
-    const generatePDF = async () => {
-        setIsSaving(true);
-        const originalScale = previewScale;
-        setPreviewScale(1);
-        await new Promise(r => setTimeout(r, 800));
-        try {
-            const [jsPDFModule, html2canvasModule] = await Promise.all([
-                import('jspdf'),
-                import('html2canvas')
-            ]);
-            const jsPDF = jsPDFModule.default;
-            const html2canvas = html2canvasModule.default;
+    // ── Derived ──
+    const issues = useMemo(() => contractIssues(formData, { agreements, id: idRef.current }), [formData, agreements, id]);
+    const blocking = issues.filter(i => i.blocking);
+    const issuesByStep = useMemo(() => issues.reduce((m, i) => { (m[i.step] = m[i.step] || []).push(i); return m; }, {}), [issues]);
+    const state = live ? contractState(live) : 'draft';
+    const stateCfg = CONTRACT_STATE_LABEL[state];
+    const isReady = live?.status === CONTRACT_STATUS.FINAL;
 
+    // Locked contracts show exactly what was signed, signatures included.
+    const previewData = useMemo(() => (locked && live ? normalizeContract(live) : formData), [locked, live, formData]);
+    const previewPages = useMemo(() => (locked && live ? paginateContract(previewData) : paginatedPages), [locked, live, previewData, paginatedPages]);
+
+    useEffect(() => {
+        if (previewPage >= previewPages.length) setPreviewPage(Math.max(0, previewPages.length - 1));
+    }, [previewPages.length, previewPage]);
+
+    const stepIndex = STEPS.findIndex(s => s.id === step);
+    const goStep = (sid) => {
+        setStep(sid);
+        if (sid === 'review') setShowIssues(true);
+        const target = STEPS.find(s => s.id === sid)?.page;
+        const idx = target ? previewPages.findIndex(p => p.type === target) : -1;
+        if (idx >= 0) setPreviewPage(idx);
+        editorScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const set = (path) => (e) => updateField(path, e && e.target ? e.target.value : e);
+    const isHidden = (f) => (formData.hiddenFields || []).includes(f);
+    const setShown = (f, shown) => setFormData(prev => {
+        const cur = prev.hiddenFields || [];
+        return { ...prev, hiddenFields: shown ? cur.filter(x => x !== f) : Array.from(new Set([...cur, f])) };
+    });
+
+    // ── Actions ──
+    const generatePDF = async () => {
+        setBusy('pdf');
+        try {
+            const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([import('jspdf'), import('html2canvas')]);
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const pages = document.querySelectorAll('.pdf-export-only .agreement-page-render');
+            const pages = pdfRef.current?.querySelectorAll('.agreement-page-render') || [];
             for (let i = 0; i < pages.length; i++) {
                 const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' });
                 if (i > 0) pdf.addPage();
                 pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297, '', 'FAST');
             }
-            pdf.save(`Newbi-Contract-${formData.parties?.secondParty?.name || 'Draft'}.pdf`);
-            addToast("Contract PDF exported.", "success");
+            const who = String(previewData.parties?.secondParty?.name || 'Draft').replace(/[^\w-]+/g, '-');
+            pdf.save(`Newbi-Contract-${previewData.agreementNumber || ''}-${who}.pdf`);
         } catch (error) {
             console.error(error);
-            addToast("Couldn't export the PDF. Please try again.", "error");
-        } finally {
-            setPreviewScale(originalScale);
-            setIsSaving(false);
+            addToast("Couldn't create the PDF. Please try again.", 'error');
+        } finally { setBusy(''); }
+    };
+
+    const markReady = async () => {
+        setShowIssues(true);
+        if (blocking.length) {
+            addToast('Fix the items marked in red first.', 'error');
+            return;
         }
+        setBusy('ready');
+        try {
+            await persist({ status: CONTRACT_STATUS.FINAL });
+            addToast('Ready to sign. Share the link from the contracts list or copy it here.', 'success');
+        } catch (err) { saveError(err); } finally { setBusy(''); }
     };
 
-    const copyAgreementNumber = () => {
-        if (formData.agreementNumber) {
-            navigator.clipboard.writeText(formData.agreementNumber);
-            setCopiedAgreementId(true);
-            setTimeout(() => setCopiedAgreementId(false), 2000);
-            addToast("Agreement ID copied.", "info");
-        }
+    const backToDraft = async () => {
+        setBusy('ready');
+        try {
+            await persist({ status: CONTRACT_STATUS.DRAFT });
+            addToast('Moved back to draft.', 'success');
+        } catch (err) { saveError(err); } finally { setBusy(''); }
     };
 
-    const tabs = [
-        { id: 'ai', label: 'AI Studio', icon: Sparkles, desc: 'AI Document Orchestrator' },
-        { id: '1', label: 'Parties & Branding', icon: Users, desc: 'Contracting Entities' },
-        { id: '2', label: 'Purpose & Scope', icon: Target, desc: 'Mission & Framework', visibilityKey: 'mission' },
-        { id: '3', label: 'Financial Terms', icon: CreditCard, desc: 'Commercial Agreements', visibilityKey: 'commercials' },
-        { id: '4', label: 'Legal Clauses', icon: Gavel, desc: 'Terms & Conditions', visibilityKey: 'clauses' },
-        { id: '7', label: 'Execution & Seal', icon: ShieldCheck, desc: 'Signatures & Verification' }
-    ];
-
-    const currentTab = tabs.find(t => t.id === activeTab);
-
-    const handleTabClick = (tabId) => {
-        setViewMode('tab');
-        setActiveTab(tabId);
-        
-        const mapping = { 
-            'ai': 'intro',
-            '1': 'intro', 
-            '2': 'mission', 
-            '3': 'commercials', 
-            '4': 'clauses', 
-            '7': 'execution'
-        };
-        const targetType = mapping[tabId];
-        const pageIndex = paginatedPages.findIndex(p => p.type === targetType);
-        if (pageIndex !== -1) setCurrentPage(pageIndex);
+    const signingLink = idRef.current ? `${window.location.origin}/agreement/${idRef.current}` : '';
+    const copyLink = async () => {
+        if (!signingLink) return;
+        const ok = await copyToClipboard(`${signingLink}?via=link`);
+        addToast(ok ? 'Signing link copied.' : "Couldn't copy the link.", ok ? 'success' : 'error');
+        if (ok && idRef.current) useStore.getState().markAgreementShared(idRef.current, 'link').catch(() => {});
     };
 
-    // Chatbot Component
-    const renderChatbot = (isFloating = false) => {
+    const makeCopy = async () => {
+        if (!id) return;
+        setBusy('copy');
+        try {
+            const newId = await useStore.getState().duplicateAgreement(id);
+            addToast('Copy created as a draft.', 'success');
+            navigate(`/admin/agreements/edit/${newId}`);
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't copy the contract. Please try again.", 'error');
+        } finally { setBusy(''); }
+    };
+
+    const onSignature = async (dataUrl) => {
+        updateField('providerSignature', dataUrl);
+        if (!dataUrl || !String(dataUrl).startsWith('data:')) return;
+        // Upload once now, so autosave doesn't upload the same image again and again.
+        setSigUploading(true);
+        try {
+            const file = await dataUrlToFile(dataUrl, 'newbi-signature.png');
+            const url = await useStore.getState().uploadToCloudinary(file);
+            if (url) setFormData(prev => (prev.providerSignature === dataUrl ? { ...prev, providerSignature: url } : prev));
+        } catch (err) {
+            console.warn('Signature upload deferred to save', err);
+        } finally { setSigUploading(false); }
+    };
+
+    // ── AI ──
+    const mapAiClauses = (list) => (list || []).map((c, i) => ({
+        id: c.id || `ai-clause-${Date.now()}-${i}`,
+        title: c.title || `Clause ${i + 1}`,
+        content: c.content || '',
+        isActive: c.isActive !== false,
+        isCustom: true,
+        strictness: 'medium',
+        category: 'custom',
+    }));
+
+    const runAiDraft = async (mode, prompt) => {
+        setAiBusy(true);
+        try {
+            if (mode === 'new') {
+                const data = await generateFullDocument('contract', prompt, 'Premium', { strict: true });
+                setFormData(prev => normalizeContract({
+                    ...prev,
+                    parties: {
+                        firstParty: { ...prev.parties.firstParty, ...(data.parties?.firstParty || {}), name: prev.parties.firstParty.name || data.parties?.firstParty?.name || 'Newbi Entertainment', address: prev.parties.firstParty.address || data.parties?.firstParty?.address || '' },
+                        secondParty: { ...prev.parties.secondParty, ...(data.parties?.secondParty || {}) },
+                    },
+                    details: { ...prev.details, ...(data.details || {}) },
+                    commercials: { ...prev.commercials, ...(data.commercials || {}) },
+                    clauses: data.clauses?.length ? mapAiClauses(data.clauses) : prev.clauses,
+                    template: data.template || prev.template,
+                }));
+                addToast('Draft ready. Check each step before sending.', 'success');
+            } else {
+                const updated = await reviseDocument(formData, prompt, 'Premium', { strict: true });
+                setFormData(prev => normalizeContract({
+                    ...prev,
+                    ...updated,
+                    // Identity, status and signatures never come from AI.
+                    id: prev.id, status: prev.status, agreementNumber: prev.agreementNumber,
+                    providerSignature: prev.providerSignature, clientSignature: prev.clientSignature, approvalMetadata: prev.approvalMetadata,
+                    parties: {
+                        firstParty: { ...prev.parties.firstParty, ...(updated.parties?.firstParty || {}) },
+                        secondParty: { ...prev.parties.secondParty, ...(updated.parties?.secondParty || {}) },
+                    },
+                    details: { ...prev.details, ...(updated.details || {}) },
+                    commercials: { ...prev.commercials, ...(updated.commercials || {}) },
+                    clauses: updated.clauses?.length ? mapAiClauses(updated.clauses) : prev.clauses,
+                }));
+                addToast('Changes applied. Check the preview.', 'success');
+            }
+            setAiOpen(false);
+            return true;
+        } catch (err) {
+            console.error(err);
+            addToast("AI couldn't draft that. Please try again or rephrase.", 'error');
+            return false;
+        } finally { setAiBusy(false); }
+    };
+
+    const openRefine = (key, label, value) => setRefineTarget({ key, label, value: value || '' });
+    const runRefine = async (instruction) => {
+        if (!refineTarget || !instruction) return;
+        setRefineBusy(true);
+        try {
+            const refined = await refineFieldContent('contract', refineTarget.label, refineTarget.value, instruction, 'Premium');
+            const m = refineTarget.key.match(/^clauses\[(.+)\]$/);
+            if (m) updateClause(m[1], { content: refined });
+            else updateField(refineTarget.key, refined);
+            addToast(`${refineTarget.label} rewritten.`, 'success');
+            setRefineTarget(null);
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't rewrite that. Please try again.", 'error');
+        } finally { setRefineBusy(false); }
+    };
+
+    // ── Commercials helpers ──
+    const currency = formData.commercials?.currency || 'INR';
+    const total = contractTotal(formData);
+    const gst = gstSummary(formData);
+    const mCheck = milestoneCheck(formData);
+    const milestones = formData.commercials?.milestones || [];
+    const setMilestones = (next) => updateField('commercials.milestones', next);
+    const updateMilestone = (idx, patch) => setMilestones(milestones.map((m, i) => (i === idx ? { ...m, ...patch } : m)));
+    const presetMilestones = (rows) => setMilestones(rows.map((r, i) => ({ id: `ms-${Date.now()}-${i}`, label: r[0], percent: r[1], amount: '', due: r[2] })));
+
+    const deliverables = formData.details?.deliverables || [];
+    const setDeliverables = (next) => updateField('details.deliverables', next);
+
+    const fp = formData.parties?.firstParty || {};
+    const sp = formData.parties?.secondParty || {};
+
+    // ── Pieces ──
+    const aiButton = (path, label, value) => (
+        <button type="button" onClick={() => openRefine(path, label, value)} className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-[12px] font-semibold text-violet-600 hover:bg-violet-500/10 dark:text-violet-300">
+            <Sparkles size={13} /> Improve with AI
+        </button>
+    );
+
+    const showInContract = (field) => (
+        <Toggle label="Show this section in the contract" checked={!isHidden(field)} onChange={v => setShown(field, v)} />
+    );
+
+    const stepIssues = (sid) => {
+        if (!showIssues || !issuesByStep[sid]?.length) return null;
         return (
-            <div className={cn(
-                "flex flex-col relative w-full",
-                isFloating ? "flex-grow flex-1 min-h-0 h-full overflow-hidden" : "h-auto"
-            )}>
-                {/* Orbital Glow in Background */}
-                <div className={cn("absolute top-0 left-1/2 -translate-x-1/2 bg-[#A855F7]/10 rounded-full blur-3xl pointer-events-none", isFloating ? "w-48 h-48" : "w-80 h-80")} />
-
-                {/* Neural Header Card */}
-                <div className={cn(
-                    "bg-white/80 dark:bg-zinc-900/60 border border-black/10 dark:border-white/10 backdrop-blur-2xl rounded-3xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0 relative z-10 shadow-lg",
-                    isFloating ? "p-3 mb-2" : "p-5 mb-6"
-                )}>
-                    <div className="flex items-center gap-3.5">
-                        <div className={cn(
-                            "rounded-2xl flex items-center justify-center border relative shadow-sm shrink-0",
-                            isFloating ? "w-9 h-9 bg-[#A855F7]/10 border-[#A855F7]/20 text-[#A855F7]" : "w-12 h-12 bg-[#A855F7]/10 border-[#A855F7]/20 text-[#A855F7] shadow-[0_0_20px_rgba(168,85,247,0.15)]"
-                        )}>
-                            <Cpu size={isFloating ? 16 : 20} className="text-[#A855F7] animate-pulse" />
-                        </div>
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.25em] block leading-none">Primary Neural Model</span>
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A855F7] opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#A855F7]"></span>
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-sm font-bold text-gray-900 dark:text-zinc-100 tracking-wide leading-none">
-                                    {activeModel || 'Gemini 3.5 Flash'}
-                                </h3>
-                                <span className="h-3 w-px bg-black/10 dark:bg-white/10" />
-                                <span className="text-[9px] text-[#A855F7] font-mono font-bold tracking-wide">live pulse</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Mode Status Pill & Switcher */}
-                    <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-black/10 dark:border-white/5 pt-2 sm:pt-0">
-                        {/* Mode Switcher */}
-                        <div className="flex items-center p-1 bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-2xl shadow-inner">
-                            <button
-                                type="button"
-                                onClick={() => setIsBulkMode(false)}
-                                className={cn(
-                                    "px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5",
-                                    !isBulkMode 
-                                        ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm border border-black/5 dark:border-white/10" 
-                                        : "text-zinc-500 hover:text-gray-900 dark:hover:text-white"
-                                )}
-                            >
-                                <Sparkles size={11} className={!isBulkMode ? "text-[#A855F7]" : "text-zinc-500"} />
-                                <span>Prompt</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setIsBulkMode(true)}
-                                className={cn(
-                                    "px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5",
-                                    isBulkMode 
-                                        ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm border border-black/5 dark:border-white/10" 
-                                        : "text-zinc-500 hover:text-gray-900 dark:hover:text-white"
-                                )}
-                            >
-                                <Zap size={11} className={isBulkMode ? "text-amber-400" : "text-zinc-500"} />
-                                <span>Bulk Text</span>
-                            </button>
-                        </div>
-
-                        {messages.length > 1 && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setMessages([
-                                        {
-                                            id: 'init-msg',
-                                            sender: 'ai',
-                                            text: "Welcome to Newbi Contract Vault Studio. Describe your engagement terms or legal clauses in the prompt console below, or paste complete draft text in Bulk Mode to auto-populate all sections."
-                                        }
-                                    ]);
-                                    setPromptText('');
-                                    setRefinementContext(null);
-                                    addToast('Chat reset to the original draft.', 'info');
-                                }}
-                                className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
-                                title="Reset conversation"
-                            >
-                                <RotateCcw size={14} />
-                            </button>
-                        )}
-                        {isFloating && (
-                            <button
-                                type="button"
-                                onClick={() => setIsFloatingChatOpen(false)}
-                                className="p-2 text-zinc-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 rounded-xl transition-all"
-                                title="Close chat"
-                            >
-                                <X size={16} />
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {/* Message Stream or Welcome Blueprint Cards */}
-                <div 
-                    ref={isFloating ? floatingChatContainerRef : chatContainerRef} 
-                    className={cn(
-                        "space-y-4 mb-4 relative z-10 flex flex-col w-full",
-                        isFloating ? "flex-grow overflow-y-auto min-h-0 pr-2 scrollbar-hide" : "h-auto"
-                    )}
-                >
-                    {/* Welcome Screen & Blueprint Presets */}
-                    {messages.length === 1 && (
-                        <div className={cn(
-                            "py-4 flex flex-col items-center justify-center text-center mx-auto animate-fade-in w-full",
-                            isFloating ? "space-y-4 px-2" : "max-w-4xl space-y-6"
-                        )}>
-                            <div className="relative">
-                                <div className="absolute -inset-4 bg-gradient-to-r from-[#A855F7] via-purple-500 to-indigo-500 rounded-full blur-xl opacity-20 animate-pulse" />
-                                <div className="relative w-14 h-14 rounded-2xl bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 flex items-center justify-center shadow-[0_0_30px_rgba(168,85,247,0.15)]">
-                                    <Sparkles size={24} className="text-[#A855F7] animate-pulse" />
-                                </div>
-                            </div>
-                            <div className="space-y-2 max-w-lg">
-                                <h2 className="text-xl md:text-2xl font-black uppercase tracking-tight text-gray-900 dark:text-white leading-none">
-                                    AI Agreement <span className="bg-gradient-to-r from-[#A855F7] to-purple-400 bg-clip-text text-transparent">Orchestrator</span>
-                                </h2>
-                                <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium">
-                                    {isBulkMode 
-                                        ? "Paste complete pre-generated contract text, raw drafts, meeting briefs, or unformatted legal terms. AI will automatically extract and map all sections." 
-                                        : "Select a suggested blueprint or describe the required commercial parameters. AI will draft a complete legal agreement in seconds."}
-                                </p>
-                            </div>
-
-                            {/* Suggested Blueprints Grid */}
-                            {!isFloating && !isBulkMode && (
-                                <div className="w-full space-y-3 pt-2">
-                                    <div className="flex items-center justify-between px-2">
-                                        <span className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.2em] flex items-center gap-2">
-                                            <Sparkles size={12} className="text-[#A855F7]" /> Suggested Blueprints
-                                        </span>
-                                        <button 
-                                            type="button"
-                                            onClick={() => setSuggestionCategory(c => (c + 1) % 2)}
-                                            className="flex items-center gap-1.5 px-3 py-1 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-all active:scale-95"
-                                        >
-                                            <RefreshCw size={10} /> Next Presets
-                                        </button>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                                        {suggestions.map((item, idx) => (
-                                            <button
-                                                type="button"
-                                                key={idx}
-                                                onClick={() => setPromptText(item.text)}
-                                                className="text-left p-4 bg-white/60 dark:bg-zinc-900/40 hover:bg-white dark:hover:bg-zinc-900/80 border border-black/10 dark:border-white/5 hover:border-[#A855F7]/40 rounded-2xl transition-all duration-300 flex flex-col justify-between gap-3 min-h-[140px] group shadow-sm relative overflow-hidden"
-                                            >
-                                                <div className="flex items-center justify-between w-full">
-                                                    <span className="px-2 py-0.5 rounded-md bg-[#A855F7]/10 text-[#A855F7] border border-[#A855F7]/20 text-[8px] font-black uppercase tracking-widest">
-                                                        {item.category}
-                                                    </span>
-                                                    <span className="text-xs text-[#A855F7] opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all font-black">
-                                                        →
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight mb-1 group-hover:text-[#A855F7] transition-colors">
-                                                        {item.label}
-                                                    </h4>
-                                                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 line-clamp-3 leading-relaxed">
-                                                        {item.text}
-                                                    </p>
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Direct Jump CTA if agreement already has content */}
-                            {formData.parties?.secondParty?.name && (
-                                <div className="w-full p-4 rounded-2xl bg-[#A855F7]/10 border border-[#A855F7]/20 flex items-center justify-between gap-4 mt-2">
-                                    <div className="text-left">
-                                        <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider">
-                                            Contract Active for: <span className="text-[#A855F7]">{formData.parties.secondParty.name}</span>
-                                        </p>
-                                        <p className="text-[10px] text-zinc-400">
-                                            {formData.clauses?.length || 0} active legal clauses · Value: {formData.commercials?.currency} {formData.commercials?.totalValue || '0.00'}
-                                        </p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setViewMode('all')}
-                                        className="px-4 py-2 bg-[#A855F7] text-black font-black uppercase tracking-widest text-[9px] rounded-xl hover:scale-105 active:scale-95 transition-all shadow-md shrink-0 flex items-center gap-1.5"
-                                    >
-                                        <LayoutGrid size={12} />
-                                        <span>Open Full Document Editor →</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Chat Messages */}
-                    {messages.length > 1 && messages.map(m => (
-                        <div
-                            key={m.id}
-                            className={cn(
-                                "max-w-[85%] rounded-3xl p-4 text-xs leading-relaxed transition-all shadow-md relative overflow-hidden group",
-                                m.sender === 'user'
-                                    ? "bg-zinc-800 text-zinc-100 self-end rounded-tr-sm border border-black/10 dark:border-white/10 ml-auto"
-                                    : "bg-white/80 dark:bg-zinc-900/60 border border-black/10 dark:border-white/5 text-gray-900 dark:text-zinc-200 self-start rounded-tl-sm mr-auto"
-                            )}
-                        >
-                            <div className="flex items-center gap-2 mb-1.5">
-                                <span className={cn(
-                                    "text-[8px] font-black uppercase tracking-wider",
-                                    m.sender === 'user' ? "text-zinc-400" : "text-[#A855F7]"
-                                )}>
-                                    {m.sender === 'user' ? 'You' : (activeModel || 'Gemini 3.5 Flash')}
-                                </span>
-                            </div>
-                            <div className="font-medium leading-relaxed">{renderChatMessage(m.text)}</div>
-                        </div>
-                    ))}
-
-                    {/* Generating Bubble */}
-                    {isGenerating && (
-                        <div className="bg-white/80 dark:bg-zinc-900/80 border border-[#A855F7]/30 text-zinc-300 self-start rounded-3xl rounded-tl-sm p-4 text-xs w-[280px] sm:w-[320px] flex flex-col gap-2.5 shadow-xl mr-auto">
-                            <div className="flex items-center gap-2">
-                                <Sparkles size={14} className="text-[#A855F7] animate-spin shrink-0" />
-                                <span className="font-bold uppercase tracking-wider text-[9px] text-[#A855F7] flex-1 truncate">
-                                    {STAGE_MESSAGES[generationStage]?.text || "Synthesizing document..."}
-                                </span>
-                                <span className="text-[8px] font-mono text-zinc-500 font-bold shrink-0">
-                                    {generationTime}s
-                                </span>
-                            </div>
-                            <div className="w-full h-1.5 bg-black/10 dark:bg-black/50 rounded-full overflow-hidden">
-                                <div 
-                                    className="h-full bg-gradient-to-r from-[#A855F7] to-purple-400 transition-all duration-500" 
-                                    style={{ width: `${generationProgress}%` }}
-                                />
-                            </div>
-                        </div>
-                    )}
-                    <div ref={chatEndRef} />
-                </div>
-
-                {/* Prompt Console Redesign */}
-                <div className={cn("pt-2 bg-transparent", isFloating ? "mt-auto shrink-0" : "mt-2")}>
-                    <div className="bg-white dark:bg-zinc-900/90 border border-black/10 dark:border-white/10 rounded-3xl p-4 flex flex-col gap-3 relative shadow-2xl focus-within:border-[#A855F7]/50 focus-within:ring-1 focus-within:ring-[#A855F7]/30 transition-all">
-                        {/* Quoted Refinement Context */}
-                        {refinementContext && (
-                            <div className="px-3 py-2 bg-[#A855F7]/10 border border-[#A855F7]/30 rounded-2xl flex items-center justify-between gap-3 border-l-4 border-l-[#A855F7] shadow-inner animate-fade-in">
-                                <div className="min-w-0">
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-[#A855F7] block mb-0.5">Refining: {refinementContext.fieldLabel}</span>
-                                    <p className="text-[10px] text-zinc-400 line-clamp-1 italic">
-                                        "{refinementContext.currentValue || 'Empty...'}"
-                                    </p>
-                                </div>
-                                <button 
-                                    type="button" 
-                                    onClick={() => setRefinementContext(null)}
-                                    className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg text-zinc-500 hover:text-white transition-all shrink-0"
-                                >
-                                    <X size={12} />
-                                </button>
-                            </div>
-                        )}
-
-                        <div className="flex items-start gap-3">
-                            <textarea
-                                value={promptText}
-                                onChange={e => setPromptText(e.target.value)}
-                                placeholder={
-                                    refinementContext 
-                                        ? `Instruct AI to refine "${refinementContext.fieldLabel}"...` 
-                                        : isBulkMode 
-                                            ? "Paste full contract text, raw brief, scope document, or MoU clauses here to automatically extract and populate all sections..." 
-                                            : "Describe the agreement you want to generate or modify (e.g., 'Draft a 6-month marketing retainer agreement for Brand XYZ with INR 5,00,000 fee and strict IP terms')..."
-                                }
-                                className="flex-grow bg-transparent border-none text-xs md:text-sm font-medium text-gray-900 dark:text-white placeholder:text-zinc-500 outline-none min-h-[70px] max-h-[160px] py-1 px-1 resize-none leading-relaxed"
-                                rows={isBulkMode ? 4 : 2}
-                                disabled={isGenerating}
-                                onKeyDown={e => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        handleStudioSubmit();
-                                    }
-                                }}
-                            />
-                            <button
-                                type="button"
-                                onClick={handleStudioSubmit}
-                                disabled={!promptText.trim() || isGenerating}
-                                className="h-11 px-5 bg-[#A855F7] hover:bg-[#9333EA] text-black font-black uppercase tracking-widest text-[10px] rounded-2xl hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-25 disabled:scale-100 flex items-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.3)]"
-                            >
-                                {isGenerating ? <RefreshCw className="animate-spin" size={14} /> : (isBulkMode ? <Zap size={14} /> : <Send size={14} />)}
-                                <span className="hidden sm:inline">{isGenerating ? 'Processing...' : (isBulkMode ? 'Ingest' : 'Generate')}</span>
-                            </button>
-                        </div>
-
-                        {/* Control Bar inside Prompt Console */}
-                        <div className="flex items-center justify-between border-t border-black/10 dark:border-white/5 pt-2.5 px-1 text-[9px] text-zinc-500 font-bold">
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                                <div className="flex items-center gap-1.5">
-                                    <span>Tone:</span>
-                                    <div className="flex bg-black/5 dark:bg-black/40 rounded-xl p-0.5 border border-black/10 dark:border-white/10">
-                                        {['formal', 'balanced', 'creative'].map(t => (
-                                            <button
-                                                type="button"
-                                                key={t}
-                                                onClick={() => setAiTone(t)}
-                                                className={cn(
-                                                    "px-2 py-0.5 rounded-lg text-[8px] uppercase tracking-wider transition-all font-bold",
-                                                    aiTone === t ? "bg-[#A855F7] text-black shadow-sm" : "text-zinc-400 hover:text-white"
-                                                )}
-                                            >
-                                                {t}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-1.5">
-                                    <span>Length:</span>
-                                    <div className="flex bg-black/5 dark:bg-black/40 rounded-xl p-0.5 border border-black/10 dark:border-white/10">
-                                        {['concise', 'balanced', 'detailed'].map(l => (
-                                            <button
-                                                type="button"
-                                                key={l}
-                                                onClick={() => setAiLength(l)}
-                                                className={cn(
-                                                    "px-2 py-0.5 rounded-lg text-[8px] uppercase tracking-wider transition-all font-bold",
-                                                    aiLength === l ? "bg-[#A855F7] text-black shadow-sm" : "text-zinc-400 hover:text-white"
-                                                )}
-                                            >
-                                                {l}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="hidden sm:flex items-center gap-2 text-[8px] text-zinc-500 font-mono">
-                                <span>~{promptText.length ? Math.round(promptText.length / 4) : 0} tokens</span>
-                                <span>·</span>
-                                <span>Enter to submit</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <ul className="space-y-1.5 rounded-2xl border border-amber-500/30 bg-amber-500/[0.06] p-3">
+                {issuesByStep[sid].map((i, n) => (
+                    <li key={n} className={cn('flex items-start gap-2 text-[13px] font-semibold', i.blocking ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-300')}>
+                        <AlertTriangle size={14} className="mt-0.5 shrink-0" /> {i.message}
+                    </li>
+                ))}
+            </ul>
         );
     };
 
+    const saveLabel = {
+        saving: 'Saving…',
+        saved: `Saved ${lastSaved}`,
+        error: "Couldn't autosave. Check your connection.",
+        locked: 'Signed. Edits are locked.',
+        idle: id ? 'Changes save automatically' : 'Saves automatically once you add the other party',
+    }[autosaveStatus];
+
+    if (notFound) {
+        return (
+            <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[#f6f7f9] px-6 text-center font-heading dark:bg-[#07080b] dark:text-white">
+                <h1 className="text-xl font-extrabold">Contract not found</h1>
+                <p className="max-w-sm text-[14px] text-gray-500">It may have been deleted. Go back to the list to pick another one.</p>
+                <Button variant="accent" onClick={() => navigate('/admin/agreements')}>Back to contracts</Button>
+            </div>
+        );
+    }
+
+    const approval = live?.approvalMetadata;
+
     return (
-        <div className="h-full w-full bg-gray-50 dark:bg-[#070A10] text-gray-900 dark:text-white flex flex-col font-['Outfit'] overflow-hidden admin-hub-content-container">
+        <div className="flex h-dvh flex-col overflow-hidden bg-[#f6f7f9] font-heading text-gray-900 dark:bg-[#07080b] dark:text-white admin-hub-content-container">
             <style dangerouslySetInnerHTML={{ __html: `
-                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,200..900;1,200..900&display=swap');
                 .font-signature { font-family: 'Caveat', cursive; }
                 .font-formal { font-family: 'Crimson Pro', serif; }
-                .scrollbar-hide::-webkit-scrollbar { display: none; }
-                .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
             `}} />
 
-            {/* Top Navigation Bar - Clean Dark Glassmorphism */}
-            <nav className="h-16 md:h-20 border-b border-black/10 dark:border-white/10 flex items-center justify-between px-4 md:px-8 bg-white/80 dark:bg-[#0B0F17]/90 backdrop-blur-2xl sticky top-0 z-[60] shrink-0">
-                <div className="flex items-center gap-3 md:gap-6 min-w-0">
-                    <Link to="/admin/agreements" className="p-2.5 md:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 transition-all border border-black/10 dark:border-white/10 shrink-0">
-                        <ArrowLeft size={16} />
-                    </Link>
-                    <div className="min-w-0 flex flex-col justify-center">
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-base md:text-xl font-black tracking-tight text-gray-900 dark:text-white truncate">
-                                Vault<span className="text-[#A855F7]">.</span>
-                            </h1>
-                            <span className="px-2 py-0.5 rounded-full bg-[#A855F7]/10 text-[#A855F7] border border-[#A855F7]/20 text-[8px] font-black uppercase tracking-widest hidden sm:inline">
-                                Agreement Studio
-                            </span>
-                        </div>
-                        <p className="text-[8px] md:text-[10px] font-bold text-gray-500 uppercase tracking-[0.25em] leading-none truncate mt-0.5">
-                            Contract Operating System
+            {/* Header */}
+            <header className="relative z-30 shrink-0 border-b border-black/[0.06] bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#07080b]/90">
+                <div className="flex h-14 items-center gap-2 px-2 sm:px-4">
+                    <button type="button" onClick={leave} disabled={busy === 'leave'} aria-label="Back to contracts" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-600 hover:bg-black/5 dark:text-zinc-300 dark:hover:bg-white/10">
+                        {busy === 'leave' ? <RefreshCw size={16} className="animate-spin" /> : <ArrowLeft size={18} />}
+                    </button>
+                    <div className="min-w-0 flex-1">
+                        <p className="flex items-center gap-2 truncate text-[15px] font-bold leading-tight">
+                            <span className="truncate">{id ? (sp.name || 'Edit contract') : 'New contract'}</span>
+                            <Badge tone={stateCfg.tone} className="hidden sm:inline-flex">{stateCfg.label}</Badge>
+                        </p>
+                        <p className={cn('truncate text-[11px] font-medium', autosaveStatus === 'error' ? 'text-red-500' : 'text-gray-500')}>
+                            {formData.agreementNumber ? `${formData.agreementNumber} · ` : ''}{locked ? 'Signed. Edits are locked.' : saveLabel}
                         </p>
                     </div>
-
-                    {/* Agreement ID Pill */}
-                    {formData.agreementNumber && (
-                        <button
-                            type="button"
-                            onClick={copyAgreementNumber}
-                            className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-mono font-bold text-zinc-400 hover:text-white transition-all group"
-                            title="Click to copy Agreement ID"
-                        >
-                            <span>{formData.agreementNumber}</span>
-                            {copiedAgreementId ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} className="opacity-40 group-hover:opacity-100" />}
-                        </button>
+                    {!locked && (
+                        <Button variant="ghost" onClick={() => setAiOpen(true)} className="hidden sm:inline-flex" aria-label="Draft with AI">
+                            <Sparkles size={15} className="text-violet-500" /> AI draft
+                        </Button>
+                    )}
+                    <Button variant="secondary" onClick={() => setPreviewOpen(true)} className="lg:hidden" aria-label="Preview contract">
+                        <Eye size={15} /> <span className="hidden sm:inline">Preview</span>
+                    </Button>
+                    <Button variant="secondary" onClick={generatePDF} disabled={busy === 'pdf'} className="hidden sm:inline-flex">
+                        {busy === 'pdf' ? <RefreshCw size={15} className="animate-spin" /> : <Download size={15} />} PDF
+                    </Button>
+                    {!locked && (
+                        <Button variant="accent" onClick={handleSave} disabled={Boolean(busy)} className="hidden md:inline-flex">
+                            <Save size={15} /> Save & close
+                        </Button>
                     )}
                 </div>
-
-                {/* Center / View Mode Switcher */}
-                <div className="hidden md:flex items-center p-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl">
-                    <button
-                        type="button"
-                        onClick={() => setViewMode('all')}
-                        className={cn(
-                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
-                            viewMode === 'all'
-                                ? "bg-[#A855F7] text-black shadow-[0_0_15px_rgba(168,85,247,0.3)]"
-                                : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                        )}
-                    >
-                        <LayoutGrid size={13} />
-                        <span>All Sections</span>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => { setViewMode('tab'); if (activeTab === 'ai') setActiveTab('1'); }}
-                        className={cn(
-                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
-                            viewMode === 'tab' && activeTab !== 'ai'
-                                ? "bg-[#A855F7] text-black shadow-[0_0_15px_rgba(168,85,247,0.3)]"
-                                : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                        )}
-                    >
-                        <SlidersHorizontal size={13} />
-                        <span>Section Tabs</span>
-                    </button>
-                </div>
-
-                {/* Right Actions */}
-                <div className="flex items-center gap-2 md:gap-4 shrink-0">
-                    <button 
-                        onClick={() => setShowPreviewMobile(!showPreviewMobile)} 
-                        className="lg:hidden h-10 px-3 bg-[#A855F7]/10 rounded-xl border border-[#A855F7]/20 text-[#A855F7] flex items-center gap-1.5 active:scale-95 transition-all"
-                    >
-                        <Eye size={14} />
-                        <span className="text-[9px] font-black uppercase tracking-widest">Preview</span>
-                    </button>
-
-                    {autosaveStatus !== 'idle' && (
-                        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 select-none">
-                            <span className={cn(
-                                "w-1.5 h-1.5 rounded-full shrink-0",
-                                autosaveStatus === 'saving' && "bg-amber-400 animate-pulse",
-                                autosaveStatus === 'saved' && "bg-emerald-400",
-                                autosaveStatus === 'error' && "bg-red-500"
-                            )} />
-                            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-400">
-                                {autosaveStatus === 'saving' && "Saving..."}
-                                {autosaveStatus === 'saved' && `Autosaved ${lastSaved}`}
-                                {autosaveStatus === 'error' && "Autosave error"}
-                            </span>
-                        </div>
-                    )}
-
-                    <button 
-                        onClick={handleSave} 
-                        disabled={isSaving} 
-                        className="h-10 md:h-11 px-4 md:px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl border border-black/10 dark:border-white/10 transition-all flex items-center gap-2"
-                    >
-                        {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />} 
-                        <span className="hidden sm:inline">Save Draft</span>
-                    </button>
-
-                    <button 
-                        onClick={generatePDF} 
-                        className="h-10 md:h-11 px-4 md:px-7 bg-[#A855F7] text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl shadow-[0_10px_25px_rgba(168,85,247,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
-                    >
-                        {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Download size={14} />} 
-                        <span>Export Contract</span>
-                    </button>
-                </div>
-            </nav>
-
-            <div className="flex-1 flex overflow-hidden min-h-0">
-                {/* Left Navigation Sidebar */}
-                <aside className={cn(
-                    "hidden lg:flex w-64 shrink-0 border-r border-black/10 dark:border-white/5 bg-white dark:bg-[#080C14] flex-col p-5 gap-6 overflow-y-auto scrollbar-hide",
-                    isExpandedPreview && "lg:hidden"
-                )}>
-                    {/* Primary Switcher */}
-                    <div className="space-y-1.5">
-                        <p className="text-[9px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest px-3 mb-2">Editor View</p>
-                        
-                        {/* All Sections Mode Button */}
-                        <button
-                            onClick={() => { setViewMode('all'); }}
-                            className={cn(
-                                "w-full p-3.5 rounded-2xl flex items-center gap-3.5 transition-all text-left group border",
-                                viewMode === 'all'
-                                    ? "bg-[#A855F7]/15 border-[#A855F7]/30 text-white shadow-[0_0_20px_rgba(168,85,247,0.15)]"
-                                    : "border-transparent hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                            )}
-                        >
-                            <div className={cn(
-                                "p-2 rounded-xl transition-all",
-                                viewMode === 'all' ? "bg-[#A855F7] text-black shadow-sm" : "bg-black/5 dark:bg-white/5 group-hover:bg-[#A855F7]/20 group-hover:text-[#A855F7]"
-                            )}>
-                                <LayoutGrid size={16} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">All Sections</p>
-                                <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-tight">Full Document Canvas</p>
-                            </div>
-                        </button>
-                    </div>
-
-                    {/* Section Tabs */}
-                    <div className="space-y-1.5">
-                        <p className="text-[9px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest px-3 mb-2">Sections</p>
-                        {tabs.map((tab, idx) => {
-                            const isTabActive = viewMode === 'tab' && activeTab === tab.id;
+                {!locked && (
+                    <nav aria-label="Contract sections" className="flex gap-1 overflow-x-auto px-2 pb-2 [scrollbar-width:none] sm:px-4 [&::-webkit-scrollbar]:hidden">
+                        {STEPS.map((s, i) => {
+                            const active = step === s.id;
+                            const stepBlocking = showIssues && (issuesByStep[s.id] || []).some(x => x.blocking);
                             return (
-                                <button 
-                                    key={tab.id} 
-                                    onClick={() => handleTabClick(tab.id)} 
-                                    className={cn(
-                                        "w-full p-3 rounded-2xl flex items-center gap-3 transition-all text-left group border",
-                                        isTabActive 
-                                            ? "bg-[#A855F7]/15 border-[#A855F7]/30 text-white shadow-[0_0_20px_rgba(168,85,247,0.15)]" 
-                                            : "border-transparent hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                    )}
-                                >
-                                    <div className={cn(
-                                        "p-2 rounded-xl transition-all shrink-0",
-                                        isTabActive ? "bg-[#A855F7] text-black shadow-sm" : "bg-black/5 dark:bg-white/5 group-hover:bg-[#A855F7]/20 group-hover:text-[#A855F7]"
-                                    )}>
-                                        <tab.icon size={15} />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-0.5 truncate">{tab.label}</p>
-                                        <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-tight truncate">{tab.desc}</p>
-                                    </div>
+                                <button key={s.id} type="button" onClick={() => goStep(s.id)} aria-current={active ? 'step' : undefined}
+                                    className={cn('flex h-10 shrink-0 items-center gap-2 rounded-full px-3.5 text-[13px] font-semibold transition-colors',
+                                        active ? a.solid : 'text-gray-500 hover:bg-black/5 hover:text-gray-900 dark:hover:bg-white/5 dark:hover:text-white')}>
+                                    <span className={cn('flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold', active ? 'bg-white/25 dark:bg-black/15' : 'bg-black/5 dark:bg-white/10')}>{i + 1}</span>
+                                    {s.label}
+                                    {stepBlocking && <span className="h-2 w-2 rounded-full bg-red-500" aria-label="Needs attention" />}
                                 </button>
                             );
                         })}
-                    </div>
+                    </nav>
+                )}
+            </header>
 
-                    {/* Quick Document Stats in Sidebar */}
-                    <div className="mt-auto p-4 rounded-2xl bg-black/5 dark:bg-white/[0.03] border border-black/10 dark:border-white/5 space-y-2">
-                        <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Document Architecture</p>
-                        <div className="grid grid-cols-2 gap-2 text-center">
-                            <div className="p-2 rounded-xl bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/5">
-                                <span className="text-[8px] text-zinc-500 block">Pages</span>
-                                <span className="text-xs font-black text-[#A855F7]">{paginatedPages.length}</span>
-                            </div>
-                            <div className="p-2 rounded-xl bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/5">
-                                <span className="text-[8px] text-zinc-500 block">Clauses</span>
-                                <span className="text-xs font-black text-emerald-400">{formData.clauses?.length || 0}</span>
-                            </div>
-                        </div>
-                    </div>
-                </aside>
-
-                {/* Mobile Bottom Navigation */}
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/90 dark:bg-black/90 backdrop-blur-3xl border-t border-black/10 dark:border-white/10 z-[100] px-2 flex items-center justify-around overflow-x-auto no-scrollbar">
-                    <button 
-                        onClick={() => setViewMode('all')} 
-                        className={cn("flex flex-col items-center justify-center min-w-[55px] h-full transition-all gap-1", viewMode === 'all' ? "text-[#A855F7]" : "text-gray-500")}
-                    >
-                        <LayoutGrid size={16} />
-                        <span className="text-[7px] font-black uppercase tracking-widest">All</span>
-                    </button>
-                    {tabs.map(tab => (
-                        <button 
-                            key={tab.id} 
-                            onClick={() => handleTabClick(tab.id)} 
-                            className={cn("flex flex-col items-center justify-center min-w-[55px] h-full transition-all gap-1", (viewMode === 'tab' && activeTab === tab.id) ? "text-[#A855F7]" : "text-gray-500")}
-                        >
-                            <tab.icon size={16} />
-                            <span className="text-[7px] font-black uppercase tracking-widest">{tab.label.split(' ')[0]}</span>
-                            {viewMode === 'tab' && activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-[#A855F7] shadow-[0_0_8px_#A855F7]" />}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Main Workspace Editor Canvas */}
-                <main className={cn(
-                    "flex-grow scrollbar-hide bg-gray-50 dark:bg-[#070A10] px-4 md:px-10 py-6 md:py-8 overflow-y-auto pb-32",
-                    isExpandedPreview && "hidden"
-                )}>
-                    <div className="max-w-[1400px] mx-auto w-full space-y-8">
-                        
-                        {/* Tab Mode Header (if in tab mode and not AI) */}
-                        {viewMode === 'tab' && activeTab !== 'ai' && (
-                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between pb-6 border-b border-black/10 dark:border-white/10 gap-4">
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-6 h-[2px] bg-[#A855F7]" />
-                                        <p className="text-[9px] font-black text-[#A855F7] uppercase tracking-[0.3em]">
-                                            Section {tabs.findIndex(t => t.id === activeTab)} of {tabs.length - 1}
-                                        </p>
+            <main className="flex min-h-0 flex-1 overflow-hidden">
+                {/* Editor column */}
+                <section className="flex min-w-0 flex-1 flex-col">
+                    <div ref={editorScrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                        <div className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6">
+                            {locked ? (
+                                <div className="space-y-5">
+                                    <div className={cn('rounded-2xl border p-4 sm:p-5', 'border-emerald-500/30 bg-emerald-500/[0.06]')}>
+                                        <div className="flex items-start gap-3">
+                                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-neon-green"><Lock size={18} /></span>
+                                            <div className="min-w-0">
+                                                <h2 className="text-[16px] font-bold">Signed and locked</h2>
+                                                <p className="mt-0.5 text-[13px] text-gray-600 dark:text-zinc-300">
+                                                    {approval?.signedBy ? `${approval.signedBy} signed` : 'The other party signed'}{approval?.signedAt ? ` on ${formatContractDate(approval.signedAt)}` : ''}. A signed contract can't be changed. Make a copy to change the terms; the copy starts as a new draft.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {(approval?.clientSignature || live?.clientSignature) && (
+                                            <img src={approval?.clientSignature || live?.clientSignature} alt="Signature of the other party" className="mt-4 h-16 rounded-lg bg-white p-1.5" />
+                                        )}
+                                        <dl className="mt-4 grid grid-cols-1 gap-2 text-[13px] sm:grid-cols-2">
+                                            {approval?.email && <div><dt className="text-gray-500">Email</dt><dd className="font-semibold">{approval.email}</dd></div>}
+                                            {approval?.ip && <div><dt className="text-gray-500">IP address</dt><dd className="font-mono text-[12px]">{approval.ip}</dd></div>}
+                                        </dl>
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            <Button variant="accent" onClick={makeCopy} disabled={busy === 'copy'}><CopyPlus size={15} /> Make a copy</Button>
+                                            <Button variant="secondary" onClick={generatePDF} disabled={busy === 'pdf'}><Download size={15} /> Download PDF</Button>
+                                            <Button variant="secondary" as="a" href={`/agreement/${id}`} target="_blank" rel="noopener noreferrer"><ExternalLink size={15} /> Contract page</Button>
+                                        </div>
                                     </div>
-                                    <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-gray-900 dark:text-white">
-                                        {currentTab?.label}<span className="text-[#A855F7]">.</span>
-                                    </h2>
-                                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
-                                        {currentTab?.desc}
-                                    </p>
+                                    <div className="lg:hidden">
+                                        <Button variant="secondary" onClick={() => setPreviewOpen(true)} className="w-full"><Eye size={15} /> View the signed contract</Button>
+                                    </div>
                                 </div>
+                            ) : (
+                                <>
+                                    <div className="mb-6">
+                                        <h2 className="text-2xl font-extrabold tracking-tight">{STEPS[stepIndex]?.label}</h2>
+                                        <p className="text-[13px] text-gray-500">{STEPS[stepIndex]?.desc}</p>
+                                    </div>
 
-                                <div className="flex items-center gap-3">
-                                    {currentTab?.visibilityKey && (
-                                        <VisibilityToggle field={currentTab.visibilityKey} />
+                                    {step === 'parties' && (
+                                        <div className="space-y-5">
+                                            {stepIssues("parties")}
+                                            <BuilderCard title="Contract" hint="Type, number and letterhead">
+                                                <div className="space-y-4">
+                                                    <Choice
+                                                        value={formData.template === 'MOU' ? 'MOU' : 'Service Agreement'}
+                                                        onChange={v => setFormData(prev => ({ ...prev, template: v, type: v }))}
+                                                        options={[
+                                                            { value: 'Service Agreement', label: 'Service agreement', hint: 'Binding terms for paid work' },
+                                                            { value: 'MOU', label: 'MOU', hint: 'Memorandum of understanding' },
+                                                        ]}
+                                                    />
+                                                    <Field label="Contract number" hint="Printed on every page. Must be unique.">
+                                                        <input className={cn(fieldCls, 'font-mono')} value={formData.agreementNumber || ''} onChange={e => updateField('agreementNumber', e.target.value.toUpperCase())} autoCapitalize="characters" />
+                                                    </Field>
+                                                    <div>
+                                                        <span className="mb-1 block text-[12px] font-bold text-gray-500">Letterhead</span>
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            {LOGOS.map(logo => {
+                                                                const sel = (formData.selectedLogo || 'entertainment') === logo.id;
+                                                                return (
+                                                                    <button key={logo.id} type="button" onClick={() => updateField('selectedLogo', logo.id)} aria-pressed={sel}
+                                                                        className={cn('flex flex-col items-center gap-2 rounded-xl border p-2 text-[12px] font-semibold transition-colors',
+                                                                            sel ? cn(a.border, a.soft) : 'border-black/10 hover:border-black/20 dark:border-white/10 dark:hover:border-white/20')}>
+                                                                        <span className="flex aspect-[4/3] w-full items-center justify-center rounded-lg bg-white p-2"><img src={logo.path} alt="" className="h-full w-full object-contain" /></span>
+                                                                        {logo.label}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </BuilderCard>
+
+                                            <BuilderCard title="Newbi (first party)" hint="Remembered for your next contract">
+                                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                    <div className="sm:col-span-2"><Field label="Legal name"><input className={fieldCls} value={fp.name || ''} onChange={set('parties.firstParty.name')} placeholder="Newbi Entertainment & Marketing LLP" /></Field></div>
+                                                    <div className="sm:col-span-2"><Field label="Registered address"><textarea className={areaCls} rows={2} value={fp.address || ''} onChange={set('parties.firstParty.address')} /></Field></div>
+                                                    <Field label="PAN" optional><input className={cn(fieldCls, 'font-mono')} value={fp.pan || ''} onChange={e => updateField('parties.firstParty.pan', e.target.value.toUpperCase())} autoCapitalize="characters" maxLength={10} /></Field>
+                                                    <Field label="GSTIN" optional><input className={cn(fieldCls, 'font-mono')} value={fp.gstin || ''} onChange={e => updateField('parties.firstParty.gstin', e.target.value.toUpperCase())} autoCapitalize="characters" maxLength={15} /></Field>
+                                                    <Field label="Called in the contract" hint='e.g. "Service Provider"'><input className={fieldCls} value={fp.role || ''} onChange={set('parties.firstParty.role')} /></Field>
+                                                    <Field label="Email" optional><input type="email" inputMode="email" autoCapitalize="off" className={fieldCls} value={fp.email || ''} onChange={set('parties.firstParty.email')} /></Field>
+                                                </div>
+                                            </BuilderCard>
+
+                                            <BuilderCard title="Other party" hint="The client, artist, brand or vendor">
+                                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                    <div className="sm:col-span-2"><Field label="Legal name"><input className={fieldCls} value={sp.name || ''} onChange={set('parties.secondParty.name')} placeholder="Company or person, as on their PAN" /></Field></div>
+                                                    <div className="sm:col-span-2"><Field label="Address"><textarea className={areaCls} rows={2} value={sp.address || ''} onChange={set('parties.secondParty.address')} /></Field></div>
+                                                    <Field label="PAN" optional><input className={cn(fieldCls, 'font-mono')} value={sp.pan || ''} onChange={e => updateField('parties.secondParty.pan', e.target.value.toUpperCase())} autoCapitalize="characters" maxLength={10} /></Field>
+                                                    <Field label="GSTIN" optional><input className={cn(fieldCls, 'font-mono')} value={sp.gstin || ''} onChange={e => updateField('parties.secondParty.gstin', e.target.value.toUpperCase())} autoCapitalize="characters" maxLength={15} /></Field>
+                                                    <Field label="Called in the contract" hint='e.g. "Client", "Artist", "Sponsor"'><input className={fieldCls} value={sp.role || ''} onChange={set('parties.secondParty.role')} /></Field>
+                                                    <Field label="Email" optional hint="Pre-fills the email when you send it"><input type="email" inputMode="email" autoCapitalize="off" className={fieldCls} value={sp.email || ''} onChange={set('parties.secondParty.email')} /></Field>
+                                                    <Field label="Phone" optional><input type="tel" inputMode="tel" className={fieldCls} value={sp.phone || ''} onChange={set('parties.secondParty.phone')} /></Field>
+                                                    <div className="hidden sm:block" />
+                                                    <Field label="Signs for them" hint="Name of the person who will sign"><input className={fieldCls} value={sp.signatoryName || ''} onChange={set('parties.secondParty.signatoryName')} /></Field>
+                                                    <Field label="Their designation" optional><input className={fieldCls} value={sp.signatoryDesignation || ''} onChange={set('parties.secondParty.signatoryDesignation')} placeholder="e.g. Director" /></Field>
+                                                </div>
+                                            </BuilderCard>
+                                        </div>
                                     )}
-                                    <button
-                                        type="button"
-                                        onClick={() => setViewMode('all')}
-                                        className="px-3.5 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-all flex items-center gap-1.5"
-                                    >
-                                        <LayoutGrid size={12} />
-                                        <span>Show All Sections</span>
-                                    </button>
-                                </div>
-                            </div>
-                        )}
 
-                        {/* RENDER SECTIONS BASED ON MODE */}
-                        {viewMode === 'tab' && activeTab === 'ai' ? (
-                            /* AI Studio Tab */
-                            <div className="w-full bg-white dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-3xl p-6 md:p-8 relative flex flex-col shadow-xl">
-                                {renderChatbot(false)}
-                            </div>
-                        ) : (
-                            /* Document Sections: Either all stacked (viewMode === 'all') or single active tab (viewMode === 'tab') */
-                            <div className="space-y-12">
-                                
-                                {/* SECTION 1: FRAMEWORK & PARTIES */}
-                                {(viewMode === 'all' || activeTab === '1') && (
-                                    <section id="section-parties" className="p-6 md:p-8 rounded-3xl bg-white dark:bg-zinc-900/40 border border-black/10 dark:border-white/10 space-y-8 shadow-sm">
-                                        <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2.5 rounded-xl bg-[#A855F7]/10 text-[#A855F7]">
-                                                    <Users size={18} />
+                                    {step === 'project' && (
+                                        <div className="space-y-5">
+                                            {stepIssues("project")}
+                                            <BuilderCard title="Project and term">
+                                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                    <div className="sm:col-span-2"><Field label="Project title"><input className={fieldCls} value={formData.details?.projectName || ''} onChange={set('details.projectName')} placeholder="e.g. Brand activation, Sunburn Campus 2026" /></Field></div>
+                                                    <Field label="Effective date"><input type="date" className={fieldCls} value={formData.effectiveDate || ''} onChange={set('effectiveDate')} /></Field>
+                                                    <Field label="End date" optional><input type="date" className={fieldCls} value={formData.details?.endDate || ''} min={formData.effectiveDate || undefined} onChange={set('details.endDate')} /></Field>
+                                                    <div className="sm:col-span-2">
+                                                        <Field label="Term" optional hint="How long the contract lasts, in words"><input className={fieldCls} value={formData.details?.duration || ''} onChange={set('details.duration')} placeholder="e.g. 6 months" /></Field>
+                                                        <div className="mt-2 flex flex-wrap gap-1.5">
+                                                            {TERM_PRESETS.map(t => (
+                                                                <button key={t} type="button" onClick={() => updateField('details.duration', t === 'One event' ? 'the duration of the event' : t)}
+                                                                    className={cn('h-9 rounded-full border px-3 text-[12px] font-semibold transition-colors', formData.details?.duration === (t === 'One event' ? 'the duration of the event' : t) ? cn(a.border, a.soft) : 'border-black/10 text-gray-600 hover:border-black/20 dark:border-white/10 dark:text-zinc-300')}>
+                                                                    {t}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <div className="sm:col-span-2"><Field label="Territory" optional><input className={fieldCls} value={formData.details?.territory || ''} onChange={set('details.territory')} placeholder="e.g. India" /></Field></div>
                                                 </div>
-                                                <div>
-                                                    <h3 className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Contract Framework & Parties</h3>
-                                                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Document Template & Legal Entities</p>
+                                            </BuilderCard>
+
+                                            <BuilderCard title="Scope of work" hint="What will be done, by whom, and how" action={aiButton("details.purpose", "Scope of work", formData.details?.purpose)}>
+                                                <RichEditor label="Scope of work" value={formData.details?.purpose || ''} onChange={v => updateField('details.purpose', v)} placeholder="Describe the services, responsibilities and how the work will be delivered…" minHeight={200} />
+                                                <div className="mt-3">{showInContract("mission")}</div>
+                                            </BuilderCard>
+
+                                            <BuilderCard title="Deliverables" hint="Listed under the scope, one per line">
+                                                <div className="space-y-2">
+                                                    {deliverables.map((d, i) => (
+                                                        <div key={i} className="flex items-center gap-2">
+                                                            <span className="w-6 shrink-0 text-center text-[12px] font-bold text-gray-400">{String.fromCharCode(97 + i)}</span>
+                                                            <input className={fieldCls} value={d} onChange={e => setDeliverables(deliverables.map((x, j) => (j === i ? e.target.value : x)))} placeholder="e.g. 4 Instagram reels" />
+                                                            <button type="button" onClick={() => setDeliverables(deliverables.filter((_, j) => j !== i))} aria-label={`Remove deliverable ${i + 1}`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gray-400 hover:bg-red-500/10 hover:text-red-500"><Trash2 size={15} /></button>
+                                                        </div>
+                                                    ))}
+                                                    <Button variant="secondary" onClick={() => setDeliverables([...deliverables, ''])}><Plus size={14} /> Add deliverable</Button>
                                                 </div>
-                                            </div>
+                                            </BuilderCard>
                                         </div>
+                                    )}
 
-                                        {/* Contract Template Selector */}
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest block">Agreement Framework Type</label>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                {['Service Agreement', 'MOU'].map(t => (
-                                                    <button 
-                                                        key={t} 
-                                                        type="button"
-                                                        onClick={() => updateField('template', t)} 
-                                                        className={cn(
-                                                            "p-4 rounded-2xl border transition-all text-xs font-black uppercase tracking-widest text-center flex items-center justify-center gap-2", 
-                                                            (formData.template || 'Service Agreement') === t 
-                                                                ? "bg-[#A855F7] border-[#A855F7] text-black shadow-[0_0_20px_rgba(168,85,247,0.3)] scale-[1.01]" 
-                                                                : "bg-black/5 dark:bg-zinc-900 border-black/10 dark:border-white/10 text-gray-500 hover:text-white hover:border-[#A855F7]/40"
-                                                        )}
-                                                    >
-                                                        <Scale size={14} />
-                                                        <span>{t === 'MOU' ? 'Memorandum of Understanding (MOU)' : 'Master Service Agreement (MSA)'}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Identity & Branding Logo Selector */}
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest block">Division Branding & Letterhead Header</label>
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                                {logoOptions.map(logo => (
-                                                    <button 
-                                                        key={logo.id} 
-                                                        type="button"
-                                                        onClick={() => updateField('selectedLogo', logo.id)} 
-                                                        className={cn(
-                                                            "p-3 rounded-2xl border transition-all text-[9px] font-black uppercase tracking-widest flex flex-col items-center gap-2.5 overflow-hidden relative group", 
-                                                            (formData.selectedLogo || 'entertainment') === logo.id 
-                                                                ? "bg-[#A855F7] border-[#A855F7] text-black shadow-md scale-[1.01]" 
-                                                                : "bg-black/5 dark:bg-zinc-900 border-black/10 dark:border-white/10 text-gray-500 hover:text-white hover:border-[#A855F7]/40"
-                                                        )}
-                                                    >
-                                                        <div className="w-full aspect-[4/2] rounded-xl bg-white flex items-center justify-center p-2 relative overflow-hidden">
-                                                            <img src={logo.path} alt={logo.label} className="w-full h-full object-contain" />
-                                                        </div>
-                                                        <span>{logo.label}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Contracting Parties: Provider vs Client */}
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-2">
-                                            {/* First Party (Provider) */}
-                                            <div className="p-6 rounded-2xl bg-black/5 dark:bg-zinc-900/60 border border-black/10 dark:border-white/10 space-y-4">
-                                                <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-2">
-                                                    <span className="text-[10px] font-black uppercase text-[#A855F7] tracking-widest flex items-center gap-1.5">
-                                                        <Building2 size={13} /> First Party (Service Provider)
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-3">
-                                                    <div>
-                                                        <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Provider Legal Name</label>
-                                                        <div className="relative group/refine">
-                                                            <Input 
-                                                                value={formData.parties.firstParty.name} 
-                                                                onChange={e => updateField('parties.firstParty.name', e.target.value)} 
-                                                                placeholder="e.g. Newbi Entertainment Pvt Ltd" 
-                                                                className="h-12 bg-white dark:bg-zinc-900 border-black/10 dark:border-white/10 pr-10 text-xs font-bold" 
-                                                            />
-                                                            <button type="button" onClick={() => handleRefineClick('parties.firstParty.name', 'Provider Legal Name', formData.parties.firstParty.name)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#A855F7] hover:scale-110 transition-all p-1" title="Refine with AI"><Sparkles size={13} /></button>
-                                                        </div>
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <div>
-                                                            <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Defined Role</label>
-                                                            <Input 
-                                                                value={formData.parties.firstParty.role} 
-                                                                onChange={e => updateField('parties.firstParty.role', e.target.value)} 
-                                                                placeholder="e.g. Service Provider" 
-                                                                className="h-12 bg-white dark:bg-zinc-900 border-black/10 dark:border-white/10 text-xs font-bold" 
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Acronym</label>
-                                                            <Input 
-                                                                value={formData.parties.firstParty.acronym || 'NB'} 
-                                                                onChange={e => updateField('parties.firstParty.acronym', e.target.value)} 
-                                                                placeholder="e.g. NB" 
-                                                                className="h-12 bg-white dark:bg-zinc-900 border-black/10 dark:border-white/10 text-xs font-bold" 
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Registered Address</label>
-                                                        <Input 
-                                                            value={formData.parties.firstParty.address} 
-                                                            onChange={e => updateField('parties.firstParty.address', e.target.value)} 
-                                                            placeholder="Provider registered address" 
-                                                            className="h-12 bg-white dark:bg-zinc-900 border-black/10 dark:border-white/10 text-xs font-medium" 
-                                                        />
+                                    {step === 'commercials' && (
+                                        <div className="space-y-5">
+                                            {stepIssues("commercials")}
+                                            <BuilderCard title="Contract value">
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    <Field label="Currency">
+                                                        <ThemedSelect className={fieldCls} value={currency} onChange={set('commercials.currency')}>
+                                                            <option value="INR">₹ INR</option>
+                                                            <option value="USD">$ USD</option>
+                                                            <option value="EUR">€ EUR</option>
+                                                            <option value="GBP">£ GBP</option>
+                                                        </ThemedSelect>
+                                                    </Field>
+                                                    <div className="col-span-2">
+                                                        <Field label="Total value" hint={total > 0 ? `Reads as ${formatMoney(total, currency)}` : 'Numbers only, e.g. 500000'}>
+                                                            <input className={cn(fieldCls, 'tabular-nums')} inputMode="decimal" value={formData.commercials?.totalValue || ''}
+                                                                onChange={set('commercials.totalValue')}
+                                                                onBlur={e => { const t = tidyAmountText(e.target.value, currency); if (t !== e.target.value) updateField('commercials.totalValue', t); }}
+                                                                placeholder="5,00,000" />
+                                                        </Field>
                                                     </div>
                                                 </div>
-                                            </div>
-
-                                            {/* Second Party (Client) */}
-                                            <div className="p-6 rounded-2xl bg-black/5 dark:bg-zinc-900/60 border border-black/10 dark:border-white/10 space-y-4">
-                                                <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-2">
-                                                    <span className="text-[10px] font-black uppercase text-[#A855F7] tracking-widest flex items-center gap-1.5">
-                                                        <Users size={13} /> Second Party (Client / Partner)
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-3">
-                                                    <div>
-                                                        <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Client Entity Name</label>
-                                                        <div className="relative group/refine">
-                                                            <Input 
-                                                                value={formData.parties.secondParty.name} 
-                                                                onChange={e => updateField('parties.secondParty.name', e.target.value)} 
-                                                                placeholder="e.g. Acme Corp Ltd" 
-                                                                className="h-12 bg-white dark:bg-zinc-900 border-black/10 dark:border-white/10 pr-10 text-xs font-bold" 
-                                                            />
-                                                            <button type="button" onClick={() => handleRefineClick('parties.secondParty.name', 'Client Entity Name', formData.parties.secondParty.name)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#A855F7] hover:scale-110 transition-all p-1" title="Refine with AI"><Sparkles size={13} /></button>
-                                                        </div>
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <div>
-                                                            <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Defined Role</label>
-                                                            <Input 
-                                                                value={formData.parties.secondParty.role} 
-                                                                onChange={e => updateField('parties.secondParty.role', e.target.value)} 
-                                                                placeholder="e.g. Client" 
-                                                                className="h-12 bg-white dark:bg-zinc-900 border-black/10 dark:border-white/10 text-xs font-bold" 
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Acronym</label>
-                                                            <Input 
-                                                                value={formData.parties.secondParty.acronym || ''} 
-                                                                onChange={e => updateField('parties.secondParty.acronym', e.target.value)} 
-                                                                placeholder="e.g. ACM" 
-                                                                className="h-12 bg-white dark:bg-zinc-900 border-black/10 dark:border-white/10 text-xs font-bold" 
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Registered Address</label>
-                                                        <Input 
-                                                            value={formData.parties.secondParty.address} 
-                                                            onChange={e => updateField('parties.secondParty.address', e.target.value)} 
-                                                            placeholder="Client registered office address" 
-                                                            className="h-12 bg-white dark:bg-zinc-900 border-black/10 dark:border-white/10 text-xs font-medium" 
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </section>
-                                )}
-
-                                {/* SECTION 2: PURPOSE & SCOPE */}
-                                {(viewMode === 'all' || activeTab === '2') && (
-                                    <section id="section-purpose" className="p-6 md:p-8 rounded-3xl bg-white dark:bg-zinc-900/40 border border-black/10 dark:border-white/10 space-y-6 shadow-sm">
-                                        <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2.5 rounded-xl bg-[#A855F7]/10 text-[#A855F7]">
-                                                    <Target size={18} />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Purpose & Scope of Engagement</h3>
-                                                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Project Framework & Recitals Definition</p>
-                                                </div>
-                                            </div>
-                                            <VisibilityToggle field="mission" />
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div>
-                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Project / Campaign Title</label>
-                                                <div className="relative group/refine">
-                                                    <Input 
-                                                        value={formData.details.projectName} 
-                                                        onChange={e => updateField('details.projectName', e.target.value)} 
-                                                        placeholder="e.g. Digital Media & Creator Acceleration" 
-                                                        className="h-12 bg-white dark:bg-zinc-900 border-black/10 dark:border-white/10 text-xs font-bold" 
+                                                <div className="mt-4 space-y-3">
+                                                    <span className="block text-[12px] font-bold text-gray-500">GST</span>
+                                                    <Choice
+                                                        value={formData.commercials?.gstMode || 'none'}
+                                                        onChange={v => updateField('commercials.gstMode', v)}
+                                                        options={[
+                                                            { value: 'extra', label: 'Plus GST', hint: 'Added on top' },
+                                                            { value: 'included', label: 'Included', hint: 'Value has GST in it' },
+                                                            { value: 'none', label: 'Not stated' },
+                                                        ]}
                                                     />
-                                                    <button type="button" onClick={() => handleRefineClick('details.projectName', 'Project Title', formData.details.projectName)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#A855F7] hover:scale-110 transition-all p-1" title="Refine with AI"><Sparkles size={13} /></button>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Governing Jurisdiction / Territory</label>
-                                                <Input 
-                                                    value={formData.details.territory || 'India'} 
-                                                    onChange={e => updateField('details.territory', e.target.value)} 
-                                                    placeholder="e.g. Bangalore, India" 
-                                                    className="h-12 bg-white dark:bg-zinc-900 border-black/10 dark:border-white/10 text-xs font-bold" 
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block">Scope of Engagement & Objectives</label>
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => handleRefineClick('details.purpose', 'Scope of Engagement', formData.details.purpose)} 
-                                                    className="text-[9px] font-bold text-[#A855F7] hover:underline flex items-center gap-1"
-                                                >
-                                                    <Sparkles size={11} /> Refine with AI
-                                                </button>
-                                            </div>
-                                            <StudioRichEditor 
-                                                value={formData.details.purpose} 
-                                                onChange={val => updateField('details.purpose', val)} 
-                                                placeholder="Detail the complete scope of engagement, responsibilities, deliverables, and operational framework..." 
-                                                minHeight="180px" 
-                                                accentColor="neon-purple"
-                                            />
-                                        </div>
-                                    </section>
-                                )}
-
-                                {/* SECTION 3: FINANCIAL & COMMERCIAL TERMS */}
-                                {(viewMode === 'all' || activeTab === '3') && (
-                                    <section id="section-commercials" className="p-6 md:p-8 rounded-3xl bg-white dark:bg-zinc-900/40 border border-black/10 dark:border-white/10 space-y-6 shadow-sm">
-                                        <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2.5 rounded-xl bg-[#A855F7]/10 text-[#A855F7]">
-                                                    <CreditCard size={18} />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Commercial & Financial Terms</h3>
-                                                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Pricing Structure & Milestone Settlement</p>
-                                                </div>
-                                            </div>
-                                            <VisibilityToggle field="commercials" />
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                            <div className="md:col-span-2">
-                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Total Agreement Consideration</label>
-                                                <div className="relative group/refine">
-                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A855F7] font-black text-xs">
-                                                        {formData.commercials.currency}
-                                                    </span>
-                                                    <Input 
-                                                        value={formData.commercials.totalValue} 
-                                                        onChange={e => updateField('commercials.totalValue', e.target.value)} 
-                                                        className="h-12 bg-white dark:bg-zinc-900 border-black/10 dark:border-white/10 pl-14 pr-10 text-sm font-black" 
-                                                        placeholder="e.g. 5,00,000" 
-                                                    />
-                                                    <button type="button" onClick={() => handleRefineClick('commercials.totalValue', 'Total Contract Value', formData.commercials.totalValue)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#A855F7] hover:scale-110 transition-all p-1" title="Refine with AI"><Sparkles size={13} /></button>
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Settlement Currency</label>
-                                                <select 
-                                                    value={formData.commercials.currency} 
-                                                    onChange={e => updateField('commercials.currency', e.target.value)} 
-                                                    className="w-full h-12 bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-2xl px-4 text-xs font-black text-gray-900 dark:text-white focus:outline-none focus:border-[#A855F7]/50"
-                                                >
-                                                    <option value="INR">INR (₹) - Indian Rupee</option>
-                                                    <option value="USD">USD ($) - US Dollar</option>
-                                                    <option value="EUR">EUR (€) - Euro</option>
-                                                    <option value="GBP">GBP (£) - British Pound</option>
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block">Payment Milestones & Settlement Schedule</label>
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => handleRefineClick('commercials.paymentSchedule', 'Payment Schedule', formData.commercials.paymentSchedule)} 
-                                                    className="text-[9px] font-bold text-[#A855F7] hover:underline flex items-center gap-1"
-                                                >
-                                                    <Sparkles size={11} /> Refine with AI
-                                                </button>
-                                            </div>
-                                            <StudioRichEditor 
-                                                value={formData.commercials.paymentSchedule} 
-                                                onChange={val => updateField('commercials.paymentSchedule', val)} 
-                                                placeholder="Detail installment percentages, invoice submission windows, bank details, and net settlement days..." 
-                                                minHeight="140px" 
-                                                accentColor="neon-purple"
-                                            />
-                                        </div>
-                                    </section>
-                                )}
-
-                                {/* SECTION 4: LEGAL CLAUSES */}
-                                {(viewMode === 'all' || activeTab === '4') && (
-                                    <section id="section-clauses" className="p-6 md:p-8 rounded-3xl bg-white dark:bg-zinc-900/40 border border-black/10 dark:border-white/10 space-y-6 shadow-sm">
-                                        <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2.5 rounded-xl bg-[#A855F7]/10 text-[#A855F7]">
-                                                    <Gavel size={18} />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Legal Clauses & Conditions</h3>
-                                                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Enforceable Clause Library & Strictness Levels</p>
-                                                </div>
-                                            </div>
-                                            <VisibilityToggle field="clauses" />
-                                        </div>
-
-                                        <ClauseMarketplace 
-                                            activeClauses={formData.clauses} 
-                                            onToggleClause={toggleClause} 
-                                            onUpdateClause={updateClause} 
-                                            onRemoveClause={removeClause} 
-                                            onAddCustom={addCustomClause}
-                                            onRefineClick={(clauseKey, title, content) => handleRefineClick(clauseKey, title, content)}
-                                        />
-                                    </section>
-                                )}
-
-                                {/* SECTION 5: SIGNATURES, SEAL & EXECUTION */}
-                                {(viewMode === 'all' || activeTab === '7') && (
-                                    <section id="section-signatures" className="p-6 md:p-8 rounded-3xl bg-white dark:bg-zinc-900/40 border border-black/10 dark:border-white/10 space-y-8 shadow-sm">
-                                        <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2.5 rounded-xl bg-[#A855F7]/10 text-[#A855F7]">
-                                                    <ShieldCheck size={18} />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">Execution, Signatures & Security</h3>
-                                                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Biometric Signing, Official Seal & Cryptographic Reference</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Security Protocol Toggles */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <button 
-                                                type="button"
-                                                onClick={() => setFormData({...formData, showSeal: !formData.showSeal})} 
-                                                className={cn(
-                                                    "p-5 rounded-2xl border transition-all flex items-center gap-4 text-left group",
-                                                    formData.showSeal 
-                                                        ? "bg-[#A855F7] text-black border-[#A855F7] shadow-[0_0_20px_rgba(168,85,247,0.3)]" 
-                                                        : "bg-black/5 dark:bg-zinc-900 border-black/10 dark:border-white/10 text-zinc-400 hover:text-white hover:border-[#A855F7]/40"
-                                                )}
-                                            >
-                                                <div className={cn(
-                                                    "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                                                    formData.showSeal ? "bg-black/10 text-black" : "bg-black/5 dark:bg-white/5 text-[#A855F7]"
-                                                )}>
-                                                    <Stamp size={20} />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[8px] font-black uppercase tracking-widest opacity-60">Security Feature</p>
-                                                    <p className="text-xs font-black uppercase tracking-wider">Official Document Seal</p>
-                                                </div>
-                                            </button>
-
-                                            <button 
-                                                type="button"
-                                                onClick={() => setFormData({...formData, showSignatures: !formData.showSignatures})} 
-                                                className={cn(
-                                                    "p-5 rounded-2xl border transition-all flex items-center gap-4 text-left group",
-                                                    formData.showSignatures 
-                                                        ? "bg-[#A855F7] text-black border-[#A855F7] shadow-[0_0_20px_rgba(168,85,247,0.3)]" 
-                                                        : "bg-black/5 dark:bg-zinc-900 border-black/10 dark:border-white/10 text-zinc-400 hover:text-white hover:border-[#A855F7]/40"
-                                                )}
-                                            >
-                                                <div className={cn(
-                                                    "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                                                    formData.showSignatures ? "bg-black/10 text-black" : "bg-black/5 dark:bg-white/5 text-[#A855F7]"
-                                                )}>
-                                                    <PenTool size={20} />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[8px] font-black uppercase tracking-widest opacity-60">Execution Block</p>
-                                                    <p className="text-xs font-black uppercase tracking-wider">Digital Signatures Protocol</p>
-                                                </div>
-                                            </button>
-                                        </div>
-
-                                        {/* Signatory Identity Inputs */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div>
-                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Authorized Representative Full Name</label>
-                                                <Input 
-                                                    value={formData.providerName || formData.senderName || ''} 
-                                                    onChange={e => {
-                                                        updateField('providerName', e.target.value);
-                                                        updateField('senderName', e.target.value);
-                                                    }} 
-                                                    placeholder="e.g. Authorized Signatory" 
-                                                    className="h-12 bg-white dark:bg-zinc-900 border-black/10 dark:border-white/10 text-xs font-bold" 
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Corporate Title / Designation</label>
-                                                <Input 
-                                                    value={formData.providerDesignation || formData.senderDesignation || ''} 
-                                                    onChange={e => {
-                                                        updateField('providerDesignation', e.target.value);
-                                                        updateField('senderDesignation', e.target.value);
-                                                    }} 
-                                                    placeholder="e.g. Director of Operations" 
-                                                    className="h-12 bg-white dark:bg-zinc-900 border-black/10 dark:border-white/10 text-xs font-bold" 
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Signature Capture Pad */}
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Biometric Digital Signature</label>
-                                                {formData.providerSignature && (
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => updateField('providerSignature', null)} 
-                                                        className="text-[9px] font-black text-red-400 hover:underline uppercase"
-                                                    >
-                                                        Clear Signature
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            <div 
-                                                onClick={() => setIsSignatureModalOpen(true)}
-                                                className="w-full h-44 bg-white dark:bg-zinc-900/60 rounded-2xl border border-black/10 dark:border-white/10 flex items-center justify-center cursor-pointer hover:border-[#A855F7]/40 transition-all relative overflow-hidden group shadow-inner"
-                                            >
-                                                {formData.providerSignature ? (
-                                                    <div className="w-full h-full flex items-center justify-center p-6">
-                                                        <img src={formData.providerSignature} className="max-h-full max-w-full object-contain filter dark:invert" alt="Signature" />
-                                                        <div className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 text-[8px] font-black uppercase tracking-wider">
-                                                            <CheckCircle2 size={11} /> Signed & Verified
+                                                    {formData.commercials?.gstMode === 'extra' && (
+                                                        <div className="grid grid-cols-3 gap-3">
+                                                            <Field label="GST rate (%)"><input type="number" inputMode="decimal" min="0" max="28" className={fieldCls} value={formData.commercials?.gstRate ?? 18} onChange={e => updateField('commercials.gstRate', e.target.value === '' ? '' : Number(e.target.value))} /></Field>
+                                                            <div className="col-span-2 flex flex-col justify-end rounded-xl bg-black/[0.03] p-3 text-[13px] dark:bg-white/[0.04]">
+                                                                <div className="flex justify-between"><span className="text-gray-500">GST</span><span className="font-semibold tabular-nums">{formatMoney(gst.gst, currency)}</span></div>
+                                                                <div className="flex justify-between"><span className="font-bold">Total payable</span><span className="font-extrabold tabular-nums">{formatMoney(gst.grand, currency)}</span></div>
+                                                            </div>
                                                         </div>
+                                                    )}
+                                                </div>
+                                            </BuilderCard>
+
+                                            <BuilderCard title="Payment milestones" hint="When each part is paid. They should add up to the contract value.">
+                                                {milestones.length === 0 && (
+                                                    <div className="mb-3 flex flex-wrap gap-1.5">
+                                                        {[
+                                                            ['50% advance, 50% after', [['Advance on signing', 50, 'on signing this Agreement'], ['Balance', 50, 'within 7 days of completion']]],
+                                                            ['30 / 70', [['Advance on signing', 30, 'on signing this Agreement'], ['Balance', 70, 'within 7 days of completion']]],
+                                                            ['100% on signing', [['Full payment', 100, 'on signing this Agreement']]],
+                                                            ['100% after the work', [['Full payment', 100, 'within 15 days of completion']]],
+                                                        ].map(([label, rows]) => (
+                                                            <button key={label} type="button" onClick={() => presetMilestones(rows)} className="h-9 rounded-full border border-black/10 px-3 text-[12px] font-semibold text-gray-600 hover:border-black/20 dark:border-white/10 dark:text-zinc-300">{label}</button>
+                                                        ))}
                                                     </div>
+                                                )}
+                                                <div className="space-y-3">
+                                                    {milestones.map((m, i) => {
+                                                        const row = mCheck.rows[i] || {};
+                                                        return (
+                                                            <div key={m.id || i} className="rounded-xl border border-black/[0.08] p-3 dark:border-white/[0.08]">
+                                                                <div className="mb-2 flex items-center justify-between">
+                                                                    <span className="text-[12px] font-bold text-gray-500">Payment {i + 1}</span>
+                                                                    <button type="button" onClick={() => setMilestones(milestones.filter((_, j) => j !== i))} aria-label={`Remove payment ${i + 1}`} className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 hover:bg-red-500/10 hover:text-red-500"><Trash2 size={15} /></button>
+                                                                </div>
+                                                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                                                    <div className="col-span-2"><Field label="What for"><input className={fieldCls} value={m.label || ''} onChange={e => updateMilestone(i, { label: e.target.value })} placeholder="e.g. Advance" /></Field></div>
+                                                                    <Field label="Percent"><input type="number" inputMode="decimal" min="0" max="100" className={fieldCls} value={m.percent ?? ''} placeholder={row.percent ? String(row.percent) : ''} onChange={e => updateMilestone(i, { percent: e.target.value === '' ? '' : Number(e.target.value), amount: '' })} /></Field>
+                                                                    <Field label="Amount"><input type="number" inputMode="decimal" min="0" className={fieldCls} value={m.amount ?? ''} placeholder={row.amount ? String(row.amount) : ''} onChange={e => updateMilestone(i, { amount: e.target.value === '' ? '' : Number(e.target.value), percent: '' })} /></Field>
+                                                                    <div className="col-span-2 sm:col-span-4"><Field label="When it's due"><input className={fieldCls} value={m.due || ''} onChange={e => updateMilestone(i, { due: e.target.value })} placeholder="e.g. within 7 days of the event" /></Field></div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    <Button variant="secondary" onClick={() => setMilestones([...milestones, { id: `ms-${Date.now()}`, label: '', percent: '', amount: '', due: '' }])}><Plus size={14} /> Add payment</Button>
+                                                    {milestones.length > 0 && (
+                                                        <div className={cn('flex items-center justify-between rounded-xl px-3 py-2.5 text-[13px] font-semibold', mCheck.ok ? 'bg-emerald-500/[0.08] text-emerald-700 dark:text-neon-green' : 'bg-red-500/[0.08] text-red-600 dark:text-red-400')}>
+                                                            <span className="flex items-center gap-1.5">{mCheck.ok ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />} {mCheck.ok ? 'Adds up to the contract value' : mCheck.diff > 0 ? `${formatMoney(mCheck.diff, currency)} still to schedule` : `${formatMoney(-mCheck.diff, currency)} more than the contract value`}</span>
+                                                            <span className="tabular-nums">{formatMoney(mCheck.sum, currency)} / {formatMoney(total, currency)}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </BuilderCard>
+
+                                            <BuilderCard title="Payment terms" hint="Invoicing, late fees, bank details. Printed under the milestones." action={aiButton("commercials.paymentSchedule", "Payment terms", formData.commercials?.paymentSchedule)}>
+                                                <RichEditor label="Payment terms" value={formData.commercials?.paymentSchedule || ''} onChange={v => updateField('commercials.paymentSchedule', v)} placeholder="e.g. Each payment is due within 7 days of Newbi's invoice…" minHeight={140} />
+                                                <div className="mt-3">{showInContract("commercials")}</div>
+                                            </BuilderCard>
+                                        </div>
+                                    )}
+
+                                    {step === 'clauses' && (
+                                        <div className="space-y-5">
+                                            {stepIssues("clauses")}
+                                            <BuilderCard title="Clauses" hint="Tap a clause to edit it. Use the arrows to change the order.">
+                                                <ClauseMarketplace
+                                                    activeClauses={formData.clauses || []}
+                                                    onToggleClause={toggleClause}
+                                                    onUpdateClause={updateClause}
+                                                    onRemoveClause={removeClause}
+                                                    onAddCustom={addCustomClause}
+                                                    onRefineClick={(key, title, content) => openRefine(key, title || 'Clause', content)}
+                                                />
+                                                <div className="mt-4">{showInContract("clauses")}</div>
+                                            </BuilderCard>
+                                        </div>
+                                    )}
+
+                                    {step === 'signatures' && (
+                                        <div className="space-y-5">
+                                            {stepIssues("signatures")}
+                                            <BuilderCard title="Signature block">
+                                                <Toggle label="Collect signatures" hint="The other party signs online on the contract page" checked={Boolean(formData.showSignatures)} onChange={v => updateField('showSignatures', v)} />
+                                            </BuilderCard>
+
+                                            <BuilderCard title="Signing for Newbi">
+                                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                    <Field label="Name"><input className={fieldCls} value={formData.providerName || ''} onChange={set('providerName')} placeholder="Full name" /></Field>
+                                                    <Field label="Designation"><input className={fieldCls} value={formData.providerDesignation || ''} onChange={set('providerDesignation')} placeholder="e.g. Founder" /></Field>
+                                                </div>
+                                                <div className="mt-3">
+                                                    <SignatureField value={formData.providerSignature || null} onChange={onSignature} label="Newbi's signature" hint={sigUploading ? 'Uploading the signature…' : 'Saved for your next contract.'} />
+                                                </div>
+                                            </BuilderCard>
+
+                                            <BuilderCard title={`Signing for ${sp.name || 'the other party'}`} action={<Button size="sm" variant="ghost" onClick={() => goStep('parties')}>Edit</Button>}>
+                                                <dl className="grid grid-cols-2 gap-3 text-[13px]">
+                                                    <div><dt className="text-gray-500">Name</dt><dd className="font-semibold">{sp.signatoryName || <span className="text-amber-600">Not set</span>}</dd></div>
+                                                    <div><dt className="text-gray-500">Designation</dt><dd className="font-semibold">{sp.signatoryDesignation || 'Authorised signatory'}</dd></div>
+                                                </dl>
+                                                <p className="mt-3 rounded-xl bg-black/[0.03] p-3 text-[12px] text-gray-500 dark:bg-white/[0.04]">
+                                                    They sign on the contract page with their name, email and a drawn or uploaded signature. The time and IP address are recorded, and the contract locks once signed.
+                                                </p>
+                                            </BuilderCard>
+
+                                            <BuilderCard title="Official seal">
+                                                <Toggle label="Stamp the company seal" checked={Boolean(formData.showSeal)} onChange={v => updateField('showSeal', v)} />
+                                                {formData.showSeal && (
+                                                    <div className="mt-3 flex justify-center overflow-hidden rounded-xl bg-white p-4"><DocumentSeal type="contract" date={formData.effectiveDate} className="h-28 w-28" /></div>
+                                                )}
+                                            </BuilderCard>
+                                        </div>
+                                    )}
+
+                                    {step === 'review' && (
+                                        <div className="space-y-5">
+                                            <BuilderCard title={blocking.length ? `${blocking.length} thing${blocking.length === 1 ? '' : 's'} to fix` : 'Ready to go'} hint={blocking.length ? 'These stop the contract from going out for signing.' : issues.length ? 'Some suggestions below, but nothing blocking.' : 'Everything a contract needs is filled in.'}>
+                                                {issues.length === 0 ? (
+                                                    <p className="flex items-center gap-2 text-[14px] font-semibold text-emerald-700 dark:text-neon-green"><CheckCircle2 size={16} /> All checks passed.</p>
                                                 ) : (
-                                                    <div className="flex flex-col items-center gap-2 text-zinc-500 group-hover:text-[#A855F7] transition-colors">
-                                                        <PenTool size={28} />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest">Click to Draw or Upload Signature</span>
-                                                    </div>
+                                                    <ul className="divide-y divide-black/[0.06] dark:divide-white/[0.06]">
+                                                        {issues.map((i, n) => (
+                                                            <li key={n} className="flex items-center gap-3 py-2.5">
+                                                                <span className={cn('h-2 w-2 shrink-0 rounded-full', i.blocking ? 'bg-red-500' : 'bg-amber-500')} />
+                                                                <span className="min-w-0 flex-1 text-[13px] font-semibold">{i.message}</span>
+                                                                <Button size="sm" variant="ghost" onClick={() => goStep(i.step)}>Fix</Button>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
                                                 )}
-                                            </div>
-                                        </div>
+                                            </BuilderCard>
 
-                                        {/* Reference Seal & Cryptographic Node Footer */}
-                                        <div className="p-6 rounded-2xl bg-black/5 dark:bg-zinc-900/60 border border-black/10 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-6">
-                                            <div className="flex items-center gap-4">
-                                                <DocumentSeal type="contract" date={formData.effectiveDate} className="w-16 h-16 shrink-0" />
-                                                <div>
-                                                    <span className="text-[8px] font-black uppercase tracking-widest text-[#A855F7]">Cryptographic Handshake</span>
-                                                    <h4 className="text-sm font-black text-gray-900 dark:text-white font-mono mt-0.5">{formData.agreementNumber}</h4>
-                                                    <p className="text-[9px] text-zinc-500 mt-0.5">SHA-256 integrity token active</p>
+                                            <BuilderCard title="Summary">
+                                                <dl className="grid grid-cols-1 gap-x-4 gap-y-3 text-[13px] sm:grid-cols-2">
+                                                    <div><dt className="text-gray-500">Between</dt><dd className="font-semibold">{fp.name || '—'} and {sp.name || '—'}</dd></div>
+                                                    <div><dt className="text-gray-500">Project</dt><dd className="font-semibold">{formData.details?.projectName || '—'}</dd></div>
+                                                    <div><dt className="text-gray-500">Effective</dt><dd className="font-semibold">{formatContractDate(formData.effectiveDate) || '—'}{formData.details?.duration ? ` · ${formData.details.duration}` : ''}{parseContractDate(formData.details?.endDate) ? ` · until ${formatContractDate(formData.details.endDate)}` : ''}</dd></div>
+                                                    <div><dt className="text-gray-500">Value</dt><dd className="font-semibold tabular-nums">{total > 0 ? formatMoney(total, currency) : '—'}{gst.mode === 'extra' ? ` + GST (${formatMoney(gst.grand, currency)})` : gst.mode === 'included' ? ' incl. GST' : ''}</dd></div>
+                                                    <div><dt className="text-gray-500">Payments</dt><dd className="font-semibold">{milestones.length ? `${milestones.length} milestone${milestones.length === 1 ? '' : 's'}` : 'No milestones'}</dd></div>
+                                                    <div><dt className="text-gray-500">Clauses</dt><dd className="font-semibold">{(formData.clauses || []).filter(c => c.isActive !== false).length} in the contract</dd></div>
+                                                    <div><dt className="text-gray-500">Pages</dt><dd className="font-semibold">{paginatedPages.length}</dd></div>
+                                                    <div><dt className="text-gray-500">Status</dt><dd><Badge tone={stateCfg.tone}>{stateCfg.label}</Badge></dd></div>
+                                                </dl>
+                                            </BuilderCard>
+
+                                            <BuilderCard title="Send for signing" hint={isReady ? 'This contract is ready to sign. Share the link; the other party signs on the contract page.' : 'Marking it ready saves it and lets you share the signing link.'}>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {isReady ? (
+                                                        <>
+                                                            <Button variant="accent" onClick={copyLink}><Link2 size={15} /> Copy signing link</Button>
+                                                            <Button variant="secondary" as="a" href={signingLink} target="_blank" rel="noopener noreferrer"><ExternalLink size={15} /> Open contract page</Button>
+                                                            <Button variant="ghost" onClick={backToDraft} disabled={busy === 'ready'}>Back to draft</Button>
+                                                        </>
+                                                    ) : (
+                                                        <Button variant="accent" onClick={markReady} disabled={busy === 'ready' || blocking.length > 0}>
+                                                            {busy === 'ready' ? <RefreshCw size={15} className="animate-spin" /> : <Send size={15} />} Mark ready to sign
+                                                        </Button>
+                                                    )}
+                                                    <Button variant="secondary" onClick={generatePDF} disabled={busy === 'pdf'}><Download size={15} /> Download PDF</Button>
                                                 </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold uppercase tracking-wider">
-                                                    Enforceable
-                                                </span>
-                                            </div>
+                                                <p className="mt-3 text-[12px] text-gray-500">To email it, use Email on the contract in the list. It goes with a tracked signing link.</p>
+                                            </BuilderCard>
                                         </div>
-                                    </section>
-                                )}
-
-                                {/* Step Navigation Buttons (Tab Mode only) */}
-                                {viewMode === 'tab' && activeTab !== 'ai' && (
-                                    <div className="flex items-center justify-between pt-6 border-t border-black/10 dark:border-white/10">
-                                        <button 
-                                            type="button"
-                                            onClick={() => {
-                                                const idx = tabs.findIndex(t => t.id === activeTab);
-                                                if (idx > 1) handleTabClick(tabs[idx - 1].id);
-                                            }}
-                                            disabled={activeTab === tabs[1].id}
-                                            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-black/5 dark:bg-white/5 text-zinc-400 hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-0"
-                                        >
-                                            <ChevronLeft size={16} /> Previous Section
-                                        </button>
-
-                                        <button 
-                                            type="button"
-                                            onClick={() => {
-                                                const idx = tabs.findIndex(t => t.id === activeTab);
-                                                if (idx < tabs.length - 1) handleTabClick(tabs[idx + 1].id);
-                                            }}
-                                            className={cn(
-                                                "flex items-center gap-2 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg",
-                                                activeTab === tabs[tabs.length - 1].id 
-                                                    ? "bg-[#A855F7] text-black hover:scale-105" 
-                                                    : "bg-[#A855F7] text-black hover:scale-105"
-                                            )}
-                                        >
-                                            <span>{activeTab === tabs[tabs.length - 1].id ? 'Complete & Save' : 'Next Section'}</span>
-                                            {activeTab !== tabs[tabs.length - 1].id && <ChevronRight size={16} />}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </main>
-
-                {/* Right Document Live Preview Workspace */}
-                <aside className={cn(
-                    "lg:static lg:flex fixed inset-0 z-[60] lg:z-0 bg-gray-100 dark:bg-[#05070D] flex-col overflow-hidden shrink-0 transition-transform duration-500 lg:translate-x-0 border-l border-black/10 dark:border-white/10",
-                    isExpandedPreview ? "w-full lg:w-full border-l-0" : "w-full lg:w-[460px] xl:w-[540px] 2xl:w-[620px]",
-                    showPreviewMobile ? "translate-x-0" : "translate-x-full lg:translate-x-0"
-                )}>
-                    {/* Live Preview Top Controls */}
-                    <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between bg-white dark:bg-[#080C14] shrink-0">
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setShowPreviewMobile(false)} className="lg:hidden p-2 bg-black/5 dark:bg-white/5 rounded-xl border border-black/10 dark:border-white/10 mr-1">
-                                <ArrowLeft size={16} />
-                            </button>
-                            <button 
-                                type="button"
-                                onClick={() => setIsExpandedPreview(!isExpandedPreview)} 
-                                className="hidden lg:flex p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 rounded-xl text-zinc-400 hover:text-white transition-all items-center gap-1.5 text-[9px] font-black uppercase tracking-wider h-9 px-3"
-                                title={isExpandedPreview ? "Exit Fullscreen Preview" : "Fullscreen Preview"}
-                            >
-                                {isExpandedPreview ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
-                                <span>{isExpandedPreview ? "Collapse" : "Expand"}</span>
-                            </button>
-                            
-                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                <span className="text-[8px] font-black uppercase tracking-wider">Live Preview</span>
-                            </div>
-                        </div>
-
-                        {/* Zoom Controls & Page Pager */}
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center bg-black/5 dark:bg-zinc-900 rounded-xl p-0.5 border border-black/10 dark:border-white/10">
-                                <button onClick={() => setUserZoom(Math.max(0.4, userZoom - 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg text-zinc-400 transition-colors" title="Zoom Out"><Minus size={11} /></button>
-                                <button onClick={() => setUserZoom(1)} className="text-[9px] font-mono font-bold text-zinc-400 px-2 min-w-[42px] text-center hover:text-white" title="Reset Zoom">{Math.round(userZoom * 100)}%</button>
-                                <button onClick={() => setUserZoom(Math.min(2, userZoom + 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg text-zinc-400 transition-colors" title="Zoom In"><Plus size={11} /></button>
-                            </div>
-
-                            <div className="flex items-center gap-1.5 bg-black/5 dark:bg-zinc-900 rounded-xl p-1 border border-black/10 dark:border-white/10">
-                                <button onClick={() => setCurrentPage(Math.max(0, currentPage - 1))} className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded text-zinc-400 hover:text-white transition-colors"><ChevronLeft size={13} /></button>
-                                <span className="text-[9px] font-mono font-bold text-zinc-400 px-1">{currentPage + 1}/{paginatedPages.length}</span>
-                                <button onClick={() => setCurrentPage(Math.min(paginatedPages.length - 1, currentPage + 1))} className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded text-zinc-400 hover:text-white transition-colors"><ChevronRight size={13} /></button>
-                            </div>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
 
-                    {/* Preview Page Canvas */}
-                    <div ref={previewContainerRef} className="flex-1 bg-gray-200/60 dark:bg-[#05070D] flex flex-col items-center justify-start p-6 overflow-y-auto overflow-x-hidden relative scrollbar-hide">
-                        <div style={{ 
-                            width: `${794 * previewScale}px`,
-                            height: `${1123 * previewScale}px`,
-                            flexShrink: 0,
-                            position: 'relative'
-                        }}>
-                            <div style={{ 
-                                width: '794px', 
-                                height: '1123px', 
-                                transform: `scale(${previewScale})`, 
-                                transformOrigin: 'top left',
-                                position: 'absolute',
-                                top: 0,
-                                left: 0
-                            }}>
-                                <div className="shadow-[0_20px_60px_rgba(0,0,0,0.45)] dark:shadow-[0_30px_90px_rgba(0,0,0,0.8)] rounded-sm">
-                                    <ContractPreview formData={formData} paginatedPages={paginatedPages} currentPage={currentPage} />
+                    {/* Sticky save bar */}
+                    {!locked && (
+                        <div className="shrink-0 border-t border-black/[0.06] bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#07080b]/95">
+                            <div className="mx-auto flex h-16 max-w-3xl items-center gap-2 px-3 sm:px-6">
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[11px] text-gray-500">{gst.mode === 'extra' ? 'Value + GST' : 'Contract value'}</p>
+                                    <p className="truncate text-[16px] font-extrabold tabular-nums">{total > 0 ? formatMoney(gst.grand, currency) : '—'}</p>
                                 </div>
+                                <Button variant="ghost" onClick={() => setAiOpen(true)} className="h-11 w-11 px-0 sm:hidden" aria-label="Draft with AI"><Sparkles size={17} className="text-violet-500" /></Button>
+                                {stepIndex > 0 && (
+                                    <Button variant="secondary" onClick={() => goStep(STEPS[stepIndex - 1].id)} className="h-11 w-11 px-0 sm:w-auto sm:px-4" aria-label="Previous section">
+                                        <ChevronLeft size={17} /> <span className="hidden sm:inline">{STEPS[stepIndex - 1].label}</span>
+                                    </Button>
+                                )}
+                                {stepIndex < STEPS.length - 1 ? (
+                                    <Button variant="accent" onClick={() => goStep(STEPS[stepIndex + 1].id)} className="h-11">
+                                        <span>Next<span className="hidden sm:inline">: {STEPS[stepIndex + 1].label}</span></span> <ChevronRight size={17} />
+                                    </Button>
+                                ) : (
+                                    <Button variant="accent" onClick={handleSave} disabled={Boolean(busy)} className="h-11">
+                                        <Save size={16} /> Save & close
+                                    </Button>
+                                )}
                             </div>
                         </div>
-                        <div className="h-24 shrink-0" />
-                    </div>
-                </aside>
-            </div>
+                    )}
+                </section>
 
-            {/* Hidden container for PDF export - renders all pages */}
-            <div className="pdf-export-only fixed -left-[9999px] top-0 pointer-events-none overflow-hidden bg-white flex flex-col gap-10">
-                {paginatedPages.map((page, idx) => (
-                    <ContractPreview key={`export-${idx}`} formData={formData} paginatedPages={paginatedPages} currentPage={idx} />
+                {/* Live preview on wide screens */}
+                <aside className="hidden w-[440px] shrink-0 flex-col border-l border-black/[0.06] dark:border-white/[0.06] lg:flex xl:w-[520px] 2xl:w-[620px]">
+                    <PaperViewer formData={previewData} pages={previewPages} page={previewPage} onPage={setPreviewPage} className="h-full" />
+                </aside>
+            </main>
+
+            {/* Preview on phones and tablets */}
+            <Sheet open={previewOpen} onClose={() => setPreviewOpen(false)} size="xl" title="Preview" subtitle={formData.agreementNumber} bodyClassName="p-0 flex flex-col"
+                footer={<Button variant="accent" onClick={generatePDF} disabled={busy === 'pdf'} className="w-full">{busy === 'pdf' ? <RefreshCw size={15} className="animate-spin" /> : <Download size={15} />} Download PDF</Button>}>
+                <PaperViewer formData={previewData} pages={previewPages} page={previewPage} onPage={setPreviewPage} className="min-h-[60dvh] flex-1" />
+            </Sheet>
+
+            {/* All pages, off screen, for the PDF */}
+            <div ref={pdfRef} aria-hidden="true" className="pointer-events-none fixed left-[-9999px] top-0 flex flex-col gap-10 bg-white">
+                {previewPages.map((_, idx) => (
+                    <ContractPreview key={`export-${idx}`} formData={previewData} paginatedPages={previewPages} currentPage={idx} />
                 ))}
             </div>
 
-            {/* Field Refinement Modal */}
-            {createPortal(
-                <AnimatePresence>
-                    {refinementContext && (
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md no-print"
-                        >
-                            <motion.div 
-                                initial={{ scale: 0.95, y: 20 }}
-                                animate={{ scale: 1, y: 0 }}
-                                exit={{ scale: 0.95, y: 20 }}
-                                className="bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col text-gray-900 dark:text-white"
-                            >
-                                <div className="p-5 border-b border-black/10 dark:border-white/10 flex items-center justify-between bg-black/5 dark:bg-black/30">
-                                    <div className="flex items-center gap-3">
-                                        <Sparkles size={18} className="text-[#A855F7] animate-pulse" />
-                                        <div>
-                                            <h3 className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">AI Field Refinement</h3>
-                                            <p className="text-[10px] text-zinc-500 font-semibold mt-0.5">Target: {refinementContext.fieldLabel}</p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        type="button"
-                                        onClick={() => setRefinementContext(null)}
-                                        className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-all"
-                                    >
-                                        <X size={16} />
-                                    </button>
-                                </div>
-                                
-                                <div className="p-6 space-y-4">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Current Content</label>
-                                        <div className="p-4 bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-2xl max-h-36 overflow-y-auto text-[11px] text-zinc-400 whitespace-pre-wrap leading-relaxed">
-                                            {htmlToPlainText(refinementContext.currentValue) || <span className="italic text-zinc-600">Field is currently empty</span>}
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Refinement Prompt</label>
-                                        <textarea
-                                            value={refinementPrompt}
-                                            onChange={(e) => setRefinementPrompt(e.target.value)}
-                                            placeholder="Tell AI how to refine this text (e.g. 'make it legally stricter', 'clarify payment deadline within 7 days', 'condense to 1 paragraph')..."
-                                            className="w-full h-28 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 focus:border-[#A855F7]/50 rounded-2xl p-4 text-xs font-medium text-gray-900 dark:text-white placeholder:text-zinc-600 focus:outline-none transition-all resize-none leading-relaxed"
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                                                    e.preventDefault();
-                                                    handleInlineRefineSubmit();
-                                                }
-                                            }}
-                                        />
-                                        <div className="flex justify-between items-center text-[9px] text-zinc-500 font-semibold px-1">
-                                            <span>Ctrl+Enter to Refine</span>
-                                            <span>Instantly updates contract preview</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div className="p-5 border-t border-black/10 dark:border-white/10 bg-black/5 dark:bg-black/30 flex justify-end gap-3">
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setRefinementContext(null)}
-                                        className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/10 transition-all text-zinc-400"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button 
-                                        type="button"
-                                        disabled={isRefining || !refinementPrompt.trim()}
-                                        onClick={handleInlineRefineSubmit}
-                                        className="px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-[#A855F7] text-black hover:scale-105 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.3)] disabled:opacity-40 disabled:scale-100"
-                                    >
-                                        {isRefining ? <RefreshCw className="animate-spin" size={12} /> : <Sparkles size={12} />}
-                                        <span>{isRefining ? "Refining..." : "Refine Field"}</span>
-                                    </button>
-                                </div>
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>,
-                document.body
-            )}
-
-            {/* Signature Modal */}
-            <SignatureModal 
-                isOpen={isSignatureModalOpen} 
-                onClose={() => setIsSignatureModalOpen(false)} 
-                onSave={(sig) => updateField('providerSignature', sig)} 
-                initialName={formData.providerName || "Authorized Signatory"}
-            />
-
-            {/* Floating Action Button for AI Assistant */}
-            {viewMode === 'all' && (
-                <div className="fixed bottom-6 right-6 lg:bottom-8 lg:right-[480px] xl:lg:right-[560px] 2xl:lg:right-[640px] z-[50]">
-                    <button
-                        type="button"
-                        onClick={() => setIsFloatingChatOpen(!isFloatingChatOpen)}
-                        className="w-13 h-13 p-3.5 bg-[#A855F7] text-black hover:bg-[#9333EA] shadow-[0_0_30px_rgba(168,85,247,0.4)] rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95"
-                        title="Open AI Assistant"
-                    >
-                        <Sparkles className="w-5 h-5" />
-                    </button>
-                </div>
-            )}
-
-            {/* Floating AI Chat Pop-up Overlay */}
-            {isFloatingChatOpen && (
-                <div className="fixed bottom-24 right-6 lg:bottom-24 lg:right-[480px] xl:lg:right-[560px] 2xl:lg:right-[640px] w-[92vw] sm:w-[420px] md:w-[460px] h-[540px] bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col p-4 z-[80] animate-fade-in">
-                    {renderChatbot(true)}
-                </div>
-            )}
+            <AIDraftSheet open={aiOpen} onClose={() => setAiOpen(false)} hasContent={hasContent} busy={aiBusy} onSubmit={runAiDraft} />
+            <AIRefineSheet target={refineTarget} onClose={() => setRefineTarget(null)} busy={refineBusy} onSubmit={runRefine} />
         </div>
     );
 };

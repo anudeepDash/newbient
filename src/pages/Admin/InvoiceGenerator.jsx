@@ -1,1516 +1,1431 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import Plus from 'lucide-react/dist/esm/icons/plus';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Save from 'lucide-react/dist/esm/icons/save';
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
-import Download from 'lucide-react/dist/esm/icons/download';
-import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
-import X from 'lucide-react/dist/esm/icons/x';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
-import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
-import Users from 'lucide-react/dist/esm/icons/users';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
-import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
-import Target from 'lucide-react/dist/esm/icons/target';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import Save from 'lucide-react/dist/esm/icons/save';
+import Download from 'lucide-react/dist/esm/icons/download';
+import Share2 from 'lucide-react/dist/esm/icons/share-2';
+import Link2 from 'lucide-react/dist/esm/icons/link-2';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
+import Building2 from 'lucide-react/dist/esm/icons/building-2';
+import ListOrdered from 'lucide-react/dist/esm/icons/list-ordered';
 import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
-import Settings from 'lucide-react/dist/esm/icons/settings';
-import Building2 from 'lucide-react/dist/esm/icons/building-2';
-import Layers from 'lucide-react/dist/esm/icons/layers';
-import ImageIcon from 'lucide-react/dist/esm/icons/image';
-import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
-import Undo2 from 'lucide-react/dist/esm/icons/undo-2';
-import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
-import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
-import Globe from 'lucide-react/dist/esm/icons/globe';
-import MoreVertical from 'lucide-react/dist/esm/icons/more-vertical';
-import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
-import Upload from 'lucide-react/dist/esm/icons/upload';
-import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
-import { useStore } from '../../lib/store';
-import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
-import { cn } from '../../lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Copy from 'lucide-react/dist/esm/icons/copy';
+import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up';
+import ArrowDown from 'lucide-react/dist/esm/icons/arrow-down';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import Minus from 'lucide-react/dist/esm/icons/minus';
 import Maximize2 from 'lucide-react/dist/esm/icons/maximize-2';
 import Minimize2 from 'lucide-react/dist/esm/icons/minimize-2';
-import StudioDatePicker from '../../components/ui/StudioDatePicker';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
-import StudioRichEditor from '../../components/ui/StudioRichEditor';
+import Paperclip from 'lucide-react/dist/esm/icons/paperclip';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
+import X from 'lucide-react/dist/esm/icons/x';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import Landmark from 'lucide-react/dist/esm/icons/landmark';
+import QrCode from 'lucide-react/dist/esm/icons/qr-code';
+import Stamp from 'lucide-react/dist/esm/icons/stamp';
+import Bookmark from 'lucide-react/dist/esm/icons/bookmark';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
+import { cn } from '../../lib/utils';
+import { copyToClipboard } from '../../lib/clipboard';
+import { nextInvoiceNumber, todayKey, invoiceAmounts, invoiceLineAmount, invoiceReceived } from '../../lib/invoicing';
+import { Button, Menu, MenuItem, EmptyState } from '../../components/admin/ui';
+import Sheet from '../../components/admin/Sheet';
+import { fieldCls, areaCls, Field, Toggle, Choice, SignatureField, UploadProgress, formatBytes } from '../../components/admin/uploads/UploadKit';
+import { BuilderCard } from '../../components/admin/events/EditorParts';
+import RichEditor from '../../components/admin/RichEditor';
 import DocumentSeal from '../../components/ui/DocumentSeal';
+import { accent, useAccent } from '../../components/admin/theme';
+import { InvoicePage, BRANDS, paginateInvoice, isBlankText } from '../../components/admin/invoices/builder/InvoicePaper';
+import {
+    GST_RATES, GST_STATES, cleanGstin, gstinProblem, stateOfGstin, invoiceTaxLines, placeOfSupply, isUpiId, isIfsc, isHttpsUrl, isEmail,
+    amountInWords, BANK_FIELDS, parseBankDetails, composeBankDetails,
+} from '../../components/admin/invoices/builder/gst';
+import ThemedSelect from '../../components/admin/ThemedSelect';
 
-// Markdown-like formatting toolbar for textareas
+/*
+ * Invoice builder (/admin/create-invoice, /admin/edit-invoice/:id).
+ * Four steps on the left, the invoice paper on the right. Saves itself a few
+ * seconds after each change (one shared create, so a slow network never makes
+ * two invoices), checks the invoice before it's shared or downloaded, and
+ * fills your business and bank details from your saved defaults.
+ */
+
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+const norm = (v) => String(v || '').trim().toUpperCase();
+const rupees = (n) => `₹${round2(n).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+const toMillis = (v) => {
+    if (!v) return 0;
+    if (typeof v?.toMillis === 'function') return v.toMillis();
+    if (typeof v === 'object' && typeof v.seconds === 'number') return v.seconds * 1000;
+    const t = new Date(v).getTime();
+    return Number.isNaN(t) ? 0 : t;
+};
+const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+/** Old notes were plain text; the editor works in HTML. */
+const asHtml = (text) => {
+    const s = String(text || '');
+    if (!s || /<[a-z][\s\S]*>/i.test(s)) return s;
+    return s.split('\n').map(line => `<div>${escapeHtml(line) || '<br>'}</div>`).join('');
+};
+
+// Only these fields are written back, so a payment, claim or "last sent" stamp
+// made elsewhere while this editor is open is never overwritten.
+const EDITOR_FIELDS = [
+    'senderName', 'senderContact', 'senderEmail', 'senderGst', 'senderAddress',
+    'clientName', 'clientAddress', 'clientGst', 'clientEmail', 'clientState',
+    'invoiceNumber', 'invoiceDate', 'dueDate', 'advancePaid', 'note', 'paymentDetails',
+    'showNotes', 'showPaymentDetails', 'showUPI', 'upiId', 'qrType', 'customQrImage',
+    'showGst', 'gstPercentage', 'showFooter', 'showAdvance', 'showSignatureBlock', 'showPaymentButton', 'paymentLink',
+    'selectedLogo', 'showSeal', 'showSignatures', 'providerSignature', 'attachments',
+];
+
+const FALLBACK_SELLER = {
+    senderName: 'Newbi Entertainment & Marketing LLP',
+    senderAddress: 'Property No. 55, 3rdFloor SAIDULAJAB, Gadaipur, Sainik Farm, New Delhi, Delhi 110030',
+    senderContact: '+91 93043 72773',
+    senderEmail: 'partnership@newbi.live',
+};
+const SELLER_KEYS = ['senderName', 'senderAddress', 'senderContact', 'senderEmail', 'senderGst', 'paymentDetails', 'upiId'];
+// Placeholder text the old builder put on new invoices.
+const PLACEHOLDER = /X{8,}|YOUR NAME|YOUR BRANCH|YOUR0{6}|:\s*0{10}\s*$|yourname@upi|email@newbi\.live|\+91 00000 00000/im;
+const real = (v) => (typeof v === 'string' && v.trim() && !PLACEHOLDER.test(v) ? v : '');
+
+const blankInvoice = () => ({
+    senderName: '', senderContact: '', senderEmail: '', senderGst: '', senderAddress: '',
+    clientName: '', clientAddress: '', clientGst: '', clientEmail: '', clientState: '',
+    invoiceNumber: '', invoiceDate: todayKey(), dueDate: '',
+    advancePaid: '', note: '', paymentDetails: '',
+    showNotes: true, showPaymentDetails: true, showUPI: false, upiId: '', qrType: 'auto', customQrImage: '',
+    showGst: true, gstPercentage: 18, showFooter: true, showAdvance: true, showSignatureBlock: true,
+    showPaymentButton: false, paymentLink: '', selectedLogo: 'entertainment',
+    showSeal: false, showSignatures: true, providerSignature: '', attachments: [],
+});
+
+let itemSeq = 0;
+const newItem = (hsn = '') => ({ id: Date.now() + (itemSeq++), name: '', description: '', qty: 1, price: '', customValues: hsn ? { hsn } : {} });
+
+const HSN_COLUMN = { id: 'hsn', label: 'HSN/SAC' };
+
+const STEPS = [
+    { id: 'details', label: 'Details', icon: Building2, desc: 'Brand, number and dates, who it is for, and your details' },
+    { id: 'items', label: 'Items', icon: ListOrdered, desc: 'What you are billing for' },
+    { id: 'payment', label: 'Payment', icon: CreditCard, desc: 'GST, advance, and how the client pays' },
+    { id: 'sign', label: 'Sign & seal', icon: ShieldCheck, desc: 'Signature, seal, attachments and a final check' },
+];
+
+const DUE_CHIPS = [['On receipt', 0], ['7 days', 7], ['15 days', 15], ['30 days', 30], ['45 days', 45]];
+
+const MAX_INLINE_IMAGE = 700 * 1024; // characters of a data URL kept inside the invoice record
+
+/** Scales the 794 × 1123 paper to the space it has. */
+const PaperFrame = ({ fit = 'width', zoom = 1, className, children }) => {
+    const ref = useRef(null);
+    const [size, setSize] = useState({ w: 0, h: 0 });
+    useLayoutEffect(() => {
+        const el = ref.current;
+        if (!el) return undefined;
+        const measure = () => setSize({ w: el.clientWidth, h: el.clientHeight });
+        measure();
+        const ro = new ResizeObserver(measure);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+    const byWidth = (size.w - 32) / 794;
+    const base = fit === 'page' ? Math.min(byWidth, (size.h - 32) / 1123) : byWidth;
+    const scale = Math.max(0.1, Math.min(2, base || 0.5)) * zoom;
+    return (
+        <div ref={ref} className={cn('overflow-auto bg-gray-200/70 p-4 [scrollbar-width:thin] dark:bg-[#050505]', className)}>
+            <div style={{ width: 794 * scale, height: 1123 * scale, position: 'relative', margin: '0 auto' }}>
+                <div style={{ width: 794, height: 1123, transform: `scale(${scale})`, transformOrigin: 'top left', position: 'absolute', top: 0, left: 0 }}>
+                    {children}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const Chip = ({ active, onClick, children, className }) => {
+    const a = useAccent();
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            aria-pressed={active}
+            className={cn('h-9 shrink-0 rounded-full border px-3.5 text-[12.5px] font-semibold transition-colors',
+                active ? cn(a.border, a.soft, a.text) : 'border-black/10 text-gray-600 hover:border-black/20 dark:border-white/10 dark:text-zinc-300 dark:hover:border-white/20',
+                className)}
+        >
+            {children}
+        </button>
+    );
+};
+
+const Note = ({ tone = 'gray', icon: Icon = AlertCircle, children, className }) => (
+    <p className={cn('flex items-start gap-2 rounded-xl px-3 py-2 text-[12.5px] font-medium', accent(tone).soft, accent(tone).text, className)}>
+        <Icon size={14} className="mt-0.5 shrink-0" />
+        <span className="min-w-0">{children}</span>
+    </p>
+);
+
+const SaveDefaultButton = ({ onClick, children = 'Save as default for new invoices' }) => (
+    <button type="button" onClick={onClick} className="inline-flex h-10 items-center gap-1.5 rounded-xl px-2 text-[12.5px] font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white">
+        <Bookmark size={13} /> {children}
+    </button>
+);
 
 const InvoiceGenerator = () => {
     useStoreSubscription(['invoices']);
     const { id } = useParams();
     const navigate = useNavigate();
-    const { addInvoice, updateInvoice, invoices, uploadToCloudinary, user } = useStore();
-    const [autosaveStatus, setAutosaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
-    const [lastSaved, setLastSaved] = useState('');
-    const isDirtyRef = useRef(false);
-    const initialDataLoadedRef = useRef(false);
-    const [previewScale, setPreviewScale] = useState(0.65);
-    const previewContainerRef = useRef(null);
+    const a = useAccent();
+    const invoices = useStore(s => s.invoices) || [];
+    const invoicesLoaded = useStore(s => Boolean(s.subscriptionsLoaded?.invoices));
+    const siteSettings = useStore(s => s.siteSettings);
+    const user = useStore(s => s.user);
+    const addToast = useStore(s => s.addToast);
 
-    const [activeTab, setActiveTab] = useState('1'); 
-    const [currentPreviewPage, setCurrentPreviewPage] = useState(0);
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [showPreviewMobile, setShowPreviewMobile] = useState(false);
-    const [userZoom, setUserZoom] = useState(1);
-    const [isExpandedPreview, setIsExpandedPreview] = useState(false);
-
-    const logoOptions = [
-        { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
-        { id: 'media', label: 'Newbi Media', path: '/logo_media.png', color: '#00D1FF' },
-        { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
-    ];
-
-    const [formData, setFormData] = useState(() => {
-        const savedSender = JSON.parse(localStorage.getItem('newbi_invoice_sender') || '{}');
-        return {
-            senderName: savedSender.name || 'Newbi Entertainment & Marketing LLP',
-            senderContact: savedSender.contact || '+91 00000 00000',
-            senderEmail: savedSender.email || 'email@newbi.live',
-            senderGst: savedSender.gst || 'XXXXXXXXXXX',
-            senderAddress: savedSender.address || 'Property No. 55, 3rdFloor SAIDULAJAB, Gadaipur, Sainik Farm, New Delhi, Delhi 110030',
-            clientName: '',
-            clientAddress: '',
-            clientGst: '',
-            invoiceNumber: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
-            invoiceDate: new Date().toISOString().split('T')[0],
-            dueDate: '',
-            advancePaid: 0,
-            note: '',
-            paymentDetails: `Name: YOUR NAME\nAccount No.: 0000000000\nIFSC Code: YOUR000000\nBranch: YOUR BRANCH\nUPI ID: yourname@upi\nContact No.: 0000000000`,
-            showSignatory: 'none',
-            signatoryImage: '',
-            showNotes: true,
-            showPaymentDetails: true,
-            showUPI: false,
-            upiId: 'yourname@upi',
-            qrType: 'auto',
-            customQrImage: '',
-            showGst: true,
-            gstPercentage: 18,
-            showFooter: true,
-            showAdvance: true,
-            showSignatureBlock: true,
-            showPaymentButton: false,
-            paymentLink: '',
-            selectedLogo: 'entertainment',
-            status: 'Pending',
-            showSeal: false,
-            showSignatures: false,
-            providerSignature: '',
-            clientSignature: '',
-        };
-    });
-
-    // Save sender details to localStorage whenever they change
-    useEffect(() => {
-        const senderDetails = {
-            name: formData.senderName,
-            contact: formData.senderContact,
-            email: formData.senderEmail,
-            gst: formData.senderGst,
-            address: formData.senderAddress
-        };
-        localStorage.setItem('newbi_invoice_sender', JSON.stringify(senderDetails));
-    }, [formData.senderName, formData.senderContact, formData.senderEmail, formData.senderGst, formData.senderAddress]);
-
-    const [items, setItems] = useState([
-        { id: 1, name: '', description: '', qty: 1, price: 0 }
-    ]);
-
+    const [formData, setFormData] = useState(blankInvoice);
+    const [items, setItems] = useState(() => [newItem()]);
     const [customColumns, setCustomColumns] = useState([]);
 
-    const inlineFmt = (t) => {
-        if (!t) return '';
-        return t
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>');
-    };
+    const [step, setStep] = useState('details');
+    const [previewPage, setPreviewPage] = useState(0);
+    const [zoom, setZoom] = useState(1);
+    const [expanded, setExpanded] = useState(false);
+    const [mobilePreview, setMobilePreview] = useState(false);
+    const [autosaveStatus, setAutosaveStatus] = useState('idle'); // idle | saving | saved | error
+    const [lastSaved, setLastSaved] = useState('');
+    const [busy, setBusy] = useState(null); // save | leave | pdf | share
+    const [capturing, setCapturing] = useState(false);
+    const [dialog, setDialog] = useState(null); // { kind: 'issues' | 'number' | 'leave', purpose }
+    const [bankAsText, setBankAsText] = useState(false);
+    const [newColumn, setNewColumn] = useState('');
+    const [upload, setUpload] = useState(null); // { name, percent }
+    const [linkDraft, setLinkDraft] = useState({ open: false, name: '', url: '' });
+    const [defaultsSource, setDefaultsSource] = useState('');
+    const editorRef = useRef(null);
 
-    const processHtmlHeadings = (html) => {
-        if (!html) return html;
-        return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
-            const level = hashes.length;
-            const headingClass = level === 1
-                ? "text-[18px] font-black text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
-                : level === 2
-                ? "text-[15px] font-bold text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
-                : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
-            const headingTag = `h${Math.min(level + 1, 6)}`;
-            return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
-        });
-    };
-
-    const renderFormatted = (text, baseClass = '') => {
-        if (!text) return null;
-        const lines = text.split('\n');
-        const elements = [];
-        let i = 0;
-        while (i < lines.length) {
-            const line = lines[i];
-            
-            if (line.trim() === '') {
-                const lastElement = elements[elements.length - 1];
-                const isLastSpacer = lastElement && lastElement.key && String(lastElement.key).startsWith('spacer-');
-                if (!isLastSpacer) {
-                    elements.push(<div key={`spacer-${i}`} className="h-3" />);
-                }
-                i++;
-                continue;
-            }
-
-            const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
-            if (headingMatch) {
-                const level = headingMatch[1].length;
-                const headingText = headingMatch[2];
-                const headingClass = level === 1
-                    ? "text-[18px] font-black text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
-                    : level === 2
-                    ? "text-[15px] font-bold text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
-                    : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
-                const headingTag = level === 1 ? 'h2' : level === 2 ? 'h3' : 'h4';
-                const Tag = headingTag;
-                elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: inlineFmt(headingText) }} />);
-            } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
-                const items = [];
-                while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) { 
-                    items.push(lines[i].replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, '').trim()); 
-                    i++; 
-                }
-                elements.push(
-                    <div key={`ul-${i}`} className="pl-6 space-y-2 my-3">
-                        {items.map((item, j) => (
-                            <div key={j} className="flex items-start gap-3">
-                                <span className="text-black mt-[8px] text-[6px] select-none shrink-0">■</span>
-                                <span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />
-                            </div>
-                        ))}
-                    </div>
-                );
-                continue;
-            } else {
-                elements.push(<p key={i} className={cn("whitespace-pre-line leading-relaxed", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
-            }
-            i++;
-        }
-        return <div>{elements}</div>;
-    };
-
-    const renderContent = (content, baseClass = '') => {
-        if (!content) return null;
-        const isHtml = content.includes('<') && content.includes('>');
-        
-        if (isHtml) {
-            return (
-                <div 
-                    className={cn("article-content", baseClass)} 
-                    dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} 
-                />
-            );
-        }
-        
-        return renderFormatted(content, baseClass);
-    };
-    const [newColumnName, setNewColumnName] = useState('');
-
-    const handleAddColumn = () => {
-        if (!newColumnName.trim()) return;
-        const id = `col-${Date.now()}`;
-        setCustomColumns([...customColumns, { id, label: newColumnName.trim() }]);
-        setNewColumnName('');
-    };
-
+    // ── Save bookkeeping ──
+    const idRef = useRef(id);
+    const isDirtyRef = useRef(false);
+    const revisionRef = useRef(0); // bumped on every edit; a save only clears "dirty" if nothing changed while it ran
+    const createPromiseRef = useRef(null); // one shared create, so concurrent saves never make two invoices
+    const justCreatedIdRef = useRef(null); // the id we just created: don't reload the form when the URL changes to it
     const hasInitializedRef = useRef(false);
-    useEffect(() => {
-        hasInitializedRef.current = false;
-        initialDataLoadedRef.current = false;
-    }, [id]);
+    const initialDataLoadedRef = useRef(!id);
+    const numberAutoRef = useRef(!id); // the number is ours to pick until the user types one
+    const defaultsAppliedRef = useRef(false);
+    const committedRef = useRef(null);
 
-    useEffect(() => {
-        if (!id) {
-            initialDataLoadedRef.current = true;
-        }
-    }, [id]);
+    const set = useCallback((patch) => setFormData(prev => ({ ...prev, ...patch })), []);
+    const updateItem = (idx, patch) => setItems(prev => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+    const numberInput = (value) => (value === '' ? '' : Number(value)); // keep '' while typing so a cleared field doesn't snap to 0
 
-    useEffect(() => {
-        if (id && invoices.length > 0 && !hasInitializedRef.current) {
-            const invoice = invoices.find(inv => inv.id === id);
-            if (invoice) {
-                setFormData({
-                    ...invoice,
-                    invoiceDate: invoice.issueDate || invoice.invoiceDate,
-                    selectedLogo: invoice.selectedLogo || 'entertainment'
-                });
-                setItems(invoice.items || []);
-                setCustomColumns(invoice.customColumns || []);
-                hasInitializedRef.current = true;
-                setTimeout(() => {
-                    initialDataLoadedRef.current = true;
-                }, 200);
-            }
-        }
-    }, [id, invoices]);
+    const existing = id ? invoices.find(inv => inv.id === id) : null;
 
-    useEffect(() => {
-        const handleResize = () => {
-            if (previewContainerRef.current) {
-                const containerWidth = previewContainerRef.current.clientWidth - 48; // padding
-                const containerHeight = previewContainerRef.current.clientHeight - 48; // padding
-                const scaleWidth = containerWidth / 794;
-                const scaleHeight = containerHeight / 1123;
-                const autoScale = isExpandedPreview ? Math.min(scaleWidth, scaleHeight) : scaleWidth;
-                setPreviewScale(Math.max(0.1, Math.min(2.0, autoScale)) * userZoom);
-            }
+    // ── Seller defaults: saved defaults → the latest invoice → the old per-browser copy → our details ──
+    const sellerDefaults = useCallback((excludeId) => {
+        const profile = siteSettings?.invoiceDefaults || {};
+        const latest = [...invoices]
+            .filter(inv => inv.id !== excludeId && inv.type !== 'upload' && real(inv.senderName))
+            .sort((x, y) => toMillis(y.createdAt) - toMillis(x.createdAt))[0] || {};
+        let legacy = {};
+        try { legacy = JSON.parse(window.localStorage.getItem('newbi_invoice_sender') || '{}') || {}; } catch { legacy = {}; }
+        const pick = (key, legacyKey) => real(profile[key]) || real(latest[key]) || real(legacy[legacyKey]) || FALLBACK_SELLER[key] || '';
+        return {
+            source: Object.keys(profile).length ? 'profile' : latest.id ? 'last' : '',
+            values: {
+                senderName: pick('senderName', 'name'),
+                senderAddress: pick('senderAddress', 'address'),
+                senderContact: pick('senderContact', 'contact'),
+                senderEmail: pick('senderEmail', 'email'),
+                senderGst: pick('senderGst', 'gst'),
+                paymentDetails: real(profile.paymentDetails) || real(latest.paymentDetails) || '',
+                upiId: real(profile.upiId) || real(latest.upiId) || '',
+            },
+            profile,
         };
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [userZoom, isExpandedPreview]);
+    }, [siteSettings, invoices]);
 
-    const subtotal = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
-    const gstAmount = formData.showGst ? (subtotal * formData.gstPercentage) / 100 : 0;
-    const totalAmount = subtotal + gstAmount;
-    const balanceDue = totalAmount - formData.advancePaid;
+    const fillSellerGaps = (prev, values) => {
+        const patch = {};
+        SELLER_KEYS.forEach(key => { if (!real(prev[key]) && values[key]) patch[key] = values[key]; });
+        return Object.keys(patch).length ? { ...prev, ...patch } : prev;
+    };
 
+    // ── Route changes: a new id loads that invoice; /create-invoice starts clean ──
+    useEffect(() => {
+        if (id && id === justCreatedIdRef.current) return;
+        idRef.current = id;
+        hasInitializedRef.current = false;
+        isDirtyRef.current = false;
+        createPromiseRef.current = null;
+        justCreatedIdRef.current = null;
+        setAutosaveStatus('idle');
+        if (!id) {
+            numberAutoRef.current = true;
+            defaultsAppliedRef.current = false;
+            setFormData(blankInvoice());
+            setItems([newItem()]);
+            setCustomColumns([]);
+            setStep('details');
+            initialDataLoadedRef.current = true;
+        } else {
+            initialDataLoadedRef.current = false;
+        }
+    }, [id]);
+
+    // Load the invoice being edited.
+    useEffect(() => {
+        if (!id || id === justCreatedIdRef.current || hasInitializedRef.current) return;
+        const invoice = invoices.find(inv => inv.id === id);
+        if (!invoice) return;
+        hasInitializedRef.current = true;
+        setFormData({
+            ...blankInvoice(),
+            ...invoice,
+            invoiceDate: String(invoice.issueDate || invoice.invoiceDate || '').slice(0, 10) || todayKey(),
+            dueDate: String(invoice.dueDate || '').slice(0, 10),
+            selectedLogo: invoice.selectedLogo || 'entertainment',
+            // Older invoices left these unset; match what the client's page shows.
+            showNotes: invoice.showNotes !== false,
+            showPaymentDetails: invoice.showPaymentDetails !== false,
+            showFooter: invoice.showFooter !== false,
+            showUPI: invoice.showUPI === undefined ? Boolean(invoice.upiId) : Boolean(invoice.showUPI),
+            showPaymentButton: Boolean(invoice.showPaymentButton || invoice.paymentLink),
+            showAdvance: invoice.showAdvance ?? (Number(invoice.advancePaid) > 0),
+            attachments: Array.isArray(invoice.attachments) ? invoice.attachments : [],
+        });
+        setItems(Array.isArray(invoice.items) && invoice.items.length ? invoice.items : [newItem()]);
+        setCustomColumns(Array.isArray(invoice.customColumns) ? invoice.customColumns : []);
+        setBankAsText(parseBankDetails(invoice.paymentDetails) === null);
+        // Invoices made from a proposal have no seller details yet: fill the gaps (and save them).
+        setTimeout(() => {
+            initialDataLoadedRef.current = true;
+            const { values } = sellerDefaults(id);
+            setFormData(prev => (real(prev.senderName) ? prev : fillSellerGaps(prev, values)));
+        }, 200);
+    }, [id, invoices]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // New invoices: the next number in the series, and your saved details.
+    useEffect(() => {
+        if (id || !invoicesLoaded) return;
+        if (!defaultsAppliedRef.current) {
+            defaultsAppliedRef.current = true;
+            const { values, profile, source } = sellerDefaults();
+            setDefaultsSource(source);
+            setFormData(prev => {
+                const next = fillSellerGaps(prev, values);
+                return {
+                    ...next,
+                    showUPI: Boolean(profile.showUPI && next.upiId) || next.showUPI,
+                    selectedLogo: profile.selectedLogo || next.selectedLogo,
+                    gstPercentage: profile.gstPercentage ?? next.gstPercentage,
+                    showSeal: profile.showSeal ?? next.showSeal,
+                    note: isBlankText(next.note) && profile.terms ? profile.terms : next.note,
+                };
+            });
+            setBankAsText(parseBankDetails(values.paymentDetails) === null);
+        }
+        // Until it's saved or typed over, follow the series (a colleague may have just used this number).
+        if (numberAutoRef.current && !idRef.current && !createPromiseRef.current) {
+            const next = nextInvoiceNumber(invoices);
+            setFormData(prev => (prev.invoiceNumber === next ? prev : { ...prev, invoiceNumber: next }));
+        }
+    }, [id, invoices, invoicesLoaded, sellerDefaults]);
+
+    // ── Money ──
+    const amounts = useMemo(
+        () => invoiceAmounts({ items, showGst: formData.showGst, gstPercentage: formData.gstPercentage }),
+        [items, formData.showGst, formData.gstPercentage]
+    );
+    const advance = Math.max(0, Number(formData.advancePaid) || 0);
+    // Payments recorded against this invoice since it was issued (live, from the list), as the client's page shows them.
+    const paymentsReceived = existing && existing.status !== 'Paid' ? invoiceReceived(existing) : 0;
+    const balanceDue = round2(Math.max(0, amounts.total - (formData.showAdvance ? advance : 0) - paymentsReceived));
+    const tax = invoiceTaxLines({ ...formData, gstPercentage: Number(formData.gstPercentage) || 0 }, amounts.gstAmount);
+    const supply = placeOfSupply(formData);
+
+    // ── Saving ──
     useEffect(() => {
         if (initialDataLoadedRef.current) {
             isDirtyRef.current = true;
+            revisionRef.current += 1;
         }
     }, [formData, items, customColumns]);
 
-    useEffect(() => {
-        if (!initialDataLoadedRef.current || !isDirtyRef.current) return;
+    const hasContent = Boolean(
+        formData.clientName?.trim() ||
+        items.some(it => String(it.name || it.description || '').trim() || Number(it.price))
+    );
 
-        let active = true;
-        const timer = setTimeout(async () => {
-            if (!active) return;
-            setAutosaveStatus('saving');
-            try {
-                const invoiceData = { 
-                    ...formData, 
-                    items, 
-                    customColumns,
-                    amount: totalAmount,
-                    total: totalAmount,
-                    issueDate: formData.invoiceDate,
-                    updatedAt: new Date().toISOString() 
-                };
-                
-                if (id) {
-                    await updateInvoice(id, invoiceData);
-                    if (active) {
-                        setAutosaveStatus('saved');
-                        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-                        isDirtyRef.current = false;
-                    }
-                } else {
-                    const res = await addInvoice({ ...invoiceData, createdAt: new Date().toISOString() });
-                    if (active) {
-                        setAutosaveStatus('saved');
-                        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-                        isDirtyRef.current = false;
-                        hasInitializedRef.current = true;
-                        initialDataLoadedRef.current = true;
-                        navigate(`/admin/edit-invoice/${res.id}`, { replace: true });
-                    }
-                }
-            } catch (err) {
-                console.error("Invoice autosave failed:", err);
-                if (active) {
-                    setAutosaveStatus('error');
-                }
-            }
-        }, 5000);
-
-        return () => {
-            active = false;
-            clearTimeout(timer);
+    const buildPayload = () => {
+        const payload = {};
+        EDITOR_FIELDS.forEach(key => { if (formData[key] !== undefined) payload[key] = formData[key]; });
+        return {
+            ...payload,
+            invoiceNumber: String(formData.invoiceNumber || '').trim(),
+            senderGst: cleanGstin(formData.senderGst),
+            clientGst: cleanGstin(formData.clientGst),
+            advancePaid: advance,
+            gstPercentage: Number(formData.gstPercentage) || 0,
+            paymentLink: formData.showPaymentButton ? String(formData.paymentLink || '').trim() : '',
+            items: items.map(it => ({
+                ...it,
+                qty: it.qty === '' || it.qty === null || it.qty === undefined ? 1 : Number(it.qty) || 0,
+                price: Number(it.price) || 0,
+            })),
+            customColumns,
+            amount: amounts.total,
+            total: amounts.total,
+            issueDate: formData.invoiceDate,
+            updatedAt: new Date().toISOString(),
         };
-    }, [formData, items, customColumns, id]);
+    };
 
-    const handleSave = async () => {
-        setIsGenerating(true);
-        try {
-            const invoiceData = { 
-                ...formData, 
-                items, 
-                customColumns,
-                amount: totalAmount,
-                total: totalAmount,
-                issueDate: formData.invoiceDate,
-                updatedAt: new Date().toISOString() 
-            };
-            if (id) {
-                await updateInvoice(id, invoiceData);
-                isDirtyRef.current = false;
-                setAutosaveStatus('saved');
-                setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-            } else {
-                const res = await addInvoice({ ...invoiceData, createdAt: new Date().toISOString() });
-                isDirtyRef.current = false;
-                setAutosaveStatus('saved');
-                setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    const markSaved = () => {
+        setAutosaveStatus('saved');
+        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    };
+
+    // One save path for autosave, Save, Share and leaving. Returns the invoice id.
+    const persist = async () => {
+        const revision = revisionRef.current;
+        const payload = buildPayload();
+        const { addInvoice, updateInvoice } = useStore.getState();
+        if (idRef.current) {
+            await updateInvoice(idRef.current, payload);
+        } else if (!createPromiseRef.current) {
+            createPromiseRef.current = addInvoice({ ...payload, status: 'Pending', createdAt: new Date().toISOString() });
+            let res;
+            try { res = await createPromiseRef.current; } catch (err) { createPromiseRef.current = null; throw err; }
+            justCreatedIdRef.current = res.id;
+            idRef.current = res.id;
+            hasInitializedRef.current = true;
+            initialDataLoadedRef.current = true;
+            navigate(`/admin/edit-invoice/${res.id}`, { replace: true });
+        } else {
+            // Another save is creating it: wait, then write this (newer) copy on top.
+            const res = await createPromiseRef.current;
+            await updateInvoice(res.id, payload);
+        }
+        if (revisionRef.current === revision) isDirtyRef.current = false;
+        markSaved();
+        return idRef.current;
+    };
+
+    // Autosave a few seconds after the last change.
+    useEffect(() => {
+        if (!initialDataLoadedRef.current || !isDirtyRef.current) return undefined;
+        if (!idRef.current && !hasContent) return undefined;
+        const timer = setTimeout(async () => {
+            setAutosaveStatus('saving');
+            try { await persist(); } catch (err) {
+                console.error('Invoice autosave failed:', err);
+                setAutosaveStatus('error');
             }
-            navigate('/admin/invoices');
-        } catch (error) {
-            useStore.getState().addToast("Couldn't save the invoice. Please try again.", 'error');
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, [formData, items, customColumns, id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Keep the last committed copy so leaving the page (or switching invoice) can save it.
+    useEffect(() => { committedRef.current = { id: idRef.current, hasContent, payload: buildPayload() }; });
+    useEffect(() => () => {
+        const snap = committedRef.current;
+        if (!snap || !isDirtyRef.current) return;
+        const { updateInvoice } = useStore.getState();
+        if (snap.id) updateInvoice(snap.id, snap.payload).catch(err => console.error('Invoice save on leave failed:', err));
+        else if (createPromiseRef.current) createPromiseRef.current.then(res => updateInvoice(res.id, snap.payload)).catch(() => {});
+    }, [id]);
+
+    useEffect(() => {
+        const warn = (e) => {
+            if (!isDirtyRef.current || (!idRef.current && !hasContent)) return;
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', warn);
+        return () => window.removeEventListener('beforeunload', warn);
+    }, [hasContent]);
+
+    // ── Checks before sharing or downloading ──
+    // While our own create is in flight its copy is already in the list; don't flag it.
+    const numberClash = Boolean(norm(formData.invoiceNumber)) && !(createPromiseRef.current && !idRef.current) && invoices.some(inv => inv.id !== idRef.current && norm(inv.invoiceNumber) === norm(formData.invoiceNumber));
+    const nextFreeNumber = useMemo(() => nextInvoiceNumber(invoices), [invoices]);
+    const hasHsn = customColumns.some(c => c.id === HSN_COLUMN.id);
+    const bank = bankAsText ? null : parseBankDetails(formData.paymentDetails);
+
+    const issues = useMemo(() => {
+        const list = [];
+        const add = (stepId, level, text) => list.push({ step: stepId, level, text });
+        // Details
+        if (!String(formData.invoiceNumber || '').trim()) add('details', 'error', 'Add an invoice number.');
+        else if (numberClash) add('details', 'error', `${formData.invoiceNumber} is already used by another invoice.`);
+        if (!formData.invoiceDate) add('details', 'error', 'Add the issue date.');
+        if (formData.dueDate && formData.invoiceDate && formData.dueDate < formData.invoiceDate) add('details', 'error', 'The due date is before the issue date.');
+        if (!formData.dueDate) add('details', 'warn', 'No due date. Clients tend to pay sooner with one.');
+        if (!String(formData.clientName || '').trim()) add('details', 'error', 'Add who the invoice is for.');
+        if (!String(formData.clientAddress || '').trim()) add('details', 'warn', "Add the client's billing address.");
+        const clientGst = gstinProblem(formData.clientGst);
+        if (clientGst === 'shape') add('details', 'error', "The client's GSTIN doesn't look right. It has 15 characters, like 07AAACN1234F1Z5.");
+        if (clientGst === 'checksum') add('details', 'warn', "The client's GSTIN may have a typo (its last character doesn't match).");
+        if (formData.showGst && !placeOfSupply(formData)) add('details', 'warn', "Add the client's GSTIN or state, so the invoice shows CGST + SGST or IGST and the place of supply.");
+        if (formData.clientEmail && !isEmail(formData.clientEmail)) add('details', 'warn', "The client's email doesn't look right.");
+        if (!real(formData.senderName)) add('details', 'error', 'Add your business name.');
+        const sellerGst = gstinProblem(formData.senderGst);
+        if (formData.showGst && !cleanGstin(formData.senderGst)) add('details', 'error', 'Add your GSTIN. A GST invoice must show it.');
+        if (sellerGst === 'shape' || (formData.senderGst && PLACEHOLDER.test(formData.senderGst))) add('details', 'error', "Your GSTIN doesn't look right.");
+        if (sellerGst === 'checksum') add('details', 'warn', 'Your GSTIN may have a typo.');
+        if (!real(formData.senderContact) || !real(formData.senderEmail)) add('details', 'warn', 'Your phone or email is missing or still placeholder text.');
+        // Items
+        const used = items.filter(it => String(it.name || it.description || '').trim() || Number(it.price));
+        if (!used.length) add('items', 'error', 'Add at least one item.');
+        items.forEach((it, i) => {
+            const named = String(it.name || it.description || '').trim();
+            if (!named && Number(it.price)) add('items', 'error', `Item ${i + 1} needs a name.`);
+            if (named && !(Number(it.price) > 0)) add('items', 'warn', `Item ${i + 1} has no rate.`);
+            if (it.qty !== '' && Number(it.qty) <= 0 && (named || Number(it.price))) add('items', 'error', `Item ${i + 1}: the quantity must be more than 0.`);
+        });
+        if (hasHsn && used.some(it => !String(it.customValues?.hsn || '').trim())) add('items', 'warn', 'Some items have no HSN/SAC code.');
+        if (used.length && amounts.total <= 0) add('items', 'error', 'The total is ₹0.');
+        // Payment
+        if (formData.showGst && !GST_RATES.includes(Number(formData.gstPercentage))) add('payment', 'warn', `${formData.gstPercentage || 0}% isn't a standard GST rate.`);
+        if (formData.showAdvance && advance > amounts.total && amounts.total > 0) add('payment', 'error', 'The advance is more than the invoice total.');
+        if (formData.showPaymentDetails && !String(formData.paymentDetails || '').trim()) add('payment', 'warn', 'Bank details are switched on but empty.');
+        if (formData.showPaymentDetails && PLACEHOLDER.test(formData.paymentDetails || '')) add('payment', 'error', 'The bank details still have placeholder text.');
+        if (formData.showPaymentDetails && bank?.ifsc && !isIfsc(bank.ifsc)) add('payment', 'warn', "The IFSC doesn't look right. It has 11 characters, like SBIN0001234.");
+        if (formData.showUPI && !isUpiId(formData.upiId)) add('payment', 'error', 'Add a valid UPI ID (like name@bank), or turn the QR code off.');
+        if (formData.showUPI && formData.qrType === 'custom' && !formData.customQrImage) add('payment', 'error', 'Upload the QR image, or make the QR from the UPI ID.');
+        if (formData.showPaymentButton && !isHttpsUrl(formData.paymentLink)) add('payment', 'error', 'Add the payment page link (starting with https://), or turn the button off.');
+        // Sign
+        if (formData.showSignatures && !formData.providerSignature) add('sign', 'warn', 'The signature box is empty. Add the authorised signature.');
+        if (!formData.showSignatures && !formData.showSeal) add('sign', 'warn', 'No signature or seal. Tax invoices are normally signed.');
+        return list;
+    }, [formData, items, amounts.total, advance, numberClash, hasHsn, bank]);
+
+    const errors = issues.filter(i => i.level === 'error');
+    const stepErrors = (stepId) => issues.filter(i => i.step === stepId && i.level === 'error').length;
+
+    // ── Paper ──
+    const paperData = {
+        ...formData,
+        advancePaid: advance,
+        gstPercentage: Number(formData.gstPercentage) || 0,
+        paymentLink: formData.showPaymentButton ? formData.paymentLink : '',
+    };
+    const pages = paginateInvoice(items, paperData);
+    const pageCount = pages.length;
+    const shownPage = Math.min(previewPage, pageCount - 1);
+
+    const goStep = (stepId) => {
+        setStep(stepId);
+        setPreviewPage(stepId === 'details' || stepId === 'items' ? 0 : Math.max(0, pageCount - 1));
+        editorRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    const stepIndex = STEPS.findIndex(s => s.id === step);
+
+    // ── Actions ──
+    const leave = async () => {
+        if (isDirtyRef.current && (idRef.current || hasContent)) {
+            setBusy('leave');
+            try { await persist(); } catch {
+                setBusy(null);
+                setDialog({ kind: 'leave' });
+                return;
+            }
+            setBusy(null);
+        }
+        isDirtyRef.current = false;
+        navigate('/admin/invoices');
+    };
+
+    const saveAndClose = async (force = false) => {
+        if (!force && numberClash) { setDialog({ kind: 'number', purpose: 'save' }); return; }
+        if (!idRef.current && !hasContent) { navigate('/admin/invoices'); return; }
+        setBusy('save');
+        try {
+            const savedId = await persist();
+            isDirtyRef.current = false;
+            navigate(savedId ? `/admin/invoices?invoice=${savedId}` : '/admin/invoices');
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't save the invoice. Please try again.", 'error');
         } finally {
-            setIsGenerating(false);
+            setBusy(null);
         }
     };
 
+    /** Saves and returns the id when the invoice is ready to go out; otherwise shows what's missing. */
+    const readyToSend = async () => {
+        if (errors.length) { setDialog({ kind: 'issues', purpose: 'share' }); return null; }
+        setBusy('share');
+        try { return await persist(); } catch {
+            addToast("Couldn't save the invoice. Please try again.", 'error');
+            return null;
+        } finally { setBusy(null); }
+    };
 
-
-    const handleSignatoryUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        setIsGenerating(true);
-        try {
-            const url = await uploadToCloudinary(file);
-            if (url) setFormData(prev => ({ ...prev, signatoryImage: url, showSignatory: 'image' }));
-        } catch (error) {
-            useStore.getState().addToast("Couldn't upload the signature. Please try again.", 'error');
-        } finally {
-            setIsGenerating(false);
+    const shareUrl = (invoiceId, via) => `${window.location.origin}/invoice/${invoiceId}?via=${via}`;
+    const share = async (how) => {
+        const savedId = await readyToSend();
+        if (!savedId) return;
+        if (how === 'link') {
+            const ok = await copyToClipboard(shareUrl(savedId, 'link'));
+            addToast(ok ? 'Invoice link copied.' : "Couldn't copy the link.", ok ? 'success' : 'error');
+        } else if (how === 'whatsapp') {
+            const text = `Hi${formData.clientName ? ` ${formData.clientName}` : ''}, here is invoice ${formData.invoiceNumber || ''} from Newbi Entertainment for ${rupees(balanceDue)}: ${shareUrl(savedId, 'whatsapp')}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+        } else if (how === 'open') {
+            window.open(`/invoice/${savedId}`, '_blank', 'noopener');
+        } else if (how === 'email') {
+            isDirtyRef.current = false;
+            navigate(`/admin/invoices?invoice=${savedId}`);
         }
     };
 
-    const generatePDF = async () => {
-        setIsGenerating(true);
-        const originalScale = previewScale;
-        setPreviewScale(1);
-        await new Promise(r => setTimeout(r, 800));
-        
-        // Create hidden container to render all pages for PDF capture
-        const hiddenContainer = document.createElement('div');
-        hiddenContainer.style.position = 'absolute';
-        hiddenContainer.style.left = '-9999px';
-        hiddenContainer.style.top = '0';
-        hiddenContainer.style.width = '794px';
-        document.body.appendChild(hiddenContainer);
-
+    const downloadPdf = async (force = false) => {
+        if (!force && errors.length) { setDialog({ kind: 'issues', purpose: 'pdf' }); return; }
+        setDialog(null);
+        setBusy('pdf');
+        setCapturing(true);
         try {
-            // Lazy load libraries
-            const [jsPDFModule, html2canvasModule] = await Promise.all([
-                import('jspdf'),
-                import('html2canvas')
-            ]);
-            const jsPDF = jsPDFModule.default;
-            const html2canvas = html2canvasModule.default;
-
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const allPages = getPaginatedPages();
-            
-            for (let i = 0; i < allPages.length; i++) {
-                const pageWrapper = document.createElement('div');
-                pageWrapper.className = 'temp-pdf-page';
-                hiddenContainer.appendChild(pageWrapper);
-            }
-            
-            const pages = document.querySelectorAll('.pdf-capture-only .invoice-page-render');
-            for (let i = 0; i < pages.length; i++) {
-                const canvas = await html2canvas(pages[i], { 
-                    scale: 2, 
-                    useCORS: true, 
-                    backgroundColor: '#ffffff'
+            await new Promise(r => setTimeout(r, 700)); // let the pages and their images render
+            const [{ default: JsPDF }, { default: html2canvas }] = await Promise.all([import('jspdf'), import('html2canvas')]);
+            const pdf = new JsPDF('p', 'mm', 'a4');
+            const nodes = document.querySelectorAll('.invoice-pdf-capture .invoice-page-render');
+            for (let i = 0; i < nodes.length; i++) {
+                const canvas = await html2canvas(nodes[i], {
+                    scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false,
+                    onclone: (doc) => doc.documentElement.classList.remove('dark'),
                 });
                 if (i > 0) pdf.addPage();
                 pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
             }
-            pdf.save(`Newbi-Invoice-${formData.invoiceNumber}.pdf`);
+            pdf.save(`Newbi-Invoice-${formData.invoiceNumber || 'draft'}.pdf`);
         } catch (error) {
             console.error(error);
-            useStore.getState().addToast("Couldn't create the PDF. Please try again.", 'error');
+            addToast("Couldn't create the PDF. Please try again.", 'error');
         } finally {
-            document.body.removeChild(hiddenContainer);
-            setPreviewScale(originalScale);
-            setIsGenerating(false);
+            setCapturing(false);
+            setBusy(null);
         }
     };
 
-    const getPaginatedPages = () => {
-        const pages = [];
-        let itemsRemaining = [...items];
-        
-        let occupiedWeight = 0;
-        if (formData.showGst) occupiedWeight += 0.5;
-        if (formData.showAdvance && formData.advancePaid > 0) occupiedWeight += 0.5;
-        if (formData.paymentLink) occupiedWeight += 0.5;
-        if (formData.upiId && formData.showUPI !== false) occupiedWeight += 1.5;
-        if (formData.showSeal || formData.showSignatures) occupiedWeight += 2;
-        if (formData.showPaymentDetails && formData.paymentDetails) occupiedWeight += 1.5;
-        if (formData.showNotes && formData.note) occupiedWeight += 1;
-
-        const firstPageWithTotalsLimit = occupiedWeight >= 4 ? 3 : (occupiedWeight >= 2 ? 4 : 6);
-        const standardPageWithTotalsLimit = occupiedWeight >= 4 ? 6 : (occupiedWeight >= 2 ? 8 : 10);
-        const firstPageLimit = 7; 
-        const standardLimit = 14; 
-
-        let isFirstPage = true;
-        while (itemsRemaining.length > 0) {
-            const limit = isFirstPage ? firstPageLimit : standardLimit;
-            const pageItems = itemsRemaining.splice(0, limit);
-            pages.push(pageItems);
-
-            const totalsLimit = isFirstPage ? firstPageWithTotalsLimit : standardPageWithTotalsLimit;
-            if (itemsRemaining.length === 0 && pageItems.length > totalsLimit) {
-                pages.push([]);
-            }
-            isFirstPage = false;
+    const saveDefaults = async (part, message = 'Saved. New invoices will start with these details.') => {
+        try {
+            await useStore.getState().updateGeneralSettings({
+                invoiceDefaults: { ...(siteSettings?.invoiceDefaults || {}), ...part, updatedAt: new Date().toISOString(), updatedBy: user?.email || null },
+            });
+            addToast(message, 'success');
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't save the defaults. Please try again.", 'error');
         }
-        
-        return pages.length > 0 ? pages : [[]];
     };
 
-    const paginatedPages = getPaginatedPages();
+    // ── Client details from earlier invoices ──
+    const knownClients = useMemo(() => {
+        const map = new Map();
+        [...invoices]
+            .sort((x, y) => toMillis(y.createdAt) - toMillis(x.createdAt))
+            .forEach(inv => {
+                const key = norm(inv.clientName);
+                if (key && !map.has(key)) map.set(key, inv);
+            });
+        return map;
+    }, [invoices]);
+    const knownClient = knownClients.get(norm(formData.clientName));
+    const canFillClient = knownClient && knownClient.id !== idRef.current && (
+        (knownClient.clientAddress && knownClient.clientAddress !== formData.clientAddress) ||
+        (knownClient.clientGst && cleanGstin(knownClient.clientGst) !== cleanGstin(formData.clientGst)) ||
+        (knownClient.clientEmail && knownClient.clientEmail !== formData.clientEmail)
+    );
 
-    useEffect(() => {
-        if (paginatedPages.length > 0 && currentPreviewPage >= paginatedPages.length) {
-            setCurrentPreviewPage(paginatedPages.length - 1);
+    const lastSignature = useMemo(() => {
+        const mine = [...invoices]
+            .filter(inv => inv.id !== idRef.current && inv.providerSignature)
+            .sort((x, y) => (Number(y.createdBy === user?.uid) - Number(x.createdBy === user?.uid)) || (toMillis(y.updatedAt || y.createdAt) - toMillis(x.updatedAt || x.createdAt)));
+        return mine[0]?.providerSignature || '';
+    }, [invoices, user?.uid]);
+
+    // ── Items ──
+    const addItem = () => setItems(prev => [...prev, newItem(hasHsn ? prev[prev.length - 1]?.customValues?.hsn || '' : '')]);
+    const moveItem = (idx, dir) => setItems(prev => {
+        const next = [...prev];
+        const to = idx + dir;
+        if (to < 0 || to >= next.length) return prev;
+        [next[idx], next[to]] = [next[to], next[idx]];
+        return next;
+    });
+    const duplicateItem = (idx) => setItems(prev => {
+        const copy = { ...prev[idx], id: newItem().id, customValues: { ...(prev[idx].customValues || {}) } };
+        return [...prev.slice(0, idx + 1), copy, ...prev.slice(idx + 1)];
+    });
+    const removeItem = (idx) => setItems(prev => (prev.length > 1 ? prev.filter((_, i) => i !== idx) : [newItem()]));
+    const toggleHsn = (on) => setCustomColumns(prev => (on
+        ? [HSN_COLUMN, ...prev.filter(c => c.id !== HSN_COLUMN.id)]
+        : prev.filter(c => c.id !== HSN_COLUMN.id)));
+    const addColumn = () => {
+        const label = newColumn.trim();
+        if (!label) return;
+        setCustomColumns(prev => [...prev, { id: `col-${Date.now()}`, label }]);
+        setNewColumn('');
+    };
+
+    // ── Dates ──
+    const addDays = (n) => {
+        const base = formData.invoiceDate ? new Date(`${formData.invoiceDate}T00:00:00`) : new Date();
+        base.setDate(base.getDate() + n);
+        return todayKey(base);
+    };
+
+    // ── Bank ──
+    const setBankField = (key, value) => set({ paymentDetails: composeBankDetails({ ...(bank || {}), [key]: value }) });
+
+    // ── Images kept inside the invoice record ──
+    const readImage = (file, onDone) => {
+        if (!file) return;
+        if (!file.type.startsWith('image/')) { addToast('Choose an image file.', 'error'); return; }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const data = String(ev.target.result || '');
+            if (data.length > MAX_INLINE_IMAGE) { addToast('That image is too large. Use one under 500 KB.', 'error'); return; }
+            onDone(data);
+        };
+        reader.readAsDataURL(file);
+    };
+    const setSignature = (data) => {
+        if (data && String(data).length > MAX_INLINE_IMAGE) { addToast('That signature image is too large. Draw it, or use a smaller image.', 'error'); return; }
+        set({ providerSignature: data || '' });
+    };
+
+    // ── Attachments ──
+    const attachments = formData.attachments || [];
+    const addAttachmentFile = async (file) => {
+        if (!file) return;
+        if (file.size > 35 * 1024 * 1024) { addToast(`That file is ${formatBytes(file.size)}. The limit is 35 MB.`, 'error'); return; }
+        setUpload({ name: file.name, percent: 0 });
+        try {
+            const res = await useStore.getState().uploadProposalFile(file, (p) => setUpload(u => (u ? { ...u, percent: p } : u)));
+            const ext = String(file.name.split('.').pop() || '').toLowerCase();
+            const fileType = res.fileType === 'pdf' ? 'pdf' : ['xls', 'xlsx', 'csv'].includes(ext) ? 'spreadsheet' : file.type.startsWith('image/') ? 'image' : 'file';
+            setFormData(prev => ({ ...prev, attachments: [...(prev.attachments || []), { id: `att_${Date.now()}`, name: file.name, type: 'file', url: res.url, fileType, size: file.size }] }));
+            addToast('File attached.', 'success');
+        } catch (err) {
+            addToast(err?.message || "Couldn't upload the file. Please try again.", 'error');
+        } finally {
+            setUpload(null);
         }
-    }, [paginatedPages.length, currentPreviewPage]);
+    };
+    const addAttachmentLink = () => {
+        const url = linkDraft.url.trim();
+        if (!isHttpsUrl(url)) { addToast('Add a full link, starting with https://', 'error'); return; }
+        let name = linkDraft.name.trim();
+        if (!name) { try { name = new URL(url).hostname; } catch { name = 'Link'; } }
+        setFormData(prev => ({ ...prev, attachments: [...(prev.attachments || []), { id: `att_${Date.now()}`, name, type: 'link', url, fileType: 'link' }] }));
+        setLinkDraft({ open: false, name: '', url: '' });
+    };
+    const removeAttachment = (attId) => setFormData(prev => ({ ...prev, attachments: (prev.attachments || []).filter(x => x.id !== attId) }));
 
-    const tabs = [
-        { id: '1', label: 'Branding & Info', icon: Building2, desc: 'Identity & Entity Info' },
-        { id: '2', label: 'Line Items', icon: FileSpreadsheet, desc: 'Service & Products Inventory' },
-        { id: '3', label: 'Payment & Taxes', icon: CreditCard, desc: 'Bank, Gateway & Taxes' },
-        { id: '4', label: 'Signatures', icon: ShieldCheck, desc: 'Digital Verification & Seal' }
+    const appendTerm = (text) => {
+        const current = isBlankText(formData.note) ? '' : asHtml(formData.note);
+        set({ note: `${current}<div>${escapeHtml(text)}</div>`, showNotes: true });
+    };
+    const sellerState = stateOfGstin(formData.senderGst)?.name;
+    const TERMS = [
+        formData.dueDate ? `Please pay by ${new Date(`${formData.dueDate}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}.` : 'Payment is due on receipt of this invoice.',
+        'Please quote the invoice number when you pay.',
+        'Interest at 18% a year applies to payments made after the due date.',
+        'Tax is not payable on reverse charge.',
+        `Subject to ${sellerState || 'Delhi'} jurisdiction.`,
+        'This is a computer-generated invoice.',
     ];
 
-    const currentTab = tabs.find(t => t.id === activeTab);
-    const currentLogo = logoOptions.find(l => l.id === formData.selectedLogo) || logoOptions[0];
-    const brandColor = currentLogo.color;
+    // ── Not found / uploaded ──
+    if (id && invoicesLoaded && !existing && id !== justCreatedIdRef.current && !hasInitializedRef.current) {
+        return (
+            <div className="flex min-h-dvh items-center justify-center bg-[#f6f7f9] px-4 font-heading dark:bg-[#07080b]">
+                <EmptyState icon={FileText} title="Invoice not found" description="It may have been deleted, or the link is wrong." action={<Button as={Link} to="/admin/invoices" variant="secondary"><ArrowLeft size={14} /> Back to invoices</Button>} />
+            </div>
+        );
+    }
+    if (existing?.type === 'upload') {
+        return (
+            <div className="flex min-h-dvh items-center justify-center bg-[#f6f7f9] px-4 font-heading dark:bg-[#07080b]">
+                <EmptyState icon={Upload} title="This invoice is an uploaded PDF" description="Its details are edited from the invoice panel, not the builder." action={<Button as={Link} to={`/admin/invoices?invoice=${existing.id}`} variant="secondary"><ArrowLeft size={14} /> Open in invoices</Button>} />
+            </div>
+        );
+    }
 
-    const handleTabClick = (tabId) => {
-        setActiveTab(tabId);
-        if (tabId === '1' || tabId === '2') {
-            setCurrentPreviewPage(0);
-        } else if (tabId === '3' || tabId === '4') {
-            setCurrentPreviewPage(Math.max(0, paginatedPages.length - 1));
-        }
+    // ── Pieces ──
+    const statusLine = (
+        <p className={cn('truncate text-[12px] font-medium', autosaveStatus === 'error' ? 'text-red-500' : 'text-gray-500')}>
+            {autosaveStatus === 'saving' && 'Saving…'}
+            {autosaveStatus === 'saved' && `Saved at ${lastSaved}`}
+            {autosaveStatus === 'error' && (
+                <button type="button" onClick={() => { setAutosaveStatus('saving'); persist().catch(() => setAutosaveStatus('error')); }} className="font-semibold underline">
+                    Couldn't save. Tap to try again
+                </button>
+            )}
+            {autosaveStatus === 'idle' && (idRef.current ? 'Changes save automatically' : 'Saves automatically once you add a client or an item')}
+        </p>
+    );
+
+    const Summary = ({ compact }) => (
+        <div className="rounded-2xl border border-black/[0.06] bg-white p-4 text-[13.5px] dark:border-white/[0.08] dark:bg-white/[0.03]">
+            <div className="flex justify-between py-1"><span className="text-gray-500">Subtotal</span><span className="font-semibold tabular-nums">{rupees(amounts.subtotal)}</span></div>
+            {tax.lines.map(line => (
+                <div key={line.label} className="flex justify-between py-1"><span className="text-gray-500">{line.label}</span><span className="font-semibold tabular-nums">{rupees(line.amount)}</span></div>
+            ))}
+            <div className="mt-1 flex justify-between border-t border-black/[0.06] pt-2 text-[16px] dark:border-white/[0.08]"><span className="font-bold">Total</span><span className={cn('font-extrabold tabular-nums', a.text)}>{rupees(amounts.total)}</span></div>
+            {((formData.showAdvance && advance > 0) || paymentsReceived > 0) && (
+                <>
+                    {formData.showAdvance && advance > 0 && <div className="flex justify-between py-1"><span className="text-gray-500">Advance received</span><span className="font-semibold tabular-nums">−{rupees(advance)}</span></div>}
+                    {paymentsReceived > 0 && <div className="flex justify-between py-1"><span className="text-gray-500">Payments received</span><span className="font-semibold tabular-nums">−{rupees(paymentsReceived)}</span></div>}
+                    <div className="flex justify-between py-1 text-[15px]"><span className="font-bold">Balance due</span><span className="font-extrabold tabular-nums">{rupees(balanceDue)}</span></div>
+                </>
+            )}
+            {!compact && amounts.total > 0 && <p className="mt-2 text-[12px] text-gray-500">{amountInWords(amounts.total)}</p>}
+        </div>
+    );
+
+    const shareMenu = (
+        <Menu trigger={({ toggle }) => (
+            <Button variant="secondary" onClick={toggle} disabled={Boolean(busy)} aria-label="Share" className="h-10 w-10 px-0 sm:w-auto sm:px-4">
+                <Share2 size={15} /> <span className="hidden sm:inline">Share</span>
+            </Button>
+        )}>
+            <MenuItem icon={Link2} onClick={() => share('link')} hint="Anyone with the link can view and pay">Copy client link</MenuItem>
+            <MenuItem icon={MessageCircle} onClick={() => share('whatsapp')}>Send on WhatsApp</MenuItem>
+            <MenuItem icon={Mail} onClick={() => share('email')} hint="Opens the invoice panel to write the email">Email to client</MenuItem>
+            <MenuItem icon={ExternalLink} onClick={() => share('open')}>Open the client's page</MenuItem>
+            <MenuItem icon={Download} onClick={() => downloadPdf()} className="sm:hidden">Download PDF</MenuItem>
+            <MenuItem icon={Save} onClick={() => saveAndClose()} className="sm:hidden">Save & close</MenuItem>
+        </Menu>
+    );
+
+    const previewToolbar = (
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-black/[0.06] bg-white px-3 py-2 dark:border-white/[0.06] dark:bg-[#0b0c11]">
+            <Button variant="secondary" size="sm" onClick={() => setExpanded(v => !v)} className="hidden lg:inline-flex">
+                {expanded ? <Minimize2 size={13} /> : <Maximize2 size={13} />} {expanded ? 'Back to editor' : 'Expand'}
+            </Button>
+            <div className="ml-auto flex items-center gap-1.5">
+                <div className="hidden items-center rounded-xl border border-black/10 dark:border-white/10 sm:flex">
+                    <button type="button" onClick={() => setZoom(z => Math.max(0.5, round2(z - 0.1)))} aria-label="Zoom out" className="flex h-9 w-9 items-center justify-center"><Minus size={13} /></button>
+                    <span className="min-w-[44px] text-center text-[12px] font-semibold tabular-nums text-gray-500">{Math.round(zoom * 100)}%</span>
+                    <button type="button" onClick={() => setZoom(z => Math.min(2, round2(z + 0.1)))} aria-label="Zoom in" className="flex h-9 w-9 items-center justify-center"><Plus size={13} /></button>
+                </div>
+                <div className="flex items-center rounded-xl border border-black/10 dark:border-white/10">
+                    <button type="button" onClick={() => setPreviewPage(Math.max(0, shownPage - 1))} disabled={shownPage === 0} aria-label="Previous page" className="flex h-9 w-10 items-center justify-center disabled:opacity-25"><ChevronLeft size={15} /></button>
+                    <span className="min-w-[44px] text-center text-[12px] font-semibold tabular-nums">{shownPage + 1} / {pageCount}</span>
+                    <button type="button" onClick={() => setPreviewPage(Math.min(pageCount - 1, shownPage + 1))} disabled={shownPage === pageCount - 1} aria-label="Next page" className="flex h-9 w-10 items-center justify-center disabled:opacity-25"><ChevronRight size={15} /></button>
+                </div>
+            </div>
+        </div>
+    );
+
+    const paper = (
+        <InvoicePage data={paperData} columns={customColumns} pageItems={pages[shownPage]} pageIndex={shownPage} pageCount={pageCount} amounts={amounts} balanceDue={balanceDue} paymentsReceived={paymentsReceived} />
+    );
+
+    const gstReadout = (value) => {
+        const problem = gstinProblem(value);
+        const state = stateOfGstin(value);
+        if (!cleanGstin(value)) return null;
+        if (problem === 'shape') return <span className="text-red-600 dark:text-red-400">15 characters, like 07AAACN1234F1Z5</span>;
+        return (
+            <span className={problem === 'checksum' ? accent('amber').text : accent('green').text}>
+                {state?.name}{problem === 'checksum' ? ' · check for a typo' : ' · looks right'}
+            </span>
+        );
     };
 
     return (
-        <div className="h-screen overflow-hidden bg-gray-50 dark:bg-[#0B0F17] text-gray-900 dark:text-white selection:bg-neon-blue selection:text-black font-['Outfit'] flex flex-col admin-hub-content-container">
+        <div className="flex h-dvh flex-col overflow-hidden bg-[#f6f7f9] font-heading text-gray-900 dark:bg-[#07080b] dark:text-white">
             <style dangerouslySetInnerHTML={{ __html: `
-                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-                @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
-                .scrollbar-hide::-webkit-scrollbar { display: none; }
-                .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-                .font-signature { font-family: 'Caveat', cursive; }
-                input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-                input[type=number] { -moz-appearance: textfield; }
-            `}} />
+                .invoice-builder input::-webkit-outer-spin-button, .invoice-builder input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+                .invoice-builder input[type=number] { -moz-appearance: textfield; }
+            ` }} />
 
             {/* Header */}
-            <header className="h-16 md:h-20 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/50 backdrop-blur-3xl flex items-center justify-between px-4 md:px-8 shrink-0 relative z-50">
-                <div className="flex items-center gap-2 md:gap-4 min-w-0">
-                    <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                        <Link to="/admin/invoices" className="p-2.5 md:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 text-gray-700 dark:text-gray-300"><ArrowLeft size={16} /></Link>
-                    </div>
-                    <div className="min-w-0 flex flex-col justify-center">
-                        <h1 className="text-sm md:text-xl font-extrabold tracking-tight text-gray-900 dark:text-white truncate leading-none">Invoice <span className="text-neon-blue">Engine.</span></h1>
-                        <p className="text-[7px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1 truncate">Financial Summary</p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 md:gap-4 shrink-0">
-                    {autosaveStatus !== 'idle' && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 select-none">
-                            <span className={cn(
-                                "w-1.5 h-1.5 rounded-full shrink-0",
-                                autosaveStatus === 'saving' && "bg-amber-400 animate-pulse",
-                                autosaveStatus === 'saved' && "bg-emerald-400",
-                                autosaveStatus === 'error' && "bg-red-500"
-                            )} />
-                            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-400">
-                                {autosaveStatus === 'saving' && "Saving..."}
-                                {autosaveStatus === 'saved' && `Autosaved ${lastSaved}`}
-                                {autosaveStatus === 'error' && "Autosave error"}
-                            </span>
-                        </div>
-                    )}
-                    <button onClick={handleSave} className="hidden lg:flex h-10 md:h-12 px-3 md:px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl transition-all items-center gap-2">
-                        <Save size={14} className="sm:hidden" />
-                        <span className="hidden sm:inline">Save</span>
+            <header className="relative z-40 shrink-0 border-b border-black/[0.06] bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#07080b]/90">
+                <div className="flex h-16 items-center gap-2 px-2 sm:px-4">
+                    <button type="button" onClick={leave} disabled={busy === 'leave'} aria-label="Back to invoices" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-600 hover:bg-black/5 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/10">
+                        <ArrowLeft size={18} />
                     </button>
-                    <button onClick={generatePDF} className="hidden lg:flex h-10 md:h-12 px-4 md:px-8 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl hover:scale-105 transition-all shadow-[0_10px_30px_rgba(0,209,255,0.2)] items-center gap-2">
-                        <Download size={14} className="sm:hidden" />
-                        <span className="hidden sm:inline">Export</span>
-                    </button>
+                    <div className="min-w-0 flex-1">
+                        <p className="truncate text-[15px] font-bold leading-tight">
+                            {idRef.current ? 'Edit invoice' : 'New invoice'}
+                            {formData.invoiceNumber ? <span className="font-medium text-gray-500"> · {formData.invoiceNumber}</span> : null}
+                        </p>
+                        {statusLine}
+                    </div>
+                    <Button variant="secondary" onClick={() => setMobilePreview(true)} className="h-10 w-10 px-0 lg:hidden" aria-label="Preview"><Eye size={16} /></Button>
+                    {shareMenu}
+                    <Button variant="secondary" onClick={() => saveAndClose()} disabled={Boolean(busy)} className="hidden h-10 sm:inline-flex">
+                        <Save size={15} /> {busy === 'save' ? 'Saving…' : 'Save & close'}
+                    </Button>
+                    <Button variant="accent" onClick={() => downloadPdf()} disabled={Boolean(busy)} className="hidden h-10 sm:inline-flex">
+                        <Download size={15} /> {busy === 'pdf' ? 'Preparing…' : 'Download PDF'}
+                    </Button>
                 </div>
+                <nav aria-label="Invoice steps" className="flex gap-1 overflow-x-auto px-2 pb-2 [scrollbar-width:none] sm:px-4 [&::-webkit-scrollbar]:hidden">
+                    {STEPS.map((s, i) => {
+                        const active = step === s.id;
+                        const errs = stepErrors(s.id);
+                        return (
+                            <button
+                                key={s.id}
+                                type="button"
+                                onClick={() => goStep(s.id)}
+                                aria-current={active ? 'step' : undefined}
+                                className={cn('flex h-10 shrink-0 items-center gap-2 rounded-full px-3.5 text-[13px] font-semibold transition-colors',
+                                    active ? a.solid : 'text-gray-600 hover:bg-black/5 hover:text-gray-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white')}
+                            >
+                                <span className={cn('flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold', active ? 'bg-white/25 dark:bg-black/15' : 'bg-black/5 dark:bg-white/10')}>{i + 1}</span>
+                                {s.label}
+                                {errs > 0 && !active && <span className="h-2 w-2 rounded-full bg-red-500" aria-label={`${errs} to fix`} />}
+                            </button>
+                        );
+                    })}
+                </nav>
             </header>
 
-            <main className="flex-1 flex overflow-hidden min-h-0">
-                {/* Sidebar */}
-                <aside className={cn(
-                    "hidden lg:flex w-64 shrink-0 border-r border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide",
-                    isExpandedPreview && "lg:hidden"
-                )}>
-                    <div className="space-y-2">
-                        <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-4 mb-4">Navigation</p>
-                        {tabs.map(tab => (
-                            <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white dark:bg-white/10 text-black dark:text-white shadow-lg border border-black/5 dark:border-white/10" : "hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white")}>
-                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-black/5 dark:bg-white/10" : "bg-black/5 dark:bg-white/5 group-hover:bg-black/10 dark:group-hover:bg-white/10")}><tab.icon size={18} /></div>
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest leading-tight mb-1">{tab.label}</p>
-                                    <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", activeTab === tab.id ? "text-gray-700 dark:text-gray-300" : "text-gray-500 dark:text-gray-400")}>{tab.desc}</p>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                </aside>
-                
-                {/* Mobile Bottom Navigation */}
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white dark:bg-black/80 backdrop-blur-3xl border-t border-black/10 dark:border-white/10 z-[100] px-4 flex items-center justify-around no-scrollbar">
-                    {tabs.map(tab => (
-                        <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[64px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-blue" : "text-gray-500")}>
-                            <tab.icon size={20} />
-                            <span className="text-[7px] font-black uppercase tracking-widest">{tab.label.split(' ')[0]}</span>
-                            {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-neon-blue mt-1 shadow-[0_0_8px_#00D1FF]" />}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Mobile Action Bar (Sticky above bottom nav) */}
-                <div className="lg:hidden fixed bottom-20 left-0 right-0 p-3 bg-gradient-to-t from-black via-black/90 to-transparent z-[90] flex items-center justify-end gap-2 pointer-events-none">
-                    <div className="flex gap-2 w-full pointer-events-auto">
-                        <button 
-                            onClick={() => setShowPreviewMobile(!showPreviewMobile)} 
-                            className="h-10 px-3 flex-1 bg-neon-blue/10 rounded-xl border border-neon-blue/20 text-neon-blue flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg backdrop-blur-md"
-                        >
-                            <Eye size={14} />
-                            <span className="text-[9px] font-black uppercase tracking-widest">Preview</span>
-                        </button>
-                        <button onClick={handleSave} className="h-10 px-3 flex-1 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg backdrop-blur-md">
-                            <Save size={14} />
-                            <span>Save</span>
-                        </button>
-                        <button onClick={generatePDF} className="h-10 px-3 flex-1 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(0,209,255,0.2)]">
-                            <Download size={14} />
-                            <span>Export</span>
-                        </button>
-                    </div>
-                </div>
-
+            <main className="flex min-h-0 flex-1 overflow-hidden">
                 {/* Editor */}
-                <section className={cn("flex-1 overflow-y-auto p-6 md:p-12 scrollbar-hide bg-white dark:bg-[#050505] pb-32 transition-colors duration-300", isExpandedPreview && "hidden")}>
-                    <div className="max-w-7xl mx-auto">
-
-                        <div className="mb-12">
-                            <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-1">{currentTab?.label}.</h2>
-                            <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.4em] mb-6">{currentTab?.desc}</p>
-                            <div className="w-16 h-1.5 bg-neon-blue rounded-full" />
+                <section ref={editorRef} className={cn('invoice-builder min-w-0 flex-1 overflow-y-auto overscroll-contain', expanded && 'lg:hidden')}>
+                    <div className="mx-auto max-w-3xl px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 lg:pb-12">
+                        <div className="mb-5">
+                            <h2 className="text-[22px] font-extrabold tracking-tight">{STEPS[stepIndex].label}</h2>
+                            <p className="text-[13px] text-gray-500">{STEPS[stepIndex].desc}</p>
                         </div>
 
-                        <AnimatePresence mode="wait">
-                            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="space-y-12">
-                                {activeTab === '1' && (
-                                    <div className="space-y-12">
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
-                                            {logoOptions.map(logo => (
-                                                <button key={logo.id} onClick={() => setFormData({...formData, selectedLogo: logo.id})} className={cn("p-4 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-2 overflow-hidden relative group/btn", formData.selectedLogo === logo.id ? "bg-neon-blue border-neon-blue text-black scale-105 shadow-xl" : "bg-gray-50 dark:bg-zinc-900/60 border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-black/20 dark:hover:border-white/20")}>
-                                                    <div className="w-full aspect-[4/3] rounded-xl bg-white dark:bg-white border border-black/5 dark:border-white/10 flex items-center justify-center p-3 relative overflow-hidden shadow-sm">
-                                                        <img src={logo.path} alt={logo.label} className="w-full h-full object-contain" />
-                                                    </div>
-                                                    <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest relative z-10 leading-tight">{logo.label}</span>
+                        {step === 'details' && (
+                            <div className="space-y-5">
+                                <BuilderCard title="Brand" hint="The logo and colour on the invoice">
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {BRANDS.map(brand => {
+                                            const on = formData.selectedLogo === brand.id;
+                                            return (
+                                                <button key={brand.id} type="button" onClick={() => set({ selectedLogo: brand.id })} aria-pressed={on}
+                                                    className={cn('flex flex-col items-center gap-2 rounded-xl border p-2 text-[12px] font-semibold transition-colors',
+                                                        on ? cn(a.border, a.soft) : 'border-black/10 hover:border-black/20 dark:border-white/10 dark:hover:border-white/20')}>
+                                                    <span className="flex aspect-[4/3] w-full items-center justify-center rounded-lg bg-white p-2"><img src={brand.path} alt="" className="h-full w-full object-contain" /></span>
+                                                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: brand.color }} />{brand.label.replace('Newbi ', '')}</span>
                                                 </button>
-                                            ))}
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                            <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest px-2">Invoice ID</label>
-                                                <input value={formData.invoiceNumber} onChange={e => setFormData({...formData, invoiceNumber: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60 transition-all" />
-                                            </div>
-                                            <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest px-2">Issue Date</label>
-                                                <StudioDatePicker value={formData.invoiceDate} onChange={val => setFormData({...formData, invoiceDate: val})} className="h-16" />
-                                            </div>
-                                            <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest px-2">Due Date</label>
-                                                <StudioDatePicker value={formData.dueDate} onChange={val => setFormData({...formData, dueDate: val})} className="h-16" />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-6">
-                                            <div className="flex justify-between items-center px-4">
-                                                <h4 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Invoiced By (Sender)</h4>
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 md:p-8 bg-gray-50 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[2.5rem]">
-                                                <div className="space-y-4">
-                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-2">Entity Name</label>
-                                                    <input value={formData.senderName} onChange={e => setFormData({...formData, senderName: e.target.value})} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
-                                                </div>
-                                                <div className="space-y-4">
-                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-2">GSTIN / TAX ID</label>
-                                                    <input value={formData.senderGst} onChange={e => setFormData({...formData, senderGst: e.target.value})} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
-                                                </div>
-                                                <div className="space-y-4">
-                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-2">Contact Details</label>
-                                                    <input value={formData.senderContact} onChange={e => setFormData({...formData, senderContact: e.target.value})} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
-                                                </div>
-                                                <div className="space-y-4">
-                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-2">Corporate Email</label>
-                                                    <input value={formData.senderEmail} onChange={e => setFormData({...formData, senderEmail: e.target.value})} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
-                                                </div>
-                                                <div className="space-y-4 md:col-span-2">
-                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-2">Entity Address</label>
-                                                    <textarea value={formData.senderAddress} onChange={e => setFormData({...formData, senderAddress: e.target.value})} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 p-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60 min-h-[100px]" placeholder="Property No. 55, 3rdFloor SAIDULAJAB, Gadaipur, Sainik Farm, New Delhi, Delhi 110030" />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-4 pt-4 border-t border-black/10 dark:border-white/5">
-                                            <div className="flex justify-between items-center px-4 mb-4">
-                                                <h4 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Invoiced To (Client)</h4>
-                                            </div>
-                                            <input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 outline-none focus:border-neon-blue/60 transition-all" placeholder="Organization Name" />
-                                            <textarea value={formData.clientAddress} onChange={e => setFormData({...formData, clientAddress: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 p-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 outline-none focus:border-neon-blue/60 transition-all min-h-[100px]" placeholder="Client Address / Billing Location" />
-                                            <input value={formData.clientGst} onChange={e => setFormData({...formData, clientGst: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 outline-none focus:border-neon-blue/60 transition-all" placeholder="Client GSTIN (Optional)" />
-                                        </div>
+                                            );
+                                        })}
                                     </div>
-                                )}
+                                </BuilderCard>
 
-                                {activeTab === '2' && (
-                                    <div className="space-y-8">
-                                        <div className="flex justify-between items-center px-4">
-                                            <div className="flex flex-col">
-                                                <h4 className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Billing Table</h4>
-                                                <div className="flex flex-wrap items-center gap-3 mt-4">
-                                                    {customColumns.map(col => (
-                                                        <span key={col.id} className="h-9 px-4 bg-neon-blue/10 border border-neon-blue/20 rounded-full text-[9px] font-black text-neon-blue uppercase flex items-center gap-3 animate-in zoom-in-95 duration-300">
-                                                            {col.label}
-                                                            <button onClick={() => setCustomColumns(customColumns.filter(c => c.id !== col.id))} className="hover:text-red-500 transition-colors p-1 hover:bg-red-500/10 rounded-full"><X size={10} /></button>
-                                                        </span>
+                                <BuilderCard title="Number and dates" hint="Numbers run in order: INV-0001, INV-0002…">
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                        <Field label="Invoice number">
+                                            <input className={cn(fieldCls, numberClash && 'border-red-500/60')} value={formData.invoiceNumber} onChange={e => { numberAutoRef.current = false; set({ invoiceNumber: e.target.value.toUpperCase() }); }} autoCapitalize="characters" autoComplete="off" />
+                                        </Field>
+                                        <Field label="Issue date"><input type="date" className={fieldCls} value={formData.invoiceDate || ''} onChange={e => set({ invoiceDate: e.target.value })} /></Field>
+                                        <Field label="Due date" optional><input type="date" className={fieldCls} value={formData.dueDate || ''} min={formData.invoiceDate || undefined} onChange={e => set({ dueDate: e.target.value })} /></Field>
+                                    </div>
+                                    {numberClash && (
+                                        <Note tone="red" className="mt-3">
+                                            {formData.invoiceNumber} is already used by another invoice.{' '}
+                                            <button type="button" className="font-bold underline" onClick={() => set({ invoiceNumber: nextFreeNumber })}>Use {nextFreeNumber}</button>
+                                        </Note>
+                                    )}
+                                    <div className="mt-3 flex flex-wrap gap-1.5">
+                                        <span className="flex h-9 items-center pr-1 text-[12px] font-bold text-gray-500">Due</span>
+                                        {DUE_CHIPS.map(([label, n]) => (
+                                            <Chip key={label} active={formData.dueDate === addDays(n)} onClick={() => set({ dueDate: addDays(n) })}>{label}</Chip>
+                                        ))}
+                                        {formData.dueDate && <button type="button" onClick={() => set({ dueDate: '' })} className="h-9 px-2 text-[12px] font-semibold text-gray-500">Clear</button>}
+                                    </div>
+                                </BuilderCard>
+
+                                <BuilderCard title="Bill to" hint="Who receives and pays this invoice">
+                                    <div className="space-y-3">
+                                        <Field label="Client name">
+                                            <input className={fieldCls} value={formData.clientName} onChange={e => set({ clientName: e.target.value })} placeholder="Company or person" list="invoice-known-clients" autoComplete="off" />
+                                        </Field>
+                                        <datalist id="invoice-known-clients">
+                                            {[...knownClients.values()].slice(0, 200).map(inv => <option key={inv.id} value={inv.clientName} />)}
+                                        </datalist>
+                                        {canFillClient && (
+                                            <button type="button" onClick={() => set({ clientAddress: knownClient.clientAddress || formData.clientAddress, clientGst: knownClient.clientGst || formData.clientGst, clientEmail: knownClient.clientEmail || formData.clientEmail })}
+                                                className={cn('flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-[13px] font-semibold', a.border, a.soft)}>
+                                                <Sparkles size={15} className={a.text} />
+                                                <span className="min-w-0 flex-1">Use the address and GSTIN from {knownClient.invoiceNumber || 'their last invoice'}</span>
+                                            </button>
+                                        )}
+                                        <Field label="Billing address">
+                                            <textarea className={areaCls} value={formData.clientAddress} onChange={e => set({ clientAddress: e.target.value })} rows={3} />
+                                        </Field>
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                            <Field label="Client GSTIN" optional hint={gstReadout(formData.clientGst) || 'Leave empty for unregistered clients'}>
+                                                <input className={fieldCls} value={formData.clientGst} onChange={e => set({ clientGst: e.target.value.toUpperCase() })} maxLength={20} autoCapitalize="characters" autoComplete="off" />
+                                            </Field>
+                                            <Field label="Client email" optional hint="Fills in the email when you send it">
+                                                <input type="email" inputMode="email" className={fieldCls} value={formData.clientEmail || ''} onChange={e => set({ clientEmail: e.target.value.trim() })} autoCapitalize="off" />
+                                            </Field>
+                                        </div>
+                                        {stateOfGstin(formData.clientGst) && gstinProblem(formData.clientGst) !== 'shape' ? (
+                                            <p className="text-[12.5px] text-gray-500">Place of supply: <span className="font-semibold text-gray-800 dark:text-zinc-200">{supply?.name} ({supply?.code})</span>, from the GSTIN</p>
+                                        ) : (
+                                            <Field label="Client's state" optional hint="Printed as the place of supply. Decides CGST + SGST or IGST.">
+                                                <ThemedSelect className={fieldCls} value={formData.clientState || ''} onChange={e => set({ clientState: e.target.value })}>
+                                                    <option value="">Choose a state</option>
+                                                    {Object.entries(GST_STATES).filter(([code]) => !['25', '28', '99'].includes(code)).sort((x, y) => x[1].localeCompare(y[1])).map(([code, name]) => (
+                                                        <option key={code} value={code}>{name} ({code})</option>
                                                     ))}
-                                                    <div className="relative group flex items-center gap-2">
-                                                        <div className="absolute inset-0 bg-neon-blue/5 rounded-full blur-md opacity-0 group-focus-within:opacity-100 transition-opacity" />
-                                                        <input 
-                                                            value={newColumnName} 
-                                                            onChange={e => setNewColumnName(e.target.value)} 
-                                                            onKeyPress={e => e.key === 'Enter' && handleAddColumn()} 
-                                                            className="w-32 bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-9 px-4 rounded-full text-[9px] font-black uppercase outline-none focus:border-neon-blue/40 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-all focus:w-48 relative z-10" 
-                                                            placeholder="+ Add Column..." 
-                                                        />
-                                                        <button onClick={handleAddColumn} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full border border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all"><Plus size={14} /></button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <button onClick={() => setItems([...items, { id: Date.now(), name: '', description: '', qty: 1, price: 0, customValues: {} }])} className="w-12 h-12 bg-neon-blue text-black rounded-2xl hover:scale-110 active:scale-95 transition-all shadow-[0_10px_25px_rgba(0,255,255,0.2)] flex items-center justify-center"><Plus size={20} /></button>
-                                        </div>
-                                        <div className="space-y-4">
-                                            {items.map((item, idx) => (
-                                                <div key={item.id} className="flex flex-col bg-gray-50 dark:bg-zinc-900/40 p-6 rounded-3xl border border-black/10 dark:border-white/5 group transition-all hover:bg-gray-100 dark:hover:bg-zinc-900/60 gap-4">
-                                                    <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
-                                                        <div className="flex-1 space-y-3 w-full">
-                                                            <input value={item.name} onChange={e => { const newItems = [...items]; newItems[idx].name = e.target.value; setItems(newItems); }} className="w-full bg-transparent border-b border-black/10 dark:border-white/10 pb-2 text-sm font-black uppercase italic outline-none focus:border-neon-blue/40 transition-all text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600" placeholder="Service Name (e.g. Brand Activation)" />
-                                                            <textarea value={item.description} onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} rows={1} className="w-full bg-transparent border-none p-0 text-[10px] font-bold uppercase tracking-widest outline-none resize-none scrollbar-hide text-gray-600 dark:text-gray-400 placeholder:text-gray-400 dark:placeholder:text-gray-600" placeholder="Detailed description..." />
-                                                        </div>
-                                                        <div className="flex flex-wrap items-center gap-4 md:gap-6 w-full md:w-auto">
-                                                            <div className="flex flex-col items-center"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Qty</span><input type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-16 bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 rounded-lg text-center text-xs font-black text-gray-900 dark:text-white outline-none focus:border-neon-blue/50" /></div>
-                                                            <div className="flex flex-col items-end"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5 pr-2">Price</span><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-blue">₹</span><input type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-32 bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 pl-7 pr-4 rounded-lg text-right text-xs font-black text-neon-blue outline-none focus:border-neon-blue/50" /></div></div>
-                                                            <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2.5 text-gray-400 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg"><Trash2 size={16} /></button>
-                                                        </div>
-                                                    </div>
-                                                    {customColumns.length > 0 && (
-                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-black/10 dark:border-white/5">
-                                                            {customColumns.map(col => (
-                                                                 <div key={col.id} className="space-y-1.5">
-                                                                    <label className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-1">{col.label}</label>
-                                                                    <input 
-                                                                        value={item.customValues?.[col.id] || ''} 
-                                                                        onChange={e => {
-                                                                            const newItems = [...items];
-                                                                            newItems[idx].customValues = { ...newItems[idx].customValues, [col.id]: e.target.value };
-                                                                            setItems(newItems);
-                                                                        }}
-                                                                        className="w-full bg-white dark:bg-black/20 border border-black/10 dark:border-white/5 h-8 px-3 rounded-lg text-[10px] font-bold outline-none focus:border-neon-blue/30 text-gray-900 dark:text-white"
-                                                                        placeholder={`Value...`}
-                                                                    />
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {activeTab === '3' && (
-                                    <div className="space-y-12">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            <div className="space-y-4">
-                                                <div className="flex justify-between items-center px-2">
-                                                    <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">GST Rate (%)</label>
-                                                    <button onClick={() => setFormData({...formData, showGst: !formData.showGst})} className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded border transition-all", formData.showGst ? "bg-neon-blue/10 text-neon-blue border-neon-blue/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>{formData.showGst ? 'Enabled' : 'Disabled'}</button>
-                                                </div>
-                                                <input type="number" value={formData.gstPercentage} onChange={e => setFormData({...formData, gstPercentage: Number(e.target.value)})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/40 transition-all" />
-                                            </div>
-                                            <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest px-2">Advance Received (₹)</label>
-                                                <input type="number" value={formData.advancePaid} onChange={e => setFormData({...formData, advancePaid: Number(e.target.value)})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-blue/40 transition-all text-neon-blue font-mono" />
-                                            </div>
-                                        </div>
-
-                                        <div className={cn("space-y-4", !formData.showPaymentDetails && "opacity-30")}>
-                                            <div className="flex justify-between items-center px-2">
-                                                <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Settlement Account Details</label>
-                                                <button type="button" onClick={() => setFormData({...formData, showPaymentDetails: formData.showPaymentDetails === false ? true : false})} className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded border transition-all", formData.showPaymentDetails !== false ? "bg-neon-blue/10 text-neon-blue border-neon-blue/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>
-                                                    {formData.showPaymentDetails !== false ? 'Enabled' : 'Disabled'}
-                                                </button>
-                                            </div>
-                                            <textarea 
-                                                value={formData.paymentDetails} 
-                                                onChange={e => setFormData({...formData, paymentDetails: e.target.value})} 
-                                                className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 p-6 rounded-2xl font-mono font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/40 transition-all min-h-[160px]" 
-                                                placeholder="Account Name, Number, IFSC, etc..." 
-                                            />
-                                        </div>
-
-                                        {/* UPI QR */}
-                                        <div className="space-y-8 pt-8 border-t border-black/10 dark:border-white/5">
-                                            <div className="flex items-center justify-between px-2">
-                                                <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Digital Payment QR</label>
-                                                <button onClick={() => setFormData({...formData, showUPI: !formData.showUPI})} className={cn("text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all", formData.showUPI ? "bg-neon-blue text-black border-neon-blue" : "bg-black/5 dark:bg-white/5 text-gray-500 border-black/10 dark:border-white/5")}>{formData.showUPI ? 'QR Enabled' : 'QR Disabled'}</button>
-                                            </div>
-                                            {formData.showUPI && (
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-top-2">
-                                                    <div className="space-y-4">
-                                                        <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-2">QR Source</label>
-                                                        <div className="flex bg-gray-100 dark:bg-black/40 p-1.5 rounded-2xl border border-black/10 dark:border-white/5">
-                                                            {['auto', 'custom'].map(type => (
-                                                                <button key={type} onClick={() => setFormData({...formData, qrType: type})} className={cn("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", formData.qrType === type ? "bg-white text-gray-900 dark:text-white print:text-black shadow-sm" : "text-gray-500 hover:text-gray-900 dark:hover:text-white")}>{type === 'auto' ? 'Dynamic UPI' : 'Custom Image'}</button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                    {formData.qrType === 'auto' ? (
-                                                        <div className="space-y-4">
-                                                            <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-2">Merchant UPI ID</label>
-                                                            <input value={formData.upiId} onChange={e => setFormData({...formData, upiId: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/40 transition-all" />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="space-y-4">
-                                                            <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-2">Custom QR Asset</label>
-                                                            <div className="relative group h-14">
-                                                                <input type="file" accept="image/*" onChange={e => { const f = e.target.files[0]; if(f) { const r = new FileReader(); r.onload = (ex) => setFormData({...formData, customQrImage: ex.target.result}); r.readAsDataURL(f); } }} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                                <div className="h-full border border-dashed border-black/10 dark:border-white/10 rounded-2xl bg-gray-50 dark:bg-black/30 flex items-center justify-center gap-3 group-hover:border-neon-blue/40 transition-all">
-                                                                    <ImageIcon size={16} className="text-gray-500" />
-                                                                    <span className="text-[10px] font-black text-gray-500 uppercase">{formData.customQrImage ? 'Replace Image' : 'Select QR Image'}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Notes & Terms */}
-                                        <div className="space-y-4 pt-8 border-t border-black/10 dark:border-white/5">
-                                            <div className="flex items-center justify-between px-2">
-                                                <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Additional Notes</label>
-                                                <button onClick={() => setFormData({...formData, showNotes: !formData.showNotes})} className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all ${formData.showNotes ? "bg-neon-blue text-black border-neon-blue" : "bg-black/5 dark:bg-white/5 text-gray-500 border-black/10 dark:border-white/5"}`}>{formData.showNotes ? 'Notes Enabled' : 'Notes Disabled'}</button>
-                                            </div>
-                                            <div className={cn(!formData.showNotes && "opacity-30")}>
-                                                <StudioRichEditor 
-                                                    label="Strategic Notes & Terms"
-                                                    value={formData.note} 
-                                                    onChange={val => setFormData({...formData, note: val})} 
-                                                    placeholder="Billing terms, payment instructions, etc..." 
-                                                    minHeight="150px"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* PayU Gateway */}
-                                        <div className="p-4 md:p-8 bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2.5rem] space-y-8 mt-8">
-                                            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/5 pb-4">
-                                                <div>
-                                                    <h4 className="text-[10px] font-black text-neon-blue uppercase tracking-widest mb-1">PayU Checkout Gateway</h4>
-                                                    <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">Automatic Payment Generation</p>
-                                                </div>
-                                                <button onClick={() => setFormData({...formData, showPaymentButton: !formData.showPaymentButton})} className={cn("w-14 h-8 rounded-full transition-all relative border", formData.showPaymentButton ? "bg-neon-blue border-neon-blue" : "bg-white dark:bg-white border-black/10 dark:border-white/10")}>
-                                                    <div className={cn("absolute top-1 w-6 h-6 rounded-full transition-all", formData.showPaymentButton ? "left-7 bg-white dark:bg-black" : "left-1 bg-gray-600")} />
-                                                </button>
-                                            </div>
-                                            {formData.showPaymentButton && (
-                                                <div className="space-y-6 animate-in fade-in slide-in-from-top-2">
-                                                    <div className="flex gap-4">
-                                                        <button 
-                                                            onClick={() => {
-                                                                const amount = (items.reduce((sum, item) => sum + (item.qty * item.price), 0) * (formData.showGst ? (1 + formData.gstPercentage/100) : 1)) - formData.advancePaid;
-                                                                const link = `https://pmny.in/payu/checkout?invoice=${formData.invoiceNumber}&amount=${amount}&merchant=NEWBI`;
-                                                                setFormData({...formData, paymentLink: link});
-                                                            }}
-                                                            className="flex-1 h-16 bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neon-blue dark:hover:text-black rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-[1.02] transition-all flex items-center justify-center gap-3 shadow-md"
-                                                        >
-                                                            <Zap size={14} /> Generate PayU Link
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => setFormData({...formData, paymentLink: ''})}
-                                                            className="h-16 px-6 bg-red-500/10 text-red-500 border border-red-500/20 rounded-2xl hover:bg-red-500/20 transition-all font-bold text-xs"
-                                                        >
-                                                            Clear
-                                                        </button>
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Final Checkout URL</label>
-                                                        <div className="relative group">
-                                                            <div className="absolute inset-0 bg-neon-blue/5 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
-                                                            <input value={formData.paymentLink} onChange={e => setFormData({...formData, paymentLink: e.target.value})} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-16 px-6 rounded-2xl font-mono text-[10px] outline-none focus:border-neon-blue/40 relative z-10 text-gray-900 dark:text-white" placeholder="PayU or Custom Gateway URL..." />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {activeTab === '4' && (
-                                    <div className="space-y-12">
-                                        {/* Document Settings Section */}
-                                        <div className="p-10 bg-gray-50 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[40px] space-y-8">
-                                            <div className="space-y-2">
-                                                <h3 className="text-xl font-black uppercase tracking-tighter italic text-gray-900 dark:text-white">Document Settings</h3>
-                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Global authentication preferences</p>
-                                            </div>
-                                            
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <button 
-                                                    onClick={() => setFormData({...formData, showSeal: !formData.showSeal})} 
-                                                    className={cn(
-                                                        "p-6 rounded-[32px] border transition-all flex flex-col items-center justify-center gap-4 text-center group",
-                                                        formData.showSeal ? "bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-lg" : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-700 dark:text-white/60 hover:border-black/20 dark:hover:border-white/20"
-                                                    )}
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <Eye size={14} className={cn(formData.showSeal ? "text-white dark:text-black" : "text-gray-500 dark:text-white/40")} />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-center">Official Seal</span>
-                                                    </div>
-                                                </button>
-                                                
-                                                <button 
-                                                    onClick={() => setFormData({...formData, showSignatures: !formData.showSignatures})} 
-                                                    className={cn(
-                                                        "p-6 rounded-[32px] border transition-all flex flex-col items-center justify-center gap-4 text-center group",
-                                                        formData.showSignatures ? "bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-lg" : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-700 dark:text-white/60 hover:border-black/20 dark:hover:border-white/20"
-                                                    )}
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <Eye size={14} className={cn(formData.showSignatures ? "text-white dark:text-black" : "text-gray-500 dark:text-white/40")} />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-center">Digital Signatures</span>
-                                                    </div>
-                                                </button>
-                                            </div>
-
-                                            {formData.showSeal && (
-                                                <div className="flex justify-center p-12 bg-white dark:bg-white rounded-[32px] border border-black/10 dark:border-white/5 overflow-hidden">
-                                                    <DocumentSeal className="scale-75 origin-center" />
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Authorization Sections */}
-                                        {formData.showSignatures && (
-                                            <div className="space-y-6">
-                                                {/* Provider Authorization (Newbi) */}
-                                                <div className="p-10 bg-gray-50 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[40px] space-y-8">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="space-y-1">
-                                                            <h3 className="text-xl font-black uppercase tracking-tighter italic text-gray-900 dark:text-white">Provider Authorization</h3>
-                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Sign on behalf of Newbi Entertainment</p>
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            <button 
-                                                                onClick={() => document.getElementById('provider-sig-upload-inv').click()}
-                                                                className="px-4 py-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center gap-2 text-gray-700 dark:text-gray-300"
-                                                            >
-                                                                <Upload size={12} /> Upload Sign
-                                                            </button>
-                                                            <input 
-                                                                type="file" 
-                                                                id="provider-sig-upload-inv" 
-                                                                className="hidden" 
-                                                                accept="image/*"
-                                                                onChange={(e) => {
-                                                                    const file = e.target.files[0];
-                                                                    if (file) {
-                                                                        const reader = new FileReader();
-                                                                        reader.onload = (re) => setFormData({...formData, providerSignature: re.target.result});
-                                                                        reader.readAsDataURL(file);
-                                                                    }
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <div className="relative h-48 bg-white dark:bg-white rounded-[32px] border border-black/10 dark:border-white/5 flex items-center justify-center group overflow-hidden">
-                                                        {formData.providerSignature ? (
-                                                            <div className="relative group w-full h-full flex items-center justify-center p-4 md:p-8">
-                                                                <img src={formData.providerSignature} alt="Provider Signature" className="max-h-full object-contain grayscale mix-blend-multiply dark:invert dark:brightness-200" />
-                                                                <button 
-                                                                    onClick={() => setFormData({...formData, providerSignature: ''})}
-                                                                    className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                                                                >
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-[10px] font-black text-gray-400 dark:text-white/20 uppercase tracking-[0.5em]">Upload Signature</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
+                                                </ThemedSelect>
+                                            </Field>
                                         )}
                                     </div>
-                                )}
+                                </BuilderCard>
 
-                            </motion.div>
-                        </AnimatePresence>
+                                <BuilderCard
+                                    title="Your details"
+                                    hint={defaultsSource === 'profile' ? 'Filled from your saved defaults' : defaultsSource === 'last' ? 'Filled from your last invoice' : 'Printed as "Invoice by"'}
+                                >
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <Field label="Business name"><input className={fieldCls} value={formData.senderName} onChange={e => set({ senderName: e.target.value })} /></Field>
+                                        <Field label="GSTIN" hint={gstReadout(formData.senderGst)}><input className={fieldCls} value={formData.senderGst} onChange={e => set({ senderGst: e.target.value.toUpperCase() })} maxLength={20} autoCapitalize="characters" autoComplete="off" /></Field>
+                                        <Field label="Phone"><input type="tel" inputMode="tel" className={fieldCls} value={formData.senderContact} onChange={e => set({ senderContact: e.target.value })} /></Field>
+                                        <Field label="Email"><input type="email" inputMode="email" className={fieldCls} value={formData.senderEmail} onChange={e => set({ senderEmail: e.target.value.trim() })} autoCapitalize="off" /></Field>
+                                        <div className="sm:col-span-2"><Field label="Address"><textarea className={areaCls} value={formData.senderAddress} onChange={e => set({ senderAddress: e.target.value })} rows={3} /></Field></div>
+                                    </div>
+                                    <div className="mt-2">
+                                        <SaveDefaultButton onClick={() => saveDefaults({
+                                            senderName: formData.senderName, senderAddress: formData.senderAddress, senderContact: formData.senderContact,
+                                            senderEmail: formData.senderEmail, senderGst: cleanGstin(formData.senderGst), selectedLogo: formData.selectedLogo,
+                                        })} />
+                                    </div>
+                                </BuilderCard>
+                            </div>
+                        )}
 
-                        {/* Section Navigation Footer */}
-                        <div className="mt-20 pt-8 border-t border-black/10 dark:border-white/5 flex items-center justify-between pb-12">
-                            <button 
-                                onClick={() => {
-                                    const idx = tabs.findIndex(t => t.id === activeTab);
-                                    if (idx > 0) setActiveTab(tabs[idx - 1].id);
-                                }}
-                                disabled={activeTab === tabs[0].id}
-                                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none"
-                            >
-                                <ChevronLeft size={16} />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Previous</span>
-                            </button>
+                        {step === 'items' && (
+                            <div className="space-y-5">
+                                <BuilderCard title="Columns" hint="Services use a SAC code (for example 998596 for event management)">
+                                    <Toggle label="Show an HSN/SAC column" checked={hasHsn} onChange={toggleHsn} />
+                                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                                        {customColumns.filter(c => c.id !== HSN_COLUMN.id).map(col => (
+                                            <span key={col.id} className={cn('inline-flex h-9 items-center gap-1 rounded-full pl-3 pr-1 text-[12.5px] font-semibold', a.chip)}>
+                                                {col.label}
+                                                <button type="button" onClick={() => setCustomColumns(prev => prev.filter(c => c.id !== col.id))} aria-label={`Remove the ${col.label} column`} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-black/10 dark:hover:bg-white/10"><X size={13} /></button>
+                                            </span>
+                                        ))}
+                                        <div className="flex items-center gap-1.5">
+                                            <input value={newColumn} onChange={e => setNewColumn(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addColumn(); } }} className={cn(fieldCls, 'h-10 w-40 text-[13px]')} placeholder="Another column" enterKeyHint="done" />
+                                            <Button size="sm" variant="secondary" onClick={addColumn} disabled={!newColumn.trim()} className="h-10"><Plus size={13} /> Add</Button>
+                                        </div>
+                                    </div>
+                                </BuilderCard>
 
-                            <button 
-                                onClick={() => {
-                                    const idx = tabs.findIndex(t => t.id === activeTab);
-                                    if (idx < tabs.length - 1) setActiveTab(tabs[idx + 1].id);
-                                }}
-                                className={cn(
-                                    "flex items-center gap-2 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all",
-                                    activeTab === tabs[tabs.length - 1].id 
-                                        ? "bg-black/5 dark:bg-white/5 text-gray-500 cursor-not-allowed opacity-50" 
-                                        : "bg-neon-blue text-black hover:scale-105 shadow-[0_0_20px_rgba(0,209,255,0.2)]"
-                                )}
-                            >
-                                <span>{activeTab === tabs[tabs.length - 1].id ? 'Final Step' : 'Next Section'}</span>
-                                {activeTab !== tabs[tabs.length - 1].id && <ChevronRight size={16} />}
-                            </button>
+                                <div className="space-y-3">
+                                    {items.map((item, idx) => {
+                                        const amount = invoiceLineAmount(item);
+                                        return (
+                                            <div key={item.id} className="rounded-2xl border border-black/[0.06] bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.03]">
+                                                <div className="mb-3 flex items-center justify-between gap-2">
+                                                    <span className="flex items-center gap-2 text-[13px] font-bold">
+                                                        <span className={cn('flex h-7 w-7 items-center justify-center rounded-lg text-[12px]', a.chip)}>{idx + 1}</span>
+                                                        {item.name || item.description ? <span className="line-clamp-1">{item.name || item.description}</span> : <span className="text-gray-400">New item</span>}
+                                                    </span>
+                                                    <Menu trigger={({ toggle }) => (
+                                                        <Button size="sm" variant="ghost" onClick={toggle} aria-label={`Actions for item ${idx + 1}`} className="h-10 w-10 px-0"><MoreHorizontal size={16} /></Button>
+                                                    )}>
+                                                        <MenuItem icon={Copy} onClick={() => duplicateItem(idx)}>Duplicate</MenuItem>
+                                                        {idx > 0 && <MenuItem icon={ArrowUp} onClick={() => moveItem(idx, -1)}>Move up</MenuItem>}
+                                                        {idx < items.length - 1 && <MenuItem icon={ArrowDown} onClick={() => moveItem(idx, 1)}>Move down</MenuItem>}
+                                                        <MenuItem icon={Trash2} danger onClick={() => removeItem(idx)}>Remove</MenuItem>
+                                                    </Menu>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <Field label="Service"><input className={fieldCls} value={item.name || ''} onChange={e => updateItem(idx, { name: e.target.value })} placeholder="e.g. Brand activation" /></Field>
+                                                    <Field label="Description" optional><textarea className={areaCls} rows={2} value={item.description || ''} onChange={e => updateItem(idx, { description: e.target.value })} /></Field>
+                                                    <div className={cn('grid gap-3', hasHsn ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3')}>
+                                                        {hasHsn && (
+                                                            <Field label="HSN/SAC">
+                                                                <input className={fieldCls} inputMode="numeric" value={item.customValues?.hsn || ''} onChange={e => updateItem(idx, { customValues: { ...(item.customValues || {}), hsn: e.target.value.replace(/[^0-9A-Za-z]/g, '') } })} maxLength={8} />
+                                                            </Field>
+                                                        )}
+                                                        <Field label="Qty"><input type="number" inputMode="decimal" min="0" className={cn(fieldCls, 'text-center')} value={item.qty} onChange={e => updateItem(idx, { qty: numberInput(e.target.value) })} /></Field>
+                                                        <Field label="Rate (₹)"><input type="number" inputMode="decimal" min="0" step="0.01" className={cn(fieldCls, 'text-right')} placeholder="0" value={item.price} onChange={e => updateItem(idx, { price: numberInput(e.target.value) })} /></Field>
+                                                        <Field label="Amount"><div className={cn(fieldCls, 'flex items-center justify-end bg-black/[0.03] tabular-nums dark:bg-white/[0.02]')}>{rupees(amount)}</div></Field>
+                                                    </div>
+                                                    {customColumns.some(c => c.id !== HSN_COLUMN.id) && (
+                                                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                                            {customColumns.filter(c => c.id !== HSN_COLUMN.id).map(col => (
+                                                                <Field key={col.id} label={col.label}>
+                                                                    <input className={fieldCls} value={item.customValues?.[col.id] || ''} onChange={e => updateItem(idx, { customValues: { ...(item.customValues || {}), [col.id]: e.target.value } })} />
+                                                                </Field>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    <button type="button" onClick={addItem}
+                                        className={cn('flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed text-[13.5px] font-bold transition-colors', a.border, a.text, 'hover:opacity-80')}>
+                                        <Plus size={16} /> Add item
+                                    </button>
+                                </div>
+                                <Summary />
+                            </div>
+                        )}
+
+                        {step === 'payment' && (
+                            <div className="space-y-5">
+                                <BuilderCard title="GST" hint="Charged on the subtotal">
+                                    <Toggle label="Charge GST" checked={Boolean(formData.showGst)} onChange={v => set({ showGst: v })} />
+                                    {formData.showGst && (
+                                        <div className="mt-3 space-y-3">
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                {GST_RATES.map(r => <Chip key={r} active={Number(formData.gstPercentage) === r} onClick={() => set({ gstPercentage: r })}>{r}%</Chip>)}
+                                                <label className="flex items-center gap-1.5">
+                                                    <span className="sr-only">Other rate</span>
+                                                    <input type="number" inputMode="decimal" min="0" max="100" step="0.01" className={cn(fieldCls, 'h-9 w-24 text-center text-[13px]')} value={formData.gstPercentage} onChange={e => set({ gstPercentage: numberInput(e.target.value) })} />
+                                                    <span className="text-[12px] font-semibold text-gray-500">%</span>
+                                                </label>
+                                            </div>
+<Note tone={tax.type === 'single' ? 'amber' : 'blue'} icon={tax.type === 'single' ? AlertTriangle : CheckCircle2}>
+                                                {tax.type === 'inter'
+                                                    ? `IGST ${amounts.gstRate}%: you're in ${tax.seller.name} and the client is in ${tax.client.name}.`
+                                                    : tax.type === 'intra'
+                                                        ? `CGST ${amounts.gstRate / 2}% + SGST ${amounts.gstRate / 2}%: you and the client are both in ${tax.seller.name}.`
+                                                        : !tax.seller
+                                                            ? 'Add your GSTIN so the invoice can show CGST + SGST or IGST. Until then it prints one GST line.'
+                                                            : "Add the client's GSTIN or state so the invoice can show CGST + SGST or IGST. Until then it prints one GST line."}
+                                            </Note>
+                                        </div>
+                                    )}
+                                </BuilderCard>
+
+                                <BuilderCard title="Advance" hint="Money already received before this invoice">
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <Field label="Advance received (₹)"><input type="number" inputMode="decimal" min="0" className={fieldCls} value={formData.advancePaid} onChange={e => set({ advancePaid: numberInput(e.target.value) })} /></Field>
+                                        <Field label="Balance due"><div className={cn(fieldCls, 'flex items-center bg-black/[0.03] tabular-nums dark:bg-white/[0.02]')}>{rupees(balanceDue)}</div></Field>
+                                    </div>
+                                    <div className="mt-3"><Toggle label="Show the advance and balance on the invoice" hint="Off: the client sees the full total" checked={Boolean(formData.showAdvance)} onChange={v => set({ showAdvance: v })} /></div>
+                                </BuilderCard>
+
+                                <BuilderCard title="Bank details" hint='Printed under "Payment details"' action={<span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', accent('teal').chip)}><Landmark size={16} /></span>}>
+                                    <Toggle label="Show bank details" checked={formData.showPaymentDetails !== false} onChange={v => set({ showPaymentDetails: v })} />
+                                    {formData.showPaymentDetails !== false && (
+                                        <div className="mt-3 space-y-3">
+                                            {bank ? (
+                                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                    {BANK_FIELDS.filter(f => !['upi', 'contact', 'accountType'].includes(f.key) || bank[f.key]).map(f => (
+                                                        <Field key={f.key} label={f.label} hint={f.key === 'ifsc' && bank.ifsc && !isIfsc(bank.ifsc) ? '11 characters, like SBIN0001234' : undefined}>
+                                                            <input
+                                                                className={fieldCls}
+                                                                value={bank[f.key] || ''}
+                                                                inputMode={f.key === 'accountNumber' ? 'numeric' : undefined}
+                                                                autoCapitalize={f.key === 'ifsc' ? 'characters' : undefined}
+                                                                onChange={e => setBankField(f.key, f.key === 'ifsc' ? e.target.value.toUpperCase() : e.target.value)}
+                                                            />
+                                                        </Field>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <textarea className={cn(areaCls, 'font-mono text-[13px]')} rows={6} value={formData.paymentDetails} onChange={e => set({ paymentDetails: e.target.value })} placeholder="Account name, number, IFSC, branch" />
+                                            )}
+                                            <div className="flex flex-wrap items-center gap-1">
+                                                {bank ? (
+                                                    <button type="button" onClick={() => setBankAsText(true)} className="h-10 px-2 text-[12.5px] font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white">Write it as text instead</button>
+                                                ) : (
+                                                    <button type="button" onClick={() => { if (parseBankDetails(formData.paymentDetails)) setBankAsText(false); else addToast("This text has lines the form can't read. Keep it as text, or clear it to use the form.", 'info'); }} className="h-10 px-2 text-[12.5px] font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white">Use the form</button>
+                                                )}
+                                                <SaveDefaultButton onClick={() => saveDefaults({ paymentDetails: formData.paymentDetails, upiId: formData.upiId })} />
+                                            </div>
+                                        </div>
+                                    )}
+                                </BuilderCard>
+
+                                <BuilderCard title="UPI QR code" hint="Clients scan it to pay the balance" action={<span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', accent('violet').chip)}><QrCode size={16} /></span>}>
+                                    <Toggle label="Show a QR code" checked={Boolean(formData.showUPI)} onChange={v => set({ showUPI: v })} />
+                                    {formData.showUPI && (
+                                        <div className="mt-3 space-y-3">
+                                            <Field label="UPI ID" hint={formData.upiId && !isUpiId(formData.upiId) ? 'Like name@bank' : 'The amount is filled in for the client'}>
+                                                <input className={fieldCls} value={formData.upiId} onChange={e => set({ upiId: e.target.value.trim() })} placeholder="name@bank" autoCapitalize="off" autoCorrect="off" />
+                                            </Field>
+                                            <Choice value={formData.qrType || 'auto'} onChange={v => set({ qrType: v })} options={[
+                                                { value: 'auto', label: 'Make it from the UPI ID', hint: 'Recommended' },
+                                                { value: 'custom', label: 'Upload a QR image', hint: 'From your bank app' },
+                                            ]} />
+                                            {formData.qrType === 'custom' && (
+                                                <div className="flex items-center gap-3">
+                                                    {formData.customQrImage && <img src={formData.customQrImage} alt="Your QR code" className="h-20 w-20 rounded-lg border border-black/10 bg-white object-contain p-1" />}
+                                                    <label className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-black/10 px-4 text-[13px] font-semibold dark:border-white/10">
+                                                        <ImageIcon size={15} /> {formData.customQrImage ? 'Replace image' : 'Choose image'}
+                                                        <input type="file" accept="image/*" className="hidden" onChange={e => { readImage(e.target.files?.[0], (data) => set({ customQrImage: data })); e.target.value = ''; }} />
+                                                    </label>
+                                                </div>
+                                            )}
+                                            {formData.qrType === 'custom' && <p className="text-[12px] text-gray-500">The client's invoice page makes its QR from the UPI ID, so keep the ID filled in too.</p>}
+                                        </div>
+                                    )}
+                                </BuilderCard>
+
+                                <BuilderCard title="Online payment link" hint="A Razorpay, PayU or other payment page">
+                                    <Toggle label='Add a "Pay now" button' checked={Boolean(formData.showPaymentButton)} onChange={v => set({ showPaymentButton: v })} />
+                                    {formData.showPaymentButton && (
+                                        <div className="mt-3">
+                                            <Field label="Payment link"><input type="url" inputMode="url" className={fieldCls} value={formData.paymentLink || ''} onChange={e => set({ paymentLink: e.target.value.trim() })} placeholder="https://" autoCapitalize="off" /></Field>
+                                        </div>
+                                    )}
+                                </BuilderCard>
+
+                                <BuilderCard title="Notes and terms" hint='Printed under "Additional note"'>
+                                    <Toggle label="Show notes" checked={Boolean(formData.showNotes)} onChange={v => set({ showNotes: v })} />
+                                    {formData.showNotes && (
+                                        <div className="mt-3 space-y-3">
+                                            <RichEditor label="Notes and terms" value={asHtml(formData.note)} onChange={val => set({ note: val })} placeholder="Payment terms, a thank-you note…" minHeight={140} />
+                                            <div>
+                                                <p className="mb-1.5 text-[12px] font-bold text-gray-500">Add a common term</p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {TERMS.map(t => <Chip key={t} onClick={() => appendTerm(t)} className="h-auto min-h-9 whitespace-normal py-1.5 text-left">+ {t}</Chip>)}
+                                                </div>
+                                            </div>
+                                            <SaveDefaultButton onClick={() => saveDefaults({ terms: formData.note }, 'Saved. New invoices will start with these terms.')}>Use as default terms</SaveDefaultButton>
+                                        </div>
+                                    )}
+                                </BuilderCard>
+
+                                <Summary />
+                            </div>
+                        )}
+
+                        {step === 'sign' && (
+                            <div className="space-y-5">
+                                <BuilderCard title="Authorised signature" hint={`Printed as "For ${formData.senderName || 'your business'} · Authorized Signatory"`}>
+                                    <Toggle label="Show the signature box" checked={Boolean(formData.showSignatures)} onChange={v => set({ showSignatures: v })} />
+                                    {formData.showSignatures && (
+                                        <div className="mt-3 space-y-2">
+                                            <SignatureField label="Signature" value={formData.providerSignature || null} onChange={setSignature} hint="Draw it, type it, or upload an image. A transparent PNG looks best." />
+                                            {!formData.providerSignature && lastSignature && (
+                                                <Button size="sm" variant="secondary" onClick={() => set({ providerSignature: lastSignature })} className="h-10"><Sparkles size={13} /> Use the last signature</Button>
+                                            )}
+                                        </div>
+                                    )}
+                                </BuilderCard>
+
+                                <BuilderCard title="Company seal" action={<span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', accent('rose').chip)}><Stamp size={16} /></span>}>
+                                    <Toggle label="Stamp the company seal" hint="Sits beside the signature" checked={Boolean(formData.showSeal)} onChange={v => set({ showSeal: v })} />
+                                    {formData.showSeal && (
+                                        <div className="mt-3 flex justify-center overflow-hidden rounded-xl bg-white p-4"><DocumentSeal className="h-[110px] w-[110px]" /></div>
+                                    )}
+                                </BuilderCard>
+
+                                <BuilderCard title="Attachments" hint="Purchase order, work report, photos… The client sees them beside the invoice" action={<span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', accent('orange').chip)}><Paperclip size={16} /></span>}>
+                                    {attachments.length > 0 && (
+                                        <ul className="mb-3 divide-y divide-black/[0.05] rounded-xl border border-black/[0.06] dark:divide-white/[0.05] dark:border-white/[0.08]">
+                                            {attachments.map(att => {
+                                                const tone = att.fileType === 'pdf' ? 'red' : att.fileType === 'spreadsheet' ? 'green' : att.fileType === 'image' ? 'violet' : att.type === 'link' ? 'blue' : 'gray';
+                                                return (
+                                                    <li key={att.id} className="flex items-center gap-3 px-3 py-2.5">
+                                                        <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', accent(tone).chip)}>{att.type === 'link' ? <Link2 size={15} /> : <FileText size={15} />}</span>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="truncate text-[13.5px] font-semibold">{att.name}</p>
+                                                            <p className="text-[12px] text-gray-500">{att.type === 'link' ? 'Link' : formatBytes(att.size) || 'File'}</p>
+                                                        </div>
+                                                        <a href={att.url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${att.name}`} className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 hover:bg-black/5 dark:hover:bg-white/10"><ExternalLink size={15} /></a>
+                                                        <button type="button" onClick={() => removeAttachment(att.id)} aria-label={`Remove ${att.name}`} className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-400 hover:bg-red-500/10 hover:text-red-500"><Trash2 size={15} /></button>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    )}
+                                    {upload ? (
+                                        <UploadProgress percent={upload.percent} step={`Uploading ${upload.name}`} />
+                                    ) : linkDraft.open ? (
+                                        <div className="space-y-2">
+                                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                                <input className={fieldCls} value={linkDraft.url} onChange={e => setLinkDraft(d => ({ ...d, url: e.target.value }))} placeholder="https://" inputMode="url" autoCapitalize="off" />
+                                                <input className={fieldCls} value={linkDraft.name} onChange={e => setLinkDraft(d => ({ ...d, name: e.target.value }))} placeholder="Name (optional)" />
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Button variant="accent" size="sm" onClick={addAttachmentLink} className="h-10">Add link</Button>
+                                                <Button variant="ghost" size="sm" onClick={() => setLinkDraft({ open: false, name: '', url: '' })} className="h-10">Cancel</Button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-wrap gap-2">
+                                            <label className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-black/10 px-4 text-[13px] font-semibold hover:border-black/20 dark:border-white/10 dark:hover:border-white/20">
+                                                <Upload size={15} /> Add a file
+                                                <input type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.png,.jpg,.jpeg,.webp,.zip" onChange={e => { addAttachmentFile(e.target.files?.[0]); e.target.value = ''; }} />
+                                            </label>
+                                            <Button variant="secondary" onClick={() => setLinkDraft({ open: true, name: '', url: '' })} className="h-11"><Link2 size={15} /> Add a link</Button>
+                                        </div>
+                                    )}
+                                    <p className="mt-2 text-[12px] text-gray-500">Up to 35 MB per file.</p>
+                                </BuilderCard>
+
+                                <BuilderCard title="Ready to send?" hint="Checked again when you share or download">
+                                    {issues.length === 0 ? (
+                                        <Note tone="green" icon={CheckCircle2}>Everything a GST invoice needs is here.</Note>
+                                    ) : (
+                                        <ul className="space-y-1.5">
+                                            {issues.map((issue, i) => (
+                                                <li key={i} className="flex items-start gap-2 text-[13px]">
+                                                    {issue.level === 'error'
+                                                        ? <AlertCircle size={15} className="mt-0.5 shrink-0 text-red-500" />
+                                                        : <AlertTriangle size={15} className={cn('mt-0.5 shrink-0', accent('amber').text)} />}
+                                                    <span className="min-w-0 flex-1">{issue.text}</span>
+                                                    {issue.step !== step && <button type="button" onClick={() => goStep(issue.step)} className={cn('shrink-0 text-[12.5px] font-bold', a.text)}>Fix</button>}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                    <div className="mt-4"><Summary compact /></div>
+                                </BuilderCard>
+                            </div>
+                        )}
+
+                        {/* Step navigation (desktop) */}
+                        <div className="mt-8 hidden items-center justify-between lg:flex">
+                            <Button variant="ghost" onClick={() => stepIndex > 0 && goStep(STEPS[stepIndex - 1].id)} className={cn('h-11', stepIndex === 0 && 'invisible')}>
+                                <ChevronLeft size={16} /> {STEPS[stepIndex - 1]?.label}
+                            </Button>
+                            {stepIndex < STEPS.length - 1 ? (
+                                <Button variant="accent" onClick={() => goStep(STEPS[stepIndex + 1].id)} className="h-11 px-5">Next: {STEPS[stepIndex + 1].label} <ChevronRight size={16} /></Button>
+                            ) : (
+                                <Button variant="primary" onClick={() => saveAndClose()} disabled={Boolean(busy)} className="h-11 px-5"><Save size={16} /> {busy === 'save' ? 'Saving…' : 'Save & close'}</Button>
+                            )}
                         </div>
                     </div>
                 </section>
 
-                {/* Doc Preview */}
-                <section className={cn(
-                    "lg:static lg:flex fixed inset-0 z-[60] lg:z-0 bg-gray-100 dark:bg-[#050505] flex-col overflow-hidden shrink-0 transition-transform duration-500 lg:translate-x-0",
-                    isExpandedPreview ? "w-full lg:w-full border-l-0" : "w-full lg:w-[400px] 2xl:w-[600px] border-l border-black/10 dark:border-white/5",
-                    showPreviewMobile ? "translate-x-0" : "translate-x-full lg:translate-x-0"
-                )}>
-                    <div className="h-20 lg:h-16 flex items-center justify-between px-8 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/20 shrink-0">
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => setShowPreviewMobile(false)} className="lg:hidden p-3 bg-black/5 dark:bg-white/5 rounded-xl border border-black/10 dark:border-white/5"><ArrowLeft size={18} /></button>
-                            <button 
-                                onClick={() => setIsExpandedPreview(!isExpandedPreview)} 
-                                className="hidden lg:flex p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 rounded-xl text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all items-center gap-2 text-[9px] font-black uppercase tracking-wider h-10 px-3"
-                                title={isExpandedPreview ? "Exit Fullscreen Preview" : "Fullscreen Preview"}
-                            >
-                                {isExpandedPreview ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
-                                <span>{isExpandedPreview ? "Collapse" : "Expand"}</span>
-                            </button>
-                            <p className="hidden xl:block text-[10px] font-black text-gray-500 uppercase tracking-widest whitespace-nowrap">Document Live View</p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center bg-white dark:bg-white rounded-lg p-1 border border-black/10 dark:border-white/5">
-                                <button onClick={() => setUserZoom(Math.max(0.5, userZoom - 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Minus size={12} /></button>
-                                <span className="text-[10px] font-black text-gray-500 px-2 min-w-[40px] text-center">{Math.round(userZoom * 100)}%</span>
-                                <button onClick={() => setUserZoom(Math.min(2, userZoom + 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Plus size={12} /></button>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setCurrentPreviewPage(Math.max(0, currentPreviewPage - 1))} disabled={currentPreviewPage === 0} className="p-2.5 bg-black/5 dark:bg-white/5 rounded-xl disabled:opacity-20 hover:bg-black/10 dark:hover:bg-white/10 transition-all"><ChevronLeft size={16} /></button>
-                                <span className="text-[10px] font-black text-neon-blue">{currentPreviewPage + 1} / {paginatedPages.length}</span>
-                                <button onClick={() => setCurrentPreviewPage(Math.min(paginatedPages.length - 1, currentPreviewPage + 1))} disabled={currentPreviewPage === paginatedPages.length - 1} className="p-2.5 bg-black/5 dark:bg-white/5 rounded-xl disabled:opacity-20 hover:bg-black/10 dark:hover:bg-white/10 transition-all"><ChevronRight size={16} /></button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div ref={previewContainerRef} className="flex-1 bg-gray-200/70 dark:bg-[#050505] flex flex-col items-center justify-start p-0 overflow-y-auto overflow-x-hidden relative scrollbar-hide">
-                        <div style={{ 
-                            width: `${794 * previewScale}px`,
-                            height: `${1123 * previewScale}px`,
-                            flexShrink: 0,
-                            position: 'relative'
-                        }}>
-                            <div style={{ 
-                                width: '794px', 
-                                height: '1123px', 
-                                transform: `scale(${previewScale})`, 
-                                transformOrigin: 'top left',
-                                position: 'absolute',
-                                top: 0,
-                                left: 0
-                            }}>
-                                <AnimatePresence mode="wait">
-                                <motion.div 
-                                    key={currentPreviewPage} 
-                                    initial={{ opacity: 0 }} 
-                                    animate={{ opacity: 1 }} 
-                                    exit={{ opacity: 0 }} 
-                                    className="invoice-page-render w-[794px] h-[1123px] bg-white text-gray-900 print:bg-white print:text-black relative flex flex-col p-[12mm] shadow-2xl rounded-[2px] overflow-hidden"
-                                    style={{ fontFamily: "'Inter', sans-serif" }}
-                                >
-                                     {/* Header - Page 1 or summary */}
-                                    {currentPreviewPage === 0 ? (
-                                        <div className="flex justify-between items-start mb-6">
-                                            <div>
-                                                <img src={currentLogo.path} alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
-                                            </div>
-                                            <div className="text-right">
-                                                <h2 className="text-4xl font-black text-gray-900 tracking-tighter uppercase mb-0">#{formData.invoiceNumber}</h2>
-                                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-tight mt-1">INVOICE ID</p>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="flex justify-between items-center mb-6 border-b border-gray-300 pb-4">
-                                            <img src={currentLogo.path} alt="Logo" className="w-[100px] object-contain opacity-50" crossOrigin="anonymous" />
-                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Invoice #{formData.invoiceNumber} — Page {currentPreviewPage + 1}</p>
-                                        </div>
-                                    )}
-
-                                    <div className="relative z-10 flex flex-col flex-1 pb-20">
-                                        {/* Info Boxes - Page 1 */}
-                                        {currentPreviewPage === 0 && (
-                                            <div className="grid grid-cols-2 gap-8 mb-8">
-                                                <div className="bg-white/80 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                    <div className="px-6 py-2" style={{ backgroundColor: `${brandColor}66` }}>
-                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE BY</h4>
-                                                    </div>
-                                                    <div className="p-6">
-                                                        <p className="text-xl font-bold mb-3 leading-none">{formData.senderName || 'Newbi Entertainment'}</p>
-                                                        <div className="text-[11px] text-gray-600 font-semibold space-y-1.5 leading-normal">
-                                                            {formData.senderAddress && <p className="whitespace-pre-wrap leading-relaxed max-w-xs">{formData.senderAddress}</p>}
-                                                            <p>Contact: {formData.senderContact}</p>
-                                                            <p>Email: {formData.senderEmail}</p>
-                                                            {formData.senderGst && <p>GSTIN: {formData.senderGst}</p>}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="bg-white/80 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                    <div className="px-6 py-2" style={{ backgroundColor: `${brandColor}66` }}>
-                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE TO</h4>
-                                                    </div>
-                                                    <div className="p-6">
-                                                        <p className="text-xl font-bold uppercase mb-3 leading-none">{formData.clientName || 'CLIENT NAME'}</p>
-                                                        <div className="text-[11px] text-gray-600 font-semibold space-y-1.5 leading-normal">
-                                                            <p>Date: {new Date(formData.invoiceDate).toLocaleDateString('en-GB')}</p>
-                                                            {formData.dueDate && <p className="font-black italic" style={{ color: brandColor }}>Due Date: {new Date(formData.dueDate).toLocaleDateString('en-GB')}</p>}
-                                                            {formData.clientAddress && <p className="whitespace-pre-line">{formData.clientAddress}</p>}
-                                                            {formData.clientGst && <p className="mt-1 pt-1 border-t border-gray-200 inline-block text-[10px]">GST: {formData.clientGst}</p>}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Items Table */}
-                                        {paginatedPages[currentPreviewPage]?.length > 0 && (
-                                            <div className={cn("mb-8 overflow-hidden rounded-2xl border border-gray-300 shadow-sm bg-white", currentPreviewPage > 0 && "mt-4")}>
-                                            <table className="w-full">
-                                                <thead>
-                                                    <tr className="text-black" style={{ backgroundColor: `${brandColor}66` }}>
-                                                        <th className="py-4 px-6 text-left text-[10px] font-black uppercase tracking-widest border-r border-black/5">SERVICE DESCRIPTION</th>
-                                                        {customColumns.map(col => (
-                                                            <th key={col.id} className="py-4 px-4 text-center text-[10px] font-black uppercase tracking-widest border-r border-black/5">{col.label}</th>
-                                                        ))}
-                                                        <th className="py-4 px-4 text-center text-[10px] font-black uppercase tracking-widest border-r border-black/5">QTY.</th>
-                                                        <th className="py-4 px-4 text-center text-[10px] font-black uppercase tracking-widest border-r border-black/5">PRICE</th>
-                                                        <th className="py-4 px-6 text-right text-[10px] font-black uppercase tracking-widest">TOTAL</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-gray-200">
-                                                    {paginatedPages[currentPreviewPage]?.map((item, idx) => (
-                                                        <tr key={idx} className="hover:bg-gray-50/50">
-                                                            <td className="py-3 px-6 text-[11px] font-bold uppercase border-r border-dashed border-gray-200 leading-relaxed italic text-gray-900">{item.description || "SERVICE"}</td>
-                                                            {customColumns.map(col => (
-                                                                <td key={col.id} className="py-3 px-4 text-center text-[10px] font-semibold border-r border-dashed border-gray-200 leading-relaxed italic text-gray-500">{item.customValues?.[col.id] || "-"}</td>
-                                                            ))}
-                                                            <td className="py-3 px-4 text-center text-[11px] font-black border-r border-dashed border-gray-200 leading-relaxed text-gray-900">{item.qty || 1}</td>
-                                                            <td className="py-3 px-4 text-center text-[11px] font-black border-r border-dashed border-gray-200 leading-relaxed text-gray-900">₹{(item.price || 0).toLocaleString()}</td>
-                                                            <td className="py-3 px-6 text-right text-[11px] font-black leading-relaxed text-gray-900">₹{( (item.qty || 1) * (item.price || 0) ).toLocaleString()}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        )}
-
-                                        {/* Totals Section - Only on Last Page */}
-                                        {currentPreviewPage === paginatedPages.length - 1 && (
-                                            <div className="mt-4 flex gap-x-8 items-start pt-4 border-t border-gray-200 relative z-10 w-full">
-                                                {/* Left Column: Payment Details & Notes */}
-                                                <div className="flex-1 space-y-2">
-                                                    {/* Payment Details */}
-                                                    {formData.showPaymentDetails && formData.paymentDetails && (
-                                                        <div className="p-4 border-2 border-dashed border-gray-300 rounded-2xl text-[10px] text-left leading-relaxed text-gray-600 bg-white/60 shadow-sm w-full">
-                                                            <p className="text-[10px] font-black text-black mb-3 border-b-2 pb-1.5 inline-block uppercase tracking-widest" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
-                                                            <div className="font-mono">
-                                                                {renderContent(formData.paymentDetails)}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    {/* Additional Notes */}
-                                                    {formData.showNotes && (
-                                                        <div className="bg-white/60 border border-black/5 rounded-2xl overflow-hidden shadow-sm">
-                                                            <div className="px-4 py-1.5 border-b border-black/10" style={{ backgroundColor: `${brandColor}66` }}>
-                                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4>
-                                                            </div>
-                                                            <div className="p-4">
-                                                                <div className="text-[10px] text-gray-700 leading-relaxed italic">
-                                                                    {renderContent(formData.note)}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Right Column: Totals, QR & Signature */}
-                                                <div className="flex-1 flex flex-col items-end space-y-1">
-                                                    {/* Totals Section */}
-                                                    <div className="w-full space-y-1.5">
-                                                        <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest">
-                                                            <span>SUBTOTAL</span>
-                                                            <span className="text-black text-[11px] font-bold italic">₹{subtotal.toLocaleString()}</span>
-                                                        </div>
-                                                        {formData.showGst && (
-                                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest text-black">
-                                                                <span>GST ({formData.gstPercentage}%)</span>
-                                                                <span className="text-black text-[11px] font-bold italic">₹{gstAmount.toLocaleString()}</span>
-                                                            </div>
-                                                        )}
-                                                        <div className="flex justify-between items-center py-2 px-3 text-black border border-black/5 mt-1 rounded-lg" style={{ backgroundColor: `${brandColor}66` }}>
-                                                            <span className="text-[9px] font-black uppercase italic">TOTAL</span>
-                                                            <span className="text-lg font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
-                                                        </div>
-                                                        {formData.showAdvance && formData.advancePaid > 0 && (
-                                                            <>
-                                                                <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest mt-1">
-                                                                    <span>ADVANCE PAID</span>
-                                                                    <span className="text-black text-[11px] font-bold italic">₹{formData.advancePaid.toLocaleString()}</span>
-                                                                </div>
-                                                                <div className="flex justify-between items-center py-2 px-4 text-black border border-black/10 rounded-xl shadow-lg mt-1" style={{ backgroundColor: `${brandColor}66` }}>
-                                                                    <span className="text-[10px] font-black uppercase italic">BALANCE DUE</span>
-                                                                    <span className="text-2xl font-black italic tracking-tighter">₹{balanceDue.toLocaleString()}</span>
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                        {formData.paymentLink && (
-                                                            <a href={formData.paymentLink} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center justify-center gap-2 w-full h-11 bg-black text-white rounded-xl font-black uppercase tracking-[0.2em] text-[9px] hover:scale-[1.02] active:scale-95 transition-all shadow-xl">
-                                                                <Zap size={14} className="text-neon-blue" />
-                                                                Pay Now Online
-                                                            </a>
-                                                        )}
-                                                    </div>
-
-                                                    {/* QR & Authentication Flex Row */}
-                                                    <div className="flex w-full items-end justify-between pt-4 mt-2 border-t border-gray-300/50 print:border-gray-200">
-                                                        
-                                                        {/* QR Code Section */}
-                                                        {formData.showUPI && formData.upiId && (
-                                                            <div className="flex flex-col items-center gap-2 shrink-0">
-                                                                <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center w-[85px]">
-                                                                    <img 
-                                                                        src={formData.qrType === 'custom' && formData.customQrImage 
-                                                                            ? formData.customQrImage 
-                                                                            : `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${balanceDue}&cu=INR`)}`} 
-                                                                        alt="Payment QR" 
-                                                                        className="w-[65px] h-[65px] grayscale contrast-125 mx-auto"
-                                                                        crossOrigin="anonymous"
-                                                                    />
-                                                                    <p className="text-[6px] font-black text-center mt-1 text-gray-600 tracking-widest uppercase italic font-bold">Scan to pay</p>
-                                                                </div>
-                                                                <a 
-                                                                    href={`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${balanceDue}&cu=INR`} 
-                                                                    className="flex items-center justify-center gap-1 w-[85px] h-8 bg-black text-white rounded-xl text-[7px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
-                                                                    data-html2canvas-ignore="true"
-                                                                >
-                                                                    Pay via UPI
-                                                                </a>
-                                                            </div>
-                                                        )}
-                                                        
-                                                        {/* Authentication Layer */}
-                                                        {(formData.showSeal || formData.showSignatures) && (
-                                                            <div className="flex items-end relative pb-1 pr-1">
-                                                                {formData.showSeal && (
-                                                                    <div className={formData.showSignatures ? "absolute -left-12 -top-4 pointer-events-none z-10 opacity-80 mix-blend-multiply (255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none mb-0.5 rotate-[-4deg]" : "pointer-events-none z-10 opacity-80 mix-blend-multiply (255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none mb-0.5 rotate-[-4deg]"}>
-                                                                        <DocumentSeal className="w-[85px] h-[85px]" />
-                                                                    </div>
-                                                                )}
-                                                                {formData.showSignatures && (
-
-                                                                    <div className="z-20 flex flex-col items-center relative space-y-1 w-[150px]">
-                                                                    <p className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest mb-1 text-center whitespace-nowrap">For {formData.senderName || 'Newbi Entertainment'}</p>
-                                                                    <div className="h-12 w-full flex items-end justify-center relative border-b border-black/20 print:border-black/20 pb-1">
-                                                                        {formData.providerSignature ? (
-                                                                            <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain mix-blend-multiply print:mix-blend-multiply print:invert-0 grayscale-0" crossOrigin="anonymous" />
-                                                                        ) : (
-                                                                            <p className="text-[11px] font-formal italic text-gray-900 print:text-black opacity-40">Authorized Signatory</p>
-                                                                        )}
-                                                                    </div>
-                                                                    <p className="text-[7.5px] font-black text-gray-900 print:text-black uppercase tracking-widest leading-tight mt-1 text-center whitespace-nowrap">Authorized Signatory</p>
-                                                                </div>
-
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Fixed Footer at bottom of every page */}
-                                    {formData.showFooter && (
-                                        <footer 
-                                            className="absolute bottom-[12mm] left-[12mm] right-[12mm] h-11 flex items-center justify-between px-6 rounded-full text-black shadow-sm z-30" 
-                                            style={{ backgroundColor: `${brandColor}66` }}
-                                        >
-                                            <div className="flex items-center gap-5 text-[8.5px] font-black tracking-widest uppercase">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="opacity-50 text-[7px] tracking-[0.2em]">CALL</span>
-                                                    <span className="whitespace-nowrap font-bold">+91 93043 72773</span>
-                                                </div>
-                                                <div className="h-3 w-[1px] bg-black/15" />
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="opacity-50 text-[7px] tracking-[0.2em]">EMAIL</span>
-                                                    <span className="whitespace-nowrap font-bold">partnership@newbi.live</span>
-                                                </div>
-                                                <div className="h-3 w-[1px] bg-black/15" />
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="opacity-50 text-[7px] tracking-[0.2em]">WEB</span>
-                                                    <span className="whitespace-nowrap font-bold">newbi.live</span>
-                                                </div>
-                                            </div>
-                                            <div className="text-[8.5px] font-black tracking-widest uppercase italic opacity-80 whitespace-nowrap pl-4">
-                                                PAGE {currentPreviewPage + 1} OF {paginatedPages.length}
-                                            </div>
-                                        </footer>
-                                    )}
-                                </motion.div>
-                            </AnimatePresence>
-                        </div>
+                {/* Phone footer: total and steps */}
+                <div className="fixed inset-x-0 bottom-0 z-30 border-t border-black/[0.06] bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#07080b]/95 lg:hidden">
+                    <div className="flex h-16 items-center gap-2 px-3">
+                        <button type="button" onClick={() => setMobilePreview(true)} className="min-w-0 flex-1 text-left">
+                            <span className="block text-[11.5px] text-gray-500">{(formData.showAdvance && advance > 0) || paymentsReceived > 0 ? 'Balance due' : 'Total'}</span>
+                            <span className="block truncate text-[17px] font-extrabold tabular-nums">{rupees((formData.showAdvance && advance > 0) || paymentsReceived > 0 ? balanceDue : amounts.total)}</span>
+                        </button>
+                        {stepIndex > 0 && (
+                            <Button variant="secondary" onClick={() => goStep(STEPS[stepIndex - 1].id)} aria-label="Previous step" className="h-11 w-11 px-0"><ChevronLeft size={18} /></Button>
+                        )}
+                        {stepIndex < STEPS.length - 1 ? (
+                            <Button variant="accent" onClick={() => goStep(STEPS[stepIndex + 1].id)} className="h-11">Next <ChevronRight size={16} /></Button>
+                        ) : (
+                            <Button variant="primary" onClick={() => saveAndClose()} disabled={Boolean(busy)} className="h-11"><Save size={15} /> Save</Button>
+                        )}
                     </div>
                 </div>
-            </section>
-        </main>
 
-            {/* PDF Capture Only Section - Hidden Off-screen */}
-            <div className="pdf-capture-only fixed top-0 left-[-9999px] z-[-1]">
-                {paginatedPages.map((pageItems, pageIdx) => (
-                    <div 
-                        key={`pdf-page-${pageIdx}`}
-                        className="invoice-page-render w-[794px] h-[1123px] bg-white text-gray-900 print:bg-white print:text-black relative flex flex-col p-[12mm] overflow-hidden"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                    >
-                        {/* Header */}
-                        {pageIdx === 0 ? (
-                            <div className="flex justify-between items-start mb-6">
-                                <div>
-                                    <img src={currentLogo.path} alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
-                                </div>
-                                <div className="text-right">
-                                    <h2 className="text-4xl font-black text-gray-600 tracking-tighter uppercase mb-0">#{formData.invoiceNumber}</h2>
-                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest leading-tight mt-1">INVOICE ID</p>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex justify-between items-center mb-6 border-b border-gray-300 pb-4">
-                                <img src={currentLogo.path} alt="Logo" className="w-[100px] object-contain opacity-50" crossOrigin="anonymous" />
-                                <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Invoice #{formData.invoiceNumber} — Page {pageIdx + 1}</p>
-                            </div>
-                        )}
+                {/* Paper preview (desktop) */}
+                <section className={cn('hidden flex-col overflow-hidden border-l border-black/[0.06] dark:border-white/[0.06] lg:flex', expanded ? 'flex-1 border-l-0' : 'lg:w-[440px] 2xl:w-[620px]')}>
+                    {previewToolbar}
+                    <PaperFrame key={expanded ? 'page' : 'width'} fit={expanded ? 'page' : 'width'} zoom={zoom} className="flex-1">{paper}</PaperFrame>
+                </section>
+            </main>
 
-                        <div className="relative z-10 flex flex-col flex-1 pb-20">
-                            {/* Page 1 Details */}
-                            {pageIdx === 0 && (
-                                <div className="grid grid-cols-2 gap-8 mb-8">
-                                    <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                        <div className="px-6 py-2" style={{ backgroundColor: `${brandColor}66` }}>
-                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE BY</h4>
-                                        </div>
-                                        <div className="p-6">
-                                            <p className="text-xl font-bold mb-3 leading-none">{formData.senderName || 'Newbi Entertainment'}</p>
-                                            <div className="text-[11px] text-gray-600 font-semibold space-y-1.5 leading-normal">
-                                                {formData.senderAddress && <p className="whitespace-pre-wrap leading-relaxed max-w-xs">{formData.senderAddress}</p>}
-                                                <p>Contact: {formData.senderContact}</p>
-                                                <p>Email: {formData.senderEmail}</p>
-                                                {formData.senderGst && <p>GSTIN: {formData.senderGst}</p>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                        <div className="px-6 py-2" style={{ backgroundColor: `${brandColor}66` }}>
-                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE TO</h4>
-                                        </div>
-                                        <div className="p-6">
-                                            <p className="text-xl font-bold uppercase mb-3 leading-none">{formData.clientName || 'CLIENT NAME'}</p>
-                                            <div className="text-[11px] text-gray-600 font-semibold space-y-1.5 leading-normal">
-                                                <p>{formData.clientAddress}</p>
-                                                {formData.clientGst && <p>GSTIN: {formData.clientGst}</p>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Service Table */}
-                            <div className="mb-8 bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm">
-                                <table className="w-full border-collapse">
-                                    <thead>
-                                        <tr className="border-b border-black/5" style={{ backgroundColor: `${brandColor}66` }}>
-                                            <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest border-r border-black/5">Service Description</th>
-                                            <th className="text-center px-4 py-4 text-[10px] font-black uppercase tracking-widest border-r border-black/5">Qty.</th>
-                                            <th className="text-right px-4 py-4 text-[10px] font-black uppercase tracking-widest border-r border-black/5">Price</th>
-                                            <th className="text-right px-6 py-4 text-[10px] font-black uppercase tracking-widest">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-black/5">
-                                        {pageItems.map((item, idx) => (
-                                            <tr key={idx} className="group transition-colors hover:bg-white/60">
-                                                <td className="px-6 py-4 text-[11px] font-bold uppercase border-r border-dashed border-gray-200 leading-relaxed italic">{item.description || "SERVICE"}</td>
-                                                <td className="px-4 py-4 text-center text-[11px] font-black border-r border-dashed border-gray-200">{item.qty || 1}</td>
-                                                <td className="px-4 py-4 text-right text-[11px] font-black italic border-r border-dashed border-gray-200">₹{(item.price || 0).toLocaleString()}</td>
-                                                <td className="px-6 py-4 text-right text-[11px] font-black italic">₹{((item.qty || 1) * (item.price || 0)).toLocaleString()}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Totals & Notes - Last Page */}
-                            {pageIdx === paginatedPages.length - 1 && (
-                                <div className="mt-auto grid grid-cols-2 gap-x-12 items-start pt-6 border-t border-gray-200">
-                                    <div className="space-y-4">
-                                        {formData.showPaymentDetails && (
-                                            <div className="p-5 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
-                                                <p className="text-xs font-black text-black mb-2 border-b-2 pb-1 inline-block" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
-                                                <div className="article-content" dangerouslySetInnerHTML={{ __html: formData.paymentDetails }} />
-                                            </div>
-                                        )}
-                                        {formData.showNotes && (
-                                            <div className="bg-white/40 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                <div className="p-3.5">
-                                                    <div className="article-content text-[10px] text-gray-700 font-bold leading-relaxed italic" dangerouslySetInnerHTML={{ __html: formData.note || 'No additional notes.' }} />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between py-1.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest"><span>SUBTOTAL</span><span className="text-black text-xs font-bold italic">₹{subtotal.toLocaleString()}</span></div>
-                                        {formData.showGst && (
-                                            <div className="flex justify-between py-1.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest"><span>GST ({formData.gstPercentage}%)</span><span className="text-black text-xs font-bold italic">₹{gstAmount.toLocaleString()}</span></div>
-                                        )}
-                                        <div className="flex justify-between items-center py-2.5 px-4 text-black border border-black/5 mt-1 rounded-xl" style={{ backgroundColor: `${brandColor}66` }}>
-                                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">TOTAL AMOUNT</span>
-                                            <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
-                                        </div>
-                                        {formData.advancePaid > 0 && (
-                                            <div className="flex justify-between py-1.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest"><span>ADVANCE PAID</span><span className="text-black text-xs font-bold italic">₹{formData.advancePaid.toLocaleString()}</span></div>
-                                        )}
-                                        <div className="flex justify-between items-center py-3 px-5 text-black border border-black/5 mt-1 rounded-2xl shadow-md" style={{ backgroundColor: `${brandColor}66` }}>
-                                            <span className="text-xs font-black uppercase tracking-[0.2em]">BALANCE DUE</span>
-                                            <span className="text-3xl font-black italic tracking-tighter">₹{balanceDue.toLocaleString()}</span>
-                                        </div>
-                                        
-                                        <div className="flex items-center justify-between w-full pt-4 mt-2 border-t border-gray-300/50">
-                                            <div className="flex flex-col items-center gap-1.5 shrink-0">
-                                                <div className="bg-white p-2 rounded-xl shadow-sm border border-black/5 flex flex-col items-center w-[85px]">
-                                                    <img 
-                                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${formData.upiId}%26pn=${encodeURIComponent(formData.senderName)}%26am=${balanceDue}%26cu=INR`}
-                                                        alt="Payment QR"
-                                                        className="w-[65px] h-[65px] grayscale contrast-125 mx-auto"
-                                                        crossOrigin="anonymous"
-                                                    />
-                                                    <p className="text-[6px] font-black text-center mt-1 text-gray-600 tracking-widest uppercase italic font-bold">Scan to pay</p>
-                                                </div>
-                                            </div>
-                                            
-                                            {(formData.showSeal || formData.showSignatures) && (
-                                                <div className="flex items-end relative pr-1 pb-1">
-                                                    {formData.showSeal && (
-                                                        <div className={formData.showSignatures ? "absolute -left-12 -top-4 pointer-events-none z-10 opacity-80 mix-blend-multiply rotate-[-4deg]" : "pointer-events-none z-10 opacity-80 mix-blend-multiply mb-0.5 rotate-[-4deg]"}>
-                                                            <DocumentSeal className="w-[85px] h-[85px]" />
-                                                        </div>
-                                                    )}
-                                                    {formData.showSignatures && (
-
-                                                        <div className="z-20 flex flex-col items-center relative space-y-1 w-[150px]">
-                                                        <p className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest mb-1 text-center whitespace-nowrap">For {formData.senderName || 'Newbi Entertainment'}</p>
-                                                        <div className="h-12 w-full flex items-end justify-center relative border-b border-black/20 pb-1">
-                                                            {formData.providerSignature ? (
-                                                                <img src={formData.providerSignature} alt="Signature" className="h-full object-contain mix-blend-multiply grayscale-0" crossOrigin="anonymous" />
-                                                            ) : (
-                                                                <p className="text-[11px] font-formal italic text-gray-900 opacity-40">Authorized Signatory</p>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-[7.5px] font-black text-gray-900 uppercase tracking-widest leading-tight mt-1 text-center whitespace-nowrap">Authorized Signatory</p>
-                                                    </div>
-
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Footer */}
-                        {formData.showFooter && (
-                            <footer 
-                                className="absolute bottom-[12mm] left-[12mm] right-[12mm] h-11 flex items-center justify-between px-6 rounded-full text-black shadow-sm z-30" 
-                                style={{ backgroundColor: `${brandColor}66` }}
-                            >
-                                <div className="flex items-center gap-5 text-[8.5px] font-black tracking-widest uppercase">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="opacity-50 text-[7px] tracking-[0.2em]">CALL</span>
-                                        <span className="whitespace-nowrap font-bold">+91 93043 72773</span>
-                                    </div>
-                                    <div className="h-3 w-[1px] bg-black/15" />
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="opacity-50 text-[7px] tracking-[0.2em]">EMAIL</span>
-                                        <span className="whitespace-nowrap font-bold">partnership@newbi.live</span>
-                                    </div>
-                                    <div className="h-3 w-[1px] bg-black/15" />
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="opacity-50 text-[7px] tracking-[0.2em]">WEB</span>
-                                        <span className="whitespace-nowrap font-bold">newbi.live</span>
-                                    </div>
-                                </div>
-                                <div className="text-[8.5px] font-black tracking-widest uppercase italic opacity-80 whitespace-nowrap pl-4">
-                                    PAGE {pageIdx + 1} OF {paginatedPages.length}
-                                </div>
-                            </footer>
-                        )}
+            {/* Paper preview (phones) */}
+            <Sheet
+                open={mobilePreview}
+                onClose={() => setMobilePreview(false)}
+                title="Preview"
+                subtitle={`${formData.invoiceNumber || 'Invoice'} · ${rupees(amounts.total)}`}
+                size="xl"
+                bodyClassName="flex flex-col p-0"
+                footer={(
+                    <div className="flex gap-2">
+                        <Button variant="secondary" onClick={() => setMobilePreview(false)} className="h-11 flex-1">Keep editing</Button>
+                        <Button variant="accent" onClick={() => downloadPdf()} disabled={Boolean(busy)} className="h-11 flex-1"><Download size={15} /> PDF</Button>
                     </div>
-                ))}
-            </div>
+                )}
+            >
+                {previewToolbar}
+                <PaperFrame zoom={zoom} className="h-[62dvh] flex-1">{paper}</PaperFrame>
+            </Sheet>
+
+            {/* Checks before sharing or downloading */}
+            <Sheet
+                open={dialog?.kind === 'issues'}
+                onClose={() => setDialog(null)}
+                variant="dialog"
+                size="sm"
+                title={dialog?.purpose === 'pdf' ? 'Before you download' : 'Before you send it'}
+                subtitle={`${errors.length} thing${errors.length === 1 ? '' : 's'} to fix`}
+                footer={dialog?.purpose === 'pdf' ? (
+                    <div className="flex gap-2">
+                        <Button variant="secondary" onClick={() => { const first = errors[0]; setDialog(null); if (first) goStep(first.step); }} className="h-11 flex-1">Fix it</Button>
+                        <Button variant="accent" onClick={() => downloadPdf(true)} className="h-11 flex-1">Download anyway</Button>
+                    </div>
+                ) : (
+                    <Button variant="accent" onClick={() => { const first = errors[0]; setDialog(null); if (first) goStep(first.step); }} className="h-11 w-full">Fix it</Button>
+                )}
+            >
+                <ul className="space-y-2">
+                    {errors.map((issue, i) => (
+                        <li key={i} className="flex items-start gap-2 text-[14px]">
+                            <AlertCircle size={16} className="mt-0.5 shrink-0 text-red-500" />
+                            <span className="min-w-0 flex-1">{issue.text}</span>
+                            <button type="button" onClick={() => { setDialog(null); goStep(issue.step); }} className={cn('shrink-0 text-[13px] font-bold', a.text)}>{STEPS.find(s => s.id === issue.step)?.label}</button>
+                        </li>
+                    ))}
+                </ul>
+            </Sheet>
+
+            <Sheet
+                open={dialog?.kind === 'number'}
+                onClose={() => setDialog(null)}
+                variant="dialog"
+                size="sm"
+                title="That number is taken"
+                subtitle={`${formData.invoiceNumber} is already used by another invoice. Two invoices shouldn't share a number.`}
+                footer={(
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                        <Button variant="secondary" onClick={() => { setDialog(null); saveAndClose(true); }} className="h-11 flex-1">Save with {formData.invoiceNumber}</Button>
+                        <Button variant="accent" onClick={() => { numberAutoRef.current = false; set({ invoiceNumber: nextFreeNumber }); setDialog(null); }} className="h-11 flex-1">Use {nextFreeNumber}</Button>
+                    </div>
+                )}
+            >
+                <p className="text-[14px] text-gray-500">Pick the next free number, then save again.</p>
+            </Sheet>
+
+            <Sheet
+                open={dialog?.kind === 'leave'}
+                onClose={() => setDialog(null)}
+                variant="dialog"
+                size="sm"
+                title="Couldn't save your latest changes"
+                subtitle="Check your connection. If you leave now, the last few changes will be lost."
+                footer={(
+                    <div className="flex gap-2">
+                        <Button variant="danger" onClick={() => { isDirtyRef.current = false; setDialog(null); navigate('/admin/invoices'); }} className="h-11 flex-1">Leave anyway</Button>
+                        <Button variant="accent" onClick={() => { setDialog(null); leave(); }} className="h-11 flex-1">Try again</Button>
+                    </div>
+                )}
+            >
+                <p className="text-[14px] text-gray-500">Your invoice is still open here.</p>
+            </Sheet>
+
+            {/* Pages drawn off-screen for the PDF */}
+            {capturing && (
+                <div className="invoice-pdf-capture pointer-events-none fixed left-[-10000px] top-0" aria-hidden="true">
+                    {pages.map((pageItems, i) => (
+                        <InvoicePage key={i} forCapture data={paperData} columns={customColumns} pageItems={pageItems} pageIndex={i} pageCount={pageCount} amounts={amounts} balanceDue={balanceDue} paymentsReceived={paymentsReceived} />
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

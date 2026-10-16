@@ -1,117 +1,66 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Construction, Sparkles, AlertTriangle, ArrowLeft, LayoutGrid } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
-
+import { Link } from 'react-router-dom';
+import Construction from 'lucide-react/dist/esm/icons/construction';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
+import Settings from 'lucide-react/dist/esm/icons/settings';
 import { useStore } from '../../lib/store';
 
+/*
+ * Shown in place of a page (or the whole site) while it's switched off in
+ * System. Visitors get a calm "back soon" message; team members get a way back
+ * to the admin and, if they can change it, to the switch itself.
+ */
 const Maintenance = () => {
-    const navigate = useNavigate();
     const { user, maintenanceState = {} } = useStore();
 
     const isAdmin = ['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'].includes(user?.role);
+    const canSwitch = ['developer', 'super_admin', 'founder'].includes(user?.role);
+    const whole = Boolean(maintenanceState.global);
+
+    const button = 'inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-[14px] font-semibold transition-colors';
 
     return (
-        <div className="min-h-[80vh] flex items-center justify-center p-4 relative overflow-hidden">
-            {/* ... background decor ... */}
-            <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-                <motion.div
-                    animate={{
-                        scale: [1, 1.2, 1],
-                        rotate: [0, 90, 0],
-                        opacity: [0.1, 0.2, 0.1]
-                    }}
-                    transition={{ duration: 10, repeat: 2 }}
-                    className="absolute -top-20 -left-20 w-80 h-80 bg-neon-purple rounded-full blur-[100px]"
-                />
-                <motion.div
-                    animate={{
-                        scale: [1, 1.3, 1],
-                        rotate: [0, -90, 0],
-                        opacity: [0.1, 0.2, 0.1]
-                    }}
-                    transition={{ duration: 12, repeat: 2 }}
-                    className="absolute -bottom-20 -right-20 w-80 h-80 bg-neon-blue rounded-full blur-[100px]"
-                />
-            </div>
+        <div className="flex min-h-[80dvh] items-center justify-center px-4 py-16 font-heading">
+            <div className="w-full max-w-md rounded-3xl border border-black/[0.06] bg-white p-6 text-center shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03] sm:p-10">
+                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:bg-amber-400/15 dark:text-amber-300">
+                    <Construction size={28} />
+                </span>
 
-            <Card className="max-w-xl w-full p-8 md:p-12 relative z-10 border-black/10 dark:border-white/10 backdrop-blur-xl bg-white dark:bg-black/40 shadow-[0_0_50px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                <div className="flex flex-col items-center text-center space-y-8">
-                    {/* Animated Icon */}
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-neon-pink/20 blur-xl rounded-full" />
-                        <div className="p-6 bg-gradient-to-br from-neon-pink to-neon-purple rounded-3xl text-gray-900 dark:text-white shadow-lg relative">
-                            <Construction size={48} strokeWidth={1.5} />
-                        </div>
-                        <div className="absolute -top-2 -right-2 text-yellow-400">
-                            <AlertTriangle size={24} fill="currentColor" />
-                        </div>
-                        <div className="absolute -bottom-2 -left-2 text-neon-blue">
-                            <Sparkles size={24} />
-                        </div>
-                    </div>
+                <h1 className="mt-6 text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
+                    {whole ? "We'll be right back" : 'This page is taking a short break'}
+                </h1>
+                <p className="mt-3 text-[15px] leading-relaxed text-gray-600 dark:text-zinc-400">
+                    {whole
+                        ? "We're making some improvements to the site. Please check back in a little while. Thanks for your patience."
+                        : "We're working on this part of the site right now. It'll be back soon."}
+                </p>
 
-                    {/* Professional Messaging */}
-                    <div className="space-y-4">
-                        <motion.h1
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="text-4xl md:text-5xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-gray-700 to-gray-500 dark:from-white dark:via-white dark:to-gray-300 uppercase"
-                        >
-                            Under Maintenance
-                        </motion.h1>
+                {isAdmin && (
+                    <p className="mt-4 rounded-xl bg-amber-500/[0.08] px-3 py-2.5 text-[13px] font-medium text-amber-800 dark:bg-amber-400/[0.08] dark:text-amber-200">
+                        {whole ? 'Maintenance mode is on for the whole site.' : 'This was switched off in System.'} Only developers can still open it.
+                    </p>
+                )}
 
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="space-y-2"
-                        >
-                            <p className="text-xl text-gray-700 dark:text-gray-300 font-medium">
-                                We are currently performing scheduled maintenance to improve our system.
-                            </p>
-                            <p className="text-gray-600 dark:text-gray-400">
-                                We expect to be back online shortly. Thank you for your patience.
-                            </p>
-                        </motion.div>
-                    </div>
-
-                    {/* Status Badge */}
-                    <div className="flex flex-wrap justify-center gap-3">
-                        <span className="px-4 py-1.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-xs font-bold uppercase tracking-widest text-gray-600 dark:text-gray-400">
-                            Status: Updating
-                        </span>
-                        <span className="px-4 py-1.5 rounded-full bg-neon-green/10 border border-neon-green/30 text-xs font-bold uppercase tracking-widest text-neon-green">
-                            System: Secure ✅
-                        </span>
-                    </div>
-
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                        className="w-full pt-4"
-                    >
-                        {isAdmin ? (
-                            <AdminDashboardLink />
-                        ) : maintenanceState.global ? (
-                            <div className="text-center p-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
-                                <p className="text-sm font-bold text-gray-900 dark:text-white">Site is under maintenance.</p>
-                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Please check back later.</p>
-                            </div>
-                        ) : (
-                            <Link to="/">
-                                <Button className="w-full h-12 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] rounded-xl flex items-center justify-center gap-2">
-                                    <ArrowLeft size={14} /> Back to Home
-                                </Button>
+                <div className="mt-6 flex flex-col gap-2">
+                    {isAdmin ? (
+                        <>
+                            {canSwitch && (
+                                <Link to="/admin/system-command" className={`${button} bg-neon-green text-black hover:bg-[#5dff3f]`}>
+                                    <Settings size={16} /> Open System switches
+                                </Link>
+                            )}
+                            <Link to="/admin" className={`${button} border border-black/10 bg-white text-gray-800 hover:border-black/20 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:border-white/20`}>
+                                <LayoutDashboard size={16} /> Back to the dashboard
                             </Link>
-                        )}
-                    </motion.div>
+                        </>
+                    ) : whole ? null : (
+                        <Link to="/" className={`${button} border border-black/10 bg-white text-gray-800 hover:border-black/20 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:border-white/20`}>
+                            <ArrowLeft size={16} /> Back to the home page
+                        </Link>
+                    )}
                 </div>
-            </Card>
+            </div>
         </div>
     );
 };

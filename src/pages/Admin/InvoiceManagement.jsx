@@ -1,834 +1,453 @@
-import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
-import { Link, useNavigate } from 'react-router-dom';
-import Edit from 'lucide-react/dist/esm/icons/edit';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Copy from 'lucide-react/dist/esm/icons/copy';
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
-import Plus from 'lucide-react/dist/esm/icons/plus';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
+import React, { useMemo, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
-import Filter from 'lucide-react/dist/esm/icons/filter';
-import Download from 'lucide-react/dist/esm/icons/download';
-import X from 'lucide-react/dist/esm/icons/x';
-import Search from 'lucide-react/dist/esm/icons/search';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Upload from 'lucide-react/dist/esm/icons/upload';
-import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
-import Mail from 'lucide-react/dist/esm/icons/mail';
-import Send from 'lucide-react/dist/esm/icons/send';
-import CopyPlus from 'lucide-react/dist/esm/icons/copy-plus';
-import MoreVertical from 'lucide-react/dist/esm/icons/more-vertical';
 import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
-import Activity from 'lucide-react/dist/esm/icons/activity';
-import Calendar from 'lucide-react/dist/esm/icons/calendar';
-import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
-import Globe from 'lucide-react/dist/esm/icons/globe';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import Wallet from 'lucide-react/dist/esm/icons/wallet';
+import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Edit from 'lucide-react/dist/esm/icons/edit';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
-import Receipt from 'lucide-react/dist/esm/icons/receipt';
-import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
-import FolderOpen from 'lucide-react/dist/esm/icons/folder-open';
-import History from 'lucide-react/dist/esm/icons/history';
+import CopyPlus from 'lucide-react/dist/esm/icons/copy-plus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Share2 from 'lucide-react/dist/esm/icons/share-2';
+import Inbox from 'lucide-react/dist/esm/icons/inbox';
+import { AnimatePresence } from 'framer-motion';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { sendInvoiceEmail, generateInvoiceEmailHTML, sendPaymentApprovedEmail, sendPaymentDeclinedEmail } from '../../lib/email';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
+import { copyToClipboard } from '../../lib/clipboard';
 import { cn } from '../../lib/utils';
-import { Input } from '../../components/ui/Input';
-import { motion, AnimatePresence } from 'framer-motion';
+import { exportSubtitle } from '../../lib/xlsx';
+import ExportMenu from '../../components/admin/ExportMenu';
+import {
+    invoiceTotal, invoiceAdvance, invoiceReceived, invoiceBalance, invoiceState, INVOICE_STATE_LABEL,
+    daysOverdue, nextInvoiceNumber, todayKey, INVOICE_NON_COPYABLE_FIELDS, invoiceCollectedSince,
+} from '../../lib/invoicing';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import { Card, Button, Badge, SearchInput, SegmentedTabs, EmptyState, Select, Menu, MenuItem, ViewToggle, useViewMode } from '../../components/admin/ui';
 import InvoiceEmailModal from '../../components/admin/InvoiceEmailModal';
-import PaymentClaimReview from '../../components/admin/PaymentClaimReview';
+import InvoiceDetailPanel from '../../components/admin/invoices/InvoiceDetailPanel';
+import RecordPaymentModal from '../../components/admin/invoices/RecordPaymentModal';
+import QuickUploadModal from '../../components/admin/invoices/QuickUploadModal';
+import { inr, toDate } from '../../components/admin/ticketing/format';
+
+const VAULT_TABS = [
+    { name: 'Invoices', path: '/admin/invoices', icon: FileText },
+    { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet },
+    { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck },
+];
+
+const FILTERS = ['all', 'unpaid', 'overdue', 'verifying', 'partial', 'paid'];
+const FILTER_LABEL = { all: 'All', unpaid: 'Unpaid', overdue: 'Overdue', verifying: 'Claimed paid', partial: 'Part paid', paid: 'Paid' };
+const PAGE = 50;
+
+const issuedOf = (inv) => toDate(inv.issueDate ? `${String(inv.issueDate).slice(0, 10)}T00:00:00` : inv.createdAt);
+const formatDay = (d) => (d ? d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+
+const Kpi = ({ icon: Icon, label, value, hint, tone, active, onClick }) => {
+    const tones = {
+        gray: 'bg-black/5 text-gray-700 dark:bg-white/5 dark:text-zinc-300',
+        red: 'bg-red-500/10 text-red-600 dark:text-red-400',
+        amber: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
+        green: 'bg-neon-green/10 text-emerald-700 dark:text-neon-green',
+    };
+    return (
+        <button type="button" onClick={onClick} className="text-left">
+            <Card className={cn('h-full rounded-2xl p-4 transition-colors hover:border-black/15 dark:hover:border-white/15', active && 'border-gray-900 dark:border-white/60')}>
+                <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', tones[tone])}><Icon size={17} /></span>
+                <p className="mt-3 truncate text-[20px] font-extrabold leading-none tracking-tight tabular-nums sm:text-[24px]">{value}</p>
+                <p className="mt-1.5 truncate text-[12px] font-bold text-gray-700 dark:text-zinc-300">{label}</p>
+                <p className="truncate text-[11px] text-gray-500">{hint}</p>
+            </Card>
+        </button>
+    );
+};
 
 const InvoiceManagement = () => {
     useStoreSubscription(['invoices']);
     const navigate = useNavigate();
-    const { invoices, updateInvoice, deleteInvoice, addInvoice, user } = useStore();
-    const [filter, setFilter] = useState('All');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [viewMode, setViewMode] = useState('grid');
-    const [selectedAnalytics, setSelectedAnalytics] = useState(null);
-    const [activeAnalyticsTab, setActiveAnalyticsTab] = useState('email');
-    const [emailModalInvoice, setEmailModalInvoice] = useState(null);
+    const invoices = useStore(s => s.invoices) || [];
+    const user = useStore(s => s.user);
+    const addToast = useStore(s => s.addToast);
+    const [params, setParams] = useSearchParams();
 
-    const getDeviceDetails = (ua) => {
-        if (!ua) return { browser: 'Browser', os: 'OS', type: 'Device' };
-        
-        let browser = 'Browser';
-        if (ua.includes('Firefox/')) browser = 'Firefox';
-        else if (ua.includes('Edg/')) browser = 'Edge';
-        else if (ua.includes('Chrome/') || ua.includes('CriOS/')) browser = 'Chrome';
-        else if (ua.includes('Safari/')) browser = 'Safari';
-
-        let os = 'OS';
-        if (ua.includes('iPhone')) os = 'iOS';
-        else if (ua.includes('iPad')) os = 'iPadOS';
-        else if (ua.includes('Android')) os = 'Android';
-        else if (ua.includes('Windows')) os = 'Windows';
-        else if (ua.includes('Macintosh') || ua.includes('Mac OS X')) os = 'macOS';
-        else if (ua.includes('Linux')) os = 'Linux';
-
-        let type = 'Desktop';
-        if (os === 'iOS' || os === 'Android') type = 'Mobile';
-        else if (os === 'iPadOS') type = 'Tablet';
-
-        return { browser, os, type };
+    const filter = FILTERS.includes(params.get('filter')) ? params.get('filter') : 'all';
+    const openId = params.get('invoice');
+    const setParam = (key, value) => {
+        const next = new URLSearchParams(params);
+        if (value) next.set(key, value); else next.delete(key);
+        setParams(next, { replace: key !== 'invoice' });
     };
 
-    const vaultTabs = [
-        { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
-        { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet, color: 'text-neon-green' },
-        { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck, color: 'text-[#A855F7]' },
-        ];
+    const [view, setView] = useViewMode('invoices', 'cards');
+    const [search, setSearch] = useState(() => params.get('q') || '');
+    const [sort, setSort] = useState('newest');
+    const [limit, setLimit] = useState(PAGE);
+    const [emailInvoice, setEmailInvoice] = useState(null);
+    const [payingInvoice, setPayingInvoice] = useState(null);
+    const [uploadOpen, setUploadOpen] = useState(false);
 
-    // Quick Upload State
-    const [showQuickUpload, setShowQuickUpload] = useState(false);
-    const [quickClientName, setQuickClientName] = useState('');
-    const [quickFile, setQuickFile] = useState(null);
-    const [uploading, setUploading] = useState(false);
+    // Editors only see invoices they created and can't delete.
+    const isEditor = user?.role === 'editor' || user?.role === 'content_admin';
+    const canManage = !isEditor;
+    const visibleInvoices = useMemo(
+        () => (isEditor ? invoices.filter(inv => inv.createdBy === user?.uid) : invoices),
+        [invoices, isEditor, user?.uid]
+    );
 
-    const filteredInvoices = invoices
-        .filter(inv => {
-            if (user?.role === 'editor' || user?.role === 'content_admin') {
-                return inv.createdBy === user?.uid;
-            }
-            return true;
-        })
-        .filter(inv => filter === 'All' ? true : inv.status === filter)
-        .filter(inv => {
-            if (!searchTerm) return true;
-            const clientName = inv.clientName || '';
-            const invoiceNumber = inv.invoiceNumber || '';
-            return clientName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                   invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase());
+    const today = todayKey();
+    const enriched = useMemo(() => visibleInvoices.map(inv => ({
+        inv,
+        state: invoiceState(inv, today),
+        total: invoiceTotal(inv),
+        balance: invoiceBalance(inv),
+        issued: issuedOf(inv),
+        overdueDays: daysOverdue(inv),
+    })), [visibleInvoices, today]);
+
+    const counts = useMemo(() => {
+        const c = Object.fromEntries(FILTERS.map(f => [f, 0]));
+        enriched.forEach(e => {
+            c.all += 1;
+            c[e.state] += 1;
+            if (e.state === 'overdue' || e.state === 'partial') c.unpaid += 1;
         });
+        return c;
+    }, [enriched]);
 
-    const handleCopyLink = (id) => {
-        const link = `${window.location.origin}/invoice/${id}?via=link`;
-        navigator.clipboard.writeText(link);
-        useStore.getState().addToast(`Invoice link copied.`, 'success');
+    const kpis = useMemo(() => {
+        const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+        let outstanding = 0, overdue = 0, collectedMonth = 0;
+        enriched.forEach(e => {
+            outstanding += e.balance;
+            if (e.state === 'overdue') overdue += e.balance;
+            collectedMonth += invoiceCollectedSince(e.inv, monthStart);
+        });
+        return { outstanding, overdue, collectedMonth };
+    }, [enriched]);
+
+    const rows = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        const list = enriched.filter(e => {
+            if (filter === 'unpaid' && !['unpaid', 'overdue', 'partial'].includes(e.state)) return false;
+            if (!['all', 'unpaid'].includes(filter) && e.state !== filter) return false;
+            if (!q) return true;
+            return [e.inv.clientName, e.inv.invoiceNumber, e.inv.clientGst, e.inv.fileName].some(v => String(v || '').toLowerCase().includes(q));
+        });
+        const by = {
+            newest: (a, b) => (b.issued?.getTime() || 0) - (a.issued?.getTime() || 0),
+            due: (a, b) => String(a.inv.dueDate || '9999').localeCompare(String(b.inv.dueDate || '9999')),
+            amount: (a, b) => b.total - a.total,
+            balance: (a, b) => b.balance - a.balance,
+            client: (a, b) => String(a.inv.clientName || '').localeCompare(String(b.inv.clientName || '')),
+        }[sort];
+        return list.sort(by);
+    }, [enriched, filter, search, sort]);
+
+    // ── actions ──
+    const shareUrl = (inv, via) => `${window.location.origin}/invoice/${inv.id}?via=${via}`;
+
+    const copyLink = async (inv) => {
+        const ok = await copyToClipboard(shareUrl(inv, 'link'));
+        addToast(ok ? 'Invoice link copied.' : "Couldn't copy the link.", ok ? 'success' : 'error');
     };
 
-    const handleNativeShare = async (invoice) => {
-        const url = `${window.location.origin}/invoice/${invoice.id}?via=share`;
-        if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+    const share = async (inv) => {
+        if (navigator.share) {
             try {
-                await navigator.share({
-                    title: `Invoice #${invoice.invoiceNumber}`,
-                    text: `View your invoice from Newbi Entertainment.`,
-                    url: url
-                });
+                await navigator.share({ title: `Invoice ${inv.invoiceNumber || ''}`.trim(), text: 'Your invoice from Newbi Entertainment.', url: shareUrl(inv, 'share') });
                 return;
             } catch (err) {
-                console.error("Share failed:", err);
+                if (err?.name === 'AbortError') return;
             }
         }
-        handleCopyLink(invoice.id);
+        copyLink(inv);
     };
 
-    const handleDelete = (id, inv) => {
-        // Permission Check: Editor cannot delete anything. Super Admin can delete anything except developer docs? 
-        // User said: "editors cannot delete anything... they can create new document which can be deleted by super admin and developer"
-        if (user?.role === 'editor' || user?.role === 'content_admin') {
-            useStore.getState().addToast("Only admins can delete invoices.", 'warning');
-            return;
-        }
-
-        if (window.confirm('Are you sure you want to delete this invoice?')) {
-            deleteInvoice(id);
-        }
+    const whatsapp = (inv) => {
+        const text = `Hi${inv.clientName ? ` ${inv.clientName}` : ''}, here is invoice ${inv.invoiceNumber || ''} from Newbi Entertainment: ${shareUrl(inv, 'whatsapp')}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
     };
 
-    const handleDuplicate = async (invoice) => {
-        if (window.confirm('Duplicate this invoice?')) {
-            try {
-                const { id, ...restOptions } = invoice;
-                const newInvoice = {
-                    ...restOptions,
-                    invoiceNumber: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
-                    status: 'Pending',
-                    createdAt: new Date().toISOString(),
-                    issueDate: new Date().toISOString().split('T')[0]
-                };
-                await addInvoice(newInvoice);
-                useStore.getState().addToast('Invoice duplicated.', 'success');
-            } catch (error) {
-                useStore.getState().addToast("Couldn't duplicate the invoice. Please try again.", 'error');
-            }
-        }
-    };
-
-    const handleSendEmail = async ({ to, cc, bcc, subject, html }) => {
+    const duplicate = async (inv) => {
+        if (!window.confirm(`Make a copy of ${inv.invoiceNumber || 'this invoice'} for ${inv.clientName || 'the same client'}?`)) return;
         try {
-            const { auth } = await import('../../lib/firebase');
-            const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
-            const response = await fetch('/api/mail', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token ? `Bearer ${token}` : '',
-                },
-                body: JSON.stringify({ 
-                    to, 
-                    cc,
-                    bcc,
-                    subject, 
-                    html,
-                    fromName: 'Newbi Finance',
-                    fromEmail: 'partnership@newbi.live'
-                }),
+            const copy = { ...inv };
+            INVOICE_NON_COPYABLE_FIELDS.forEach(k => { delete copy[k]; });
+            const number = nextInvoiceNumber(invoices);
+            const ref = await useStore.getState().addInvoice({
+                ...copy,
+                invoiceNumber: number,
+                status: 'Pending',
+                issueDate: today,
+                invoiceDate: today,
+                createdAt: new Date().toISOString(),
             });
-            const result = await response.json();
-            if (result.success) {
-                useStore.getState().addToast('Invoice email sent.', 'success');
-            } else {
-                throw new Error(result.error);
-            }
+            addToast(`Copied as ${number}.`, 'success');
+            if (ref?.id && inv.type !== 'upload') navigate(`/admin/edit-invoice/${ref.id}`);
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast("Couldn't send the email. Please try again.", 'error');
-            throw err;
+            addToast("Couldn't duplicate the invoice.", 'error');
         }
     };
 
-    const handleApprovePaymentClaim = async (invoice) => {
-        const logs = invoice.paymentLogs || [];
-        const claim = invoice.paymentClaim || {};
-        await updateInvoice(invoice.id, {
-            status: 'Paid',
-            paymentClaim: { ...claim, status: 'approved' },
-            paymentLogs: [...logs, {
-                type: 'Client Claim — Verified',
-                transactionId: `CLAIM-${Date.now()}`,
-                timestamp: new Date().toISOString(),
-                amount: invoice.total || invoice.amount,
-                verifiedBy: user?.displayName || 'Admin'
-            }]
-        });
-        setSelectedAnalytics({ ...invoice, status: 'Paid', paymentClaim: { ...claim, status: 'approved' } });
-        // Send approval email
-        if (claim.email) {
-            const invoiceUrl = `${window.location.origin}/invoice/${invoice.id}`;
-            await sendPaymentApprovedEmail(claim.email, claim.name || invoice.clientName, invoice.invoiceNumber, invoiceUrl);
-        }
-        useStore.getState().addToast("Payment claim approved. We've let the client know.", 'success');
-    };
-
-    const handleDeclinePaymentClaim = async (invoice) => {
-        const claim = invoice.paymentClaim || {};
-        await updateInvoice(invoice.id, {
-            status: 'Pending',
-            paymentClaim: { ...claim, status: 'declined' }
-        });
-        setSelectedAnalytics({ ...invoice, status: 'Pending', paymentClaim: { ...claim, status: 'declined' } });
-        // Send decline email
-        if (claim.email) {
-            const invoiceUrl = `${window.location.origin}/invoice/${invoice.id}`;
-            await sendPaymentDeclinedEmail(claim.email, claim.name || invoice.clientName, invoice.invoiceNumber, invoiceUrl);
-        }
-        useStore.getState().addToast("Payment claim declined. We've let the client know.", 'success');
-    };
-
-    const handleMarkAsPaid = async (invoice) => {
-        if (window.confirm('Mark as Paid?')) {
-            try {
-                await updateInvoice(invoice.id, { status: 'Paid' });
-            } catch (error) {
-                useStore.getState().addToast("Couldn't update the status. Please try again.", 'error');
-            }
-        }
-    };
-
-    const handleQuickUpload = async (e) => {
-        e.preventDefault();
-        if (!quickClientName || !quickFile) return;
-        setUploading(true);
+    const remove = async (inv) => {
+        if (!canManage) { addToast('Only admins can delete invoices.', 'info'); return; }
+        const paid = invoiceReceived(inv) > 0 || inv.status === 'Paid';
+        if (!window.confirm(`Delete ${inv.invoiceNumber || 'this invoice'} for ${inv.clientName || 'this client'}?${paid ? ' It has payments recorded, which will be lost.' : ''} The client's link will stop working. This can't be undone.`)) return;
         try {
-            const toBase64 = (file) => new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-            });
-            const base64Data = await toBase64(quickFile);
-            const newInvoice = {
-                invoiceNumber: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
-                clientName: quickClientName,
-                issueDate: new Date().toISOString().split('T')[0],
-                status: 'Pending',
-                createdAt: new Date().toISOString(),
-                pdfUrl: base64Data,
-                type: 'upload'
-            };
-            await addInvoice(newInvoice);
-            setShowQuickUpload(false);
-            setQuickClientName('');
-            setQuickFile(null);
-        } catch (error) {
-            useStore.getState().addToast("Couldn't upload the file. Please try again.", 'error');
-        } finally {
-            setUploading(false);
+            await useStore.getState().deleteInvoice(inv.id);
+            if (openId === inv.id) setParam('invoice', null);
+            addToast('Invoice deleted.', 'success');
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't delete the invoice.", 'error');
         }
     };
+
+    const sendEmail = async ({ to, cc, bcc, subject, html }) => {
+        const { auth } = await import('../../lib/firebase');
+        const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+        const res = await fetch('/api/mail', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
+            body: JSON.stringify({ to, cc, bcc, subject, html, fromName: 'Newbi Finance', fromEmail: 'partnership@newbi.live' }),
+        });
+        const result = await res.json().catch(() => ({}));
+        if (!result.success) {
+            addToast("Couldn't send the email. Please try again.", 'error');
+            throw new Error(result.error || 'Send failed');
+        }
+        addToast('Invoice email sent.', 'success');
+        if (emailInvoice?.id) {
+            useStore.getState().updateInvoice(emailInvoice.id, { lastSentAt: new Date().toISOString(), lastSentTo: Array.isArray(to) ? to.join(', ') : to }).catch(() => {});
+        }
+    };
+
+    const exportSpec = () => ({
+        filename: `invoices_${filter}_${today}`,
+        sheetName: 'Invoices',
+        title: 'Invoices',
+        subtitle: exportSubtitle(rows.length, 'invoice', filter !== 'all' ? (FILTER_LABEL[filter] || filter) : null),
+        rows,
+        totals: { total: true, advance: true, received: true, balance: true },
+        columns: [
+            { header: 'Invoice No', value: r => r.inv.invoiceNumber || '' },
+            { header: 'Client', value: r => r.inv.clientName || '' },
+            { header: 'Client GST', value: r => r.inv.clientGst || '' },
+            { header: 'Issued', type: 'date', value: r => r.issued || null },
+            { header: 'Due', type: 'date', value: r => r.inv.dueDate || null },
+            { header: 'Total', key: 'total', type: 'money', value: r => r.total },
+            { header: 'Advance', key: 'advance', type: 'money', value: r => invoiceAdvance(r.inv) },
+            { header: 'Received', key: 'received', type: 'money', value: r => invoiceReceived(r.inv) },
+            { header: 'Balance', key: 'balance', type: 'money', value: r => r.balance },
+            { header: 'Status', value: r => INVOICE_STATE_LABEL[r.state].label },
+            { header: 'Days Overdue', type: 'number', value: r => r.overdueDays || null },
+            { header: 'Last Opened', type: 'datetime', value: r => r.inv.lastOpened || null },
+            { header: 'Link', value: r => `${window.location.origin}/invoice/${r.inv.id}` },
+        ],
+    });
+
+    const shown = rows.slice(0, limit);
+
+    const actionsMenu = (inv) => (
+        <Menu trigger={({ toggle }) => (
+            <Button size="sm" variant="ghost" onClick={toggle} aria-label="More actions" className="w-9 px-0"><MoreHorizontal size={15} /></Button>
+        )}>
+            <MenuItem icon={FileText} onClick={() => setParam('invoice', inv.id)}>Details & payments</MenuItem>
+            <MenuItem as="a" href={`/invoice/${inv.id}`} target="_blank" rel="noopener noreferrer" icon={ExternalLink}>Open invoice</MenuItem>
+            {canManage && inv.type !== 'upload' && <MenuItem icon={Edit} onClick={() => navigate(`/admin/edit-invoice/${inv.id}`)}>Edit</MenuItem>}
+            <MenuItem icon={Mail} onClick={() => setEmailInvoice(inv)}>Email to client</MenuItem>
+            <MenuItem icon={MessageCircle} onClick={() => whatsapp(inv)}>Send on WhatsApp</MenuItem>
+            <MenuItem icon={Link2} onClick={() => copyLink(inv)}>Copy link</MenuItem>
+            {canManage && <MenuItem icon={CopyPlus} onClick={() => duplicate(inv)}>Duplicate</MenuItem>}
+            {canManage && <MenuItem icon={Trash2} danger onClick={() => remove(inv)}>Delete</MenuItem>}
+        </Menu>
+    );
 
     return (
         <AdminCommunityHubLayout
-            studioHeader={{
-                title: 'INVOICE',
-                subtitle: 'VAULT',
-                accentClass: 'text-neon-blue',
-                icon: FileText
-            }}
-            tabs={vaultTabs}
-            accentColor="neon-blue"
-            action={
-                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full md:w-auto">
-                    <button
-                        onClick={() => setShowQuickUpload(true)}
-                        className="w-full sm:w-auto bg-white dark:bg-white/10 hover:bg-black/5 dark:hover:bg-neon-blue/20 text-gray-900 dark:text-white hover:text-black dark:hover:text-neon-blue border border-black/10 dark:border-white/15 hover:border-black/20 dark:hover:border-neon-blue/40 font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-5 md:px-7 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-sm dark:shadow-lg flex items-center justify-center gap-2"
-                    >
-                        <Upload className="h-4 w-4 text-neon-blue" /> Quick Upload
-                    </button>
-                    <Link to="/admin/create-invoice" className="w-full sm:w-auto">
-                        <button className="w-full sm:w-auto bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-6 md:px-10 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_4px_12px_rgba(0,209,255,0.4)] hover:shadow-[0_8px_24px_rgba(0,209,255,0.6)] flex items-center justify-center">
-                            <Plus className="mr-2 h-4 w-4" /> New Invoice
-                        </button>
-                    </Link>
+            studioHeader={{ title: 'Invoices', icon: FileText, accentClass: 'text-sky-600 dark:text-neon-blue', description: 'Billing, payments and who has opened what' }}
+            tabs={VAULT_TABS}
+            action={(
+                <div className="flex w-full gap-2 sm:w-auto">
+                    <Button variant="secondary" onClick={() => setUploadOpen(true)} className="flex-1 sm:flex-none"><Upload size={14} /> Add PDF</Button>
+                    <Button as={Link} to="/admin/create-invoice" variant="primary" className="flex-1 sm:flex-none"><Plus size={14} /> New invoice</Button>
                 </div>
-            }
-        >
-            <div className="relative z-10">
-                {/* Dynamic Command Center - Optimized for Mobile */}
-                <div className="bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-2xl md:rounded-[2.5rem] p-1.5 md:p-2 mb-8 md:mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4">
-                    {/* Search Field */}
-                    <div className="relative flex-1 w-full group">
-                        <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={20} />
-                        <input 
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Search invoices..."
-                            className="w-full bg-transparent h-14 md:h-16 pl-16 md:pl-20 pr-6 md:pr-8 rounded-2xl text-[9px] md:text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
-                        />
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row items-center gap-2 w-full xl:w-auto">
-                        {/* Status Filter Toggles */}
-                        <div className="flex bg-white dark:bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-black/10 dark:border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
-                            <div className="flex min-w-max md:min-w-0 flex-1">
-                                {['All', 'Pending', 'Verification Pending', 'Paid'].map((s) => (
-                                    <button
-                                        key={s}
-                                        onClick={() => setFilter(s)}
-                                        className={cn(
-                                            "flex-1 px-3 sm:px-6 md:px-10 py-2.5 rounded-lg md:rounded-xl text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[70px] sm:min-w-[100px] md:min-w-[120px]",
-                                            filter === s 
-                                                ? "bg-white text-black shadow-[0_10px_25px_rgba(255,255,255,0.2)]" 
-                                                : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
-                                        )}
-                                    >
-                                        {s}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* View Mode Toggle */}
-                        <div className="flex bg-white dark:bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-black/10 dark:border-white/5 w-full sm:w-auto justify-center">
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                className={cn(
-                                    "flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all duration-300 flex justify-center",
-                                    viewMode === 'grid' ? "bg-white text-black shadow-[0_10px_25px_rgba(255,255,255,0.2)]" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                )}
-                            >
-                                <LayoutGrid size={18} />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('table')}
-                                className={cn(
-                                    "flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all duration-300 flex justify-center",
-                                    viewMode === 'table' ? "bg-white text-black shadow-[0_10px_25px_rgba(255,255,255,0.2)]" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                )}
-                            >
-                                <FileText size={18} />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <AnimatePresence mode="wait">
-                    {viewMode === 'grid' ? (
-                        <motion.div key="grid" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex overflow-x-auto lg:overflow-x-visible md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide snap-x snap-mandatory pb-8 md:pb-0">
-                            {filteredInvoices.map((inv, i) => (
-                                <motion.div key={inv.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} className="min-w-[85vw] md:min-w-0 snap-center h-full flex flex-col">
-                                    <Card className="group relative p-8 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 transition-all rounded-[2.5rem] h-full flex flex-col justify-between overflow-hidden border">
-                                        <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700 pointer-events-none"><DollarSign size={100} /></div>
-                                        <div>
-                                            <div className="flex justify-between items-start mb-6">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-black font-mono tracking-widest text-neon-blue bg-neon-blue/10 px-3 py-1 rounded-full border border-neon-blue/20">{inv.invoiceNumber || 'NEWBI-INV'}</span>
-                                                    <div className={cn("w-2 h-2 rounded-full animate-pulse shadow-[0_0_10px_currentColor]", inv.status === 'Paid' ? 'text-neon-green bg-neon-green' : inv.status === 'Verification Pending' ? 'text-orange-500 bg-orange-500' : 'text-yellow-500 bg-yellow-500')} />
-                                                    {inv.paymentClaim && inv.status === 'Verification Pending' && (
-                                                        <span className="text-[7px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-500 border border-orange-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                            <AlertTriangle size={8} /> Claim
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <button onClick={() => handleDuplicate(inv)} className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5"><CopyPlus size={14} /></button>
-                                                    {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                        <>
-                                                            <button onClick={() => setSelectedAnalytics(inv)} className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-neon-blue/20 hover:text-neon-blue text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5"><Activity size={14} /></button>
-                                                            <button onClick={() => handleDelete(inv.id, inv)} className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5"><Trash2 size={14} /></button>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <h3 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-2 leading-none">{inv.clientName}</h3>
-                                            <div className="flex items-center gap-3">
-                                                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Calendar size={12} /> {new Date(inv.createdAt || inv.issueDate).toLocaleDateString()}</p>
-                                                <p className="text-neon-blue text-[10px] font-black uppercase tracking-widest">₹{(inv.total || inv.amount || 0).toLocaleString()}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-black/10 dark:border-white/5">
-                                            <div className="flex items-center gap-2 w-full">
-                                                <Link 
-                                                    to={`/admin/edit-invoice/${inv.id}`}
-                                                    className="flex-1 h-12 bg-neon-blue text-black rounded-xl transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-[0_5px_15px_rgba(0,209,255,0.2)] hover:scale-[1.02]"
-                                                >
-                                                    <Edit size={14} /> Edit
-                                                </Link>
-                                                <div className="flex bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-xl overflow-hidden p-1">
-                                                    <button 
-                                                        onClick={() => {
-                                                            const text = `Invoice from Newbi: ${window.location.origin}/invoice/${inv.id}?via=whatsapp`;
-                                                            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                                                        }}
-                                                        className="h-10 w-10 hover:bg-green-500/20 text-green-500 rounded-lg transition-all flex items-center justify-center"
-                                                        title="WhatsApp"
-                                                    >
-                                                        <MessageCircle size={16} />
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => handleCopyLink(inv.id)}
-                                                        className="h-10 w-10 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg transition-all flex items-center justify-center border-l border-black/10 dark:border-white/5"
-                                                        title="Copy Link"
-                                                    >
-                                                        <Copy size={16} />
-                                                    </button>
-                                                </div>
-                                                <button
-                                                    onClick={() => setEmailModalInvoice(inv)}
-                                                    className="h-12 w-12 bg-black/5 dark:bg-white/5 hover:bg-neon-blue/20 hover:text-neon-blue text-gray-600 dark:text-gray-400 rounded-xl transition-all border border-black/10 dark:border-white/5 flex items-center justify-center"
-                                                    title="Email Invoice"
-                                                >
-                                                    <Mail size={16} />
-                                                </button>
-                                                <Link 
-                                                    to={`/invoice/${inv.id}`}
-                                                    className="h-12 w-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all border border-black/10 dark:border-white/5 flex items-center justify-center"
-                                                >
-                                                    <Eye size={16} />
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    </Card>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    ) : (
-                        <motion.div 
-                            key="table"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0"
-                        >
-                            <Card className="md:min-w-[800px] bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border overflow-hidden">
-                                <table className="w-full text-left hidden md:table">
-                                    <thead>
-                                        <tr className="border-b border-black/10 dark:border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
-                                            <th className="p-6 md:p-8">Reference</th>
-                                            <th className="p-6 md:p-8">Client</th>
-                                            <th className="p-6 md:p-8">Amount</th>
-                                            <th className="p-6 md:p-8">Created</th>
-                                            <th className="p-6 md:p-8">Status</th>
-                                            <th className="p-6 md:p-8 text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {filteredInvoices.map((invoice) => (
-                                            <tr key={invoice.id} className="group hover:bg-white/[0.02] transition-colors">
-                                                <td className="p-6 md:p-8">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue group-hover:scale-110 transition-transform">
-                                                            <Receipt size={20} />
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{invoice.invoiceNumber || 'NEWBI-INV'}</div>
-                                                            <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">FINANCIAL DOC</div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="p-6 md:p-8">
-                                                    <div className="text-sm font-black uppercase tracking-tight text-gray-900 dark:text-white">{invoice.clientName}</div>
-                                                </td>
-                                                <td className="p-6 md:p-8">
-                                                    <div className="text-sm font-black text-gray-900 dark:text-white tabular-nums">₹{Number(invoice.total || invoice.amount || 0).toLocaleString()}</div>
-                                                </td>
-                                                <td className="p-6 md:p-8">
-                                                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                                                        {new Date(invoice.createdAt || invoice.issueDate).toLocaleDateString()}
-                                                    </div>
-                                                </td>
-                                                <td className="p-6 md:p-8">
-                                                    <div className={cn(
-                                                        "inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em]",
-                                                        invoice.status === 'Paid' ? 'bg-emerald-500/10 text-emerald-500' : 
-                                                        (invoice.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-gray-600/10 text-gray-600')
-                                                    )}>
-                                                        {invoice.status}
-                                                    </div>
-                                                </td>
-                                                <td className="p-6 md:p-8">
-                                                    <div className="flex justify-end gap-2">
-                                                        <Link to={`/invoice/${invoice.id}`} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><Eye size={18} /></Link>
-                                                        {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                            <>
-                                                                <button onClick={() => setSelectedAnalytics(invoice)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Activity size={18} /></button>
-                                                                <button onClick={() => handleDelete(invoice.id, invoice)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
-                                                            </>
-                                                        )}
-                                                        <button onClick={() => handleDuplicate(invoice)} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><History size={18} /></button>
-                                                        <button onClick={() => handleNativeShare(invoice)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Share2 size={18} /></button>
-                                                        <Link to={`/admin/edit-invoice/${invoice.id}`} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={18} /></Link>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-
-                                {/* Mobile Stacked Cards */}
-                                <div className="flex md:hidden flex-col gap-4 p-4">
-                                    {filteredInvoices.map((invoice) => (
-                                        <div key={invoice.id} className="bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl p-4 flex flex-col gap-4">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
-                                                        <Receipt size={20} />
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{invoice.invoiceNumber || 'NEWBI-INV'}</div>
-                                                        <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">FINANCIAL DOC</div>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-sm font-black text-gray-900 dark:text-white tabular-nums">₹{Number(invoice.total || invoice.amount || 0).toLocaleString()}</div>
-                                                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
-                                                        {new Date(invoice.createdAt || invoice.issueDate).toLocaleDateString()}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="flex justify-between items-center bg-black/5 dark:bg-white/5 rounded-xl p-3">
-                                                <div className="text-xs font-black uppercase tracking-tight text-gray-900 dark:text-white">{invoice.clientName}</div>
-                                                <div className={cn(
-                                                    "inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em]",
-                                                    invoice.status === 'Paid' ? 'bg-emerald-500/10 text-emerald-500' : 
-                                                    (invoice.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-gray-600/10 text-gray-600')
-                                                )}>
-                                                    {invoice.status}
-                                                </div>
-                                            </div>
-
-                                            <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-black/10 dark:border-white/5">
-                                                <Link to={`/invoice/${invoice.id}`} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Eye size={16} /></Link>
-                                                {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                    <>
-                                                        <button onClick={() => setSelectedAnalytics(invoice)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-blue transition-colors"><Activity size={16} /></button>
-                                                        <button onClick={() => handleDelete(invoice.id, invoice)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                                                    </>
-                                                )}
-                                                <button onClick={() => handleDuplicate(invoice)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><History size={16} /></button>
-                                                <button onClick={() => handleNativeShare(invoice)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-blue transition-colors"><Share2 size={16} /></button>
-                                                <Link to={`/admin/edit-invoice/${invoice.id}`} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={16} /></Link>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </Card>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
-
-            {/* Quick Import Modal */}
-            {createPortal(
-                <AnimatePresence>
-                    {showQuickUpload && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowQuickUpload(false)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
-                            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-lg shrink-0">
-                                <Card className="p-10 bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/10 rounded-[3rem] shadow-2xl">
-                                    <button onClick={() => setShowQuickUpload(false)} className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-zinc-800 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all z-10"><X size={20} /></button>
-                                    <h2 className="text-4xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-2">IMPORT <span className="text-neon-blue">INVOICE.</span></h2>
-                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-10">Sync external billing documents</p>
-                                    <form onSubmit={handleQuickUpload} className="space-y-8">
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Client Entity</label>
-                                            <Input value={quickClientName} onChange={(e) => setQuickClientName(e.target.value)} placeholder="e.g. RedBull Global" className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl" required />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">PDF Document</label>
-                                            <div className="relative group cursor-pointer h-32 border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 bg-white dark:bg-black/30 group-hover:border-neon-blue/40 transition-all">
-                                                <input type="file" accept="application/pdf" onChange={(e) => setQuickFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" required />
-                                                <Upload className="text-gray-500 group-hover:text-neon-blue" size={24} />
-                                                <span className="text-[10px] font-black text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest">{quickFile ? quickFile.name : 'Select PDF File'}</span>
-                                            </div>
-                                        </div>
-                                        <Button type="submit" className="w-full h-16 bg-neon-blue text-black font-black font-heading uppercase tracking-[0.2em] text-xs rounded-2xl shadow-xl" disabled={uploading}>{uploading ? 'PROCESSING...' : 'IMPORT INVOICE'}</Button>
-                                    </form>
-                                </Card>
-                            </motion.div>
-                        </div>
-                    )}
-                </AnimatePresence>,
-                document.body
             )}
+        >
+            <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <Kpi icon={Wallet} tone="gray" label="Outstanding" value={inr(kpis.outstanding)} hint={`${counts.unpaid + counts.verifying} unpaid invoices`} active={filter === 'unpaid'} onClick={() => setParam('filter', filter === 'unpaid' ? null : 'unpaid')} />
+                    <Kpi icon={AlertCircle} tone={counts.overdue ? 'red' : 'gray'} label="Overdue" value={inr(kpis.overdue)} hint={counts.overdue ? `${counts.overdue} past their due date` : 'Nothing overdue'} active={filter === 'overdue'} onClick={() => setParam('filter', filter === 'overdue' ? null : 'overdue')} />
+                    <Kpi icon={Clock} tone={counts.verifying ? 'amber' : 'gray'} label="Claimed paid" value={counts.verifying} hint={counts.verifying ? 'Check your bank, then confirm' : 'No claims waiting'} active={filter === 'verifying'} onClick={() => setParam('filter', filter === 'verifying' ? null : 'verifying')} />
+                    <Kpi icon={TrendingUp} tone="green" label="Collected this month" value={inr(kpis.collectedMonth)} hint="Payments and invoices marked paid" active={false} onClick={() => setParam('filter', 'paid')} />
+                </div>
 
-            {/* Analytics Side Panel */}
-            {createPortal(
-                <AnimatePresence>
-                    {selectedAnalytics && (
-                        <div className="fixed inset-0 z-[100] flex justify-end">
-                            <motion.div 
-                                initial={{ opacity: 0 }} 
-                                animate={{ opacity: 1 }} 
-                                exit={{ opacity: 0 }} 
-                                onClick={() => setSelectedAnalytics(null)} 
-                                className="absolute inset-0 bg-white dark:bg-black/80 backdrop-blur-sm" 
-                            />
-                            <motion.div 
-                                initial={{ x: '100%' }} 
-                                animate={{ x: 0 }} 
-                                exit={{ x: '100%' }} 
-                                transition={{ type: 'spring', damping: 25, stiffness: 200 }} 
-                                className="relative w-full max-w-xl bg-gray-100 dark:bg-zinc-950 border-l border-black/10 dark:border-white/10 h-full shadow-[-20px_0_60px_rgba(0,0,0,0.8)] flex flex-col"
-                            >
-                                <div className="p-8 border-b border-black/10 dark:border-white/5 flex justify-between items-center shrink-0">
-                                    <div>
-                                        <h3 className="text-2xl font-black uppercase tracking-tighter italic text-neon-blue">Billing Intel.</h3>
-                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Activity Log for {selectedAnalytics.clientName}</p>
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                    <SearchInput value={search} onChange={(v) => { setSearch(v); setLimit(PAGE); }} placeholder="Client, invoice number or GST" className="lg:w-80" />
+                    <div className="flex flex-1 items-center gap-2">
+                        <Select value={sort} onChange={setSort} label="Sort" className="flex-1 lg:w-48 lg:flex-none" options={[
+                            { value: 'newest', label: 'Newest first' },
+                            { value: 'due', label: 'Due soonest' },
+                            { value: 'balance', label: 'Largest balance' },
+                            { value: 'amount', label: 'Largest amount' },
+                            { value: 'client', label: 'Client A–Z' },
+                        ]} />
+                        <ExportMenu getSpec={exportSpec} />
+                        <ViewToggle value={view} onChange={setView} />
+                    </div>
+                </div>
+
+                <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+                    <SegmentedTabs
+                        value={filter}
+                        onChange={(v) => { setParam('filter', v === 'all' ? null : v); setLimit(PAGE); }}
+                        items={FILTERS.filter(f => f === 'all' || f === filter || counts[f] > 0).map(f => ({
+                            value: f, label: FILTER_LABEL[f], count: counts[f], highlight: (f === 'overdue' || f === 'verifying') && counts[f] > 0,
+                        }))}
+                    />
+                </div>
+
+                {shown.length === 0 ? (
+                    <Card className="rounded-2xl">
+                        <EmptyState
+                            icon={Inbox}
+                            title={visibleInvoices.length ? 'No matching invoices' : 'No invoices yet'}
+                            description={visibleInvoices.length ? 'Try another filter or search.' : 'Create one, or add a PDF you made elsewhere.'}
+                            action={!visibleInvoices.length && <Button as={Link} to="/admin/create-invoice" variant="primary"><Plus size={14} /> New invoice</Button>}
+                        />
+                    </Card>
+                ) : view === 'cards' ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {shown.map(({ inv, state, total, balance, issued, overdueDays }) => {
+                            const cfg = INVOICE_STATE_LABEL[state];
+                            const collected = total - balance;
+                            return (
+                                <Card key={inv.id} className="relative flex flex-col rounded-2xl p-4 transition-colors hover:border-black/15 dark:hover:border-white/15">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            <Badge tone={cfg.tone}>{cfg.label}{overdueDays ? ` ${overdueDays}d` : ''}</Badge>
+                                            {inv.type === 'upload' && <Badge tone="gray">PDF</Badge>}
+                                            {inv.sourceProposalId && <Badge tone="violet">From proposal</Badge>}
+                                        </div>
+                                        <span className="shrink-0 font-mono text-[11px] text-gray-500">{inv.invoiceNumber || ''}</span>
                                     </div>
-                                    <button onClick={() => setSelectedAnalytics(null)} className="p-3 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><X size={20} /></button>
-                                </div>
-                                <div className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Access Timeline</p>
-                                            <div className="px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
-                                                <span className="text-[8px] font-black text-neon-blue uppercase tracking-widest">Live Tracking Active</span>
+                                    <button type="button" onClick={() => setParam('invoice', inv.id)} className="mt-3 min-w-0 text-left after:absolute after:inset-0">
+                                        <p className="line-clamp-2 text-[17px] font-extrabold leading-snug">{inv.clientName || 'Untitled'}</p>
+                                    </button>
+                                    <p className="mt-3 text-[11px] font-bold text-gray-500">{balance > 0 ? 'Balance due' : 'Total'}</p>
+                                    <p className="text-[22px] font-extrabold tracking-tight tabular-nums">{inr(balance > 0 ? balance : total)}</p>
+                                    {balance > 0 && collected > 0 && (
+                                        <div className="mt-2">
+                                            <div className="h-1.5 overflow-hidden rounded-full bg-black/5 dark:bg-white/5">
+                                                <div className="h-full rounded-full bg-emerald-500 dark:bg-neon-green" style={{ width: `${Math.min(100, (collected / total) * 100)}%` }} />
                                             </div>
-                                        </div>
-
-                                        {/* Tabs */}
-                                        <div className="flex border-b border-black/10 dark:border-white/10">
-                                            <button 
-                                                onClick={() => setActiveAnalyticsTab('email')}
-                                                className={cn(
-                                                    "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 text-center",
-                                                    activeAnalyticsTab === 'email' 
-                                                        ? "border-neon-blue text-neon-blue bg-neon-blue/5" 
-                                                        : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                                )}
-                                            >
-                                                Email Shared
-                                            </button>
-                                            <button 
-                                                onClick={() => setActiveAnalyticsTab('whatsapp')}
-                                                className={cn(
-                                                    "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 text-center",
-                                                    activeAnalyticsTab === 'whatsapp' 
-                                                        ? "border-neon-blue text-neon-blue bg-neon-blue/5" 
-                                                        : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                                )}
-                                            >
-                                                WhatsApp
-                                            </button>
-                                            <button 
-                                                onClick={() => setActiveAnalyticsTab('general')}
-                                                className={cn(
-                                                    "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 text-center",
-                                                    activeAnalyticsTab === 'general' 
-                                                        ? "border-neon-blue text-neon-blue bg-neon-blue/5" 
-                                                        : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                                )}
-                                            >
-                                                General Opens
-                                            </button>
-                                        </div>
-
-                                        {(() => {
-                                            const logs = selectedAnalytics.accessLogs || [];
-                                            const emailLogs = logs.filter(log => log.via === 'email');
-                                            const whatsappLogs = logs.filter(log => log.via === 'whatsapp');
-                                            const generalLogs = logs.filter(log => log.via !== 'email' && log.via !== 'whatsapp');
-                                            
-                                            let activeLogs = generalLogs;
-                                            if (activeAnalyticsTab === 'email') activeLogs = emailLogs;
-                                            if (activeAnalyticsTab === 'whatsapp') activeLogs = whatsappLogs;
-
-                                            if (activeLogs.length > 0) {
-                                                return (
-                                                    <div className="space-y-3">
-                                                        {[...activeLogs].reverse().map((log, i) => {
-                                                            const device = getDeviceDetails(log.userAgent);
-                                                            return (
-                                                                <div key={i} className="p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl space-y-3">
-                                                                    <div className="flex items-start justify-between">
-                                                                        <div className="flex items-center gap-3">
-                                                                            <div className="p-2 bg-black/5 dark:bg-white/5 rounded-xl text-gray-600 dark:text-gray-400">
-                                                                                {activeAnalyticsTab === 'email' ? <Mail size={16} /> : activeAnalyticsTab === 'whatsapp' ? <MessageCircle size={16} /> : <Globe size={16} />}
-                                                                            </div>
-                                                                            <div>
-                                                                                <p className="text-xs font-bold text-gray-900 dark:text-white">
-                                                                                    {activeAnalyticsTab === 'email' ? (log.shareName || 'Email Recipient') : activeAnalyticsTab === 'whatsapp' ? 'WhatsApp Recipient' : (log.via === 'link' ? 'Direct Link Click' : 'Client Access')}
-                                                                                </p>
-                                                                                <p className="text-[10px] text-gray-500 font-mono mt-0.5">
-                                                                                    {activeAnalyticsTab === 'email' ? (log.shareEmail || 'No email registered') : (log.ip || 'Anonymous IP')}
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="text-right">
-                                                                            <p className="text-[10px] font-black text-neon-blue uppercase tracking-widest">
-                                                                                {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                            </p>
-                                                                            <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
-                                                                                {new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-black/10 dark:border-white/5 text-[9px] text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider">
-                                                                        <div>
-                                                                            <span className="text-gray-600 font-bold block text-[8px]">DEVICE</span>
-                                                                            <span>{device.type} ({device.os}) / {device.browser}</span>
-                                                                        </div>
-                                                                        <div>
-                                                                            <span className="text-gray-600 font-bold block text-[8px]">SCREEN RESOLUTION</span>
-                                                                            <span>{log.screen || 'Unknown'}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                );
-                                            } else {
-                                                return (
-                                                    <div className="py-12 text-center border border-dashed border-black/10 dark:border-white/10 rounded-2xl">
-                                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
-                                                            No {activeAnalyticsTab} access events recorded yet.
-                                                        </p>
-                                                    </div>
-                                                );
-                                            }
-                                        })()}
-                                    </div>
-
-                                    {/* Payment Claim Review */}
-                                    {selectedAnalytics.paymentClaim && (
-                                        <div className="pt-8 border-t border-black/10 dark:border-white/5">
-                                            <PaymentClaimReview
-                                                invoice={selectedAnalytics}
-                                                onApprove={() => handleApprovePaymentClaim(selectedAnalytics)}
-                                                onDecline={() => handleDeclinePaymentClaim(selectedAnalytics)}
-                                            />
+                                            <p className="mt-1 text-[11px] text-gray-500">{inr(collected)} of {inr(total)} collected</p>
                                         </div>
                                     )}
-
-                                    {/* Payment Ledger */}
-                                    <div className="space-y-4 pt-8 border-t border-black/10 dark:border-white/5">
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Payment Ledger</p>
-                                            {(selectedAnalytics.status === 'Pending' || selectedAnalytics.status === 'Verification Pending') && (
-                                                <button 
-                                                    onClick={async () => {
-                                                        if(window.confirm('Manually verify and mark this invoice as PAID?')) {
-                                                            const logs = selectedAnalytics.paymentLogs || [];
-                                                            await updateInvoice(selectedAnalytics.id, { 
-                                                                status: 'Paid',
-                                                                paymentLogs: [...logs, {
-                                                                    type: 'Manual Verification',
-                                                                    timestamp: new Date().toISOString(),
-                                                                    amount: selectedAnalytics.total || selectedAnalytics.amount
-                                                                }]
-                                                            });
-                                                            setSelectedAnalytics({...selectedAnalytics, status: 'Paid'});
-                                                        }
-                                                    }}
-                                                    className="text-[9px] font-black text-neon-blue uppercase tracking-widest hover:underline"
-                                                >
-                                                    Verify Manually
-                                                </button>
-                                            )}
-                                        </div>
-                                        {(selectedAnalytics.paymentLogs || []).length > 0 ? (
-                                            <div className="space-y-3">
-                                                {selectedAnalytics.paymentLogs.map((log, i) => (
-                                                    <div key={i} className="p-5 bg-neon-green/5 border border-neon-green/20 rounded-2xl flex items-center justify-between">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-10 h-10 bg-neon-green/20 rounded-xl flex items-center justify-center text-neon-green"><CheckCircle size={16} /></div>
-                                                            <div>
-                                                                <p className="text-xs font-bold text-gray-900 dark:text-white">{log.type}</p>
-                                                                <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">ID: {log.transactionId || 'INTERNAL'}</p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <p className="text-[10px] font-black text-neon-green uppercase tracking-widest">SUCCESS</p>
-                                                            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mt-1">{new Date(log.timestamp).toLocaleDateString()}</p>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                    <div className="mt-2 space-y-0.5 text-[12px] text-gray-500">
+                                        <p>Issued {formatDay(issued)}</p>
+                                        <p className={cn(overdueDays && 'font-semibold text-red-600 dark:text-red-400')}>{inv.dueDate ? `Due ${formatDay(new Date(`${inv.dueDate}T00:00:00`))}` : 'No due date'}</p>
+                                        <p>{inv.lastOpened ? `Opened by client ${formatDay(new Date(inv.lastOpened))}` : 'Not opened yet'}</p>
+                                    </div>
+                                    <div className="relative z-10 mt-4 flex items-center gap-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+                                        {canManage && balance > 0 ? (
+                                            <Button size="sm" variant={state === 'verifying' ? 'secondary' : 'success'} onClick={() => (state === 'verifying' ? setParam('invoice', inv.id) : setPayingInvoice(inv))} className="flex-1">
+                                                {state === 'verifying' ? 'Review claim' : <><Wallet size={13} /> Record payment</>}
+                                            </Button>
                                         ) : (
-                                            <div className="p-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-2xl">
-                                                <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest text-center">No transaction records found.</p>
-                                            </div>
+                                            <Button size="sm" as="a" href={`/invoice/${inv.id}`} target="_blank" rel="noopener noreferrer" variant="secondary" className="flex-1"><ExternalLink size={13} /> Open</Button>
                                         )}
+                                        <Button size="sm" variant="secondary" onClick={() => share(inv)} aria-label="Share invoice" className="w-9 px-0"><Share2 size={14} /></Button>
+                                        {actionsMenu(inv)}
                                     </div>
-                                </div>
-                                <div className="p-8 border-t border-black/10 dark:border-white/5 bg-white dark:bg-black/40 shrink-0">
-                                    <div className="p-6 rounded-2xl bg-neon-blue/5 border border-neon-blue/10 flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
-                                            <ShieldCheck size={20} />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Real-time Security</p>
-                                            <p className="text-[9px] font-medium text-gray-500 mt-1">All access attempts are logged with IP & browser fingerprints.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
+                                </Card>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <Card className="overflow-hidden rounded-2xl">
+                        <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-4 border-b border-black/[0.06] px-5 py-2.5 text-[11px] font-bold text-gray-500 dark:border-white/[0.06] xl:grid">
+                            <span>Client</span><span>Issued / due</span><span className="text-right">Total</span><span className="text-right">Balance</span><span className="w-[248px]" />
                         </div>
-                    )}
-                </AnimatePresence>,
-                document.body
-            )}
+                        <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                            {shown.map(({ inv, state, total, balance, issued, overdueDays }) => {
+                                const cfg = INVOICE_STATE_LABEL[state];
+                                return (
+                                    <li key={inv.id} className="relative transition-colors hover:bg-black/[0.015] dark:hover:bg-white/[0.02]">
+                                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-3.5 sm:px-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] xl:gap-4">
+                                            <button type="button" onClick={() => setParam('invoice', inv.id)} className="min-w-0 text-left after:absolute after:inset-0 xl:after:hidden">
+                                                <span className="flex flex-wrap items-center gap-2">
+                                                    <span className="truncate text-[15px] font-bold">{inv.clientName || 'Untitled'}</span>
+                                                    <Badge tone={cfg.tone}>{cfg.label}{overdueDays ? ` ${overdueDays}d` : ''}</Badge>
+                                                    {inv.type === 'upload' && <Badge tone="gray">PDF</Badge>}
+                                                </span>
+                                                <span className="mt-0.5 block truncate text-[12px] text-gray-500">
+                                                    {inv.invoiceNumber || 'No number'}
+                                                    <span className="xl:hidden"> · {formatDay(issued)}{inv.dueDate ? ` · due ${formatDay(new Date(`${inv.dueDate}T00:00:00`))}` : ''}</span>
+                                                </span>
+                                            </button>
 
-            {/* Invoice Email Modal */}
+                                            <div className="text-right xl:hidden">
+                                                <p className="text-[15px] font-extrabold tabular-nums">{inr(balance > 0 ? balance : total)}</p>
+                                                <p className="text-[11px] text-gray-500">{balance > 0 && balance < total ? `of ${inr(total)}` : balance > 0 ? 'due' : 'total'}</p>
+                                            </div>
+
+                                            <div className="hidden min-w-0 text-[13px] xl:block">
+                                                <p>{formatDay(issued)}</p>
+                                                <p className={cn('text-[12px]', overdueDays ? 'font-semibold text-red-600 dark:text-red-400' : 'text-gray-500')}>
+                                                    {inv.dueDate ? `due ${formatDay(new Date(`${inv.dueDate}T00:00:00`))}` : 'No due date'}
+                                                </p>
+                                            </div>
+                                            <p className="hidden text-right text-[14px] font-semibold tabular-nums xl:block">{inr(total)}</p>
+                                            <p className={cn('hidden text-right text-[14px] font-extrabold tabular-nums xl:block', balance === 0 && 'text-gray-400')}>{balance > 0 ? inr(balance) : '—'}</p>
+
+                                            <div className="relative z-10 col-span-2 flex items-center justify-end gap-2 pt-2 xl:col-span-1 xl:w-[248px] xl:pt-0">
+                                                {canManage && balance > 0 && (
+                                                    <Button size="sm" variant={state === 'verifying' ? 'secondary' : 'success'} onClick={() => (state === 'verifying' ? setParam('invoice', inv.id) : setPayingInvoice(inv))} className="flex-1 sm:flex-none">
+                                                        {state === 'verifying' ? 'Review claim' : <><Wallet size={13} /> Record payment</>}
+                                                    </Button>
+                                                )}
+                                                <Button size="sm" variant="secondary" onClick={() => share(inv)} aria-label="Share invoice" className="w-9 px-0"><Share2 size={14} /></Button>
+                                                {actionsMenu(inv)}
+                                            </div>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </Card>
+                )}
+                {rows.length > limit && (
+                    <div className="text-center">
+                        <Button variant="ghost" onClick={() => setLimit(l => l + PAGE)}>Show {Math.min(PAGE, rows.length - limit)} more of {rows.length - limit}</Button>
+                    </div>
+                )}
+            </div>
+
+            <InvoiceDetailPanel
+                invoiceId={openId}
+                onClose={() => setParam('invoice', null)}
+                canManage={canManage}
+                onRecordPayment={setPayingInvoice}
+                onEmail={setEmailInvoice}
+                onShare={share}
+                onDuplicate={duplicate}
+                onDelete={remove}
+            />
+            <RecordPaymentModal invoice={payingInvoice} open={Boolean(payingInvoice)} onClose={() => setPayingInvoice(null)} />
+            <QuickUploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} invoices={invoices} onCreated={(id) => id && setParam('invoice', id)} />
             <AnimatePresence>
-                {emailModalInvoice && (
-                    <InvoiceEmailModal
-                        isOpen={!!emailModalInvoice}
-                        onClose={() => setEmailModalInvoice(null)}
-                        invoice={emailModalInvoice}
-                        onSend={handleSendEmail}
-                    />
+                {emailInvoice && (
+                    <InvoiceEmailModal isOpen={Boolean(emailInvoice)} onClose={() => setEmailInvoice(null)} invoice={emailInvoice} onSend={sendEmail} />
                 )}
             </AnimatePresence>
         </AdminCommunityHubLayout>

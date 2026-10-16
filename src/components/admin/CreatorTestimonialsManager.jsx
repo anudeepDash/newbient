@@ -1,336 +1,355 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Card } from '../ui/Card';
-import { Input } from '../ui/Input';
-import { Button } from '../ui/Button';
-import { PREDEFINED_CITIES } from '../../lib/constants';
+import { PREDEFINED_CITIES, CREATOR_NICHES } from '../../lib/constants';
 import { cn } from '../../lib/utils';
 import Star from 'lucide-react/dist/esm/icons/star';
-import User from 'lucide-react/dist/esm/icons/user';
-import MapPin from 'lucide-react/dist/esm/icons/map-pin';
-import ImageIcon from 'lucide-react/dist/esm/icons/image';
 import Plus from 'lucide-react/dist/esm/icons/plus';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
+import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up';
+import ArrowDown from 'lucide-react/dist/esm/icons/arrow-down';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
 import MessageSquareQuote from 'lucide-react/dist/esm/icons/message-square-quote';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import Sheet from './Sheet';
+import { accent } from './theme';
+import { Button, Badge, Avatar, EmptyState, Menu, MenuItem } from './ui';
+import { Field, Toggle, fieldCls, areaCls } from './uploads/UploadKit';
+import { ImageSlot } from './events/EditorParts';
+import ConfirmSheet from './creators/ConfirmSheet';
+import { uploadImage, moveItem } from './creators/uploadImage';
+import ThemedSelect from './ThemedSelect';
 
-const CreatorTestimonialsManager = () => {
-    useStoreSubscription(['creatorTestimonials']);
-    const { 
-        creatorTestimonials, 
-        addCreatorTestimonial, 
-        updateCreatorTestimonial, 
-        deleteCreatorTestimonial, 
-        uploadToCloudinary 
-    } = useStore();
+/*
+ * Creator testimonials for the public /creator page: add, edit, reorder,
+ * show/hide and delete. Also rendered inside Site content (which wraps it in
+ * a form), so every handler stops its submit from reaching that form.
+ */
 
-    const [form, setForm] = useState({
-        name: '',
-        city: 'Bengaluru',
-        niche: '',
-        handle: '',
-        quote: '',
-        avatarUrl: '',
-        rating: 5,
-        isActive: true
-    });
-    const [uploadingAvatar, setUploadingAvatar] = useState(false);
-    const [submitting, setSubmitting] = useState(false);
+const QUOTE_MAX = 400;
+const EMPTY_FORM = { name: '', city: 'Bengaluru', niche: '', handle: '', quote: '', avatarUrl: '', rating: 5, isActive: true };
+const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
 
-    const handleAvatarUpload = async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        setUploadingAvatar(true);
+const Stars = ({ value, onChange, size = 15 }) => (
+    <span className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map(n => {
+            const on = n <= value;
+            const icon = <Star size={size} className={on ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-zinc-600'} />;
+            return onChange ? (
+                <button key={n} type="button" onClick={() => onChange(n)} aria-label={`${n} star${n === 1 ? '' : 's'}`} className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-black/5 dark:hover:bg-white/5">
+                    {icon}
+                </button>
+            ) : <span key={n}>{icon}</span>;
+        })}
+    </span>
+);
+
+const TestimonialPreview = ({ t }) => (
+    <div className="rounded-2xl border border-black/[0.06] bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.03]">
+        <Stars value={Number(t.rating) || 5} size={13} />
+        <p className="mt-2 line-clamp-5 text-[14px] leading-relaxed text-gray-700 dark:text-zinc-300">“{t.quote || 'Their words will appear here.'}”</p>
+        <div className="mt-3 flex items-center gap-2.5">
+            <Avatar src={t.avatarUrl} name={t.name || '?'} size={36} className="rounded-full" />
+            <div className="min-w-0">
+                <p className="truncate text-[13px] font-bold">{t.name || 'Creator name'}</p>
+                <p className="truncate text-[12px] text-gray-500">{[t.city, t.niche, t.handle && (/^\d|[kKmM]$/.test(t.handle) ? t.handle : `@${t.handle.replace(/^@/, '')}`)].filter(Boolean).join(' · ')}</p>
+            </div>
+        </div>
+    </div>
+);
+
+const TestimonialEditor = ({ open, editing, onClose }) => {
+    const addToast = useStore(s => s.addToast);
+    const [form, setForm] = useState(EMPTY_FORM);
+    const [uploading, setUploading] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (!open) return;
+        setError('');
+        setForm(editing ? {
+            name: editing.name || '',
+            city: editing.city || 'Bengaluru',
+            niche: editing.niche || '',
+            handle: editing.handle || '',
+            quote: editing.quote || '',
+            avatarUrl: editing.avatarUrl || '',
+            rating: Number(editing.rating) || 5,
+            isActive: editing.isActive !== false,
+        } : EMPTY_FORM);
+    }, [open, editing]);
+
+    const set = (key) => (value) => setForm(prev => ({ ...prev, [key]: value }));
+    const cities = PREDEFINED_CITIES.filter(c => c !== 'Others');
+    const cityIsCustom = form.city && !cities.includes(form.city);
+
+    const pickPhoto = async (file) => {
+        setError('');
+        setUploading(true);
         try {
-            const url = await uploadToCloudinary(file);
-            setForm(prev => ({ ...prev, avatarUrl: url }));
-            useStore.getState().addToast('Creator photo uploaded.', 'success');
+            const url = await uploadImage(file);
+            set('avatarUrl')(url);
         } catch (err) {
-            useStore.getState().addToast("Couldn't upload the photo. Please try again.", 'error');
+            setError(err.message);
         } finally {
-            setUploadingAvatar(false);
+            setUploading(false);
         }
     };
 
-    const handleAdd = async (e) => {
-        if (e) e.preventDefault();
-        if (!form.name.trim() || !form.quote.trim()) {
-            useStore.getState().addToast("Add the creator's name and a quote before saving.", 'error');
-            return;
-        }
-
-        setSubmitting(true);
+    const submit = async (e) => {
+        stop(e);
+        if (saving || uploading) return;
+        if (!form.name.trim()) return setError("Add the creator's name.");
+        if (!form.quote.trim()) return setError('Add what they said.');
+        if (form.quote.length > QUOTE_MAX) return setError(`Keep the quote under ${QUOTE_MAX} characters.`);
+        setError('');
+        const payload = {
+            name: form.name.trim(),
+            city: form.city.trim() || 'Pan-India',
+            niche: form.niche.trim() || 'Creator',
+            handle: form.handle.trim().replace(/^@/, ''),
+            quote: form.quote.trim(),
+            avatarUrl: form.avatarUrl.trim(),
+            rating: Math.min(5, Math.max(1, Number(form.rating) || 5)),
+            isActive: form.isActive,
+        };
+        setSaving(true);
         try {
-            await addCreatorTestimonial({
-                name: form.name.trim(),
-                city: form.city.trim() || 'Pan-India',
-                niche: form.niche.trim() || 'Creator',
-                handle: form.handle.trim() ? form.handle.trim().replace(/^@/, '') : '',
-                quote: form.quote.trim(),
-                avatarUrl: form.avatarUrl || '',
-                rating: Number(form.rating) || 5,
-                isActive: form.isActive !== false
-            });
-
-            setForm({
-                name: '',
-                city: 'Bengaluru',
-                niche: '',
-                handle: '',
-                quote: '',
-                avatarUrl: '',
-                rating: 5,
-                isActive: true
-            });
-            useStore.getState().addToast('Testimonial added.', 'success');
+            if (editing) await useStore.getState().updateCreatorTestimonial(editing.id, payload);
+            else await useStore.getState().addCreatorTestimonial(payload);
+            addToast(editing ? 'Testimonial updated.' : 'Testimonial added.', 'success');
+            onClose();
         } catch (err) {
-            console.error('Error adding testimonial:', err);
-            useStore.getState().addToast("Couldn't add the testimonial. Please try again.", 'error');
+            console.error('Save testimonial error:', err);
+            setError("Couldn't save the testimonial. Please try again.");
         } finally {
-            setSubmitting(false);
+            setSaving(false);
         }
     };
-
-    const handleDelete = async (id, name) => {
-        if (!window.confirm(`Delete testimonial from ${name}?`)) return;
-        try {
-            await deleteCreatorTestimonial(id);
-            useStore.getState().addToast('Testimonial removed.', 'success');
-        } catch (err) {
-            useStore.getState().addToast("Couldn't delete the testimonial. Please try again.", 'error');
-        }
-    };
-
-    const handleToggleActive = async (id, currentStatus) => {
-        try {
-            await updateCreatorTestimonial(id, { isActive: !currentStatus });
-            useStore.getState().addToast(`Testimonial is now ${!currentStatus ? 'visible' : 'hidden'}.`, 'info');
-        } catch (err) {
-            useStore.getState().addToast("Couldn't update the testimonial. Please try again.", 'error');
-        }
-    };
-
-    const activeCount = (creatorTestimonials || []).filter(t => t.isActive !== false).length;
 
     return (
-        <section className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4 flex-1">
-                    <h2 className="text-xl font-black font-heading tracking-tight uppercase text-rose-600 dark:text-neon-pink flex items-center gap-2">
-                        <MessageSquareQuote size={20} className="text-rose-600 dark:text-neon-pink" />
-                        Creator Testimonials
-                    </h2>
-                    <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
-                </div>
-                <div className="text-[10px] font-mono uppercase tracking-widest text-gray-500 dark:text-zinc-400 bg-black/[0.04] dark:bg-white/[0.05] px-3 py-1.5 rounded-xl border border-black/10 dark:border-white/10 shrink-0">
-                    {activeCount} Active / {creatorTestimonials?.length || 0} Total
-                </div>
-            </div>
-
-            <Card className="p-5 sm:p-8 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl space-y-8 shadow-sm">
-                {/* Form to add real testimonial */}
-                <div className="space-y-5">
-                    <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                            Add Authentic Creator Testimonial
-                        </p>
-                        <span className="text-[10px] text-gray-500 dark:text-zinc-400">
-                            Only active testimonials added here will appear on the creator landing page
-                        </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
-                        {/* Creator Name */}
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300">
-                                Creator Name
-                            </label>
-                            <div className="relative">
-                                <User size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                                <Input
-                                    value={form.name}
-                                    onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
-                                    placeholder="e.g. Priya Sharma"
-                                    className="h-12 pl-11 bg-white dark:bg-black/50 border-black/10 dark:border-white/10 rounded-xl text-xs font-bold"
-                                />
-                            </div>
-                        </div>
-
-                        {/* City */}
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300">
-                                Creator City
-                            </label>
-                            <div className="relative">
-                                <MapPin size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                                <select
-                                    value={form.city}
-                                    onChange={(e) => setForm(prev => ({ ...prev, city: e.target.value }))}
-                                    className="w-full h-12 pl-11 pr-4 bg-white dark:bg-black/50 border border-black/10 dark:border-white/10 rounded-xl font-bold text-xs text-gray-900 dark:text-white outline-none focus:border-neon-pink"
-                                >
-                                    {PREDEFINED_CITIES.map(c => (
-                                        <option key={c} value={c} className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-white">
-                                            {c}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Niche */}
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300">
-                                Specialization / Niche
-                            </label>
-                            <Input
-                                value={form.niche}
-                                onChange={(e) => setForm(prev => ({ ...prev, niche: e.target.value }))}
-                                placeholder="e.g. Lifestyle &amp; Fashion"
-                                className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/10 rounded-xl text-xs font-medium"
-                            />
-                        </div>
-
-                        {/* Handle / Followers */}
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300">
-                                Handle or Audience Metric
-                            </label>
-                            <Input
-                                value={form.handle}
-                                onChange={(e) => setForm(prev => ({ ...prev, handle: e.target.value }))}
-                                placeholder="e.g. @priyastyle or 45K"
-                                className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/10 rounded-xl text-xs font-medium"
-                            />
-                        </div>
-
-                        {/* Quote Text */}
-                        <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
-                            <label className="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300">
-                                Testimonial Quote
-                            </label>
-                            <textarea
-                                value={form.quote}
-                                onChange={(e) => setForm(prev => ({ ...prev, quote: e.target.value }))}
-                                rows={3}
-                                placeholder="Describe their authentic experience working with Newbi brand campaigns or concert access..."
-                                className="w-full p-3 bg-white dark:bg-black/50 border border-black/10 dark:border-white/10 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none focus:border-neon-pink leading-relaxed resize-none"
-                            />
-                        </div>
-
-                        {/* Avatar Upload */}
-                        <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
-                            <label className="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300">
-                                Creator Photo / Avatar
-                            </label>
-                            <div className="space-y-2">
-                                <label className="h-12 w-full px-4 rounded-xl bg-white dark:bg-black/50 border border-black/10 dark:border-white/10 text-gray-700 dark:text-zinc-300 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                                    {uploadingAvatar ? 'Uploading...' : <><ImageIcon size={15} /> Upload Photo</>}
-                                    <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
-                                </label>
-                                {form.avatarUrl && (
-                                    <div className="flex items-center gap-2">
-                                        <img src={form.avatarUrl} alt="Preview" className="w-8 h-8 rounded-full object-cover border border-black/10" />
-                                        <span className="text-[10px] font-black uppercase tracking-wider text-neon-green">Photo Ready</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-end pt-2">
-                        <Button
-                            type="button"
-                            onClick={handleAdd}
-                            disabled={submitting || !form.name.trim() || !form.quote.trim()}
-                            className="h-11 px-6 rounded-xl bg-neon-green text-black font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all disabled:opacity-40 flex items-center gap-2 shadow-sm"
-                        >
-                            <Plus size={14} /> Add Testimonial
+        <Sheet
+            open={open}
+            onClose={() => { if (!saving) onClose(); }}
+            size="lg"
+            title={editing ? 'Edit testimonial' : 'Add a testimonial'}
+            subtitle="Real words from a real creator. They show on the creator page."
+            footer={(
+                <div className="space-y-2">
+                    {error && <p role="alert" className="text-[13px] font-semibold text-red-600 dark:text-red-400">{error}</p>}
+                    <div className="flex gap-2">
+                        <Button variant="ghost" onClick={onClose} disabled={saving} className="h-12">Cancel</Button>
+                        <Button variant="primary" type="submit" form="testimonial-form" disabled={saving || uploading} className="h-12 flex-1">
+                            {saving && <Loader2 size={15} className="animate-spin" />}
+                            {saving ? 'Saving…' : uploading ? 'Uploading photo…' : editing ? 'Save changes' : 'Add testimonial'}
                         </Button>
                     </div>
                 </div>
-
-                {/* Existing Testimonials */}
-                <div className="space-y-4 pt-6 border-t border-black/10 dark:border-white/5">
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                        Configured Testimonials ({creatorTestimonials?.length || 0})
-                    </p>
-
-                    {(!creatorTestimonials || creatorTestimonials.length === 0) ? (
-                        <div className="p-8 text-center rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 space-y-1">
-                            <p className="text-sm font-bold text-gray-700 dark:text-zinc-300">
-                                No testimonials added yet.
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-zinc-500">
-                                The creator landing page stays clean and will only display testimonials when authentic entries are added above.
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {creatorTestimonials.map(t => (
-                                <div
-                                    key={t.id}
-                                    className={cn(
-                                        "p-5 rounded-2xl bg-white dark:bg-[#0c0e14] border transition-all flex flex-col justify-between gap-3 shadow-sm",
-                                        t.isActive !== false ? "border-black/[0.08] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20" : "border-red-500/20 opacity-60"
-                                    )}
-                                >
-                                    <div className="space-y-2.5">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <div className="flex items-center gap-2.5">
-                                                {t.avatarUrl ? (
-                                                    <img src={t.avatarUrl} alt={t.name} className="w-9 h-9 rounded-full object-cover border border-black/10" />
-                                                ) : (
-                                                    <div className="w-9 h-9 rounded-full bg-black text-white dark:bg-white/10 flex items-center justify-center font-bold text-xs">
-                                                        {t.name.charAt(0)}
-                                                    </div>
-                                                )}
-                                                <div>
-                                                    <h4 className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                                                        {t.name}
-                                                    </h4>
-                                                    <p className="text-[10px] text-gray-500 dark:text-zinc-400 font-medium">
-                                                        {t.city} &bull; {t.niche}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleToggleActive(t.id, t.isActive !== false)}
-                                                className={cn(
-                                                    "text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border transition-all flex items-center gap-1",
-                                                    t.isActive !== false 
-                                                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30" 
-                                                        : "bg-zinc-500/10 text-zinc-400 border-zinc-500/30"
-                                                )}
-                                            >
-                                                {t.isActive !== false ? <><Eye size={10} /> Active</> : <><EyeOff size={10} /> Hidden</>}
-                                            </button>
-                                        </div>
-
-                                        <p className="text-xs text-gray-700 dark:text-zinc-300 italic line-clamp-4 leading-relaxed">
-                                            &ldquo;{t.quote}&rdquo;
-                                        </p>
-                                    </div>
-
-                                    <div className="pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-[10px] text-gray-500">
-                                        <span>{t.handle ? `@${t.handle}` : 'Verified Creator'}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDelete(t.id, t.name)}
-                                            className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center transition-colors"
-                                            title="Delete Testimonial"
-                                        >
-                                            <Trash2 size={13} />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+            )}
+        >
+            <form id="testimonial-form" onSubmit={submit} noValidate className="grid gap-5 md:grid-cols-[200px_minmax(0,1fr)]">
+                <div className="space-y-3">
+                    <ImageSlot
+                        label="Photo"
+                        hint="Square works best"
+                        aspect="aspect-square"
+                        previewUrl={form.avatarUrl}
+                        url={form.avatarUrl}
+                        onFile={pickPhoto}
+                        onUrl={set('avatarUrl')}
+                        onClear={() => set('avatarUrl')('')}
+                    />
+                    {uploading && <p className="flex items-center gap-1.5 text-[12px] font-semibold text-gray-500"><Loader2 size={12} className="animate-spin" /> Uploading…</p>}
                 </div>
-            </Card>
+                <div className="space-y-4">
+                    <Field label="Creator's name">
+                        <input className={fieldCls} value={form.name} onChange={(e) => set('name')(e.target.value)} placeholder="Priya Sharma" autoComplete="off" />
+                    </Field>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <Field label="City">
+                            <ThemedSelect className={fieldCls} value={cityIsCustom || form.city === '' ? '__custom' : form.city} onChange={(e) => set('city')(e.target.value === '__custom' ? (cityIsCustom ? form.city : '') : e.target.value)}>
+                                {cities.map(c => <option key={c} value={c}>{c}</option>)}
+                                <option value="__custom">Other city…</option>
+                            </ThemedSelect>
+                        </Field>
+                        <Field label="Niche" optional>
+                            <input className={fieldCls} list="testimonial-niches" value={form.niche} onChange={(e) => set('niche')(e.target.value)} placeholder="Fashion & Luxury" />
+                            <datalist id="testimonial-niches">{CREATOR_NICHES.map(n => <option key={n} value={n} />)}</datalist>
+                        </Field>
+                    </div>
+                    {(cityIsCustom || form.city === '') && (
+                        <Field label="City name">
+                            <input className={fieldCls} value={form.city} onChange={(e) => set('city')(e.target.value)} placeholder="Mysuru" />
+                        </Field>
+                    )}
+                    <Field label="Instagram handle or audience" optional hint="@priyastyle, or something like 45K">
+                        <input className={fieldCls} value={form.handle} onChange={(e) => set('handle')(e.target.value)} autoCapitalize="off" />
+                    </Field>
+                    <Field label="What they said" hint={`${form.quote.length}/${QUOTE_MAX}`}>
+                        <textarea rows={4} className={cn(areaCls, 'resize-y', form.quote.length > QUOTE_MAX && 'border-red-500/60')} value={form.quote} onChange={(e) => set('quote')(e.target.value)} placeholder="How working with Newbi went for them" />
+                    </Field>
+                    <div>
+                        <span className="mb-1 block text-[12px] font-bold text-gray-500">Rating</span>
+                        <Stars value={form.rating} onChange={set('rating')} size={20} />
+                    </div>
+                    <div className="rounded-xl border border-black/[0.06] p-3 dark:border-white/[0.08]">
+                        <Toggle label="Show on the creator page" hint="Turn off to keep it saved but hidden" checked={form.isActive} onChange={set('isActive')} />
+                    </div>
+                    <div>
+                        <span className="mb-1 block text-[12px] font-bold text-gray-500">Preview</span>
+                        <TestimonialPreview t={form} />
+                    </div>
+                </div>
+            </form>
+        </Sheet>
+    );
+};
+
+const CreatorTestimonialsManager = () => {
+    useStoreSubscription(['creatorTestimonials', 'siteSettings']);
+    const testimonials = useStore(s => s.creatorTestimonials) || [];
+    const siteSettings = useStore(s => s.siteSettings);
+    const addToast = useStore(s => s.addToast);
+
+    const [editorOpen, setEditorOpen] = useState(false);
+    const [editing, setEditing] = useState(null);
+    const [deleting, setDeleting] = useState(null);
+    const [busy, setBusy] = useState(false);
+
+    const sectionVisible = siteSettings?.showCreatorTestimonials !== false;
+    const visibleCount = testimonials.filter(t => t.isActive !== false).length;
+
+    const openEditor = (t = null) => { setEditing(t); setEditorOpen(true); };
+
+    const toggleActive = async (t) => {
+        if (busy) return;
+        setBusy(true);
+        try {
+            await useStore.getState().updateCreatorTestimonial(t.id, { isActive: t.isActive === false });
+            addToast(t.isActive === false ? 'Testimonial is visible.' : 'Testimonial hidden.', 'success');
+        } catch {
+            addToast("Couldn't update the testimonial. Please try again.", 'error');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const move = async (index, delta) => {
+        if (busy) return;
+        setBusy(true);
+        try {
+            await moveItem(testimonials, index, delta, useStore.getState().updateCreatorTestimonial);
+        } catch {
+            addToast("Couldn't change the order. Please try again.", 'error');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const showSection = async () => {
+        try {
+            await useStore.getState().updateGeneralSettings({ showCreatorTestimonials: true });
+            addToast('Testimonials are showing on the creator page.', 'success');
+        } catch {
+            addToast("Couldn't change that. Please try again.", 'error');
+        }
+    };
+
+    const remove = async () => {
+        try {
+            await useStore.getState().deleteCreatorTestimonial(deleting.id);
+            addToast('Testimonial deleted.', 'success');
+            setDeleting(null);
+        } catch {
+            addToast("Couldn't delete the testimonial. Please try again.", 'error');
+        }
+    };
+
+    return (
+        <section className="space-y-4" onSubmit={(e) => e.stopPropagation()}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                    <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', accent('rose').chip)}><MessageSquareQuote size={18} /></span>
+                    <div className="min-w-0">
+                        <h2 className="text-[17px] font-extrabold">Creator testimonials</h2>
+                        <p className="text-[13px] text-gray-500">{visibleCount} showing · {testimonials.length - visibleCount} hidden · the order here is the order on the page</p>
+                    </div>
+                </div>
+                <Button variant="accent" onClick={() => openEditor()} className="h-11"><Plus size={15} /> Add testimonial</Button>
+            </div>
+
+            {!sectionVisible && (
+                <div className="flex flex-col gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/[0.06] p-4 sm:flex-row sm:items-center">
+                    <EyeOff size={17} className="shrink-0 text-amber-600 dark:text-amber-300" />
+                    <p className="min-w-0 flex-1 text-[13px] font-semibold">The testimonials section is turned off, so none of these show on the creator page.</p>
+                    <Button variant="secondary" onClick={showSection}>Turn it on</Button>
+                </div>
+            )}
+
+            {testimonials.length === 0 ? (
+                <div className="rounded-2xl border border-black/[0.06] bg-white dark:border-white/[0.08] dark:bg-white/[0.03]">
+                    <EmptyState
+                        icon={MessageSquareQuote}
+                        tone="rose"
+                        title="No testimonials yet"
+                        description="The creator page skips this section until you add one. Ask a creator you've worked with for a line or two."
+                        action={<Button variant="accent" onClick={() => openEditor()}><Plus size={15} /> Add testimonial</Button>}
+                    />
+                </div>
+            ) : (
+                <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {testimonials.map((t, i) => {
+                        const hidden = t.isActive === false;
+                        return (
+                            <li key={t.id} className={cn('flex flex-col rounded-2xl border bg-white p-4 dark:bg-white/[0.03]', hidden ? 'border-dashed border-black/15 dark:border-white/15' : 'border-black/[0.06] dark:border-white/[0.08]')}>
+                                <div className="flex items-start gap-3">
+                                    <span className={cn('flex h-7 min-w-[28px] items-center justify-center rounded-full px-1.5 text-[12px] font-bold tabular-nums', accent('rose').chip)}>{i + 1}</span>
+                                    <Avatar src={t.avatarUrl} name={t.name} size={44} className="rounded-full" />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-[15px] font-bold">{t.name || 'Unnamed'}</p>
+                                        <p className="truncate text-[12px] text-gray-500">{[t.city, t.niche].filter(Boolean).join(' · ')}</p>
+                                    </div>
+                                    <Menu trigger={({ toggle }) => (
+                                        <Button size="sm" variant="ghost" onClick={toggle} aria-label="Testimonial actions" className="h-10 w-10 px-0"><MoreHorizontal size={16} /></Button>
+                                    )}>
+                                        <MenuItem icon={Pencil} onClick={() => openEditor(t)}>Edit</MenuItem>
+                                        <MenuItem icon={hidden ? Eye : EyeOff} onClick={() => toggleActive(t)}>{hidden ? 'Show on the page' : 'Hide from the page'}</MenuItem>
+                                        <MenuItem icon={ArrowUp} onClick={() => move(i, -1)} disabled={i === 0 || busy}>Move up</MenuItem>
+                                        <MenuItem icon={ArrowDown} onClick={() => move(i, 1)} disabled={i === testimonials.length - 1 || busy}>Move down</MenuItem>
+                                        <MenuItem icon={Trash2} danger onClick={() => setDeleting(t)}>Delete</MenuItem>
+                                    </Menu>
+                                </div>
+                                <div className="mt-2 pl-10"><Stars value={Number(t.rating) || 5} size={13} /></div>
+                                <p className="mt-2 line-clamp-4 text-[14px] leading-relaxed text-gray-700 dark:text-zinc-300">“{t.quote}”</p>
+                                <div className="flex-1" />
+                                <div className="mt-3 flex items-center gap-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+                                    {hidden ? <Badge tone="gray"><EyeOff size={11} /> Hidden</Badge> : <Badge tone="green"><Eye size={11} /> Showing</Badge>}
+                                    {t.handle && <span className="truncate text-[12px] text-gray-500">{/^\d|[kKmM]$/.test(t.handle) ? t.handle : `@${t.handle}`}</span>}
+                                    <span className="flex-1" />
+                                    <Button size="sm" variant="ghost" onClick={() => move(i, -1)} disabled={i === 0 || busy} aria-label="Move up" className="h-10 w-10 px-0"><ArrowUp size={15} /></Button>
+                                    <Button size="sm" variant="ghost" onClick={() => move(i, 1)} disabled={i === testimonials.length - 1 || busy} aria-label="Move down" className="h-10 w-10 px-0"><ArrowDown size={15} /></Button>
+                                    <Button size="sm" variant="secondary" onClick={() => openEditor(t)} className="h-10"><Pencil size={13} /> Edit</Button>
+                                </div>
+                            </li>
+                        );
+                    })}
+                </ul>
+            )}
+
+            <TestimonialEditor open={editorOpen} editing={editing} onClose={() => setEditorOpen(false)} />
+            <ConfirmSheet
+                open={Boolean(deleting)}
+                onClose={() => setDeleting(null)}
+                title="Delete this testimonial?"
+                confirmLabel="Delete"
+                onConfirm={remove}
+            >
+                <p>{deleting?.name ? `${deleting.name}'s` : 'This'} testimonial will be removed from the creator page for good. To keep it but not show it, hide it instead.</p>
+            </ConfirmSheet>
         </section>
     );
 };

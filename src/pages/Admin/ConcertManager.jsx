@@ -1,451 +1,282 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Plus from 'lucide-react/dist/esm/icons/plus';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Edit from 'lucide-react/dist/esm/icons/edit';
-import Upload from 'lucide-react/dist/esm/icons/upload';
-import Loader from 'lucide-react/dist/esm/icons/loader';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
-import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
-import X from 'lucide-react/dist/esm/icons/x';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import ImageIcon from 'lucide-react/dist/esm/icons/image';
 import Music from 'lucide-react/dist/esm/icons/music';
-import Calendar from 'lucide-react/dist/esm/icons/calendar';
-import Radio from 'lucide-react/dist/esm/icons/radio';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
-import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
+import Tags from 'lucide-react/dist/esm/icons/tags';
+import PlayCircle from 'lucide-react/dist/esm/icons/play-circle';
+import ImageOff from 'lucide-react/dist/esm/icons/image-off';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import Edit from 'lucide-react/dist/esm/icons/edit-3';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up';
+import ArrowDown from 'lucide-react/dist/esm/icons/arrow-down';
+import ChevronsUp from 'lucide-react/dist/esm/icons/chevrons-up';
+import ArrowUpDown from 'lucide-react/dist/esm/icons/arrow-up-down';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
+import Check from 'lucide-react/dist/esm/icons/check';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import LivePreview from '../../components/admin/LivePreview';
-import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
-import StudioDatePicker from '../../components/ui/StudioDatePicker';
+import { Card, Button, Badge, StatTile, SearchInput, SegmentedTabs, EmptyState, Menu, MenuItem, ViewToggle, useViewMode } from '../../components/admin/ui';
+import ExportMenu from '../../components/admin/ExportMenu';
+import { CONTENT_TABS, ConfirmSheet, framedBackground } from '../../components/admin/content/ContentKit';
+import { PortfolioEditorSheet, PortfolioCategoriesSheet } from '../../components/admin/content/PortfolioSheets';
+import { formatDay, toDate } from '../../components/admin/content/contentRules';
 
-const coreContentTabs = [
-    { name: 'Upcoming', path: '/admin/upcoming-events', icon: Calendar, color: 'text-neon-green' },
-    { name: 'Announcements', path: '/admin/announcements', icon: Radio, color: 'text-neon-pink' },
-    { name: 'Blog', path: '/admin/blog', icon: FileText, color: 'text-neon-blue' },
-    { name: 'Portfolio', path: '/admin/concertzone', icon: Music, color: 'text-neon-purple' },
-];
-
+/** The portfolio of past events on the home page (/admin/concertzone). */
 const ConcertManager = () => {
     useStoreSubscription(['portfolio', 'portfolioCategories']);
-    const { portfolio, addPortfolioItem, updatePortfolioItem, deletePortfolioItem, updatePortfolioOrder, portfolioCategories, addCategory, deleteCategory } = useStore();
-    const [isAdding, setIsAdding] = useState(false);
-    const [editingId, setEditingId] = useState(null);
-    const [uploading, setUploading] = useState(false);
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [newCategoryName, setNewCategoryName] = useState('');
-    const [showCategoryManager, setShowCategoryManager] = useState(false);
-    const [filterCategory, setFilterCategory] = useState('all');
-    const [showPreviewMobile, setShowPreviewMobile] = useState(false);
+    const { portfolio = [], portfolioCategories = [], deletePortfolioItem, updatePortfolioOrder, addToast } = useStore();
+    const [params, setParams] = useSearchParams();
+    const [search, setSearch] = useState('');
+    const [view, setView] = useViewMode('portfolio', 'cards');
+    const [reordering, setReordering] = useState(false);
+    const [editor, setEditor] = useState(null); // { item } | {}
+    const [categoriesOpen, setCategoriesOpen] = useState(false);
+    const [removing, setRemoving] = useState(null);
+    const [busy, setBusy] = useState(false);
+    const busyRef = useRef(false);
 
-    const [newPortfolio, setNewPortfolio] = useState({
-        title: '', date: '', category: '', image: '', highlightUrl: '',
-        imageTransform: { scale: 1, x: 0, y: 0 },
-        year: new Date().getFullYear(),
-        sector: ''
+    const categories = useMemo(() => [...portfolioCategories].sort((a, b) => (a.order || 0) - (b.order || 0)), [portfolioCategories]);
+    const known = useMemo(() => new Set(categories.map(c => c.id)), [categories]);
+    const labelFor = (id) => categories.find(c => c.id === id)?.label;
+
+    const category = params.get('category') || 'all';
+    const setCategory = (v) => { const next = new URLSearchParams(params); if (v === 'all') next.delete('category'); else next.set('category', v); setParams(next, { replace: true }); };
+
+    const counts = useMemo(() => {
+        const out = { all: portfolio.length, none: 0 };
+        portfolio.forEach(p => {
+            if (known.has(p.category)) out[p.category] = (out[p.category] || 0) + 1;
+            else out.none += 1;
+        });
+        return out;
+    }, [portfolio, known]);
+    const withReels = portfolio.filter(p => p.highlightUrl).length;
+    const noImage = portfolio.filter(p => !p.image).length;
+
+    const shown = useMemo(() => {
+        if (reordering) return portfolio;
+        const q = search.trim().toLowerCase();
+        return portfolio.filter(p => {
+            if (category === 'none' && known.has(p.category)) return false;
+            if (category !== 'all' && category !== 'none' && p.category !== category) return false;
+            if (!q) return true;
+            return [p.title, p.sector, labelFor(p.category), p.year].some(v => String(v || '').toLowerCase().includes(q));
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [portfolio, category, search, known, reordering, categories]);
+
+    const guard = async (fn) => {
+        if (busyRef.current) return;
+        busyRef.current = true;
+        setBusy(true);
+        try { await fn(); } finally { busyRef.current = false; setBusy(false); }
+    };
+
+    // Order is saved for the whole list, so it's the same everywhere. Pinned
+    // projects always sort first, so items move within their own group.
+    const move = (item, dir) => guard(async () => {
+        const list = [...portfolio];
+        const i = list.findIndex(x => x.id === item.id);
+        let j = i + dir;
+        while (j >= 0 && j < list.length && !!list[j].isPinned !== !!item.isPinned) j += dir;
+        if (j < 0 || j >= list.length) return;
+        [list[i], list[j]] = [list[j], list[i]];
+        try { await updatePortfolioOrder(list); }
+        catch (err) { console.error(err); addToast("Couldn't save the new order. Please try again.", 'error'); }
+    });
+    const toTop = (item) => guard(async () => {
+        const rest = portfolio.filter(x => x.id !== item.id);
+        const firstOfGroup = rest.findIndex(x => !!x.isPinned === !!item.isPinned);
+        const at = firstOfGroup === -1 ? rest.length : firstOfGroup;
+        const list = [...rest.slice(0, at), item, ...rest.slice(at)];
+        try { await updatePortfolioOrder(list); addToast('Moved to the top.', 'success'); }
+        catch (err) { console.error(err); addToast("Couldn't save the new order. Please try again.", 'error'); }
     });
 
-    const [portfolioPreviewUrl, setPortfolioPreviewUrl] = useState('');
-
-    useEffect(() => {
-        if (!selectedFile) {
-            setPortfolioPreviewUrl(newPortfolio.image || '');
-            return;
-        }
-        let isMounted = true;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            if (isMounted) setPortfolioPreviewUrl(e.target?.result || '');
-        };
-        reader.readAsDataURL(selectedFile);
-        return () => { isMounted = false; };
-    }, [selectedFile, newPortfolio.image]);
-
-    const resetForms = () => {
-        setNewPortfolio({ title: '', date: '', category: '', image: '', highlightUrl: '', imageTransform: { scale: 1, x: 0, y: 0 }, year: new Date().getFullYear(), sector: '' });
-        setIsAdding(false); setEditingId(null); setSelectedFile(null); setUploading(false); setShowPreviewMobile(false);
-    };
-
-    const handleEdit = (item) => { setEditingId(item.id); setIsAdding(true); setSelectedFile(null); setNewPortfolio({ ...item }); setShowPreviewMobile(false); };
-
-    const moveItem = async (index, direction) => {
-        const newItems = [...portfolio];
-        if (direction === 'up' && index > 0) [newItems[index], newItems[index - 1]] = [newItems[index - 1], newItems[index]];
-        else if (direction === 'down' && index < newItems.length - 1) [newItems[index], newItems[index + 1]] = [newItems[index + 1], newItems[index]];
-        else return;
-        await updatePortfolioOrder(newItems);
-    };
-
-    const handleFileUpload = async (file) => {
-        if (!file) return null;
-        const data = new FormData();
-        data.append('file', file); data.append('upload_preset', 'maw1e4ud'); data.append('cloud_name', 'dgtalrz4n');
-        const res = await fetch('https://api.cloudinary.com/v1_1/dgtalrz4n/image/upload', { method: 'POST', body: data });
-        return (await res.json()).secure_url;
-    };
-
-    const handleSave = async (e) => {
-        e.preventDefault(); setUploading(true);
+    const remove = () => guard(async () => {
         try {
-            let imageUrl = newPortfolio.image;
-            if (selectedFile) imageUrl = await handleFileUpload(selectedFile);
-            const data = { ...newPortfolio, image: imageUrl };
-            if (!data.category && portfolioCategories.length > 0) data.category = portfolioCategories[0].id;
-            if (editingId) await updatePortfolioItem(editingId, data);
-            else await addPortfolioItem({ id: `p-${Date.now()}`, ...data });
-            resetForms();
-        } catch { useStore.getState().addToast("Couldn't save the portfolio item. Please try again.", 'error'); }
-        finally { setUploading(false); }
-    };
+            await deletePortfolioItem(removing.id);
+            addToast('Project deleted.', 'success');
+            setRemoving(null);
+        } catch (err) {
+            console.error(err);
+            addToast("Couldn't delete the project. Please try again.", 'error');
+        }
+    });
 
-    const handleAddCategory = async (e) => {
-        e.preventDefault();
-        if (!newCategoryName.trim()) return;
-        try { await addCategory(newCategoryName.trim()); setNewCategoryName(''); }
-        catch { useStore.getState().addToast("Couldn't add the category. Please try again.", 'error'); }
-    };
+    const exportSpec = () => ({
+        filename: 'portfolio',
+        sheetName: 'Portfolio',
+        title: 'Portfolio',
+        subtitle: `${shown.length} project${shown.length === 1 ? '' : 's'}`,
+        rows: shown,
+        columns: [
+            { header: 'Position', type: 'number', value: p => portfolio.indexOf(p) + 1 },
+            { header: 'Project', value: p => p.title || '' },
+            { header: 'Category', value: p => labelFor(p.category) || 'None (hidden)' },
+            { header: 'Card label', value: p => p.sector || '' },
+            { header: 'Date', type: 'date', value: p => toDate(p.date) || null },
+            { header: 'Year', value: p => p.year || '' },
+            { header: 'Highlight reel', value: p => p.highlightUrl || '' },
+            { header: 'Image', value: p => p.image || '' },
+        ],
+    });
 
-    const filtered = filterCategory === 'all' ? portfolio : portfolio.filter(i => i.category === filterCategory);
+    const dateText = (p) => formatDay(p.date) || (p.year ? String(p.year) : '');
+
+    const actions = (p) => (
+        <Menu trigger={({ toggle }) => (
+            <Button size="sm" variant="ghost" onClick={toggle} aria-label="More actions" className="h-10 w-10 px-0"><MoreHorizontal size={16} /></Button>
+        )}>
+            <MenuItem icon={Edit} onClick={() => setEditor({ item: p })}>Edit</MenuItem>
+            {p.highlightUrl && <MenuItem as="a" href={p.highlightUrl} target="_blank" rel="noopener noreferrer" icon={ExternalLink}>Open the reel</MenuItem>}
+            <MenuItem icon={ChevronsUp} onClick={() => toTop(p)}>Move to the top</MenuItem>
+            <MenuItem icon={Trash2} danger onClick={() => setRemoving(p)}>Delete</MenuItem>
+        </Menu>
+    );
+
+    const thumb = (p, cls) => (
+        <div className={cn('relative overflow-hidden bg-violet-500/[0.08] dark:bg-violet-400/[0.08]', cls)}>
+            {p.image
+                ? <div className="absolute inset-0" style={framedBackground(p.image, p.imageTransform)} />
+                : <div className="absolute inset-0 flex items-center justify-center text-violet-500/60 dark:text-violet-300/50"><ImageIcon size={22} /></div>}
+        </div>
+    );
 
     return (
         <AdminCommunityHubLayout
-            studioHeader={{ title: 'PORTFOLIO', subtitle: 'MANAGER', accentClass: 'text-neon-purple', icon: Music }}
-            tabs={coreContentTabs}
-            accentColor="neon-purple"
-            action={!isAdding && (
-                <div className="flex flex-wrap gap-3">
-                    <button
-                        onClick={() => setShowCategoryManager(!showCategoryManager)}
-                        className={cn('h-12 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all',
-                            showCategoryManager ? 'bg-white text-black border-white' : 'bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white border-black/10 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10')}
-                    >
-                        {showCategoryManager ? 'Hide' : 'Categories'}
-                    </button>
-                    <Button onClick={() => { setIsAdding(true); setEditingId(null); setNewPortfolio({ title: '', date: '', category: '', image: '', highlightUrl: '', imageTransform: { scale: 1, x: 0, y: 0 } }); }}
-                        className="h-12 px-8 bg-neon-purple text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:scale-105 active:scale-95 transition-all">
-                        <Plus size={16} className="mr-2" /> New Entry
-                    </Button>
+            studioHeader={{ title: 'Portfolio', icon: Music, description: 'Past events and campaigns on the home page' }}
+            tabs={CONTENT_TABS}
+            action={(
+                <div className="flex w-full gap-2 sm:w-auto">
+                    <Button variant="secondary" onClick={() => setCategoriesOpen(true)} className="flex-1 sm:flex-none"><Tags size={14} /> Categories</Button>
+                    <Button variant="accent" onClick={() => setEditor({})} className="flex-1 sm:flex-none"><Plus size={15} /> New project</Button>
                 </div>
             )}
         >
-            {/* Mobile Preview Toggle */}
-            {isAdding && (
-                <div className="lg:hidden fixed bottom-24 right-6 z-[200]">
-                    <button 
-                        onClick={() => setShowPreviewMobile(!showPreviewMobile)}
-                        className={cn(
-                            "w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all border animate-in zoom-in duration-300",
-                            showPreviewMobile ? "bg-white text-black border-white" : "bg-neon-purple text-black border-neon-purple"
-                        )}
-                    >
-                        {showPreviewMobile ? <X size={24} /> : <Eye size={24} />}
-                    </button>
+            <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <StatTile icon={Music} tone="violet" label="Projects" value={portfolio.length} hint={`${categories.length} categor${categories.length === 1 ? 'y' : 'ies'}`} active={category === 'all' && !reordering} onClick={() => setCategory('all')} />
+                    <StatTile icon={PlayCircle} tone="pink" label="With a reel" value={withReels} hint="Play button on the card" />
+                    <StatTile icon={ImageOff} tone="amber" label="Need a picture" value={noImage} hint={noImage ? 'Show an empty frame' : 'All have pictures'} />
+                    <StatTile icon={Tags} tone={counts.none ? 'red' : 'teal'} label="Hidden (no category)" value={counts.none} hint={counts.none ? 'Not on the website' : 'Everything is visible'} active={category === 'none'} onClick={counts.none ? () => setCategory(category === 'none' ? 'all' : 'none') : undefined} />
                 </div>
-            )}
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-10 pb-20">
 
-                {/* ── Category Manager ── */}
-                <AnimatePresence>
-                    {showCategoryManager && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-10 overflow-hidden">
-                            <Card className="p-6 md:p-8 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2rem]">
-                                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-6 flex items-center gap-3">
-                                    <div className="w-8 h-px bg-neon-green/40" /> SECTOR REGISTRY
-                                </h3>
-                                <form onSubmit={handleAddCategory} className="flex gap-4 mb-6">
-                                    <Input placeholder="NEW SECTOR NAME" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)}
-                                        className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl uppercase text-[10px] font-black tracking-widest flex-1 focus:border-neon-purple/30" />
-                                    <Button type="submit" className="h-12 px-8 bg-neon-purple text-black font-black uppercase tracking-widest rounded-xl">Add</Button>
-                                </form>
-                                <div className="flex flex-wrap gap-3">
-                                    {portfolioCategories.map(cat => (
-                                        <div key={cat.id} className="group flex items-center gap-3 bg-white dark:bg-black/30 border border-black/10 dark:border-white/5 px-5 py-2.5 rounded-xl hover:border-neon-green/20 transition-all">
-                                            <span className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">{cat.label}</span>
-                                            <button onClick={() => deleteCategory(cat.id)} className="text-gray-700 group-hover:text-red-500 transition-colors"><X size={12} /></button>
-                                        </div>
-                                    ))}
-                                    {portfolioCategories.length === 0 && <p className="text-[10px] font-black text-gray-700 uppercase tracking-widest">No sectors defined.</p>}
-                                </div>
-                            </Card>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                <AnimatePresence mode="wait">
-                    {isAdding ? (
-                        /* ── Editor ── */
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
-                            <div className="lg:col-span-7 w-full">
-                                <AnimatePresence mode="wait">
-                                    {showPreviewMobile ? (
-                                        <motion.div key="mobile-preview" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="lg:hidden">
-                                            <LivePreview type="portfolio" categories={portfolioCategories} data={{ ...newPortfolio, image: portfolioPreviewUrl }} />
-                                        </motion.div>
-                                    ) : (
-                                        <Card className="p-4 md:p-8 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem]">
-                                    <div className="flex justify-between items-center mb-10">
-                                        <h2 className="text-xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white flex items-center gap-3">
-                                            <Sparkles className="text-neon-purple" size={22} /> {editingId ? 'EDIT' : 'NEW'} RECORD
-                                        </h2>
-                                        <button onClick={resetForms} className="text-[10px] font-black text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest">Discard</button>
-                                    </div>
-
-                                    <form onSubmit={handleSave} className="space-y-8">
-                                        {/* Title */}
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Event Reference</label>
-                                            <Input placeholder="ENTER EVENT TITLE..." value={newPortfolio.title}
-                                                onChange={e => setNewPortfolio({ ...newPortfolio, title: e.target.value })} required
-                                                className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest focus:border-neon-purple/30 px-6" />
-                                        </div>
-
-                                        {/* Date + Category + Year */}
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Event Date</label>
-                                                <StudioDatePicker
-                                                    value={newPortfolio.date && (newPortfolio.date.seconds ? new Date(newPortfolio.date.seconds * 1000).toISOString().split('T')[0] : (typeof newPortfolio.date === 'string' ? newPortfolio.date.split('T')[0] : new Date(newPortfolio.date).toISOString().split('T')[0]))}
-                                                    onChange={val => setNewPortfolio({ ...newPortfolio, date: val })}
-                                                    className="h-14"
-                                                    placeholder="SELECT EVENT DATE..."
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Sector</label>
-                                                <select value={newPortfolio.category} onChange={e => setNewPortfolio({ ...newPortfolio, category: e.target.value })}
-                                                    className="w-full h-14 bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest text-gray-900 dark:text-white focus:outline-none focus:border-neon-purple/30 appearance-none cursor-pointer">
-                                                    <option value="" className="bg-gray-100 dark:bg-zinc-900">SELECT SECTOR...</option>
-                                                    {portfolioCategories.map(cat => <option key={cat.id} value={cat.id} className="bg-gray-100 dark:bg-zinc-900">{cat.label.toUpperCase()}</option>)}
-                                                </select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Project Year</label>
-                                                <Input type="number" placeholder="2024" value={newPortfolio.year || ''}
-                                                    onChange={e => setNewPortfolio({ ...newPortfolio, year: parseInt(e.target.value) || '' })}
-                                                    className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" />
-                                            </div>
-                                        </div>
-
-                                        {/* Image */}
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Portfolio Image</label>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div className="md:col-span-2">
-                                                    <Input placeholder="HTTPS://..." value={newPortfolio.image} onChange={e => setNewPortfolio({ ...newPortfolio, image: e.target.value })}
-                                                        className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl text-[10px] font-black px-6" />
-                                                </div>
-                                                <div className="relative group cursor-pointer">
-                                                    <input type="file" accept="image/*" onChange={e => setSelectedFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                    <div className="h-14 border-2 border-dashed border-black/10 dark:border-white/5 rounded-2xl flex items-center justify-center gap-2 bg-white dark:bg-black/20 group-hover:border-neon-purple/30 transition-all">
-                                                        <Upload className="text-gray-500 group-hover:text-neon-purple" size={16} />
-                                                        <span className="text-[8px] font-black text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest">{selectedFile ? 'READY' : 'UPLOAD'}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Image Calibration */}
-                                            <div className="bg-white/[0.03] p-6 rounded-2xl border border-black/10 dark:border-white/5 space-y-5">
-                                                <div className="flex justify-between items-center mb-4">
-                                                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-neon-purple">Visual Calibration</h4>
-                                                    <button 
-                                                        type="button"
-                                                        onClick={() => setNewPortfolio({ 
-                                                            ...newPortfolio, 
-                                                            imageTransform: { scale: 1, x: 0, y: 0 } 
-                                                        })}
-                                                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 text-[8px] font-black uppercase tracking-widest text-gray-500 hover:text-neon-purple hover:bg-neon-purple/5 hover:border-neon-purple/20 transition-all"
-                                                    >
-                                                        <RotateCcw size={10} />
-                                                        Reset
-                                                    </button>
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                    {[
-                                                        { label: 'Scale', key: 'scale', min: -3, max: 3, step: 0.01, unit: 'x', format: v => v.toFixed(2) },
-                                                        { label: 'X-Pos', key: 'x', min: -100, max: 100, step: 1, unit: '%', format: v => v },
-                                                        { label: 'Y-Pos', key: 'y', min: -100, max: 100, step: 1, unit: '%', format: v => v },
-                                                    ].map(({ label, key, min, max, step, unit, format }) => (
-                                                        <div key={key} className="space-y-2">
-                                                            <div className="flex justify-between">
-                                                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{label}</span>
-                                                                <span className="text-[8px] font-black text-gray-900 dark:text-white">{format(newPortfolio.imageTransform?.[key] ?? (key === 'scale' ? 1 : 0))}{unit}</span>
-                                                            </div>
-                                                            <input type="range" min={min} max={max} step={step}
-                                                                value={newPortfolio.imageTransform?.[key] ?? (key === 'scale' ? 1 : 0)}
-                                                                onChange={e => setNewPortfolio({ ...newPortfolio, imageTransform: { ...newPortfolio.imageTransform, [key]: parseFloat(e.target.value) } })}
-                                                                className="w-full accent-neon-purple bg-black/10 dark:bg-white/10 h-1 rounded-full appearance-none cursor-pointer" />
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Reel URL */}
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Highlight Reel URL (Optional)</label>
-                                            <Input placeholder="HTTPS://WWW.INSTAGRAM.COM/NEWBI.LIVE/REEL/..." value={newPortfolio.highlightUrl || ''}
-                                                onChange={e => setNewPortfolio({ ...newPortfolio, highlightUrl: e.target.value })}
-                                                className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl text-[10px] font-black px-6" />
-                                        </div>
-
-                                        <div className="sticky bottom-0 z-50 bg-gray-100 dark:bg-zinc-900/90 backdrop-blur-xl p-4 md:p-8 -mx-4 md:-mx-8 -mb-4 md:-mb-8 rounded-b-[2.5rem] border-t border-black/10 dark:border-white/10 flex gap-4 mt-8">
-                                            <Button type="button" variant="outline" onClick={resetForms} className="h-14 px-8 flex-1 rounded-2xl border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 font-black uppercase tracking-widest text-[10px]">Abort</Button>
-                                            <Button type="submit" disabled={uploading} className="h-14 px-10 flex-[2] bg-neon-purple text-black font-black uppercase tracking-widest rounded-2xl shadow-xl text-[10px] hover:scale-105 active:scale-95 transition-all">
-                                                {uploading ? <Loader className="animate-spin mr-2" size={16} /> : (editingId ? 'UPDATE RECORD' : 'SAVE RECORD')}
-                                            </Button>
-                                        </div>
-                                    </form>
-                                </Card>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-
-                            {/* Live Preview */}
-                            <div className="lg:col-span-5 hidden lg:block lg:sticky lg:top-32">
-                                <LivePreview type="portfolio" categories={portfolioCategories}
-                                    data={{ ...newPortfolio, image: portfolioPreviewUrl }} />
+                {reordering ? (
+                    <Card className={cn('flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center', 'border-violet-500/40 bg-violet-500/[0.06] dark:border-violet-300/40 dark:bg-violet-400/[0.06]')}>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[15px] font-bold">Reorder the portfolio</p>
+                            <p className="text-[12px] text-gray-500">This is the order on the website. Each change saves right away.</p>
+                        </div>
+                        <Button variant="accent" onClick={() => setReordering(false)} className="h-11"><Check size={15} /> Done</Button>
+                    </Card>
+                ) : (
+                    <>
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                            <SearchInput value={search} onChange={setSearch} placeholder="Search projects" className="lg:w-80" />
+                            <div className="flex flex-1 items-center justify-end gap-2">
+                                <Button variant="secondary" onClick={() => { setReordering(true); setSearch(''); }} disabled={portfolio.length < 2} className="h-11"><ArrowUpDown size={14} /> Reorder</Button>
+                                <ExportMenu getSpec={exportSpec} />
+                                <ViewToggle value={view} onChange={setView} />
                             </div>
                         </div>
-                    ) : (
-                        /* ── Grid ── */
-                        <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                            {/* Stats + Filter bar */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
-                                <div className="flex items-center gap-6">
-                                    <div className="text-center">
-                                        <p className="text-3xl font-black text-gray-900 dark:text-white font-heading">{portfolio.length}</p>
-                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Total Records</p>
-                                    </div>
-                                    <div className="w-px h-10 bg-black/5 dark:bg-white/5" />
-                                    <div className="text-center">
-                                        <p className="text-3xl font-black text-neon-purple font-heading">{portfolioCategories.length}</p>
-                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Sectors</p>
-                                    </div>
-                                </div>
+                        <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+                            <SegmentedTabs
+                                value={category}
+                                onChange={setCategory}
+                                items={[
+                                    { value: 'all', label: 'All', count: counts.all },
+                                    ...categories.map(c => ({ value: c.id, label: c.label, count: counts[c.id] || 0 })),
+                                    ...(counts.none ? [{ value: 'none', label: 'No category', count: counts.none, highlight: true }] : []),
+                                ]}
+                            />
+                        </div>
+                    </>
+                )}
 
-                                {/* Category Filter */}
-                                <div className="flex gap-2 flex-wrap">
-                                    <button onClick={() => setFilterCategory('all')}
-                                        className={cn('px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all',
-                                            filterCategory === 'all' ? 'bg-white text-black border-white' : 'bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 border-black/10 dark:border-white/10 hover:text-gray-900 dark:hover:text-white')}>
-                                        All
-                                    </button>
-                                    {portfolioCategories.map(cat => (
-                                        <button key={cat.id} onClick={() => setFilterCategory(cat.id)}
-                                            className={cn('px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all',
-                                                filterCategory === cat.id ? 'bg-neon-purple text-black border-neon-purple' : 'bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 border-black/10 dark:border-white/10 hover:text-gray-900 dark:hover:text-white')}>
-                                            {cat.label}
+                {shown.length === 0 ? (
+                    <Card className="rounded-2xl">
+                        <EmptyState
+                            icon={Music}
+                            title={portfolio.length ? 'Nothing here' : 'No projects yet'}
+                            description={portfolio.length ? 'Try another category or search.' : categories.length ? 'Add your first past event. It shows on the home page under its category.' : 'Start by adding a category (like Music or Brands), then add projects.'}
+                            action={!portfolio.length && (categories.length
+                                ? <Button variant="accent" onClick={() => setEditor({})}><Plus size={14} /> New project</Button>
+                                : <Button variant="accent" onClick={() => setCategoriesOpen(true)}><Tags size={14} /> Add a category</Button>)}
+                        />
+                    </Card>
+                ) : reordering || view === 'list' ? (
+                    <Card className="overflow-hidden rounded-2xl">
+                        <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                            {shown.map((p, index) => {
+                                const label = labelFor(p.category);
+                                return (
+                                    <li key={p.id} className="flex items-center gap-3 px-3 py-2.5 sm:px-4">
+                                        {reordering && <span className="w-6 shrink-0 text-center text-[12px] font-bold tabular-nums text-gray-400">{index + 1}</span>}
+                                        {thumb(p, 'h-14 w-11 shrink-0 rounded-lg')}
+                                        <button type="button" onClick={() => setEditor({ item: p })} className="-my-2 min-w-0 flex-1 py-2 text-left">
+                                            <span className="flex flex-wrap items-center gap-2">
+                                                <span className="truncate text-[15px] font-bold">{p.title || 'Untitled'}</span>
+                                                {p.isPinned && <Badge tone="amber">Pinned</Badge>}
+                                                {!label && <Badge tone="red">Hidden</Badge>}
+                                            </span>
+                                            <span className="mt-0.5 block truncate text-[12px] text-gray-500">{[label || 'No category', p.sector, dateText(p), p.highlightUrl ? 'Reel' : null].filter(Boolean).join(' · ')}</span>
                                         </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                <AnimatePresence mode="popLayout">
-                                    {filtered.map((item, index) => (
-                                        <motion.div key={item.id} layout
-                                            initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.92 }}
-                                            transition={{ duration: 0.4 }}
-                                            className="group relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/5 hover:border-neon-purple/20 transition-all duration-500 shadow-[0_20px_60px_rgba(0,0,0,0.4)]"
-                                        >
-                                            {/* Image */}
-                                            <div className="absolute inset-0 z-0">
-                                                {item.image ? (
-                                                    <div className="absolute inset-0 bg-cover transition-transform duration-700 group-hover:scale-110"
-                                                        style={{
-                                                            backgroundImage: `url(${item.image})`,
-                                                            transform: `scale(${item.imageTransform?.scale || 1})`,
-                                                            backgroundPosition: `calc(50% + ${(item.imageTransform?.x || 0)}%) calc(50% + ${(item.imageTransform?.y || 0)}%)`
-                                                        }} />
-                                                ) : (
-                                                    <div className="absolute inset-0 flex items-center justify-center">
-                                                        <ImageIcon size={40} className="text-gray-800" />
-                                                    </div>
-                                                )}
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/10 z-10" />
-                                                <div className="absolute inset-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-                                                    style={{ background: 'radial-gradient(ellipse at bottom, rgba(168,85,247,0.07) 0%, transparent 70%)' }} />
+                                        {reordering ? (
+                                            <div className="flex shrink-0 items-center gap-1">
+                                                <Button size="sm" variant="secondary" onClick={() => move(p, -1)} disabled={busy || index === 0} aria-label="Move up" className="h-11 w-11 px-0"><ArrowUp size={16} /></Button>
+                                                <Button size="sm" variant="secondary" onClick={() => move(p, 1)} disabled={busy || index === shown.length - 1} aria-label="Move down" className="h-11 w-11 px-0"><ArrowDown size={16} /></Button>
                                             </div>
-
-                                            {/* Top toolbar — appears on hover */}
-                                            <div className="absolute top-5 left-5 right-5 z-30 flex justify-between items-center opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 transition-all duration-400">
-                                                <div className="flex gap-2">
-                                                    <button onClick={() => moveItem(index, 'up')} disabled={index === 0}
-                                                        className="w-9 h-9 rounded-xl bg-white dark:bg-black/70 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-neon-purple hover:text-black transition-all disabled:opacity-0">
-                                                        <ChevronUp size={16} />
-                                                    </button>
-                                                    <button onClick={() => moveItem(index, 'down')} disabled={index === portfolio.length - 1}
-                                                        className="w-9 h-9 rounded-xl bg-white dark:bg-black/70 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-neon-purple hover:text-black transition-all disabled:opacity-0">
-                                                        <ChevronDown size={16} />
-                                                    </button>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <button onClick={() => handleEdit(item)}
-                                                        className="w-9 h-9 rounded-xl bg-white dark:bg-black/70 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-neon-purple hover:text-black transition-all">
-                                                        <Edit size={16} />
-                                                    </button>
-                                                    <button onClick={() => deletePortfolioItem(item.id)}
-                                                        className="w-9 h-9 rounded-xl bg-white dark:bg-black/70 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-red-500 transition-all">
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Category badge */}
-                                            <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover:opacity-100 transition-all duration-400">
-                                                <span className="px-3 py-1.5 rounded-full bg-white dark:bg-black/60 backdrop-blur-md border border-neon-purple/20 text-[8px] font-black uppercase tracking-widest text-neon-purple whitespace-nowrap">
-                                                    {portfolioCategories.find(c => c.id === item.category)?.label || 'GENERAL'}
-                                                </span>
-                                            </div>
-
-                                            {/* Content slab */}
-                                            <div className="absolute inset-x-6 bottom-6 z-20 space-y-3">
-                                                <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase italic tracking-tight leading-tight group-hover:text-neon-purple transition-colors duration-500 line-clamp-2">
-                                                    {item.title}
-                                                </h3>
-                                                <div className="flex items-center justify-between">
-                                                    {item.date && (
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Clock size={10} className="text-gray-900 dark:text-white/30" />
-                                                            <span className="text-[9px] font-black text-gray-900 dark:text-white/40 uppercase tracking-widest">{item.date}</span>
-                                                        </div>
-                                                    )}
-                                                    {item.highlightUrl && (
-                                                        <span className="text-[9px] font-black text-neon-purple uppercase tracking-widest flex items-center gap-1">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-neon-purple animate-pulse" /> Reel
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
-
-                                {filtered.length === 0 && (
-                                    <div className="col-span-full py-32 flex flex-col items-center justify-center gap-6 bg-gray-100 dark:bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-black/10 dark:border-white/5">
-                                        <div className="w-16 h-16 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-700 animate-pulse">
-                                            <Music size={28} />
-                                        </div>
-                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em]">No portfolio records found.</p>
-                                        <Button onClick={() => setIsAdding(true)} className="h-12 px-10 bg-neon-purple text-black font-black uppercase tracking-widest rounded-2xl">
-                                            Add First Entry
-                                        </Button>
+                                        ) : actions(p)}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </Card>
+                ) : (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+                        {shown.map(p => {
+                            const label = labelFor(p.category);
+                            return (
+                                <Card key={p.id} className="group relative flex flex-col overflow-hidden rounded-2xl transition-colors hover:border-black/15 dark:hover:border-white/15">
+                                    <button type="button" onClick={() => setEditor({ item: p })} className="block text-left" aria-label={`Edit ${p.title || 'project'}`}>
+                                        {thumb(p, 'aspect-[4/5]')}
+                                    </button>
+                                    <div className="pointer-events-none absolute left-2 top-2 flex flex-wrap gap-1">
+                                        <Badge tone={label ? 'violet' : 'red'} className="bg-white/90 dark:bg-black/70">{label || 'Hidden'}</Badge>
+                                        {p.highlightUrl && <Badge tone="pink" className="bg-white/90 dark:bg-black/70"><PlayCircle size={10} /> Reel</Badge>}
                                     </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                                    <div className="flex items-start gap-1 p-3">
+                                        <button type="button" onClick={() => setEditor({ item: p })} className="-my-2 min-w-0 flex-1 py-2 text-left">
+                                            <p className="line-clamp-2 text-[14px] font-bold leading-snug">{p.title || 'Untitled'}</p>
+                                            <p className="mt-0.5 truncate text-[12px] text-gray-500">{[p.sector, dateText(p)].filter(Boolean).join(' · ') || ' '}</p>
+                                        </button>
+                                        {actions(p)}
+                                    </div>
+                                </Card>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
+
+            <PortfolioEditorSheet
+                open={Boolean(editor)}
+                onClose={() => setEditor(null)}
+                item={editor?.item || null}
+                categories={categories}
+                onManageCategories={() => setCategoriesOpen(true)}
+            />
+            <PortfolioCategoriesSheet open={categoriesOpen} onClose={() => setCategoriesOpen(false)} categories={categories} portfolio={portfolio} />
+
+            <ConfirmSheet open={Boolean(removing)} onClose={() => setRemoving(null)} title="Delete this project?" confirmLabel="Delete" busy={busy} onConfirm={remove}>
+                <p><span className="font-semibold text-gray-900 dark:text-white">{removing?.title || 'This project'}</span> will be removed from the home page portfolio. This can't be undone.</p>
+                {removing?.wasEvent ? <p>It was archived from a past event. Ticket orders for that event are kept.</p> : null}
+            </ConfirmSheet>
         </AdminCommunityHubLayout>
     );
 };

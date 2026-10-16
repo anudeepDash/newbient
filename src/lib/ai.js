@@ -32,6 +32,105 @@ export class NBError extends Error {
     }
 }
 
+// Plain errors for strict callers (AI studio). Strict calls never fall back to
+// a made-up document or to a keyless public AI service: they either return the
+// real answer or throw one of these, so the screen can say what went wrong.
+export const STRICT_ERRORS = {
+    SIGNED_OUT: { code: 'NB-401', message: "You're signed out. Sign in again to use AI." },
+    FORBIDDEN: { code: 'NB-403', message: "Your account doesn't have access to the AI tools." },
+    RATE_LIMITED: { code: 'NB-429', message: 'The AI is getting a lot of requests right now. Wait a minute and try again.' },
+    UNAVAILABLE: { code: 'NB-503', message: "The AI service isn't answering right now. Please try again in a minute." },
+    TIMEOUT: { code: 'NB-504', message: 'The AI took too long to answer. Try again, or shorten the brief.' },
+    TOO_LONG: { code: 'NB-413', message: 'That brief is too long for the AI. Remove some pasted text or attachments and try again.' },
+    OFFLINE: { code: 'NB-000', message: "Couldn't reach the AI service. Check your connection and try again." },
+    UNREADABLE: { code: 'NB-302', message: "The AI's answer came back incomplete. Please try again." },
+};
+
+const STRICT_TIMEOUT_MS = 100000;
+
+const abortError = () => {
+    const err = new Error('Cancelled');
+    err.name = 'AbortError';
+    return err;
+};
+
+/** One AbortSignal that fires on the caller's cancel or after `ms`. */
+const withTimeout = (signal, ms) => {
+    const controller = new AbortController();
+    let timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; controller.abort(); }, ms);
+    const onAbort = () => controller.abort();
+    if (signal) {
+        if (signal.aborted) controller.abort();
+        else signal.addEventListener('abort', onAbort, { once: true });
+    }
+    return {
+        signal: controller.signal,
+        timedOut: () => timedOut,
+        done: () => { clearTimeout(timer); signal?.removeEventListener?.('abort', onAbort); },
+    };
+};
+
+const setActiveModel = (provider) => {
+    let displayModel = 'Gemini Flash';
+    if (provider) {
+        if (provider.startsWith('gemini-')) {
+            displayModel = provider.replace('gemini-', '').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        } else if (provider.startsWith('openrouter')) {
+            displayModel = `OpenRouter (${provider.replace('openrouter-', '')})`;
+        } else {
+            displayModel = provider;
+        }
+    }
+    try { useStore.setState({ activeModel: displayModel }); } catch { /* store not ready */ }
+};
+
+/** Strict path: our own /api/ai only, with cancel, timeout and clear errors. */
+const executeAIStrict = async (systemPrompt, userPrompt, { signal } = {}) => {
+    if (signal?.aborted) throw abortError();
+    let user = auth.currentUser;
+    if (!user) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        user = auth.currentUser;
+    }
+    if (!user) throw new NBError(STRICT_ERRORS.SIGNED_OUT);
+    const token = await user.getIdToken();
+
+    const t = withTimeout(signal, STRICT_TIMEOUT_MS);
+    let response;
+    try {
+        response = await fetch('/api/ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ systemPrompt, userPrompt, strict: true, type: systemPrompt.includes('proposal') ? 'proposal' : 'generic' }),
+            signal: t.signal,
+        });
+    } catch (e) {
+        t.done();
+        if (signal?.aborted) throw abortError();
+        if (t.timedOut()) throw new NBError(STRICT_ERRORS.TIMEOUT);
+        throw new NBError(STRICT_ERRORS.OFFLINE, e?.message);
+    }
+
+    let data = null;
+    try { data = await response.json(); } catch { data = null; }
+    t.done();
+    if (signal?.aborted) throw abortError();
+
+    if (response.ok && typeof data?.content === 'string' && data.content.trim()) {
+        setActiveModel(data.provider);
+        return data.content;
+    }
+    const raw = data?.error || response.statusText;
+    if (response.status === 401) throw new NBError(STRICT_ERRORS.SIGNED_OUT, raw);
+    if (response.status === 403) throw new NBError(STRICT_ERRORS.FORBIDDEN, raw);
+    if (response.status === 413) throw new NBError(STRICT_ERRORS.TOO_LONG, raw);
+    if (response.status === 429) throw new NBError(STRICT_ERRORS.RATE_LIMITED, raw);
+    if (response.status === 504) throw new NBError(STRICT_ERRORS.TIMEOUT, raw);
+    if (response.ok) throw new NBError(STRICT_ERRORS.UNREADABLE, raw);
+    throw new NBError(STRICT_ERRORS.UNAVAILABLE, raw);
+};
+
 // ── Master Orchestrator (Backend Proxy Migration) ────────────────────────
 const executeAIPulse = async (systemPrompt, userPrompt) => {
     try {
@@ -587,7 +686,30 @@ RULES:
  * Generate a complete document from a natural language prompt.
  * Primary: Gemini 2.0 Flash (via Proxy) | Fallback: Mock
  */
+/** Applies the same clean-up to a parsed AI document as the generators expect. */
+const tidyParsed = (type, parsed) => {
+    if (parsed.items) {
+        parsed.items = parsed.items.map(item => ({ ...item, qty: Number(item.qty) || 1, price: Number(item.price) || 0 }));
+    }
+    if ((type === 'agreement' || type === 'contract') && parsed.clauses) {
+        parsed.clauses = parsed.clauses.map(c => ({ ...c, isActive: c.isActive !== false }));
+        if (parsed.parties?.firstParty) parsed.parties.firstParty.name = parsed.parties.firstParty.name || 'Newbi Entertainment';
+    }
+    return parsed;
+};
+
+const parseStrict = (raw) => {
+    try {
+        const parsed = finalExtract(raw);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('not an object');
+        return parsed;
+    } catch {
+        throw new NBError(STRICT_ERRORS.UNREADABLE);
+    }
+};
+
 export const generateFullDocument = async (type, prompt, tone = 'Premium', config = {}) => {
+    if (config?.strict) return generateFullDocumentStrict(type, prompt, tone, config);
     if (!SYSTEM_PROMPTS[type]) {
         throw new NBError(ERROR_CODES.UNSUPPORTED_TYPE, `Type: ${type}`);
     }
@@ -655,7 +777,46 @@ CRITICAL: Every field must have specific, relevant content based on the request.
 /**
  * Refine an existing document based on a conversational prompt.
  */
-export const reviseDocument = async (currentData, revisionPrompt, tone = 'Premium') => {
+/**
+ * Strict generation (pass `{ strict: true, signal }` as config): no mock or
+ * public fallback; throws NBError (or AbortError on cancel) instead.
+ */
+const generateFullDocumentStrict = async (type, prompt, tone = 'Premium', { signal } = {}) => {
+    if (!SYSTEM_PROMPTS[type]) throw new NBError(ERROR_CODES.UNSUPPORTED_TYPE, `Type: ${type}`);
+    if (!prompt || prompt.trim().length < 5) throw new NBError(ERROR_CODES.EMPTY_PROMPT);
+
+    const userPrompt = `Generate a ${type} document for this request:
+
+"${prompt}"
+
+Tone: ${tone}
+Date: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+
+Return ONLY a valid JSON object matching this schema:
+${JSON.stringify(SCHEMAS[type], null, 2)}
+
+CRITICAL: Every field must have specific, relevant content based on the request. No placeholders. Arrays must have multiple items. Numbers must be actual numbers.`;
+
+    const raw = await executeAIStrict(SYSTEM_PROMPTS[type], userPrompt, { signal });
+    const parsed = tidyParsed(type, parseStrict(raw));
+    return (type === 'proposal' || type === 'bulk_proposal') ? parsed : stripHTML(parsed);
+};
+
+export const reviseDocument = async (currentData, revisionPrompt, tone = 'Premium', options = {}) => {
+    if (options?.strict) {
+        if (!currentData || !revisionPrompt || revisionPrompt.trim().length < 2) throw new NBError(ERROR_CODES.EMPTY_PROMPT, 'Invalid revision data');
+        const userPrompt = `Here is the current document in JSON format:
+${JSON.stringify(currentData, null, 2)}
+
+Instruction: "${revisionPrompt}"
+Tone: ${tone}
+
+Please apply the instruction to the document and return ONLY the updated JSON.`;
+        const raw = await executeAIStrict(SYSTEM_PROMPTS.revision, userPrompt, { signal: options.signal });
+        const parsed = parseStrict(raw);
+        if (parsed.items) parsed.items = parsed.items.map(item => ({ ...item, qty: Number(item.qty) || 1, price: Number(item.price) || 0 }));
+        return options.keepFormatting ? parsed : stripHTML(parsed);
+    }
     if (!currentData || !revisionPrompt || revisionPrompt.trim().length < 2) {
         throw new NBError(ERROR_CODES.EMPTY_PROMPT, 'Invalid revision data');
     }

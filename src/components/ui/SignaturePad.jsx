@@ -79,7 +79,7 @@ const SignaturePad = ({ onSave, onClear }) => {
 
     return (
         <div className="space-y-4">
-            <div className="relative bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 hover:border-neon-green/30 rounded-2xl overflow-hidden shadow-inner cursor-crosshair transition-all">
+            <div className="relative bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 hover:border-emerald-500/40 rounded-2xl overflow-hidden shadow-inner cursor-crosshair transition-all">
                 <canvas
                     ref={canvasRef}
                     width={500}
@@ -95,7 +95,7 @@ const SignaturePad = ({ onSave, onClear }) => {
                 />
                 {!hasContent && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <p className="text-gray-700 dark:text-gray-300 text-sm font-bold uppercase tracking-widest italic">Sign Here</p>
+                        <p className="text-[14px] font-semibold text-gray-400 dark:text-gray-500">Sign here with your finger or mouse</p>
                     </div>
                 )}
             </div>
@@ -103,7 +103,7 @@ const SignaturePad = ({ onSave, onClear }) => {
             <div className="flex gap-3">
                 <button 
                     onClick={clear}
-                    className="w-full h-10 sm:h-12 bg-gray-100 dark:bg-zinc-900 text-gray-900 dark:text-white rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all"
+                    className="w-full h-10 sm:h-12 bg-gray-100 dark:bg-zinc-900 text-gray-900 dark:text-white rounded-xl flex items-center justify-center gap-2 text-[13px] font-semibold hover:bg-zinc-800 transition-all"
                 >
                     <Eraser size={14} /> Clear Drawing
                 </button>

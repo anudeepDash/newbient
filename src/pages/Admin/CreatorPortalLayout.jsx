@@ -9,24 +9,26 @@ import Star from 'lucide-react/dist/esm/icons/star';
 import Target from 'lucide-react/dist/esm/icons/target';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import Settings from 'lucide-react/dist/esm/icons/settings';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import Inbox from 'lucide-react/dist/esm/icons/inbox';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { StatTile } from '../../components/admin/creatorPortal/ui';
-import { isPendingCreator, isOpenCampaign, countPendingSubmissions } from '../../components/admin/creatorPortal/creatorUtils';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import { useAccent } from '../../components/admin/theme';
+import { cn } from '../../lib/utils';
+import { isPendingCreator, countPendingSubmissions } from '../../components/admin/creatorPortal/creatorUtils';
+import { indexApplicants } from '../../components/admin/campaigns/campaignModel';
 
 // Unique key per section so switching tabs cross-fades like the rest of admin.
 const getSection = (pathname) => {
     if (pathname.startsWith('/admin/campaigns')) return 'campaigns';
     if (pathname.startsWith('/admin/creators/leaderboard')) return 'leaderboard';
     if (pathname.startsWith('/admin/creators/settings')) return 'settings';
+    if (pathname.startsWith('/admin/creators/groups')) return 'groups';
     return 'creators';
 };
 
 const CreatorPortalLayout = () => {
     useStoreSubscription(['creators', 'campaigns']);
     const location = useLocation();
+    const a = useAccent();
     const creators = useStore(state => state.creators);
     const campaigns = useStore(state => state.campaigns);
 
@@ -35,29 +37,28 @@ const CreatorPortalLayout = () => {
         import('./CampaignManager');
         import('./CreatorSettingsPage');
         import('./CreatorManager');
+        import('./CreatorGroupsPage');
     }, []);
 
     const stats = useMemo(() => {
         const list = creators || [];
         const camps = campaigns || [];
+        // Same count as the campaigns screens: per applicant, per task.
+        const byCampaign = indexApplicants(list);
         return {
-            creators: list.length,
-            verified: list.filter(c => c.profileStatus === 'approved').length,
             pending: list.filter(isPendingCreator).length,
-            openCampaigns: camps.filter(isOpenCampaign).length,
-            campaigns: camps.length,
-            submissions: camps.reduce((acc, c) => acc + countPendingSubmissions(c), 0),
+            submissions: camps.reduce((acc, c) => acc + countPendingSubmissions(c, byCampaign.get(c.id) || []), 0),
         };
     }, [creators, campaigns]);
 
     const section = getSection(location.pathname);
-    // Focused screens (a single campaign, the editor) skip the summary strip.
-    const isFocusedScreen = /^\/admin\/campaigns\/(create|edit|manage)/.test(location.pathname);
-    const showSummary = !isFocusedScreen && (section === 'creators' || section === 'campaigns');
+    // The creators list and the campaigns list each have their own KPI tiles
+    // (they filter the list), so the portal adds no summary strip of its own.
 
     const tabs = useMemo(() => [
         { name: 'Creators', path: '/admin/creators', icon: Star, badge: stats.pending > 0 ? stats.pending : null },
         { name: 'Campaigns', path: '/admin/campaigns', icon: Target, badge: stats.submissions > 0 ? stats.submissions : null },
+        { name: 'Groups', path: '/admin/creators/groups', icon: MessageCircle },
         { name: 'Leaderboard', path: '/admin/creators/leaderboard', icon: Trophy },
         { name: 'Settings', path: '/admin/creators/settings', icon: Settings },
     ], [stats.pending, stats.submissions]);
@@ -65,50 +66,12 @@ const CreatorPortalLayout = () => {
     return (
         <AdminCommunityHubLayout
             studioHeader={{
-                title: 'CREATOR',
-                subtitle: 'PORTAL',
+                title: 'Creators',
                 icon: Users,
-                accentClass: 'text-neon-pink'
+                description: 'Roster, campaigns, city groups and referrals',
             }}
-            accentColor="neon-pink"
             tabs={tabs}
         >
-            {showSummary && (
-                <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    <StatTile
-                        label="Creator roster"
-                        value={stats.creators.toLocaleString()}
-                        hint={`${stats.verified.toLocaleString()} verified`}
-                        icon={Users}
-                        to="/admin/creators"
-                    />
-                    <StatTile
-                        label="Pending verification"
-                        value={stats.pending.toLocaleString()}
-                        hint={stats.pending ? 'Awaiting review' : 'All clear'}
-                        icon={Clock}
-                        tone={stats.pending ? 'amber' : 'gray'}
-                        to="/admin/creators?status=pending"
-                    />
-                    <StatTile
-                        label="Active campaigns"
-                        value={stats.openCampaigns.toLocaleString()}
-                        hint={`${stats.campaigns.toLocaleString()} total`}
-                        icon={Zap}
-                        tone="green"
-                        to="/admin/campaigns?status=open"
-                    />
-                    <StatTile
-                        label="Pending review"
-                        value={stats.submissions.toLocaleString()}
-                        hint="Task submissions"
-                        icon={Inbox}
-                        tone={stats.submissions ? 'amber' : 'gray'}
-                        to="/admin/campaigns?status=review"
-                    />
-                </div>
-            )}
-
             <AnimatePresence mode="wait">
                 <motion.div
                     key={section}
@@ -119,7 +82,7 @@ const CreatorPortalLayout = () => {
                 >
                     <Suspense fallback={
                         <div className="flex items-center justify-center py-24">
-                            <LoadingSpinner size="md" color="#FF007F" />
+                            <Loader2 size={22} className={cn('animate-spin', a.text)} />
                         </div>
                     }>
                         <Outlet />

@@ -1,452 +1,700 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import QrCode from 'lucide-react/dist/esm/icons/qr-code';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import ScanLine from 'lucide-react/dist/esm/icons/scan-line';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import XCircle from 'lucide-react/dist/esm/icons/x-circle';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
-import ScanLine from 'lucide-react/dist/esm/icons/scan-line';
-import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
-import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
-import Users from 'lucide-react/dist/esm/icons/users';
-import Search from 'lucide-react/dist/esm/icons/search';
-import Maximize from 'lucide-react/dist/esm/icons/maximize';
-import Ticket from 'lucide-react/dist/esm/icons/ticket';
+import WifiOff from 'lucide-react/dist/esm/icons/wifi-off';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
-import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import Flashlight from 'lucide-react/dist/esm/icons/flashlight';
+import SwitchCamera from 'lucide-react/dist/esm/icons/switch-camera';
+import Volume2 from 'lucide-react/dist/esm/icons/volume-2';
+import VolumeX from 'lucide-react/dist/esm/icons/volume-x';
+import History from 'lucide-react/dist/esm/icons/history';
+import Search from 'lucide-react/dist/esm/icons/search';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Settings2 from 'lucide-react/dist/esm/icons/settings-2';
+import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
+import CameraOff from 'lucide-react/dist/esm/icons/camera-off';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { cn } from '../../lib/utils';
-import { Html5Qrcode } from 'html5-qrcode';
+import { SOLD_STATUSES, orderTicketCount, isOrderCheckedIn, isGuestAdmissible } from '../../lib/ticketing';
+import Sheet from '../../components/admin/Sheet';
+import { Toggle } from '../../components/admin/uploads/UploadKit';
+import { useOperationalEvents, useGuestEntries, hasGuestlist } from '../../components/admin/ticketing/events';
+import { formatEventDate } from '../../components/admin/ticketing/format';
+import { scanFeedback, unlockScanAudio } from '../../components/admin/events/scanFeedback';
 
-const EventScanner = () => {
-    useStoreSubscription(['upcomingEvents', 'portfolio', 'guestlists']);
-    const { upcomingEvents, portfolio = [], guestlists = [], scanTicket, user } = useStore();
-    const [searchParams] = useSearchParams();
-    const eventIdFromUrl = searchParams.get('eventId');
+/*
+ * The gate scanner: a full-screen page for a phone at the door, built for the
+ * dark. Camera first, a big colour result for every scan (green = let in,
+ * amber = already used, red = not valid), sound and vibration, manual entry,
+ * recent scans, and scans made without signal are kept and sent later.
+ * Check-ins go through store.scanTicket (Firestore transactions).
+ */
 
-    const allOperationalEvents = [
-        ...(upcomingEvents?.filter(e => e.isTicketed || e.isGuestlistEnabled) || []),
-        ...(portfolio?.filter(p => p.wasEvent && (p.isTicketed || p.isGuestlistEnabled)) || []),
-        ...(guestlists || []).map(g => ({ ...g, isGuestlist: true }))
-    ].sort((a, b) => new Date(b.date) - new Date(a.date));
+const SHEET_Z = 600;
+const HOUR = 3600000;
 
-    const navigate = useNavigate();
-    const [selectedEventId, setSelectedEventId] = useState(eventIdFromUrl || '');
-    const [scanResult, setScanResult] = useState(null); // { status: 'GREEN'|'RED'|'YELLOW', message: '', data: {} }
-    const [isScanning, setIsScanning] = useState(false);
-    const [manualCode, setManualCode] = useState('');
+// ── small persistence helpers (per browser; never required) ──
+const readJson = (key, fallback) => {
+    try { const v = window.localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+};
+const writeJson = (key, value) => {
+    try { window.localStorage.setItem(key, JSON.stringify(value)); } catch { /* private mode */ }
+};
 
-    const [facingMode, setFacingMode] = useState("environment");
-    const scannerRef = useRef(null);
-    const isTransitioning = useRef(false);
+const DEFAULT_PREFS = { sound: true, vibrate: true, autoNext: true };
 
-    const activeEvent = allOperationalEvents.find(e => e.id === selectedEventId);
+const withTimeout = (promise, ms) => new Promise((resolve, reject) => {
+    const t = setTimeout(() => { const e = new Error('timeout'); e.network = true; reject(e); }, ms);
+    promise.then(v => { clearTimeout(t); resolve(v); }, e => { clearTimeout(t); reject(e); });
+});
 
-    useEffect(() => {
-        let mounted = true;
-        let localScanner = null;
+const isNetworkError = (err) => Boolean(
+    err?.network
+    || (typeof navigator !== 'undefined' && navigator.onLine === false)
+    || err?.code === 'unavailable'
+    || /offline|network|failed to fetch/i.test(String(err?.message || err))
+);
 
-        const cleanupScanner = async () => {
-            if (scannerRef.current) {
-                const scanner = scannerRef.current;
-                scannerRef.current = null;
-                try {
-                    if (scanner.isScanning) {
-                        await scanner.stop();
-                    }
-                    try {
-                        scanner.clear();
-                    } catch (clearErr) {
-                        // ignore if element already unmounted
-                    }
-                } catch (e) {
-                    console.error("Error during scanner cleanup:", e);
-                }
-            }
+// Same reading as store.scanTicket, for offline look-ups.
+const refFromCode = (raw) => {
+    let text = String(raw || '').trim();
+    for (let i = 0; i < 2; i++) { try { text = decodeURIComponent(text); } catch { break; } }
+    try { const o = JSON.parse(text); if (o?.ref) return String(o.ref).toUpperCase(); } catch { /* not JSON */ }
+    const m = text.toUpperCase().match(/\b(?:NB|GL)-[A-Z0-9]{3,12}\b/);
+    return m ? m[0] : text.toUpperCase().replace(/\s+/g, '');
+};
+
+const timeOf = (iso) => {
+    const d = iso ? new Date(iso) : null;
+    return d && !isNaN(d) ? d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '';
+};
+
+// What each outcome looks like.
+const LOOK = {
+    admitted: { bg: 'bg-emerald-600', icon: CheckCircle2, title: 'Let them in', feedback: 'good' },
+    already: { bg: 'bg-amber-400', fg: 'text-gray-950', icon: AlertTriangle, title: 'Already checked in', feedback: 'warn' },
+    unpaid: { bg: 'bg-red-600', icon: XCircle, title: 'Payment not verified', feedback: 'bad' },
+    pending: { bg: 'bg-red-600', icon: XCircle, title: 'Not approved yet', feedback: 'bad' },
+    rejected: { bg: 'bg-red-600', icon: XCircle, title: 'Not valid', feedback: 'bad' },
+    wrong_event: { bg: 'bg-red-600', icon: XCircle, title: 'Wrong event', feedback: 'bad' },
+    not_found: { bg: 'bg-red-600', icon: XCircle, title: 'Code not found', feedback: 'bad' },
+    offline: { bg: 'bg-sky-600', icon: WifiOff, title: 'No connection', feedback: 'info' },
+    error: { bg: 'bg-zinc-700', icon: AlertTriangle, title: "Couldn't check", feedback: 'bad' },
+};
+
+const HINTS = {
+    unpaid: 'Ask them to wait while someone verifies the payment in Ticketing.',
+    pending: 'Their guestlist request is still waiting for approval.',
+    not_found: 'Check the code, or find them by name on the check-in desk.',
+    offline: "Saved on this phone and sent when you're back online.",
+    error: 'Something went wrong. Try again in a moment.',
+};
+
+const recentTone = (reason) => (reason === 'admitted' ? 'bg-emerald-500' : reason === 'already' ? 'bg-amber-400' : reason === 'offline' ? 'bg-sky-500' : 'bg-red-500');
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const EventPicker = ({ events, onPick, onBack }) => {
+    const [q, setQ] = useState('');
+    const [showPast, setShowPast] = useState(false);
+    const now = Date.now();
+    const { soon, past } = useMemo(() => {
+        const query = q.trim().toLowerCase();
+        const list = events.filter(e => !query || [e.title, e.location].some(v => String(v || '').toLowerCase().includes(query)));
+        const isPast = (e) => e.when && e.when.getTime() < now - 12 * HOUR;
+        return {
+            soon: list.filter(e => !isPast(e)).sort((a, b) => (a.when?.getTime() ?? Infinity) - (b.when?.getTime() ?? Infinity)),
+            past: list.filter(isPast).sort((a, b) => b.when.getTime() - a.when.getTime()),
         };
+    }, [events, q, now]);
 
-        const initScanner = async () => {
-            await cleanupScanner();
-
-            if (!mounted || !isScanning || !selectedEventId) return;
-
-            // Wait for DOM to register the #reader element
-            await new Promise(resolve => setTimeout(resolve, 80));
-            if (!mounted) return;
-
-            const readerEl = document.getElementById("reader");
-            if (!readerEl) {
-                console.error("Reader element not found in DOM");
-                return;
-            }
-
-            try {
-                localScanner = new Html5Qrcode("reader");
-                scannerRef.current = localScanner;
-
-                await localScanner.start(
-                    { facingMode: facingMode },
-                    { fps: 10 },
-                    handleScanSuccess,
-                    handleScanFailure
-                );
-            } catch (err) {
-                console.warn("Failed to start scanner with facingMode:", facingMode, err);
-                if (mounted && localScanner) {
-                    try {
-                        const fallbackMode = facingMode === "environment" ? "user" : "environment";
-                        console.log("Attempting fallback facingMode:", fallbackMode);
-                        await localScanner.start(
-                            { facingMode: fallbackMode },
-                            { fps: 10 },
-                            handleScanSuccess,
-                            handleScanFailure
-                        );
-                        setFacingMode(fallbackMode);
-                    } catch (fallbackErr) {
-                        console.error("Fallback scanner start failed:", fallbackErr);
-                    }
-                }
-            }
-        };
-
-        initScanner();
-
-        return () => {
-            mounted = false;
-            cleanupScanner();
-        };
-    }, [isScanning, selectedEventId, facingMode]);
-
-    const toggleCamera = () => {
-        if (!scannerRef.current) return;
-        const newMode = facingMode === "environment" ? "user" : "environment";
-        setFacingMode(newMode);
-    };
-
-    const handleScanSuccess = async (decodedText, decodedResult) => {
-        setIsScanning(false);
-        processTicket(decodedText);
-    };
-
-    const handleScanFailure = (error) => {
-        // Ignore
-    };
-
-    const processTicket = async (code) => {
-        setScanResult(null);
-        try {
-            const result = await scanTicket(selectedEventId, code);
-            
-            if (result.valid && !result.scanned) {
-                setScanResult({ status: 'GREEN', message: 'ENTRY GRANTED', data: result.data });
-            } else if (result.valid && result.scanned) {
-                setScanResult({ status: 'YELLOW', message: 'ALREADY SCANNED', data: result.data });
-            } else {
-                setScanResult({ status: 'RED', message: result.message || 'INVALID PASS', data: null });
-            }
-        } catch (error) {
-            setScanResult({ status: 'RED', message: 'SYSTEM ERROR', data: null });
-        }
-    };
-
-    const handleManualSubmit = (e) => {
-        e.preventDefault();
-        if (manualCode) processTicket(manualCode);
-    };
-
-    const handleBack = () => {
-        if (user?.role === 'scanner') {
-            navigate('/');
-        } else {
-            navigate('/admin');
-        }
+    const row = (e) => {
+        const today = e.when && Math.abs(e.when.getTime() - now) < 18 * HOUR;
+        return (
+            <li key={e.id}>
+                <button type="button" onClick={() => onPick(e.id)} className="flex min-h-[72px] w-full items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.04] p-3 text-left active:bg-white/[0.08]">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-teal-400/15 text-teal-300">
+                        {e.image ? <img src={e.hubImage || e.image} alt="" className="h-full w-full object-cover" /> : e.isTicketed ? <ScanLine size={20} /> : <ListChecks size={20} />}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[16px] font-bold">{e.title || 'Untitled event'}</span>
+                        <span className="mt-0.5 flex items-center gap-1.5 truncate text-[13px] text-zinc-400"><Calendar size={12} /> {formatEventDate(e.when)}</span>
+                    </span>
+                    {today && <span className="shrink-0 rounded-full bg-teal-400 px-2 py-0.5 text-[12px] font-bold text-black">Today</span>}
+                    <ChevronRight size={18} className="shrink-0 text-zinc-500" />
+                </button>
+            </li>
+        );
     };
 
     return (
-        <div className="fixed inset-0 bg-[#0B0F17] text-gray-900 dark:text-white font-['Outfit'] overflow-hidden flex flex-col z-[9999]">
-            {/* Ambient Background Glows */}
-            <div className={cn(
-                "absolute inset-0 opacity-30 blur-[200px] transition-all duration-1000 pointer-events-none",
-                scanResult?.status === 'GREEN' ? "bg-neon-green" :
-                scanResult?.status === 'RED' ? "bg-red-500" :
-                scanResult?.status === 'YELLOW' ? "bg-yellow-500" :
-                "bg-neon-blue/20"
-            )} />
-
-            {/* Header */}
-            <div className="h-16 md:h-24 bg-white dark:bg-black/40 backdrop-blur-3xl border-b border-black/10 dark:border-white/10 flex items-center justify-between px-4 md:px-10 shrink-0 z-50">
-                <button onClick={handleBack} className="flex items-center gap-2 md:gap-3 px-3 md:px-5 py-2 md:py-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-xl md:rounded-2xl border border-black/10 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all group">
-                    <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
-                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Back</span>
-                </button>
-                <div className="flex items-center gap-3 md:gap-4">
-                    {selectedEventId && (
-                        <button 
-                            onClick={() => { setSelectedEventId(''); setIsScanning(false); setScanResult(null); }}
-                            className="md:hidden px-3 py-1.5 bg-neon-blue/10 border border-neon-blue/20 text-neon-blue text-[9px] font-black uppercase tracking-widest rounded-xl"
-                        >
-                            Change Event
-                        </button>
+        <div className="fixed inset-0 z-[500] flex h-dvh flex-col bg-[#07080b] font-heading text-white">
+            <header className="flex shrink-0 items-center gap-2 border-b border-white/[0.08] px-3 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+                <button type="button" onClick={onBack} className="flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.08]" aria-label="Back"><ArrowLeft size={20} /></button>
+                <div className="min-w-0">
+                    <h1 className="text-[18px] font-extrabold">Gate scanner</h1>
+                    <p className="text-[13px] text-zinc-400">Pick the event you're checking in</p>
+                </div>
+            </header>
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-4">
+                <div className="mx-auto max-w-lg space-y-4">
+                    <label className="relative block">
+                        <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+                        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search events" type="search"
+                            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] pl-11 pr-4 text-[15px] font-semibold text-white outline-none placeholder:text-zinc-500 focus:border-teal-300/60" />
+                    </label>
+                    {soon.length === 0 && past.length === 0 ? (
+                        <div className="py-16 text-center">
+                            <p className="text-[16px] font-bold">No events to scan</p>
+                            <p className="mt-1 text-[13px] text-zinc-400">Events with tickets or a guestlist show up here.</p>
+                        </div>
+                    ) : (
+                        <>
+                            <ul className="space-y-2">{soon.map(row)}</ul>
+                            {soon.length === 0 && <p className="py-4 text-center text-[13px] text-zinc-400">Nothing coming up.</p>}
+                            {past.length > 0 && (
+                                <div>
+                                    <button type="button" onClick={() => setShowPast(v => !v)} className="h-11 text-[14px] font-semibold text-zinc-400">
+                                        {showPast ? 'Hide past events' : `Past events (${past.length})`}
+                                    </button>
+                                    {showPast && <ul className="space-y-2">{past.map(row)}</ul>}
+                                </div>
+                            )}
+                        </>
                     )}
-                    <div className="flex items-center gap-2 md:gap-4 bg-white dark:bg-black/60 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl border border-black/10 dark:border-white/10 shadow-2xl">
-                        <div className={cn(
-                            "w-1.5 h-1.5 md:w-2 md:h-2 rounded-full animate-pulse",
-                            isScanning ? "bg-neon-green shadow-[0_0_10px_#39FF14]" : "bg-gray-500"
-                        )} />
-                        <span className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-gray-900 dark:text-white">Scanner</span>
-                    </div>
                 </div>
             </div>
+        </div>
+    );
+};
 
-            <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative z-10">
-                {/* Configuration Sidebar */}
-                <div className={cn(
-                    "w-full md:w-96 bg-white dark:bg-black/60 backdrop-blur-2xl border-r border-black/10 dark:border-white/10 p-4 md:p-8 flex-col gap-6 shrink-0 overflow-y-auto custom-scrollbar z-20",
-                    selectedEventId ? "hidden md:flex" : "flex"
-                )}>
-                    
-                    {/* Active Protocol Details */}
-                    {activeEvent && (
-                        <div className="bg-gradient-to-b from-neon-blue/10 to-transparent border border-neon-blue/20 rounded-[2rem] p-6 space-y-4 relative overflow-hidden group shadow-[0_0_30px_rgba(0,180,255,0.1)]">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-neon-blue/20 rounded-full blur-[50px] group-hover:bg-neon-blue/30 transition-all" />
-                            
-                            <div className="relative z-10">
-                                <h4 className="text-[9px] font-bold text-neon-blue uppercase tracking-[0.3em] mb-2 flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-neon-blue animate-pulse" /> Active Protocol
-                                </h4>
-                                <p className="text-2xl font-extrabold tracking-tight leading-none">{activeEvent.title}</p>
-                                <p className="text-[10px] text-gray-600 dark:text-gray-400 font-bold uppercase tracking-widest mt-2">{new Date(activeEvent.date).toLocaleDateString()}</p>
-                            </div>
-                        </div>
-                    )}
+// ─────────────────────────────────────────────────────────────────────────────
 
-                    {/* Event Selection List */}
-                    <div className="flex-1 flex flex-col gap-3 min-h-[300px]">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Target Event</label>
-                        <div className="flex flex-col gap-3">
-                            {allOperationalEvents.map(e => (
-                                <button 
-                                    key={e.id}
-                                    onClick={() => { setSelectedEventId(e.id); setIsScanning(false); setScanResult(null); }}
-                                    className={cn(
-                                        "p-4 rounded-2xl border text-left transition-all relative overflow-hidden",
-                                        selectedEventId === e.id 
-                                            ? "bg-black/10 dark:bg-white/10 border-black/20 dark:border-white/20 shadow-xl" 
-                                            : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 hover:bg-black/10 dark:hover:bg-white/10"
-                                    )}
-                                >
-                                    <div className="flex items-center justify-between gap-2">
-                                        <h4 className={cn(
-                                            "text-sm font-extrabold tracking-tight truncate",
-                                            selectedEventId === e.id ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400"
-                                        )}>{e.title}</h4>
-                                        {e.date && new Date(e.date) < new Date() && (
-                                            <span className="shrink-0 text-[7px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">Past</span>
-                                        )}
-                                    </div>
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500 mt-1">{new Date(e.date).toLocaleDateString()}</p>
-                                    
-                                    {selectedEventId === e.id && (
-                                        <div className="absolute top-0 bottom-0 left-0 w-1 bg-white" />
-                                    )}
-                                </button>
+const ResultScreen = ({ result, autoNext, onNext, onRetry }) => {
+    const look = LOOK[result.reason] || LOOK.error;
+    const Icon = look.icon;
+    const d = result.data || {};
+    const people = d.people || d.guestsCount || 1;
+    const items = Array.isArray(d.items) ? d.items.filter(i => i.count > 0) : [];
+    const timed = autoNext && result.reason === 'admitted';
+
+    let detail = null;
+    if (result.reason === 'admitted') detail = items.length ? items.map(i => `${i.count}× ${i.name}`).join(' · ') : d.type;
+    else if (result.reason === 'already') detail = d.previousAt ? `First scanned at ${timeOf(d.previousAt)}` : 'This pass was used before.';
+    else if (result.reason === 'offline') {
+        detail = d.local === 'valid' ? `Looks valid for ${d.name}${people > 1 ? ` (${people} people)` : ''}. Only let them in if you're sure.`
+            : d.local === 'used' ? `${d.name} was already checked in.`
+                : d.local === 'invalid' ? `${d.name}'s pass isn't valid yet.`
+                    : 'This code isn\'t in the list saved on this phone.';
+    } else detail = result.message;
+
+    return (
+        <div className={cn('absolute inset-0 z-30 flex flex-col', look.bg, look.fg || 'text-white')} role="alert" aria-live="assertive">
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 overflow-y-auto px-6 pt-[env(safe-area-inset-top)] text-center">
+                <Icon size={96} strokeWidth={2.2} />
+                <h2 className="text-[34px] font-extrabold leading-tight">{look.title}</h2>
+                {d.name && <p className="max-w-full break-words text-[26px] font-bold leading-snug">{d.name}</p>}
+                {(result.reason === 'admitted' || result.reason === 'already' || (result.reason === 'offline' && d.local === 'valid')) && (
+                    <p className="flex items-center gap-2 rounded-full bg-black/20 px-5 py-2 text-[22px] font-extrabold">
+                        <Users size={22} /> {people === 1 ? '1 person' : `${people} people`}
+                    </p>
+                )}
+                {detail && <p className="max-w-md text-[17px] font-semibold leading-snug opacity-90">{detail}</p>}
+                {Array.isArray(d.plusOneNames) && d.plusOneNames.length > 0 && result.reason === 'admitted' && (
+                    <p className="max-w-md text-[15px] opacity-90">With {d.plusOneNames.join(', ')}</p>
+                )}
+                {HINTS[result.reason] && <p className="max-w-md text-[15px] opacity-80">{HINTS[result.reason]}</p>}
+                {d.code && <p className="font-mono text-[15px] opacity-75">{d.code}</p>}
+            </div>
+            <div className="shrink-0 space-y-2 px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3">
+                {timed && (
+                    <div className="h-1.5 overflow-hidden rounded-full bg-black/20">
+                        <div key={result.at} className="h-full origin-left animate-[nbscan-countdown_2.5s_linear_forwards] rounded-full bg-white" />
+                    </div>
+                )}
+                {result.reason === 'error' && onRetry && (
+                    <button type="button" onClick={onRetry} className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-black/25 text-[17px] font-bold">
+                        <RefreshCw size={18} /> Try again
+                    </button>
+                )}
+                <button type="button" onClick={onNext} className="flex h-16 w-full items-center justify-center rounded-2xl bg-white text-[19px] font-extrabold text-black active:scale-[0.98]">
+                    {timed ? 'Next (auto)' : 'Scan next'}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ScanScreen = ({ eventId, event, onChangeEvent, onBack, canOpenDesk, onOpenDesk }) => {
+    const scanTicket = useStore(s => s.scanTicket);
+    const ticketOrders = useStore(s => s.ticketOrders);
+    const addToast = useStore(s => s.addToast);
+    const { entries } = useGuestEntries(event?.guestlistIds, Boolean(event && hasGuestlist(event)));
+
+    const [prefs, setPrefsState] = useState(() => ({ ...DEFAULT_PREFS, ...readJson('nb_scanner_prefs', {}) }));
+    const setPref = (patch) => setPrefsState(p => { const n = { ...p, ...patch }; writeJson('nb_scanner_prefs', n); return n; });
+
+    const [camOn, setCamOn] = useState(true);
+    const [camState, setCamState] = useState('starting'); // starting | on | error
+    const [camError, setCamError] = useState('');
+    const [facing, setFacing] = useState('environment');
+    const [restartKey, setRestartKey] = useState(0);
+    const [torch, setTorch] = useState({ supported: false, on: false });
+    const [result, setResult] = useState(null);
+    const [checking, setChecking] = useState(false);
+    const [manual, setManual] = useState('');
+    const [recent, setRecent] = useState(() => readJson(`nb_scans_${eventId}`, []));
+    const [queue, setQueue] = useState(() => readJson(`nb_scan_queue_${eventId}`, []));
+    const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine !== false);
+    const [panel, setPanel] = useState(null); // 'recent' | 'settings'
+
+    const scannerRef = useRef(null);
+    const busyRef = useRef(false);
+    const lastRef = useRef({ code: '', at: 0 });
+    const resultRef = useRef(null);
+    const timerRef = useRef(null);
+    const decodeRef = useRef(() => {});
+    resultRef.current = result;
+
+    // ── counts for the header ──
+    const counts = useMemo(() => {
+        let expected = 0;
+        let inside = 0;
+        (ticketOrders || []).forEach(o => {
+            if (o.eventId !== event?.id || !SOLD_STATUSES.includes(o.status)) return;
+            const n = orderTicketCount(o);
+            expected += n;
+            if (isOrderCheckedIn(o)) inside += n;
+        });
+        entries.forEach(e => {
+            if (!isGuestAdmissible(e)) return;
+            const n = Number(e.guestsCount) || 1;
+            expected += n;
+            if (e.attended) inside += n;
+        });
+        return { expected, inside };
+    }, [ticketOrders, entries, event?.id]);
+
+    // ── keep the screen awake while scanning ──
+    useEffect(() => {
+        let lock = null;
+        const request = async () => {
+            try { lock = await navigator.wakeLock?.request?.('screen'); } catch { /* not allowed */ }
+        };
+        request();
+        const onVis = () => { if (document.visibilityState === 'visible') request(); };
+        document.addEventListener('visibilitychange', onVis);
+        return () => { document.removeEventListener('visibilitychange', onVis); try { lock?.release?.(); } catch { /* ignore */ } };
+    }, []);
+
+    // ── online / offline ──
+    useEffect(() => {
+        const up = () => setOnline(true);
+        const down = () => setOnline(false);
+        window.addEventListener('online', up);
+        window.addEventListener('offline', down);
+        return () => { window.removeEventListener('online', up); window.removeEventListener('offline', down); };
+    }, []);
+
+    // ── camera ──
+    useEffect(() => {
+        if (!camOn) return undefined;
+        let cancelled = false;
+        const stopInstance = async (s) => {
+            if (!s) return;
+            try { if (s.isScanning) await s.stop(); } catch { /* already stopped */ }
+            try { s.clear(); } catch { /* element gone */ }
+        };
+        const start = async () => {
+            setCamState('starting');
+            setCamError('');
+            setTorch({ supported: false, on: false });
+            if (typeof window !== 'undefined' && !window.isSecureContext) {
+                setCamState('error');
+                setCamError('The camera only works on the secure (https) site. Type codes below instead.');
+                return;
+            }
+            await new Promise(r => setTimeout(r, 60));
+            if (cancelled || !document.getElementById('nb-reader')) return;
+            let instance;
+            try {
+                instance = new Html5Qrcode('nb-reader', {
+                    verbose: false,
+                    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+                    experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+                });
+                scannerRef.current = instance;
+                const cfg = { fps: 12, qrbox: (w, h) => { const s = Math.max(160, Math.floor(Math.min(w, h) * 0.72)); return { width: s, height: s }; } };
+                const onDecode = (text) => decodeRef.current(text);
+                try {
+                    await instance.start({ facingMode: facing }, cfg, onDecode, () => {});
+                } catch (first) {
+                    if (cancelled) return;
+                    if (/NotAllowed|Permission/i.test(String(first?.name || first))) throw first;
+                    await instance.start({ facingMode: facing === 'environment' ? 'user' : 'environment' }, cfg, onDecode, () => {});
+                }
+                if (cancelled) { await stopInstance(instance); return; }
+                setCamState('on');
+                try {
+                    const t = instance.getRunningTrackCameraCapabilities().torchFeature();
+                    setTorch({ supported: t.isSupported(), on: false });
+                } catch { /* no torch API */ }
+            } catch (err) {
+                if (cancelled) return;
+                const text = `${err?.name || ''} ${err?.message || err}`;
+                setCamState('error');
+                setCamError(/NotAllowed|Permission/i.test(text)
+                    ? 'Camera access is blocked. On iPhone: Settings → Safari → Camera → Allow, then reload. You can type codes below.'
+                    : /NotFound|no camera|Requested device not found/i.test(text)
+                        ? 'No camera found on this device. Type codes below instead.'
+                        : "The camera couldn't start. Close other apps using it and tap Retry, or type codes below.");
+            }
+        };
+        start();
+        return () => {
+            cancelled = true;
+            const s = scannerRef.current;
+            scannerRef.current = null;
+            stopInstance(s);
+        };
+    }, [camOn, facing, restartKey]);
+
+    const toggleTorch = async () => {
+        try {
+            const t = scannerRef.current?.getRunningTrackCameraCapabilities().torchFeature();
+            if (!t?.isSupported()) return;
+            await t.apply(!torch.on);
+            setTorch(x => ({ ...x, on: !x.on }));
+        } catch { addToast("The torch isn't available on this camera.", 'info'); }
+    };
+
+    // ── recent scans ──
+    const addRecent = useCallback((entry) => {
+        setRecent(prev => {
+            const next = [entry, ...prev].slice(0, 40);
+            writeJson(`nb_scans_${eventId}`, next);
+            return next;
+        });
+    }, [eventId]);
+
+    const saveQueue = (next) => { setQueue(next); writeJson(`nb_scan_queue_${eventId}`, next); };
+
+    // ── checking a code ──
+    const localLookup = useCallback((code) => {
+        const ref = refFromCode(code);
+        const order = (ticketOrders || []).find(o => o.eventId === event?.id && String(o.bookingRef || '').toUpperCase() === ref);
+        if (order) {
+            const sold = SOLD_STATUSES.includes(order.status);
+            return { code: ref, name: order.customerName || 'Ticket holder', people: orderTicketCount(order), local: !sold ? 'invalid' : isOrderCheckedIn(order) ? 'used' : 'valid' };
+        }
+        const entry = entries.find(e => String(e.bookingRef || '').toUpperCase() === ref);
+        if (entry) {
+            return { code: ref, name: entry.customerName || entry.name || 'Guest', people: Number(entry.guestsCount) || 1, local: !isGuestAdmissible(entry) ? 'invalid' : entry.attended ? 'used' : 'valid' };
+        }
+        return { code: ref, local: 'unknown' };
+    }, [ticketOrders, entries, event?.id]);
+
+    const check = useCallback(async (code) => {
+        const opts = { guestlistIds: event?.guestlistIds || [] };
+        const attempt = (c) => withTimeout(scanTicket(event?.id || eventId, c, opts), 12000);
+        let res = await attempt(code);
+        // Typed codes without the "NB-" / "GL-" part.
+        const bare = String(code).toUpperCase().replace(/[\s-]+/g, '');
+        if (res?.reason === 'not_found' && /^[A-Z0-9]{3,12}$/.test(bare) && !/^(NB|GL)/.test(bare)) {
+            res = await attempt(`NB-${bare}`);
+            if (res?.reason === 'not_found') res = await attempt(`GL-${bare}`);
+            if (res?.reason === 'not_found') res = { ...res, data: { code: bare } };
+        }
+        return res;
+    }, [scanTicket, event?.id, event?.guestlistIds, eventId]);
+
+    const clearResult = useCallback(() => {
+        clearTimeout(timerRef.current);
+        setResult(null);
+    }, []);
+
+    const show = useCallback((res) => {
+        const look = LOOK[res.reason] || LOOK.error;
+        scanFeedback(look.feedback, prefs);
+        const at = Date.now();
+        setResult({ ...res, at });
+        clearTimeout(timerRef.current);
+        if (res.reason === 'admitted' && prefs.autoNext) timerRef.current = setTimeout(() => setResult(null), 2500);
+    }, [prefs]);
+
+    const handleCode = useCallback(async (raw, via) => {
+        const code = String(raw || '').trim();
+        if (!code || busyRef.current || resultRef.current) return;
+        const now = Date.now();
+        // The camera reports the same QR many times a second; and right after a
+        // result, the same pass is usually still in view.
+        if (via === 'camera' && lastRef.current.code === code && now - lastRef.current.at < 5000) return;
+        lastRef.current = { code, at: now };
+        busyRef.current = true;
+        setChecking(true);
+        let res;
+        try {
+            if (typeof navigator !== 'undefined' && navigator.onLine === false) throw Object.assign(new Error('offline'), { network: true });
+            res = await check(code);
+        } catch (err) {
+            if (isNetworkError(err)) {
+                const local = localLookup(code);
+                saveQueue([...readJson(`nb_scan_queue_${eventId}`, []).filter(q => q.code !== local.code), { code: local.code, at: new Date().toISOString() }]);
+                res = { valid: false, reason: 'offline', data: local };
+            } else {
+                console.error('Scan failed:', err);
+                res = { valid: false, reason: 'error', message: "Couldn't check this code.", data: { code: refFromCode(code) }, retry: code };
+            }
+        } finally {
+            busyRef.current = false;
+            setChecking(false);
+        }
+        show(res);
+        addRecent({ code: res.data?.code || refFromCode(code), reason: res.reason, name: res.data?.name || '', people: res.data?.people || res.data?.guestsCount || null, at: new Date().toISOString(), via });
+    }, [check, localLookup, show, addRecent, eventId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    decodeRef.current = (text) => handleCode(text, 'camera');
+
+    // ── send scans saved while offline ──
+    const syncing = useRef(false);
+    useEffect(() => {
+        if (!online || !queue.length || syncing.current) return;
+        syncing.current = true;
+        (async () => {
+            let done = 0;
+            const left = [];
+            for (const item of queue) {
+                try {
+                    const res = await withTimeout(scanTicket(event?.id || eventId, item.code, { guestlistIds: event?.guestlistIds || [] }), 12000);
+                    done += 1;
+                    addRecent({ code: res.data?.code || item.code, reason: res.reason, name: res.data?.name || '', people: res.data?.people || null, at: new Date().toISOString(), via: 'synced' });
+                } catch (err) {
+                    left.push(item);
+                    if (isNetworkError(err)) break;
+                }
+            }
+            const rest = [...left, ...queue.slice(done + left.length)];
+            // Keep anything scanned offline while this was sending.
+            const latest = readJson(`nb_scan_queue_${eventId}`, []);
+            const added = latest.filter(x => !queue.some(q => q.code === x.code));
+            saveQueue([...rest, ...added]);
+            syncing.current = false;
+            if (done) addToast(`${done} offline ${done === 1 ? 'scan' : 'scans'} sent. Check Recent for the results.`, 'success');
+        })();
+    }, [online, queue.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => () => clearTimeout(timerRef.current), []);
+
+    const submitManual = (e) => {
+        e.preventDefault();
+        unlockScanAudio();
+        const code = manual.trim();
+        if (!code) return;
+        lastRef.current = { code: '', at: 0 };
+        // A new typed code replaces whatever result is showing.
+        clearTimeout(timerRef.current);
+        resultRef.current = null;
+        setResult(null);
+        handleCode(code, 'typed').then(() => setManual(''));
+    };
+
+    const lastScans = recent.slice(0, 3);
+
+    return (
+        <div className="fixed inset-0 z-[500] flex h-dvh flex-col bg-[#07080b] font-heading text-white" onPointerDown={unlockScanAudio}>
+            {/* Top bar */}
+            <header className="flex shrink-0 items-center gap-2 border-b border-white/[0.08] px-3 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))]">
+                <button type="button" onClick={onBack} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/[0.08]" aria-label="Back"><ArrowLeft size={20} /></button>
+                <button type="button" onClick={onChangeEvent} className="min-w-0 flex-1 rounded-xl px-1 text-left">
+                    <span className="block truncate text-[16px] font-extrabold">{event?.title || 'Loading event…'}</span>
+                    <span className="block truncate text-[12px] text-zinc-400">Tap to change event</span>
+                </button>
+                <div className="shrink-0 rounded-xl bg-teal-400/15 px-3 py-1.5 text-right">
+                    <span className="block text-[18px] font-extrabold leading-none tabular-nums text-teal-300">{counts.inside}<span className="text-[13px] text-teal-300/70"> / {counts.expected}</span></span>
+                    <span className="block text-[11px] font-semibold text-teal-300/80">in</span>
+                </div>
+                <button type="button" onClick={() => setPanel('settings')} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/[0.08]" aria-label="Scanner settings"><Settings2 size={19} /></button>
+            </header>
+
+            {(!online || queue.length > 0) && (
+                <div className={cn('flex shrink-0 items-center gap-2 px-4 py-2 text-[13px] font-semibold', online ? 'bg-sky-500/20 text-sky-200' : 'bg-amber-500/20 text-amber-200')}>
+                    <WifiOff size={15} />
+                    {online ? `Sending ${queue.length} saved ${queue.length === 1 ? 'scan' : 'scans'}…` : `Offline. Scans are saved on this phone${queue.length ? ` (${queue.length})` : ''}.`}
+                </div>
+            )}
+
+            {/* Camera */}
+            <div className="relative mx-auto w-full max-w-xl flex-1 overflow-hidden">
+                <div className="absolute inset-0 bg-black">
+                    {camOn && <div id="nb-reader" className="h-full w-full" />}
+                </div>
+
+                {camOn && camState !== 'error' && (
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                        <div className="relative aspect-square w-[72%] max-w-[22rem]">
+                            {['left-0 top-0 border-l-4 border-t-4 rounded-tl-3xl', 'right-0 top-0 border-r-4 border-t-4 rounded-tr-3xl', 'bottom-0 left-0 border-b-4 border-l-4 rounded-bl-3xl', 'bottom-0 right-0 border-b-4 border-r-4 rounded-br-3xl'].map(c => (
+                                <span key={c} className={cn('absolute h-12 w-12 border-teal-300', c)} />
                             ))}
                         </div>
                     </div>
-                </div>
+                )}
 
-                {/* Main Scanning Viewport */}
-                <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden">
-                    {!selectedEventId ? (
-                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-6 max-w-sm">
-                            <div className="w-32 h-32 mx-auto bg-black/5 dark:bg-white/5 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center relative">
-                                <div className="absolute inset-0 border-2 border-dashed border-gray-600 rounded-full animate-[spin_20s_linear_infinite]" />
-                                <ScanLine size={48} className="text-gray-500" />
-                            </div>
-                            <h2 className="text-2xl font-extrabold tracking-tight">Awaiting Setup</h2>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] leading-relaxed">Please configure the target event from the console to initialize the optical scanner.</p>
-                        </motion.div>
-                    ) : (
-                        <div className="w-full max-w-sm md:max-w-lg flex flex-col items-center gap-6 relative z-10 h-full justify-center">
-                            {/* Visual Scanner Frame */}
-                            <div className="w-full aspect-[4/5] md:aspect-square bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-[2.5rem] md:rounded-[3rem] overflow-hidden relative shadow-[0_0_100px_rgba(0,0,0,0.8)] shrink-0">
-                                {isScanning ? (
-                                    <>
-                                        <div className="absolute inset-0 bg-white dark:bg-black overflow-hidden">
-                                            <div id="reader" className="w-full h-full" />
-                                        </div>
-                                        {/* HUD Overlay */}
-                                        <div className="absolute inset-0 border-[2px] border-black/10 dark:border-white/10 z-50 pointer-events-none rounded-[2.5rem] md:rounded-[3rem]">
-                                            {/* Corner Reticles */}
-                                            <div className="absolute top-4 left-4 md:top-6 md:left-6 w-12 h-12 md:w-16 md:h-16 border-t-[4px] border-l-[4px] md:border-t-[6px] md:border-l-[6px] border-neon-green rounded-tl-[1.5rem] opacity-80" />
-                                            <div className="absolute top-4 right-4 md:top-6 md:right-6 w-12 h-12 md:w-16 md:h-16 border-t-[4px] border-r-[4px] md:border-t-[6px] md:border-r-[6px] border-neon-green rounded-tr-[1.5rem] opacity-80" />
-                                            <div className="absolute bottom-4 left-4 md:bottom-6 md:left-6 w-12 h-12 md:w-16 md:h-16 border-b-[4px] border-l-[4px] md:border-b-[6px] md:border-l-[6px] border-neon-green rounded-bl-[1.5rem] opacity-80" />
-                                            <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6 w-12 h-12 md:w-16 md:h-16 border-b-[4px] border-r-[4px] md:border-b-[6px] md:border-r-[6px] border-neon-green rounded-br-[1.5rem] opacity-80" />
-                                            
-                                            {/* Scanning Laser */}
-                                            <div className="absolute inset-x-8 top-1/2 h-1 bg-neon-green shadow-[0_0_30px_#39FF14] animate-[scan_3s_ease-in-out_infinite]" />
-                                            
-                                            <div className="absolute bottom-4 md:bottom-8 left-0 right-0 flex flex-col items-center gap-4 pointer-events-auto">
-                                                <button 
-                                                    onClick={toggleCamera} 
-                                                    className="flex items-center gap-2 bg-white dark:bg-black/60 hover:bg-white dark:hover:bg-black/80 backdrop-blur-xl border border-black/20 dark:border-white/20 px-5 py-3 rounded-full text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-xl"
-                                                >
-                                                    <RefreshCw size={14} className={facingMode === "user" ? "rotate-180 transition-transform" : "transition-transform"} /> 
-                                                    Swap Camera
-                                                </button>
-                                                <span className="bg-white dark:bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white/80">Scanning Pass...</span>
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="flex-1 flex flex-col items-center justify-center gap-8 p-8 text-center bg-gray-100 dark:bg-zinc-900/40 relative">
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-80" />
-                                        <div className="relative z-10 w-24 h-24 bg-black/5 dark:bg-white/5 rounded-3xl flex items-center justify-center border border-black/10 dark:border-white/10 group-hover:scale-105 transition-transform">
-                                            <ScanLine size={40} className="text-gray-600 dark:text-gray-400 group-hover:text-neon-green transition-colors" />
-                                        </div>
-                                        <div className="relative z-10">
-                                            <h3 className="text-xl font-extrabold tracking-tight mb-2 text-gray-900 dark:text-white">Camera Inactive</h3>
-                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Initialize optical sensor to begin verification</p>
-                                        </div>
-                                        <Button onClick={() => { setIsScanning(true); setScanResult(null); }} className="relative z-10 h-16 px-10 bg-white text-black font-black uppercase tracking-[0.2em] rounded-2xl hover:scale-105 shadow-[0_10px_40px_rgba(255,255,255,0.2)]">
-                                            <ScanLine size={20} className="mr-3" /> Initialize Sensor
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
+                {camOn && camState === 'starting' && (
+                    <p className="absolute inset-x-0 bottom-20 text-center text-[14px] font-semibold text-zinc-300">Starting camera…</p>
+                )}
 
-                            {/* Manual Entry Console */}
-                            <form onSubmit={handleManualSubmit} className="w-full max-w-md flex gap-3 relative">
-                                <div className="absolute inset-0 bg-black/5 dark:bg-white/5 rounded-2xl blur-xl" />
-                                <Input 
-                                    value={manualCode} 
-                                    onChange={e => setManualCode(e.target.value)} 
-                                    placeholder="TICKET CODE" 
-                                    className="flex-1 h-16 bg-white dark:bg-black/80 backdrop-blur border-black/10 dark:border-white/10 rounded-2xl text-center font-mono font-black tracking-[0.3em] uppercase focus:border-neon-blue relative z-10"
-                                />
-                                <Button type="submit" className="h-16 px-8 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 rounded-2xl border border-black/10 dark:border-white/10 relative z-10"><Search size={20}/></Button>
-                            </form>
-                        </div>
-                    )}
+                {(!camOn || camState === 'error') && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-8 text-center">
+                        <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.08] text-zinc-300"><CameraOff size={28} /></span>
+                        <p className="max-w-xs text-[15px] leading-relaxed text-zinc-300">{camOn ? camError : 'Camera is off. Type codes below, or turn it back on.'}</p>
+                        <button type="button" onClick={() => { setCamOn(true); setRestartKey(k => k + 1); }} className="flex h-12 items-center gap-2 rounded-2xl bg-teal-400 px-6 text-[15px] font-bold text-black">
+                            <RefreshCw size={16} /> {camOn ? 'Retry camera' : 'Turn camera on'}
+                        </button>
+                    </div>
+                )}
 
-                    {/* High-Fidelity Result Overlay */}
-                    <AnimatePresence>
-                        {scanResult && (
-                            <motion.div 
-                                initial={{ opacity: 0, y: 50, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: 50, scale: 0.95 }}
-                                className="absolute inset-x-6 md:inset-x-auto md:w-[500px] bottom-10 z-[100]"
-                            >
-                                <div className={cn(
-                                    "p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border backdrop-blur-3xl text-center relative overflow-hidden shadow-2xl",
-                                    scanResult.status === 'GREEN' && "bg-white dark:bg-black/90 border-neon-green/50 shadow-[0_30px_100px_rgba(57,255,20,0.2)]",
-                                    scanResult.status === 'RED' && "bg-white dark:bg-black/90 border-red-500/50 shadow-[0_30px_100px_rgba(239,68,68,0.2)]",
-                                    scanResult.status === 'YELLOW' && "bg-white dark:bg-black/90 border-yellow-500/50 shadow-[0_30px_100px_rgba(234,179,8,0.2)]"
-                                )}>
-                                    <div className={cn(
-                                        "absolute inset-0 opacity-10",
-                                        scanResult.status === 'GREEN' && "bg-neon-green",
-                                        scanResult.status === 'RED' && "bg-red-500",
-                                        scanResult.status === 'YELLOW' && "bg-yellow-500"
-                                    )} />
+                {checking && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50">
+                        <span className="h-14 w-14 animate-spin rounded-full border-4 border-teal-300 border-t-transparent" aria-label="Checking" />
+                    </div>
+                )}
 
-                                    {/* Icon Header */}
-                                    <div className="flex justify-center mb-4 md:mb-6 relative z-10">
-                                        <div className={cn(
-                                            "w-16 h-16 md:w-24 md:h-24 rounded-full flex items-center justify-center border-[3px] md:border-4",
-                                            scanResult.status === 'GREEN' && "bg-neon-green/20 border-neon-green text-neon-green",
-                                            scanResult.status === 'RED' && "bg-red-500/20 border-red-500 text-red-500",
-                                            scanResult.status === 'YELLOW' && "bg-yellow-500/20 border-yellow-500 text-yellow-500"
-                                        )}>
-                                            {scanResult.status === 'GREEN' && <CheckCircle2 className="w-8 h-8 md:w-12 md:h-12" />}
-                                            {scanResult.status === 'RED' && <XCircle className="w-8 h-8 md:w-12 md:h-12" />}
-                                            {scanResult.status === 'YELLOW' && <AlertTriangle className="w-8 h-8 md:w-12 md:h-12" />}
-                                        </div>
-                                    </div>
-
-                                    {/* Message */}
-                                    <div className="relative z-10 mb-8">
-                                        <h3 className={cn(
-                                            "text-3xl font-extrabold tracking-tight leading-none mb-4",
-                                            scanResult.status === 'GREEN' && "text-neon-green",
-                                            scanResult.status === 'RED' && "text-red-500",
-                                            scanResult.status === 'YELLOW' && "text-yellow-500"
-                                        )}>
-                                            {scanResult.message}
-                                        </h3>
-                                        
-                                        {scanResult.data && (
-                                            <div className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl p-6 text-left space-y-3">
-                                                <div className="flex justify-between items-center border-b border-black/10 dark:border-white/5 pb-3">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Holder</span>
-                                                    <span className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{scanResult.data.name}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center border-b border-black/10 dark:border-white/5 pb-3">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Pass Type</span>
-                                                    <span className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{scanResult.data.type}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center border-b border-black/10 dark:border-white/5 pb-3">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Access Granted</span>
-                                                    <span className="text-xs font-black uppercase tracking-widest text-neon-green text-right flex flex-col items-end">
-                                                        {scanResult.data.items ? (
-                                                            scanResult.data.items.map((item, idx) => (
-                                                                <span key={idx}>{item.count}x {item.name}</span>
-                                                            ))
-                                                        ) : scanResult.data.guestsCount ? (
-                                                            <span>{scanResult.data.guestsCount} Guest{scanResult.data.guestsCount > 1 ? 's' : ''}</span>
-                                                        ) : (
-                                                            <span>1x General Access</span>
-                                                        )}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between items-center pt-1">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Identifier</span>
-                                                    <span className="text-[10px] font-mono font-bold text-gray-700 dark:text-gray-300">{scanResult.data.code}</span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Action */}
-                                    <Button onClick={() => { setScanResult(null); setIsScanning(true); setManualCode(''); }} className="w-full h-16 bg-white text-black font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-gray-200 relative z-10">
-                                        PROCEED TO NEXT
-                                    </Button>
-                                </div>
-                            </motion.div>
+                {camOn && camState === 'on' && (
+                    <div className="absolute right-3 top-3 z-10 flex flex-col gap-2">
+                        {torch.supported && (
+                            <button type="button" onClick={toggleTorch} aria-pressed={torch.on} aria-label="Torch" className={cn('flex h-12 w-12 items-center justify-center rounded-full', torch.on ? 'bg-amber-300 text-black' : 'bg-black/60 text-white')}>
+                                <Flashlight size={20} />
+                            </button>
                         )}
-                    </AnimatePresence>
+                        <button type="button" onClick={() => setFacing(f => (f === 'environment' ? 'user' : 'environment'))} aria-label="Switch camera" className="flex h-12 w-12 items-center justify-center rounded-full bg-black/60 text-white">
+                            <SwitchCamera size={20} />
+                        </button>
+                    </div>
+                )}
+
+                {result && <ResultScreen result={result} autoNext={prefs.autoNext} onNext={clearResult} onRetry={result.retry ? () => { const c = result.retry; clearResult(); lastRef.current = { code: '', at: 0 }; setTimeout(() => handleCode(c, 'typed'), 0); } : undefined} />}
+            </div>
+
+            {/* Manual entry + recent */}
+            <div className="mx-auto w-full max-w-xl shrink-0 space-y-3 border-t border-white/[0.08] px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3">
+                <form onSubmit={submitManual} className="flex gap-2">
+                    <input
+                        value={manual}
+                        onChange={(e) => setManual(e.target.value.toUpperCase())}
+                        placeholder="Type a code, e.g. NB-7KQ2XM"
+                        autoCapitalize="characters"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        enterKeyHint="go"
+                        className="h-14 min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/[0.06] px-4 font-mono text-[17px] font-bold text-white outline-none placeholder:font-sans placeholder:text-[14px] placeholder:font-medium placeholder:text-zinc-500 focus:border-teal-300/60"
+                    />
+                    <button type="submit" disabled={!manual.trim() || checking} className="h-14 shrink-0 rounded-2xl bg-teal-400 px-5 text-[16px] font-extrabold text-black disabled:opacity-40">Check</button>
+                </form>
+                <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setPanel('recent')} className="flex h-11 min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-xl bg-white/[0.05] px-3 text-left">
+                        <History size={16} className="shrink-0 text-zinc-400" />
+                        {lastScans.length ? (
+                            <span className="flex min-w-0 items-center gap-2 overflow-hidden">
+                                {lastScans.map((s, i) => (
+                                    <span key={`${s.at}-${i}`} className="flex shrink-0 items-center gap-1.5 text-[13px] font-semibold">
+                                        <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', recentTone(s.reason))} />
+                                        <span className="max-w-[7rem] truncate">{s.name || s.code}</span>
+                                    </span>
+                                ))}
+                            </span>
+                        ) : <span className="text-[13px] text-zinc-400">Recent scans show here</span>}
+                    </button>
+                    {canOpenDesk && (
+                        <button type="button" onClick={onOpenDesk} className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-white/[0.05] px-3 text-[13px] font-semibold text-zinc-200">
+                            <Search size={15} /> Find by name
+                        </button>
+                    )}
                 </div>
             </div>
 
+            <Sheet open={panel === 'recent'} onClose={() => setPanel(null)} title="Recent scans" subtitle={`On this phone · ${recent.length}`} zIndex={SHEET_Z} size="sm">
+                {recent.length === 0 ? (
+                    <p className="py-8 text-center text-[14px] text-gray-500">Nothing scanned yet.</p>
+                ) : (
+                    <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
+                        {recent.map((s, i) => (
+                            <li key={`${s.at}-${i}`} className="flex items-center gap-3 py-3">
+                                <span className={cn('h-3 w-3 shrink-0 rounded-full', recentTone(s.reason))} />
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate text-[15px] font-bold">{s.name || s.code}</p>
+                                    <p className="truncate text-[12px] text-gray-500">
+                                        {(LOOK[s.reason] || LOOK.error).title}{s.people > 1 ? ` · ${s.people} people` : ''} · <span className="font-mono">{s.code}</span>{s.via === 'synced' ? ' · sent after reconnecting' : ''}
+                                    </p>
+                                </div>
+                                <span className="shrink-0 text-[12px] tabular-nums text-gray-500">{timeOf(s.at)}</span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </Sheet>
+
+            <Sheet open={panel === 'settings'} onClose={() => setPanel(null)} title="Scanner settings" zIndex={SHEET_Z} size="sm" bodyClassName="space-y-4">
+                <Toggle label="Sound" hint="A beep for every result" checked={prefs.sound} onChange={(v) => { unlockScanAudio(); setPref({ sound: v }); }} />
+                <Toggle label="Vibration" hint="Android phones; iPhones don't support it" checked={prefs.vibrate} onChange={(v) => setPref({ vibrate: v })} />
+                <Toggle label="Move on by itself" hint="Valid scans clear after 2.5 seconds" checked={prefs.autoNext} onChange={(v) => setPref({ autoNext: v })} />
+                <Toggle label="Camera" hint="Turn off to type codes only and save battery" checked={camOn} onChange={(v) => setCamOn(v)} />
+                <div className="flex items-center gap-2 pt-2 text-[13px] text-gray-500">
+                    {prefs.sound ? <Volume2 size={15} /> : <VolumeX size={15} />}
+                    Scans made without signal are saved on this phone and sent when it reconnects.
+                </div>
+            </Sheet>
+
             <style>{`
-                #reader { border: none !important; width: 100% !important; height: 100% !important; background: #000; position: relative; }
-                #reader > div { display: none !important; } /* Hide all library-injected wrappers */
-                #reader__dashboard_section_csr { display: none !important; }
-                #reader__dashboard_section_swaplink { display: none !important; }
-                
-                #reader video { 
-                    object-fit: cover !important; 
-                    width: 100% !important; 
-                    height: 100% !important; 
-                    position: absolute !important;
-                    top: 0 !important;
-                    left: 0 !important;
-                    margin: 0 !important; 
-                    padding: 0 !important;
-                    display: block !important;
-                }
-                
-                @keyframes scan {
-                    0%, 100% { top: 15%; opacity: 0; }
-                    10%, 90% { opacity: 1; }
-                    50% { top: 85%; }
-                }
+                #nb-reader { position: relative; width: 100% !important; height: 100% !important; border: none !important; }
+                #nb-reader video { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; object-fit: cover !important; }
+                #nb-reader img, #nb-reader__dashboard, #nb-reader__header_message, #nb-reader #qr-shaded-region { display: none !important; }
+                @keyframes nbscan-countdown { from { transform: scaleX(1); } to { transform: scaleX(0); } }
             `}</style>
         </div>
+    );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const EventScanner = () => {
+    useStoreSubscription(['upcomingEvents', 'portfolio', 'guestlists', 'volunteerGigs', 'ticketOrders']);
+    const user = useStore(s => s.user);
+    const navigate = useNavigate();
+    const [params, setParams] = useSearchParams();
+    const eventId = params.get('eventId') || '';
+    const events = useOperationalEvents();
+    const event = events.find(e => e.id === eventId) || events.find(e => e.guestlistIds?.includes(eventId)) || null;
+    const isScannerRole = user?.role === 'scanner';
+
+    const goBack = () => {
+        if (eventId && !isScannerRole) navigate(`/admin/ticketing?eventId=${encodeURIComponent(event?.id || eventId)}&tab=checkin`);
+        else navigate(isScannerRole ? '/' : '/admin');
+    };
+
+    if (!eventId) {
+        return <EventPicker events={events} onPick={(id) => { unlockScanAudio(); setParams({ eventId: id }); }} onBack={() => navigate(isScannerRole ? '/' : '/admin/ticketing')} />;
+    }
+
+    return (
+        <ScanScreen
+            key={eventId}
+            eventId={eventId}
+            event={event}
+            onBack={goBack}
+            onChangeEvent={() => setParams({})}
+            canOpenDesk
+            onOpenDesk={() => navigate(`/admin/ticketing?eventId=${encodeURIComponent(event?.id || eventId)}&tab=checkin`)}
+        />
     );
 };
 

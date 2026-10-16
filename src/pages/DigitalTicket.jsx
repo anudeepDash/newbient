@@ -15,6 +15,8 @@ import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, collectionGroup, doc, getDoc } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import GlobalLoader from '../components/ui/GlobalLoader';
+import { useStore } from '../lib/store';
+import { SOLD_STATUSES } from '../lib/ticketing';
 
 const DigitalTicket = () => {
     const { id } = useParams();
@@ -132,7 +134,7 @@ const DigitalTicket = () => {
     // For paid tickets, check if verified. For guestlist, verified if not pending or rejected.
     const isVerified = type === 'guestlist' 
         ? (!isPending && !isRejected) 
-        : (status === 'approved' || status === 'dispatched');
+        : SOLD_STATUSES.includes(status); // free tickets are 'confirmed'
     
     // Compute QR Data
     const isRSVPOnly = type === 'guestlist' && ticketData.guestlistMode === 'rsvp';

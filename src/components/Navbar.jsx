@@ -11,10 +11,12 @@ import logoLight from '../assets/logo_light.png';
 import newbiCreatorsLogoDark from '../assets/newbi-creators-logo.png';
 import newbiCreatorsLogoLight from '../assets/newbi-creators-logo-light.png';
 import { useTheme } from '../hooks/useTheme';
+import { isAnnouncementLive } from './admin/content/contentRules';
 
 const Navbar = () => {
     const { maintenanceState, user, siteSettings, creators, artists, announcements, isProfilePanelOpen, dismissedAnnouncementId, dismissPinnedAnnouncement } = useStore();
-    const pinnedAnnouncement = announcements?.find(a => a.isPinned && a.id !== dismissedAnnouncementId);
+    // Only a pinned announcement inside its show window (not scheduled for later, not ended).
+    const pinnedAnnouncement = announcements?.find(a => a.isPinned && a.id !== dismissedAnnouncementId && isAnnouncementLive(a));
     const [isOpen, setIsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const location = useLocation();
@@ -39,7 +41,7 @@ const Navbar = () => {
             name: 'CREATOR', 
             path: '/creator', 
             matchPaths: ['/creator', '/creator/join', '/creator-dashboard'], 
-            featureId: 'influencer', 
+            featureId: 'influencer_public', 
             icon: Zap 
         },
         { name: 'CONCERT ZONE', path: '/concertzone', featureId: 'concerts', icon: Music },
@@ -55,7 +57,7 @@ const Navbar = () => {
             name: 'Creator', 
             path: '/creator', 
             matchPaths: ['/creator', '/creator/join', '/creator-dashboard'], 
-            featureId: 'influencer', 
+            featureId: 'influencer_public', 
             icon: Zap 
         },
         { name: 'More', isMenu: true, action: () => setIsOpen(prev => !prev), icon: Menu },
