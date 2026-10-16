@@ -4704,11 +4704,10 @@ export const useStore = create((set, get) => ({
     isAuthOpen: false,
     setAuthModal: (open) => set({ isAuthOpen: open }),
 
+    // Popup sign-in, or a full-page redirect inside Instagram/WhatsApp in-app browsers.
     loginWithGoogle: async () => {
-        const { signInWithPopup } = await import('firebase/auth');
-        const { auth, googleProvider } = await import('./firebase');
-        const result = await signInWithPopup(auth, googleProvider);
-        return result.user;
+        const { signInWithGoogle } = await import('./googleSignIn');
+        return signInWithGoogle();
     },
 
     signUpWithEmail: async (email, password, displayName) => {
