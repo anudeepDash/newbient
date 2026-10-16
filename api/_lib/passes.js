@@ -657,7 +657,8 @@ const holderOf = (creator) => ({
     holderPhone: creator.isPhoneVerified ? (toE164(creator.whatsapp || creator.phone) || '') : '',
 });
 
-const ticketSignature = (t) => (t ? [t.kind, t.url || t.storagePath || '', t.qty || '', t.tier || '', t.note || ''].join('|') : '');
+// Same link (or same PDF name and size), qty, tier and note = nothing to resend.
+const ticketSignature = (t) => (t ? [t.kind, t.kind === 'pdf' ? `${t.filename || ''}:${t.size || ''}` : t.url || '', t.qty || '', t.tier || '', t.note || ''].join('|') : '');
 
 /**
  * Creates or updates one creator's campaign pass in a transaction.
@@ -843,6 +844,8 @@ const cleanExternalRow = (row, campaignId) => {
         if (!path.startsWith(`tickets/${campaignId}/`) || path.includes('..')) return { error: 'The PDF wasn’t uploaded for this campaign.' };
         ticket.storagePath = path;
         ticket.filename = safeFileName(row.filename || path.split('/').pop());
+        // The size tells a corrected PDF with the same name apart from the one already sent.
+        if (Number(row.size) > 0) ticket.size = Math.floor(Number(row.size));
     }
     return { ticket };
 };
@@ -926,7 +929,7 @@ const uploadPdfAction = async (db, body, caller) => {
         contentType: 'application/pdf',
         metadata: { cacheControl: 'private, max-age=0', metadata: { campaignId, uid, uploadedBy: caller.email || caller.uid } },
     });
-    return { success: true, storagePath, filename };
+    return { success: true, storagePath, filename, size: buf.length };
 };
 
 const resendAction = async (db, body, caller) => {
