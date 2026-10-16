@@ -95,6 +95,8 @@ const AppLayout = () => {
 
     const tabs = useMemo(() => visibleTabs(c => ({ creator: isCreator, campus: isCampus })[c] || false), [isCreator, isCampus]);
     const activeModule = moduleForPath(path);
+    // A campaign page has its own bottom bar (apply); the tab pill steps aside there on phones.
+    const ownBottomBar = /^\/c\/[^/]+\/?$/.test(path);
 
     return (
         <div className="relative isolate min-h-dvh bg-[#f4f4f1] text-gray-900 dark:bg-[#050608] dark:text-white">
@@ -168,7 +170,7 @@ const AppLayout = () => {
             {/* ── Tab bar (phones and tablets): a floating glass pill; only the active tab shows its label ── */}
             <nav
                 aria-label="App sections"
-                className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-5 lg:hidden"
+                className={cn('pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-5 lg:hidden', ownBottomBar && 'hidden')}
             >
                 <div
                     className={cn(

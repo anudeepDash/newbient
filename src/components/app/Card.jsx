@@ -9,7 +9,6 @@ import Gift from 'lucide-react/dist/esm/icons/gift';
 import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
 import { cn } from '../../lib/utils';
 import { isPresent } from '../../lib/present';
-import { Stat, StatRow } from './Field';
 import BrandLayers, { BRAND_GLASS } from './BrandLayers';
 
 /*
@@ -189,15 +188,15 @@ const Card = ({
             </div>
 
             {/* Body */}
-            <div className="relative z-10 flex flex-1 flex-col px-5 pb-5 pt-4">
+            <div className="relative z-10 flex flex-1 flex-col px-4 pb-4 pt-3 sm:px-5">
 
                 {shownMeta.length > 0 && (
-                    <div className="relative z-10 mb-4 flex flex-wrap items-center justify-between gap-2">
+                    <div className="relative z-10 mb-2.5 flex flex-wrap items-center gap-2">
                         {shownMeta.map((m, i) => <MetaPill key={i} {...m} />)}
                     </div>
                 )}
 
-                <div className="relative z-10 mb-5 flex-1">
+                <div className="relative z-10 mb-3.5">
                     {(isPresent(eyebrow) || eyebrowLogo) && (
                         <div className="mb-1.5 flex items-center gap-1.5">
                             {eyebrowLogo && <img src={eyebrowLogo} alt="" className="h-4 w-4 shrink-0 rounded border border-black/10 bg-white object-contain p-0.5 dark:border-white/10 dark:bg-zinc-800" />}
@@ -205,7 +204,7 @@ const Card = ({
                         </div>
                     )}
                     {isPresent(title) && (
-                        <h3 className="mb-2 font-heading text-[19px] font-extrabold leading-snug tracking-[-0.025em] text-gray-900 transition-colors duration-300 group-hover:text-emerald-700 dark:text-white dark:group-hover:text-neon-green">
+                        <h3 className="mb-1 font-heading text-[18px] font-extrabold leading-snug tracking-[-0.025em] text-gray-900 transition-colors duration-300 group-hover:text-emerald-700 dark:text-white dark:group-hover:text-neon-green">
                             {title}
                         </h3>
                     )}
@@ -213,24 +212,32 @@ const Card = ({
                     {children}
                 </div>
 
-                {shownStats.length > 0 && (
-                    <StatRow className="relative z-10 mb-5">
-                        {shownStats.map((s, i) => <Stat key={s.label || i} {...s} />)}
-                    </StatRow>
-                )}
-
-                {ctaNode || (ctaConfig && (
-                    <div className="relative z-10 flex items-center justify-between rounded-full bg-white/60 py-2 pl-4 pr-2 ring-1 ring-inset ring-black/[0.06] transition-colors duration-300 group-hover:bg-neon-green group-hover:ring-black dark:bg-white/[0.05] dark:ring-white/[0.1] dark:group-hover:ring-black">
-                        <span className="font-heading text-[13px] font-bold text-gray-800 transition-colors duration-300 group-hover:text-black dark:text-zinc-200 dark:group-hover:text-black">
-                            {ctaConfig.label}
-                        </span>
-                        {ctaConfig.icon && (
-                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/[0.05] transition-colors duration-300 group-hover:bg-black dark:bg-white/[0.08] dark:group-hover:bg-black">
-                                <ctaConfig.icon size={14} className="text-gray-600 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-neon-green dark:text-zinc-300" />
+                {/* One footer row: the key stats as small labels, and the CTA as a compact pill. */}
+                {(shownStats.length > 0 || ctaNode || ctaConfig) && (
+                    <div className="relative z-10 mt-auto flex items-end justify-between gap-3 border-t border-black/[0.06] pt-3.5 dark:border-white/[0.08]">
+                        <dl className="flex min-w-0 gap-5">
+                            {shownStats.slice(0, 2).map((st, i) => (
+                                <div key={st.label || i} className="min-w-0">
+                                    <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-zinc-500">{st.label}</dt>
+                                    <dd className={cn('truncate text-[14px] font-bold', st.tone === 'accent' ? 'text-emerald-700 dark:text-neon-green' : 'text-gray-900 dark:text-white')}>
+                                        {st.format ? st.format(st.value) : st.value}
+                                    </dd>
+                                </div>
+                            ))}
+                        </dl>
+                        {ctaNode || (ctaConfig && (
+                            <span className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-black/[0.05] pl-1.5 pr-1.5 font-heading sm:pl-3.5 text-[13px] font-bold text-gray-800 transition-colors duration-300 group-hover:bg-neon-green group-hover:text-black dark:bg-white/[0.08] dark:text-zinc-100 dark:group-hover:bg-neon-green dark:group-hover:text-black">
+                                {/* Phones: just the arrow, so the stats beside it have room. */}
+                                <span className="sr-only sm:not-sr-only">{ctaConfig.label}</span>
+                                {ctaConfig.icon && (
+                                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black/[0.06] transition-colors duration-300 group-hover:bg-black dark:bg-white/[0.1]">
+                                        <ctaConfig.icon size={14} className="transition-colors duration-300 group-hover:text-neon-green" />
+                                    </span>
+                                )}
                             </span>
-                        )}
+                        ))}
                     </div>
-                ))}
+                )}
             </div>
         </Root>
     );
