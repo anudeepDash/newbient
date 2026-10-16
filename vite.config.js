@@ -97,7 +97,7 @@ export default defineConfig(({ mode }) => {
         // prerendered (scripts/prerender.mjs) and routed by vercel.json.
         name: 'landing-dev-routes',
         configureServer(server) {
-          const LANDING = new Set(['/', '/creator', '/contact', '/terms', '/privacy']);
+          const LANDING = new Set(['/', '/creator', '/community', '/contact', '/terms', '/privacy']);
           server.middlewares.use((req, res, next) => {
             const [pathname] = (req.url || '').split('?');
             const clean = pathname.replace(/\/+$/, '') || '/';

@@ -10,7 +10,7 @@ const LINKS = [
     { label: 'Work', to: '/#work' },
     { label: 'About', to: '/#about' },
     { label: 'Creators', to: '/creator' },
-    { label: 'Community', href: APP_LINKS.home },
+    { label: 'Community', to: '/community' },
     { label: 'ConcertZone', href: '/concertzone' }, // its own brand and app, so a full page load
     { label: 'Contact', to: '/contact' },
 ];

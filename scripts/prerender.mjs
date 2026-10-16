@@ -2,7 +2,7 @@
  * Prerenders the landing site (newbi.live) to static HTML after `vite build`.
  *
  *   dist/_landing/index.html          → /
- *   dist/_landing/creator/index.html  → /creator   (also /contact, /terms, /privacy)
+ *   dist/_landing/creator/index.html  → /creator   (also /community, /contact, /terms, /privacy)
  *   dist/app-shell.html               → every other route (the app; was dist/index.html)
  *
  * vercel.json rewrites those paths to these files (except on the app host), and
@@ -65,7 +65,8 @@ export async function prerender({ root = process.cwd(), log = console.log } = {}
     // home), so Rollup may file the shared chunk under either module.
     const pageModule = {
         '/': ['src/landing/pages/HomePage.jsx', 'src/pages/Home.jsx'],
-        '/creator': ['src/pages/CreatorLanding.jsx'],
+        '/creator': ['src/landing/pages/CreatorPage.jsx', 'src/pages/CreatorLanding.jsx'],
+        '/community': ['src/landing/pages/CommunityPage.jsx'],
         '/contact': ['src/pages/Contact.jsx'],
         '/terms': ['src/pages/Terms.jsx'],
         '/privacy': ['src/pages/Privacy.jsx'],

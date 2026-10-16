@@ -7,7 +7,7 @@ const AUDIENCES = [
     { key: 'brand', label: 'a brand', to: '/#enquire' },
     { key: 'college', label: 'a college', to: '/#enquire' },
     { key: 'creator', label: 'a creator', to: '/creator' },
-    { key: 'community', label: 'here for the shows', href: APP_LINKS.home },
+    { key: 'community', label: 'here for the shows', to: '/community' },
 ];
 
 const formatDay = (iso) => {

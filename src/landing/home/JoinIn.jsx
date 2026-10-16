@@ -3,8 +3,8 @@ import { ArrowRight, ArrowUpRight, Check } from 'lucide-react';
 import SectionHeading from '../components/SectionHeading';
 import { APP_LINKS } from '../links';
 
-function Column({ label, title, intro, points, cta, dark }) {
-    const Arrow = cta.href ? ArrowUpRight : ArrowRight;
+function Column({ label, title, intro, points, cta, more, dark }) {
+    const Arrow = ArrowUpRight;
     const btn = `mt-10 inline-flex h-14 px-8 items-center gap-2 rounded-full font-heading font-bold text-base transition hover:scale-[1.03] active:scale-[0.98] ${dark ? 'bg-neon-green text-black' : 'bg-gray-950 text-white dark:bg-white dark:text-black'}`;
     return (
         <div className={`nb-reveal relative overflow-hidden flex flex-col p-7 sm:p-10 lg:p-14 rounded-[2rem] ${dark ? '[--nb-stroke:#fff] bg-gray-950 text-white dark:bg-[#0a0a0a] dark:border dark:border-white/10' : 'bg-white/60 dark:bg-white/[0.03] border border-gray-950/10 dark:border-white/10 text-gray-950 dark:text-white'}`}>
@@ -19,10 +19,9 @@ function Column({ label, title, intro, points, cta, dark }) {
                     </li>
                 ))}
             </ul>
-            <div className="relative mt-auto">
-                {cta.href
-                    ? <a href={cta.href} className={btn}>{cta.label} <Arrow size={18} aria-hidden="true" /></a>
-                    : <Link to={cta.to} className={btn}>{cta.label} <Arrow size={18} aria-hidden="true" /></Link>}
+            <div className="relative mt-auto flex flex-wrap items-center gap-x-6 gap-y-3">
+                <a href={cta.href} className={btn}>{cta.label} <Arrow size={18} aria-hidden="true" /></a>
+                <Link to={more.to} className={`mt-10 inline-flex items-center gap-1.5 min-h-[44px] text-sm font-semibold underline underline-offset-4 decoration-neon-green ${dark ? 'text-white' : 'text-gray-950 dark:text-white'}`}>{more.label} <ArrowRight size={15} aria-hidden="true" /></Link>
             </div>
         </div>
     );
@@ -56,7 +55,8 @@ export default function JoinIn({ welcomePoints }) {
                             'Tickets and passes for campaigns you are on',
                             welcomePoints ? `${welcomePoints.toLocaleString('en-IN')} Newbi points the day you join` : 'Free to join',
                         ]}
-                        cta={{ label: 'Apply as a creator', to: '/creator' }}
+                        cta={{ label: 'Apply as a creator', href: APP_LINKS.creatorApply }}
+                        more={{ label: 'How the network works', to: '/creator' }}
                         dark
                     />
                     <Column
@@ -68,7 +68,8 @@ export default function JoinIn({ welcomePoints }) {
                             'Volunteer gigs at live events',
                             'Giveaways, passes and a QR code for entry',
                         ]}
-                        cta={{ label: 'Join the community', href: APP_LINKS.home }}
+                        cta={{ label: 'Join the community', href: APP_LINKS.community }}
+                        more={{ label: 'How the community works', to: '/community' }}
                     />
                 </div>
             </div>
