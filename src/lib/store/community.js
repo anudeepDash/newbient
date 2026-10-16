@@ -99,6 +99,10 @@ export const buildFeed = ({ events = [], guestlists = [], gigs = [], giveaways =
     });
     guestlists.filter(isOpen).forEach(gl => {
         const ownerId = eventsById.has(gl.id) ? gl.id : eventsById.has(gl.eventId) ? gl.eventId : null;
+        // A list made for an event that has since been archived (moved out of upcoming_events) is over,
+        // even when the list itself has no date.
+        const linkedEvent = gl.isEmbedded || (gl.eventId && gl.eventId !== gl.id && !gigsById.has(gl.eventId));
+        if (!ownerId && linkedEvent && !gigsById.has(gl.id)) return;
         if (ownerId && seenLists.has(ownerId)) return;
         if (seenLists.has(gl.id)) return;
         seenLists.add(gl.id);

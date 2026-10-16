@@ -266,7 +266,7 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
                             <p className="rounded-xl bg-black/[0.03] px-3.5 py-3 text-[13px] text-gray-500 dark:bg-white/[0.04]">Select creators first. Shortlisted, selected and finished creators can get tickets.</p>
                         ) : (
                             <>
-                                <ul className="max-h-[38dvh] divide-y divide-black/[0.05] overflow-y-auto rounded-xl border border-black/[0.06] dark:divide-white/[0.06] dark:border-white/[0.08]">
+                                <ul className="divide-y divide-black/[0.05] rounded-xl border border-black/[0.06] dark:divide-white/[0.06] dark:border-white/[0.08] sm:max-h-[38dvh] sm:overflow-y-auto">
                                     {eligible.map(e => {
                                         const has = passFor(existing, e.creator);
                                         const hasQr = has && has.qr !== false;
@@ -292,19 +292,19 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
                         )
                     ) : (
                         <div className="space-y-4">
-                            <div className="grid gap-2 sm:grid-cols-3">
-                                <Button onClick={downloadTemplate} className="h-11 justify-start"><Download size={14} /> Template</Button>
-                                <Button onClick={() => csvInput.current?.click()} className="h-11 justify-start" disabled={sending}><Upload size={14} /> {csvName ? 'Replace CSV' : 'Choose CSV'}</Button>
-                                <Button onClick={() => pdfInput.current?.click()} className="h-11 justify-start" disabled={sending}><FileText size={14} /> Add PDFs{files.length ? ` (${files.length})` : ''}</Button>
+                            <div className="grid grid-cols-3 gap-2">
+                                <Button onClick={downloadTemplate} className="h-11 px-2 sm:justify-start sm:px-4"><Download size={14} /> Template</Button>
+                                <Button onClick={() => csvInput.current?.click()} className="h-11 px-2 sm:justify-start sm:px-4" disabled={sending}><Upload size={14} /> {csvName ? 'CSV' : 'Choose CSV'}</Button>
+                                <Button onClick={() => pdfInput.current?.click()} className="h-11 px-2 sm:justify-start sm:px-4" disabled={sending}><FileText size={14} /> PDFs{files.length ? ` (${files.length})` : ''}</Button>
                                 <input ref={csvInput} type="file" accept=".csv,text/csv" className="hidden" onChange={e => { readCsv(e.target.files?.[0]); e.target.value = ''; }} />
                                 <input ref={pdfInput} type="file" accept="application/pdf,.pdf" multiple className="hidden" onChange={e => { addPdfs(e.target.files); e.target.value = ''; }} />
                             </div>
                             <div
                                 onDragOver={e => e.preventDefault()}
                                 onDrop={e => { e.preventDefault(); const list = Array.from(e.dataTransfer.files || []); const csv = list.find(f => /\.csv$/i.test(f.name)); if (csv) readCsv(csv); addPdfs(list); }}
-                                className="rounded-xl border-2 border-dashed border-black/10 px-4 py-4 text-center text-[13px] text-gray-500 dark:border-white/10"
+                                className="rounded-xl border-black/10 text-[13px] text-gray-500 dark:border-white/10 sm:border-2 sm:border-dashed sm:px-4 sm:py-4 sm:text-center"
                             >
-                                Drop the CSV and the ticket PDFs here. PDFs are matched to rows by <code className="font-mono">ticket_file</code>; each must be under 3 MB.
+                                <span className="hidden sm:inline">Drop the CSV and the ticket PDFs here. </span>PDFs are matched to rows by <code className="font-mono">ticket_file</code> and must be under 3 MB. The template lists everyone who can get a ticket.
                             </div>
                             {csvError && <p role="alert" className="text-[13px] font-semibold text-rose-600 dark:text-rose-300">{csvError}</p>}
 
@@ -314,7 +314,7 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
                                         <span className="truncate text-[13px] font-semibold">{csvName}</span>
                                         {Object.entries(counts).filter(([, n]) => n > 0).map(([k, n]) => <Badge key={k} tone={ROW_STATUS[k].tone}>{n} {ROW_STATUS[k].label.toLowerCase()}</Badge>)}
                                     </div>
-                                    <ul className="max-h-[42dvh] space-y-2 overflow-y-auto">
+                                    <ul className="space-y-2 sm:max-h-[42dvh] sm:overflow-y-auto">
                                         {evaluated.map(r => (
                                             <li key={r.row} className={cn('rounded-xl border px-3 py-2.5', r.status === 'ready' && !r.skip ? 'border-black/[0.08] dark:border-white/[0.1]' : 'border-black/[0.05] bg-black/[0.02] dark:border-white/[0.06] dark:bg-white/[0.02]')}>
                                                 <div className="flex items-center gap-2">

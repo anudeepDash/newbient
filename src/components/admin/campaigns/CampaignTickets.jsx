@@ -125,9 +125,9 @@ const CampaignTickets = ({ campaign, applicants, passes, loaded, error, onSend }
 
             {!loaded ? (
                 <Card className="h-32 animate-pulse" />
-            ) : live.length === 0 ? (
+            ) : live.length === 0 ? (error ? null : (
                 <EmptyState icon={Ticket} title="No tickets sent yet" description="Tickets you send show up here with how each one was delivered." />
-            ) : (
+            )) : (
                 <Card className="divide-y divide-black/[0.05] p-0 dark:divide-white/[0.06]">
                     {live.map(p => {
                         const entry = byKey.get(p.creatorId) || byKey.get(p.holderUid);

@@ -38,6 +38,10 @@ try {
  */
 const PASS_CACHE = 'nb-passes-v1';
 
+// Take over straight away, so a phone that already had the push-only worker gets offline passes too.
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
+
 self.addEventListener('message', (event) => {
   const data = event.data || {};
   if (data.type !== 'nb-cache-pages' || !Array.isArray(data.urls)) return;
