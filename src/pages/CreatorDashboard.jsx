@@ -15,7 +15,7 @@ import CreatorCityGroupCard from '../components/creator/CreatorCityGroupCard';
 import CampaignDetailModal from '../components/creator/CampaignDetailModal';
 import EditCreatorModal from '../components/creator/EditCreatorModal';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import { extractSocialUsername } from '../lib/socialUtils';
 import { isCampaignCityMatch } from '../lib/constants';
 
@@ -93,8 +93,37 @@ const renderRankBadge = (rank) => {
 
 // ─── Referrals View ───────────────────────────────────────────────────────────
 
-const CreatorReferralsView = ({ profile }) => {
-    const { creators } = useStore();
+// Referral list and leaderboard come from the server, so the dashboard never
+// loads other creators' records (phones, emails) into the browser.
+const useCreatorReferrals = (profile) => {
+    const [data, setData] = useState({ referrals: [], leaderboard: [], myRank: 0 });
+    useEffect(() => {
+        if (!profile?.uid || !auth?.currentUser) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const token = await auth.currentUser.getIdToken();
+                const res = await fetch('/api/creator-join?action=creator-referrals', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const json = await res.json();
+                if (!cancelled && json?.success) {
+                    setData({
+                        referrals: json.referrals || [],
+                        leaderboard: json.leaderboard || [],
+                        myRank: json.myRank || 0
+                    });
+                }
+            } catch (err) {
+                console.warn('[CreatorDashboard] Referral stats notice:', err.message);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [profile?.uid]);
+    return data;
+};
+
+const CreatorReferralsView = ({ profile, referralData }) => {
     const [copied, setCopied] = useState(false);
     const referralLink = `${getPublicSiteUrl()}/creator/join?ref=${profile.creatorId || String(profile.uid || '').slice(0, 8).toUpperCase()}`;
 
@@ -105,70 +134,10 @@ const CreatorReferralsView = ({ profile }) => {
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const myReferrals = useMemo(() => {
-        if (!profile) return [];
-        const profUid = profile.uid;
-        const profIdUpper = profile.creatorId ? String(profile.creatorId).toUpperCase() : null;
-        const profInstaLower = profile.instagram ? String(profile.instagram).toLowerCase() : null;
-        const profLiLower = profile.linkedin ? String(profile.linkedin).toLowerCase() : null;
-        
-        return (creators || []).filter(c => {
-            const ref = c.referredBy;
-            if (!ref) return false;
-            if (ref === profUid) return true;
-            
-            const refStr = String(ref);
-            const refUpper = refStr.toUpperCase();
-            const refLower = refStr.toLowerCase();
-            
-            if (profIdUpper && refUpper === profIdUpper) return true;
-            if (profInstaLower && refLower === profInstaLower) return true;
-            if (profLiLower && refLower === profLiLower) return true;
-            
-            return false;
-        });
-    }, [creators, profile]);
-
+    const myReferrals = referralData?.referrals || [];
     const approvedCount = myReferrals.filter(c => c.profileStatus === 'approved').length;
-
-    const leaderboard = useMemo(() => {
-        const counts = {};
-        const uidMap = new Map();
-        const creatorIdMap = new Map();
-        const instagramMap = new Map();
-        const linkedinMap = new Map();
-        
-        (creators || []).forEach(rc => {
-            if (rc.uid) uidMap.set(rc.uid, rc);
-            if (rc.creatorId) creatorIdMap.set(String(rc.creatorId).toUpperCase(), rc);
-            if (rc.instagram) instagramMap.set(String(rc.instagram).toLowerCase(), rc);
-            if (rc.linkedin) linkedinMap.set(String(rc.linkedin).toLowerCase(), rc);
-        });
-
-        (creators || []).forEach(c => {
-            if (c.referredBy) {
-                const refStr = String(c.referredBy);
-                const refUpper = refStr.toUpperCase();
-                const refLower = refStr.toLowerCase();
-                
-                const referrer = uidMap.get(refStr) || 
-                                 creatorIdMap.get(refUpper) || 
-                                 instagramMap.get(refLower) || 
-                                 linkedinMap.get(refLower);
-                                 
-                if (referrer && referrer.uid) {
-                    counts[referrer.uid] = (counts[referrer.uid] || 0) + 1;
-                }
-            }
-        });
-
-        return (creators || [])
-            .filter(c => counts[c.uid] > 0)
-            .map(c => ({ ...c, referralCount: counts[c.uid] }))
-            .sort((a, b) => b.referralCount - a.referralCount);
-    }, [creators]);
-
-    const myRank = leaderboard.findIndex(c => c.uid === profile.uid) + 1;
+    const leaderboard = referralData?.leaderboard || [];
+    const myRank = referralData?.myRank || 0;
     const conversionRate = myReferrals.length > 0 ? Math.round((approvedCount / myReferrals.length) * 100) : 0;
 
     return (
@@ -642,7 +611,7 @@ const CreatorProfileOverviewView = ({ profile, onEditClick, onVerifyPhoneClick }
 
 const CreatorDashboard = () => {
     const {
-        user, authInitialized, creators, campaigns, creatorGroups,
+        user, authInitialized, campaigns, creatorGroups,
         markCreatorCityGroupJoined, loading, openProfilePanel, subscriptionsLoaded,
         setAuthModal, resolveCreatorProfile
     } = useStore();
@@ -662,7 +631,7 @@ const CreatorDashboard = () => {
     const [deliverableFilter, setDeliverableFilter] = useState('all');
     const [phoneBannerDismissed, setPhoneBannerDismissed] = useState(false);
 
-    const activeSubs = useMemo(() => ['campaigns', 'creatorGroups', 'creators'], []);
+    const activeSubs = useMemo(() => ['campaigns', 'creatorGroups'], []);
     useStoreSubscription(activeSubs);
 
     useDynamicMeta({
@@ -735,7 +704,7 @@ const CreatorDashboard = () => {
             if (isCancelled) return;
             if (resolvedProfile) {
                 setProfile(resolvedProfile);
-            } else if (subscriptionsLoaded?.creators) {
+            } else {
                 navigate('/creator/join', { replace: true });
             }
             setIsResolvingProfile(false);
@@ -745,7 +714,7 @@ const CreatorDashboard = () => {
         });
 
         return () => { isCancelled = true; };
-    }, [user, authInitialized, creators, subscriptionsLoaded?.creators, navigate, resolveCreatorProfile]);
+    }, [user, authInitialized, navigate, resolveCreatorProfile]);
 
     const isCityMatch = (campCity, userCity) => isCampaignCityMatch(campCity, userCity);
 
@@ -831,18 +800,8 @@ const CreatorDashboard = () => {
         });
     }, [joinedCampaignsList, deliverableFilter, profile]);
 
-    const referralCount = useMemo(() => {
-        if (!profile) return 0;
-        const profUid = profile.uid;
-        const profIdUpper = profile.creatorId ? String(profile.creatorId).toUpperCase() : null;
-        return (creators || []).filter(c => {
-            const ref = c.referredBy;
-            if (!ref) return false;
-            if (ref === profUid) return true;
-            if (profIdUpper && String(ref).toUpperCase() === profIdUpper) return true;
-            return false;
-        }).length;
-    }, [creators, profile]);
+    const referralData = useCreatorReferrals(profile);
+    const referralCount = referralData.referrals.length;
 
     const handleCopyCreatorId = () => {
         const id = profile?.creatorId || String(profile?.uid || '').slice(0, 8).toUpperCase();
@@ -1522,7 +1481,7 @@ const CreatorDashboard = () => {
                             )}
 
                             {/* ─ Referrals Tab ─ */}
-                            {activeTab === 'referrals' && <CreatorReferralsView profile={profile} />}
+                            {activeTab === 'referrals' && <CreatorReferralsView profile={profile} referralData={referralData} />}
 
                             {/* ─ Vault Tab ─ */}
                             {activeTab === 'rewards' && <CreatorVaultView creatorPoints={creatorPoints} />}

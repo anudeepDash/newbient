@@ -3283,9 +3283,10 @@ export const sendCreatorDirectEmail = async (toEmail, subject, messageBody, crea
  */
 export const sendWhatsAppVerification = async (phone, creatorName, verificationUrl) => {
     try {
+        const token = await getAuthToken().catch(() => null);
         const response = await fetch('/api/creator-join?action=whatsapp-verify', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
             body: JSON.stringify({
                 phone,
                 creatorName,
