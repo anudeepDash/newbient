@@ -29,8 +29,11 @@ createRoot(document.getElementById('root')).render(
 )
 
 
-// Register Service Worker for Push Notifications (only on browsers supporting PushManager)
-if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
+// Register the service worker: push notifications where supported, and on the
+// app (passes keep working offline at the gate) everywhere else too.
+const wantsServiceWorker = typeof window !== 'undefined' && 'serviceWorker' in navigator
+  && ('PushManager' in window || /^app\./i.test(window.location.hostname) || /^\/(app\/)?(p|t)\//.test(window.location.pathname));
+if (wantsServiceWorker) {
   window.addEventListener('load', () => {
     try {
       navigator.serviceWorker.register('/firebase-messaging-sw.js')

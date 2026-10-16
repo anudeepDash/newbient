@@ -14,6 +14,7 @@ import { createCampaign } from './campaigns.js';
 import { sendPush } from '../push.js';
 import { isCampaignCityMatch } from '../../../src/lib/constants.js';
 import { normalizeEmail, isValidEmail } from '../mailing.js';
+import { deliverGuestlistPass, ensureOrderPass, passUrl } from '../passes.js';
 
 class EventError extends Error {
     constructor(message, status = 400) { super(message); this.status = status; }
@@ -41,35 +42,16 @@ const passFromGuestlist = async ({ guestlistId, entryId }, caller) => {
     if (!idOk(guestlistId) || !idOk(entryId)) throw new EventError('Missing guestlist entry.');
     const db = getDb();
     const entryRef = db.collection('guestlists').doc(guestlistId).collection('entries').doc(entryId);
-    const [entrySnap, glSnap] = await Promise.all([entryRef.get(), db.collection('guestlists').doc(guestlistId).get()]);
+    const entrySnap = await entryRef.get();
     if (!entrySnap.exists) throw new EventError('Entry not found.', 404);
     const entry = entrySnap.data();
-    const gl = glSnap.exists ? glSnap.data() : {};
     // The person who registered (right after registering) or staff (approving).
     const own = caller.uid && entry.userId && entry.userId === caller.uid;
     if (!caller.staff && !own && !isFresh(entry.createdAt || entry.appliedAt)) throw new EventError('Forbidden', 403);
     if (!['approved', 'confirmed'].includes(String(entry.status || '').toLowerCase())) throw new EventError('This place isn’t confirmed yet.', 409);
-    const email = normalizeEmail(entry.customerEmail || entry.email);
-    if (!isValidEmail(email)) throw new EventError('This entry has no email address.', 422);
-    if (!(await claimOnce(entryRef, 'passConfirmedAt'))) return { duplicate: true };
-
-    const ref = String(entry.bookingRef || '');
-    const data = {
-        name: entry.customerName || entry.name,
-        eventName: entry.title || gl.title,
-        date: entry.date || gl.date,
-        venue: entry.location || gl.location,
-        qty: Number(entry.guestsCount || 1),
-        ref,
-        mode: (entry.guestlistMode || gl.guestlistMode) === 'rsvp' ? 'rsvp' : 'qr',
-        source: 'guestlist',
-        passUrl: ref ? `${SITE_URL}/ticket/${encodeURIComponent(ref)}` : '',
-    };
-    const delivery = await notify('pass-confirmed', entry.userId || null, data, {
-        to: { email, phone: entry.customerPhone || entry.phone, name: data.name },
-        ref: { collection: `guestlists/${guestlistId}/entries`, id: entryId },
-    });
-    return { delivery };
+    // Issues the pass (passes/{ref}) if it doesn't exist yet, then sends it once.
+    const out = await deliverGuestlistPass(db, guestlistId, entryId, { issuedBy: caller.staff ? (caller.email || 'staff') : 'self' });
+    return out.duplicate ? { duplicate: true } : { delivery: out.delivery, ref: out.ref };
 };
 
 const orderItems = (order) => (Array.isArray(order.items) && order.items.length
@@ -98,6 +80,10 @@ export const sendOrderEmail = async (orderId, { event: eventDoc = null } = {}) =
     }
     ev = ev || {};
     const ref = String(order.bookingRef || '');
+    // Confirmed orders get a pass record too, so the gate scanner and the app show them like any other pass.
+    if (template === 'pass-confirmed' && ref) {
+        await ensureOrderPass(db, orderId, order, ev).catch(err => console.warn('[MAIL/EVENTS] order pass not issued:', err.message));
+    }
     const data = {
         name: order.customerName,
         eventName: ev.title || order.eventTitle,
@@ -109,7 +95,7 @@ export const sendOrderEmail = async (orderId, { event: eventDoc = null } = {}) =
         paymentRef: order.paymentRef && order.paymentRef !== 'FREE' ? order.paymentRef : '',
         mode: 'qr',
         source: 'order',
-        passUrl: ref ? `${SITE_URL}/ticket/${encodeURIComponent(ref)}` : '',
+        passUrl: ref ? passUrl(ref) : '',
     };
     const delivery = await notify(template, order.userId || null, data, {
         to: { email, phone: order.customerPhone, name: order.customerName },

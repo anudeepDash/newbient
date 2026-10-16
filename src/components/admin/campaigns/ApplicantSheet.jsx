@@ -22,6 +22,8 @@ import { cn } from '../../../lib/utils';
 import { accent } from '../theme';
 import Sheet from '../Sheet';
 import { Avatar, Badge, Button, Menu, MenuItem } from '../ui';
+import Ticket from 'lucide-react/dist/esm/icons/ticket';
+import { DeliveryDots } from './CampaignTickets';
 import { StageBadge, Spinner } from './parts';
 import { creatorHandle, creatorPhotoOf, formatCount, formatDay, inr, taskTypeOf, waNumber } from './campaignModel';
 
@@ -45,6 +47,7 @@ const Check2 = ({ ok, children, neutral }) => (
 const ApplicantSheet = ({
     open, onClose, campaign, entry, busy,
     onSelect, onUnselect, onStage, onPay, onUnpay, onApprove, onRequestChanges, onMessage, onOpenProfile,
+    ticket = null, onSendTicket,
 }) => {
     if (!entry) return <Sheet open={false} onClose={onClose} />;
     const { creator, stage, criteria, progress, payout } = entry;
@@ -196,6 +199,27 @@ const ApplicantSheet = ({
                                     );
                                 })}
                             </ul>
+                        )}
+                    </section>
+                )}
+
+                {onSendTicket && (selected || stage === 'shortlisted' || ticket) && (
+                    <section>
+                        <h3 className="mb-2 text-[13px] font-bold">Event ticket</h3>
+                        {ticket ? (
+                            <div className={cn('flex items-center gap-3 rounded-xl border p-3', accent('green').border, accent('green').soft)}>
+                                <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', accent('green').chip)}><Ticket size={17} /></span>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[14px] font-bold">{ticket.externalTicket ? (ticket.externalTicket.kind === 'pdf' ? 'PDF ticket' : 'Ticket link') : 'Newbi pass'}{ticket.status === 'checked_in' ? ' · checked in' : ''}</p>
+                                    <div className="mt-1"><DeliveryDots delivery={ticket.delivery} showSeen /></div>
+                                </div>
+                                <Button size="sm" variant="ghost" onClick={() => onSendTicket(entry)} className="h-10">Send</Button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-3">
+                                <p className="min-w-0 flex-1 text-[13px] text-gray-500">No ticket sent yet.</p>
+                                <Button size="sm" variant="secondary" onClick={() => onSendTicket(entry)} className="h-10"><Ticket size={14} /> Send ticket</Button>
+                            </div>
                         )}
                     </section>
                 )}
