@@ -60,10 +60,6 @@ export default function CommunityPage() {
                     <div className="absolute inset-0 opacity-[0.07] dark:opacity-[0.06] text-black dark:text-white" style={{ backgroundImage: 'linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)', backgroundSize: '72px 72px', maskImage: 'linear-gradient(to bottom, #000 40%, transparent)', WebkitMaskImage: 'linear-gradient(to bottom, #000 40%, transparent)' }} />
                 </div>
                 <div className="relative flex-1 flex flex-col justify-center max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-14 md:py-20">
-                    <p className="nb-exit-fade flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">
-                        <span className="relative flex w-2 h-2"><span className="nb-ping absolute inset-0 rounded-full bg-neon-green/70" /><span className="relative w-2 h-2 rounded-full bg-neon-green" /></span>
-                        Newbi community
-                    </p>
                     <h1 className="mt-6 font-heading font-extrabold tracking-[-0.045em] leading-[0.9] text-gray-950 dark:text-white text-[14vw] sm:text-[11vw] lg:text-[8.5vw] xl:text-[7.5vw]">
                         <span className="nb-exit-l block">Be on the list</span>{' '}
                         <span className="nb-exit-r block"><span className="nb-ghost">for every show</span> <span className="text-emerald-600 dark:text-neon-green">near you.</span></span>

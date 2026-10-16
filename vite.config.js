@@ -97,7 +97,7 @@ export default defineConfig(({ mode }) => {
         // prerendered (scripts/prerender.mjs) and routed by vercel.json.
         name: 'landing-dev-routes',
         configureServer(server) {
-          const LANDING = new Set(['/', '/creator', '/community', '/contact', '/terms', '/privacy']);
+          const LANDING = new Set(['/', '/work', '/creator', '/community', '/contact', '/terms', '/privacy']);
           server.middlewares.use((req, res, next) => {
             const [pathname] = (req.url || '').split('?');
             const clean = pathname.replace(/\/+$/, '') || '/';
@@ -117,10 +117,16 @@ export default defineConfig(({ mode }) => {
             if (!req.url.startsWith('/api/forms')) return next();
             const url = new URL(req.url, 'http://localhost');
             const type = url.searchParams.get('type');
-            if (type !== 'public-feed' && type !== 'enquiry') return next();
+            if (type !== 'public-feed' && type !== 'public-archive' && type !== 'enquiry') return next();
             res.status = (c) => { res.statusCode = c; return res; };
             res.json = (d) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(d)); return res; };
             try {
+              if (type === 'public-archive') {
+                const { getPublicArchive } = await import('./api/_lib/publicFeed.js');
+                const { firestoreRest } = await import('./scripts/dev/firestoreRest.mjs');
+                const archive = await getPublicArchive(firestoreRest(env.VITE_FIREBASE_PROJECT_ID || 'newbi-ent-v2'));
+                return res.status(200).json({ success: true, ...archive });
+              }
               if (type === 'public-feed') {
                 const { getPublicFeed } = await import('./api/_lib/publicFeed.js');
                 const { firestoreRest } = await import('./scripts/dev/firestoreRest.mjs');

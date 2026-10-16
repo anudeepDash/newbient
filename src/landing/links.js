@@ -17,6 +17,7 @@ export const APP_LINKS = {
 };
 
 export const FEED_URL = '/api/forms?type=public-feed';
+export const ARCHIVE_URL = '/api/forms?type=public-archive';
 export const ENQUIRY_URL = '/api/forms?type=enquiry';
 
 // Smaller, modern-format Cloudinary renditions; other hosts are left alone.

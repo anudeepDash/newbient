@@ -50,13 +50,6 @@ export default function Hero({ onChooseAudience, nextEvent }) {
             </div>
 
             <div className="relative flex-1 flex flex-col max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-10 pt-8 md:pt-12 pb-8">
-                <p className="nb-exit-fade flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">
-                    <span className="relative flex w-2 h-2">
-                        <span className="nb-ping absolute inset-0 rounded-full bg-neon-green/70" />
-                        <span className="relative w-2 h-2 rounded-full bg-neon-green" />
-                    </span>
-                    Event marketing &amp; live entertainment · India
-                </p>
 
                 <div className="flex-1 flex flex-col justify-center py-10 md:py-14">
                     <h1 className="font-heading font-extrabold tracking-[-0.045em] leading-[0.9] text-gray-950 dark:text-white text-[15vw] sm:text-[12vw] lg:text-[10vw] xl:text-[9vw]">

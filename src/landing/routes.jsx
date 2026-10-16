@@ -33,6 +33,15 @@ export const LANDING_ROUTES = [
         },
     },
     {
+        path: '/work',
+        featureId: 'home',
+        Page: lazyPage(() => import('./pages/WorkPage.jsx')),
+        meta: {
+            title: 'Work | Newbi',
+            description: 'Concerts, launches, fests and campaigns Newbi Entertainment & Marketing has produced and run across India.',
+        },
+    },
+    {
         path: '/creator',
         featureId: 'influencer_public',
         Page: lazyPage(() => import('./pages/CreatorPage.jsx')),

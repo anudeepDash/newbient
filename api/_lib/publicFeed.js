@@ -126,7 +126,7 @@ function pastClients(list) {
         }));
 }
 
-function caseStudies(list, categories) {
+function caseStudies(list, categories, limit = 10) {
     const catName = new Map(categories.map((c) => [c.id, str(c.name || c.label || c.title, 40)]));
     return list
         .filter((p) => !isHidden(p) && str(p.title) && isHttpUrl(p.image))
@@ -134,7 +134,7 @@ function caseStudies(list, categories) {
             if (Boolean(a.isPinned) !== Boolean(b.isPinned)) return a.isPinned ? -1 : 1;
             return (a.order || 0) - (b.order || 0);
         })
-        .slice(0, 4)
+        .slice(0, limit)
         .map((p) => ({
             id: p.id,
             title: str(p.title, 120),
@@ -228,6 +228,31 @@ export async function getPublicFeed(db, { maintenanceDoc = 'maintenance' } = {})
         testimonials: settings.showCreatorTestimonials ? testimonials(quotes) : [],
         campaigns: openCampaigns(campaigns),
     };
+}
+
+// Every published portfolio item, for the /work archive.
+export async function getPublicArchive(db) {
+    const [portfolio, categories] = await Promise.all([
+        readCollection(db, 'portfolio', 500),
+        readCollection(db, 'portfolio_categories'),
+    ]);
+    const items = caseStudies(portfolio, categories, 500);
+    const used = [...new Set(items.map((i) => i.category).filter(Boolean))];
+    return { generatedAt: new Date().toISOString(), items, categories: used };
+}
+
+export async function handlePublicArchive(db, req, res) {
+    if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (!db) return res.status(503).json({ success: false, error: 'Archive unavailable' });
+    try {
+        const archive = await getPublicArchive(db);
+        res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
+        return res.status(200).json({ success: true, ...archive });
+    } catch (err) {
+        console.error('[public-archive] error:', err);
+        res.setHeader('Cache-Control', 'no-store');
+        return res.status(500).json({ success: false, error: 'Archive unavailable' });
+    }
 }
 
 export async function handlePublicFeed(db, req, res) {

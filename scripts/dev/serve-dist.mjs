@@ -8,13 +8,13 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import { getPublicFeed } from '../../api/_lib/publicFeed.js';
+import { getPublicFeed, getPublicArchive } from '../../api/_lib/publicFeed.js';
 import { handleEnquiry } from '../../api/_lib/enquiry.js';
 import { firestoreRest } from './firestoreRest.mjs';
 
 const port = Number(process.argv[2] || 4173);
 const dist = path.resolve('dist');
-const LANDING = { '/': '_landing/index.html', '/creator': '_landing/creator/index.html', '/community': '_landing/community/index.html', '/contact': '_landing/contact/index.html', '/terms': '_landing/terms/index.html', '/privacy': '_landing/privacy/index.html' };
+const LANDING = { '/': '_landing/index.html', '/creator': '_landing/creator/index.html', '/community': '_landing/community/index.html', '/work': '_landing/work/index.html', '/contact': '_landing/contact/index.html', '/terms': '_landing/terms/index.html', '/privacy': '_landing/privacy/index.html' };
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.ico': 'image/x-icon' };
 
 const send = (req, res, status, body, type) => {
@@ -30,6 +30,10 @@ http.createServer(async (req, res) => {
     if (url.pathname === '/api/forms' && url.searchParams.get('type') === 'public-feed') {
         const feed = await getPublicFeed(firestoreRest('newbi-ent-v2'));
         return send(req, res, 200, JSON.stringify({ success: true, ...feed }), 'application/json');
+    }
+    if (url.pathname === '/api/forms' && url.searchParams.get('type') === 'public-archive') {
+        const archive = await getPublicArchive(firestoreRest('newbi-ent-v2'));
+        return send(req, res, 200, JSON.stringify({ success: true, ...archive }), 'application/json');
     }
     if (url.pathname === '/api/forms' && url.searchParams.get('type') === 'enquiry') {
         let body = ''; req.on('data', (c) => { body += c; });

@@ -169,6 +169,11 @@
             "destination": "/_landing/index.html"
         },
         {
+            "source": "/work",
+            "missing": [{ "type": "host", "value": "app.newbi.live" }],
+            "destination": "/_landing/work/index.html"
+        },
+        {
             "source": "/creator",
             "missing": [{ "type": "host", "value": "app.newbi.live" }],
             "destination": "/_landing/creator/index.html"
