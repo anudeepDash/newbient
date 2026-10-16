@@ -42,7 +42,7 @@ const BellButton = ({ count, onClick, className }) => (
     >
         <Bell size={20} />
         {count > 0 && (
-            <span className="absolute right-1.5 top-1.5 min-w-[18px] rounded-full bg-neon-pink px-1 text-center text-[10px] font-black leading-[18px] text-black ring-2 ring-[#f6f7f9] dark:ring-[#050608]">
+            <span className="absolute right-1.5 top-1.5 min-w-[18px] rounded-full bg-neon-pink px-1 text-center text-[10px] font-black leading-[18px] text-black ring-2 ring-[#f4f4f1] dark:ring-[#050608]">
                 {count > 9 ? '9+' : count}
             </span>
         )}
@@ -98,11 +98,14 @@ const AppLayout = () => {
     const activeModule = moduleForPath(path);
 
     return (
-        <div className="min-h-dvh bg-[#f6f7f9] text-gray-900 dark:bg-[#050608] dark:text-white">
+        <div className="relative isolate min-h-dvh bg-[#f4f4f1] text-gray-900 dark:bg-[#050608] dark:text-white">
+            {/* The landing site's soft colour wash (gradients only, no blur filter). */}
+            <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 dark:hidden" style={{ background: 'radial-gradient(60% 40% at 100% 0%, rgba(57,255,20,0.22), transparent 70%), radial-gradient(50% 40% at 0% 100%, rgba(56,189,248,0.14), transparent 70%)' }} />
+            <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 hidden dark:block" style={{ background: 'radial-gradient(60% 40% at 100% 0%, rgba(57,255,20,0.14), transparent 70%), radial-gradient(50% 40% at 0% 100%, rgba(56,189,248,0.08), transparent 70%)' }} />
             <AuthResumer />
 
             {/* ── Top bar (every screen size: desktop is the phone layout, centred) ── */}
-            <header className="fixed inset-x-0 top-0 z-40 border-b border-black/[0.05] bg-[#f6f7f9]/95 pt-[env(safe-area-inset-top)] dark:border-white/[0.05] dark:bg-[#050608]/95">
+            <header className="fixed inset-x-0 top-0 z-40 border-b border-black/[0.05] bg-[#f4f4f1]/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl dark:border-white/[0.05] dark:bg-[#050608]/80">
                 <div className="mx-auto flex h-14 max-w-3xl items-center justify-between pl-4 pr-1.5 sm:px-4">
                     <Link to={appPath('/')} aria-label="Newbi home" className="flex h-11 items-center"><Logo className="h-7" /></Link>
                     <div className="flex items-center">

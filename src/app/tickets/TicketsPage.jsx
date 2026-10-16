@@ -74,7 +74,7 @@ const TicketsPage = () => {
 
     return (
         <PageBody>
-            <PageHeader eyebrow="Tickets" title="Upcoming shows" subtitle="Pick your tickets and pay by UPI. Your ticket shows up in the app." />
+            <PageHeader eyebrow="Tickets" title="Get your" highlight="tickets." subtitle="Pick a show, pay by UPI, and your ticket shows up in the app." />
 
             {!loaded ? (
                 <CardGrid><CardSkeleton /><CardSkeleton /></CardGrid>

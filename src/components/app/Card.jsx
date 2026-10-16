@@ -156,6 +156,8 @@ const Card = ({
                 >
                     {image ? (
                         <>
+                            {/* Neutral backing while the photo loads, so the vignette doesn't read as a white haze */}
+                            <div className="absolute inset-0 bg-gray-200 dark:bg-zinc-900" />
                             {/* Aura: desktop only, iPhone Safari runs out of GPU memory with it */}
                             <div className="absolute -inset-8 hidden scale-110 bg-cover bg-center opacity-80 blur-xl transform-gpu sm:block" style={{ backgroundImage: `url("${image}")` }} />
                             <img

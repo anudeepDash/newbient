@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import House from 'lucide-react/dist/esm/icons/house';
 import Users from 'lucide-react/dist/esm/icons/users';
+import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import Camera from 'lucide-react/dist/esm/icons/camera';
 import GraduationCap from 'lucide-react/dist/esm/icons/graduation-cap';
 import CircleUserRound from 'lucide-react/dist/esm/icons/circle-user-round';
@@ -21,7 +22,8 @@ import CircleUserRound from 'lucide-react/dist/esm/icons/circle-user-round';
  *   aliases     other root paths that belong to the module (tab highlight)
  *   onboarding  profile fields this module's main flow needs (requirements.js)
  *
- * There is no Passes tab: guestlist passes live in Community, campaign tickets
+ * Tickets has its own tab for buying. Passes still live where they came from:
+ * guestlist passes in Community, campaign tickets
  * inside the creator's campaign.
  */
 
@@ -59,7 +61,15 @@ export const APP_MODULES = [
             { path: 'g/:id', Component: GuestlistPage },
             { path: 'giveaways/:slug', Component: GiveawayPage },
         ],
-        aliases: ['/tickets'],
+        onboarding: ['name'],
+    },
+    {
+        id: 'tickets',
+        path: '/tickets',
+        tab: { label: 'Tickets', icon: Ticket },
+        capability: null,
+        launched: true,
+        routes: [{ path: '', Component: TicketsPage }],
         onboarding: ['name'],
     },
     {
@@ -130,7 +140,6 @@ export function moduleForPath(pathname = '/') {
  * the signed ticket link from WhatsApp/email, and a single form.
  */
 export const STANDALONE_ROUTES = [
-    { path: 'tickets', Component: TicketsPage },
     { path: 'p/:ref', Component: PassPage },
     { path: 't/:token', Component: TicketLinkPage },
     { path: 'forms/:id', Component: FormPage },

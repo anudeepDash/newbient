@@ -10,11 +10,10 @@ import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import HeartHandshake from 'lucide-react/dist/esm/icons/heart-handshake';
 import { cn } from '../../lib/utils';
 import { useAppStore } from '../../lib/store/appStore';
-import { useStore as useLegacyStore } from '../../lib/store.js';
 import { guestlistPasses } from '../../lib/store/passes';
 import { communityPost } from '../../lib/passesApi';
 import { isPresent } from '../../lib/present';
-import { Card, Button, CARD_TYPES, Field, Sheet } from '../../components/app';
+import { Card, Button, Field, Sheet } from '../../components/app';
 import { useAuthGate, useResumeIntent, INTENTS } from '../auth/AuthGate';
 import { useAppContent } from '../useAppContent';
 import { feedCard, dateLabel } from '../cards';
@@ -22,7 +21,8 @@ import { appPath } from '../host';
 import { plainText } from '../community/communityParts';
 import { isUpcomingPass, passCard } from '../passes/passCards';
 import PageHeader, { PageBody } from './PageHeader';
-import { CardGrid, CardSkeleton, EmptyState, SectionHeader, Rail } from './parts';
+import { usePublicContact } from '../usePublicFeed';
+import { CardGrid, CardSkeleton, EmptyState, SectionHeader, Rail, GLASS } from './parts';
 
 /*
  * Community: your guestlist passes, a one-tap Join, and one feed of cards
@@ -31,7 +31,6 @@ import { CardGrid, CardSkeleton, EmptyState, SectionHeader, Rail } from './parts
  * gigs open a sheet with "I'm interested".
  */
 
-const FILTER_LABELS = { guestlist: 'Guestlists', gig: 'Gigs', giveaway: 'Giveaways', form: 'Forms' };
 
 /* "I'm interested" in a gig: saved in the app first, then a WhatsApp/link button. */
 const GigSheet = ({ gig, onClose }) => {
@@ -95,7 +94,7 @@ const JoinPanel = () => {
     const authUser = useAppStore(s => s.authUser);
     const profile = useAppStore(s => s.profile);
     const joinCommunity = useAppStore(s => s.joinCommunity);
-    const whatsappCommunity = useLegacyStore(s => s.siteDetails?.whatsappCommunity);
+    const whatsappCommunity = usePublicContact().whatsappCommunity;
     const gate = useAuthGate();
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
@@ -113,7 +112,7 @@ const JoinPanel = () => {
     if (member) {
         if (!isPresent(whatsappCommunity)) return null;
         return (
-            <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.06] px-5 py-4">
+            <div className={`flex flex-wrap items-center gap-3 rounded-3xl px-5 py-4 ${GLASS}`}>
                 <CircleCheck size={20} className="shrink-0 text-emerald-700 dark:text-neon-green" />
                 <p className="min-w-0 flex-1 text-[15px] font-semibold">You’re in the Newbi community.</p>
                 <Button size="sm" variant="secondary" icon={MessageCircle} href={whatsappCommunity} target="_blank" rel="noopener noreferrer">WhatsApp group</Button>
@@ -121,9 +120,9 @@ const JoinPanel = () => {
         );
     }
     return (
-        <div className="flex flex-col gap-3 rounded-3xl border border-black/[0.06] bg-white px-5 py-5 dark:border-white/[0.08] dark:bg-[#0c0e14] sm:flex-row sm:items-center">
+        <div className={`flex flex-col gap-3 rounded-3xl px-5 py-5 sm:flex-row sm:items-center ${GLASS}`}>
             <div className="min-w-0 flex-1">
-                <p className="text-[17px] font-black">Join the Newbi community</p>
+                <p className="font-heading text-[19px] font-extrabold tracking-[-0.02em]">Join the Newbi community</p>
                 <p className="text-[14px] text-gray-600 dark:text-zinc-400">First word on guestlists, gigs and giveaways. One tap, no forms.</p>
             </div>
             <Button loading={busy} onClick={() => gate.run({ type: INTENTS.joinCommunity }, join)}>Join</Button>
@@ -154,6 +153,13 @@ const Chips = ({ items, value, onChange }) => (
     </div>
 );
 
+const SECTIONS = [
+    { type: 'guestlist', title: 'Guestlists' },
+    { type: 'gig', title: 'Volunteer gigs' },
+    { type: 'giveaway', title: 'Giveaways' },
+    { type: 'form', title: 'Forms' },
+];
+
 const CommunityPage = () => {
     useAppContent({ campaigns: false });
     const authUser = useAppStore(s => s.authUser);
@@ -163,16 +169,14 @@ const CommunityPage = () => {
     const myGuestlists = useMemo(() => guestlistPasses(passes).filter(isUpcomingPass), [passes]);
     const { requestSignIn } = useAuthGate();
     const [searchParams, setSearchParams] = useSearchParams();
-    const [filter, setFilter] = useState('all');
     const [city, setCity] = useState('all');
 
-    const types = useMemo(() => Object.keys(FILTER_LABELS).filter(t => feed.some(i => i.type === t)), [feed]);
     const cities = useMemo(() => {
         const counts = new Map();
         feed.forEach(i => { if (isPresent(i.city)) counts.set(i.city.trim(), (counts.get(i.city.trim()) || 0) + 1); });
         return [...counts.keys()].sort();
     }, [feed]);
-    const shown = useMemo(() => feed.filter(i => (filter === 'all' || i.type === filter) && (city === 'all' || !isPresent(i.city) || i.city.trim() === city)), [feed, filter, city]);
+    const shown = useMemo(() => feed.filter(i => (city === 'all' || !isPresent(i.city) || i.city.trim() === city)), [feed, city]);
 
     const gigId = searchParams.get('gig');
     const openGig = gigId ? feed.find(i => i.type === 'gig' && i.id === gigId) : null;
@@ -180,7 +184,7 @@ const CommunityPage = () => {
 
     return (
         <PageBody>
-            <PageHeader eyebrow="Community" title="What’s on" subtitle="Guestlists, gigs, giveaways and forms from Newbi." />
+            <PageHeader eyebrow="Community" title="What’s" highlight="on." subtitle="Guestlists, gigs, giveaways and forms from Newbi." />
 
             {myGuestlists.length > 0 && (
                 <section className="space-y-3">
@@ -191,13 +195,7 @@ const CommunityPage = () => {
 
             <JoinPanel />
 
-            {types.length > 1 && (
-                <Chips
-                    value={filter}
-                    onChange={setFilter}
-                    items={[{ key: 'all', label: 'All' }, ...types.map(t => ({ key: t, label: FILTER_LABELS[t], icon: CARD_TYPES[t].icon }))]}
-                />
-            )}
+            {/* One section per kind, like the old community hub: guestlists, gigs, giveaways, forms. */}
             {cities.length > 1 && (
                 <Chips value={city} onChange={setCity} items={[{ key: 'all', label: 'All cities', icon: MapPin }, ...cities.map(c => ({ key: c, label: c }))]} />
             )}
@@ -205,7 +203,16 @@ const CommunityPage = () => {
             {!loaded ? (
                 <CardGrid><CardSkeleton /><CardSkeleton /><CardSkeleton /></CardGrid>
             ) : shown.length ? (
-                <CardGrid>{shown.map(item => <Card key={item.key} {...feedCard(item)} />)}</CardGrid>
+                SECTIONS.map(({ type, title }) => {
+                    const items = shown.filter(i => i.type === type);
+                    if (!items.length) return null;
+                    return (
+                        <section key={type} className="space-y-3">
+                            <SectionHeader title={title} />
+                            <CardGrid>{items.map(item => <Card key={item.key} {...feedCard(item)} />)}</CardGrid>
+                        </section>
+                    );
+                })
             ) : (
                 <EmptyState
                     icon={Users}
