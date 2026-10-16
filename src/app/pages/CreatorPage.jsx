@@ -1,6 +1,6 @@
 import React from 'react';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
 import { useAppStore, useCapability } from '../../lib/store/appStore';
 import { isPresent } from '../../lib/present';
@@ -76,7 +76,7 @@ const CreatorPage = () => {
                     <HeroPanel image={campaigns[0]?.thumbnail} title="Get passes, products and paid work for posting about the shows you love.">
                         <p className="text-[15px] text-gray-600 dark:text-zinc-300">Share your Instagram, niche and rates. Approved creators get invited to campaigns from brands and events.</p>
                         <div className="pt-1">
-                            <Button href={landingUrl('/creator/join')} icon={Sparkles}>Apply as a creator</Button>
+                            <Button href={landingUrl('/creator/join')}>Apply as a creator</Button>
                         </div>
                     </HeroPanel>
                 </>
@@ -91,7 +91,7 @@ const CreatorPage = () => {
                         {campaigns.map(c => <Card key={c.id} {...campaignCard(c, { applied: joined.has(c.id) })} />)}
                     </CardGrid>
                 ) : (
-                    <EmptyState icon={Sparkles} title="No open campaigns right now" message="New brand and event campaigns show up here first." />
+                    <EmptyState icon={Megaphone} title="No open campaigns right now" message="New brand and event campaigns show up here first." />
                 )}
             </section>
         </PageBody>
