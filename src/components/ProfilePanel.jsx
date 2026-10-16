@@ -14,15 +14,16 @@ import { extractSocialUsername, hasDisallowedLink, buildSocialUrl } from '../lib
 import { PREDEFINED_CITIES, CREATOR_NICHES, CREATOR_NICHE_OPTIONS, isCollegeNiche } from '../lib/constants';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../lib/firebase';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import StudioSelect from './ui/StudioSelect';
 import CampaignDetailModal from './creator/CampaignDetailModal';
 
 const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
     const { 
-        user, logout, creators, addNotification, addToast,
+        user, logout, addNotification, addToast,
         resetPassword, updateDisplayName, 
-        ticketOrders, notifications, upcomingEvents, portfolio, guestlists,
+        notifications, upcomingEvents, portfolio, guestlists,
         revokeSessions, deleteAccount, deleteCreator, updateCreator,
         isProfilePanelOpen, profilePanelTab, closeProfilePanel, resolveCreatorProfile,
         campaigns
@@ -82,18 +83,42 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
     }, [profilePanelTab]);
 
     const [resolvedCreator, setResolvedCreator] = useState(null);
+    // Only this user's own ticket orders and creator profiles are loaded, never the whole collections.
+    const [ticketOrders, setTicketOrders] = useState([]);
+    const [ownCreatorsByUid, setOwnCreatorsByUid] = useState([]);
+    const [ownCreatorsByEmail, setOwnCreatorsByEmail] = useState([]);
 
     useEffect(() => {
         if (!isOpen || !user?.uid) return;
         
         // On-demand subscriptions when profile panel is open
         const store = useStore.getState();
-        const unsub1 = store.subscribeToTicketOrders ? store.subscribeToTicketOrders() : null;
         const unsub2 = store.subscribeToUpcomingEvents ? store.subscribeToUpcomingEvents() : null;
         const unsub3 = store.subscribeToPortfolio ? store.subscribeToPortfolio() : null;
         const unsub4 = store.subscribeToGuestlists ? store.subscribeToGuestlists() : null;
-        const unsub5 = store.subscribeToCreators ? store.subscribeToCreators() : null;
         const unsub6 = store.subscribeToCampaigns ? store.subscribeToCampaigns() : null;
+
+        const unsub1 = onSnapshot(
+            query(collection(db, 'ticket_orders'), where('userId', '==', user.uid)),
+            (snap) => setTicketOrders(snap.docs.map(d => ({ ...d.data(), id: d.id }))),
+            (err) => console.warn('[ProfilePanel] Ticket orders listener notice:', err.message)
+        );
+        const toCreator = (d) => {
+            const data = { ...d.data(), id: d.id };
+            if (!data.uid) data.uid = d.id;
+            return data;
+        };
+        const unsub5 = onSnapshot(
+            query(collection(db, 'creators'), where('uid', '==', user.uid)),
+            (snap) => setOwnCreatorsByUid(snap.docs.map(toCreator)),
+            (err) => console.warn('[ProfilePanel] Creator profile listener notice:', err.message)
+        );
+        const ownEmail = user.email ? user.email.trim().toLowerCase() : null;
+        const unsub7 = ownEmail ? onSnapshot(
+            query(collection(db, 'creators'), where('email', '==', ownEmail)),
+            (snap) => setOwnCreatorsByEmail(snap.docs.map(toCreator)),
+            (err) => console.warn('[ProfilePanel] Creator email listener notice:', err.message)
+        ) : null;
 
         if (resolveCreatorProfile) {
             resolveCreatorProfile(user).then((res) => {
@@ -166,8 +191,18 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
             if (unsub4) unsub4();
             if (unsub5) unsub5();
             if (unsub6) unsub6();
+            if (unsub7) unsub7();
         };
     }, [isOpen, user?.uid, user?.email, resolveCreatorProfile]);
+
+    const creators = useMemo(() => {
+        // Live listener data is applied last so it wins over the one-time lookup.
+        const byId = new Map();
+        [resolvedCreator, ...ownCreatorsByEmail, ...ownCreatorsByUid].filter(Boolean).forEach(c => {
+            byId.set(c.id || c.uid, { ...(byId.get(c.id || c.uid) || {}), ...c });
+        });
+        return Array.from(byId.values());
+    }, [ownCreatorsByUid, ownCreatorsByEmail, resolvedCreator]);
 
     const userPhoneNorm = user?.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
     const userEmailNorm = user?.email ? user.email.toLowerCase() : null;
@@ -380,6 +415,12 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         };
     }, [isOpen, activeTab]);
 
+    // Account messages go only to the signed-in user, never to the global feed.
+    const notifySelf = (notification) => {
+        if (!user?.uid) return;
+        addNotification({ ...notification, userId: user.uid });
+    };
+
     const handleLogout = async () => {
         await logout();
         onClose();
@@ -390,13 +431,13 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         setIsUpdating(true);
         try {
             await resetPassword(user.email);
-            addNotification({
+            notifySelf({
                 title: "Password reset email sent",
                 content: "Check your inbox for a link to reset your password.",
                 type: 'message'
             });
         } catch (err) {
-            addNotification({
+            notifySelf({
                 title: "Couldn't send reset email",
                 content: "We couldn't send the password reset email. Please try again.",
                 type: 'default'
@@ -411,7 +452,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         setIsUpdating(true);
         try {
             await deleteCreator(creatorProfile.uid);
-            addNotification({
+            notifySelf({
                 title: "Creator profile deactivated",
                 content: "Your creator profile is deactivated. Your tickets and main account are still active.",
                 type: 'message'
@@ -420,7 +461,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
             setActiveTab('overview');
         } catch (err) {
             console.error("Creator profile deletion failed:", err);
-            addNotification({
+            notifySelf({
                 title: "Couldn't deactivate profile",
                 content: "We couldn't deactivate your creator profile. Please try again.",
                 type: 'default'
@@ -449,7 +490,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
             setIsUpdating(true);
             try {
                 await revokeSessions();
-                addNotification({
+                notifySelf({
                     title: "Signed out everywhere",
                     content: "You've been signed out of all your devices.",
                     type: 'message'
@@ -457,7 +498,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
                 onClose();
                 navigate('/');
             } catch (err) {
-                addNotification({
+                notifySelf({
                     title: "Couldn't sign out everywhere",
                     content: "We couldn't sign you out of all devices. Please try again.",
                     type: 'default'
@@ -474,13 +515,13 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         try {
             await updateDisplayName(newDisplayName);
             setIsEditingName(false);
-            addNotification({
+            notifySelf({
                 title: "Name updated",
                 content: "Your display name has been updated.",
                 type: 'message'
             });
         } catch (err) {
-            addNotification({
+            notifySelf({
                 title: "Couldn't update name",
                 content: "We couldn't save your new display name. Please try again.",
                 type: 'default'
@@ -496,13 +537,13 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         try {
             await useStore.getState().updateUserProfile(user.uid, { phoneNumber: newPhone });
             setIsEditingPhone(false);
-            addNotification({
+            notifySelf({
                 title: "Phone number updated",
                 content: "Your phone number has been updated.",
                 type: 'security'
             });
         } catch (err) {
-            addNotification({
+            notifySelf({
                 title: "Couldn't update phone number",
                 content: "We couldn't save your new phone number. Please try again.",
                 type: 'default'
@@ -873,7 +914,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
                                                 setIsUpdating={setIsUpdating}
                                                 updateCreator={updateCreator}
                                                 addToast={addToast}
-                                                addNotification={addNotification}
+                                                addNotification={notifySelf}
                                                 participatedCampaigns={participatedCampaigns}
                                                 onOpenCampaign={(camp) => setSelectedCampaignForModal(camp)}
                                             />

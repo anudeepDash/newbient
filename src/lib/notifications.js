@@ -39,12 +39,19 @@ export const requestNotificationPermission = async () => {
     return null;
 };
 
+// onMessage adds a new handler on every call, so it is registered once per page load.
+let foregroundMessagingStarted = false;
+
 export const initForegroundMessaging = async () => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || foregroundMessagingStarted) return;
+    foregroundMessagingStarted = true;
 
     try {
         const msg = await getMessagingSafe();
-        if (!msg) return;
+        if (!msg) {
+            foregroundMessagingStarted = false;
+            return;
+        }
 
         onMessage(msg, (payload) => {
             try {
@@ -68,9 +75,12 @@ export const initForegroundMessaging = async () => {
                     }
                 }
                 
-                // 2. Add to store notifications (In-app center)
+                // 2. Add to the signed-in user's in-app notifications (never the global feed)
                 const notif = payload.notification || {};
+                const uid = useStore.getState().user?.uid;
+                if (!uid) return;
                 useStore.getState().addNotification({
+                    userId: uid,
                     title: notif.title || 'New notification',
                     content: notif.body || '',
                     type: payload.data?.type || 'push',
@@ -84,6 +94,7 @@ export const initForegroundMessaging = async () => {
             }
         });
     } catch (e) {
+        foregroundMessagingStarted = false;
         console.warn('[Notifications] Failed to init foreground messaging:', e);
     }
 };

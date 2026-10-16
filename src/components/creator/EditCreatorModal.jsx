@@ -463,9 +463,11 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
 
             await updateCreator(creatorId, payload);
             addToast("Creator details saved.", "success");
-
-            if (addNotification) {
+            
+            // Sent to whoever saved, not the global feed.
+            if (addNotification && user?.uid) {
                 addNotification({
+                    userId: user.uid,
                     title: "Creator profile updated",
                     content: "Your creator details and commercials have been saved.",
                     type: 'message'

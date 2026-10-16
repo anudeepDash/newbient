@@ -11,14 +11,14 @@ import Building from 'lucide-react/dist/esm/icons/building';
 import Info from 'lucide-react/dist/esm/icons/info';
 
 import { useStore } from '../lib/store';
-import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 
 const PayeeRegistration = () => {
-    useStoreSubscription(['financePayees']);
-    const { addFinancePayee, updateFinancePayee, financePayees } = useStore();
+    // Signed-in users only. This page never reads the payee list (it holds bank details)
+    // and never edits an existing payee: every submission is a new, pending record for admins to review.
+    const { addFinancePayee, user, authInitialized, setAuthModal } = useStore();
     const [searchParams] = useSearchParams();
 
     // Query parameters
@@ -51,8 +51,17 @@ const PayeeRegistration = () => {
         }
     }, [paramType]);
 
+    useEffect(() => {
+        if (user?.email && !email) setEmail(user.email);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.email]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!user?.uid) {
+            setAuthModal(true);
+            return;
+        }
         if (!name || !email || !phone) {
             useStore.getState().addToast('Fill in all the required fields to continue.', 'error');
             return;
@@ -80,10 +89,6 @@ const PayeeRegistration = () => {
         try {
             const emailLower = email.trim().toLowerCase();
             const phoneTrimmed = phone.trim();
-            const existingPayee = financePayees.find(p => 
-                (p.email && p.email.toLowerCase() === emailLower) || 
-                (p.phone && p.phone.trim() === phoneTrimmed)
-            );
 
             const payeeData = {
                 name: name.trim(),
@@ -95,23 +100,18 @@ const PayeeRegistration = () => {
                 bankDetails: paymentMode === 'Bank Transfer' ? { bankName: bankName.trim(), accountNumber: accountNumber.trim(), ifscCode: ifscCode.trim() } : null,
                 destinationDetails,
                 notes: notes.trim(),
-                linkedGig: paramEvent ? paramEvent.trim() : (existingPayee?.linkedGig || ''),
-                status: 'Approved',
+                linkedGig: paramEvent ? paramEvent.trim() : '',
+                status: 'Pending',
+                source: 'public_registration',
+                submittedByUid: user.uid,
+                submittedByEmail: user.email || '',
             };
 
-            if (existingPayee) {
-                await updateFinancePayee(existingPayee.id, {
-                    ...payeeData,
-                    updatedAt: new Date().toISOString()
-                });
-                useStore.getState().addToast('Your payment details have been updated.', 'success');
-            } else {
-                await addFinancePayee({
-                    ...payeeData,
-                    createdAt: new Date().toISOString()
-                });
-                useStore.getState().addToast('Your payment details have been saved.', 'success');
-            }
+            await addFinancePayee({
+                ...payeeData,
+                createdAt: new Date().toISOString()
+            });
+            useStore.getState().addToast("Your payment details were sent. Our team will review them.", 'success');
             setIsSubmitted(true);
         } catch (err) {
             console.error(err);
@@ -134,6 +134,28 @@ const PayeeRegistration = () => {
         setNotes('');
         setIsSubmitted(false);
     };
+
+    if (!user?.uid) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-[#020202] text-gray-900 dark:text-white flex flex-col justify-center items-center pt-48 md:pt-56 pb-20 px-4 transition-colors duration-300">
+                <Card className="w-full max-w-md p-8 md:p-10 text-center bg-white dark:bg-zinc-950/80 border-gray-200 dark:border-white/5 rounded-[2.5rem] border">
+                    <h1 className="text-3xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white leading-none">
+                        PAYOUT <span className="text-neon-green">REGISTRATION.</span>
+                    </h1>
+                    <p className="text-sm text-gray-500 mt-4 mb-8">
+                        {authInitialized === false
+                            ? 'Checking your sign-in…'
+                            : 'Sign in to share your payout details with the Newbi team.'}
+                    </p>
+                    {authInitialized !== false && (
+                        <Button type="button" onClick={() => setAuthModal(true)} className="w-full h-12">
+                            Sign in to continue
+                        </Button>
+                    )}
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#020202] text-gray-900 dark:text-white flex flex-col justify-center items-center pt-48 md:pt-56 pb-20 px-4 relative overflow-hidden selection:bg-neon-green selection:text-black transition-colors duration-300">
@@ -372,7 +394,7 @@ const PayeeRegistration = () => {
                                         REGISTRATION <span className="text-neon-green">COMPLETE!</span>
                                     </h2>
                                     <p className="text-gray-600 dark:text-gray-400 font-bold uppercase tracking-wider text-[9px] max-w-xs mx-auto mb-8 leading-relaxed">
-                                        Your payment preferences have been updated. Our team will reference this information for future disbursements.
+                                        We have your payout details. Our team will review them before using them for payments.
                                     </p>
 
                                     {/* Summary Display Box */}
