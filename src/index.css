@@ -45,6 +45,9 @@
   /* Admin pages: the colour behind everything (Safari's overscroll and bars) is the admin background. */
   html.admin-route { --bg-primary: #f6f7f9; }
   html.dark.admin-route { --bg-primary: #07080b; }
+  /* The app (app.newbi.live, or /app in dev) has its own page colour too. */
+  html.app-route { --bg-primary: #f6f7f9; }
+  html.dark.app-route { --bg-primary: #050608; }
 
   /* Native controls (date/time pickers, scrollbars, autofill) follow the site theme, not just the OS. */
   html { color-scheme: light; }
