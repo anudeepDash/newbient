@@ -7,7 +7,7 @@ import NotificationBell from './NotificationBell';
 // The profile panel is large; it's fetched the first time someone opens it.
 const ProfilePanel = lazy(() => import('./ProfilePanel'));
 import { useStore } from '../lib/store';
-import logo from '../assets/logo.png';
+import NewbiLogo from './brand/NewbiLogo';
 import newbiCreatorsLogoDark from '../assets/newbi-creators-logo.png';
 import newbiCreatorsLogoLight from '../assets/newbi-creators-logo-light.png';
 import { useTheme } from '../hooks/useTheme';
@@ -163,7 +163,7 @@ const Navbar = () => {
                                 </>
                             ) : (
                                 <>
-                                    <img src={logo} alt="newbi.live" className="h-9 w-auto" />
+                                    <NewbiLogo className="h-9 w-auto" />
                                 </>
                             )}
                         </Link>

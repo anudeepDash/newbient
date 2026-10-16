@@ -15,7 +15,7 @@ import { appPath, stripAppBase } from './host';
 import { AuthResumer } from './auth/AuthGate';
 import NotificationsSheet from './NotificationsSheet';
 import SignInSheet from './auth/SignInSheet';
-import newbiLogo from '../assets/logo/newbi-logo.svg';
+import NewbiLogo from '../components/brand/NewbiLogo';
 
 /*
  * The app shell (app.newbi.live, or /app on localhost).
@@ -29,7 +29,7 @@ import newbiLogo from '../assets/logo/newbi-logo.svg';
 
 // The unified newbi.live logo (outlined, so one file works on light and dark).
 const Logo = ({ className }) => (
-    <img src={newbiLogo} alt="Newbi" width="1433" height="697" className={cn('w-auto', className)} />
+    <NewbiLogo className={cn('w-auto', className)} />
 );
 
 const BellButton = ({ count, onClick, className }) => (
