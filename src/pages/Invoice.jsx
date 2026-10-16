@@ -880,7 +880,7 @@ const Invoice = () => {
                                                                             <img 
                                                                                 src={displayInvoice.qrType === 'custom' && displayInvoice.customQrImage
                                                                                     ? displayInvoice.customQrImage
-                                                                                    : `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`}
+                                                                                    : `/api/qr?size=200&margin=1&text=${encodeURIComponent(`upi://pay?pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`}
                                                                                 alt="Payment QR" 
                                                                                 className="w-[70px] h-[70px] grayscale contrast-125 mx-auto"
                                                                                 crossOrigin="anonymous"

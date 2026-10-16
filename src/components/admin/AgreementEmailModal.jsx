@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo } from 'react';
-import { generateAgreementEmailHTML } from '../../lib/email';
 import EmailComposer from './EmailComposer';
 
 /** Email a contract's signing link. Each recipient gets their own tracked link. */
@@ -18,19 +17,17 @@ const AgreementEmailModal = ({ isOpen, onClose, agreement, onSend }) => {
         theme: 'light',
     }), [agreement, party, project]);
 
-    const buildHtml = useCallback(({ headerText, messageBody, theme, recipient, preview }) => {
+    const buildData = useCallback(({ headerText, messageBody, recipient }) => {
         const query = new URLSearchParams({ via: 'email', email: recipient || '', name: agreement?.parties?.secondParty?.name || '' }).toString();
-        return generateAgreementEmailHTML({
+        return {
             headerText,
             messageBody,
-            agreementNumber: agreement?.agreementNumber || 'AGR-0000',
-            secondPartyName: agreement?.parties?.secondParty?.name || 'Client',
+            agreementNumber: agreement?.agreementNumber || '',
+            secondPartyName: agreement?.parties?.secondParty?.name || '',
             projectName: agreement?.details?.projectName || '',
-            effectiveDate: agreement?.effectiveDate ? new Date(agreement.effectiveDate).toLocaleDateString('en-GB') : '',
+            effectiveDate: agreement?.effectiveDate ? new Date(agreement.effectiveDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
             agreementUrl: `${window.location.origin}/agreement/${agreement?.id}?${query}`,
-            theme,
-            ...(preview ? { isPreview: true } : {}),
-        });
+        };
     }, [agreement]);
 
     return (
@@ -41,7 +38,8 @@ const AgreementEmailModal = ({ isOpen, onClose, agreement, onSend }) => {
             subtitle={[agreement?.agreementNumber, agreement?.parties?.secondParty?.name].filter(Boolean).join(' · ')}
             initial={initial}
             resetKey={agreement?.id}
-            buildHtml={buildHtml}
+            template="agreement"
+            buildData={buildData}
             perRecipient
             onSend={onSend}
             successText="Contract sent to"

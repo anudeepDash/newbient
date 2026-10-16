@@ -473,7 +473,7 @@ const BlogPostEditor = () => {
                                             {becomingLive ? (
                                                 <div className="space-y-3 border-t border-black/[0.06] pt-4 dark:border-white/[0.06]">
                                                     <Toggle label="Notify everyone" hint={'In-app and phone notification: "New article: …"'} checked={form.notifyPush} onChange={(v) => set({ notifyPush: v, notifyEmail: v ? form.notifyEmail : false })} />
-                                                    <Toggle label="Also email all registered users" hint="Use for big stories only" checked={form.notifyEmail} onChange={(v) => set({ notifyEmail: v, notifyPush: v ? true : form.notifyPush })} />
+                                                    <Toggle label="Also write an email" hint="Opens Mailing with this filled in, so you pick who gets it" checked={form.notifyEmail} onChange={(v) => set({ notifyEmail: v, notifyPush: v ? true : form.notifyPush })} />
                                                 </div>
                                             ) : form.mode === 'schedule' ? (
                                                 <p className="border-t border-black/[0.06] pt-4 text-[12px] text-gray-500 dark:border-white/[0.06]">Notifications go out when you send them, so none is sent for a scheduled post. Once it's live, use "Send notification" in the blog list.</p>

@@ -10,7 +10,9 @@ import GraduationCap from 'lucide-react/dist/esm/icons/graduation-cap';
 import { useStore } from '../../lib/store';
 import { cn } from '../../lib/utils';
 import { extractSocialUsername, buildSocialUrl } from '../../lib/socialUtils';
-import { resolveCityWhatsAppGroup, generateOfficialHTML } from '../../lib/email';
+import { resolveCityWhatsAppGroup } from '../../lib/email';
+import { sendTemplateEmail } from '../../lib/mailApi';
+import { previewEmailHtml } from '../../lib/emailTemplates';
 import { copyToClipboard } from '../../lib/clipboard';
 import { creatorHasCollegeNiche } from '../../lib/constants';
 import EmailPreviewIframe from '../ui/EmailPreviewIframe';
@@ -217,13 +219,11 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
         onUpdateStatus?.(creatorId, status);
     };
 
-    const livePreviewHtml = useMemo(() => generateOfficialHTML({
-        headerText: emailSubject || 'No subject',
-        messageBody: emailBody.trim() ? emailBody : '<p style="color:#999;font-style:italic;">Your message will appear here…</p>',
-        category: 'OUTREACH',
-        theme: 'light',
-        isPreview: true,
-    }), [emailSubject, emailBody]);
+    const livePreviewHtml = useMemo(() => previewEmailHtml('creator-message', {
+        name: creatorData?.name || 'Creator',
+        subject: emailSubject || 'No subject',
+        messageHtml: emailBody.trim() ? emailBody : '<p style="color:#999">Your message will appear here…</p>',
+    }), [emailSubject, emailBody, creatorData?.name]);
 
     const sendEmail = async (e) => {
         e.preventDefault();
@@ -231,9 +231,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
         if (!emailSubject.trim() || !emailBody.replace(/<[^>]*>/g, '').trim()) { addToast('Add a subject and a message first.', 'error'); return; }
         setSendingEmail(true);
         try {
-            const { sendCustomEmail } = await import('../../lib/email');
-            const r = await sendCustomEmail({ toEmail: creatorData.email, toName: creatorData.name, subject: emailSubject, message: emailBody, html: livePreviewHtml });
-            if (!r?.success) throw new Error('Send failed');
+            await sendTemplateEmail({ template: 'creator-message', to: creatorData.email, data: { name: creatorData.name || 'Creator', subject: emailSubject.trim(), messageHtml: emailBody } });
             addToast(`Email sent to ${creatorData.name}.`, 'success');
             setEmailBody('');
         } catch {

@@ -7,6 +7,12 @@
             "includeFiles": "dist/**"
         }
     },
+    "crons": [
+        {
+            "path": "/api/mail",
+            "schedule": "30 3 * * *"
+        }
+    ],
     "redirects": [
         {
             "source": "/unsubscribe",

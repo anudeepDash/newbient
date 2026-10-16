@@ -5,7 +5,7 @@ import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import { cn } from '../../../lib/utils';
 import { useStore } from '../../../lib/store';
 import { notifySpecificUser } from '../../../lib/notificationTriggers';
-import { sendCreatorDirectEmail } from '../../../lib/email';
+import { sendTemplateEmail } from '../../../lib/mailApi';
 import { creatorCampaignPath } from '../../../lib/campaignLinks';
 import Sheet from '../Sheet';
 import { Button, Avatar } from '../ui';
@@ -61,8 +61,11 @@ export const MessageSheet = ({ open, onClose, campaign, entries }) => {
             if (email) {
                 for (let i = 0; i < withEmail.length; i += 1) {
                     const e = withEmail[i];
-                    const res = await sendCreatorDirectEmail(e.creator.email, title.trim(), body.trim(), e.creator.name || 'Creator');
-                    if (!res?.success) mailFailed += 1;
+                    try {
+                        await sendTemplateEmail({ template: 'creator-message', to: e.creator.email, data: { name: e.creator.name || 'Creator', subject: title.trim(), message: body.trim() } });
+                    } catch {
+                        mailFailed += 1;
+                    }
                     setProgress(Math.round(((i + 1) / withEmail.length) * 100));
                 }
             }

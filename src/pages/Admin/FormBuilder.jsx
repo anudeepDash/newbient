@@ -415,7 +415,7 @@ const FormBuilder = () => {
                                 {!id && (
                                     <>
                                         <div className="py-3"><Toggle label="Notify everyone when it's published" hint="An in-app and push notification" checked={notify} onChange={setNotify} /></div>
-                                        {notify && <div className="pt-3"><Toggle label="Also email everyone" hint="Sends to the whole mailing list" checked={notifyEmail} onChange={setNotifyEmail} /></div>}
+                                        {notify && <div className="pt-3"><Toggle label="Also write an email" hint="Opens Mailing with this filled in, so you pick who gets it" checked={notifyEmail} onChange={setNotifyEmail} /></div>}
                                     </>
                                 )}
                             </div>

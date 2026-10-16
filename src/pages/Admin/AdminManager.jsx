@@ -28,7 +28,12 @@ import { useConsolidatedMembers } from '../../hooks/useConsolidatedMembers';
 import { cn } from '../../lib/utils';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import GlobalLoader from '../../components/ui/GlobalLoader';
-import { sendStaffAuthorizedEmail } from '../../lib/email';
+import { notifyEvent } from '../../lib/mailApi';
+
+const sendStaffAuthorizedEmail = async (email, role) => {
+    const res = await notifyEvent('staff-authorized', { email, role });
+    return { success: Boolean(res?.success && res.ok !== false) };
+};
 import { exportSubtitle } from '../../lib/xlsx';
 import {
     Card, Button, Badge, StatTile, SearchInput, Select, SegmentedTabs, EmptyState,

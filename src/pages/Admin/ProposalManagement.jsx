@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { sendComposedEmail } from '../../lib/mailApi';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
@@ -235,16 +236,8 @@ const ProposalManagement = () => {
             addToast("Couldn't create the invoice.", 'error');
         }
     };
-    const sendEmail = async ({ to, cc, bcc, subject, html }) => {
-        const { auth } = await import('../../lib/firebase');
-        const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
-        const res = await fetch('/api/mail', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
-            body: JSON.stringify({ to, cc, bcc, subject, html, fromName: 'Newbi Partnerships', fromEmail: 'partnership@newbi.live' }),
-        });
-        const result = await res.json().catch(() => ({}));
-        if (!result.success) throw new Error(result.error || 'Send failed');
+    const sendEmail = async (payload) => {
+        await sendComposedEmail({ ...payload, fromName: 'Newbi Partnerships', fromEmail: 'partnership@newbi.live' });
         if (emailProposal) markShared(emailProposal, 'email');
     };
 

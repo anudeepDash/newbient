@@ -14,7 +14,7 @@ import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { notifyAdmins } from '../lib/notificationTriggers';
-import { sendContactAutoReply } from '../lib/email';
+import { submitEnquiry } from '../lib/mailApi';
 import { cn } from '../lib/utils';
 import { useStore } from '../lib/store';
 import useDynamicMeta from '../hooks/useDynamicMeta';
@@ -38,19 +38,24 @@ const Contact = () => {
         e.preventDefault();
         setSending(true);
         try {
-            await addDoc(collection(db, "messages"), {
-                ...formData,
-                createdAt: new Date().toISOString(),
-                status: 'new'
-            });
-
-            // Notify Admins
-            await notifyAdmins(
-                'New contact message',
-                `${formData.name} sent a message through the contact form.` ,
-                '/admin/messages',
-                'message'
-            );
+            try {
+                // Saved, the team alerted and an auto-reply sent, all on the server.
+                await submitEnquiry(formData);
+            } catch (apiErr) {
+                // Only when the API itself isn't there (local dev): the old direct write.
+                if (apiErr.status && apiErr.status !== 404) throw apiErr;
+                await addDoc(collection(db, "messages"), {
+                    ...formData,
+                    createdAt: new Date().toISOString(),
+                    status: 'new'
+                });
+                await notifyAdmins(
+                    'New contact message',
+                    `${formData.name} sent a message through the contact form.`,
+                    '/admin/messages',
+                    'message'
+                );
+            }
 
             useStore.getState().addToast("Message sent. We'll get back to you soon.", 'success');
             setFormData({ name: '', email: '', message: '' });

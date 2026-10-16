@@ -17,7 +17,7 @@ import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { cn } from '../../lib/utils';
 import { generateNewsletterBriefing } from '../../lib/ai';
-import { sendTestEmail } from '../../lib/email';
+import { sendCampaignTest } from '../../lib/mailApi';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import { Button, EmptyState, SearchInput, SegmentedTabs } from '../../components/admin/ui';
 import { accent, useAccent } from '../../components/admin/theme';
@@ -167,9 +167,9 @@ const NewsletterStudio = () => {
         if (!selectedPosts.length) { addToast('Pick at least one story first.', 'error'); return; }
         setTesting(true);
         try {
-            await sendTestEmail({ to: myEmail, subject: finalSubject, html: htmlFor(false), accountType: 'weekly' });
+            const sent = await sendCampaignTest({ subject: finalSubject, html: htmlFor(false), accountType: 'weekly' });
             setTestedAt(Date.now());
-            addToast(`Test sent to ${myEmail}.`, 'success');
+            addToast(`Test sent to ${sent.to || myEmail}.`, 'success');
         } catch (err) {
             console.error('Newsletter test failed:', err);
             addToast("Couldn't send the test. Please try again.", 'error');
@@ -204,7 +204,6 @@ const NewsletterStudio = () => {
             warnings: [
                 !testedAt && "You haven't sent yourself a test of this newsletter yet.",
                 suppression.status === 'error' && "The unsubscribe list didn't load here. The server still skips unsubscribed people.",
-                recipients.length > 2000 && "This is a big send. Keep this tab open; it may take a while and can run into your mail provider's daily limit.",
             ].filter(Boolean),
             options: { audience: { label, segments: audience.segments, final: recipients.length } },
         });

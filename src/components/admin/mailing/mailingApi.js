@@ -1,9 +1,9 @@
-import { auth } from '../../../lib/firebase';
 import { generateOfficialHTML } from '../../../lib/email';
 
 /*
- * Content and server helpers for the mailing screens. The email HTML itself
- * comes from lib/email.js; this only prepares the data it is given.
+ * Content helpers for the mailing screens. The composer HTML comes from
+ * lib/email.js (merge tags are left in; the server fills them per person
+ * when it sends the queued campaign).
  */
 
 export const ALIASES = [
@@ -82,10 +82,6 @@ export const officialData = (mail, { preview = false } = {}) => {
     };
 };
 
-// sendMassEmail rebuilds the email per person from the raw fields (after
-// filling merge tags), so give it this rather than the generator directly.
-export const renderOfficial = (data) => generateOfficialHTML(officialData(data));
-
 export const buildOfficialHtml = (mail, opts) => generateOfficialHTML(officialData(mail, opts));
 
 export const SAMPLE_PERSON = { name: 'Alex Rivera', firstName: 'Alex', email: 'alex@example.com', role: 'Member' };
@@ -128,24 +124,8 @@ export const uploadInlineImages = async (html, upload) => {
     return { html: out, uploaded: found.length };
 };
 
-const callMailApi = async (body) => {
-    const token = await auth.currentUser?.getIdToken?.();
-    const res = await fetch('/api/mail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
-        body: JSON.stringify(body),
-    });
-    let data = {};
-    try { data = await res.json(); } catch { data = {}; }
-    if (!res.ok || data.success !== true) throw new Error(data.error || `Request failed (${res.status})`);
-    return data;
-};
-
-/** Everyone who unsubscribed: [{ email, unsubscribedAt, campaignId }]. */
-export const fetchSuppressionList = async () => (await callMailApi({ action: 'suppression-list' })).entries || [];
-
-/** Lets an address get campaign email again (they asked to be re-added). */
-export const allowEmailAgain = (email) => callMailApi({ action: 'resubscribe', email });
+/** Everyone who unsubscribed: [{ email, unsubscribedAt, campaignId }]; and letting someone back in. */
+export { fetchSuppressionList, allowEmailAgain } from '../../../lib/mailApi';
 
 /* Campaign records */
 
@@ -153,7 +133,11 @@ const minutesAgo = (iso) => (Date.now() - (Date.parse(iso || '') || 0)) / 60000;
 
 export const campaignState = (c) => {
     const s = c?.status;
-    if (s === 'sending') return minutesAgo(c.lastProgressAt || c.sentAt) > 15 ? 'interrupted' : 'sending';
+    if (s === 'scheduled') return 'scheduled';
+    if (s === 'queued') return 'queued';
+    if (s === 'sending' && c?.pausedReason === 'daily_limit') return 'paused';
+    // Queued campaigns are sent by the server; only browser sends could be cut off by a closed tab.
+    if (s === 'sending') return minutesAgo(c.lastProgressAt || c.sentAt) > (c?.queue ? 90 : 15) ? 'interrupted' : 'sending';
     if (s === 'partially_failed') return 'partial';
     if (s === 'failed') return 'failed';
     if (s === 'cancelled') return 'stopped';
@@ -166,6 +150,9 @@ export const CAMPAIGN_STATE = {
     failed: { label: 'Failed', tone: 'red' },
     stopped: { label: 'Stopped', tone: 'gray' },
     sending: { label: 'Sending', tone: 'blue' },
+    queued: { label: 'Queued', tone: 'blue' },
+    scheduled: { label: 'Scheduled', tone: 'violet' },
+    paused: { label: 'Paused · daily limit', tone: 'amber' },
     interrupted: { label: 'Interrupted', tone: 'orange' },
 };
 
@@ -197,8 +184,9 @@ export const canRetryCampaign = (c) => {
     const pending = [...(c?.failedEmails || []), ...(c?.unsentEmails || [])];
     if (!pending.length) return false;
     const state = campaignState(c);
-    if (state === 'sending') return false;
-    return Boolean(c.html || c.messageBody);
+    if (['sending', 'queued', 'scheduled', 'paused'].includes(state)) return false;
+    // Server-queued campaigns keep their email on the server.
+    return Boolean(c.queue || c.html || c.messageBody);
 };
 
 export const formatWhen = (value) => {
