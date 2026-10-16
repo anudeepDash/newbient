@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { getFirestore } from 'firebase-admin/firestore';
 import { verifyToken } from './_lib/auth.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -124,6 +125,38 @@ function invalidateModelCache() {
     modelCacheTimestamp = 0;
 }
 
+// ── Admin check ─────────────────────────────────────────────────────────
+// The proxy spends paid AI credits, so only admin-panel users may call it
+// (same rule as the admin login: an entry in `admins` with an admin role).
+// Results are cached briefly per user.
+const ADMIN_ROLES = ['founder', 'super_admin', 'developer', 'admin', 'editor', 'scanner', 'content_admin', 'gate_manager', 'blog_writer'];
+const adminCache = new Map();
+const ADMIN_CACHE_TTL = 5 * 60 * 1000;
+
+async function isAdminCaller(decodedToken) {
+    const key = decodedToken.uid;
+    const cached = adminCache.get(key);
+    if (cached && Date.now() - cached.at < ADMIN_CACHE_TTL) return cached.ok;
+
+    const db = getFirestore();
+    let ok = false;
+    const email = decodedToken.email ? String(decodedToken.email).trim() : '';
+    for (const candidate of [...new Set([email, email.toLowerCase()])].filter(Boolean)) {
+        const snap = await db.collection('admins').where('email', '==', candidate).limit(1).get();
+        if (!snap.empty) {
+            ok = ADMIN_ROLES.includes(snap.docs[0].data()?.role);
+            break;
+        }
+    }
+    adminCache.set(key, { ok, at: Date.now() });
+    return ok;
+}
+
+const MAX_PROMPT_CHARS = 200000;
+// Strict callers (AI studio) get an answer or a clear error before the
+// platform cuts the function off, and are never routed to keyless public AIs.
+const STRICT_DEADLINE_MS = 50000;
+
 // ── Main Handler ────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
@@ -173,10 +206,26 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const { systemPrompt, userPrompt, type } = req.body;
+    try {
+        if (!(await isAdminCaller(decodedToken))) {
+            return res.status(403).json({ error: 'Forbidden: AI tools are for admin accounts only' });
+        }
+    } catch (e) {
+        console.error('[AI PROXY] Admin check failed:', e.message);
+        return res.status(503).json({ error: "Couldn't verify admin access. Please try again." });
+    }
+
+    const { systemPrompt = '', userPrompt, type } = req.body || {};
+    const strict = req.body?.strict === true;
+    const startedAt = Date.now();
+    const outOfTime = () => strict && Date.now() - startedAt > STRICT_DEADLINE_MS;
+    let sawRateLimit = false;
 
     if (!userPrompt) {
         return res.status(400).json({ error: 'User prompt is required' });
+    }
+    if (String(userPrompt).length + String(systemPrompt).length > MAX_PROMPT_CHARS) {
+        return res.status(413).json({ error: 'Prompt is too long' });
     }
 
     try {
@@ -191,6 +240,7 @@ export default async function handler(req, res) {
                 console.warn('[AI PROXY] ⚠️ Skipping Gemini: API key is dead (leaked/revoked). Get a new key from https://aistudio.google.com/apikey');
             } else {
                 for (const modelName of models) {
+                    if (outOfTime()) break;
                     try {
                         const response = await ai.models.generateContent({
                             model: modelName,
@@ -230,6 +280,7 @@ export default async function handler(req, res) {
                         
                         // Rate limit / quota / 503 high demand — try next model
                         if (status === 429 || status === 503 || errMsg.includes('quota') || errMsg.includes('rate') || errMsg.includes('high demand') || errMsg.includes('temporarily unavailable')) {
+                            sawRateLimit = true;
                             console.warn(`[AI PROXY] ⚠️ ${modelName} overloaded/rate-limited (${status}). Trying next model...`);
                             continue;
                         }
@@ -259,6 +310,7 @@ export default async function handler(req, res) {
             ];
 
             for (const orModel of orModels) {
+                if (outOfTime()) break;
                 try {
                     const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                         method: 'POST',
@@ -274,7 +326,7 @@ export default async function handler(req, res) {
                                 { role: "system", content: systemPrompt },
                                 { role: "user", content: userPrompt }
                             ],
-                            max_tokens: 4096,
+                            max_tokens: 8192,
                             response_format: { type: "json_object" }
                         })
                     });
@@ -289,6 +341,7 @@ export default async function handler(req, res) {
                         }
                     } else {
                         const errText = await orRes.text();
+                        if (orRes.status === 429) sawRateLimit = true;
                         console.warn(`[AI PROXY] ⚠️ OpenRouter ${orModel} not OK:`, errText.substring(0, 120));
                         if (errText.includes('credits') || errText.includes('max_tokens')) continue;
                     }
@@ -296,6 +349,13 @@ export default async function handler(req, res) {
                     console.error(`[AI PROXY] OpenRouter ${orModel} failed:`, e.message);
                 }
             }
+        }
+
+        // Strict callers stop here: no keyless public services for client data.
+        if (strict) {
+            if (outOfTime()) return res.status(504).json({ error: 'The AI took too long to answer' });
+            if (sawRateLimit) return res.status(429).json({ error: 'AI rate limit reached' });
+            return res.status(503).json({ error: 'AI service unavailable' });
         }
 
         // ═══════════════════════════════════════════════════════════════

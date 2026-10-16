@@ -2,6 +2,7 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import nodemailer from 'nodemailer';
+import { isTicketAction, handleTicketAction } from './_lib/tickets.js';
 
 export const maxDuration = 60;
 let adminDb = null;
@@ -932,6 +933,24 @@ export default async function handler(req, res) {
 
     const action = req.query?.action || req.body?.action || 'join';
 
+    // Is the signed-in caller on the admin team? (cached per request)
+    const STAFF_ROLES = ['founder', 'super_admin', 'developer', 'admin', 'editor', 'content_admin'];
+    let staffCheck = null;
+    const isStaff = async () => {
+        if (!decodedToken?.email) return false;
+        if (!staffCheck) {
+            staffCheck = adminDb.collection('admins').where('email', '==', decodedToken.email).limit(1).get()
+                .then(snap => !snap.empty && STAFF_ROLES.includes(snap.docs[0].data()?.role))
+                .catch(() => false);
+        }
+        return staffCheck;
+    };
+
+    // Public ticketing (availability, coupons, orders) shares this function.
+    if (isTicketAction(action)) {
+        return handleTicketAction(action, req, res, adminDb, decodedToken);
+    }
+
     // ── ACTION: VERIFY INSTAGRAM PROFILE & FOLLOWERS ──────────────────────────
     if (action === 'verify-instagram') {
         const rawHandle = req.query?.handle || req.body?.handle || '';
@@ -1276,6 +1295,55 @@ export default async function handler(req, res) {
             }
 
             const data = snap.data();
+
+            // Only staff, or the creator editing their own profile, may update it.
+            if (!decodedToken) {
+                return res.status(401).json({ success: false, error: 'Please sign in again to save changes.' });
+            }
+            const staff = await isStaff();
+            const isOwner = decodedToken.uid && (snap.id === decodedToken.uid || data.uid === decodedToken.uid)
+                || (decodedToken.email && String(data.email || '').toLowerCase() === String(decodedToken.email).toLowerCase());
+            if (!staff && !isOwner) {
+                return res.status(403).json({ success: false, error: "You can't change this profile." });
+            }
+            if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
+                return res.status(400).json({ success: false, error: 'Nothing to update.' });
+            }
+            const ignored = [];
+            if (!staff) {
+                // Creators can't approve, verify, badge, feature or shortlist themselves.
+                // Unchanged values are fine (the app re-sends whole profiles); changes are dropped.
+                const same = (k) => JSON.stringify(updates[k] ?? null) === JSON.stringify(data[k] ?? null);
+                const ADMIN_ONLY = ['adminBadges', 'badges', 'isFeatured', 'featured', 'isBlocked', 'blocked', 'role',
+                    'campaignStages', 'campaignPayouts', 'verifiedBy', 'verifiedAt', 'points', 'totalPoints', 'rewardPoints',
+                    'creatorId', 'uid', 'email'];
+                for (const k of ADMIN_ONLY) {
+                    if (k in updates && !same(k)) { ignored.push(k); delete updates[k]; }
+                }
+                // Verification flags can only be switched off by the creator, never on.
+                for (const k of ['isVerified', 'instagramVerified', 'isInstagramVerified']) {
+                    if (k in updates && !same(k) && updates[k]) { ignored.push(k); delete updates[k]; }
+                }
+                if ('profileStatus' in updates && !same('profileStatus') && updates.profileStatus !== 'pending') {
+                    ignored.push('profileStatus'); delete updates.profileStatus;
+                }
+                // Shortlist: creators may withdraw, and may only add campaigns that auto-shortlist eligible creators.
+                if ('shortlistedCampaigns' in updates && !same('shortlistedCampaigns')) {
+                    const before = new Set(Array.isArray(data.shortlistedCampaigns) ? data.shortlistedCampaigns : []);
+                    const wanted = Array.isArray(updates.shortlistedCampaigns) ? updates.shortlistedCampaigns : [];
+                    const added = wanted.filter(id => !before.has(id));
+                    const allowed = new Set();
+                    for (const cid of added) {
+                        const camp = await adminDb.collection('campaigns').doc(String(cid)).get().catch(() => null);
+                        if (camp?.exists && camp.data()?.autoShortlistEligible) allowed.add(cid);
+                    }
+                    const next = wanted.filter(id => before.has(id) || allowed.has(id));
+                    if (next.length !== wanted.length) ignored.push('shortlistedCampaigns');
+                    updates.shortlistedCampaigns = next;
+                }
+                if (ignored.length) console.warn('[API/CREATOR-JOIN] creator-update ignored admin-only fields from', decodedToken.uid, ignored);
+            }
+
             const prevStatus = data.profileStatus;
             const now = new Date().toISOString();
             const finalUpdates = {
@@ -1288,6 +1356,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ 
                 success: true, 
                 id: snap.id, 
+                ignored,
                 prevStatus, 
                 email: data.email, 
                 name: data.displayName || data.name || 'Creator' 
@@ -1302,6 +1371,21 @@ export default async function handler(req, res) {
     if (action === 'creator-delete') {
         if (req.method !== 'POST') {
             return res.status(405).json({ success: false, error: 'Method not allowed' });
+        }
+        // Deleting a creator is admin-only: a signed-in admin (admins collection).
+        const CREATOR_DELETE_ROLES = ['founder', 'super_admin', 'developer', 'admin', 'editor', 'content_admin'];
+        if (!decodedToken?.email) {
+            return res.status(401).json({ success: false, error: 'Sign in as an admin to delete creators.' });
+        }
+        try {
+            const adminSnap = await adminDb.collection('admins').where('email', '==', decodedToken.email).limit(1).get();
+            const role = adminSnap.empty ? null : adminSnap.docs[0].data()?.role;
+            if (!CREATOR_DELETE_ROLES.includes(role)) {
+                return res.status(403).json({ success: false, error: "Your account can't delete creators." });
+            }
+        } catch (roleErr) {
+            console.error('[API/CREATOR-JOIN] Creator delete role check error:', roleErr);
+            return res.status(500).json({ success: false, error: "Couldn't check your access. Please try again." });
         }
         try {
             const { id, uid } = req.body || {};
@@ -1341,22 +1425,30 @@ export default async function handler(req, res) {
             return res.status(405).json({ success: false, error: 'Method not allowed' });
         }
         try {
-            const { campaignId, taskId, creatorUid, contentLink = '', proofUrl = '', updatedTasks } = req.body || {};
+            const { campaignId, taskId, creatorUid, contentLink = '', proofUrl = '' } = req.body || {};
             if (!campaignId || !taskId || !creatorUid) {
                 return res.status(400).json({ success: false, error: 'campaignId, taskId, and creatorUid are required' });
             }
-
-            const campRef = adminDb.collection('campaigns').doc(campaignId);
-            const campSnap = await campRef.get();
-            if (!campSnap.exists) {
-                return res.status(404).json({ success: false, error: 'Campaign not found' });
+            if (!decodedToken) {
+                return res.status(401).json({ success: false, error: 'Please sign in again to submit.' });
+            }
+            if (decodedToken.uid !== creatorUid && !(await isStaff())) {
+                // The submission key may be the creator's profile id; allow it when that profile is theirs.
+                const own = await adminDb.collection('creators').doc(String(creatorUid)).get().catch(() => null);
+                const ownData = own?.exists ? own.data() : null;
+                if (!ownData || (ownData.uid !== decodedToken.uid && String(ownData.email || '').toLowerCase() !== String(decodedToken.email || '').toLowerCase())) {
+                    return res.status(403).json({ success: false, error: "You can only submit work for your own profile." });
+                }
             }
 
-            const campData = campSnap.data();
-            let newTasks = updatedTasks;
-
-            if (!Array.isArray(newTasks)) {
-                newTasks = (campData.tasks || []).map(t => {
+            const campRef = adminDb.collection('campaigns').doc(campaignId);
+            // Re-read the stored campaign and add only this submission, in a
+            // transaction, so a stale task list from the browser (or another
+            // creator submitting at the same moment) can't overwrite anything.
+            const newTasks = await adminDb.runTransaction(async (tx) => {
+                const campSnap = await tx.get(campRef);
+                if (!campSnap.exists) return null;
+                const tasks = (campSnap.data().tasks || []).map(t => {
                     if (t.id === taskId || String(t.id) === String(taskId)) {
                         const submissions = { ...(t.submissions || {}) };
                         submissions[creatorUid] = {
@@ -1372,9 +1464,12 @@ export default async function handler(req, res) {
                     }
                     return t;
                 });
+                tx.update(campRef, { tasks });
+                return tasks;
+            });
+            if (!newTasks) {
+                return res.status(404).json({ success: false, error: 'Campaign not found' });
             }
-
-            await campRef.update({ tasks: newTasks });
             return res.status(200).json({ success: true, tasks: newTasks });
         } catch (subErr) {
             console.error('[API/CREATOR-JOIN] campaign-task-submit error:', subErr);

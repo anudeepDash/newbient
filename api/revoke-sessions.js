@@ -67,8 +67,9 @@ export default async function handler(req, res) {
 
         const db = getFirestore();
 
-        // 1. Resolve UID if targetEmail is passed and targetUid is missing/invalid
-        if (targetEmail && (!uidToRevoke || uidToRevoke.length < 20 || uidToRevoke === targetEmail)) {
+        // 1. Resolve UID if targetEmail is passed and targetUid is missing/invalid.
+        // Admin records are keyed by 20-character Firestore ids; Auth UIDs are longer.
+        if (targetEmail && (!uidToRevoke || uidToRevoke.length <= 20 || uidToRevoke === targetEmail)) {
             try {
                 const userRecord = await auth.getUserByEmail(targetEmail);
                 uidToRevoke = userRecord.uid;

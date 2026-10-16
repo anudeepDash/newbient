@@ -576,15 +576,18 @@ export default async function handler(req, res) {
             }
         } else if (effectiveBlogSlug) {
             const snaps = await adminDb.collection('posts').where('slug', '==', effectiveBlogSlug).get();
-            if (!snaps.empty) {
-                const data = snaps.docs[0].data();
-                meta.title = `${stripHtml(data.title)} | Concert Zone | Newbi Ent.`;
-                const cleanExcerpt = stripHtml(data.excerpt);
+            // Only published posts (or scheduled ones whose time has come) get a preview card.
+            const isLive = (d) => d.status === 'Published' || (d.status === 'Scheduled' && new Date(d.publishAt || d.publishDate || 0).getTime() <= Date.now());
+            const liveDoc = snaps.docs.find(d => isLive(d.data()));
+            if (liveDoc) {
+                const data = liveDoc.data();
+                meta.title = `${stripHtml(data.seoTitle || data.title)} | Concert Zone | Newbi Ent.`;
+                const cleanExcerpt = stripHtml(data.shortDescription || data.excerpt);
                 const cleanContent = stripHtml(data.content);
                 const desc = cleanExcerpt || cleanContent || '';
                 meta.description = desc.length > 160 ? desc.substring(0, 157).trim() + '...' : desc;
                 meta.image = data.coverImage?.startsWith('http') ? data.coverImage : (data.coverImage ? `${baseUrl}${data.coverImage}` : defaultOgImage);
-                meta.url = `${baseUrl}/concertzone/${data.category || 'music'}/${effectiveBlogSlug}`;
+                meta.url = `${baseUrl}/concertzone/${(data.category || 'news').toLowerCase().replace(' ', '-')}/${effectiveBlogSlug}`;
             }
         }
     };
