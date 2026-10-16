@@ -18,6 +18,7 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
  *   </Sheet>
  *
  * size: 'auto' (fits content, up to 92dvh) or 'full' (full height on phones).
+ * backdrop: an element painted behind the header and body (e.g. <AmbientBackdrop/>).
  */
 
 const MOBILE_QUERY = '(max-width: 767px)';
@@ -49,6 +50,7 @@ const Sheet = ({
     className,
     bodyClassName,
     zIndex,
+    backdrop,
 }) => {
     const phone = useIsPhone();
     const drag = useDragControls();
@@ -112,17 +114,18 @@ const Sheet = ({
                             className
                         )}
                     >
+                        {backdrop && <div aria-hidden="true" className="pointer-events-none absolute inset-0">{backdrop}</div>}
                         {phone && (
                             // The handle is the only drag target.
                             <div
-                                className="flex h-6 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
+                                className="relative flex h-6 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
                                 onPointerDown={(e) => dismissible && drag.start(e)}
                             >
                                 <span className="h-1 w-10 rounded-full bg-black/15 dark:bg-white/20" />
                             </div>
                         )}
                         {(header || title || dismissible) && (
-                            <div className={cn('flex shrink-0 items-start justify-between gap-4 px-5 pb-3', phone ? 'pt-1' : 'pt-5')}>
+                            <div className={cn('relative flex shrink-0 items-start justify-between gap-4 px-5 pb-3', phone ? 'pt-1' : 'pt-5')}>
                                 {header ? <div className="min-w-0 flex-1">{header}</div> : (
                                     <div className="min-w-0">
                                         {title && <h2 className="text-lg font-extrabold tracking-tight">{title}</h2>}
@@ -141,11 +144,11 @@ const Sheet = ({
                                 )}
                             </div>
                         )}
-                        <div className={cn('min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 pt-1 [-webkit-overflow-scrolling:touch]', bodyClassName)}>
+                        <div className={cn('relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 pt-1 [-webkit-overflow-scrolling:touch]', bodyClassName)}>
                             {children}
                         </div>
                         {footer ? (
-                            <div className="shrink-0 border-t border-black/[0.06] px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 dark:border-white/[0.06]">
+                            <div className="relative shrink-0 border-t border-black/[0.06] bg-white px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 dark:border-white/[0.06] dark:bg-[#0d0f15]">
                                 {footer}
                             </div>
                         ) : phone && <div className="h-[env(safe-area-inset-bottom)] shrink-0" />}

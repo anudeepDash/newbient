@@ -16,7 +16,9 @@ import CircleUserRound from 'lucide-react/dist/esm/icons/circle-user-round';
  *               tab still shows (with lockedLabel) when `showLocked` is set,
  *               so people can discover it; otherwise it's hidden.
  *   launched    false keeps the module out of the shell entirely
- *   routes      [{ path, Component }] relative to `path`
+ *   routes      [{ path, Component }] relative to `path`; a path starting with
+ *               '/' is from the app root (the campaign page is /c/:id)
+ *   aliases     other root paths that belong to the module (tab highlight)
  *   onboarding  profile fields this module's main flow needs (requirements.js)
  *
  * There is no Passes tab: guestlist passes live in Community, campaign tickets
@@ -25,7 +27,9 @@ import CircleUserRound from 'lucide-react/dist/esm/icons/circle-user-round';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 const CommunityPage = lazy(() => import('./pages/CommunityPage'));
-const CreatorPage = lazy(() => import('./pages/CreatorPage'));
+const CreatorHome = lazy(() => import('./creator/home/CreatorHome'));
+const CreatorApplyPage = lazy(() => import('./creator/apply/CreatorApplyPage'));
+const CampaignPage = lazy(() => import('./creator/campaign/CampaignPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 
 export const APP_MODULES = [
@@ -54,7 +58,15 @@ export const APP_MODULES = [
         capability: 'creator',
         showLocked: true,
         launched: true,
-        routes: [{ path: '', Component: CreatorPage }],
+        routes: [
+            { path: '', Component: CreatorHome },
+            { path: 'deliverables', Component: CreatorHome },
+            { path: 'referrals', Component: CreatorHome },
+            { path: 'profile', Component: CreatorHome },
+            { path: 'apply', Component: CreatorApplyPage },
+            { path: '/c/:id', Component: CampaignPage },
+        ],
+        aliases: ['/c'],
         onboarding: ['name', 'email', 'phoneVerified', 'city'],
     },
     {
@@ -98,14 +110,15 @@ export function visibleTabs(has) {
 /* The module a path belongs to ('/community/g/x' → community). Home matches only '/'. */
 export function moduleForPath(pathname = '/') {
     const path = pathname.replace(/\/+$/, '') || '/';
-    return launchedModules().find(m => (m.path === '/' ? path === '/' : path === m.path || path.startsWith(`${m.path}/`))) || null;
+    const under = (base) => path === base || path.startsWith(`${base}/`);
+    return launchedModules().find(m => (m.path === '/' ? path === '/' : under(m.path) || (m.aliases || []).some(under))) || null;
 }
 
 /* Route definitions for the router, relative to the app root. */
 export function appRoutes() {
     return launchedModules().flatMap(module => module.routes.map(route => {
         const base = module.path === '/' ? '' : module.path.slice(1);
-        const path = [base, route.path].filter(Boolean).join('/');
+        const path = route.path.startsWith('/') ? route.path.slice(1) : [base, route.path].filter(Boolean).join('/');
         return { key: `${module.id}:${route.path || 'index'}`, path, index: !path, Component: route.Component };
     }));
 }
