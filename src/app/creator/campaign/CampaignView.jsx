@@ -11,7 +11,7 @@ import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import Hourglass from 'lucide-react/dist/esm/icons/hourglass';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
-import { AmbientBackdrop, BrandLayers, BRAND_GLASS, Button, CARD_TYPES, GlassChip, MetaPill, Sheet, Stat, StatRow } from '../../../components/app';
+import { PosterGlow, BrandLayers, BRAND_GLASS, Button, CARD_TYPES, GlassChip, MetaPill, Sheet, Stat, StatRow } from '../../../components/app';
 import { useAppStore } from '../../../lib/store/appStore';
 import { useStore as useLegacyStore } from '../../../lib/store.js';
 import { isPresent } from '../../../lib/present';
@@ -233,22 +233,13 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
     ].filter(m => isPresent(m.label));
 
     /* The campaign card, expanded: the 16:9 poster starts at the very top, bleeds to the edges, and
-       its colours (a blurred copy behind it) spill down and fade into the popup. */
+       a soft light in the poster's own colour glows out behind it and fades into the popup. */
     const hero = (
         <div className="relative aspect-video w-full shrink-0">
-            {campaign.thumbnail && (
-                <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[170%]"
-                    style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 45%, transparent 100%)', maskImage: 'linear-gradient(to bottom, #000 45%, transparent 100%)' }}
-                >
-                    <AmbientBackdrop image={campaign.thumbnail} intensity={0.6} fade={false} />
-                </div>
-            )}
-            <div className="absolute inset-0" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 55%, transparent 100%)', maskImage: 'linear-gradient(to bottom, #000 55%, transparent 100%)' }}>
+            <PosterGlow image={campaign.thumbnail} height="200%" />
+            <div className="absolute inset-0" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 65%, transparent 100%)', maskImage: 'linear-gradient(to bottom, #000 65%, transparent 100%)' }}>
                 {campaign.thumbnail ? (
                     <>
-                        <div className="absolute inset-0 bg-gray-200 dark:bg-zinc-900" />
                         <img src={campaign.thumbnail} alt="" className="relative h-full w-full object-cover" />
                         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_50%,_rgba(0,0,0,0.35)_100%)]" />
                     </>

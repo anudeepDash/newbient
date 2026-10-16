@@ -10,6 +10,7 @@ import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
 import { cn } from '../../lib/utils';
 import { isPresent } from '../../lib/present';
 import BrandLayers, { BRAND_GLASS } from './BrandLayers';
+import { PosterGlow } from './AmbientBackdrop';
 
 /*
  * The one card for the app: an aspect-video hero that fades into the body,
@@ -139,6 +140,8 @@ const Card = ({
         >
             {/* The Newbi surface, behind everything; the glow rises from the bottom corner, under the body. */}
             <BrandLayers mark={false} from="bottom" />
+            {/* The poster's colours glow out behind it and spill into the body. */}
+            <PosterGlow image={image} height="92%" strength={0.85} />
 
             {/* Progress strip */}
             {hasProgress && (
@@ -155,14 +158,12 @@ const Card = ({
                 <div
                     className="pointer-events-none absolute inset-0 transform-gpu"
                     style={{
-                        WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 40%, transparent 100%)',
-                        maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 40%, transparent 100%)',
+                        WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 62%, transparent 100%)',
+                        maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 62%, transparent 100%)',
                     }}
                 >
                     {image ? (
                         <>
-                            {/* Neutral backing while the photo loads, so the vignette doesn't read as a white haze */}
-                            <div className="absolute inset-0 bg-gray-200 dark:bg-zinc-900" />
                             <img
                                 src={image}
                                 alt={imageAlt || title || ''}
@@ -204,40 +205,38 @@ const Card = ({
                         </div>
                     )}
                     {isPresent(title) && (
-                        <h3 className="mb-1 font-heading text-[18px] font-extrabold leading-snug tracking-[-0.025em] text-gray-900 transition-colors duration-300 group-hover:text-emerald-700 dark:text-white dark:group-hover:text-neon-green">
+                        <div className="flex items-start justify-between gap-3">
+                        <h3 className="mb-1 min-w-0 font-heading text-[18px] font-extrabold leading-snug tracking-[-0.025em] text-gray-900 transition-colors duration-300 group-hover:text-emerald-700 dark:text-white dark:group-hover:text-neon-green">
                             {title}
                         </h3>
+                            {ctaConfig && !ctaNode && (
+                                <span aria-hidden="true" className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.05] text-gray-700 transition-colors duration-300 group-hover:bg-neon-green group-hover:text-black dark:bg-white/[0.08] dark:text-zinc-200">
+                                    <ArrowRight size={15} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+                                </span>
+                            )}
+                        </div>
                     )}
                     {isPresent(text) && <p className="line-clamp-2 text-[13px] leading-relaxed text-gray-600 dark:text-zinc-400">{text}</p>}
                     {children}
                 </div>
 
-                {/* One footer row: the key stats as small labels, and the CTA as a compact pill. */}
-                {(shownStats.length > 0 || ctaNode || ctaConfig) && (
-                    <div className="relative z-10 mt-auto flex items-end justify-between gap-3 border-t border-black/[0.06] pt-3.5 dark:border-white/[0.08]">
-                        <dl className="flex min-w-0 gap-5">
-                            {shownStats.slice(0, 2).map((st, i) => (
-                                <div key={st.label || i} className="min-w-0">
-                                    <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-zinc-500">{st.label}</dt>
-                                    <dd className={cn('truncate text-[14px] font-bold', st.tone === 'accent' ? 'text-emerald-700 dark:text-neon-green' : 'text-gray-900 dark:text-white')}>
-                                        {st.format ? st.format(st.value) : st.value}
-                                    </dd>
-                                </div>
-                            ))}
-                        </dl>
-                        {ctaNode || (ctaConfig && (
-                            <span className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-black/[0.05] pl-1.5 pr-1.5 font-heading sm:pl-3.5 text-[13px] font-bold text-gray-800 transition-colors duration-300 group-hover:bg-neon-green group-hover:text-black dark:bg-white/[0.08] dark:text-zinc-100 dark:group-hover:bg-neon-green dark:group-hover:text-black">
-                                {/* Phones: just the arrow, so the stats beside it have room. */}
-                                <span className="sr-only sm:not-sr-only">{ctaConfig.label}</span>
-                                {ctaConfig.icon && (
-                                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black/[0.06] transition-colors duration-300 group-hover:bg-black dark:bg-white/[0.1]">
-                                        <ctaConfig.icon size={14} className="transition-colors duration-300 group-hover:text-neon-green" />
-                                    </span>
-                                )}
-                            </span>
+                {/* The key numbers as tiles (Reward, Tasks, Min. followers…). A custom CTA node sits under them. */}
+                {shownStats.length > 0 && (
+                    <div className={cn('relative z-10 mt-auto grid gap-2', shownStats.length >= 3 ? 'grid-cols-3' : shownStats.length === 2 ? 'grid-cols-2' : 'grid-cols-1')}>
+                        {shownStats.slice(0, 3).map((st, i) => (
+                            <div key={st.label || i} className="min-w-0 rounded-xl bg-white/60 px-2.5 py-2 ring-1 ring-inset ring-black/[0.06] dark:bg-white/[0.04] dark:ring-white/[0.08]">
+                                <p className="flex items-center gap-1 truncate text-[9px] font-bold uppercase tracking-[0.12em] text-gray-500 dark:text-zinc-500">
+                                    {st.icon && <st.icon size={10} className={st.tone === 'accent' ? 'text-emerald-600 dark:text-neon-green' : undefined} />}
+                                    {st.label}
+                                </p>
+                                <p className={cn('mt-0.5 line-clamp-2 break-words text-[13px] font-bold leading-tight', st.tone === 'accent' ? 'text-emerald-700 dark:text-neon-green' : 'text-gray-900 dark:text-white')}>
+                                    {st.format ? st.format(st.value) : st.value}
+                                </p>
+                            </div>
                         ))}
                     </div>
                 )}
+                {ctaNode && <div className={cn('relative z-10', shownStats.length ? 'mt-3' : 'mt-auto')}>{ctaNode}</div>}
             </div>
         </Root>
     );

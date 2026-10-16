@@ -55,12 +55,12 @@ export function campaignCard(c, { applied = false, from = null, progress = null 
             </>
         ),
         meta: [
-            { icon: Users, label: followers ? `${followers}+ followers` : null },
             { icon: Flame, label: spots.hasSpots ? `${spots.spotsLeft} ${spots.spotsLeft === 1 ? 'spot' : 'spots'} left` : null, tone: fewLeft ? 'warn' : 'default' },
         ],
         stats: [
             { label: 'Reward', value: c.reward, icon: Award, tone: 'accent' },
             { label: 'Tasks', value: tasks || null, icon: FileText },
+            { label: 'Followers', value: followers ? `${followers}+` : null, icon: Users },
         ],
         progress: progress && progress.total ? Math.round((progress.approved / progress.total) * 100) : null,
         cta: { label: applied ? 'Open campaign' : 'View brief' },
