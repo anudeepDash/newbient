@@ -8,6 +8,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { requestNotificationPermission, initForegroundMessaging } from './lib/notifications';
 import Layout from './components/Layout';
 import GlobalLoader from './components/ui/GlobalLoader';
+import { isAppHost, landingAppBase } from './app/host';
 
 import Home from './pages/Home';
 import CreatorLanding from './pages/CreatorLanding';
@@ -35,6 +36,9 @@ const PayeeRegistration = lazy(() => import('./pages/PayeeRegistration'));
 const VerifyPayout = lazy(() => import('./pages/VerifyPayout'));
 const VerifyCreator = lazy(() => import('./pages/VerifyCreator'));
 const DocumentViewer = lazy(() => import('./pages/DocumentViewer'));
+
+// The app (app.newbi.live): its own shell and route tree, loaded only when visited.
+const AppRoutes = lazy(() => import('./app/AppRoutes'));
 
 // Lazy-loaded Admin Pages & Heavy Tools
 const Dashboard = lazy(() => import('./pages/Admin/Dashboard'));
@@ -109,6 +113,8 @@ function AppContent() {
   };
 
   const currentColor = getColorByPath(location.pathname);
+  const appHost = isAppHost();
+  const appBase = landingAppBase();
   const isAdmin = ['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'].includes(user?.role) || safeLocalStorage.getItem('adminAuth') === 'true';
 
   // Foreground push handler: once per page load, not on every auth change.
@@ -116,30 +122,32 @@ function AppContent() {
     initForegroundMessaging();
   }, []);
 
+  // One auth listener for the page's lifetime (signing in no longer tears it down).
+  useEffect(() => {
+    if (!auth) return undefined;
+    return onAuthStateChanged(auth, (user) => {
+      const { checkUserRole } = useStore.getState();
+      if (checkUserRole) {
+        checkUserRole(user).then(() => {
+          if (user) {
+            requestNotificationPermission();
+          }
+        }).catch(err => console.warn("Auth state check warning:", err));
+      }
+    }, (err) => console.warn("Auth state listener warning:", err));
+  }, []);
+
+  // Site config listeners: re-subscribed only when admin access changes, not on every login.
   useEffect(() => {
     const unsubscribeData = subscribeToData ? subscribeToData(isAdmin) : null;
-    const unsubscribeNotifications = subscribeToNotifications ? subscribeToNotifications(user?.uid) : null;
-    
-    let unsubAuth = null;
-    if (auth) {
-      unsubAuth = onAuthStateChanged(auth, (user) => {
-        const { checkUserRole } = useStore.getState();
-        if (checkUserRole) {
-          checkUserRole(user).then(() => {
-            if (user) {
-              requestNotificationPermission();
-            }
-          }).catch(err => console.warn("Auth state check warning:", err));
-        }
-      }, (err) => console.warn("Auth state listener warning:", err));
-    }
+    return () => { if (unsubscribeData) unsubscribeData(); };
+  }, [subscribeToData, isAdmin]);
 
-    return () => {
-      if (unsubscribeData) unsubscribeData();
-      if (unsubscribeNotifications) unsubscribeNotifications();
-      if (unsubAuth) unsubAuth();
-    };
-  }, [subscribeToData, subscribeToNotifications, isAdmin, user?.uid]);
+  // The signed-in user's notifications.
+  useEffect(() => {
+    const unsubscribeNotifications = subscribeToNotifications ? subscribeToNotifications(user?.uid) : null;
+    return () => { if (unsubscribeNotifications) unsubscribeNotifications(); };
+  }, [subscribeToNotifications, user?.uid]);
 
 
   return (
@@ -151,7 +159,16 @@ function AppContent() {
       </AnimatePresence>
 
       <Suspense fallback={<GlobalLoader color={currentColor} />}>
+        {appHost ? (
+          // app.newbi.live: the app owns every path.
+          <Routes>
+            <Route path="auth/action" element={<ActionHandler />} />
+            <Route path="*" element={<AppRoutes />} />
+          </Routes>
+        ) : (
         <Routes>
+          {/* Dev and previews: the same app tree under /app (Safari can't open app.localhost). */}
+          {appBase && <Route path={`${appBase}/*`} element={<AppRoutes />} />}
           <Route path="/" element={<Layout />}>
             <Route index element={<MaintenanceGuard isPage featureId="home"><Home /></MaintenanceGuard>} />
             <Route path="contact" element={<MaintenanceGuard isPage featureId="contact"><Contact /></MaintenanceGuard>} />
@@ -290,6 +307,7 @@ function AppContent() {
             } />
           </Route>
         </Routes>
+        )}
       </Suspense>
       <AuthOverlay />
       <NewbiToast />
