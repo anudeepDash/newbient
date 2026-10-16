@@ -2,7 +2,7 @@ import { lazy } from 'react';
 import House from 'lucide-react/dist/esm/icons/house';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
-import Camera from 'lucide-react/dist/esm/icons/camera';
+import Zap from 'lucide-react/dist/esm/icons/zap';
 import GraduationCap from 'lucide-react/dist/esm/icons/graduation-cap';
 import CircleUserRound from 'lucide-react/dist/esm/icons/circle-user-round';
 
@@ -53,7 +53,7 @@ export const APP_MODULES = [
     {
         id: 'creator',
         path: '/creator',
-        tab: { label: 'Creator', icon: Camera, lockedLabel: 'Become a creator' },
+        tab: { label: 'Creator', icon: Zap, lockedLabel: 'Become a creator' },
         capability: 'creator',
         showLocked: true,
         launched: true,

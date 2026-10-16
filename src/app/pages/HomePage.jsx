@@ -56,7 +56,7 @@ const HomePage = () => {
                     <h1 className="font-heading text-[30px] font-extrabold leading-tight tracking-[-0.035em] sm:text-[34px] lg:text-[48px]">{firstName ? `Hi, ${firstName}` : 'Welcome back'}</h1>
                 </header>
             ) : (
-                <HeroPanel eyebrow="Newbi" title="Concerts, campaigns and the community, in one app.">
+                <HeroPanel eyebrow="Newbi" title="Concerts, campaigns and the community, in one place.">
                     <p className="text-[15px] text-gray-600 dark:text-zinc-300">Get on guestlists, enter giveaways and apply to creator campaigns with one account.</p>
                     <div className="flex flex-wrap gap-3 pt-1">
                         <Button onClick={() => requestSignIn()}>Sign in</Button>
