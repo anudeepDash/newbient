@@ -104,3 +104,71 @@
     .nb-reveal { animation: nb-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 22%; }
   }
 }
+
+/* ───────────── Hero v3: stage lights, equalizer, word rotator, tickers ───────────── */
+
+/* Stage-light beams swinging from the top. */
+@keyframes nb-beam-l { from { transform: rotate(-16deg); } to { transform: rotate(10deg); } }
+@keyframes nb-beam-r { from { transform: rotate(14deg); } to { transform: rotate(-12deg); } }
+.nb-beam { transform-origin: 50% 0; clip-path: polygon(47% 0, 53% 0, 100% 100%, 0 100%); }
+.nb-beam-l { transform: rotate(-6deg); }
+.nb-beam-r { transform: rotate(6deg); }
+
+/* Audio-equalizer bars along the bottom of the hero ("the pulse"). */
+@keyframes nb-eq { 0%, 100% { transform: scaleY(0.22); } 50% { transform: scaleY(1); } }
+.nb-eq { transform-origin: 50% 100%; transform: scaleY(0.55); }
+
+/* Rotating word in the hero line. Five rows: four words plus the first again, for a seamless loop. */
+@keyframes nb-rotate { 0%, 17% { transform: translateY(0); } 25%, 42% { transform: translateY(-1.25em); } 50%, 67% { transform: translateY(-2.5em); } 75%, 92% { transform: translateY(-3.75em); } 100% { transform: translateY(-5em); } }
+.nb-rotator { height: 1.25em; overflow: hidden; vertical-align: bottom; }
+.nb-rotator-track { display: block; }
+.nb-rotator-track > span { display: block; height: 1.25em; line-height: 1.25em; white-space: nowrap; }
+.nb-rotator-static { display: none; }
+
+/* "Youth." shimmer */
+@keyframes nb-shimmer { from { background-position: 0% 50%; } to { background-position: 200% 50%; } }
+.nb-shimmer {
+  background-image: linear-gradient(90deg, #0b0f17, #1fae0a, #0b0f17);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.dark .nb-shimmer { background-image: linear-gradient(90deg, #ffffff, #39FF14, #00F0FF, #ffffff); }
+
+/* Ticker bands */
+@keyframes nb-ticker { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
+.nb-ticker, .nb-ticker-rev { display: flex; width: max-content; }
+
+/* Formats bento: slow colour drift in the tiles */
+@keyframes nb-hue { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
+.nb-tile-bg { background-size: 200% 200%; }
+
+/* FAQ chevron */
+details[open] > summary .nb-chevron { transform: rotate(45deg); }
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .nb-beam-l { animation: nb-beam-l 9s ease-in-out infinite alternate; }
+  .nb-beam-r { animation: nb-beam-r 11s ease-in-out infinite alternate; }
+  .nb-eq { animation: nb-eq var(--eq-d, 1.2s) ease-in-out infinite; animation-delay: var(--eq-delay, 0s); }
+  .nb-rotator-track { animation: nb-rotate 10s cubic-bezier(0.7, 0, 0.3, 1) infinite; }
+  .nb-shimmer { animation: nb-shimmer 6s linear infinite; }
+  .nb-ticker { animation: nb-ticker 38s linear infinite; }
+  .nb-ticker-rev { animation: nb-ticker 44s linear infinite reverse; }
+  .nb-tile-bg { animation: nb-hue 14s ease-in-out infinite alternate; }
+  .nb-chevron { transition: transform 0.25s ease; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nb-rotator { display: none; }
+  .nb-rotator-static { display: inline; }
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* The big closing line slides sideways as you scroll past it. */
+    @keyframes nb-slide { from { transform: translate3d(8%, 0, 0); } to { transform: translate3d(-38%, 0, 0); } }
+    .nb-slide { animation: nb-slide linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
+    /* Bento tiles rise one after another (staggered by their own position). */
+    .nb-pop { animation: nb-rise linear both; animation-timeline: view(); animation-range: entry 5% cover 30%; }
+  }
+}
