@@ -44,7 +44,7 @@ export default function HomePage() {
             <Marquee />
             <Story />
             {!off('home_clients') && <Proof clients={feed?.clients} stats={feed?.settings?.stats} />}
-            <About recentStages={(feed?.caseStudies || []).map((c) => c.title).slice(0, 4)} openCampaigns={(feed?.campaigns || []).length} upcomingCount={events.length} />
+            <About />
             <Process />
             <Manifesto />
             {!off('home_portfolio') && <CaseStudies items={feed?.caseStudies} />}

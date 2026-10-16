@@ -101,6 +101,9 @@
   .nb-ping { animation: nb-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite; }
 }
 
+/* Stacked cards pin under the last (works without scroll-driven animations too). */
+.nb-stack-card { position: sticky; top: calc(5.5rem + var(--i, 0) * 12px); }
+
 /* Chevrons on <details> */
 details > summary { list-style: none; }
 details > summary::-webkit-details-marker { display: none; }
@@ -141,6 +144,12 @@ details[open] > summary .nb-plus { transform: rotate(45deg); }
     /* The giant wordmark inks in as it arrives. */
     @keyframes nb-ink { from { color: var(--nb-ghost); } to { color: #39FF14; } }
     .nb-ink { animation: nb-ink linear both; animation-timeline: view(); animation-range: entry 25% entry 100%; }
+
+    /* Stacked cards: each one pins under the last; the ones underneath settle back and dim. */
+    .nb-stack { view-timeline-name: --nb-stack; view-timeline-axis: block; }
+    @keyframes nb-settle { to { transform: scale(0.93); filter: brightness(0.55); } }
+    .nb-stack-card > div { transform-origin: 50% 0; animation: nb-settle linear both; animation-timeline: --nb-stack; animation-range: contain calc(var(--i) * 16%) contain calc(var(--i) * 16% + 22%); }
+    .nb-stack-card:last-child > div { animation: none; }
 
     /* Horizontal track (desktop): the section pins and the panels slide sideways with the scroll. */
     @media (min-width: 1024px) {

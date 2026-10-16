@@ -3,7 +3,6 @@ const LINES = [
     ['Execution, not decks.', 'We run the thing, not just plan it.'],
     ['One crew.', 'Artists, production, creators, crews, report.'],
     ['Our own network.', 'Creators and ambassadors matched by city and niche.'],
-    ['Our own tech.', 'Ticketing, QR entry, guestlists and a creator dashboard we built.'],
     ['Numbers after.', 'Every project ends with a report you can forward.'],
 ];
 
