@@ -82,8 +82,8 @@ const VerifyCreator = () => {
                     return;
                 }
 
-                // Verify token match
-                if (data.verificationToken && data.verificationToken !== token) {
+                // Verify token match. A profile with no stored token can't be verified by link.
+                if (!data.verificationToken || data.verificationToken !== token) {
                     setStatus('error');
                     setErrorMessage('This verification link is expired or invalid. Please request a new verification link.');
                     return;
@@ -95,8 +95,7 @@ const VerifyCreator = () => {
                     phoneVerifiedAt: new Date().toISOString(),
                     isEmailVerified: true,
                     emailVerifiedAt: new Date().toISOString(),
-                    verificationToken: null, // Clear used token
-                    profileStatus: data.profileStatus === 'pending' ? 'approved' : (data.profileStatus || 'approved')
+                    verificationToken: null // Clear used token. Review status stays as it is.
                 });
 
                 setStatus('success');

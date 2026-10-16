@@ -27,6 +27,8 @@ import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { motion, AnimatePresence } from 'framer-motion';
 import SpinWheel from '../components/giveaway/SpinWheel';
 import { cn } from '../lib/utils';
+import { db } from '../lib/firebase';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 
 const GiveawayPage = () => {
@@ -35,18 +37,55 @@ const GiveawayPage = () => {
     const [searchParams] = useSearchParams();
     const referredBy = searchParams.get('ref');
     
-    const { giveaways, giveawayEntries, enterGiveaway, updateGiveawayEntry, subscribeToGiveawayEntries, user, setAuthModal } = useStore();
+    const { giveaways, enterGiveaway, updateGiveawayEntry, user, setAuthModal } = useStore();
     const giveaway = giveaways.find(g => g.slug === slug);
-    const userEntry = giveawayEntries.find(e => e.campaignId === giveaway?.id && e.userId === user?.uid);
-    const winner = giveawayEntries.find(e => e.campaignId === giveaway?.id && e.isWinner);
+
+    // Only the signed-in user's own entry is read from Firestore. Everyone else's
+    // entries (phones, colleges) stay on the server; the page gets a public summary.
+    const [ownEntries, setOwnEntries] = useState([]);
+    const [board, setBoard] = useState({ leaderboard: [], totalEntries: 0, winner: null });
+    const userEntry = ownEntries[0] || null;
+    const winner = board.winner;
+
+    useEffect(() => {
+        if (!giveaway?.id || !user?.uid) {
+            setOwnEntries([]);
+            return;
+        }
+        const q = query(
+            collection(db, 'giveaway_entries'),
+            where('campaignId', '==', giveaway.id),
+            where('userId', '==', user.uid)
+        );
+        return onSnapshot(q, (snap) => {
+            setOwnEntries(snap.docs.map(d => ({ ...d.data(), id: d.id })));
+        }, (err) => console.warn('[Giveaway] Own entry listener notice:', err.message));
+    }, [giveaway?.id, user?.uid]);
 
     useEffect(() => {
         if (!giveaway?.id) return;
-        const unsubscribe = subscribeToGiveawayEntries(giveaway.id);
-        return () => {
-            if (unsubscribe) unsubscribe();
+        let cancelled = false;
+        const loadBoard = () => {
+            fetch(`/api/forms?type=giveaway-board&id=${encodeURIComponent(giveaway.id)}`)
+                .then(res => res.json())
+                .then(json => {
+                    if (!cancelled && json?.success) {
+                        setBoard({
+                            leaderboard: json.leaderboard || [],
+                            totalEntries: json.totalEntries || 0,
+                            winner: json.winner || null
+                        });
+                    }
+                })
+                .catch(err => console.warn('[Giveaway] Leaderboard notice:', err.message));
         };
-    }, [giveaway?.id, subscribeToGiveawayEntries]);
+        loadBoard();
+        const interval = setInterval(loadBoard, 60000);
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+        };
+    }, [giveaway?.id, userEntry?.entryScore]);
     
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
@@ -92,10 +131,7 @@ const GiveawayPage = () => {
         return () => clearInterval(interval);
     }, [giveaway?.endDate]);
 
-    const campaignEntries = giveawayEntries.filter(e => e.campaignId === giveaway?.id);
-    const leaderboard = [...campaignEntries]
-        .sort((a, b) => (b.entryScore || 0) - (a.entryScore || 0))
-        .slice(0, 10);
+    const leaderboard = board.leaderboard;
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -609,7 +645,7 @@ const GiveawayPage = () => {
                                 </div>
                                 <div className="px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center gap-2 shrink-0">
                                     <Users size={14} className="text-neon-blue" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">{campaignEntries.length} Active</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">{board.totalEntries} Active</span>
                                 </div>
                             </div>
 

@@ -82,6 +82,78 @@ export default async function handler(req, res) {
         return res.status(405).json({ success: false, error: 'Method not allowed' });
     }
 
+    // Payout receipt check for /verify-payout. The caller must already know the reference,
+    // amount and payee from the receipt; we confirm all three against the spends record.
+    if (req.query.type === 'payout-verify') {
+        const ref = String(req.query.ref || '').trim();
+        const amt = Number(req.query.amt);
+        const payee = normalizeString(req.query.payee);
+        if (!ref || !payee || !Number.isFinite(amt) || !adminDb) {
+            return res.status(200).json({ success: true, verified: false });
+        }
+        try {
+            const candidates = [];
+            const byRef = await adminDb.collection('spends').where('paymentRef', '==', ref).limit(5).get();
+            byRef.forEach(d => candidates.push(d));
+            if (!candidates.length && !ref.includes('/')) {
+                const byId = await adminDb.collection('spends').doc(ref).get();
+                if (byId.exists) candidates.push(byId);
+            }
+            const match = candidates.find(d => {
+                const s = d.data() || {};
+                const names = [s.receiverName, s.paidTo].map(normalizeString).filter(Boolean);
+                return Math.abs(Number(s.amount) - amt) < 0.01
+                    && names.includes(payee)
+                    && normalizeString(s.status || 'paid') === 'paid';
+            });
+            if (!match) return res.status(200).json({ success: true, verified: false });
+            const s = match.data();
+            return res.status(200).json({
+                success: true,
+                verified: true,
+                payout: {
+                    reference: s.paymentRef || match.id,
+                    amount: Number(s.amount),
+                    payee: s.receiverName || s.paidTo || '',
+                    date: s.date || s.createdAt || '',
+                    paymentMode: s.paymentMode || '',
+                    receiptUrl: s.receiptUrl || ''
+                }
+            });
+        } catch (err) {
+            console.error('[API/FORMS] payout-verify error:', err);
+            return res.status(500).json({ success: false, verified: false, error: 'Verification is unavailable right now.' });
+        }
+    }
+
+    // Public giveaway summary: top 10 names and scores, entry count and winner name only,
+    // so the giveaway page never downloads entrants' phones or colleges.
+    if (req.query.type === 'giveaway-board') {
+        const giveawayId = String(req.query.id || '').trim();
+        if (!giveawayId || !adminDb) {
+            return res.status(200).json({ success: true, leaderboard: [], totalEntries: 0, winner: null });
+        }
+        try {
+            const snap = await adminDb.collection('giveaway_entries').where('campaignId', '==', giveawayId).get();
+            const entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const leaderboard = entries
+                .sort((a, b) => (b.entryScore || 0) - (a.entryScore || 0))
+                .slice(0, 10)
+                .map(e => ({ id: e.id, name: e.name || 'Participant', entryScore: e.entryScore || 0 }));
+            const winnerEntry = entries.find(e => e.isWinner);
+            res.setHeader('Cache-Control', 's-maxage=15, stale-while-revalidate=60');
+            return res.status(200).json({
+                success: true,
+                leaderboard,
+                totalEntries: entries.length,
+                winner: winnerEntry ? { id: winnerEntry.id, name: winnerEntry.name || 'Participant' } : null
+            });
+        } catch (err) {
+            console.error('[API/FORMS] giveaway-board error:', err);
+            return res.status(500).json({ success: false, error: 'Leaderboard is unavailable right now.' });
+        }
+    }
+
     const { id, slug, formId } = req.query;
     const targetId = (id || slug || formId || '').trim();
 

@@ -878,6 +878,126 @@ const sendWelcomeEmail = async (toEmail, creatorName, verificationUrl, creatorDa
 };
 
 
+// ── Access control ──────────────────────────────────────────────────────────
+const PROD_ORIGINS = ['https://newbi.live', 'https://www.newbi.live', 'https://artistant.in', 'https://www.artistant.in'];
+
+// True only for local development (Vite middleware or `vercel dev`), never on a deployed site.
+const isDevRuntime = () => (process.env.VERCEL_ENV
+    ? process.env.VERCEL_ENV === 'development'
+    : process.env.NODE_ENV !== 'production');
+
+const isAllowedOrigin = (origin) => {
+    if (!origin) return false;
+    if (PROD_ORIGINS.includes(origin)) return true;
+    return isDevRuntime() && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+};
+
+const isLocalDevRequest = (req) => {
+    const host = req.headers?.host || '';
+    return isDevRuntime() && (host.includes('localhost') || host.includes('127.0.0.1'));
+};
+
+const CREATOR_ADMIN_ROLES = ['developer', 'super_admin', 'founder', 'admin', 'editor', 'content_admin'];
+
+// Same lookup as api/sync-users.js: an `admins` entry for the caller's verified email,
+// or an admin role on users/{uid}.
+const isAdminCaller = async (decodedToken) => {
+    if (!decodedToken || !adminDb) return false;
+    try {
+        const rawEmail = (decodedToken.email || '').trim();
+        if (rawEmail && decodedToken.email_verified) {
+            const emails = Array.from(new Set([rawEmail, rawEmail.toLowerCase()]));
+            const snap = await adminDb.collection('admins').where('email', 'in', emails).limit(5).get();
+            if (snap.docs.some(d => CREATOR_ADMIN_ROLES.includes(d.data()?.role))) return true;
+        }
+        const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
+        if (userDoc.exists && CREATOR_ADMIN_ROLES.includes(userDoc.data()?.role)) return true;
+    } catch (e) {
+        console.warn('[API/CREATOR-JOIN] Admin check notice:', e.message);
+    }
+    return false;
+};
+
+// Fields only the server or an admin may set on a creator profile.
+const PRIVILEGED_CREATOR_FIELDS = [
+    'uid', 'creatorId', 'verificationToken', 'profileStatus', 'isVerified', 'verifiedAt', 'verifiedBy',
+    'isPhoneVerified', 'phoneVerifiedAt', 'isEmailVerified', 'emailVerifiedAt',
+    'phoneVerificationPending', 'phoneVerificationSuspendedAt', 'needsPhoneVerificationNotice',
+    'instagramVerified', 'instagramVerifiedAt', 'manualFollowerEntry', 'requiresManualVerification',
+    'isManualFollowerEntry', 'shortlistedCampaigns', 'cityGroupAddedBy', 'inviteLinkSent', 'inviteLinkSentAt',
+    'inviteLinkChannel', 'role', 'isAdmin', 'points', 'earnings', 'walletBalance', 'balance', 'payouts',
+    'adminNotes', 'rejectionReason', 'addedByAdmin', 'createdAt', 'updatedAt'
+];
+
+// Fields a creator may change on their own profile through creator-update.
+const CREATOR_SELF_EDITABLE_FIELDS = [
+    'name', 'displayName', 'email', 'phone', 'city', 'customCity', 'categories', 'category', 'niche', 'niches',
+    'primaryNiche', 'specializations', 'cityPageFocus', 'collegeName', 'instagram', 'instagramFollowers',
+    'instagramProfilePic', 'linkedin', 'youtube', 'twitter', 'website', 'bio', 'doBarter', 'commercials',
+    'profilePicture', 'avatar', 'photoURL', 'handle', 'gender', 'dob', 'languages', 'joinedCampaigns',
+    'hasJoinedCityGroup', 'joinedCityGroupAt'
+];
+
+const pickFields = (obj = {}, allowed = []) => {
+    const out = {};
+    for (const key of allowed) {
+        if (obj[key] !== undefined) out[key] = obj[key];
+    }
+    return out;
+};
+
+const omitFields = (obj = {}, denied = []) => {
+    const out = { ...obj };
+    for (const key of denied) delete out[key];
+    return out;
+};
+
+// The phone on a verified ID token proves the caller owns that number.
+const tokenPhoneMatches = (decodedToken, phone) => {
+    const tokenPhone = normalizePhoneNumber(decodedToken?.phone_number || '');
+    return Boolean(tokenPhone) && tokenPhone === normalizePhoneNumber(phone || '');
+};
+
+// Creators may add a campaign to their own shortlist only when that campaign auto-shortlists.
+const filterSelfShortlist = async (requested, current = []) => {
+    if (!Array.isArray(requested)) return undefined;
+    const currentSet = new Set(current || []);
+    const additions = requested.filter(id => !currentSet.has(id));
+    const allowedAdditions = [];
+    for (const campaignId of additions.slice(0, 20)) {
+        try {
+            const snap = await adminDb.collection('campaigns').doc(String(campaignId)).get();
+            if (snap.exists && snap.data()?.autoShortlistEligible) allowedAdditions.push(campaignId);
+        } catch (e) { /* skip unknown campaign */ }
+    }
+    const kept = requested.filter(id => currentSet.has(id));
+    return Array.from(new Set([...kept, ...allowedAdditions]));
+};
+
+// Finds a creator doc by doc id, uid field, or creatorId.
+const findCreatorDoc = async (identifier) => {
+    const target = String(identifier || '').trim();
+    if (!target) return null;
+    const direct = await adminDb.collection('creators').doc(target).get();
+    if (direct.exists) return direct;
+    let q = await adminDb.collection('creators').where('uid', '==', target).limit(1).get();
+    if (!q.empty) return q.docs[0];
+    q = await adminDb.collection('creators').where('creatorId', '==', target.toUpperCase()).limit(1).get();
+    if (!q.empty) return q.docs[0];
+    return null;
+};
+
+const isCreatorOwner = (snap, decodedToken) => Boolean(
+    decodedToken?.uid && snap && (snap.id === decodedToken.uid || snap.data()?.uid === decodedToken.uid)
+);
+
+const ADMIN_ONLY_ACTIONS = new Set([
+    'whatsapp-verify', 'creator-group-add', 'creator-group-update', 'creator-group-delete',
+    'creator-groups-sync', 'creator-group-bulk-add', 'creator-group-invite-sent', 'creator-group-bulk-invite-sent',
+    'creator-delete'
+]);
+const PUBLIC_ACTIONS = new Set(['join', 'verify-instagram', 'verify', 'creator-groups-get']);
+
 export default async function handler(req, res) {
     if (!res.status) res.status = (c) => { res.statusCode = c; return res; };
     if (!res.json) res.json = (d) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(d)); return res; };
@@ -901,12 +1021,15 @@ export default async function handler(req, res) {
         }
     }
 
-    const origin = req.headers?.origin || '*';
+    const origin = req.headers?.origin || '';
     if (typeof res.setHeader === 'function') {
-        res.setHeader('Access-Control-Allow-Origin', origin);
+        if (isAllowedOrigin(origin)) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
+        }
+        res.setHeader('Vary', 'Origin');
         res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
     }
 
     if (req.method === 'OPTIONS') {
@@ -917,7 +1040,7 @@ export default async function handler(req, res) {
         return res.status(500).json({ success: false, error: 'Database service unavailable' });
     }
 
-    // Optional Auth Token Resolution
+    // Auth token resolution. Optional only for the public actions below.
     let decodedToken = null;
     const authHeader = req.headers?.authorization;
     if (authHeader && authHeader.startsWith('Bearer ') && adminAuth) {
@@ -925,12 +1048,23 @@ export default async function handler(req, res) {
             const token = authHeader.split('Bearer ')[1];
             decodedToken = await adminAuth.verifyIdToken(token, true);
         } catch (e) {
-            // Token verification failure is non-fatal for guest registration
             console.warn('[API/CREATOR-JOIN] Token decode notice:', e.message);
         }
     }
 
     const action = req.query?.action || req.body?.action || 'join';
+
+    if (!PUBLIC_ACTIONS.has(action) && !decodedToken) {
+        return res.status(401).json({ success: false, error: 'Please sign in to continue.' });
+    }
+
+    let callerIsAdmin = false;
+    if (ADMIN_ONLY_ACTIONS.has(action)) {
+        callerIsAdmin = await isAdminCaller(decodedToken);
+        if (!callerIsAdmin) {
+            return res.status(403).json({ success: false, error: 'Admin access required.' });
+        }
+    }
 
     // ── ACTION: VERIFY INSTAGRAM PROFILE & FOLLOWERS ──────────────────────────
     if (action === 'verify-instagram') {
@@ -981,8 +1115,7 @@ export default async function handler(req, res) {
                 }
             }
 
-            const reqHost = req.headers?.host || '';
-            const isLocal = reqHost.includes('localhost') || reqHost.includes('127.0.0.1');
+            const isLocal = isLocalDevRequest(req);
 
             const result = await fetchInstagramProfile(cleanHandle);
             if (!result.success) {
@@ -1086,18 +1219,29 @@ export default async function handler(req, res) {
             }
 
             const data = snap.data();
+            // Only what the verify page shows; the link alone must not reveal contact details.
+            const publicCreator = (d) => ({
+                id: snap.id,
+                name: d.name || '',
+                displayName: d.displayName || '',
+                instagram: d.instagram || '',
+                city: d.city || '',
+                creatorId: d.creatorId || '',
+                profileStatus: d.profileStatus || ''
+            });
 
             // If already verified
             if (data.isPhoneVerified && !data.verificationToken) {
-                return res.status(200).json({ success: true, alreadyVerified: true, creator: { ...data, id: snap.id } });
+                return res.status(200).json({ success: true, alreadyVerified: true, creator: publicCreator(data) });
             }
 
-            // Verify token match
-            if (data.verificationToken && data.verificationToken !== verificationToken) {
+            // Verify token match. A profile with no stored token can't be verified by link.
+            if (!data.verificationToken || data.verificationToken !== verificationToken) {
                 return res.status(400).json({ success: false, error: 'This verification link is invalid or expired.' });
             }
 
             const now = new Date().toISOString();
+            // Verification confirms contact details only; it never changes the review status.
             const updates = {
                 isPhoneVerified: true,
                 phoneVerifiedAt: now,
@@ -1106,7 +1250,6 @@ export default async function handler(req, res) {
                 isEmailVerified: true,
                 emailVerifiedAt: now,
                 verificationToken: null,
-                profileStatus: data.profileStatus === 'pending' ? 'approved' : (data.profileStatus || 'approved'),
                 updatedAt: now
             };
 
@@ -1114,7 +1257,7 @@ export default async function handler(req, res) {
 
             return res.status(200).json({
                 success: true,
-                creator: { ...data, ...updates, id: snap.id }
+                creator: publicCreator({ ...data, ...updates })
             });
         } catch (err) {
             console.error('[API/CREATOR-JOIN] Verify error:', err);
@@ -1130,6 +1273,11 @@ export default async function handler(req, res) {
         const { phone, creatorName = 'Creator', verificationUrl } = req.body || {};
         if (!phone || !verificationUrl) {
             return res.status(400).json({ success: false, error: 'phone and verificationUrl are required.' });
+        }
+        let verifyOrigin = '';
+        try { verifyOrigin = new URL(verificationUrl).origin; } catch (e) { /* invalid URL */ }
+        if (!isAllowedOrigin(verifyOrigin)) {
+            return res.status(400).json({ success: false, error: 'verificationUrl must point to newbi.live.' });
         }
         try {
             await sendWhatsAppVerification(phone, creatorName, verificationUrl);
@@ -1248,38 +1396,43 @@ export default async function handler(req, res) {
                 return res.status(400).json({ success: false, error: 'Creator ID or UID is required' });
             }
 
-            let docRef = adminDb.collection('creators').doc(targetIdentifier);
-            let snap = await docRef.get();
-
-            // If not found by direct doc ID, try searching by uid or creatorId
-            if (!snap.exists) {
-                let querySnap = await adminDb.collection('creators')
-                    .where('uid', '==', targetIdentifier)
-                    .limit(1)
-                    .get();
-
-                if (querySnap.empty) {
-                    querySnap = await adminDb.collection('creators')
-                        .where('creatorId', '==', targetIdentifier.toUpperCase())
-                        .limit(1)
-                        .get();
-                }
-
-                if (!querySnap.empty) {
-                    snap = querySnap.docs[0];
-                    docRef = snap.ref;
-                }
-            }
-
-            if (!snap.exists) {
+            const snap = await findCreatorDoc(targetIdentifier);
+            if (!snap) {
                 return res.status(404).json({ success: false, error: 'Creator profile not found.' });
             }
+            const docRef = snap.ref;
 
             const data = snap.data();
             const prevStatus = data.profileStatus;
             const now = new Date().toISOString();
+
+            callerIsAdmin = await isAdminCaller(decodedToken);
+            let allowedUpdates;
+            if (callerIsAdmin) {
+                allowedUpdates = { ...(updates || {}) };
+            } else {
+                if (!isCreatorOwner(snap, decodedToken)) {
+                    return res.status(403).json({ success: false, error: 'You can only edit your own creator profile.' });
+                }
+                const requested = updates || {};
+                allowedUpdates = pickFields(requested, CREATOR_SELF_EDITABLE_FIELDS);
+                const nextShortlist = await filterSelfShortlist(requested.shortlistedCampaigns, data.shortlistedCampaigns);
+                if (nextShortlist) allowedUpdates.shortlistedCampaigns = nextShortlist;
+                // Phone verification only counts when the signed-in account owns that number.
+                if (requested.isPhoneVerified === true && tokenPhoneMatches(decodedToken, requested.phone || data.phone)) {
+                    allowedUpdates.isPhoneVerified = true;
+                    allowedUpdates.phoneVerifiedAt = data.phoneVerifiedAt || now;
+                    allowedUpdates.phoneVerificationPending = false;
+                    allowedUpdates.needsPhoneVerificationNotice = false;
+                }
+                // Changing the phone number drops a verification that belonged to the old number.
+                if (allowedUpdates.phone && normalizePhoneNumber(allowedUpdates.phone) !== normalizePhoneNumber(data.phone)
+                    && !allowedUpdates.isPhoneVerified) {
+                    allowedUpdates.isPhoneVerified = false;
+                }
+            }
             const finalUpdates = {
-                ...updates,
+                ...allowedUpdates,
                 updatedAt: now
             };
 
@@ -1341,41 +1494,53 @@ export default async function handler(req, res) {
             return res.status(405).json({ success: false, error: 'Method not allowed' });
         }
         try {
-            const { campaignId, taskId, creatorUid, contentLink = '', proofUrl = '', updatedTasks } = req.body || {};
+            const { campaignId, taskId, creatorUid, contentLink = '', proofUrl = '' } = req.body || {};
             if (!campaignId || !taskId || !creatorUid) {
                 return res.status(400).json({ success: false, error: 'campaignId, taskId, and creatorUid are required' });
             }
 
-            const campRef = adminDb.collection('campaigns').doc(campaignId);
-            const campSnap = await campRef.get();
-            if (!campSnap.exists) {
-                return res.status(404).json({ success: false, error: 'Campaign not found' });
+            // The caller may only submit for themselves (their auth uid or their own creator doc).
+            const callerUid = decodedToken.uid;
+            if (String(creatorUid) !== callerUid) {
+                const creatorSnap = await findCreatorDoc(creatorUid);
+                if (!isCreatorOwner(creatorSnap, decodedToken)) {
+                    return res.status(403).json({ success: false, error: 'You can only submit tasks for your own profile.' });
+                }
             }
 
-            const campData = campSnap.data();
-            let newTasks = updatedTasks;
+            const campRef = adminDb.collection('campaigns').doc(String(campaignId));
+            const submissionData = {
+                status: 'submitted',
+                contentLink: String(contentLink || ''),
+                proofUrl: String(proofUrl || ''),
+                submittedAt: new Date().toISOString(),
+                reviewedAt: null,
+                rejectionReason: ''
+            };
+            const submitterIds = Array.from(new Set([String(creatorUid), callerUid]));
 
-            if (!Array.isArray(newTasks)) {
-                newTasks = (campData.tasks || []).map(t => {
+            // Only this creator's entry on this one task changes; a transaction keeps
+            // concurrent submissions from other creators intact.
+            const newTasks = await adminDb.runTransaction(async (tx) => {
+                const campSnap = await tx.get(campRef);
+                if (!campSnap.exists) return null;
+                const tasks = (campSnap.data().tasks || []).map(t => {
                     if (t.id === taskId || String(t.id) === String(taskId)) {
                         const submissions = { ...(t.submissions || {}) };
-                        submissions[creatorUid] = {
-                            status: 'submitted',
-                            contentLink: contentLink || '',
-                            proofUrl: proofUrl || '',
-                            submittedAt: new Date().toISOString(),
-                            reviewedAt: null,
-                            rejectionReason: ''
-                        };
-                        const completedBy = Array.from(new Set([...(t.completedBy || []), creatorUid]));
+                        submitterIds.forEach(id => { submissions[id] = submissionData; });
+                        const completedBy = Array.from(new Set([...(t.completedBy || []), ...submitterIds]));
                         return { ...t, submissions, completedBy };
                     }
                     return t;
                 });
-            }
+                tx.update(campRef, { tasks });
+                return tasks;
+            });
 
-            await campRef.update({ tasks: newTasks });
-            return res.status(200).json({ success: true, tasks: newTasks });
+            if (!newTasks) {
+                return res.status(404).json({ success: false, error: 'Campaign not found' });
+            }
+            return res.status(200).json({ success: true });
         } catch (subErr) {
             console.error('[API/CREATOR-JOIN] campaign-task-submit error:', subErr);
             return res.status(500).json({ success: false, error: subErr.message || 'Failed to persist task submission' });
@@ -1388,41 +1553,39 @@ export default async function handler(req, res) {
             return res.status(405).json({ success: false, error: 'Method not allowed' });
         }
         try {
-            const params = req.method === 'POST' ? req.body : req.query;
-            const { uid, email, phone } = params || {};
-            const searchUid = (uid || decodedToken?.uid || '').trim();
-            const searchEmail = (email || decodedToken?.email || '').trim().toLowerCase();
-            const searchPhone = normalizePhoneNumber(phone || decodedToken?.phone_number || '');
-
-            if (!searchUid && !searchEmail && !searchPhone) {
-                return res.status(400).json({ success: false, error: 'Must provide uid, email, or phone to resolve profile.' });
-            }
+            // Identity comes only from the verified ID token, never from request parameters.
+            const searchUid = decodedToken.uid;
+            const searchEmail = decodedToken.email_verified ? (decodedToken.email || '').trim().toLowerCase() : '';
+            const searchPhone = normalizePhoneNumber(decodedToken.phone_number || '');
 
             let foundDoc = null;
 
             // 1. Try by exact uid (document ID or uid field)
-            if (searchUid) {
-                let snap = await adminDb.collection('creators').doc(searchUid).get();
-                if (snap.exists) {
-                    foundDoc = snap;
+            let snap = await adminDb.collection('creators').doc(searchUid).get();
+            if (snap.exists) {
+                foundDoc = snap;
+            } else {
+                const querySnap = await adminDb.collection('creators').where('uid', '==', searchUid).limit(1).get();
+                if (!querySnap.empty) foundDoc = querySnap.docs[0];
+            }
+
+            // 2. Try by the token's verified email
+            if (!foundDoc && searchEmail) {
+                const emailSnap = await adminDb.collection('creators').where('email', '==', searchEmail).limit(1).get();
+                if (!emailSnap.empty) {
+                    foundDoc = emailSnap.docs[0];
                 } else {
-                    const querySnap = await adminDb.collection('creators').where('uid', '==', searchUid).limit(1).get();
-                    if (!querySnap.empty) foundDoc = querySnap.docs[0];
+                    const creatorsSnap = await adminDb.collection('creators').get();
+                    creatorsSnap.forEach(doc => {
+                        const data = doc.data();
+                        if (!foundDoc && data.email && data.email.trim().toLowerCase() === searchEmail) {
+                            foundDoc = doc;
+                        }
+                    });
                 }
             }
 
-            // 2. Try by email
-            if (!foundDoc && searchEmail) {
-                const creatorsSnap = await adminDb.collection('creators').get();
-                creatorsSnap.forEach(doc => {
-                    const data = doc.data();
-                    if (!foundDoc && data.email && data.email.trim().toLowerCase() === searchEmail) {
-                        foundDoc = doc;
-                    }
-                });
-            }
-
-            // 3. Try by phone
+            // 3. Try by the token's verified phone number
             if (!foundDoc && searchPhone) {
                 const creatorsSnap = await adminDb.collection('creators').get();
                 creatorsSnap.forEach(doc => {
@@ -1438,22 +1601,85 @@ export default async function handler(req, res) {
             }
 
             const data = foundDoc.data();
-            
-            // Auto-link uid if it differs and we have an authenticated user uid
-            if (searchUid && data.uid !== searchUid) {
-                await foundDoc.ref.update({ 
+
+            // Link the profile to this account. Safe here because the match came from
+            // the token's own uid or its verified email or phone.
+            if (data.uid !== searchUid) {
+                await foundDoc.ref.update({
                     uid: searchUid,
                     updatedAt: new Date().toISOString()
                 });
                 data.uid = searchUid;
             }
 
-            return res.status(200).json({ 
-                success: true, 
-                creator: { ...data, id: foundDoc.id } 
+            const { verificationToken: _omitToken, ...safeData } = data;
+            return res.status(200).json({
+                success: true,
+                creator: { ...safeData, id: foundDoc.id }
             });
         } catch (err) {
             console.error('[API/CREATOR-JOIN] Resolve creator error:', err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+    }
+
+    // ── ACTION: CREATOR REFERRALS (own referrals + public leaderboard) ───────
+    // Computed here so creator dashboards don't need every creator's record.
+    if (action === 'creator-referrals') {
+        try {
+            const creatorsSnap = await adminDb.collection('creators').get();
+            const all = creatorsSnap.docs.map(d => ({ ...d.data(), id: d.id, uid: d.data().uid || d.id }));
+            const me = all.find(c => c.id === decodedToken.uid || c.uid === decodedToken.uid);
+            if (!me) {
+                return res.status(200).json({ success: true, referrals: [], leaderboard: [], myRank: 0 });
+            }
+
+            const uidMap = new Map();
+            const creatorIdMap = new Map();
+            const instagramMap = new Map();
+            const linkedinMap = new Map();
+            all.forEach(c => {
+                uidMap.set(c.uid, c);
+                if (c.creatorId) creatorIdMap.set(String(c.creatorId).toUpperCase(), c);
+                if (c.instagram) instagramMap.set(String(c.instagram).toLowerCase(), c);
+                if (c.linkedin) linkedinMap.set(String(c.linkedin).toLowerCase(), c);
+            });
+            const referrerOf = (c) => {
+                if (!c.referredBy) return null;
+                const refStr = String(c.referredBy);
+                return uidMap.get(refStr) || creatorIdMap.get(refStr.toUpperCase())
+                    || instagramMap.get(refStr.toLowerCase()) || linkedinMap.get(refStr.toLowerCase()) || null;
+            };
+
+            const counts = {};
+            const referrals = [];
+            all.forEach(c => {
+                const referrer = referrerOf(c);
+                if (!referrer) return;
+                counts[referrer.uid] = (counts[referrer.uid] || 0) + 1;
+                if (referrer.uid === me.uid) referrals.push(c);
+            });
+
+            const publicCard = (c) => ({
+                uid: c.uid,
+                name: c.name || c.displayName || '',
+                instagram: c.instagram || '',
+                profilePicture: c.profilePicture || c.instagramProfilePic || c.profilePic || c.photoURL || '',
+                profileStatus: c.profileStatus || ''
+            });
+            const ranked = all
+                .filter(c => counts[c.uid] > 0)
+                .map(c => ({ ...publicCard(c), referralCount: counts[c.uid] }))
+                .sort((a, b) => b.referralCount - a.referralCount);
+
+            return res.status(200).json({
+                success: true,
+                referrals: referrals.map(publicCard),
+                leaderboard: ranked.slice(0, 10),
+                myRank: ranked.findIndex(c => c.uid === me.uid) + 1
+            });
+        } catch (err) {
+            console.error('[API/CREATOR-JOIN] Creator referrals error:', err);
             return res.status(500).json({ success: false, error: err.message });
         }
     }
@@ -1601,6 +1827,9 @@ export default async function handler(req, res) {
     }
 
     // ── ACTION: JOIN / REGISTER CREATOR ─────────────────────────────────────
+    if (action !== 'join') {
+        return res.status(400).json({ success: false, error: 'Unknown action.' });
+    }
     if (req.method !== 'POST') {
         return res.status(405).json({ success: false, error: 'Method not allowed' });
     }
@@ -1608,7 +1837,13 @@ export default async function handler(req, res) {
     try {
         const body = req.body || {};
         const { creator, sendWelcome = true } = body;
-        const creatorData = creator || body;
+        const rawCreatorData = creator || body;
+        // Admins onboarding a creator may set review fields; everyone else gets them from the server.
+        callerIsAdmin = decodedToken ? await isAdminCaller(decodedToken) : false;
+        const creatorData = callerIsAdmin
+            ? { ...rawCreatorData }
+            : omitFields(rawCreatorData, PRIVILEGED_CREATOR_FIELDS);
+        delete creatorData.action;
 
         const name = (creatorData.displayName || creatorData.name || '').trim();
         const rawPhone = creatorData.phone || '';
@@ -1640,7 +1875,16 @@ export default async function handler(req, res) {
         }
 
         const callerUid = decodedToken?.uid || null;
-        const targetUid = creatorData.uid || callerUid || adminDb.collection('creators').doc().id;
+        // A non-admin can only create or update the profile tied to their own account;
+        // signed-out applicants always get a fresh document.
+        const targetUid = callerIsAdmin
+            ? (rawCreatorData.uid || adminDb.collection('creators').doc().id)
+            : (callerUid || adminDb.collection('creators').doc().id);
+        const existingSnap = await adminDb.collection('creators').doc(targetUid).get();
+        const existingData = existingSnap.exists ? existingSnap.data() : null;
+        if (existingData && !callerIsAdmin && callerUid && existingData.uid && existingData.uid !== callerUid) {
+            return res.status(403).json({ success: false, error: 'This creator profile belongs to another account.' });
+        }
 
         // 1. Phone number deduplication via targeted query
         if (normPhone) {
@@ -1726,10 +1970,11 @@ export default async function handler(req, res) {
             }
         }
 
+        // Read from the raw payload: claiming manual entry only ever routes a profile to review.
         const isManualFollowers = Boolean(
-            creatorData.manualFollowerEntry || 
-            creatorData.isManualFollowerEntry || 
-            creatorData.requiresManualVerification
+            rawCreatorData.manualFollowerEntry || 
+            rawCreatorData.isManualFollowerEntry || 
+            rawCreatorData.requiresManualVerification
         );
         const submittedFollowers = Number(creatorData.instagramFollowers) || 0;
         if (cleanInsta && requireInstagramVerification && minInstagramFollowers > 0 && !isManualFollowers) {
@@ -1741,27 +1986,33 @@ export default async function handler(req, res) {
             }
         }
 
-        const verificationToken = creatorData.verificationToken || `vt_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-        const creatorId = (creatorData.creatorId || targetUid.slice(0, 8)).toUpperCase();
+        const verificationToken = `vt_${Date.now()}_${Math.random().toString(36).slice(2, 11)}${Math.random().toString(36).slice(2, 11)}`;
+        const creatorId = ((callerIsAdmin && creatorData.creatorId) || existingData?.creatorId || targetUid.slice(0, 8)).toUpperCase();
         const now = new Date().toISOString();
 
-        // Check if verified via phone auth or token email match
-        const reqHost = req.headers?.host || '';
-        const isLocal = reqHost.includes('localhost') || reqHost.includes('127.0.0.1');
-        const isEmailVerified = creatorData.isEmailVerified || (decodedToken?.email_verified && decodedToken?.email?.toLowerCase() === normEmail) || isLocal || false;
-        const isPhoneVerified = Boolean(creatorData.isPhoneVerified) || (Boolean(decodedToken?.phone_number) && normalizePhoneNumber(decodedToken?.phone_number) === normPhone) || isLocal;
-
-        // Phone verification check removed to allow bypassing when SMS fails on Safari
+        // Verified only by the signed-in account's own email or phone (or an admin onboarding).
+        const isLocal = isLocalDevRequest(req);
+        const tokenEmailMatches = Boolean(decodedToken?.email_verified && decodedToken?.email?.toLowerCase() === normEmail);
+        const isEmailVerified = Boolean((callerIsAdmin && creatorData.isEmailVerified) || existingData?.isEmailVerified || tokenEmailMatches || isLocal);
+        const isPhoneVerified = Boolean((callerIsAdmin && creatorData.isPhoneVerified)
+            || (existingData?.isPhoneVerified && normalizePhoneNumber(existingData.phone) === normPhone)
+            || tokenPhoneMatches(decodedToken, rawPhone) || isLocal);
 
         // Determine auto-verification:
         // Only creators who manually entered their followers require manual verification.
+        // Status is decided here, never taken from the applicant. A profile that already
+        // exists keeps its review status, so re-applying can't lift a rejection or suspension.
         const shouldAutoVerify = !isManualFollowers;
-        const profileStatus = creatorData.profileStatus 
-            ? creatorData.profileStatus 
-            : (shouldAutoVerify ? 'approved' : 'pending');
-        const isVerified = creatorData.isVerified !== undefined 
-            ? creatorData.isVerified 
-            : shouldAutoVerify;
+        let profileStatus = shouldAutoVerify ? 'approved' : 'pending';
+        let isVerified = shouldAutoVerify;
+        if (callerIsAdmin) {
+            if (creatorData.profileStatus) profileStatus = creatorData.profileStatus;
+            if (creatorData.isVerified !== undefined) isVerified = creatorData.isVerified;
+        } else if (existingData?.profileStatus) {
+            profileStatus = existingData.profileStatus;
+            isVerified = existingData.isVerified ?? (profileStatus === 'approved');
+        }
+        const keepsExistingReview = !callerIsAdmin && Boolean(existingData?.profileStatus);
 
         const finalCreator = {
             ...creatorData,
@@ -1772,25 +2023,30 @@ export default async function handler(req, res) {
             isVerified,
             manualFollowerEntry: isManualFollowers,
             requiresManualVerification: isManualFollowers,
-            verifiedAt: shouldAutoVerify ? now : (creatorData.verifiedAt || null),
-            verifiedBy: shouldAutoVerify ? (creatorData.verifiedBy || 'system_auto_verify') : null,
+            verifiedAt: keepsExistingReview ? (existingData.verifiedAt || null) : (shouldAutoVerify ? now : (creatorData.verifiedAt || null)),
+            verifiedBy: keepsExistingReview ? (existingData.verifiedBy || null) : (shouldAutoVerify ? (creatorData.verifiedBy || 'system_auto_verify') : null),
             instagram: cleanInsta,
             linkedin: cleanLinkedin,
             youtube: cleanYoutube,
             twitter: cleanTwitter,
             website: '',
             instagramFollowers: submittedFollowers ? String(submittedFollowers) : (creatorData.instagramFollowers || '0'),
-            instagramVerified: Boolean(creatorData.instagramVerified || (cleanInsta && submittedFollowers >= minInstagramFollowers)),
-            instagramVerifiedAt: creatorData.instagramVerifiedAt || (cleanInsta ? now : null),
+            instagramVerified: Boolean((callerIsAdmin && creatorData.instagramVerified) || (cleanInsta && submittedFollowers >= minInstagramFollowers)),
+            instagramVerifiedAt: (callerIsAdmin && creatorData.instagramVerifiedAt) || (cleanInsta ? now : null),
             isPhoneVerified,
-            phoneVerifiedAt: isPhoneVerified ? (creatorData.phoneVerifiedAt || now) : null,
+            phoneVerifiedAt: isPhoneVerified ? (creatorData.phoneVerifiedAt || existingData?.phoneVerifiedAt || now) : null,
             phoneVerificationPending: !isPhoneVerified,
             phoneVerificationSuspendedAt: !isPhoneVerified ? (creatorData.phoneVerificationSuspendedAt || now) : null,
             needsPhoneVerificationNotice: !isPhoneVerified,
             isEmailVerified,
-            createdAt: creatorData.createdAt || now,
+            createdAt: existingData?.createdAt || (callerIsAdmin && creatorData.createdAt) || now,
             updatedAt: now
         };
+
+        if (!callerIsAdmin) {
+            const nextShortlist = await filterSelfShortlist(rawCreatorData.shortlistedCampaigns, existingData?.shortlistedCampaigns);
+            if (nextShortlist) finalCreator.shortlistedCampaigns = nextShortlist;
+        }
 
         // Write to Firestore using Admin privileges (immune to client Firestore security rules)
         await adminDb.collection('creators').doc(targetUid).set(finalCreator, { merge: true });
@@ -1841,12 +2097,13 @@ export default async function handler(req, res) {
                 .catch(err => console.warn('Email background notice:', err));
         }
 
+        // The token only travels by WhatsApp/email; returning it would let anyone verify without the message.
+        const { verificationToken: _omitToken, ...creatorResponse } = finalCreator;
         return res.status(200).json({
             success: true,
             id: targetUid,
             creatorId,
-            verificationToken,
-            creator: finalCreator
+            creator: creatorResponse
         });
 
     } catch (err) {
