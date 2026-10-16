@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import LogIn from 'lucide-react/dist/esm/icons/log-in';
 import { useAppStore } from '../../lib/store/appStore';
 import { useStore as useLegacyStore } from '../../lib/store.js';
 import { auth } from '../../lib/firebase';
 import { Button } from '../../components/app/controls';
-import AmbientBackdrop from '../../components/app/AmbientBackdrop';
+import { HeroPanel } from '../pages/parts';
+import newbiIcon from '../../assets/logo/newbi-icon.svg';
 
 /*
  * Sign-in that picks up where you left off.
@@ -160,8 +160,12 @@ export function AuthResumer() {
     return null;
 }
 
-/* Page guard: shows a sign-in panel instead of the children when signed out. */
-const AuthGate = ({ children, title = 'Sign in to continue', message = 'One account for passes, campaigns and the community.', intent }) => {
+/*
+ * Page guard: shows a sign-in panel instead of the children when signed out.
+ * The panel is the "N." hero card; `plain` drops the card for use inside a
+ * Sheet, so there's no card inside a modal.
+ */
+const AuthGate = ({ children, title = 'Sign in to continue', message = 'One account for passes, campaigns and the community.', intent, plain = false }) => {
     const authUser = useAppStore(s => s.authUser);
     const authReady = useAppStore(s => s.authReady);
     const { requestSignIn } = useAuthGate();
@@ -170,18 +174,24 @@ const AuthGate = ({ children, title = 'Sign in to continue', message = 'One acco
     if (!authReady) {
         return <div className="mx-auto h-48 max-w-md animate-pulse rounded-3xl bg-black/[0.04] dark:bg-white/[0.04]" />;
     }
-    return (
-        <div className="relative mx-auto max-w-md overflow-hidden rounded-3xl border border-black/[0.06] bg-white px-6 py-10 text-center shadow-[0_8px_40px_rgba(0,0,0,0.06)] dark:border-white/[0.07] dark:bg-[#0c0e14]">
-            <AmbientBackdrop />
-            <div className="relative space-y-4">
-                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-700 dark:bg-neon-green/10 dark:text-neon-green">
-                    <LogIn size={22} />
+    const signIn = <Button size="lg" className="w-full" onClick={() => requestSignIn(intent)}>Sign in</Button>;
+    if (plain) {
+        return (
+            <div className="mx-auto flex min-h-[50dvh] max-w-sm flex-col items-center justify-center px-2 py-10 text-center">
+                <span className="flex h-20 w-20 items-center justify-center rounded-[1.6rem] bg-gray-900 shadow-[0_18px_50px_-18px_rgba(57,255,20,0.7)] dark:bg-white/[0.06] dark:ring-1 dark:ring-white/10">
+                    <img src={newbiIcon} alt="" className="w-12" />
                 </span>
-                <h2 className="text-xl font-black tracking-tight">{title}</h2>
-                <p className="text-[15px] text-gray-600 dark:text-zinc-400">{message}</p>
-                <Button className="w-full" onClick={() => requestSignIn(intent)}>Sign in</Button>
+                <h2 className="mt-5 font-heading text-[26px] font-black leading-tight tracking-tight">{title}</h2>
+                <p className="mt-2 text-[15px] text-gray-600 dark:text-zinc-400">{message}</p>
+                <div className="mt-6 w-full">{signIn}</div>
             </div>
-        </div>
+        );
+    }
+    return (
+        <HeroPanel eyebrow="Your Newbi account" title={title} className="mx-auto max-w-md">
+            <p className="text-[15px] text-gray-600 dark:text-zinc-300">{message}</p>
+            <div className="pt-2">{signIn}</div>
+        </HeroPanel>
     );
 };
 

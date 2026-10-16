@@ -344,6 +344,7 @@ const CreatorApplyPage = ({ overlay = false }) => {
                 title="Apply as a creator"
                 message="Sign in to apply. It takes about 30 seconds."
                 intent={{ type: INTENTS.creatorApply }}
+                plain={overlay}
             />
         </Frame>
     );

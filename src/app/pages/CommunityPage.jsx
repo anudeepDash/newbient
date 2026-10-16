@@ -22,7 +22,7 @@ import { appPath } from '../host';
 import { plainText } from '../community/communityParts';
 import { isUpcomingPass, passCard } from '../passes/passCards';
 import PageHeader, { PageBody } from './PageHeader';
-import { CardGrid, CardSkeleton, EmptyState, SectionHeader, Rail } from './parts';
+import { CardGrid, CardSkeleton, EmptyState, HeroPanel, SectionHeader, Rail } from './parts';
 
 /*
  * Community: your guestlist passes, a one-tap Join, and one feed of cards
@@ -121,14 +121,13 @@ const JoinPanel = () => {
         );
     }
     return (
-        <div className="flex flex-col gap-3 rounded-3xl border border-black/[0.06] bg-white px-5 py-5 dark:border-white/[0.08] dark:bg-[#0c0e14] sm:flex-row sm:items-center">
-            <div className="min-w-0 flex-1">
-                <p className="text-[17px] font-black">Join the Newbi community</p>
-                <p className="text-[14px] text-gray-600 dark:text-zinc-400">First word on guestlists, gigs and giveaways. One tap, no forms.</p>
+        <HeroPanel eyebrow="Newbi community" title="Guestlists, gigs and giveaways, first.">
+            <p className="text-[15px] text-gray-600 dark:text-zinc-300">Join the Newbi community. It’s free, one tap, no forms.</p>
+            <div className="pt-1">
+                <Button loading={busy} onClick={() => gate.run({ type: INTENTS.joinCommunity }, join)}>{authUser ? 'Join the community' : 'Sign in and join'}</Button>
             </div>
-            <Button loading={busy} onClick={() => gate.run({ type: INTENTS.joinCommunity }, join)}>Join</Button>
             {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
-        </div>
+        </HeroPanel>
     );
 };
 

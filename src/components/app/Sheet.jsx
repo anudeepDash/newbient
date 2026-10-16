@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import X from 'lucide-react/dist/esm/icons/x';
 import { cn } from '../../lib/utils';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import newbiIcon from '../../assets/logo/newbi-icon.svg';
 
 /*
  * The app's one modal primitive.
@@ -19,6 +20,9 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
  *
  * size: 'auto' (fits content, up to 92dvh) or 'full' (full height on phones).
  * backdrop: an element painted behind the header and body (e.g. <AmbientBackdrop/>).
+ * floatingHeader: the close button (and header) float over the top of the
+ *   body instead of taking a row, for sheets that open on a full-bleed image.
+ * watermark: the faded "N." mark off the bottom-right corner (default on).
  */
 
 const MOBILE_QUERY = '(max-width: 767px)';
@@ -51,6 +55,8 @@ const Sheet = ({
     bodyClassName,
     zIndex,
     backdrop,
+    floatingHeader = false,
+    watermark = true,
 }) => {
     const phone = useIsPhone();
     const drag = useDragControls();
@@ -114,18 +120,32 @@ const Sheet = ({
                             className
                         )}
                     >
+                        {watermark && (
+                            <img
+                                aria-hidden="true"
+                                src={newbiIcon}
+                                alt=""
+                                className="pointer-events-none absolute -right-10 bottom-16 w-56 rotate-[-8deg] select-none opacity-[0.05] sm:w-64 dark:opacity-[0.07]"
+                            />
+                        )}
                         {backdrop && <div aria-hidden="true" className="pointer-events-none absolute inset-0">{backdrop}</div>}
                         {phone && (
                             // The handle is the only drag target.
                             <div
-                                className="relative flex h-6 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
+                                className={cn(
+                                    'flex h-6 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing',
+                                    floatingHeader ? 'absolute inset-x-0 top-0 z-20' : 'relative'
+                                )}
                                 onPointerDown={(e) => dismissible && drag.start(e)}
                             >
-                                <span className="h-1 w-10 rounded-full bg-black/15 dark:bg-white/20" />
+                                <span className={cn('h-1 w-10 rounded-full', floatingHeader ? 'bg-white/70 shadow-sm' : 'bg-black/15 dark:bg-white/20')} />
                             </div>
                         )}
                         {(header || title || dismissible) && (
-                            <div className={cn('relative flex shrink-0 items-start justify-between gap-4 px-5 pb-3', phone ? 'pt-1' : 'pt-5')}>
+                            <div className={cn(
+                                'flex shrink-0 items-start justify-between gap-4 px-5 pb-3',
+                                floatingHeader ? 'pointer-events-none absolute inset-x-0 top-0 z-10 pt-6 sm:pt-4 [&>*]:pointer-events-auto' : cn('relative', phone ? 'pt-1' : 'pt-5')
+                            )}>
                                 {header ? <div className="min-w-0 flex-1">{header}</div> : (
                                     <div className="min-w-0">
                                         {title && <h2 className="text-lg font-extrabold tracking-tight">{title}</h2>}
@@ -137,7 +157,12 @@ const Sheet = ({
                                         type="button"
                                         onClick={onClose}
                                         aria-label="Close"
-                                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/5 text-gray-500 hover:text-gray-900 dark:bg-white/10 dark:text-zinc-400 dark:hover:text-white"
+                                        className={cn(
+                                            'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+                                            floatingHeader
+                                                ? 'bg-black/55 text-white shadow-md ring-1 ring-white/20 hover:bg-black/70'
+                                                : 'bg-black/5 text-gray-500 hover:text-gray-900 dark:bg-white/10 dark:text-zinc-400 dark:hover:text-white'
+                                        )}
                                     >
                                         <X size={18} />
                                     </button>

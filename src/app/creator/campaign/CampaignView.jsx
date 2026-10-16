@@ -47,7 +47,7 @@ const Chip = ({ icon: Icon, label, tone }) => {
     if (!isPresent(label)) return null;
     return (
         <span className={cn(
-            'inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-bold',
+            'inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-bold',
             tone === 'accent'
                 ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-800 dark:border-neon-green/25 dark:bg-neon-green/10 dark:text-neon-green'
                 : 'border-black/[0.06] bg-white/80 text-gray-800 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-zinc-200'
@@ -58,6 +58,7 @@ const Chip = ({ icon: Icon, label, tone }) => {
     );
 };
 
+const HERO_FADE = { WebkitMaskImage: 'linear-gradient(to bottom, #000 62%, transparent)', maskImage: 'linear-gradient(to bottom, #000 62%, transparent)' };
 const RADIAL = 'radial-gradient(ellipse 65% 60% at 50% 38%, #000 25%, transparent 100%)';
 const PAGE_GLOW_MASK = { WebkitMaskImage: RADIAL, maskImage: RADIAL };
 
@@ -198,19 +199,26 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
                 )}
                 <div className="relative space-y-5">
                     {campaign.thumbnail ? (
-                        <div className="overflow-hidden rounded-3xl border border-black/[0.06] bg-black/[0.04] dark:border-white/[0.08] dark:bg-white/[0.04]">
-                            <img src={campaign.thumbnail} alt="" className="aspect-video w-full object-cover" />
-                        </div>
-                    ) : null}
+                        variant === 'sheet' ? (
+                            // Edge to edge under the floating close button, fading into the sheet.
+                            <div className="-mx-5 -mb-10 overflow-hidden" style={HERO_FADE}>
+                                <img src={campaign.thumbnail} alt="" className="aspect-[16/10] w-full object-cover sm:aspect-video" />
+                            </div>
+                        ) : (
+                            <div className="overflow-hidden rounded-3xl border border-black/[0.06] bg-black/[0.04] dark:border-white/[0.08] dark:bg-white/[0.04]">
+                                <img src={campaign.thumbnail} alt="" className="aspect-video w-full object-cover" />
+                            </div>
+                        )
+                    ) : variant === 'sheet' ? <div className="h-12" /> : null}
 
-                    <div className="space-y-2">
+                    <div className="relative space-y-2">
                         {(isPresent(campaign.brand) || campaign.brandLogo) && (
                             <div className="flex items-center gap-2">
                                 {campaign.brandLogo && <img src={campaign.brandLogo} alt="" className="h-6 w-6 rounded-md border border-black/10 bg-white object-contain p-0.5 dark:border-white/10" />}
                                 {isPresent(campaign.brand) && <span className="text-[12px] font-black uppercase tracking-widest text-emerald-700 dark:text-neon-green">{campaign.brand}</span>}
                             </div>
                         )}
-                        <h1 className="font-heading text-[26px] font-black leading-[1.15] tracking-tight sm:text-[32px]">{campaign.title}</h1>
+                        <h1 className="font-heading text-[24px] font-black leading-[1.15] tracking-tight sm:text-[28px]">{campaign.title}</h1>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
@@ -302,9 +310,10 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
                     size="full"
                     width="lg"
                     header={<span className="sr-only">{campaign.title}</span>}
+                    floatingHeader
                     footer={bar}
                     bodyClassName="pt-0"
-                    backdrop={<AmbientBackdrop image={campaign.thumbnail} className="bottom-auto h-[520px]" />}
+                    backdrop={<AmbientBackdrop image={campaign.thumbnail} className="bottom-auto h-[520px]" intensity={0.35} />}
                 >
                     {body}
                 </Sheet>
