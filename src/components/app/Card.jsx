@@ -222,12 +222,14 @@ const Card = ({
 
                 {/* The key numbers as tiles (Reward, Tasks, Min. followers…). A custom CTA node sits under them. */}
                 {shownStats.length > 0 && (
-                    <div className={cn('relative z-10 mt-auto grid gap-2', shownStats.length >= 3 ? 'grid-cols-3' : shownStats.length === 2 ? 'grid-cols-2' : 'grid-cols-1')}>
+                    <div className={cn('relative z-10 mt-auto grid gap-2', shownStats.length >= 3 ? 'grid-cols-[minmax(0,1fr)_auto_auto]' : shownStats.length === 2 ? 'grid-cols-[minmax(0,1fr)_auto]' : 'grid-cols-1')}>
                         {shownStats.slice(0, 3).map((st, i) => (
-                            <div key={st.label || i} className="min-w-0 rounded-xl bg-white/60 px-2.5 py-2 ring-1 ring-inset ring-black/[0.06] dark:bg-white/[0.04] dark:ring-white/[0.08]">
-                                <p className="flex items-center gap-1 truncate text-[9px] font-bold uppercase tracking-[0.12em] text-gray-500 dark:text-zinc-500">
-                                    {st.icon && <st.icon size={10} className={st.tone === 'accent' ? 'text-emerald-600 dark:text-neon-green' : undefined} />}
-                                    {st.label}
+                            // Content centred, so a short value next to a two-line one never leaves a gap.
+                            <div key={st.label || i} className="flex min-w-[3.75rem] flex-col justify-center rounded-xl bg-white/60 px-2.5 py-2 ring-1 ring-inset ring-black/[0.06] dark:bg-white/[0.04] dark:ring-white/[0.08]">
+                                <p className="flex min-w-0 items-center gap-1 whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.06em] text-gray-500 dark:text-zinc-500">
+                                    {/* Only the highlighted tile keeps its icon, so labels fit on narrow cards. */}
+                                    {st.icon && st.tone === 'accent' && <st.icon size={10} className="shrink-0 text-emerald-600 dark:text-neon-green" />}
+                                    <span className="truncate">{st.label}</span>
                                 </p>
                                 <p className={cn('mt-0.5 line-clamp-2 break-words text-[13px] font-bold leading-tight', st.tone === 'accent' ? 'text-emerald-700 dark:text-neon-green' : 'text-gray-900 dark:text-white')}>
                                     {st.format ? st.format(st.value) : st.value}
