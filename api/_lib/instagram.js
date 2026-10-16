@@ -54,6 +54,7 @@ export const readCreatorSettings = async (db = getDb()) => {
         minFollowers: Number.isFinite(min) ? min : 1000,
         requireVerification: data.requireInstagramVerification !== false,
         welcomePoints: Number(data.creatorWelcomePoints) || 0,
+        allowSignups: data.allowCreatorSignups !== false,
     };
 };
 

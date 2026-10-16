@@ -156,7 +156,11 @@ const ApplyFlow = () => {
         <PageBody>
             <PageHeader eyebrow="Newbi Creators" title={app.result ? 'Welcome' : 'Apply as a creator'} subtitle={app.result ? null : 'Two quick steps. Your contact details come from your profile.'} />
 
-            {app.result ? (
+            {!app.result && settings?.announcement && <Notice tone="info">{settings.announcement}</Notice>}
+
+            {settings && !settings.allowSignups && !app.result ? (
+                <Notice tone="warn" title="Applications are paused">We’re not taking new creator applications right now. Check back soon.</Notice>
+            ) : app.result ? (
                 <ResultPanel result={app.result} welcomePoints={settings?.welcomePoints || 0} next={next} />
             ) : (
                 <div className="mx-auto max-w-xl space-y-5">

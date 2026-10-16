@@ -43,11 +43,13 @@ export const createCreatorSlice = (set, get) => ({
                     metaVerification: d.instagramMetaVerification === true,
                     requireVerification: d.requireInstagramVerification !== false,
                     welcomePoints: Number(d.creatorWelcomePoints) || 0,
+                    allowSignups: d.allowCreatorSignups !== false,
+                    announcement: String(d.creatorAnnouncement || '').trim(),
                 },
             });
         } catch (error) {
             console.warn('[app/creator] settings:', error?.code || error);
-            set({ creatorSettings: { minFollowers: 1000, metaVerification: false, requireVerification: true, welcomePoints: 0 } });
+            set({ creatorSettings: { minFollowers: 1000, metaVerification: false, requireVerification: true, welcomePoints: 0, allowSignups: true, announcement: '' } });
         }
     },
 

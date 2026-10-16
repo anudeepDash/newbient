@@ -167,15 +167,10 @@ const InstagramStep = ({ app, settings, oauthError, onContinue }) => {
             {oauthError && <Notice tone="error">{oauthError}</Notice>}
             {error && !error.missing && <Notice tone="error">{error.error}</Notice>}
 
-            <Button
-                className="w-full"
-                size="lg"
-                variant={metaOn && !found?.connected ? 'secondary' : 'primary'}
-                disabled={!ready}
-                onClick={onContinue}
-            >
-                Continue
-            </Button>
+            {/* With Meta on, "Connect Instagram" is the next step until it's done. */}
+            {(!metaOn || ready) && (
+                <Button className="w-full" size="lg" disabled={!ready} onClick={onContinue}>Continue</Button>
+            )}
         </div>
     );
 };

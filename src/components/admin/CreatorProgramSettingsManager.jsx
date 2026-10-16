@@ -17,6 +17,7 @@ import { accent } from './theme';
 import { Button, Badge } from './ui';
 import { Field, Toggle, fieldCls } from './uploads/UploadKit';
 import { BuilderCard } from './events/EditorParts';
+import { appUrl } from '../../app/host';
 
 /*
  * Creator program rules: who can apply, the Instagram follower gate, points,
@@ -28,6 +29,7 @@ const DEFAULTS = {
     allowCreatorSignups: true,
     minInstagramFollowersToJoin: 1000,
     requireInstagramVerification: true,
+    instagramMetaVerification: false,
     creatorWelcomePoints: 100,
     creatorReferralPoints: 200,
     showPastClients: true,
@@ -39,6 +41,7 @@ const fromSettings = (s) => ({
     allowCreatorSignups: s?.allowCreatorSignups !== false,
     minInstagramFollowersToJoin: s?.minInstagramFollowersToJoin !== undefined ? String(Number(s.minInstagramFollowersToJoin) || 0) : String(DEFAULTS.minInstagramFollowersToJoin),
     requireInstagramVerification: s?.requireInstagramVerification !== false,
+    instagramMetaVerification: s?.instagramMetaVerification === true,
     creatorWelcomePoints: s?.creatorWelcomePoints !== undefined ? String(Number(s.creatorWelcomePoints) || 0) : String(DEFAULTS.creatorWelcomePoints),
     creatorReferralPoints: s?.creatorReferralPoints !== undefined ? String(Number(s.creatorReferralPoints) || 0) : String(DEFAULTS.creatorReferralPoints),
     showPastClients: s?.showPastClients !== false,
@@ -54,11 +57,13 @@ const whole = (v) => {
     return Number.isFinite(n) && n >= 0 && Number.isInteger(n) ? n : null;
 };
 
+// The pitch is on the landing site; applying and the dashboard are in the app.
 const LINKS = [
     { label: 'Creator page', path: '/creator', icon: Globe, tone: 'pink' },
-    { label: 'Join form', path: '/creator/join', icon: ClipboardList, tone: 'violet' },
-    { label: 'Creator dashboard', path: '/creator-dashboard', icon: LayoutDashboard, tone: 'blue' },
+    { label: 'Application', path: appUrl('/creator/apply'), icon: ClipboardList, tone: 'violet' },
+    { label: 'Creator home', path: appUrl('/creator'), icon: LayoutDashboard, tone: 'blue' },
 ];
+const absolute = (path) => (/^https?:/.test(path) ? path : `${window.location.origin}${path}`);
 
 const CreatorProgramSettingsManager = () => {
     useStoreSubscription(['siteSettings']);
@@ -96,6 +101,7 @@ const CreatorProgramSettingsManager = () => {
                 allowCreatorSignups: form.allowCreatorSignups,
                 minInstagramFollowersToJoin: whole(form.minInstagramFollowersToJoin),
                 requireInstagramVerification: form.requireInstagramVerification,
+                instagramMetaVerification: form.instagramMetaVerification,
                 creatorWelcomePoints: whole(form.creatorWelcomePoints),
                 creatorReferralPoints: whole(form.creatorReferralPoints),
                 showPastClients: form.showPastClients,
@@ -112,7 +118,7 @@ const CreatorProgramSettingsManager = () => {
     };
 
     const copyLink = async (path) => {
-        const ok = await copyToClipboard(`${window.location.origin}${path}`);
+        const ok = await copyToClipboard(absolute(path));
         addToast(ok ? 'Link copied.' : "Couldn't copy.", ok ? 'success' : 'error');
     };
 
@@ -124,7 +130,7 @@ const CreatorProgramSettingsManager = () => {
                 <div className="space-y-4 lg:col-span-2">
                     <BuilderCard
                         title="Applications"
-                        hint="The form at /creator/join"
+                        hint="The creator application in the app"
                         action={<Badge tone={form.allowCreatorSignups ? 'green' : 'red'}>{form.allowCreatorSignups ? 'Open' : 'Paused'}</Badge>}
                     >
                         <div className="space-y-4">
@@ -180,10 +186,20 @@ const CreatorProgramSettingsManager = () => {
                                 <Toggle
                                     label="Check followers automatically"
                                     hint={form.requireInstagramVerification
-                                        ? 'We look up the Instagram account and use its real follower count.'
-                                        : 'Creators can type their follower count; nothing is checked against the minimum.'}
+                                        ? 'The minimum is checked against the follower count Instagram reports.'
+                                        : 'The minimum isn’t enforced; every application is reviewed by hand.'}
                                     checked={form.requireInstagramVerification}
                                     onChange={set('requireInstagramVerification')}
+                                />
+                            </div>
+                            <div className="rounded-xl border border-black/[0.06] p-3 dark:border-white/[0.08]">
+                                <Toggle
+                                    label="Verify through Instagram (Meta)"
+                                    hint={form.instagramMetaVerification
+                                        ? 'Creators connect a Professional Instagram account. Followers come from Meta and verified creators over the minimum are approved straight away.'
+                                        : 'Off until the Meta app is set up. Creators type their handle and follower count, and every application comes to review.'}
+                                    checked={form.instagramMetaVerification}
+                                    onChange={set('instagramMetaVerification')}
                                 />
                             </div>
                         </div>
@@ -191,7 +207,7 @@ const CreatorProgramSettingsManager = () => {
 
                     <BuilderCard title="Points" hint="Newbi points on the creator's ID pass">
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <Field label="Welcome points" hint={errors.creatorWelcomePoints || (Number(form.creatorWelcomePoints) === 0 ? 'The join form still gives 100 when this is 0.' : 'Given when a creator finishes the join form.')}>
+                            <Field label="Welcome points" hint={errors.creatorWelcomePoints || (Number(form.creatorWelcomePoints) === 0 ? 'No welcome points are shown when this is 0.' : 'Shown to creators once they’re approved.')}>
                                 <input type="number" inputMode="numeric" min="0" max="5000" className={cn(fieldCls, 'tabular-nums', errors.creatorWelcomePoints && 'border-red-500/60')} value={form.creatorWelcomePoints} onChange={(e) => set('creatorWelcomePoints')(e.target.value)} />
                             </Field>
                             <Field label="Referral points" hint={errors.creatorReferralPoints || 'Saved for the referral program. Points aren\'t added to accounts automatically yet.'}>

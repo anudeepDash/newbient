@@ -336,6 +336,9 @@ const handleApply = async (req, res, { db, token }) => {
     if (existing?.profileStatus === 'rejected' || existing?.profileStatus === 'suspended') {
         return send(res, 403, { success: false, error: "Your creator profile can't be changed right now. Contact creators@newbi.live." });
     }
+    if (!existing && !settings.allowSignups) {
+        return send(res, 403, { success: false, code: 'paused', error: 'New creator applications are paused right now.' });
+    }
     // New applicants need the full profile. Existing creators editing their details
     // keep what's on their creator record for anything the profile doesn't have yet.
     if (existing) {
