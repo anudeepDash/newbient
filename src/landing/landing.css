@@ -1,0 +1,210 @@
+/* Landing site only (newbi.live marketing pages), built with its own Tailwind config. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap');
+@config "../../tailwind.landing.config.js";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { --bg-primary: #F4F2EC; --text-primary: #0a0a0a; }
+  .dark { --bg-primary: #050505; --text-primary: #FFFFFF; }
+  html { color-scheme: light; background-color: var(--bg-primary); -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; @apply antialiased; }
+  html.dark { color-scheme: dark; }
+  body { @apply font-sans antialiased; background-color: var(--bg-primary); color: var(--text-primary); }
+  button, a, [role="button"], input, select, textarea { touch-action: manipulation; }
+  /* iOS Safari zooms into inputs under 16px. */
+  @media (pointer: coarse) { input, textarea, select { font-size: 16px !important; } }
+}
+
+@layer components {
+  .carousel-scrollbar { -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: rgba(0, 0, 0, 0.1) transparent; }
+  .dark .carousel-scrollbar { scrollbar-color: rgba(255, 255, 255, 0.1) transparent; }
+  .carousel-scrollbar::-webkit-scrollbar { height: 4px; }
+  .carousel-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 9999px; }
+  .dark .carousel-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+/* Logo strip: one row that drifts sideways; people who prefer less motion get a still, wrapped grid. */
+@keyframes nb-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.nb-marquee {
+  display: flex;
+  width: max-content;
+  animation: nb-marquee 45s linear infinite;
+}
+.nb-marquee:hover { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .nb-marquee {
+    animation: none !important;
+    width: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .nb-marquee [data-dupe] { display: none; }
+}
+
+/* ═══════════════════════ "Poster Night" design language ═══════════════════════
+ * One dark stage, one acid-green accent, huge uppercase type with outlined
+ * words, mono labels like a lineup poster, film grain, and motion that lives in
+ * the scroll. Everything below is decoration on top of a page that is complete
+ * without it: nothing starts hidden on first paint, the scroll effects are CSS
+ * scroll-driven animations (no JavaScript; unsupported browsers see the still
+ * page), and all motion is off for people who prefer reduced motion.
+ */
+
+::selection { background: #39FF14; color: #050505; }
+
+/* Type for the landing shell: Manrope for display, Inter for everything else (labels included). */
+.nb-landing .font-heading { font-family: 'Manrope', 'Inter', system-ui, sans-serif; }
+.nb-landing .font-mono { font-family: 'Inter', system-ui, sans-serif; }
+
+/* Secondary display lines: a muted fill instead of an outline (outlines expose glyph overlaps). */
+:root { --nb-ghost: rgba(10, 10, 10, 0.32); --nb-ink: #0a0a0a; }
+.dark { --nb-ghost: rgba(255, 255, 255, 0.34); --nb-ink: #ffffff; }
+.nb-ghost { color: var(--nb-ghost); }
+
+/* Film grain (desktop only: a fixed full-screen layer is costly on phones) */
+@media (min-width: 768px) {
+  .nb-grain::before {
+    content: ''; position: fixed; inset: 0; z-index: 40; pointer-events: none; opacity: 0.07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: multiply;
+  }
+  .dark .nb-grain::before { opacity: 0.09; mix-blend-mode: screen; }
+}
+
+/* Marquee strips (logos, the divider) */
+@keyframes nb-marquee { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
+.nb-marquee { display: flex; width: max-content; animation: nb-marquee 45s linear infinite; }
+.nb-marquee-fast { animation-duration: 28s; }
+.nb-marquee:hover { animation-play-state: paused; }
+
+/* Spinning badge, pulsing dot */
+@keyframes nb-spin { to { transform: rotate(360deg); } }
+@keyframes nb-ping { 75%, 100% { transform: scale(2.2); opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .nb-spin { animation: nb-spin 16s linear infinite; }
+  .nb-ping { animation: nb-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite; }
+}
+
+/* Stacked cards pin under the last (works without scroll-driven animations too). */
+.nb-stack-card { position: sticky; top: calc(5.5rem + var(--i, 0) * 14px); }
+
+/* Text that fills with colour as it scrolls past (Why Newbi). The sweep runs
+ * across the whole line in reading order. Without scroll-driven support, or
+ * with reduced motion, the text is simply fully coloured. */
+.nb-fill-green, .nb-fill-white {
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  background-repeat: no-repeat;
+  background-size: 200% 100%;
+  background-position: 0% 0;
+}
+.nb-fill-green { background-image: linear-gradient(90deg, #39FF14 48%, rgba(255, 255, 255, 0.16) 52%); }
+.nb-fill-white { background-image: linear-gradient(90deg, #ffffff 48%, rgba(255, 255, 255, 0.16) 52%); }
+
+/* Chevrons on <details> */
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details[open] > summary .nb-plus { transform: rotate(45deg); }
+.nb-plus { transition: transform 0.25s ease; }
+
+/* ── Scroll-driven motion ───────────────────────────────────────────────── */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* Hero lines slide apart and dim as you scroll away. */
+    @keyframes nb-exit-l { to { transform: translate3d(-14%, 0, 0); opacity: 0.15; } }
+    @keyframes nb-exit-r { to { transform: translate3d(14%, 0, 0); opacity: 0.15; } }
+    @keyframes nb-exit-fade { to { transform: translate3d(0, -30px, 0); opacity: 0; } }
+    .nb-exit-l, .nb-exit-r, .nb-exit-fade { animation-timing-function: linear; animation-fill-mode: both; animation-timeline: scroll(root); animation-range: 0 85vh; }
+    .nb-exit-l { animation-name: nb-exit-l; }
+    .nb-exit-r { animation-name: nb-exit-r; }
+    .nb-exit-fade { animation-name: nb-exit-fade; }
+
+    /* Blocks rise in as they enter the screen. */
+    @keyframes nb-rise { from { opacity: 0; transform: translate3d(0, 40px, 0); } to { opacity: 1; transform: none; } }
+    .nb-reveal { animation: nb-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+    .nb-reveal-late { animation: nb-rise linear both; animation-timeline: view(); animation-range: entry 20% cover 40%; }
+
+    /* Why Newbi: the green phrase fills first, then the rest of the line. */
+    @keyframes nb-fill { from { background-position: 100% 0; } to { background-position: 0% 0; } }
+    .nb-fill-green { animation: nb-fill linear both; animation-timeline: view(); animation-range: entry 70% cover 42%; }
+    .nb-fill-white { animation: nb-fill linear both; animation-timeline: view(); animation-range: cover 30% cover 58%; }
+
+    /* Lyric lines: dim at the bottom, bright in the middle, dim again on the way out. */
+    @keyframes nb-lyric { 0% { opacity: 0.16; transform: translate3d(0, 12px, 0); } 35%, 60% { opacity: 1; transform: none; } 100% { opacity: 0.28; } }
+    .nb-lyric { animation: nb-lyric linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
+
+    /* The timeline draws its own line; each step lights up as it passes. */
+    @keyframes nb-grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+    .nb-line { transform-origin: top; animation: nb-grow-y linear both; animation-timeline: view(); animation-range: entry 40% exit 70%; }
+    @keyframes nb-light { from { background-color: transparent; box-shadow: none; } to { background-color: #39FF14; box-shadow: 0 0 24px rgba(57,255,20,0.6); } }
+    .nb-step-dot { animation: nb-light linear both; animation-timeline: view(); animation-range: cover 5% cover 40%; }
+
+    /* Photos drift a little slower than the page. */
+    @keyframes nb-parallax { from { transform: translate3d(0, -7%, 0); } to { transform: translate3d(0, 7%, 0); } }
+    .nb-parallax { animation: nb-parallax linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
+
+    /* The giant wordmark inks in as it arrives. */
+    @keyframes nb-ink { from { color: var(--nb-ghost); } to { color: #39FF14; } }
+    .nb-ink { animation: nb-ink linear both; animation-timeline: view(); animation-range: entry 25% entry 100%; }
+
+    /* Stacked cards: the ones underneath settle back and darken as the next arrives. */
+    .nb-stack { view-timeline-name: --nb-stack; view-timeline-axis: block; }
+    @keyframes nb-settle { to { transform: scale(0.93); filter: brightness(0.55); } }
+    .nb-stack-card > div { transform-origin: 50% 0; animation: nb-settle linear both; animation-timeline: --nb-stack; animation-range: contain calc(var(--i) * 22%) contain calc(var(--i) * 22% + 28%); }
+    .nb-stack-card:last-child > div { animation: none; }
+
+    /* Nights we built: the strip pins and the posters slide past with the scroll. */
+    .nb-film { height: calc(100svh + var(--n) * 42svh); view-timeline-name: --nb-film; view-timeline-axis: block; }
+    .nb-film-pin { position: sticky; top: 0; height: 100svh; display: flex; flex-direction: column; }
+    .nb-film-track { overflow: visible; flex: 1; width: max-content; scroll-snap-type: none; animation: nb-pan linear both; animation-timeline: --nb-film; animation-range: contain 0% contain 100%; }
+    .nb-film-frame { width: auto; height: 52svh; aspect-ratio: 4 / 5; }
+    .nb-film-frame > * { height: 100%; }
+    .nb-film-frame figure > div { height: calc(100% - 4.5rem); aspect-ratio: auto; }
+    .nb-film-low { margin-top: 5svh; }
+    .nb-film-progress { display: block; }
+    .nb-film-bar { transform-origin: left; animation: nb-grow-x linear both; animation-timeline: --nb-film; animation-range: contain 0% contain 100%; }
+    @media (min-width: 1024px) {
+      .nb-film-frame { height: 58vh; }
+      .nb-film-low { margin-top: 7vh; }
+    }
+
+    /* Horizontal track: the section pins and the slides move sideways with the scroll. */
+    .nb-story { height: 600svh; view-timeline-name: --nb-story; view-timeline-axis: block; }
+    .nb-story-pin { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+    .nb-story-track { display: flex; flex-direction: row; gap: 0; padding: 0; height: 100%; width: max-content; animation: nb-pan linear both; animation-timeline: --nb-story; animation-range: contain 0% contain 100%; }
+    .nb-story-panel { width: 100vw; height: 100%; flex: none; padding: 4.5rem 1.25rem 2rem; }
+    .nb-story-panel + .nb-story-panel { border-left: 1px solid rgba(127, 127, 127, 0.18); }
+    .nb-story-progress { display: block; }
+    .nb-story-hint { display: flex; }
+    @keyframes nb-pan { to { transform: translate3d(calc(-100% + 100vw), 0, 0); } }
+    @keyframes nb-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    .nb-story-bar { transform-origin: left; animation: nb-grow-x linear both; animation-timeline: --nb-story; animation-range: contain 0% contain 100%; }
+    @media (min-width: 640px) {
+      .nb-story-panel { padding-left: 2rem; padding-right: 2rem; }
+    }
+    @media (min-width: 1024px) {
+      .nb-story { height: 520vh; }
+      .nb-story-pin { height: 100vh; }
+      /* Each slide is as wide as its content (title + text), so the gap between them is always the same. */
+      .nb-story-panel { width: max-content; min-width: 56vw; padding: 0 7vw; }
+      .nb-story-panel:last-child { min-width: 100vw; }
+    }
+  }
+}

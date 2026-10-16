@@ -4,7 +4,6 @@ import { cn } from '../../lib/utils';
 import { useStore } from '../../lib/store';
 import { Calendar, MapPin, ArrowRight, Share2, Ticket, ChevronLeft, ChevronRight, Plus, Gift } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import html2canvas from 'html2canvas';
 import EventTicketingModal from '../tickets/EventTicketingModal';
 import EventHubModal from '../community/EventHubModal';
 import EventCard from '../community/EventCard';
@@ -100,6 +99,7 @@ const UpcomingEvents = () => {
                 titleEl.style.display = 'block';
             }
 
+            const { default: html2canvas } = await import('html2canvas');
             const canvas = await html2canvas(cardElement, {
                 useCORS: true,
                 scale: 3,

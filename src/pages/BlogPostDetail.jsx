@@ -28,7 +28,7 @@ import BlogNewsletter from '../components/blog/BlogNewsletter';
 import BlogCard from '../components/blog/BlogCard';
 import AdSenseSlot from '../components/blog/AdSenseSlot';
 import useDynamicMeta from '../hooks/useDynamicMeta';
-import { TEST_POSTS } from './ConcertZoneBlog';
+import { TEST_POSTS } from './concertzone/testPosts';
 import { isAdminRole } from '../constants/roles';
 import { isPostPublic } from '../components/admin/content/contentRules';
 
