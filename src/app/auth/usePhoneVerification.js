@@ -118,7 +118,9 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         setPhone(e164);
         setError('');
 
-        if (isTestMode()) {
+        const signingIn = (mode || (auth?.currentUser ? 'link' : 'signIn')) === 'signIn';
+        // Test mode only fakes adding a number to an account; signing in always needs a real code.
+        if (isTestMode() && !signingIn) {
             await finish(e164, { testMode: true });
             return true;
         }
@@ -126,7 +128,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         setStatus('sending');
         try {
             const verifier = await ensureVerifier();
-            if ((mode || (auth?.currentUser ? 'link' : 'signIn')) === 'link') {
+            if (!signingIn) {
                 if (!auth.currentUser) throw Object.assign(new Error('Sign in first.'), { code: 'auth/requires-recent-login' });
                 const provider = new PhoneAuthProvider(auth);
                 confirmationRef.current = await provider.verifyPhoneNumber(e164, verifier);
@@ -199,7 +201,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         isVerifying: status === 'verifying',
         codeSent: status === 'sent' || status === 'verifying',
         verified: status === 'verified',
-        testMode: isTestMode(),
+        testMode: isTestMode() && (mode || (auth?.currentUser ? 'link' : 'signIn')) !== 'signIn',
         send,
         verify,
         reset,

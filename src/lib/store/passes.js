@@ -41,7 +41,12 @@ export const createPassesSlice = (set, get) => ({
     },
 });
 
-/* Selectors */
-export const guestlistPasses = (state) => state.passes.filter(p => p.source === 'guestlist');
-export const campaignPasses = (campaignId) => (state) =>
-    state.passes.filter(p => p.source === 'campaign' && (!campaignId || p.sourceId === campaignId));
+/*
+ * Filters over the passes list. Use them inside useMemo, never as a store
+ * selector: a selector that returns a new array every time re-renders forever.
+ *   const passes = useAppStore(s => s.passes);
+ *   const mine = useMemo(() => guestlistPasses(passes), [passes]);
+ */
+export const guestlistPasses = (passes = []) => passes.filter(p => p.source === 'guestlist');
+export const campaignPasses = (passes = [], campaignId) =>
+    passes.filter(p => p.source === 'campaign' && (!campaignId || p.sourceId === campaignId));

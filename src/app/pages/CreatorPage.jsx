@@ -1,73 +1,99 @@
 import React from 'react';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
-import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
 import { useAppStore, useCapability } from '../../lib/store/appStore';
-import { Card } from '../../components/app';
+import { isPresent } from '../../lib/present';
 import { extractSocialUsername } from '../../lib/socialUtils';
+import { Card, Button } from '../../components/app';
 import { landingUrl } from '../host';
+import { useAppContent } from '../useAppContent';
+import { campaignCard } from '../cards';
 import PageHeader, { PageBody } from './PageHeader';
+import { CardGrid, CardSkeleton, EmptyState, HeroPanel, SectionHeader } from './parts';
 
 /*
  * Creator home. Phase 4 moves the dashboard and the application in here
  * (Openings, Deliverables, Referrals, Profile, with campaign tickets inside
- * each campaign). Until then it links to the current pages.
+ * each campaign). For now: your status, the open campaigns, and links to the
+ * current dashboard and application.
  */
 
-const STATUS_LABELS = { approved: 'Approved', pending: 'In review', pending_verification: 'Verifying', rejected: 'Not approved' };
+const STATUS = {
+    approved: { label: 'Approved', tone: 'text-emerald-700 bg-emerald-500/10 dark:text-neon-green dark:bg-neon-green/10' },
+    pending: { label: 'In review', tone: 'text-amber-700 bg-amber-500/10 dark:text-amber-300' },
+    pending_verification: { label: 'Verifying', tone: 'text-amber-700 bg-amber-500/10 dark:text-amber-300' },
+    rejected: { label: 'Not approved', tone: 'text-red-700 bg-red-500/10 dark:text-red-400' },
+};
 
-const followerLabel = (n) => {
-    const count = Number(n);
-    if (!Number.isFinite(count) || count <= 0) return null;
-    return count >= 1000 ? `${(count / 1000).toFixed(count >= 10000 ? 0 : 1)}K` : String(count);
+const compact = (n) => {
+    const v = Number(n);
+    if (!Number.isFinite(v) || v <= 0) return null;
+    return v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1).replace(/\.0$/, '')}K` : String(v);
+};
+
+const CreatorStatus = ({ creator }) => {
+    const username = creator?.instagram ? extractSocialUsername(creator.instagram, 'instagram') : null;
+    const photo = creator?.profilePicture || creator?.instagramProfilePic || creator?.photoURL;
+    const name = creator?.name || creator?.displayName;
+    const status = STATUS[creator?.profileStatus];
+    const followers = compact(creator?.instagramFollowers);
+    return (
+        <HeroPanel image={photo} eyebrow="Creator" title={name || 'Your creator profile'}>
+            <div className="flex flex-wrap items-center gap-2">
+                {status && <span className={`rounded-full px-3 py-1 text-[13px] font-bold ${status.tone}`}>{status.label}</span>}
+                {isPresent(username) && (
+                    <span className="flex items-center gap-1.5 rounded-full bg-black/[0.04] px-3 py-1 text-[13px] font-semibold text-gray-700 dark:bg-white/[0.07] dark:text-zinc-300">
+                        <Instagram size={13} /> @{username}{followers ? ` · ${followers}` : ''}
+                    </span>
+                )}
+            </div>
+            <div className="pt-1">
+                <Button href={landingUrl('/creator-dashboard')} icon={ArrowUpRight}>Open dashboard</Button>
+            </div>
+        </HeroPanel>
+    );
 };
 
 const CreatorPage = () => {
+    useAppContent({ feed: false });
     const isCreator = useCapability('creator');
     const creator = useAppStore(s => s.creatorProfile);
-    const loaded = useAppStore(s => s.creatorLoaded);
+    const creatorLoaded = useAppStore(s => s.creatorLoaded);
+    const campaigns = useAppStore(s => s.openCampaigns);
+    const campaignsLoaded = useAppStore(s => s.campaignsLoaded);
+    const joined = new Set(creator?.joinedCampaigns || []);
 
-    if (!loaded) {
-        return <PageBody><div className="aspect-video max-w-xl animate-pulse rounded-3xl bg-black/[0.04] dark:bg-white/[0.04]" /></PageBody>;
-    }
-
-    if (!isCreator) {
-        return (
-            <PageBody>
-                <PageHeader eyebrow="Creators" title="Become a Newbi creator" subtitle="Paid and barter campaigns with brands and events, matched to your city and niche." />
-                <div className="max-w-xl">
-                    <Card
-                        type="campaign"
-                        title="Apply with your Instagram"
-                        description="Share your Instagram, niche and rates. Approved creators get invited to campaigns from brands and events."
-                        cta={{ label: 'Start application' }}
-                        href={landingUrl('/creator/join')}
-                    />
-                </div>
-            </PageBody>
-        );
-    }
-
-    const username = creator?.instagram ? extractSocialUsername(creator.instagram, 'instagram') : null;
-    const handle = username ? `@${username}` : null;
     return (
         <PageBody>
-            <PageHeader eyebrow="Creator" title="Your campaigns" subtitle="Openings, deliverables and your tickets for each campaign." />
-            <div className="max-w-xl">
-                <Card
-                    type="campaign"
-                    image={creator?.profilePicture || creator?.instagramProfilePic || creator?.photoURL}
-                    eyebrow={handle}
-                    title={creator?.name || creator?.displayName || 'Creator dashboard'}
-                    chips={[{ icon: MapPin, label: creator?.city }]}
-                    stats={[
-                        { label: 'Status', value: STATUS_LABELS[creator?.profileStatus], tone: 'accent' },
-                        { label: 'Followers', value: followerLabel(creator?.instagramFollowers), icon: Instagram },
-                        { label: 'Campaigns', value: (creator?.joinedCampaigns || []).length || null },
-                    ]}
-                    cta={{ label: 'Open dashboard' }}
-                    href={landingUrl('/creator-dashboard')}
-                />
-            </div>
+            {!creatorLoaded ? (
+                <div className="h-48 animate-pulse rounded-[2rem] bg-black/[0.04] dark:bg-white/[0.04]" />
+            ) : isCreator ? (
+                <CreatorStatus creator={creator} />
+            ) : (
+                <>
+                    <PageHeader eyebrow="Creators" title="Become a Newbi creator" />
+                    <HeroPanel image={campaigns[0]?.thumbnail} title="Get passes, products and paid work for posting about the shows you love.">
+                        <p className="text-[15px] text-gray-600 dark:text-zinc-300">Share your Instagram, niche and rates. Approved creators get invited to campaigns from brands and events.</p>
+                        <div className="pt-1">
+                            <Button href={landingUrl('/creator/join')} icon={Sparkles}>Apply as a creator</Button>
+                        </div>
+                    </HeroPanel>
+                </>
+            )}
+
+            <section className="space-y-3">
+                <SectionHeader title="Open campaigns" />
+                {!campaignsLoaded ? (
+                    <CardGrid><CardSkeleton /><CardSkeleton /></CardGrid>
+                ) : campaigns.length ? (
+                    <CardGrid>
+                        {campaigns.map(c => <Card key={c.id} {...campaignCard(c, { applied: joined.has(c.id) })} />)}
+                    </CardGrid>
+                ) : (
+                    <EmptyState icon={Sparkles} title="No open campaigns right now" message="New brand and event campaigns show up here first." />
+                )}
+            </section>
         </PageBody>
     );
 };

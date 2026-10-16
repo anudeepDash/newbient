@@ -115,6 +115,7 @@ function AppContent() {
   const currentColor = getColorByPath(location.pathname);
   const appHost = isAppHost();
   const appBase = landingAppBase();
+  const inApp = appHost || Boolean(appBase && (location.pathname === appBase || location.pathname.startsWith(`${appBase}/`)));
   const isAdmin = ['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'].includes(user?.role) || safeLocalStorage.getItem('adminAuth') === 'true';
 
   // Foreground push handler: once per page load, not on every auth change.
@@ -309,7 +310,8 @@ function AppContent() {
         </Routes>
         )}
       </Suspense>
-      <AuthOverlay />
+      {/* The app has its own sign-in sheet (src/app/auth/SignInSheet). */}
+      {!inApp && <AuthOverlay />}
       <NewbiToast />
     </>
   );

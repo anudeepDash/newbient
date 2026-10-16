@@ -104,7 +104,9 @@ export const createProfileSlice = (set, get) => ({
 
     /* Saves the editable profile fields. Also mirrors name to the legacy displayName. */
     updateProfile: async (patch = {}) => {
-        const uid = get().authUser?.uid;
+        // Right after sign-in the store's user lags a moment behind Firebase's.
+        const { auth } = await import('../firebase');
+        const uid = get().authUser?.uid || auth?.currentUser?.uid;
         if (!uid) throw new Error('Sign in to update your profile.');
         const clean = Object.fromEntries(Object.entries(patch).filter(([key]) => SELF_EDITABLE.has(key)));
         if (!Object.keys(clean).length) return;
@@ -117,7 +119,6 @@ export const createProfileSlice = (set, get) => ({
         clean.updatedAt = new Date().toISOString();
         await setDoc(doc(db, 'users', uid), clean, { merge: true });
         if (clean.displayName) {
-            const { auth } = await import('../firebase');
             const { updateProfile } = await import('firebase/auth');
             if (auth?.currentUser?.uid === uid) await updateProfile(auth.currentUser, { displayName: clean.displayName }).catch(() => {});
         }

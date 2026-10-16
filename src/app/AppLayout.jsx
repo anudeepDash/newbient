@@ -1,5 +1,6 @@
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import Bell from 'lucide-react/dist/esm/icons/bell';
 import Sun from 'lucide-react/dist/esm/icons/sun';
 import Moon from 'lucide-react/dist/esm/icons/moon';
@@ -11,15 +12,17 @@ import { visibleTabs, moduleForPath } from './modules';
 import { appPath, stripAppBase } from './host';
 import { AuthResumer } from './auth/AuthGate';
 import NotificationsSheet from './NotificationsSheet';
+import SignInSheet from './auth/SignInSheet';
 import newbiLogo from '../assets/logo/newbi-logo.svg';
 
 /*
  * The app shell (app.newbi.live, or /app on localhost).
  *
- * Phones: a top bar (logo, notification bell) and a bottom tab bar, both
- * padded for the notch and home bar. Desktop: a left rail. Tabs come from the
- * module registry (modules.js). Follows the admin shell's patterns, without
- * live blur on the fixed bars (costly on iPhone Safari).
+ * Phones: a top bar (logo, notification bell) and a floating glass pill of
+ * tabs, both clear of the notch and home bar; only the active tab shows its
+ * label. Desktop: a left rail. Tabs come from the module registry
+ * (modules.js). The pill is the one live blur in the shell; the top bar is
+ * solid, so iPhone Safari never stacks blur layers.
  */
 
 // The unified newbi.live logo (outlined, so one file works on light and dark).
@@ -163,19 +166,28 @@ const AppLayout = () => {
             </header>
 
             {/* ── Page ── */}
-            <main className="min-w-0 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-[calc(3.5rem+env(safe-area-inset-top))] lg:pb-0 lg:pl-[248px] lg:pt-0">
+            <main className="min-w-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-[calc(3.5rem+env(safe-area-inset-top))] lg:pb-0 lg:pl-[248px] lg:pt-0">
                 <Suspense fallback={<PageFallback />}>
                     <Outlet />
                 </Suspense>
             </main>
 
-            {/* ── Phone bottom tabs ── */}
+            {/* ── Phone tab bar: a floating glass pill; only the active tab shows its label ── */}
             <nav
                 aria-label="App sections"
-                className="fixed inset-x-0 bottom-0 z-40 border-t border-black/[0.06] bg-[#f6f7f9]/95 pb-[env(safe-area-inset-bottom)] dark:border-white/[0.06] dark:bg-[#050608]/95 lg:hidden"
+                className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:hidden"
             >
-                <div className="mx-auto flex h-16 max-w-lg items-stretch">
-                    {tabs.map(({ module, locked }) => {
+                <div
+                    className={cn(
+                        'pointer-events-auto relative flex items-center gap-1 rounded-full p-1.5',
+                        // Liquid glass: translucent fill, one backdrop blur, a bright top edge and a soft drop shadow.
+                        'border border-white/60 bg-white/80 shadow-[0_10px_40px_-8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.9)]',
+                        'supports-[backdrop-filter]:bg-white/55 supports-[backdrop-filter]:backdrop-blur-2xl supports-[backdrop-filter]:backdrop-saturate-[1.8]',
+                        'dark:border-white/[0.12] dark:bg-[#15171d]/90 dark:shadow-[0_10px_40px_-8px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.12)]',
+                        'dark:supports-[backdrop-filter]:bg-[#15171d]/55'
+                    )}
+                >
+                    {tabs.map(({ module, locked, label }) => {
                         const Icon = module.tab.icon;
                         const active = activeModule?.id === module.id;
                         return (
@@ -183,18 +195,25 @@ const AppLayout = () => {
                                 key={module.id}
                                 to={appPath(module.path)}
                                 aria-current={active ? 'page' : undefined}
-                                aria-label={locked ? module.tab.lockedLabel : undefined}
+                                aria-label={active ? undefined : label}
                                 className={cn(
-                                    'relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[10.5px] font-bold transition-colors',
-                                    active ? 'text-emerald-600 dark:text-neon-green' : 'text-gray-400 dark:text-zinc-500'
+                                    'relative flex h-12 items-center justify-center rounded-full transition-[padding,color] duration-300',
+                                    active ? 'gap-2 pl-4 pr-5 text-gray-900 dark:text-white' : 'w-12 text-gray-500 active:scale-95 dark:text-zinc-400'
                                 )}
+                                style={{ WebkitTapHighlightColor: 'transparent' }}
                             >
-                                {active && <span className="absolute top-0 h-0.5 w-8 rounded-full bg-emerald-500 dark:bg-neon-green" />}
+                                {active && (
+                                    <motion.span
+                                        layoutId="app-tab-pill"
+                                        transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                                        className="absolute inset-0 rounded-full bg-white shadow-[0_2px_10px_rgba(0,0,0,0.12)] dark:bg-white/[0.14] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
+                                    />
+                                )}
                                 <span className="relative">
-                                    <Icon size={21} strokeWidth={active ? 2.3 : 1.9} />
-                                    {locked && <span className="absolute -right-1.5 -top-0.5 h-2 w-2 rounded-full bg-neon-green ring-2 ring-[#f6f7f9] dark:ring-[#050608]" />}
+                                    <Icon size={21} strokeWidth={active ? 2.3 : 1.9} className={active ? 'text-emerald-600 dark:text-neon-green' : undefined} />
+                                    {locked && !active && <span className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-neon-green ring-2 ring-white dark:ring-[#15171d]" />}
                                 </span>
-                                <span className="max-w-full truncate px-1">{module.tab.label}</span>
+                                {active && <span className="relative whitespace-nowrap text-[14px] font-bold">{module.tab.label}</span>}
                             </Link>
                         );
                     })}
@@ -202,6 +221,7 @@ const AppLayout = () => {
             </nav>
 
             <NotificationsSheet open={bellOpen} onClose={() => setBellOpen(false)} />
+            <SignInSheet />
         </div>
     );
 };
