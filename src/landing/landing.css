@@ -214,3 +214,12 @@ details[open] > summary .nb-plus { transform: rotate(45deg); }
 @media (prefers-reduced-motion: no-preference) {
   .nb-float { animation: nb-float 6s ease-in-out infinite; }
 }
+
+/* "show up." in the hero: neon green with a black outline and offset shadow, like the logo's ".live". */
+.nb-sticker {
+  color: #39FF14;
+  -webkit-text-stroke: 0.045em #000;
+  paint-order: stroke fill;
+  text-shadow: 0.05em 0.06em 0 #000;
+  padding-right: 0.08em;
+}
