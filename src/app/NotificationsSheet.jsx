@@ -30,9 +30,13 @@ const NotificationsSheet = ({ open, onClose }) => {
         const link = n.link || n.url;
         if (!isPresent(link)) return;
         onClose();
-        if (/^https?:\/\//.test(link)) window.location.href = link;
+        // Links to app.newbi.live (passes, tickets, campaigns) open inside this app, also on previews.
+        const appLink = link.match(/^https?:\/\/app\.newbi\.live(\/[^#]*)?/i);
+        if (appLink) navigate(appPath(appLink[1] || '/'));
+        else if (/^https?:\/\//.test(link)) window.location.href = link;
         // In-app links stay in the app; everything else still lives on the landing site.
         else if (link.startsWith('/app/') || link === '/app') navigate(appPath(link.replace(/^\/app/, '') || '/'));
+        else if (/^\/(p|t|c|forms|community)(\/|$)/.test(link)) navigate(appPath(link));
         else if (isAppHost()) window.location.href = landingUrl(link);
         else navigate(link);
     };
