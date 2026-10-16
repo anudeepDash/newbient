@@ -520,9 +520,9 @@ const Proposal = () => {
     const proposalExpired = isProposalExpired(displayProposal);
 
     const logoOptions = [
-        { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
-        { id: 'media', label: 'Newbi Media', path: '/logo_media.png', color: '#00D1FF' },
-        { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
+        { id: 'entertainment', label: 'Newbi Entertainment', path: '/brand/newbi-logo-entertainment-800w.png', color: '#39FF14' },
+        { id: 'media', label: 'Newbi Media', path: '/brand/newbi-logo-media-800w.png', color: '#00D1FF' },
+        { id: 'marketing', label: 'Newbi Marketing', path: '/brand/newbi-logo-marketing-800w.png', color: '#FF0055' }
     ];
 
     const currentLogo = logoOptions.find(l => l.id === displayProposal.selectedLogo) || logoOptions[0];
@@ -1349,7 +1349,7 @@ const Proposal = () => {
                             {/* Header Logic */}
                             <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", idx > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
                                 <div className="flex flex-col gap-6 items-start">
-                                    <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", idx > 0 && "h-8")} crossOrigin="anonymous" />
+                                    <img src={currentLogo.path} alt="Logo" className={cn("h-20 w-auto object-contain", idx > 0 && "h-10")} crossOrigin="anonymous" />
                                 </div>
                                 <div className="text-right space-y-3">
                                     <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", idx > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", idx > 0 && "text-sm")}>{displayProposal.proposalNumber}</p></div>
@@ -1944,7 +1944,7 @@ const Proposal = () => {
                     <div key={idx} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] mb-10">
                         <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", idx > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
                             <div className="flex flex-col gap-6 items-start">
-                                <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", idx > 0 && "h-8")} crossOrigin="anonymous" />
+                                <img src={currentLogo.path} alt="Logo" className={cn("h-20 w-auto object-contain", idx > 0 && "h-10")} crossOrigin="anonymous" />
                             </div>
                             <div className="text-right space-y-3">
                                 <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", idx > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", idx > 0 && "text-sm")}>{displayProposal.proposalNumber}</p></div>

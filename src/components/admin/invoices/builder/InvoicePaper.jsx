@@ -13,9 +13,9 @@ import { invoiceTaxLines, placeOfSupply, panOfGstin, amountInWords } from './gst
  */
 
 export const BRANDS = [
-    { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
-    { id: 'media', label: 'Newbi Media', path: '/logo_media.png', color: '#00D1FF' },
-    { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' },
+    { id: 'entertainment', label: 'Newbi Entertainment', path: '/brand/newbi-logo-entertainment-800w.png', color: '#39FF14' },
+    { id: 'media', label: 'Newbi Media', path: '/brand/newbi-logo-media-800w.png', color: '#00D1FF' },
+    { id: 'marketing', label: 'Newbi Marketing', path: '/brand/newbi-logo-marketing-800w.png', color: '#FF0055' },
 ];
 export const brandOf = (id) => BRANDS.find(b => b.id === id) || BRANDS[0];
 
