@@ -399,10 +399,16 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
                 <BrandLayers soft mark={false} />
                 {hero}
                 {content}
-                <div className="sticky bottom-0 z-20 border-t border-black/[0.06] bg-[#f7f7f3]/85 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0b0d12]/85 sm:px-7 max-lg:mb-[5.5rem]">
+                {/* Desktop: pinned to the card's bottom edge. */}
+                <div className="sticky bottom-0 z-20 hidden rounded-b-[2rem] border-t border-black/[0.06] bg-[#f7f7f3]/90 px-7 py-4 backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0b0d12]/90 lg:block">
                     {bar}
                 </div>
+                <div className="h-4 lg:hidden" aria-hidden="true" />
             </article>
+            {/* Phones: the apply bar docks at the bottom edge (the tab pill steps aside on this page). */}
+            <div className="fixed inset-x-0 bottom-0 z-40 border-t border-black/[0.06] bg-[#f7f7f3]/90 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0b0d12]/90 lg:hidden">
+                <div className="mx-auto max-w-2xl">{bar}</div>
+            </div>
             {sheets}
         </>
     );

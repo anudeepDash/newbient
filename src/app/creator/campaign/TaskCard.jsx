@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import Camera from 'lucide-react/dist/esm/icons/camera';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import Video from 'lucide-react/dist/esm/icons/video';
@@ -6,6 +6,7 @@ import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Upload from 'lucide-react/dist/esm/icons/upload';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import { cn } from '../../../lib/utils';
+import { copyToClipboard } from '../../../lib/clipboard';
 import { isPresent } from '../../../lib/present';
 import { isRequiredTask } from '../../../lib/creator/tasks';
 import { cleanTaskDescription, extractTaskActionLinks, linkifyContent } from '../../../lib/taskLinks';
@@ -49,6 +50,9 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, highli
         return isPresent(cleaned?.replace(/<[^>]+>/g, '')) ? linkifyContent(cleaned) : null;
     }, [task.description, links]);
     const meta = STATUS[status];
+    const caption = String(task.captionScript || '').trim();
+    const [copied, setCopied] = useState(false);
+    const copyCaption = () => copyToClipboard(caption).then(ok => { if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1800); } });
     const due = dueLabel(task.deadline);
 
     // One quiet line: what it is and when. "Required" is the norm, so only "Optional" is said.
@@ -62,21 +66,34 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, highli
                 highlight ? 'ring-2 ring-emerald-500/50 dark:ring-neon-green/50' : 'ring-black/[0.06] dark:ring-white/[0.08]'
             )}
         >
-            {/* Icon · what and when · status · links, on one row (the links wrap under on phones). */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-3">
+            {/* Icon · what and when · status · the link, on one row. */}
+            <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:bg-neon-green/10 dark:text-neon-green">
                     {type ? <type.icon size={18} /> : <span className="text-[14px] font-black">{index + 1}</span>}
                 </span>
                 <div className="min-w-0 flex-1">
-                    <h3 className="text-[15px] font-bold leading-snug">{isPresent(task.title) ? task.title : `Deliverable ${index + 1}`}</h3>
-                    {line && <p className="mt-0.5 text-[13px] text-gray-500 dark:text-zinc-400">{line}</p>}
+                    <h3 className="truncate text-[15px] font-bold leading-snug">{isPresent(task.title) ? task.title : `Deliverable ${index + 1}`}</h3>
+                    {line && <p className="mt-0.5 truncate text-[13px] text-gray-500 dark:text-zinc-400">{line}</p>}
                 </div>
                 {meta && <ToneChip tone={meta.tone} className="shrink-0">{meta.label}</ToneChip>}
-                <TaskLinks links={links} className="max-sm:basis-full max-sm:pl-[3.25rem] sm:ml-auto" />
+                {links.length === 1 && <TaskLinks links={links} compact className="shrink-0" />}
             </div>
 
-            {description && (
-                <div className="nb-brief nb-brief-sm break-words" dangerouslySetInnerHTML={{ __html: description }} />
+            {/* The deliverable's own brief, caption and extra links, lined up under the title. */}
+            {(description || caption || links.length > 1) && (
+                <div className="space-y-3 pl-[3.25rem]">
+                    {description && <div className="nb-brief nb-brief-sm break-words" dangerouslySetInnerHTML={{ __html: description }} />}
+                    {caption && (
+                        <div className="rounded-xl bg-black/[0.04] px-3 py-2.5 dark:bg-white/[0.05]">
+                            <div className="mb-1 flex items-center justify-between gap-2">
+                                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500 dark:text-zinc-400">Caption to use</span>
+                                <button type="button" onClick={copyCaption} className="text-[12px] font-bold text-emerald-700 dark:text-neon-green">{copied ? 'Copied' : 'Copy'}</button>
+                            </div>
+                            <p className="whitespace-pre-line text-[14px] text-gray-800 dark:text-zinc-200">{caption}</p>
+                        </div>
+                    )}
+                    {links.length > 1 && <TaskLinks links={links} />}
+                </div>
             )}
 
             {status === 'rejected' && isPresent(submission?.rejectionReason) && (
