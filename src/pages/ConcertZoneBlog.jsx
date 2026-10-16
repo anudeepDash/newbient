@@ -223,8 +223,7 @@ const StoryCard = ({ post }) => {
 const ConcertZoneBlog = () => {
     useStoreSubscription(['posts']);
     useDynamicMeta({
-        title: "Concert Zone",
-        description: "Latest music, live events, artists, guides, and concert news from Newbi.",
+        page: 'concertzone',
         url: window.location.href
     });
 

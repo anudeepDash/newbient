@@ -8,6 +8,7 @@ import {
 import QRCode from 'qrcode';
 import { cn } from '../../lib/utils';
 import { getDocumentShareMeta, getPdfPreviewImageUrl } from '../../lib/documentPreviewUtils';
+import { DEFAULT_IMAGE } from '../../app/seo';
 
 export default function DocumentShareModal({
     isOpen,
@@ -182,7 +183,7 @@ export default function DocumentShareModal({
                                 <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-zinc-900/60 dark:to-zinc-950 p-5 flex flex-col sm:flex-row items-center gap-5 shadow-inner">
                                     {/* Mini Document Paper Canvas Mockup */}
                                     <div className="w-32 sm:w-36 aspect-[1/1.414] bg-white text-black rounded-lg shadow-xl border border-black/15 overflow-hidden flex flex-col relative shrink-0 select-none group">
-                                        {effectivePreviewImage && (effectivePreviewImage.startsWith('data:') || effectivePreviewImage.startsWith('http') || effectivePreviewImage.startsWith('/')) && !effectivePreviewImage.endsWith('/og-image.png') ? (
+                                        {effectivePreviewImage && (effectivePreviewImage.startsWith('data:') || effectivePreviewImage.startsWith('http') || effectivePreviewImage.startsWith('/')) && !effectivePreviewImage.endsWith(DEFAULT_IMAGE.path) ? (
                                             <div className="w-full h-full relative overflow-hidden bg-white">
                                                 <img 
                                                     src={effectivePreviewImage} 

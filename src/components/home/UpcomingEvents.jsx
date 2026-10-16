@@ -8,6 +8,7 @@ import html2canvas from 'html2canvas';
 import EventTicketingModal from '../tickets/EventTicketingModal';
 import EventHubModal from '../community/EventHubModal';
 import EventCard from '../community/EventCard';
+import { appUrl, pagePath } from '../../app/seo';
 
 const UpcomingEvents = () => {
     const { upcomingEvents, siteSettings, maintenanceState, giveaways, user, setAuthModal } = useStore();
@@ -87,8 +88,8 @@ const UpcomingEvents = () => {
         const cardElement = document.getElementById(`event-card-${event.id}`);
         if (!cardElement) return;
 
-        // Shared link defaults to home page with event param
-        const eventUrl = `${window.location.origin}/?event=${event.id}`;
+        // The app's event page: it gets a proper link preview (api/og.js).
+        const eventUrl = appUrl(pagePath('guestlist', { id: event.id }), window.location.origin);
 
         try {
             // Temporarily remove truncation and line-clamping for full title capture

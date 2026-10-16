@@ -11,6 +11,7 @@ import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import CommunityCard from './CommunityCard';
 import EventTicketingModal from '../tickets/EventTicketingModal';
+import { appUrl, pagePath } from '../../app/seo';
 
 const EventHubModal = ({ event, isOpen, onClose }) => {
     useStoreSubscription(['forms', 'volunteerGigs', 'campaigns']);
@@ -90,7 +91,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
     };
 
     const handleShare = () => {
-        const url = `${window.location.origin}/?event=${event.id}`;
+        const url = appUrl(pagePath('guestlist', { id: event.id }), window.location.origin);
         navigator.clipboard.writeText(url);
         useStore.getState().addToast("Event link copied.", 'success');
     };

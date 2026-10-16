@@ -1,3 +1,5 @@
+import { DEFAULT_IMAGE, LANDING_ORIGIN } from '../app/seo';
+
 /**
  * Utilities for extracting document preview images, Cloudinary PDF thumbnail rendering,
  * and generating rich metadata for social link sharing and link unfurling.
@@ -51,7 +53,7 @@ export const getDocumentShareMeta = (rawDocument, type = 'proposal') => {
     const formattedAmount = rawAmount ? `₹${Number(rawAmount).toLocaleString('en-IN')}` : null;
     const fileUrl = documentData.fileUrl || documentData.pdfUrl;
 
-    const previewImage = getPdfPreviewImageUrl(fileUrl) || documentData.thumbnail || documentData.coverImage || 'https://www.newbi.live/og-image.png';
+    const previewImage = getPdfPreviewImageUrl(fileUrl) || documentData.thumbnail || documentData.coverImage || `${LANDING_ORIGIN}${DEFAULT_IMAGE.path}`;
 
     if (type === 'invoice') {
         const title = `Tax Invoice ${docNumber} · ${clientName}`;
