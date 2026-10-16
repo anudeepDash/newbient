@@ -324,3 +324,6 @@ export const handleCommunity = async (req, res) => {
         return res.status(500).json({ success: false, code: 'SERVER', error: 'Something went wrong. Please try again.' });
     }
 };
+
+// For tests.
+export const _internal = { actions: ACTIONS };

@@ -53,7 +53,7 @@ export const channelState = (delivery, channel) => {
     if (!st) return 'none';
     if (OK.has(st)) return 'ok';
     if (st === 'skipped' || st === 'suppressed') return 'skipped';
-    if (st === 'retry' || st === 'sending') return 'pending';
+    if (st === 'retry' || st === 'retrying' || st === 'sending') return 'pending';
     return 'failed';
 };
 export const hasFailure = (p) => ['email', 'whatsapp'].some(ch => channelState(p.delivery, ch) === 'failed');

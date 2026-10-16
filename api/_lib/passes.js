@@ -243,15 +243,11 @@ const ownPlace = async (db, gid, uid) => {
         }
     }
     // Registered before passes existed.
-    const legacy = await db.collection('guestlists').doc(gid).collection('entries').where('userId', '==', uid).limit(1).get();
-    if (!legacy.empty) {
-        const e = legacy.docs[0].data();
-        if (!['rejected', 'cancelled'].includes(String(e.status))) {
-            const confirmed = ['approved', 'confirmed', 'attended'].includes(String(e.status)) || e.attended;
-            return { ref: e.passRef || e.bookingRef || null, status: confirmed ? 'issued' : (e.status || 'pending'), legacy: true };
-        }
-    }
-    return null;
+    const legacy = await db.collection('guestlists').doc(gid).collection('entries').where('userId', '==', uid).limit(5).get();
+    const e = legacy.docs.map(d => d.data()).find(x => !['rejected', 'cancelled'].includes(String(x.status)) && !x.passRevoked);
+    if (!e) return null;
+    const confirmed = ['approved', 'confirmed', 'attended'].includes(String(e.status)) || e.attended;
+    return { ref: e.passRef || e.bookingRef || null, status: confirmed ? 'issued' : (e.status || 'pending'), legacy: true };
 };
 
 const guestlistAction = async (db, body, caller) => {
@@ -337,7 +333,7 @@ const registerGuestlist = async (db, body, caller) => {
                 return { duplicate: true, ref: passSnap.id, status: passSnap.data().status };
             }
         }
-        const live = legacySnap.docs.map(d => d.data()).find(e => !['rejected', 'cancelled'].includes(String(e.status)));
+        const live = legacySnap.docs.map(d => d.data()).find(e => !['rejected', 'cancelled'].includes(String(e.status)) && !e.passRevoked);
         if (live) return { duplicate: true, ref: live.passRef || live.bookingRef || null, status: ['approved', 'confirmed', 'attended'].includes(String(live.status)) ? 'issued' : (live.status || 'pending') };
 
         const gl = glSnap.exists ? glSnap.data() : {};
@@ -1077,4 +1073,4 @@ export const handlePasses = async (req, res) => {
 };
 
 // For tests and the migration script.
-export const _internal = { upsertCampaignPass, deliverCampaignPass, publicPass, cleanExternalRow, passFromGuestlistEntry };
+export const _internal = { actions: ACTIONS, upsertCampaignPass, deliverCampaignPass, publicPass, cleanExternalRow, passFromGuestlistEntry };
