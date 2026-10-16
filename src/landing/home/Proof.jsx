@@ -58,7 +58,7 @@ export default function Proof({ clients = [], stats = [] }) {
                     {stats.map((s) => (
                         <div key={s.label}>
                             <dt className="sr-only">{s.label}</dt>
-                            <dd className="font-heading text-5xl md:text-7xl font-black tracking-[-0.04em] text-gray-950 dark:text-white tabular-nums">{s.value}</dd>
+                            <dd className="font-heading text-5xl md:text-7xl font-extrabold tracking-[-0.04em] text-gray-950 dark:text-white tabular-nums">{s.value}</dd>
                             <dd className="mt-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500">{s.label}</dd>
                         </div>
                     ))}

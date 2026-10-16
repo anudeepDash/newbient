@@ -19,7 +19,7 @@ export default function LandingFooter() {
                 <div className="space-y-4">
                     <Logo height={34} />
                     <p className="text-sm text-gray-600 dark:text-zinc-400 max-w-xs leading-relaxed">
-                        College activations, live shows and creator campaigns across India.
+                        Event marketing, brand activations, influencer campaigns and live production across India.
                     </p>
                     <div className="flex items-center gap-1 -ml-3">
                         {contact.instagram && (
@@ -40,7 +40,8 @@ export default function LandingFooter() {
 
                 <nav aria-label="Newbi" className={col}>
                     <p className={heading}>Newbi</p>
-                    <Link to="/#services" className={item}>What we do</Link>
+                    <Link to="/#about" className={item}>About</Link>
+                    <Link to="/#services" className={item}>What we run</Link>
                     <Link to="/#work" className={item}>Work</Link>
                     <Link to="/#enquire" className={item}>Work with us</Link>
                     <Link to="/contact" className={item}>Contact</Link>
@@ -49,7 +50,7 @@ export default function LandingFooter() {
                 <nav aria-label="Join in" className={col}>
                     <p className={heading}>Join in</p>
                     <Link to="/creator" className={item}>For creators</Link>
-                    <a href={APP_LINKS.home} className={item}>Open the app</a>
+                    <a href={APP_LINKS.home} className={item}>Community</a>
                     <a href="/concertzone" className={item}>ConcertZone</a>
                     <a href="https://artistant.in" target="_blank" rel="noopener noreferrer" className={item}>Artistant</a>
                 </nav>

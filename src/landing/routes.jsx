@@ -28,8 +28,8 @@ export const LANDING_ROUTES = [
         featureId: 'home',
         Page: lazyPage(() => import('./pages/HomePage.jsx')),
         meta: {
-            title: 'Newbi | College activations, live shows and creator campaigns',
-            description: 'Newbi runs college activations, live shows and creator campaigns across India for brands, colleges and artists.',
+            title: 'Newbi | Event marketing, brand activations and influencer campaigns',
+            description: 'Newbi is an event marketing and live entertainment company: brand activations, influencer campaigns, concerts and live production across India.',
         },
     },
     {

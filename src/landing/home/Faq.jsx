@@ -3,10 +3,10 @@ import SectionHeading from '../components/SectionHeading';
 
 const FAQS = [
     { q: 'Which cities do you work in?', a: 'Across India. Tell us the city or campus and we will tell you how we would run it there.' },
-    { q: 'How early should we get in touch?', a: 'For fests and live shows, a few weeks ahead gives you the most options. A creator campaign on its own can go live sooner.' },
+    { q: 'How early should we get in touch?', a: 'For events and activations, a few weeks ahead gives you the most options. An influencer or digital campaign can go live sooner.' },
     { q: 'What does a project cost?', a: 'It depends on the format, the city and the scale. Share a rough budget in the form and we plan to it.' },
-    { q: 'Do you handle permissions and production?', a: 'Yes. Permissions, production, staffing and running the day are part of the job.' },
-    { q: 'Can we run a creator campaign without an event?', a: 'Yes. Creator campaigns run on their own or alongside an event.' },
+    { q: 'Do you handle permits, production and staffing?', a: 'Yes. Venue and campus permits, technical production, fabrication, volunteer crews and running the day are part of the job.' },
+    { q: 'Can we run a campaign without an event?', a: 'Yes. Influencer, digital and social campaigns run on their own or alongside an event or activation.' },
     { q: 'How do we see results?', a: 'Photos, content links and a short report with the numbers that matter for your goal.' },
 ];
 
@@ -15,7 +15,7 @@ export default function Faq() {
     return (
         <section aria-labelledby="faq-title" className="py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
-                <SectionHeading id="faq-title" index="07" eyebrow="Questions" title="Before you" highlight="ask." className="lg:sticky lg:top-28 self-start" />
+                <SectionHeading id="faq-title" index="08" eyebrow="Questions" title="Before you" highlight="ask." className="lg:sticky lg:top-28 self-start" />
                 <div className="nb-reveal border-t border-gray-950/10 dark:border-white/10">
                     {FAQS.map((f, i) => (
                         <details key={f.q} className="group border-b border-gray-950/10 dark:border-white/10">

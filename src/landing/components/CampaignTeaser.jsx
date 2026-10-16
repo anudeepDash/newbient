@@ -63,7 +63,7 @@ export default function CampaignTeaser({ campaign: c }) {
 
                 <div className="mt-auto pt-5">
                     <span className="flex items-center justify-between px-4 h-11 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.07] dark:group-hover:bg-neon-green dark:group-hover:border-neon-green transition-colors">
-                        <span className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-600 dark:text-zinc-400 dark:group-hover:text-black">View in the app</span>
+                        <span className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-600 dark:text-zinc-400 dark:group-hover:text-black">View campaign</span>
                         <ArrowUpRight size={15} className="text-gray-400 dark:text-zinc-500 dark:group-hover:text-black" aria-hidden="true" />
                     </span>
                 </div>
