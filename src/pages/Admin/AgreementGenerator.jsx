@@ -59,9 +59,9 @@ const STEPS = [
 ];
 
 const LOGOS = [
-    { id: 'entertainment', label: 'Entertainment', path: '/logo_document.png' },
-    { id: 'media', label: 'Media', path: '/logo_media.png' },
-    { id: 'marketing', label: 'Marketing', path: '/logo_marketing.png' },
+    { id: 'entertainment', label: 'Entertainment', path: '/brand/newbi-logo-entertainment-800w.png' },
+    { id: 'media', label: 'Media', path: '/brand/newbi-logo-media-800w.png' },
+    { id: 'marketing', label: 'Marketing', path: '/brand/newbi-logo-marketing-800w.png' },
 ];
 
 const TERM_PRESETS = ['One event', '1 month', '3 months', '6 months', '12 months'];
