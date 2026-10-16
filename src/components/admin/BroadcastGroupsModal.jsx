@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useStore } from '../../lib/store';
 import { DEFAULT_CREATOR_GROUPS } from '../../lib/constants';
-import { sendCreatorGroupsBroadcastEmail, generateCreatorGroupsBroadcastHTML } from '../../lib/email';
+import { generateCreatorGroupsBroadcastHTML } from '../../lib/email';
+import { queueCreatorGroupsBroadcast } from '../../lib/creatorGroupsMail';
 import { cn } from '../../lib/utils';
 import Send from 'lucide-react/dist/esm/icons/send';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
@@ -135,17 +136,12 @@ const BroadcastGroupsModal = ({ onClose, preselectedCity = 'All' }) => {
                 city: c.city || selectedCityFilter
             }));
 
-            const result = await sendCreatorGroupsBroadcastEmail(recipientsPayload, {
+            const result = await queueCreatorGroupsBroadcast(recipientsPayload, {
                 city: emailCity,
                 groupUrl: activeCityGroup.groupUrl,
                 customSubject: emailSubject,
                 customMessage: message,
                 availableGroups: activeGroups,
-                // sendMassEmail reports { sent, failed, total } after each batch
-                onProgress: (p, tot) => {
-                    if (p && typeof p === 'object') setProgress({ current: (p.sent || 0) + (p.failed || 0), total: p.total || targetRecipients.length });
-                    else setProgress({ current: Number(p) || 0, total: Number(tot) || targetRecipients.length });
-                }
             });
 
             const sent = result?.sent ?? result?.sentCount ?? 0;
@@ -153,7 +149,7 @@ const BroadcastGroupsModal = ({ onClose, preselectedCity = 'All' }) => {
             if (result && (result.success || sent > 0)) {
                 const sentCount = result.success && !sent ? targetRecipients.length : sent;
                 setSendStats({ sent: sentCount, failed });
-                useStore.getState().addToast(`Broadcast sent to ${sentCount} creators.`, failed ? 'warning' : 'success');
+                useStore.getState().addToast(`Queued for ${sentCount} creators. Our server sends it in the background.`, failed ? 'warning' : 'success');
             } else {
                 throw new Error(result?.error || 'Email dispatch failed.');
             }

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { sendComposedEmail } from '../../lib/mailApi';
 import { useSearchParams } from 'react-router-dom';
 
 import Printer from 'lucide-react/dist/esm/icons/printer';
@@ -554,7 +555,7 @@ const SpendsManagement = () => {
                     {/* Verification QR Code pointing to functional verification URL */}
                     <div className="flex flex-col items-center justify-center p-1.5 bg-white rounded-xl border border-white/10 w-fit mx-auto shadow-inner mb-2.5">
                         <img 
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&color=020202&data=${encodeURIComponent(
+                            src={`/api/qr?size=160&margin=1&text=${encodeURIComponent(
                                 `https://newbi.live/verify-payout?ref=${finalUTR}&amt=${data.amount}&payee=${encodeURIComponent(data.receiverName)}&date=${encodeURIComponent(data.date)}&mode=${encodeURIComponent(data.paymentMode)}${(data.receiptUrl || data.proofUrl) ? `&proof=${encodeURIComponent(data.receiptUrl || data.proofUrl)}` : ''}`
                             )}`}
                             alt="Verification QR"
@@ -658,32 +659,10 @@ const SpendsManagement = () => {
         window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
     };
 
-    const handleSendReceiptEmail = async ({ to, cc, bcc, subject, html }) => {
+    const handleSendReceiptEmail = async (payload) => {
         try {
-            const { auth } = await import('../../lib/firebase');
-            const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
-            const response = await fetch('/api/mail', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token ? `Bearer ${token}` : '',
-                },
-                body: JSON.stringify({
-                    to,
-                    cc,
-                    bcc,
-                    subject,
-                    html,
-                    fromName: 'Newbi Finance',
-                    fromEmail: 'partnership@newbi.live'
-                }),
-            });
-            const result = await response.json();
-            if (result.success) {
-                useStore.getState().addToast('Receipt emailed.', 'success');
-            } else {
-                throw new Error(result.error || 'Failed to send email');
-            }
+            await sendComposedEmail({ ...payload, fromName: 'Newbi Finance', fromEmail: 'partnership@newbi.live' });
+            useStore.getState().addToast('Receipt emailed.', 'success');
         } catch (err) {
             console.error('Send receipt email failed:', err);
             useStore.getState().addToast("Couldn't send the email. Please try again.", 'error');
@@ -1343,7 +1322,7 @@ const SpendsManagement = () => {
                             <div className="flex flex-col items-center gap-2">
                                 <div className="rounded-2xl border border-black/10 bg-white p-3">
                                     <img
-                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=020202&data=${encodeURIComponent(upiCheckoutLink())}`}
+                                        src={`/api/qr?size=300&margin=1&text=${encodeURIComponent(upiCheckoutLink())}`}
                                         alt="UPI payment QR code"
                                         className="h-[150px] w-[150px]"
                                     />
@@ -1743,7 +1722,7 @@ const SpendsManagement = () => {
                                 <div className="flex flex-col items-center gap-2">
                                     <div className="rounded-2xl border border-black/10 bg-white p-3">
                                         <img
-                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&color=020202&data=${encodeURIComponent(
+                                            src={`/api/qr?size=360&margin=1&text=${encodeURIComponent(
                                                 `upi://pay?pa=${activeSlipData.destinationDetails.replace('UPI:', '').trim()}&pn=${encodeURIComponent(activeSlipData.receiverName)}&am=${activeSlipData.amount}&cu=INR`
                                             )}`}
                                             alt="UPI payment QR code"

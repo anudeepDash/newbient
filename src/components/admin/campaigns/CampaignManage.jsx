@@ -37,6 +37,7 @@ import Undo2 from 'lucide-react/dist/esm/icons/undo-2';
 import { cn, getCampaignSpotsInfo, normalizePhoneNumber } from '../../../lib/utils';
 import { useStore } from '../../../lib/store';
 import { notifySpecificUser } from '../../../lib/notificationTriggers';
+import { notifyEvent } from '../../../lib/mailApi';
 import { creatorCampaignPath, findCampaignById } from '../../../lib/campaignLinks';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { exportSubtitle, fileDate } from '../../../lib/xlsx';
@@ -242,15 +243,23 @@ const CampaignManage = ({
             await useStore.getState().reviewTaskSubmissions(campaign.id, items.map(({ entry, task }) => ({
                 taskId: task.id, creatorUid: entry.key, keys: creatorKeys(entry.creator), status: statusValue, rejectionReason: reason,
             })));
-            await Promise.allSettled(items.map(({ entry, task }) => notifySpecificUser(
-                entry.key,
-                statusValue === 'approved' ? 'Task approved' : 'Changes requested on your task',
-                statusValue === 'approved'
-                    ? `Your submission for "${task.title}" has been approved. Great work!`
-                    : `Your submission for "${task.title}" needs a few changes: ${reason}`,
-                creatorCampaignPath(campaign.id),
-                'campaign'
-            )));
+            // The server tells each creator (email, push and the in-app alert).
+            const told = await notifyEvent('submission-reviewed', {
+                campaignId: campaign.id,
+                campaignPath: creatorCampaignPath(campaign.id),
+                reviews: items.map(({ entry, task }) => ({ uid: entry.key, taskId: task.id, taskTitle: task.title, status: statusValue === 'approved' ? 'approved' : 'changes', reason })),
+            });
+            if (!told?.success) {
+                await Promise.allSettled(items.map(({ entry, task }) => notifySpecificUser(
+                    entry.key,
+                    statusValue === 'approved' ? 'Task approved' : 'Changes requested on your task',
+                    statusValue === 'approved'
+                        ? `Your submission for "${task.title}" has been approved. Great work!`
+                        : `Your submission for "${task.title}" needs a few changes: ${reason}`,
+                    creatorCampaignPath(campaign.id),
+                    'campaign'
+                )));
+            }
             addToast(statusValue === 'approved' ? (items.length === 1 ? 'Approved.' : `${items.length} submissions approved.`) : 'Feedback sent.', 'success');
         } catch {
             addToast("Couldn't save your review. Please try again.", 'error');

@@ -91,6 +91,27 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       {
+        // Local dev only: QR images (passes, invoices) use /api/qr like production.
+        name: 'api-qr-dev',
+        configureServer(server) {
+          server.middlewares.use(async (req, res, next) => {
+            if (!req.url.startsWith('/api/qr')) return next();
+            try {
+              const { default: QRCode } = await import('qrcode');
+              const q = new URL(req.url, 'http://localhost').searchParams;
+              const text = q.get('text');
+              if (!text) { res.statusCode = 400; return res.end('Missing text'); }
+              const png = await QRCode.toBuffer(text, { width: Math.min(1200, Math.max(64, parseInt(q.get('size'), 10) || 300)), margin: Math.min(8, parseInt(q.get('margin'), 10) || 0) });
+              res.setHeader('Content-Type', 'image/png');
+              return res.end(png);
+            } catch (err) {
+              res.statusCode = 500;
+              return res.end(String(err.message || err));
+            }
+          });
+        },
+      },
+      {
         name: 'api-ai-middleware',
         configureServer(server) {
           server.middlewares.use((req, res, next) => {

@@ -2,13 +2,12 @@ import { create } from 'zustand';
 import { db, storage, auth } from './firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch, runTransaction } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail, sendCreatorApprovedEmail, sendWhatsAppVerification } from './email';
+import { notifyEvent, subscribeToNewsletter } from './mailApi';
 import { normalizePhoneNumber } from './utils';
 import { couponProblem, normalizeCouponCode, isGuestAdmissible, orderItems, orderTicketCount } from './ticketing';
 import { invoiceBalance, INVOICE_STATUS, nextInvoiceNumber, todayKey } from './invoicing';
 import { CONTRACT_STATUS, CONTRACT_NON_COPYABLE_FIELDS } from './contracts';
 import { isProposalClosed, isProposalExpired, nextProposalNumber, proposalValue, PROPOSAL_NON_COPYABLE_FIELDS, PROPOSAL_STATUS } from './proposals';
-import { getPublicSiteUrl } from './siteUrl';
 import { extractSocialUsername, hasDisallowedLink } from './socialUtils';
 import { safeLocalStorage } from './storage';
 import { DEFAULT_CREATOR_GROUPS, isCampaignCityMatch } from './constants';
@@ -189,7 +188,7 @@ const processAndUploadBase64Fields = async (obj, pathPrefix) => {
     return obj;
 };
 
-const notifyMatchingCreatorsOfCampaign = async (campaignData, creatorsList) => {
+const notifyMatchingCreatorsOfCampaign = async (campaignData, creatorsList, { again = false } = {}) => {
     try {
         let allCreators = creatorsList || [];
         if (allCreators.length === 0) {
@@ -207,10 +206,10 @@ const notifyMatchingCreatorsOfCampaign = async (campaignData, creatorsList) => {
         });
 
         if (matchingCreators.length > 0) {
-            // 1. Send mass email notifications to matching creators
-            const emails = [...new Set(matchingCreators.map(c => c.email).filter(Boolean))];
-            if (emails.length > 0) {
-                await sendNewCampaignNotificationEmail(emails, campaignData);
+            // 1. Email + push to matching creators: queued on the server, which
+            // works out who matches the campaign city from the saved record.
+            if (campaignData.id && matchingCreators.some(c => c.email)) {
+                await notifyEvent('campaign-invite', { campaignId: campaignData.id, again });
             }
 
             // 2. Create in-app notification for each matching creator. A campaign
@@ -3048,26 +3047,9 @@ export const useStore = create((set, get) => ({
             ...extra
         });
 
-        // If approved, dispatch confirmation email
+        // Approved: the server sends the pass (email, WhatsApp, push) once.
         if (status === 'approved' || status === 'confirmed') {
-            try {
-                const { sendGuestlistConfirmation } = await import('./email');
-                const targetEmail = (currentData.customerEmail || currentData.email || '').trim().toLowerCase();
-                if (targetEmail) {
-                    await sendGuestlistConfirmation({
-                        toName: currentData.customerName || currentData.name || 'Guest',
-                        toEmail: targetEmail,
-                        eventName: currentData.title || 'Event',
-                        bookingRef: currentData.bookingRef,
-                        guestCount: currentData.guestsCount || 1,
-                        date: currentData.date,
-                        location: currentData.location,
-                        guestlistMode: currentData.guestlistMode || 'qr'
-                    });
-                }
-            } catch (err) {
-                console.warn('Failed to send approval email notification:', err);
-            }
+            await notifyEvent('pass-confirmed', { guestlistId, entryId });
         }
 
         // Rejected entries don't hold spots. Only move the counter when the
@@ -3260,38 +3242,9 @@ export const useStore = create((set, get) => ({
         await updateDoc(orderRef, { status, [`${status}At`]: now });
 
         if (status !== 'dispatched') return { ok: true };
-        try {
-            const orderDoc = await getDoc(orderRef);
-            if (!orderDoc.exists()) return { ok: true, emailed: false };
-            const orderData = orderDoc.data();
-            const email = String(orderData.customerEmail || orderData.email || '').trim();
-            if (!email) return { ok: true, emailed: false };
-            let eventName = orderData.eventTitle || 'Event';
-            if (orderData.eventId) {
-                const eventDoc = await getDoc(doc(db, 'upcoming_events', orderData.eventId));
-                if (eventDoc.exists()) eventName = eventDoc.data().title || eventName;
-            }
-            const items = orderItems(orderData);
-            const ticketsHtml = items.map(item => `
-                <div style="padding: 10px 0; border-bottom: 1px solid #eee;">
-                    <strong>${item.name}</strong> x ${item.count}
-                </div>
-            `).join('');
-            const result = await sendBookingConfirmation({
-                to_name: orderData.customerName,
-                to_email: email,
-                event_name: eventName,
-                booking_ref: orderData.bookingRef,
-                tickets_html: ticketsHtml,
-                total_amount: orderData.totalAmount || 0,
-                payment_ref: orderData.paymentRef || 'FREE',
-                items
-            });
-            return { ok: true, emailed: result?.success !== false };
-        } catch (err) {
-            console.error("Failed to send booking confirmation email on dispatch:", err);
-            return { ok: true, emailed: false };
-        }
+        // The server builds and sends the pass from the order record (once).
+        const result = await notifyEvent('pass-confirmed', { orderId });
+        return { ok: true, emailed: Boolean(result?.success && (result.duplicate || result.delivery?.email?.status === 'sent')) };
     },
 
     // Messages
@@ -3524,31 +3477,8 @@ export const useStore = create((set, get) => ({
             }
         }
 
-        const verificationUrl = `${getPublicSiteUrl()}/verify-creator?id=${targetUid}&token=${verificationToken}`;
-
-        if (creator.phone) {
-            sendWhatsAppVerification(creator.phone, creator.displayName || creator.name || 'Creator', verificationUrl)
-                .catch(err => console.error("Error sending WhatsApp verification:", err));
-        }
-
-        if (sendWelcome && creator.email) {
-            sendCreatorWelcomeEmail(
-                creator.email, 
-                creator.displayName || creator.name || 'Creator', 
-                verificationToken, 
-                targetUid,
-                {
-                    city: creator.city,
-                    handle: creator.handle || creator.instagram,
-                    niche: creator.categories || creator.niche || creator.primaryNiche || creator.category,
-                    passId: creatorId || creator.creatorId,
-                    phone: creator.phone,
-                    avatar: creator.avatar || creator.profilePicture || creator.photoURL,
-                    points: creator.points || 500
-                }
-            ).catch(err => console.error("Error sending welcome email to creator:", err));
-        }
-
+        // Local offline fallback only: the welcome email and WhatsApp link are sent
+        // by /api/creator-join (once, awaited), never from the browser.
         return { id: targetUid, creatorId, verificationToken };
     },
     resolveCreatorProfile: async (user) => {
@@ -3702,6 +3632,7 @@ export const useStore = create((set, get) => ({
 
         let directSuccess = false;
         let lastError = null;
+        let writtenId = docId;
 
         // 1. Attempt direct client-side Firestore update
         try {
@@ -3719,6 +3650,7 @@ export const useStore = create((set, get) => ({
                 const altSnap = await getDoc(altRef);
                 if (altSnap.exists()) {
                     await updateDoc(altRef, sanitizedUpdates);
+                    writtenId = existingCreator.uid;
                     directSuccess = true;
                 }
             }
@@ -3769,11 +3701,10 @@ export const useStore = create((set, get) => ({
             )
         }));
 
-        // Send approval email if verified
-        if (sanitizedUpdates.profileStatus === 'approved' && prevStatus !== 'approved' && email) {
-            const creatorData = existingCreator ? { ...existingCreator, ...sanitizedUpdates } : sanitizedUpdates;
-            sendCreatorApprovedEmail(email, name, creatorData)
-                .catch(err => console.error("Error sending creator approval email:", err));
+        // Approved / rejected: the server sends the email (and push, in-app) from the saved record.
+        const decided = sanitizedUpdates.profileStatus;
+        if ((decided === 'approved' || decided === 'rejected') && prevStatus !== decided && email) {
+            await notifyEvent(decided === 'approved' ? 'creator-approved' : 'creator-rejected', { creatorId: writtenId, reason: sanitizedUpdates.rejectionReason || '' });
         }
     },
     deleteCreator: async (uid) => {
@@ -4026,7 +3957,7 @@ export const useStore = create((set, get) => ({
     announceCampaign: async (id) => {
         const snap = await getDoc(doc(db, 'campaigns', id));
         if (!snap.exists()) throw new Error('This campaign no longer exists.');
-        await notifyMatchingCreatorsOfCampaign({ ...snap.data(), id }, get().creators);
+        await notifyMatchingCreatorsOfCampaign({ ...snap.data(), id }, get().creators, { again: true });
         const announcedAt = new Date().toISOString();
         await updateDoc(doc(db, 'campaigns', id), { announcedAt });
         set(state => ({ campaigns: (state.campaigns || []).map(c => c.id === id ? { ...c, announcedAt } : c) }));
@@ -5548,6 +5479,15 @@ export const useStore = create((set, get) => ({
         }
     },
     subscribeUser: async (email, name = '') => {
+        // The server handles it: people who unsubscribed before get a confirm
+        // email (double opt-in) instead of silently staying suppressed.
+        try {
+            const res = await subscribeToNewsletter(email, name);
+            return { success: true, message: res.message || 'Successfully subscribed!', confirmRequired: Boolean(res.confirmRequired) };
+        } catch (err) {
+            if (err.status && err.status !== 404) return { success: false, message: err.message };
+            // Offline local dev without the API: the old direct write.
+        }
         // Check if already subscribed
         const q = query(collection(db, 'subscribers'), where('email', '==', email.toLowerCase()));
         const snapshot = await getDocs(q);
@@ -5573,7 +5513,8 @@ export const useStore = create((set, get) => ({
     saveFcmToken: async (token) => {
         const { user } = get();
         if (user) {
-            await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true });
+            // fcmTokens keeps every device; fcmToken stays for older readers.
+            await setDoc(doc(db, 'users', user.uid), { fcmToken: token, fcmTokens: arrayUnion(token) }, { merge: true });
         }
         set({ fcmToken: token });
     },

@@ -21,15 +21,15 @@ import { cn } from '../../lib/utils';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import { Button, Card, EmptyState, SearchInput, SegmentedTabs, Select, Avatar } from '../../components/admin/ui';
 import { accent } from '../../components/admin/theme';
-import { Field, fieldCls, Toggle } from '../../components/admin/uploads/UploadKit';
+import { Field, fieldCls } from '../../components/admin/uploads/UploadKit';
 import { BuilderCard, ImageSlot } from '../../components/admin/events/EditorParts';
 import RichEditor from '../../components/admin/RichEditor';
 import ExportMenu from '../../components/admin/ExportMenu';
 import { exportSubtitle, fileDate } from '../../lib/xlsx';
-import { sendTestEmail } from '../../lib/email';
+import { sendCampaignTest } from '../../lib/mailApi';
 import AudienceBuilder from '../../components/admin/mailing/AudienceBuilder';
 import EmailPreview from '../../components/admin/mailing/EmailPreview';
-import SendSheet from '../../components/admin/mailing/SendSheet';
+import SendSheet, { useMailWorkerKick } from '../../components/admin/mailing/SendSheet';
 import CampaignHistory from '../../components/admin/mailing/CampaignHistory';
 import TemplatesPanel from '../../components/admin/mailing/TemplatesPanel';
 import { ConfirmDialog, FieldLabel, useSuppression } from '../../components/admin/mailing/shared';
@@ -38,13 +38,14 @@ import {
 } from '../../components/admin/mailing/audience';
 import {
     ALIASES, CATEGORY_LABEL, EMPTY_MAIL, MERGE_TAGS, PRESET_CATEGORIES, allowEmailAgain, buildOfficialHtml, effectiveCategory,
-    fillTags, formatWhen, isValidEmailAddress, renderOfficial, samplePerson, stripHtml, textToHtml, uploadInlineImages, usesMergeTags,
+    fillTags, formatWhen, isValidEmailAddress, samplePerson, stripHtml, textToHtml, uploadInlineImages,
 } from '../../components/admin/mailing/mailingApi';
 import ThemedSelect from '../../components/admin/ThemedSelect';
 
 /*
  * Mailing: write a campaign email, choose who gets it, preview it, send
- * yourself a test, then send with live progress. History keeps every
+ * yourself a test, then queue it (now or scheduled). The server sends it in
+ * batches within the daily limit, so the tab can be closed. History keeps every
  * campaign with opens, clicks, failures (retryable) and unsubscribes.
  *
  * Deep links other pages use (keep working):
@@ -80,6 +81,8 @@ const MailingManager = () => {
     const creators = useStore(s => s.creators);
     const emailTemplates = useStore(s => s.emailTemplates);
     const emailCampaigns = useStore(s => s.emailCampaigns);
+    // Wakes due scheduled sends (the server cron only runs daily on this plan).
+    useMailWorkerKick(emailCampaigns);
     const user = useStore(s => s.user);
     const addToast = useStore(s => s.addToast);
 
@@ -126,7 +129,6 @@ const MailingManager = () => {
         const saved = readJson(AUDIENCE_KEY);
         return saved ? { ...DEFAULT_AUDIENCE, ...saved, creatorFilters: { ...DEFAULT_AUDIENCE.creatorFilters, ...(saved.creatorFilters || {}) } } : DEFAULT_AUDIENCE;
     });
-    const [individual, setIndividual] = useState(false);
 
     // Drop the prefill params once read, so a refresh doesn't wipe edits.
     useEffect(() => {
@@ -189,8 +191,6 @@ const MailingManager = () => {
 
     /* ---------- Checks ---------- */
 
-    const hasTags = usesMergeTags(mail);
-    const sendIndividually = hasTags || individual;
     const problems = [
         !mail.subject.trim() && 'Add a subject.',
         !mail.headerText.trim() && !stripHtml(mail.messageBody) && 'Write a heading or a message.',
@@ -240,17 +240,10 @@ const MailingManager = () => {
         setTesting(true);
         try {
             const ready = await hostInlineImages();
-            const me = samplePerson({ email: myEmail, name: user?.displayName || user?.name || '', role: user?.role || 'Admin' });
-            const html = buildOfficialHtml({
-                ...ready,
-                headerText: fillTags(ready.headerText, me),
-                messageBody: fillTags(ready.messageBody, me),
-                ctaText: fillTags(ready.ctaText, me),
-                preheader: fillTags(ready.preheader, me),
-            });
-            await sendTestEmail({ to: myEmail, subject: fillTags(ready.subject, me), html, accountType: 'official', fromName, fromEmail });
+            // Same server path as the real send; merge tags are filled in for you.
+            const sent = await sendCampaignTest({ subject: ready.subject, html: buildOfficialHtml(ready), accountType: 'official', fromName, fromEmail });
             setTestedAt(Date.now());
-            addToast(`Test sent to ${myEmail}.`, 'success');
+            addToast(`Test sent to ${sent.to || myEmail}.`, 'success');
         } catch (err) {
             console.error('Test send failed:', err);
             addToast(/upload/i.test(err?.message || '') ? "Couldn't upload the images in your message. Please try again." : "Couldn't send the test. Please try again.", 'error');
@@ -279,7 +272,6 @@ const MailingManager = () => {
             accountType: 'official',
             fromName,
             fromEmail,
-            individualAuto: sendIndividually,
             summary: [
                 { label: 'To', value: `${recipients.length.toLocaleString('en-IN')} ${recipients.length === 1 ? 'person' : 'people'} · ${audienceLabel}` },
                 skippedBits.length ? { label: 'Left out', value: skippedBits.join(', ') } : null,
@@ -288,9 +280,7 @@ const MailingManager = () => {
             ].filter(Boolean),
             warnings: [
                 !testedAt && 'You haven\'t sent yourself a test of this email yet.',
-                hasTags && 'Merge tags are on, so everyone gets their own copy. This is slower for big lists.',
                 suppression.status === 'error' && "The unsubscribe list didn't load here. The server still skips unsubscribed people.",
-                recipients.length > 2000 && 'This is a big send. Keep this tab open; it may take a while and can run into your mail provider\'s daily limit.',
             ].filter(Boolean),
             // Upload pasted images, then build the final email.
             prepare: async () => {
@@ -301,8 +291,6 @@ const MailingManager = () => {
                 };
             },
             options: {
-                buildHtml: renderOfficial,
-                individual: sendIndividually,
                 audience: { label: audienceLabel, segments: audience.segments, creatorFilters: audience.segments.includes('creators') ? audience.creatorFilters : null, customCount: audience.custom.length, final: recipients.length },
             },
         });
@@ -332,7 +320,6 @@ const MailingManager = () => {
             accountType: campaign.accountType || 'official',
             fromName: campaign.senderName,
             fromEmail: campaign.senderEmail,
-            individualAuto: campaign.deliveryMode === 'individual',
             summary: [
                 { label: 'Campaign', value: campaign.subject || 'Untitled' },
                 { label: 'Retrying', value: `${pending.length.toLocaleString('en-IN')} ${pending.length === 1 ? 'person' : 'people'} who didn't get it` },
@@ -342,9 +329,6 @@ const MailingManager = () => {
             confirmLabel: `Retry ${pending.length.toLocaleString('en-IN')}`,
             options: {
                 campaignId: campaign.id,
-                baseSentCount: Number(campaign.sentCount || 0),
-                individual: campaign.deliveryMode === 'individual',
-                buildHtml: renderOfficial,
             },
         });
     };
@@ -639,12 +623,6 @@ const MailingManager = () => {
                                     <input className={cn(fieldCls, 'mt-2')} value={mail.customCategory} onChange={(e) => patch({ customCategory: e.target.value })} placeholder="Your label, e.g. Exclusive" maxLength={24} />
                                 )}
                             </div>
-                            <Toggle
-                                label="Send individually"
-                                hint={hasTags ? 'On because the email uses personal tags. Everyone gets their own copy.' : 'Everyone gets their own copy, so you can see exactly who opened and clicked. Slower for big lists.'}
-                                checked={sendIndividually}
-                                onChange={(v) => { if (!hasTags) setIndividual(v); }}
-                            />
                         </div>
                     </BuilderCard>
 

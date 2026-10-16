@@ -1,6 +1,6 @@
 import { useStore } from './store';
 import { db } from './firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query } from 'firebase/firestore';
 
 /**
  * Triggers an in-app and potentially a push notification.
@@ -45,10 +45,23 @@ export const triggerNotification = async ({ userId, type, title, content, link, 
 };
 
 /**
- * Notify all users with an announcement and optionally broadcast via email
+ * Opens the Mailing composer with an email drafted from a notification, so
+ * staff pick the audience and the server queues it.
  */
-export const notifyAllUsers = async (title, content, link = '', image = '', sendEmail = false, type = 'announcement') => {
-    // 1. Trigger Push & In-App Notification
+export const openMailingDraft = ({ title, content, link = '', image = '' }) => {
+    const ctaUrl = link ? (link.startsWith('http') ? link : `${window.location.origin}${link.startsWith('/') ? '' : '/'}${link}`) : '';
+    const params = new URLSearchParams({ subject: title || '', header: title || '', body: content || '' });
+    if (image) params.set('heroImage', image);
+    if (ctaUrl) { params.set('ctaText', 'View details'); params.set('ctaUrl', ctaUrl); }
+    window.location.assign(`/admin/mailing?${params.toString()}`);
+};
+
+/**
+ * In-app (and push) announcement for everyone. It no longer emails every
+ * user: with `openEmailDraft` the Mailing composer opens pre-filled, so the
+ * email goes to a chosen audience through the server queue.
+ */
+export const notifyAllUsers = async (title, content, link = '', image = '', openEmailDraft = false, type = 'announcement') => {
     await triggerNotification({
         userId: null,
         type,
@@ -57,48 +70,7 @@ export const notifyAllUsers = async (title, content, link = '', image = '', send
         link,
         image
     });
-
-    // 2. Trigger Mass Email Broadcast if requested
-    if (sendEmail) {
-        try {
-            const usersSnap = await getDocs(query(collection(db, 'users')));
-            const emails = [];
-            usersSnap.forEach(doc => {
-                const data = doc.data();
-                if (data.email) emails.push(data.email);
-            });
-            
-            const uniqueEmails = [...new Set(emails)];
-            
-            if (uniqueEmails.length > 0) {
-                const { sendMassEmail } = await import('./email');
-                const htmlContent = `
-                    <style>
-                        ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
-                        ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
-                        li { margin-bottom: 5px !important; line-height: 1.6 !important; }
-                    </style>
-                    <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 12px;">
-                        ${image ? `<img src="${image}" alt="${title}" style="width: 100%; border-radius: 8px; margin-bottom: 20px;" />` : ''}
-                        <h2 style="color: #000; text-transform: uppercase; font-style: italic;">${title}</h2>
-                        <p style="font-size: 16px; line-height: 1.6; color: #555;">${content}</p>
-                        ${link ? `
-                        <div style="margin: 30px 0;">
-                            <a href="${link.startsWith('http') ? link : `https://newbi.live${link}`}" style="background: #39FF14; color: #000; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px;">View Details</a>
-                        </div>
-                        ` : ''}
-                        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
-                        <p style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 2px;">Newbi Entertainment &bull; Exclusive Experiences</p>
-                    </div>
-                `;
-                
-                await sendMassEmail(uniqueEmails, title, htmlContent);
-                console.log(`[Mass Email Triggered] Dispatched to ${uniqueEmails.length} recipients.`);
-            }
-        } catch (error) {
-            console.error("Error triggering mass email broadcast:", error);
-        }
-    }
+    if (openEmailDraft && typeof window !== 'undefined') openMailingDraft({ title, content, link, image });
 };
 
 /**

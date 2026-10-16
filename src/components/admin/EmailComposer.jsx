@@ -10,6 +10,7 @@ import { Button, SegmentedTabs } from './ui';
 import RichEditor from './RichEditor';
 import EmailPreviewIframe from '../ui/EmailPreviewIframe';
 import { Field, fieldCls } from './uploads/UploadKit';
+import { previewEmailHtml } from '../../lib/emailTemplates';
 
 /*
  * One composer for every "email this document" action (invoices, proposals,
@@ -17,6 +18,9 @@ import { Field, fieldCls } from './uploads/UploadKit';
  * and a real preview of the branded email.
  *
  * buildHtml({ headerText, messageBody, theme, recipient, preview }) → html
+ * template + buildData({ headerText, messageBody, recipient }) → data: use a
+ *   server email template instead (documents). The preview renders the same
+ *   template, and onSend gets { template, data } so the server builds it.
  * perRecipient: send one email per address (each gets its own tracked link);
  *   CC/BCC go with the first only, and a partial failure keeps just the
  *   addresses that failed so Send retries those.
@@ -80,7 +84,7 @@ const RecipientInput = ({ value, onChange, placeholder, autoFocus }) => {
 
 const EmailComposer = ({
     open, onClose, title = 'Send email', subtitle, initial, resetKey,
-    buildHtml, perRecipient = false, onSend, successText = 'Sent.',
+    buildHtml, template, buildData, perRecipient = false, onSend, successText = 'Sent.',
 }) => {
     const [to, setTo] = useState([]);
     const [cc, setCc] = useState([]);
@@ -110,8 +114,16 @@ const EmailComposer = ({
         setSending(false);
     }, [open, resetKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const previewHtml = useMemo(() => (open ? buildHtml({ headerText, messageBody, theme, recipient: to[0] || '', preview: true }) : ''),
-        [open, buildHtml, headerText, messageBody, theme, to]);
+    const previewHtml = useMemo(() => {
+        if (!open) return '';
+        if (template) return previewEmailHtml(template, { ...buildData({ headerText, messageBody, recipient: to[0] || '' }), subject });
+        return buildHtml({ headerText, messageBody, theme, recipient: to[0] || '', preview: true });
+    }, [open, template, buildData, buildHtml, headerText, messageBody, theme, to, subject]);
+
+    // What onSend gets for one email: the template and its data, or the finished html.
+    const content = (recipient) => (template
+        ? { template, data: buildData({ headerText, messageBody, recipient }) }
+        : { html: buildHtml({ headerText, messageBody, theme, recipient }) });
 
     const send = async () => {
         if (!to.length) { setStatus({ type: 'error', text: 'Add at least one recipient.' }); setTab('write'); return; }
@@ -122,7 +134,7 @@ const EmailComposer = ({
             if (!perRecipient) {
                 await onSend({
                     to: to.join(', '), cc: cc.join(', '), bcc: bcc.join(', '), subject: subject.trim(),
-                    html: buildHtml({ headerText, messageBody, theme, recipient: to[0] }),
+                    ...content(to[0]),
                 });
                 setStatus({ type: 'success', text: successText });
                 setTimeout(onClose, 1200);
@@ -137,7 +149,7 @@ const EmailComposer = ({
                         cc: sent.length === 0 ? cc.join(', ') : '',
                         bcc: sent.length === 0 ? bcc.join(', ') : '',
                         subject: subject.trim(),
-                        html: buildHtml({ headerText, messageBody, theme, recipient }),
+                        ...content(recipient),
                     });
                     sent.push(recipient);
                 } catch (err) {
@@ -225,10 +237,12 @@ const EmailComposer = ({
                         <RichEditor value={messageBody} onChange={setMessageBody} placeholder="Write your message…" />
                         <p className="mt-1 text-[11px] text-gray-500">The button to open the document is added below your message.</p>
                     </div>
-                    <div>
-                        <span className="mb-1 block text-[12px] font-bold text-gray-500">Email style</span>
-                        <SegmentedTabs value={theme} onChange={setTheme} items={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
-                    </div>
+                    {!template && (
+                        <div>
+                            <span className="mb-1 block text-[12px] font-bold text-gray-500">Email style</span>
+                            <SegmentedTabs value={theme} onChange={setTheme} items={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
+                        </div>
+                    )}
                 </div>
             ) : (
                 <div className="space-y-3">

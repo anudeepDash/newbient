@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { notifyEvent } from '../lib/mailApi';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useStore, giveawayEndsAt } from '../lib/store';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
@@ -140,6 +141,7 @@ const GiveawayPage = () => {
         setIsSubmitting(true);
         try {
             await enterGiveaway(giveaway.id, { ...formData, referredBy });
+            notifyEvent('giveaway-entry', { giveawayId: giveaway.id });
         } catch (error) {
             useStore.getState().addToast("Couldn't enter you into the giveaway. Please try again.", 'error');
         } finally {

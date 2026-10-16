@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { sendComposedEmail } from '../../lib/mailApi';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
@@ -212,18 +213,13 @@ const InvoiceManagement = () => {
         }
     };
 
-    const sendEmail = async ({ to, cc, bcc, subject, html }) => {
-        const { auth } = await import('../../lib/firebase');
-        const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
-        const res = await fetch('/api/mail', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
-            body: JSON.stringify({ to, cc, bcc, subject, html, fromName: 'Newbi Finance', fromEmail: 'partnership@newbi.live' }),
-        });
-        const result = await res.json().catch(() => ({}));
-        if (!result.success) {
+    const sendEmail = async (payload) => {
+        const { to } = payload;
+        try {
+            await sendComposedEmail({ ...payload, fromName: 'Newbi Finance', fromEmail: 'partnership@newbi.live' });
+        } catch (err) {
             addToast("Couldn't send the email. Please try again.", 'error');
-            throw new Error(result.error || 'Send failed');
+            throw err;
         }
         addToast('Invoice email sent.', 'success');
         if (emailInvoice?.id) {

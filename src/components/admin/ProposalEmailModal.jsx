@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo } from 'react';
-import { generateProposalEmailHTML } from '../../lib/email';
 import EmailComposer from './EmailComposer';
 
 /** Email a proposal link. Each recipient gets their own tracked link. */
@@ -17,18 +16,16 @@ const ProposalEmailModal = ({ isOpen, onClose, proposal, onSend }) => {
         theme: 'light',
     }), [proposal, title]);
 
-    const buildHtml = useCallback(({ headerText, messageBody, theme, recipient, preview }) => {
+    const buildData = useCallback(({ headerText, messageBody, recipient }) => {
         const query = new URLSearchParams({ via: 'email', email: recipient || '', name: proposal?.clientName || '' }).toString();
-        return generateProposalEmailHTML({
+        return {
             headerText,
             messageBody,
-            proposalNumber: proposal?.proposalNumber || 'PROP-0000',
-            clientName: proposal?.clientName || 'Client',
+            proposalNumber: proposal?.proposalNumber || '',
+            clientName: proposal?.clientName || '',
             projectName: proposal?.campaignName || '',
             proposalUrl: `${window.location.origin}/proposal/${proposal?.id}?${query}`,
-            theme,
-            ...(preview ? { isPreview: true } : {}),
-        });
+        };
     }, [proposal]);
 
     return (
@@ -39,7 +36,8 @@ const ProposalEmailModal = ({ isOpen, onClose, proposal, onSend }) => {
             subtitle={[proposal?.proposalNumber, proposal?.clientName].filter(Boolean).join(' · ')}
             initial={initial}
             resetKey={proposal?.id}
-            buildHtml={buildHtml}
+            template="proposal"
+            buildData={buildData}
             perRecipient
             onSend={onSend}
             successText="Proposal sent to"

@@ -429,8 +429,7 @@ const UpcomingEventsManager = () => {
                         `New event: ${eventData.title}`,
                         `Join us on ${eventData.date} at ${eventData.location}.`,
                         '/events',
-                        eventData.image,
-                        true // sendEmail
+                        eventData.image
                     );
                 } catch (notifyError) {
                     console.error("Event saved, but notifying users failed:", notifyError);
@@ -958,10 +957,10 @@ const UpcomingEventsManager = () => {
                                                                 const params = new URLSearchParams({ subject: `UPDATE: ${item.title}`, header: item.title || '', body: item.description || '', heroImage: item.image || '', ctaText: 'See Details', ctaUrl: `${window.location.origin}/concertzone` });
                                                                 window.location.href = `/admin/mailing?${params.toString()}`;
                                                             }}>Email subscribers</MenuItem>
-                                                            <MenuItem icon={Sparkles} hint="Push + email to all users" onClick={async () => {
+                                                            <MenuItem icon={Sparkles} hint="In-app and push to everyone" onClick={async () => {
                                                                 if (!window.confirm(`Send the new-event notification for "${item.title}" to everyone again?`)) return;
                                                                 try {
-                                                                    await notifyAllUsers(`New event: ${item.title}`, `Join us on ${item.date} at ${item.location}.`, '/events', item.image, true);
+                                                                    await notifyAllUsers(`New event: ${item.title}`, `Join us on ${item.date} at ${item.location}.`, '/events', item.image);
                                                                     useStore.getState().addToast('Notification sent.', 'success');
                                                                 } catch {
                                                                     useStore.getState().addToast("Couldn't send the notification.", 'error');
