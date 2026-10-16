@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from 'lucide-react';
-import { LogoImage } from '../components/Logo';
 import { APP_LINKS } from '../links';
 
 const AUDIENCES = [
@@ -35,7 +34,7 @@ function Badge() {
 const pillCls = 'inline-flex items-center min-h-[44px] px-4 rounded-full border border-gray-950/20 dark:border-white/20 text-sm font-semibold text-gray-950 dark:text-white hover:bg-gray-950 hover:text-white dark:hover:bg-neon-green dark:hover:text-black hover:border-transparent transition-colors';
 
 /*
- * Home hero: the logo, a headline set as large as the screen allows, the
+ * Home hero: a headline set as large as the screen allows, the
  * spinning "Pulse of Youth" stamp, the two actions, and a row of pills that
  * send brands and colleges to the form, creators to /creator and everyone
  * here for the shows to the community. Everything is on the page at first
@@ -51,16 +50,13 @@ export default function Hero({ onChooseAudience, nextEvent }) {
             </div>
 
             <div className="relative flex-1 flex flex-col max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-10 pt-8 md:pt-12 pb-8">
-                <div className="nb-exit-fade flex items-center justify-between gap-4">
-                    <LogoImage height={40} className="md:!h-[52px]" priority />
-                    <p className="hidden sm:flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">
-                        <span className="relative flex w-2 h-2">
-                            <span className="nb-ping absolute inset-0 rounded-full bg-neon-green/70" />
-                            <span className="relative w-2 h-2 rounded-full bg-neon-green" />
-                        </span>
-                        Event marketing &amp; live entertainment · India
-                    </p>
-                </div>
+                <p className="nb-exit-fade flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">
+                    <span className="relative flex w-2 h-2">
+                        <span className="nb-ping absolute inset-0 rounded-full bg-neon-green/70" />
+                        <span className="relative w-2 h-2 rounded-full bg-neon-green" />
+                    </span>
+                    Event marketing &amp; live entertainment · India
+                </p>
 
                 <div className="flex-1 flex flex-col justify-center py-10 md:py-14">
                     <h1 className="font-heading font-extrabold tracking-[-0.045em] leading-[0.9] text-gray-950 dark:text-white text-[15vw] sm:text-[12vw] lg:text-[10vw] xl:text-[9vw]">

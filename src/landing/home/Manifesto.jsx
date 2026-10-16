@@ -1,4 +1,5 @@
-// Why Newbi, read like lyrics: each line brightens as it passes the middle of the screen.
+// Why Newbi, read like lyrics: as each line scrolls up, its green phrase fills
+// with colour, then the rest of the line fills white.
 const LINES = [
     ['Execution, not decks.', 'We run the thing, not just plan it.'],
     ['One crew.', 'Artists, production, creators, crews, report.'],
@@ -14,9 +15,9 @@ export default function Manifesto() {
                 <h2 id="why-title" className="sr-only">Why Newbi</h2>
                 <ul className="mt-10 md:mt-16 space-y-6 md:space-y-10">
                     {LINES.map(([lead, rest]) => (
-                        <li key={lead} className="nb-lyric font-heading font-extrabold tracking-[-0.03em] leading-[0.95] text-[2.4rem] sm:text-6xl lg:text-7xl xl:text-[5.5rem]">
-                            <span className="text-neon-green">{lead}</span>{' '}
-                            <span className="nb-ghost">{rest}</span>
+                        <li key={lead} className="font-heading font-extrabold tracking-[-0.03em] leading-[0.95] text-[2.4rem] sm:text-6xl lg:text-7xl xl:text-[5.5rem]">
+                            <span className="nb-fill-green">{lead}</span>{' '}
+                            <span className="nb-fill-white">{rest}</span>
                         </li>
                     ))}
                 </ul>
