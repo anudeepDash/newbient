@@ -11,6 +11,7 @@ export default {
         './src/pages/Terms.jsx',
         './src/pages/Privacy.jsx',
         './src/components/ui/HorizontalCarousel.jsx',
+        './src/components/brand/**/*.{js,jsx}',
     ],
     safelist: [],
 };
