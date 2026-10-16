@@ -38,13 +38,14 @@ export default function CaseStudies({ items = [] }) {
                             <WorkPoster item={item} index={i} eager={i < 2} />
                         </li>
                     ))}
-                    <li className={`nb-film-frame shrink-0 snap-start w-[60vw] sm:w-[36vw] lg:w-[min(24vw,320px)] ${items.length % 2 ? 'nb-film-low' : ''}`}>
-                        <Link to="/work" className="group flex flex-col justify-between aspect-[4/5] rounded-[1.5rem] border border-dashed border-white/25 p-7 md:p-9 hover:border-neon-green hover:bg-white/[0.03] transition-colors">
-                            <span className="font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-zinc-500">The archive</span>
+                    {/* A size container: everything in the card scales with its width (cqw), so it fits at any poster size. */}
+                    <li className={`nb-film-frame shrink-0 snap-start w-[60vw] sm:w-[36vw] lg:w-[min(24vw,320px)] [container-type:inline-size] ${items.length % 2 ? 'nb-film-low' : ''}`}>
+                                                <Link to="/work" className="group flex flex-col justify-between aspect-[4/5] rounded-[1.5rem] border border-dashed border-white/25 p-[9cqw] hover:border-neon-green hover:bg-white/[0.03] transition-colors">
+                            <span className="font-mono text-[clamp(9px,4cqw,11px)] font-bold uppercase tracking-[0.28em] text-zinc-500">The archive</span>
                             <span>
-                                <span className="block font-heading font-extrabold tracking-[-0.045em] leading-[0.9] text-5xl md:text-6xl lg:text-7xl">And many <span className="text-neon-green">more.</span></span>
-                                <span className="mt-6 inline-flex items-center gap-2 h-12 px-6 rounded-full bg-neon-green text-black font-heading font-bold text-sm group-hover:scale-[1.03] transition-transform">
-                                    View the full archive <ArrowRight size={16} aria-hidden="true" />
+                                <span className="block font-heading font-extrabold tracking-[-0.045em] leading-[0.9] text-[17cqw]">And many <span className="text-neon-green">more.</span></span>
+                                <span className="mt-[7cqw] inline-flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-full bg-neon-green px-[6cqw] py-[3.5cqw] font-heading text-[clamp(11px,5.4cqw,14px)] font-bold text-black transition-transform group-hover:scale-[1.03]">
+                                    Full archive <ArrowRight size={14} aria-hidden="true" />
                                 </span>
                             </span>
                         </Link>
