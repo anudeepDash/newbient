@@ -134,6 +134,8 @@ export const handleInboxTemplate = async (req, res, { db, actor }) => {
     const t = tSnap.data();
     if (!tSnap.exists || !t.lastCampaignId || !t.lastAppId) return send(res, 409, { success: false, error: 'This conversation isn’t linked to a campaign application.' });
     if (kind === 'deliverables' && !submitUrlFor(t.lastCampaignId, t.lastAppId)) return send(res, 409, { success: false, error: 'LINK_SIGNING_SECRET isn’t set, so personal links can’t be made.' });
+    const contact = await db.collection('creator_contacts').doc(threadId).get();
+    if (contact.exists && contact.data().whatsappOptOut?.at) return send(res, 409, { success: false, code: 'opted_out', error: 'They asked to stop WhatsApp updates, so templates aren’t sent. Use the Newbi app instead.' });
     const id = await enqueueJob(db, { campaignId: t.lastCampaignId, appId: t.lastAppId, kind, createdBy: actor.actorEmail, again: true });
     if (!id) return send(res, 409, { success: false, error: 'That message is already waiting to go out.' });
     const outcome = await sendSoon(db, id);

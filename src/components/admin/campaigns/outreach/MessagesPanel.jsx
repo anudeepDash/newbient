@@ -15,14 +15,18 @@ import { StatusBadge, Handle, STATUS_ACTIONS, when } from './parts';
 import ApiSendCard, { DeliveryNote } from './ApiSendCard';
 
 /*
- * Messaging shortlisted people, two ways:
+ * Messaging shortlisted people. Shortlisting already tells everyone with a
+ * Newbi account in the app and by push (and on WhatsApp through the API when
+ * it's set up), so by hand is only for people without an account:
  *   - WhatsApp API (Phase 2, when it's set up): "Send to N" queues everyone
  *     waiting; the server sends the approved template at the rate limit and
  *     the badges follow delivery, read and "Joined".
- *   - By hand (Phase 1, always there): each person's message, "Open WhatsApp"
- *     (wa.me in a new tab, the admin presses send there) and "Copy message".
- *     Opening or copying moves them to "To send"; only "Mark sent" marks them
- *     sent. Nothing is sent from the browser.
+ *   - By hand (the fallback): each person's message, "Open WhatsApp" (wa.me in
+ *     a new tab, the admin presses send there) and "Copy message". Opening or
+ *     copying moves them to "To send"; only "Mark sent" marks them sent. It's
+ *     capped per day for the whole team (OUTREACH_WAME_DAILY_CAP, 20), because
+ *     many chats from one number in a day get it restricted. Nothing is sent
+ *     from the browser, and never to someone who replied STOP.
  *
  * WhatsApp Web logged us out after ~44 quick sends, so the panel counts how
  * many chats were opened in the last 10 minutes and suggests a pause.
@@ -34,10 +38,16 @@ const PACE_WARN_AT = 15;
 const TO_MESSAGE = new Set(['shortlisted', 'message_queued']);
 const MESSAGED = new Set(['message_sent', 'replied', 'joined', 'posted', 'paid']);
 
-const MessageCard = ({ app, text, canSend, onQueue, onMarkSent, onStatus, onOpen }) => {
+const MessageCard = ({ app, text, canSend: canSendIn, capReached, onQueue, onMarkSent, onStatus, onOpen }) => {
     const addToast = useStore(s => s.addToast);
     const [expanded, setExpanded] = useState(false);
     const link = waLink(app.phone, text);
+    // By hand only for people without the app, who haven't said STOP, while today's cap lasts.
+    const inApp = Boolean(app.uid);
+    const blockedNote = app.whatsappOptOut ? 'They asked to stop WhatsApp updates.'
+        : inApp ? 'Gets updates in the Newbi app, so there’s no need to message by hand.'
+            : capReached && app.status === 'shortlisted' ? 'Today’s limit for chats opened by hand is reached. Try tomorrow.' : null;
+    const canSend = canSendIn && !blockedNote;
     const copy = async () => {
         const ok = await copyToClipboard(text);
         addToast(ok ? 'Message copied. Paste it in WhatsApp.' : 'Couldn’t copy. Select the text and copy it.', ok ? 'success' : 'error');
@@ -63,7 +73,8 @@ const MessageCard = ({ app, text, canSend, onQueue, onMarkSent, onStatus, onOpen
                 <ChevronDown size={14} className={cn('transition-transform', expanded && 'rotate-180')} /> {expanded ? 'Show less' : 'Show the whole message'}
             </button>
             <div className="flex flex-wrap gap-2">
-                {TO_MESSAGE.has(app.status) && (
+                {TO_MESSAGE.has(app.status) && blockedNote && <p className="flex min-h-10 items-center text-[12.5px] text-gray-500">{blockedNote}</p>}
+                {TO_MESSAGE.has(app.status) && !blockedNote && (
                     <>
                         <Button
                             as="a"
@@ -101,14 +112,16 @@ const MessageCard = ({ app, text, canSend, onQueue, onMarkSent, onStatus, onOpen
     );
 };
 
-const MessagesPanel = ({ campaign, applications, settings, api, onStatus, onOpen, onSetup, onSendApi, onStopApi }) => {
+const MessagesPanel = ({ campaign, applications, settings, api, wame, onStatus, onOpen, onSetup, onSendApi, onStopApi }) => {
+    const capReached = Boolean(wame && wame.usedToday >= wame.cap);
     const [show, setShow] = useState('to_message');
     const template = settings?.messageTemplate;
     const linkMissing = /\{group_link\}/.test(template || '') && !settings?.whatsappGroupLink;
     const renderFor = (app) => renderMessage(template, { application: app, campaign: { ...campaign, whatsappGroupLink: settings?.whatsappGroupLink } });
 
     const toMessage = applications.filter(a => TO_MESSAGE.has(a.status));
-    const sendable = toMessage.filter(a => !IN_FLIGHT.has(a.delivery?.whatsapp?.status));
+    const sendable = toMessage.filter(a => !IN_FLIGHT.has(a.delivery?.whatsapp?.status) && !a.whatsappOptOut);
+    const byHand = toMessage.filter(a => !a.uid && !a.whatsappOptOut);
     const messaged = applications.filter(a => MESSAGED.has(a.status));
     const list = show === 'to_message' ? toMessage : messaged;
 
@@ -117,7 +130,7 @@ const MessagesPanel = ({ campaign, applications, settings, api, onStatus, onOpen
         return applications.filter(a => Date.parse(a.messageQueuedAt || '') > since).length;
     }, [applications]);
 
-    const queue = (app) => onStatus([app.id], 'message_queued', { quiet: true });
+    const queue = (app) => onStatus([app.id], 'message_queued', { quiet: true, source: 'wame' });
     const markSent = (app, text) => onStatus([app.id], 'message_sent', { messageText: text });
 
     return (
@@ -129,6 +142,12 @@ const MessagesPanel = ({ campaign, applications, settings, api, onStatus, onOpen
                 </Card>
             )}
             <ApiSendCard api={api} campaign={campaign} settings={settings} sendable={linkMissing ? [] : sendable} onSend={onSendApi} onStop={onStopApi} />
+            {wame && byHand.length > 0 && (
+                <Card className={cn('p-4 text-[13.5px]', capReached && 'border-amber-500/30')}>
+                    <p className="font-semibold">{byHand.length} {byHand.length === 1 ? 'person has' : 'people have'} no Newbi account, so only you can message them.</p>
+                    <p className="text-gray-600 dark:text-zinc-400">{wame.usedToday} of {wame.cap} chats opened by hand today. The limit keeps your WhatsApp number from being restricted.</p>
+                </Card>
+            )}
             {openedRecently >= PACE_WARN_AT && (
                 <Card className="border-amber-500/30 p-4 text-[13.5px]">
                     <p className="font-semibold">You’ve opened {openedRecently} chats in the last 10 minutes.</p>
@@ -166,6 +185,7 @@ const MessagesPanel = ({ campaign, applications, settings, api, onStatus, onOpen
                             app={app}
                             text={renderFor(app)}
                             canSend={!linkMissing}
+                            capReached={capReached}
                             onQueue={queue}
                             onMarkSent={markSent}
                             onStatus={onStatus}

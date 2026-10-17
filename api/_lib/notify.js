@@ -95,7 +95,7 @@ export const EVENTS = {
     // through the outreach send queue (rate limit, opt-outs), never from here; there's no email.
     'outreach-city-group': {
         push: (d) => ({ title: `Join the ${short(d.city || 'city', 40)} creators community`, body: 'Gigs, guestlist passes and meetups drop there first. Tap to join on WhatsApp.', link: d.groupUrl }),
-        inApp: (d) => ({ title: `Your ${d.city || 'city'} creators community`, message: `Thanks for applying to ${d.campaignTitle || 'the campaign'}. Join ${d.groupTitle || 'the Newbi creators group'} on WhatsApp for gigs, passes and meetups.`, type: 'creator', link: d.groupUrl || '' }),
+        inApp: (d) => ({ title: `Your ${d.city || 'city'} creators community`, message: `${d.campaignTitle ? `Thanks for applying to ${d.campaignTitle}. ` : ''}Join ${d.groupTitle || 'the Newbi creators group'} on WhatsApp for gigs, passes and meetups.`, type: 'creator', link: d.groupUrl || '' }),
     },
     'outreach-shortlisted': {
         push: (d) => ({ title: "You're shortlisted 🎉", body: `${short(d.campaignTitle || 'Your campaign', 80)}: join the creators group and see what to post.`, link: d.hubUrl }),

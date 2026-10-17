@@ -229,6 +229,36 @@ describe('admin actions', () => {
         expect(note.message).toContain('I’ve joined');
     });
 
+    it('caps chats opened by hand per day for the whole team', async () => {
+        vi.stubEnv('OUTREACH_WAME_DAILY_CAP', '1');
+        const [a, b] = apps().map(x => x.id);
+        [a, b].forEach(id => { const d = db.store.get(`campaigns/c1/applications/${id}`); delete d.uid; });
+        await call('outreach-status', { campaignId: 'c1', appIds: [a, b], to: 'shortlisted' }, { token: ADMIN });
+        expect((await call('outreach-status', { campaignId: 'c1', appIds: [a], to: 'message_queued', source: 'wame' }, { token: ADMIN })).body.success).toBe(true);
+        const over = await call('outreach-status', { campaignId: 'c1', appIds: [b], to: 'message_queued', source: 'wame' }, { token: ADMIN });
+        expect(over.statusCode).toBe(429);
+        expect(over.body).toMatchObject({ code: 'wame_cap', wame: { cap: 1, usedToday: 1 } });
+        expect(apps().find(x => x.id === b).status).toBe('shortlisted');
+        expect((await call('outreach-list', { campaignId: 'c1' }, { token: ADMIN })).body.wame).toEqual({ cap: 1, usedToday: 1 });
+        vi.unstubAllEnvs();
+    });
+
+    it('sends existing creators their city community in the app, not WhatsApp', async () => {
+        db.store.set('creators/cr2', { uid: 'u-cr2', name: 'Meera', city: 'Bangalore' });
+        db.store.set('creators/cr3', { name: 'No Login', city: 'Bangalore' });
+        const res = await call('outreach-city-notify', { creatorIds: ['cr2', 'cr3', 'missing'] }, { token: ADMIN });
+        expect(res.body.results).toEqual([{ id: 'cr2', outcome: 'sent' }, { id: 'cr3', outcome: 'no_account' }, { id: 'missing', outcome: 'not_found' }]);
+        expect(Object.values(db.dump('notifications')).some(n => n.userId === 'u-cr2' && n.link.startsWith('https://chat.whatsapp.com/'))).toBe(true);
+    });
+
+    it('shares the by-hand cap with the city invite screen', async () => {
+        vi.stubEnv('OUTREACH_WAME_DAILY_CAP', '2');
+        expect((await call('outreach-wame', {}, { token: ADMIN })).body).toMatchObject({ cap: 2, usedToday: 0 });
+        expect((await call('outreach-wame', { use: 2 }, { token: ADMIN })).body).toMatchObject({ success: true, usedToday: 2 });
+        expect((await call('outreach-wame', { use: 1 }, { token: ADMIN })).statusCode).toBe(429);
+        vi.unstubAllEnvs();
+    });
+
     it('rejects unknown statuses and setting someone back to applied', async () => {
         const [a] = apps().map(x => x.id);
         expect((await call('outreach-status', { campaignId: 'c1', appIds: [a], to: 'applied' }, { token: ADMIN })).statusCode).toBe(400);

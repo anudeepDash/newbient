@@ -374,6 +374,46 @@ describe('the creator’s campaign page: groups and “I’ve joined”', () => 
     });
 });
 
+describe('STOP and START', () => {
+    const contact = () => db.store.get(`creator_contacts/${contactIdFor('+919876500001')}`);
+    const from = '919876500001';
+
+    it('stops every template to that number, cancels what’s queued and confirms once', async () => {
+        db.store.set('outreach_queue/c1_a1_reminder', { campaignId: 'c1', appId: 'a1', kind: 'reminder', status: 'queued', nextAttemptAt: '2026-11-03T00:00:00Z' });
+        const out = await onOutreachInbound({ from, id: 'wamid.s1', type: 'button', button: { payload: 'stop', text: 'Stop updates' } }, { db });
+        expect(out).toBe('stopped');
+        expect(contact().whatsappOptOut).toMatchObject({ via: '“Stop updates”' });
+        expect(app().whatsappOptOut).toBe(true);
+        expect(db.store.get('outreach_queue/c1_a1_reminder').status).toBe('cancelled');
+        expect(sent.at(-1)).toMatchObject({ type: 'text', to: from });
+        expect(sent.at(-1).text.body).toMatch(/won’t get campaign updates/);
+        expect(audit()).toContainEqual(expect.objectContaining({ appId: 'a1', field: 'whatsapp_opt_out', to: 'stopped' }));
+
+        // Nothing template-based goes out any more: queued sends are cancelled, the inbox refuses templates.
+        const before = sent.length;
+        await call('outreach-resend-link', { campaignId: 'c1', appIds: ['a1'] });
+        expect(sent.length).toBe(before);
+        const threadId = contactIdFor('+919876500001');
+        expect((await call('inbox-template', { threadId, kind: 'deliverables' })).body.code).toBe('opted_out');
+    });
+
+    it('takes plain replies like “stop.” but not sentences that only contain the word', async () => {
+        expect(await onOutreachInbound({ from, id: 'wamid.s2', type: 'text', text: { body: 'please stop sending the brief twice' } }, { db })).toBe('replied');
+        expect(contact()?.whatsappOptOut?.at).toBeFalsy();
+        expect(await onOutreachInbound({ from, id: 'wamid.s3', type: 'text', text: { body: ' Stop. ' } }, { db })).toBe('stopped');
+    });
+
+    it('turns updates back on with START', async () => {
+        await onOutreachInbound({ from, id: 'wamid.s4', type: 'text', text: { body: 'STOP' } }, { db });
+        expect(await onOutreachInbound({ from, id: 'wamid.s5', type: 'text', text: { body: 'start' } }, { db })).toBe('started');
+        expect(contact().whatsappOptOut).toBeNull();
+        expect(app().whatsappOptOut).toBe(false);
+        const before = sent.length;
+        await call('outreach-resend-link', { campaignId: 'c1', appIds: ['a1'] });
+        expect(sent.length).toBe(before + 1);
+    });
+});
+
 describe('admin list', () => {
     it('includes each person’s personal link when the campaign has deliverables', async () => {
         const res = await call('outreach-list', { campaignId: 'c1' });
