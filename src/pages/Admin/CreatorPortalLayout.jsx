@@ -55,21 +55,26 @@ const CreatorPortalLayout = () => {
     // The creators list and the campaigns list each have their own KPI tiles
     // (they filter the list), so the portal adds no summary strip of its own.
 
+    // Campaigns, Groups and Settings have their own sidebar entries (App · Creators); the layout
+    // drops tabs that repeat one. The leaderboard is a view of the Creators list, so it only
+    // shows there.
+    const onCreatorsList = /^\/admin\/creators(\/leaderboard|\/[^/]+)?\/?$/.test(location.pathname) && !/\/(groups|settings)\/?$/.test(location.pathname);
     const tabs = useMemo(() => [
         { name: 'Creators', path: '/admin/creators', icon: Star, badge: stats.pending > 0 ? stats.pending : null },
         { name: 'Campaigns', path: '/admin/campaigns', icon: Target, badge: stats.submissions > 0 ? stats.submissions : null },
         { name: 'Groups', path: '/admin/creators/groups', icon: MessageCircle },
-        { name: 'Leaderboard', path: '/admin/creators/leaderboard', icon: Trophy },
+        ...(onCreatorsList ? [{ name: 'Leaderboard', path: '/admin/creators/leaderboard', icon: Trophy }] : []),
         { name: 'Settings', path: '/admin/creators/settings', icon: Settings },
-    ], [stats.pending, stats.submissions]);
+    ], [stats.pending, stats.submissions, onCreatorsList]);
 
     return (
         <AdminCommunityHubLayout
-            studioHeader={{
-                title: 'Creators',
-                icon: Users,
-                description: 'Roster, campaigns, city groups and referrals',
-            }}
+            studioHeader={
+                location.pathname.startsWith('/admin/campaigns') ? { title: 'Campaigns', icon: Target, description: 'Briefs, applicants, deliverables and tickets' }
+                    : /\/admin\/creators\/groups/.test(location.pathname) ? { title: 'Groups', icon: MessageCircle, description: 'City WhatsApp groups for creators' }
+                        : /\/admin\/creators\/settings/.test(location.pathname) ? { title: 'Creator settings', icon: Settings, description: 'Instagram check, minimum followers, welcome points and sign-ups' }
+                            : { title: 'Creators', icon: Users, description: 'Roster, approvals and referrals' }
+            }
             tabs={tabs}
         >
             <AnimatePresence mode="wait">

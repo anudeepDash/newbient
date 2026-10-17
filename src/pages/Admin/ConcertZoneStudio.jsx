@@ -231,7 +231,7 @@ const ConcertZoneStudio = () => {
 
     return (
         <AdminCommunityHubLayout
-            studioHeader={{ title: 'Blog', icon: PenSquare, description: 'Stories on Concert Zone, from draft to published' }}
+            studioHeader={{ title: 'ConcertZone', icon: PenSquare, description: 'Stories on Concert Zone, from draft to published, and the newsletter' }}
             tabs={CONTENT_TABS}
             action={(
                 <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">

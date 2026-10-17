@@ -163,7 +163,8 @@ function AppContent() {
     <Route element={<AdminShell />}>
       <Route path="admin" element={<AdminGuard><Dashboard /></AdminGuard>} />
       <Route path="admin/manage-admins" element={<AdminGuard><MaintenanceGuard featureId="admins"><AdminManager /></MaintenanceGuard></AdminGuard>} />
-      <Route path="admin/active-users" element={<Navigate to="/admin/manage-admins?tab=active" replace />} />
+      <Route path="admin/users" element={<AdminGuard><MaintenanceGuard featureId="admins"><AdminManager view="users" /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/active-users" element={<Navigate to="/admin/users?tab=active" replace />} />
       <Route path="admin/finance" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><FinanceDashboard /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
       <Route path="admin/spends" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><SpendsManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
       <Route path="admin/other-income" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><OtherIncomeManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
@@ -212,8 +213,11 @@ function AppContent() {
       </Route>
       <Route path="admin/city-groups" element={<Navigate to="/admin/creators/groups" replace />} />
                     <Route path="admin/creator-hub" element={<Navigate to="/admin/creators" replace />} />
-      <Route path="admin/content" element={<AdminGuard><SiteContentManager /></AdminGuard>} />
-      <Route path="admin/site-content" element={<Navigate to="/admin/content" replace />} />
+      <Route path="admin/site" element={<AdminGuard><SiteContentManager view="site" /></AdminGuard>} />
+      <Route path="admin/brands" element={<AdminGuard><SiteContentManager view="brands" /></AdminGuard>} />
+      <Route path="admin/app-settings" element={<AdminGuard><SiteContentManager view="app" /></AdminGuard>} />
+      <Route path="admin/content" element={<Navigate to="/admin/site" replace />} />
+      <Route path="admin/site-content" element={<Navigate to="/admin/site" replace />} />
       <Route path="admin/giveaways" element={<AdminGuard><MaintenanceGuard featureId="giveaways"><GiveawayManager /></MaintenanceGuard></AdminGuard>} />
       <Route path="admin/giveaways/:giveawayId/participants" element={<AdminGuard><MaintenanceGuard featureId="giveaways"><GiveawayParticipants /></MaintenanceGuard></AdminGuard>} />
       <Route path="admin/blog" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><ConcertZoneStudio /></MaintenanceGuard></AdminGuard>} />
