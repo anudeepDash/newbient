@@ -24,6 +24,7 @@ import Shield from 'lucide-react/dist/esm/icons/shield';
 import Mail from 'lucide-react/dist/esm/icons/mail';
 import Settings from 'lucide-react/dist/esm/icons/settings';
 import Plus from 'lucide-react/dist/esm/icons/plus';
+import Bell from 'lucide-react/dist/esm/icons/bell';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import Quote from 'lucide-react/dist/esm/icons/quote';
 import Target from 'lucide-react/dist/esm/icons/target';
@@ -134,6 +135,7 @@ export const ADMIN_QUICK_ACTIONS = [
     { id: 'new-event', name: 'New event', path: '/admin/upcoming-events?new=1', icon: Plus, requires: 'upcoming' },
     { id: 'scan', name: 'Scan tickets', path: '/admin/scanner', icon: ScanLine, requires: 'scanner' },
     { id: 'new-post', name: 'New blog post', path: '/admin/blog/create', icon: Plus, requires: 'blog' },
+    { id: 'send-notification', name: 'Send notification', path: '/admin/announcements?compose=notification', icon: Bell, requires: 'announcements' },
 ];
 
 const canSee = (item, role, cards) => {

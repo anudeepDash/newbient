@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import CheckCheck from 'lucide-react/dist/esm/icons/check-check';
 import Bell from 'lucide-react/dist/esm/icons/bell';
 import { cn } from '../lib/utils';
 import { isPresent } from '../lib/present';
+import { isNotificationForViewer } from '../lib/store/notifications';
 import { useAppStore } from '../lib/store/appStore';
 import { Sheet, Button } from '../components/app';
 import { appPath, isAppHost, landingUrl } from './host';
@@ -21,8 +22,11 @@ const timeAgo = (value) => {
 
 const NotificationsSheet = ({ open, onClose }) => {
     const navigate = useNavigate();
-    const notifications = useAppStore(s => s.notifications);
-    const unreadCount = useAppStore(s => s.unreadCount);
+    const allNotifications = useAppStore(s => s.notifications);
+    const isCreator = useAppStore(s => Boolean(s.profile?.capabilities?.creator || s.creatorProfile));
+    // Creators-only notifications are hidden from everyone else.
+    const notifications = useMemo(() => (allNotifications || []).filter(n => isNotificationForViewer(n, isCreator)), [allNotifications, isCreator]);
+    const unreadCount = notifications.filter(n => !n.isRead).length;
     const markRead = useAppStore(s => s.markNotificationRead);
     const markAllRead = useAppStore(s => s.markAllNotificationsRead);
 
