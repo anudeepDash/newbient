@@ -1,5 +1,9 @@
 # React + Vite
 
+## Newbi modules
+
+- **Campaign outreach** (open creator applications, shortlist, WhatsApp messages by hand, audit log): see [docs/campaign-outreach.md](docs/campaign-outreach.md). Run its tests with `npm test`.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
