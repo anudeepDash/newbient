@@ -14,6 +14,8 @@ Phase 1 sends by hand: messages open in WhatsApp through `wa.me` and **an admin 
 | Shared rules (browser and server) | `src/lib/outreach/` (normalise, template, status, match, application, export) |
 | Server | `api/_lib/outreach.js`, reached through `api/creator-join.js?action=outreach-*`. The project is at Vercel's function limit, so it can't have its own function. |
 | WhatsApp API queue (Phase 2) | `api/_lib/outreachQueue.js`; webhook in `api/track.js`; daily run in `api/mail.js` |
+| Deliverables, tickets, payouts (Phase 3) | `api/_lib/outreachDeliver.js`; creator page `app.newbi.live/d/{token}` → `src/app/creator/campaign/apply/DeliverablesPage.jsx`; passes via `api/_lib/passes.js` (`releaseApplicationPass`) |
+| Inbox (Phase 3) | `api/_lib/outreachInbox.js`, storage in `api/_lib/outreachThreads.js`; admin **Outreach → Inbox** |
 | Tests | `tests/outreach/` (Vitest; server handlers run against an in-memory Firestore) |
 | Seed | `scripts/seed-outreach.mjs` (local emulator only) |
 
@@ -65,6 +67,8 @@ rate_limits/{hash of ip}                    per-IP counter for the public form (
   match /rate_limits/{doc} { allow read, write: if false; }
   match /outreach_queue/{doc} { allow read, write: if false; }
   match /outreach_rate/{doc} { allow read, write: if false; }
+  match /outreach_inbox/{thread} { allow read, write: if false;
+    match /inbox_messages/{doc} { allow read, write: if false; } }
   ```
 
   Check that no broader rule (such as `match /campaigns/{id}/{document=**} { allow read: if true; }`) opens these subcollections.
@@ -72,6 +76,12 @@ rate_limits/{hash of ip}                    per-IP counter for the public form (
 
   ```bash
   gcloud firestore fields ttls update expiresAt --collection-group=rate_limits --enable-ttl
+  ```
+
+- **Inbox retention (12 months):** every inbox message has an `expiresAt` a year after it was sent. Add a TTL policy so Firestore deletes them. The thread and the application statuses stay.
+
+  ```bash
+  gcloud firestore fields ttls update expiresAt --collection-group=inbox_messages --enable-ttl
   ```
 
 - **Indexes:** none needed. Every query is a single-field equality or order.
@@ -88,7 +98,7 @@ rate_limits/{hash of ip}                    per-IP counter for the public form (
 npm test
 ```
 
-132 tests cover:
+157 tests cover:
 - handle and phone normalisation
 - the duplicate merge
 - bulk-paste matching
@@ -97,6 +107,7 @@ npm test
 - the server handlers: validation, rate limit, admin-only access, the audit log and log masking
 - the seed data
 - the WhatsApp API queue: rate limit, daily cap, backoff, permanent failures, Joined (including a forged or wrong-number tap), replies, reminders and failed deliveries
+- Phase 3: personal links (forged and removed), proof checks, review and changes, posted, the ticket rules and the passes extension, payouts with the Spend, override and cancel, and the inbox (dedupe, 24-hour window, templates, media)
 
 ## Trying it locally with sample data
 
@@ -176,6 +187,59 @@ When the API is set up, **Messages** shows a WhatsApp API card. **Send to N** qu
   ```
 - **Logs:** each message is in `message_log` (event `outreach-invite` or `outreach-reminder`). Phones are masked in server logs, and the access token never leaves the env.
 
-## Phase 3 (not built)
+## Phase 3: inbox, deliverables, tickets and payouts
 
-A replies inbox, deliverable submission with approve/reject, and payout or ticket release against approved deliverables.
+### Creators send their posts
+
+- After a creator taps **Joined ✅**, they get a personal link on WhatsApp (template `campaign_deliverables`): `app.newbi.live/d/{token}`. You can also put it in a hand-sent message with `{submit_link}`.
+- The link is signed (`LINK_SIGNING_SECRET`), lasts 60 days and needs no sign-in. It stops working if they're removed from the shortlist.
+- On that page they see the campaign's **deliverables** (the list in Edit → Deliverables) and send each one:
+  - reels and posts: an Instagram link (checked to be an instagram.com reel or post);
+  - stories: a screenshot (uploaded to Cloudinary like other proofs);
+  - anything else: either.
+- They can also add a **UPI ID** for payment. Nothing else financial is collected: no bank account numbers, no PAN.
+- Submissions are stored on the application (`deliverables.{taskId}`, with a short history). They're rate-limited per network and audited.
+
+### Review (Outreach → Deliverables)
+
+- **Approve**, or **Ask for changes** with a reason. The reason goes to the creator on WhatsApp (`campaign_deliverable_changes`) with their link, and they send it again.
+- When every **required** deliverable is approved, the person moves to **Posted** automatically.
+
+### Tickets (Outreach → Payouts and tickets)
+
+Tickets are real Newbi passes (QR, gate scanner), sent by email and WhatsApp through the existing passes system (`campaign_ticket` / `campaign_ticket_link`). Choose when they go out in Message setup:
+- **when their pre-event deliverables are approved** (default). These are the required ones due on or before the event date; without dates, every required one except "visit the event";
+- **when they tap Joined**;
+- **only when you release them**.
+
+`passes.js` gained `releaseApplicationPass`. The holder comes from the application (the phone and email they applied with), so it works for people without a Newbi login. A registered creator's pass is keyed to their login, so they never get two. You can revoke a ticket and send a new one. Ticket messages go through the passes system's own delivery, not the outreach queue.
+
+### Payouts (Outreach → Payouts and tickets)
+
+- **Nothing moves money.** Pay in your bank app, then **Mark paid**. The amount defaults to the tier's cash from the campaign; add the method, account, date and the UTR.
+- Mark paid needs every required deliverable approved. You can override that with a written reason, which goes into the audit log.
+- Each payout also writes a **Spend** (`spends`, type **Creator Payout**, linked to the campaign and application), so it shows in Finance. The creator gets `campaign_payout_sent` with the amount and reference.
+- **Cancel payout** marks the Spend Cancelled and moves them back to Posted.
+- **Export payouts due** gives an Excel file with names, UPI IDs and amounts.
+- Payments to creators above certain amounts may need TDS (sections 194R/194J). Check with your accountant; the app doesn't handle TDS.
+
+### Inbox (Outreach → Inbox)
+
+- Every WhatsApp message in and out is kept per phone number (`outreach_inbox/{contactId}/inbox_messages`). That covers incoming texts, Joined taps, photos and voice notes, plus every template and reply we sent. Each thread is linked to the person's applications and their creator profile.
+- Only founder, super_admin, developer and admin roles can see it, the same as the rest of outreach.
+- **Replying:** free text only within 24 hours of their last message (Meta's rule). After that, send a template (their posts link, or the join reminder). Replies use the send queue: same rate limit, retries and read ticks.
+- **Media:** photos and voice notes load through the server when you click Show. Meta only keeps media for a while.
+- **Mark done** files a thread away; a new message reopens it. Messages are deleted after 12 months by the TTL policy above.
+
+### More templates to create in WhatsApp Manager
+
+1. **`campaign_deliverables`**
+   - Body: `Hey {{1}}! Here's your personal link to send your {{2}} posts to Newbi. Tap the button once they're live.`
+   - Button: **Visit website**, dynamic URL `https://app.newbi.live/d/{{1}}`, text "Send my posts"
+2. **`campaign_deliverable_changes`**
+   - Body: `Hey {{1}}, a quick change on "{{2}}": {{3}} Tap the button to send it again.`
+   - Button: the same dynamic URL, text "Send it again"
+3. **`campaign_payout_sent`**
+   - Body: `Hey {{1}}, we've sent ₹{{2}} for {{3}}. Reference: {{4}}. Thanks for creating with Newbi!`
+
+The ticket templates (`campaign_ticket`, `campaign_ticket_link`) already exist for the passes system. Override names with `WHATSAPP_TEMPLATE_CAMPAIGN_DELIVERABLES` and the like.
