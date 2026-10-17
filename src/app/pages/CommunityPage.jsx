@@ -16,6 +16,7 @@ import { isPresent } from '../../lib/present';
 import { Card, Button, Field, Sheet } from '../../components/app';
 import { useAuthGate, useResumeIntent, INTENTS } from '../auth/AuthGate';
 import { useAppContent } from '../useAppContent';
+import useDynamicMeta from '../../hooks/useDynamicMeta';
 import { feedCard, dateLabel } from '../cards';
 import { appPath } from '../host';
 import { plainText } from '../community/communityParts';
@@ -162,6 +163,7 @@ const SECTIONS = [
 ];
 
 const CommunityPage = () => {
+    useDynamicMeta({ page: 'community' });
     useAppContent({ campaigns: false });
     const authUser = useAppStore(s => s.authUser);
     const feed = useAppStore(s => s.communityFeed);
