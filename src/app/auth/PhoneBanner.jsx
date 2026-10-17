@@ -2,13 +2,17 @@ import React, { useState } from 'react';
 import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
 import X from 'lucide-react/dist/esm/icons/x';
 import { useAppStore } from '../../lib/store/appStore';
+import { useStore as useLegacyStore } from '../../lib/store.js';
+import { isPresent } from '../../lib/present';
 import { Button } from '../../components/app';
 import CompleteProfileSheet from '../profile/CompleteProfileSheet';
 
 /*
  * Signed in without a verified phone number: a banner at the top of the app
- * that opens phone verification. Sign-in itself never asks for the number.
- * "Not now" hides it until the next visit (this tab's session).
+ * that opens phone verification. Sign-in itself never asks for the number,
+ * and the banner waits until sign-in is completely done: the account sheet
+ * is closed and the profile has a name. "Not now" hides it until the next
+ * visit (this tab's session).
  */
 
 const DISMISS_KEY = 'nb_phone_banner_dismissed';
@@ -21,10 +25,12 @@ const PhoneBanner = () => {
     const authUser = useAppStore(s => s.authUser);
     const profile = useAppStore(s => s.profile);
     const profileLoaded = useAppStore(s => s.profileLoaded);
+    const signingIn = useLegacyStore(s => s.isAuthOpen);
     const [dismissed, setDismissed] = useState(readDismissed);
     const [open, setOpen] = useState(false);
 
-    const show = authUser && profileLoaded && profile?.uid === authUser.uid && !profile.phoneVerified && !dismissed;
+    const signedInFully = authUser && profileLoaded && profile?.uid === authUser.uid && isPresent(profile.name) && !signingIn;
+    const show = signedInFully && !profile.phoneVerified && !dismissed && !open;
 
     const dismiss = () => {
         setDismissed(true);
