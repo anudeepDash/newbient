@@ -84,7 +84,7 @@ const CampaignList = ({
         review: rows.filter(r => r.stats.toReview > 0).length,
         decide: rows.filter(r => r.status === 'open' && r.stats.undecided > 0).length,
         draft: rows.filter(r => r.status === 'draft').length,
-        closed: rows.filter(r => r.status === 'closed').length,
+        closed: rows.filter(r => r.status === 'closed' || r.status === 'live').length,
     }), [rows]);
 
     const kpis = useMemo(() => rows.reduce((acc, r) => {
@@ -103,7 +103,7 @@ const CampaignList = ({
             .filter(r => {
                 if (filter === 'open' && r.status !== 'open') return false;
                 if (filter === 'draft' && r.status !== 'draft') return false;
-                if (filter === 'closed' && r.status !== 'closed') return false;
+                if (filter === 'closed' && r.status !== 'closed' && r.status !== 'live') return false;
                 if (filter === 'review' && r.stats.toReview === 0) return false;
                 if (filter === 'decide' && !(r.status === 'open' && r.stats.undecided > 0)) return false;
                 if (!term) return true;

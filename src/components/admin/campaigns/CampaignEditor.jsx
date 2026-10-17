@@ -17,6 +17,9 @@ import RichEditor from '../RichEditor';
 import LivePreview from '../LivePreview';
 import TaskCard from './TaskCard';
 import { ConfirmSheet, Spinner } from './parts';
+import OpenFormCard, { OPEN_FORM_FIELDS, openFormFromCampaign, openFormPayload, validateOpenForm } from './outreach/OpenFormCard';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../../../lib/firebase';
 import { TASK_TYPES, blankTask, newTaskId, campaignStatus, stripHtml, formatDay, toDayInput, daysUntil, inr } from './campaignModel';
 import ThemedSelect from '../ThemedSelect';
 
@@ -35,6 +38,7 @@ const SECTIONS = [
     { id: 'cm-pay', label: 'Pay and spots' },
     { id: 'cm-tickets', label: 'Event tickets' },
     { id: 'cm-dates', label: 'Deadlines' },
+    { id: 'cm-open-form', label: 'Open form' },
     { id: 'cm-images', label: 'Images' },
     { id: 'cm-visibility', label: 'Visibility' },
 ];
@@ -49,6 +53,7 @@ const blankForm = (uid) => ({
     applyMethod: 'newbi', applyFormUrl: '', applyFormNeedsSignIn: false,
     eventId: '', ticketsPerCreator: '', ticketAutoIssue: '',
     status: 'Open', tasks: [], createdBy: uid || '',
+    ...OPEN_FORM_FIELDS,
 });
 
 /** A stored campaign → editable form values (strings for number inputs). */
@@ -78,7 +83,8 @@ const toForm = (c, { copy = false } = {}) => ({
     // Stored truthiness: an old campaign without the flag never auto-selected.
     autoShortlistEligible: Boolean(c.autoShortlistEligible),
     isPinned: copy ? false : Boolean(c.isPinned),
-    status: copy ? 'Draft' : (campaignStatus(c) === 'open' ? 'Open' : campaignStatus(c) === 'draft' ? 'Draft' : (c.status || 'Closed')),
+    status: copy ? 'Draft' : ({ open: 'Open', draft: 'Draft', live: 'Live' }[campaignStatus(c)] || c.status || 'Closed'),
+    ...openFormFromCampaign(c, { copy }),
     tasks: (c.tasks || []).map((t, i) => ({
         ...t,
         ...(copy ? { id: newTaskId(), submissions: {}, completedBy: [], verifiedBy: [] } : {}),
@@ -123,6 +129,8 @@ const toPayload = (f) => ({
     autoShortlistEligible: false, // retired: applying never shortlists
     isPinned: f.isPinned,
     status: f.status,
+    // The open application form (outreach): public fields only; the group link and template are private.
+    ...openFormPayload(f),
     tasks: f.tasks.map((t, i) => ({
         ...t,
         title: (t.title || '').trim() || `Deliverable ${i + 1}`,
@@ -256,6 +264,7 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
             if (!form.applyFormUrl.trim()) e.applyFormUrl = 'Paste the Google Form link.';
             else if (!/^https:\/\/(docs\.google\.com\/forms\/|forms\.gle\/)/i.test(form.applyFormUrl.trim())) e.applyFormUrl = 'Use a Google Form link (docs.google.com/forms/… or forms.gle/…).';
         }
+        Object.assign(e, validateOpenForm(form, { targetCity: form.targetCity }));
         return e;
     };
 
@@ -278,6 +287,17 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
         }
         setSaving(true);
         try {
+            // Two campaigns can't share an open-form link.
+            const slug = String(next.slug || '').trim().toLowerCase();
+            if (slug && db) {
+                const taken = await getDocs(query(collection(db, 'campaigns'), where('slug', '==', slug)));
+                if (taken.docs.some(d => d.id !== campaign?.id)) {
+                    setErrors({ slug: 'Another campaign already uses this link name.' });
+                    document.getElementById('cm-field-slug')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    addToast('Pick another link name for the open form.', 'error');
+                    return;
+                }
+            }
             const payload = toPayload(next);
             if (!isEdit) payload.createdBy = next.createdBy || user?.uid || '';
             const willGoLive = payload.status === 'Open' && originalStatus !== 'open';
@@ -387,12 +407,13 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                             <div>
                                 <span className="mb-1 block text-[12px] font-bold text-gray-500">Status</span>
                                 <Choice
-                                    value={form.status === 'Open' || form.status === 'Draft' ? form.status : 'Closed'}
+                                    value={['Open', 'Draft', 'Live'].includes(form.status) ? form.status : 'Closed'}
                                     onChange={(v) => set({ status: v })}
                                     options={[
                                         { value: 'Open', label: 'Open', hint: 'Live, creators can apply' },
                                         { value: 'Draft', label: 'Draft', hint: 'Hidden from creators' },
                                         { value: 'Closed', label: 'Closed', hint: 'Visible, no new applicants' },
+                                        { value: 'Live', label: 'Live', hint: 'Event is on, applications closed' },
                                     ]}
                                 />
                             </div>
@@ -593,6 +614,8 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                             </ul>
                         )}
                     </BuilderCard>
+
+                    <OpenFormCard form={form} set={set} title={form.title} targetCity={form.targetCity} errors={errors} err={err} />
 
                     <BuilderCard id="cm-images" title="Images" hint="Upload, paste (Ctrl/Cmd+V) or link">
                         <ImageSlot

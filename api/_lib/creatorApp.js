@@ -608,7 +608,8 @@ const notifyReferrer = async (db, referredBy, creator) => {
 
 /* ── campaign-apply ───────────────────────────────────────────────────── */
 
-const OPEN_STATUSES = new Set(['open', 'active', 'live', 'published']);
+// 'live' means the event is on: applications are closed (see src/lib/outreach/application.js).
+const OPEN_STATUSES = new Set(['open', 'active', 'published']);
 
 const handleCampaignApply = async (req, res, { db, token }) => {
     if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });

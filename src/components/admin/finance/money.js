@@ -82,6 +82,8 @@ export const SPEND_TYPES = {
     'Volunteer Payout': { label: 'Volunteer payouts', tone: 'green' },
     'Vendor Payout': { label: 'Vendors', tone: 'orange' },
     'Artist Fee': { label: 'Artist fees', tone: 'violet' },
+    // Written by campaign outreach when a creator payout is marked paid (api/_lib/outreachDeliver.js).
+    'Creator Payout': { label: 'Creator payouts', tone: 'pink' },
     'General Expense': { label: 'General expenses', tone: 'rose' },
 };
 export const spendType = (sp) => (SPEND_TYPES[sp?.payoutType] ? sp.payoutType : 'General Expense');

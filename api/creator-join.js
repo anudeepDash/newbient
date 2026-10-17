@@ -8,6 +8,7 @@ import { safeSiteOrigin } from './_lib/linkSign.js';
 import { cleanHandle as cleanInstagramHandle, lookupInstagram, readCreatorSettings } from './_lib/instagram.js';
 import { CREATOR_APP_ACTIONS, handleCreatorAppAction } from './_lib/creatorApp.js';
 import { verifyIdTokenSafe } from './_lib/auth.js';
+import { OUTREACH_ACTIONS, handleOutreachAction } from './_lib/outreach.js';
 
 export const maxDuration = 60;
 let adminDb = null;
@@ -465,6 +466,11 @@ export default async function handler(req, res) {
     // The app's creator module: apply, Instagram verification, campaign apply and submissions.
     if (CREATOR_APP_ACTIONS.has(action)) {
         return handleCreatorAppAction(action, req, res, { decodedToken });
+    }
+
+    // Campaign outreach: the public application form and the admin shortlist (api/_lib/outreach.js).
+    if (OUTREACH_ACTIONS.has(action)) {
+        return handleOutreachAction(action, req, res, { decodedToken });
     }
 
     if (!PUBLIC_ACTIONS.has(action) && !decodedToken) {

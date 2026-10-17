@@ -160,6 +160,17 @@
             "permanent": true
         },
         {
+            "source": "/:prefix(campaign|campaigns|c)/:slug/apply",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                }
+            ],
+            "destination": "https://app.newbi.live/c/:slug/apply",
+            "permanent": false
+        },
+        {
             "source": "/:prefix(campaign|campaigns|creator/campaign|creator/campaigns|creator-dashboard/campaign)/:id",
             "has": [
                 {
