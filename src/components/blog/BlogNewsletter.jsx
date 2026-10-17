@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Send, Loader2, Instagram, Linkedin, Globe, CheckCircle2 } from 'lucide-react';
+import { Send, Loader2, Instagram, Linkedin, Globe, CheckCircle2 } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import WeeklyLogo from './WeeklyLogo';
 
@@ -36,96 +36,62 @@ const BlogNewsletter = () => {
         }
     };
 
+    const field = 'w-full h-12 px-4 rounded-xl bg-[#F4F2EC] dark:bg-white/[0.04] ring-1 ring-inset ring-black/10 dark:ring-white/15 text-base text-gray-950 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[var(--cz-accent,#00F0FF)]';
+
     return (
-        <div className="relative group overflow-hidden rounded-[2.5rem] bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border border-black/10 dark:border-white/5 p-8 md:p-12">
-            {/* Background Glows */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[100px] -mr-32 -mt-32 pointer-events-none group-hover:bg-neon-blue/10 transition-all duration-500" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-neon-pink/5 blur-[100px] -ml-32 -mb-32 pointer-events-none group-hover:bg-neon-pink/10 transition-all duration-500" />
-
-            <div className="relative z-10 text-center md:text-left">
-                <div className="flex flex-col items-center md:items-start mb-10 md:mb-12">
-                    <span className="text-[10px] font-black text-neon-blue uppercase tracking-[0.5em] mb-4">STAY UPDATED</span>
+        <section aria-label="Weekly by ConcertZone" className="relative overflow-hidden rounded-[1.75rem] bg-white dark:bg-white/[0.04] ring-1 ring-black/[0.06] dark:ring-white/10 p-6 sm:p-10 md:p-12">
+            <div aria-hidden="true" className="absolute -top-24 -right-24 w-72 h-72 rounded-full opacity-25 blur-3xl bg-[var(--cz-accent,#00F0FF)] pointer-events-none" />
+            <div className="relative grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+                <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-gray-500 dark:text-zinc-500 mb-4">The newsletter</p>
                     <WeeklyLogo />
+                    <p className="mt-5 max-w-md text-base leading-relaxed text-gray-600 dark:text-zinc-400">
+                        One email a week: the shows worth going to, artist stories and what is happening behind the scenes.
+                    </p>
+                    <div className="mt-5 flex items-center gap-1 -ml-3">
+                        <a href="https://www.instagram.com/newbi.live" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-11 h-11 rounded-full flex items-center justify-center text-gray-600 dark:text-zinc-400 hover:text-gray-950 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+                            <Instagram size={19} aria-hidden="true" />
+                        </a>
+                        <a href="https://www.linkedin.com/company/newbi-ent/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="w-11 h-11 rounded-full flex items-center justify-center text-gray-600 dark:text-zinc-400 hover:text-gray-950 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+                            <Linkedin size={19} aria-hidden="true" />
+                        </a>
+                        <a href="/" aria-label="newbi.live" className="w-11 h-11 rounded-full flex items-center justify-center text-gray-600 dark:text-zinc-400 hover:text-gray-950 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+                            <Globe size={19} aria-hidden="true" />
+                        </a>
+                    </div>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base font-medium mb-12 leading-relaxed max-w-lg mx-auto md:mx-0 opacity-70 italic">
-                    Your weekly dose of nightlife culture, artist stories, and behind-the-scenes blueprints. Stay ahead of the beat with the definitive music industry briefing.
-                </p>
 
-                <div className="flex items-center gap-4 mb-12 justify-center md:justify-start">
-                    <a href="https://www.instagram.com/newbi.live" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-900 dark:text-white/50 hover:text-neon-pink hover:border-neon-pink hover:bg-neon-pink/10 transition-all group shadow-lg">
-                        <Instagram size={20} className="group-hover:scale-110 transition-transform" />
-                    </a>
-                    <a href="https://www.linkedin.com/company/newbi-ent/" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-900 dark:text-white/50 hover:text-[#0a66c2] hover:border-[#0a66c2] hover:bg-[#0a66c2]/10 transition-all group shadow-lg">
-                        <Linkedin size={20} className="group-hover:scale-110 transition-transform" />
-                    </a>
-                    <a href="https://newbi.live" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-900 dark:text-white/50 hover:text-neon-blue hover:border-neon-blue hover:bg-neon-blue/10 transition-all group shadow-lg">
-                        <Globe size={20} className="group-hover:scale-110 transition-transform" />
-                    </a>
-                </div>
                 {isSuccess ? (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex flex-col items-center gap-6 py-8"
-                    >
-                        <div className="w-20 h-20 rounded-2xl bg-neon-green/10 flex items-center justify-center border border-neon-green/20">
-                            <CheckCircle2 size={32} className="text-neon-green" />
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} role="status" className="flex flex-col items-start gap-4 rounded-2xl bg-[#F4F2EC] dark:bg-white/[0.04] p-6">
+                        <CheckCircle2 size={28} className="text-emerald-600 dark:text-neon-green" aria-hidden="true" />
+                        <div>
+                            <p className="font-heading text-2xl font-extrabold tracking-[-0.02em]">You're in.</p>
+                            <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400">Check your inbox to confirm your email.</p>
                         </div>
-                        <div className="text-center">
-                            <p className="text-2xl font-black font-heading uppercase italic tracking-tighter mb-2">YOU'RE IN.</p>
-                            <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Check your email for confirmation</p>
-                        </div>
-                        <button 
-                            onClick={() => setIsSuccess(false)}
-                            className="text-neon-blue text-[9px] font-black uppercase tracking-[0.4em] hover:opacity-80 transition-opacity"
-                        >
-                            // ADD ANOTHER EMAIL
+                        <button type="button" onClick={() => setIsSuccess(false)} className="min-h-[44px] text-sm font-semibold underline underline-offset-4 decoration-[var(--cz-accent,#00F0FF)] decoration-2">
+                            Add another email
                         </button>
                     </motion.div>
                 ) : (
-                    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                        <div className="flex flex-col md:grid md:grid-cols-12 gap-4">
-                            <div className="md:col-span-5 group/input relative">
-                                <input
-                                    type="text"
-                                    placeholder="YOUR NAME"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    className="w-full h-14 bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-xl px-6 font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-gray-900 dark:text-white placeholder:text-gray-900 dark:placeholder:text-white/20 focus:outline-none focus:border-neon-blue/40 transition-all"
-                                />
-                            </div>
-                            <div className="md:col-span-5 group/input relative">
-                                <input
-                                    type="email"
-                                    required
-                                    placeholder="EMAIL ADDRESS"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full h-14 bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-xl px-6 font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-gray-900 dark:text-white placeholder:text-gray-900 dark:placeholder:text-white/20 focus:outline-none focus:border-neon-blue/40 transition-all"
-                                />
-                            </div>
-                            <div className="md:col-span-2">
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="w-full h-14 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center shadow-xl group/btn"
-                                >
-                                    {isSubmitting ? (
-                                        <Loader2 className="animate-spin" size={18} />
-                                    ) : (
-                                        <Send size={20} className="group-hover:translate-x-1 transition-transform" />
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                        {error && <p className="text-neon-pink text-[10px] font-black uppercase tracking-[0.2em] mt-2">{error}</p>}
-                        <p className="text-gray-600 text-[9px] uppercase tracking-[0.4em] font-black opacity-40 text-center md:text-left">
-                            NO SPAM // PURE UPDATES // SECURE
-                        </p>
+                    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+                        <label className="sr-only" htmlFor="cz-nl-name">Your name</label>
+                        <input id="cz-nl-name" type="text" autoComplete="name" placeholder="Your name (optional)" value={name} onChange={(e) => setName(e.target.value)} className={field} />
+                        <label className="sr-only" htmlFor="cz-nl-email">Email</label>
+                        <input id="cz-nl-email" type="email" required autoComplete="email" inputMode="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className={field} />
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="h-12 px-6 inline-flex items-center justify-center gap-2 rounded-full bg-gray-950 text-white dark:bg-white dark:text-black font-heading font-bold hover:scale-[1.02] active:scale-[0.98] transition disabled:opacity-60"
+                        >
+                            {isSubmitting ? <Loader2 className="animate-spin" size={18} aria-hidden="true" /> : <Send size={17} aria-hidden="true" />}
+                            {isSubmitting ? 'Subscribing' : 'Subscribe'}
+                        </button>
+                        {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+                        <p className="text-xs text-gray-500 dark:text-zinc-500">No spam. Unsubscribe from any email.</p>
                     </form>
                 )}
             </div>
-        </div>
+        </section>
     );
 };
 

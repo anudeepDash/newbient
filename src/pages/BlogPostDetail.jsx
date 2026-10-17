@@ -1,562 +1,252 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { motion, useScroll, useSpring, useTransform, AnimatePresence } from 'framer-motion';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import User from 'lucide-react/dist/esm/icons/user';
-import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { motion, useScroll, useSpring } from 'framer-motion';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
 import Share2 from 'lucide-react/dist/esm/icons/share-2';
 import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import Twitter from 'lucide-react/dist/esm/icons/twitter';
 import Linkedin from 'lucide-react/dist/esm/icons/linkedin';
-import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
-import Tag from 'lucide-react/dist/esm/icons/tag';
-import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
-import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up';
-import Heart from 'lucide-react/dist/esm/icons/heart';
-import Star from 'lucide-react/dist/esm/icons/star';
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
-import Home from 'lucide-react/dist/esm/icons/home';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import LinkIcon from 'lucide-react/dist/esm/icons/link';
+import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import { useStore } from '../lib/store';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
-import { cn } from '../lib/utils';
 import BlogNewsletter from '../components/blog/BlogNewsletter';
-import BlogCard from '../components/blog/BlogCard';
 import AdSenseSlot from '../components/blog/AdSenseSlot';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { TEST_POSTS } from './concertzone/testPosts';
 import { isAdminRole } from '../constants/roles';
 import { isPostPublic } from '../components/admin/content/contentRules';
+import { CzShell, CzHeader, StoryCard, PostMedia, CategoryChip, Label, formatDate } from './concertzone/czShared';
 
-const CATEGORY_COLORS = {
-    'Live Events': '#00ffff', // neon-blue
-    'Artists': '#e11d48',    // rose-600 (premium red)
-    'Guides': '#a855f7',     // purple
-    'Buzz': '#facc15',       // yellow
-    'Community': '#10b981',   // green
-    'default': '#00ffff'
-};
+const isTest = (p) => String(p?.id || '').includes('-test');
 
-const AdSlot = ({ className = '', format = 'horizontal', slot = '' }) => (
-    <AdSenseSlot 
-        className={className} 
-        adSlot={slot} 
-        adFormat={format === 'horizontal' ? 'horizontal' : 'auto'}
-        style={{ display: 'block', minHeight: format === 'horizontal' ? '96px' : '280px' }}
-    />
-);
+const shareBtn = 'h-11 px-4 inline-flex items-center gap-2 rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/15 text-sm font-semibold text-gray-800 dark:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors';
 
-const isRawVideo = (url) => {
-    if (!url) return false;
-    return !!(url.match(/\.(mp4|webm|ogg|mov)$/i) || url.includes('cloudinary.com') || url.includes('firebasestorage.googleapis.com'));
-};
+function ShareRow({ post }) {
+    const [canNative, setCanNative] = useState(false);
+    useEffect(() => { setCanNative(typeof navigator !== 'undefined' && typeof navigator.share === 'function'); }, []);
 
-const getVideoEmbedUrl = (url) => {
-    if (!url) return null;
-    let id = '';
-    if (url.includes('youtube.com/watch?v=')) {
-        id = url.split('v=')[1]?.split('&')[0];
-    } else if (url.includes('youtu.be/')) {
-        id = url.split('/').pop();
-    } else if (url.includes('youtube.com/shorts/')) {
-        id = url.split('shorts/')[1]?.split('?')[0]?.split('&')[0];
-    } else if (url.includes('youtube.com/embed/')) {
-        id = url.split('embed/')[1]?.split('?')[0]?.split('&')[0];
-    }
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    const text = `Read "${post.title}" on ConcertZone`;
+    const count = () => { if (!isTest(post)) useStore.getState().incrementPostShare?.(post.id); };
+    const open = (href) => { count(); window.open(href, '_blank', 'noopener,noreferrer'); };
 
-    if (id) {
-        return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&playsinline=1&showinfo=0&rel=0&modestbranding=1`;
-    }
-
-    if (url.includes('vimeo.com/')) {
-        const id = url.split('/').pop()?.split('?')[0];
-        return `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&background=1&loop=1&byline=0&title=0`;
-    }
-    if (url.includes('instagram.com/')) {
-        const base = url.split('?')[0];
-        return `${base}${base.endsWith('/') ? '' : '/'}embed/`;
-    }
-    return url;
-};
-
-const BlogPostDetail = () => {
-    useStoreSubscription(['posts']);
-    const { category, slug } = useParams();
-    const { posts } = useStore();
-    const navigate = useNavigate();
-    const [isLiked, setIsLiked] = useState(false);
-    const [isShareOpen, setIsShareOpen] = useState(false);
-    const contentRef = useRef(null);
-
-    const { scrollYProgress } = useScroll({
-        target: contentRef,
-        offset: ["start start", "end end"]
-    });
-
-    const scaleX = useSpring(scrollYProgress, {
-        stiffness: 100,
-        damping: 30,
-        restDelta: 0.001
-    });
-
-
-    const viewerRole = useStore(state => state.user?.role);
-    const post = useMemo(() => {
-        // Drafts and posts scheduled for later are only visible to the admin team (for previews).
-        const canPreview = isAdminRole(viewerRole) && !['scanner', 'gate_manager'].includes(viewerRole);
-        const found = posts.find(p => p.slug === slug && (isPostPublic(p) || canPreview));
-        // Try Firestore posts first, then fall back to test posts
-        return found || TEST_POSTS.find(p => p.slug === slug);
-    }, [posts, slug, viewerRole]);
-
-    useDynamicMeta({
-        title: post ? (post.seoTitle || post.title) : undefined,
-        description: post ? post.shortDescription : "Read this article on Concert Zone.",
-        image: post?.coverImage,
-        url: window.location.href,
-        page: 'post'
-    });
-
-    const relatedPosts = useMemo(() => {
-        if (!post) return [];
-        const allPosts = posts.length > 0 ? posts : TEST_POSTS;
-        return allPosts
-            .filter(p => p.id !== post.id && (p.category === post.category || true))
-            .filter(p => p.status === 'Published' || p.id.includes('-test'))
-            .slice(0, 3);
-    }, [posts, post]);
-
-    useEffect(() => {
-        if (post?.id && !post.id.includes('-test')) {
-            useStore.getState().incrementPostView?.(post.id);
-        }
-    }, [post?.id]);
-
-    const accentColor = useMemo(() => {
-        return post?.accentColor || CATEGORY_COLORS[post?.category] || CATEGORY_COLORS.default;
-    }, [post]);
-
-    if (!post) {
-        return (
-            <div className="min-h-screen bg-white dark:bg-black flex flex-col items-center justify-center p-6 text-center">
-                <motion.h1 
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-4xl md:text-6xl font-black font-heading uppercase italic tracking-tighter mb-8"
-                >
-                    ARTICLE <span className="text-neon-pink">MISSING.</span>
-                </motion.h1>
-                <Link to="/concertzone" className="h-14 px-8 bg-white text-black font-black uppercase tracking-widest rounded-2xl flex items-center gap-3 hover:scale-105 transition-all">
-                    <ArrowLeft size={18} /> BACK TO HUB
-                </Link>
-            </div>
-        );
-    }
-
-    const handleShare = (platform) => {
-        const url = window.location.href;
-        const text = `Read "${post.title}" on Newbi Concert Zone`;
-        const links = {
-            whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`,
-            twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
-            linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
-        };
-
-        if (!post.id.includes('-test')) {
-            useStore.getState().incrementPostShare?.(post.id);
-        }
-
-        if (platform === 'native') {
-            setIsShareOpen(true);
-        } else {
-            window.open(links[platform], '_blank');
+    const native = async () => {
+        try { await navigator.share({ title: post.title, text, url }); count(); } catch { /* closed the sheet */ }
+    };
+    const copy = async () => {
+        try {
+            await navigator.clipboard.writeText(url);
+            count();
+            useStore.getState().addToast?.('Link copied.', 'success');
+        } catch {
+            useStore.getState().addToast?.('Could not copy the link.', 'error');
         }
     };
 
     return (
-        <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white pb-32 selection:bg-neon-blue selection:text-black">
-            {/* Immersive Background Atmos (Newbi Feel) */}
-            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-                <div 
-                    className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] opacity-20" 
-                    style={{ backgroundColor: accentColor }}
-                />
-                <div 
-                    className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] opacity-10" 
-                    style={{ backgroundColor: accentColor }}
-                />
-                
-                {/* Mesh Grid */}
-                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
-                
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/50 to-black z-10" />
-            </div>
+        <div className="flex flex-wrap items-center gap-2">
+            {canNative && <button type="button" onClick={native} className={shareBtn}><Share2 size={16} aria-hidden="true" /> Share</button>}
+            <button type="button" onClick={() => open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`${text} ${url}`)}`)} className={shareBtn}><MessageCircle size={16} aria-hidden="true" /> WhatsApp</button>
+            <button type="button" onClick={() => open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`)} className={shareBtn} aria-label="Share on X"><Twitter size={16} aria-hidden="true" /> X</button>
+            <button type="button" onClick={() => open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`)} className={shareBtn}><Linkedin size={16} aria-hidden="true" /> LinkedIn</button>
+            <button type="button" onClick={copy} className={shareBtn}><LinkIcon size={16} aria-hidden="true" /> Copy link</button>
+        </div>
+    );
+}
 
+const BlogPostDetail = () => {
+    useStoreSubscription(['posts']);
+    const { slug } = useParams();
+    const { posts } = useStore();
+    const viewerRole = useStore((state) => state.user?.role);
+    const articleRef = useRef(null);
 
+    const { scrollYProgress } = useScroll({ target: articleRef, offset: ['start start', 'end end'] });
+    const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 });
 
-            <motion.div 
-                initial={{ y: -50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                className="fixed top-0 left-0 right-0 z-[250] px-4 py-4 md:py-6 md:px-24 md:top-8"
-            >
-                <div className="bg-white dark:bg-black/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-2xl md:rounded-3xl p-1.5 md:p-3 flex items-center justify-between gap-3 shadow-[0_30px_60px_rgba(0,0,0,0.5)]">
-                    <button 
-                        onClick={() => navigate('/concertzone')}
-                        className="flex items-center gap-2 h-9 md:h-10 px-3 md:px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 rounded-xl transition-all group shrink-0"
-                    >
-                        <ArrowLeft size={14} style={{ color: accentColor }} className="group-hover:-translate-x-1 transition-transform" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white hidden xs:block">BACK</span>
-                    </button>
+    const post = useMemo(() => {
+        // Drafts and posts scheduled for later are only visible to the admin team (for previews).
+        const canPreview = isAdminRole(viewerRole) && !['scanner', 'gate_manager'].includes(viewerRole);
+        const found = posts.find((p) => p.slug === slug && (isPostPublic(p) || canPreview));
+        return found || TEST_POSTS.find((p) => p.slug === slug);
+    }, [posts, slug, viewerRole]);
 
-                    <div className="w-[1px] h-5 bg-black/10 dark:bg-white/10 hidden sm:block" />
+    useDynamicMeta({
+        title: post ? (post.seoTitle || post.title) : undefined,
+        description: post ? post.shortDescription : 'Read this article on ConcertZone.',
+        image: post?.coverImage,
+        url: window.location.href,
+        page: 'post',
+    });
 
-                    <div className="flex items-center gap-3 md:gap-6 shrink-0 overflow-hidden">
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] truncate max-w-[80px] xs:max-w-none" style={{ color: accentColor }}>{post.category}</span>
-                        <div className="h-px w-6 md:w-16 bg-black/20 dark:bg-white/20 hidden md:block" />
-                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-900 dark:text-white/40 italic whitespace-nowrap hidden lg:block">Reading Now</span>
-                    </div>
+    // Same section first, then the newest of the rest.
+    const relatedPosts = useMemo(() => {
+        if (!post) return [];
+        const pool = (posts.length > 0 ? posts.filter((p) => isPostPublic(p)) : TEST_POSTS)
+            .filter((p) => p.id !== post.id)
+            .sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate));
+        const same = pool.filter((p) => p.category === post.category);
+        const other = pool.filter((p) => p.category !== post.category);
+        return [...same, ...other].slice(0, 3);
+    }, [posts, post]);
 
-                    <div className="hidden xl:block w-[1px] h-6 bg-black/10 dark:bg-white/10" />
+    useEffect(() => {
+        if (post?.id && !isTest(post)) useStore.getState().incrementPostView?.(post.id);
+    }, [post?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-                    <div className="flex-1 min-w-0 hidden md:block">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white truncate italic opacity-80">{post.title}</h4>
-                    </div>
-
-                    <div className="flex items-center gap-3 md:gap-6 shrink-0">
-                        <div className="relative w-12 md:w-24 h-[2px] bg-black/10 dark:bg-white/10 rounded-full overflow-hidden hidden sm:block">
-                            <motion.div 
-                                className="absolute inset-0 origin-left" 
-                                style={{ scaleX, backgroundColor: accentColor }} 
-                            />
-                        </div>
-                        <button 
-                            onClick={() => setIsShareOpen(true)}
-                            className="h-9 md:h-10 px-4 md:px-6 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-all shadow-lg"
-                        >
-                            SHARE
-                        </button>
-                    </div>
+    if (!post) {
+        return (
+            <CzShell>
+                <div className="max-w-xl mx-auto px-4 py-28 text-center">
+                    <Label>404</Label>
+                    <h1 className="mt-3 font-heading text-4xl md:text-5xl font-extrabold tracking-[-0.04em]">This story isn't here.</h1>
+                    <p className="mt-4 text-gray-600 dark:text-zinc-400">It may have been moved or unpublished.</p>
+                    <Link to="/concertzone" className="mt-8 inline-flex h-12 px-6 items-center gap-2 rounded-full bg-gray-950 text-white dark:bg-white dark:text-black font-heading font-bold">
+                        <ArrowLeft size={16} aria-hidden="true" /> All stories
+                    </Link>
                 </div>
-            </motion.div>
+            </CzShell>
+        );
+    }
 
-            {/* Cinematic Hero Segment */}
-            <header className="relative w-full h-[85vh] md:h-[95vh] overflow-hidden flex flex-col justify-end">
-                <motion.div 
-                    initial={{ scale: 1.2, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 1.8, ease: "easeOut" }}
-                    className="absolute inset-0"
-                >
-                    {post.videoUrl ? (
-                        isRawVideo(post.videoUrl) ? (
-                            <video 
-                                src={post.videoUrl} 
-                                autoPlay 
-                                muted 
-                                loop 
-                                playsInline
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <div className="w-full h-full pointer-events-none relative overflow-hidden">
-                                <iframe 
-                                    src={getVideoEmbedUrl(post.videoUrl)} 
-                                    className="absolute top-1/2 left-1/2 w-[130%] h-[130%] -translate-x-1/2 -translate-y-1/2 pointer-events-none object-cover border-none" 
-                                    allow="autoplay; encrypted-media" 
-                                    title={post.title}
-                                />
-                            </div>
-                        )
-                    ) : (
-                        <img 
-                            src={post.coverImage} 
-                            alt={post.title} 
-                            className="w-full h-full" 
-                            style={{ 
-                                objectFit: 'cover', 
-                                transform: `scale(${post.coverImageScale || 1})`,
-                                transformOrigin: `${post.coverImagePosX ?? 50}% ${post.coverImagePosY ?? 50}%`
-                            }}
-                        />
+    const isPreview = !isTest(post) && !isPostPublic(post);
+    const tags = (post.tags || []).map((t) => (typeof t === 'string' ? t : (t?.name || t?.label || ''))).filter(Boolean);
+    const categoryPath = post.category ? `/concertzone/${post.category.toLowerCase().replace(' ', '-')}` : '/concertzone';
+
+    const header = (
+        <CzHeader
+            progressBar={(
+                <motion.div aria-hidden="true" className="absolute left-0 right-0 bottom-0 h-0.5 origin-left bg-[var(--cz-accent)]" style={{ scaleX: progress }} />
+            )}
+        />
+    );
+
+    return (
+        <CzShell header={header}>
+            {isPreview && (
+                <p role="status" className="bg-amber-300 text-black text-sm font-semibold text-center px-4 py-2.5">
+                    Preview: this story isn't public yet. Only the team can see it.
+                </p>
+            )}
+
+            <article ref={articleRef}>
+                {/* Title block */}
+                <header className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 md:pt-14">
+                    <Link to={categoryPath} className="inline-flex items-center gap-2 min-h-[44px] text-sm font-semibold text-gray-600 dark:text-zinc-400 hover:text-gray-950 dark:hover:text-white">
+                        <ArrowLeft size={16} aria-hidden="true" /> {post.category || 'ConcertZone'}
+                    </Link>
+                    <h1 className="mt-4 font-heading font-extrabold tracking-[-0.04em] leading-[1.02] text-[2.4rem] sm:text-5xl md:text-6xl text-gray-950 dark:text-white break-words">
+                        {post.title}
+                    </h1>
+                    {post.shortDescription && (
+                        <p className="mt-5 text-lg md:text-xl leading-relaxed text-gray-600 dark:text-zinc-400">{post.shortDescription}</p>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                    <div className="absolute inset-0 bg-white dark:bg-black/40 backdrop-blur-[2px]" />
-                </motion.div>
-
-                <div className="relative z-10 max-w-[1800px] mx-auto px-8 md:px-24 pb-24 md:pb-32 w-full">
-                    <motion.div
-                        initial={{ opacity: 0, y: 60 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6, duration: 0.8 }}
-                        className="max-w-6xl"
-                    >
-                        <div className="flex items-center gap-4 md:gap-6 mb-8 md:mb-12">
-                            <motion.span 
-                                whileHover={{ scale: 1.05 }}
-                                className="px-5 md:px-8 py-2 md:py-3 text-black text-[11px] md:text-[13px] font-black uppercase tracking-widest rounded-2xl italic transition-all cursor-pointer"
-                                style={{ backgroundColor: accentColor, boxShadow: `0 15px 40px ${accentColor}66` }}
-                            >
-                                {post.category}
-                            </motion.span>
-                            <div className="h-px w-12 md:w-24 bg-black/20 dark:bg-white/20" />
-                            <span className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.4em] text-gray-900 dark:text-white/40 whitespace-nowrap">Reading Now</span>
-                        </div>
-                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-black font-heading uppercase leading-[1.1] tracking-tight mb-12 md:mb-16 italic drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] break-words pr-4 md:pr-16 pb-4">
-                            {post.title.split(' ').map((word, i) => (
-                                <span key={i} 
-                                    className={i % 2 === 1 ? "text-transparent bg-clip-text not-italic" : "text-gray-900 dark:text-white"}
-                                    style={i % 2 === 1 ? { backgroundImage: `linear-gradient(to right, ${accentColor}, white, ${accentColor})` } : {}}
-                                >
-                                    {word}{' '}
+                    <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3">
+                        <div className="flex items-center gap-3">
+                            <span aria-hidden="true" className="w-10 h-10 rounded-full bg-[var(--cz-accent)] text-black font-heading font-extrabold flex items-center justify-center">
+                                {(post.author || 'N').trim().charAt(0).toUpperCase()}
+                            </span>
+                            <span className="leading-tight">
+                                <span className="block text-sm font-semibold text-gray-950 dark:text-white">{post.author || 'Newbi Editorial'}</span>
+                                <span className="block text-[13px] text-gray-500 dark:text-zinc-400">
+                                    {[formatDate(post.publishDate, { day: 'numeric', month: 'long', year: 'numeric' }), `${post.readingTime || 5} min read`].filter(Boolean).join(' · ')}
                                 </span>
-                            ))}
-                        </h1>
-                        <div className="flex flex-wrap items-center gap-8 md:gap-16 text-[11px] md:text-[13px] font-black uppercase tracking-[0.4em] text-gray-900 dark:text-white/50">
-                            <div className="flex items-center gap-4 md:gap-5">
-                                <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl md:rounded-[1.5rem] bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center group overflow-hidden">
-                                    <User size={20} className="group-hover:text-neon-blue transition-colors md:size-[24px]" />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[8px] md:text-[10px] text-gray-600 mb-0.5 md:mb-1 tracking-widest">AUTHOR</span>
-                                    <span className="text-gray-900 dark:text-white text-xs md:text-sm">{post.author || 'NEWBI TEAM'}</span>
-                                </div>
-                            </div>
-                            <div className="hidden xs:block w-[1px] h-10 md:h-12 bg-black/10 dark:bg-white/10" />
-                            <div className="flex flex-col">
-                                <span className="text-[8px] md:text-[10px] text-gray-600 mb-0.5 md:mb-1 tracking-widest">PUBLISHED</span>
-                                <span className="text-gray-900 dark:text-white text-xs md:text-sm">{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                            </div>
-                            <div className="hidden xs:block w-[1px] h-10 md:h-12 bg-black/10 dark:bg-white/10" />
-                            <div className="flex flex-col">
-                                <span className="text-[8px] md:text-[10px] text-gray-600 mb-0.5 md:mb-1 tracking-widest">VIEWS</span>
-                                <span className="text-gray-900 dark:text-white text-xs md:text-sm flex items-center gap-2">
-                                    <Eye size={14} style={{ color: accentColor }} /> {post.viewCount || 0}
-                                </span>
-                            </div>
+                            </span>
                         </div>
-                    </motion.div>
-                </div>
-                
-                {/* Scroll Indicator */}
-                <motion.div 
-                    animate={{ y: [0, 10, 0] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                    className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-30"
-                >
-                    <div className="w-[1px] h-12 bg-gradient-to-b from-gray-900 dark:from-white to-transparent" />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Scroll</span>
-                </motion.div>
-            </header>
-
-            <div className="max-w-[1800px] mx-auto px-6 md:px-24 grid grid-cols-1 lg:grid-cols-12 gap-16 md:gap-24 relative pt-16 md:pt-32">
-                
-                {/* High-Fi Engagement Rail */}
-                <aside className="hidden xl:block lg:col-span-1">
-                    <div className="sticky top-48 flex flex-col items-center gap-8">
-                        <button 
-                            onClick={() => setIsLiked(!isLiked)}
-                            className={cn(
-                                "w-20 h-20 rounded-[2rem] flex flex-col items-center justify-center transition-all border group",
-                                isLiked ? "bg-neon-pink border-neon-pink text-gray-900 dark:text-white shadow-[0_15px_40px_rgba(255,0,85,0.4)]" : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-600 hover:text-gray-900 dark:hover:text-white hover:border-black/20 dark:hover:border-white/20"
-                            )}
-                        >
-                            <Heart size={24} fill={isLiked ? "currentColor" : "none"} className={isLiked ? "scale-110" : "group-hover:scale-110 transition-transform"} />
-                            <span className="text-[8px] font-black mt-2 tracking-widest">LIKE</span>
-                        </button>
-                        <button 
-                            onClick={() => setIsShareOpen(true)}
-                            className="w-20 h-20 rounded-[2rem] bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-600 hover:text-gray-900 dark:hover:text-white hover:border-black/20 dark:hover:border-white/20 flex flex-col items-center justify-center transition-all group"
-                        >
-                            <Share2 size={24} className="group-hover:scale-110 transition-transform" />
-                            <span className="text-[8px] font-black mt-2 tracking-widest">SHARE</span>
-                        </button>
+                        {post.viewCount > 0 && (
+                            <span className="ml-auto inline-flex items-center gap-1.5 text-[13px] text-gray-500 dark:text-zinc-400">
+                                <Eye size={14} aria-hidden="true" /> {post.viewCount.toLocaleString()} reads
+                            </span>
+                        )}
                     </div>
-                </aside>
+                </header>
 
-                {/* The Narrative Hub */}
-                <div ref={contentRef} className="lg:col-span-8 xl:col-span-9">
-                    <div className="article-content article-content-force-white">
-                        <div dangerouslySetInnerHTML={{ __html: post.content }} />
+                {/* Cover */}
+                {(post.coverImage || post.videoUrl) && (
+                    <div className="max-w-5xl mx-auto px-4 sm:px-6 mt-8 md:mt-10">
+                        <div className="relative aspect-[4/3] sm:aspect-[16/9] overflow-hidden rounded-[1.5rem] bg-zinc-900">
+                            <PostMedia post={post} video eager />
+                            {post.category && <CategoryChip className="absolute top-4 left-4">{post.category}</CategoryChip>}
+                        </div>
+                    </div>
+                )}
+
+                {/* Body */}
+                <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-10 md:pt-14">
+                    <div className="cz-article">
+                        <div dangerouslySetInnerHTML={{ __html: post.content || '' }} />
                     </div>
 
-                    {/* Commercial Integrity: Ticketing Integration */}
                     {post.ticketingLink && (
-                        <motion.div 
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            className="mt-20 p-10 md:p-16 rounded-[3rem] md:rounded-[4rem] bg-white/[0.02] border border-black/10 dark:border-white/10 relative overflow-hidden group"
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 via-transparent to-transparent pointer-events-none" />
-                            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
-                                <div className="space-y-4 text-center md:text-left">
-                                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neon-blue/10 border border-neon-blue/20 text-neon-blue text-[10px] font-black uppercase tracking-widest">
-                                        <Zap size={14} /> LIVE EVENT ACCESS
-                                    </div>
-                                    <h3 className="text-3xl md:text-5xl font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white leading-tight">
-                                        Experience this <br /> Narrative Live.
-                                    </h3>
-                                </div>
-                                <a 
-                                    href={post.ticketingLink} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="h-20 md:h-24 px-12 md:px-20 bg-white text-black font-black uppercase tracking-[0.2em] rounded-3xl md:rounded-[2.5rem] flex items-center gap-4 hover:scale-105 active:scale-95 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.2)] group/btn"
-                                >
-                                    {post.ticketingButtonText || 'GET TICKETS'}
-                                    <ArrowUpRight size={24} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
-                                </a>
+                        <div className="mt-12 rounded-[1.5rem] bg-gray-950 text-white dark:bg-white/[0.06] p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-5">
+                            <div className="flex-1">
+                                <p className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-white/60"><Ticket size={14} aria-hidden="true" /> Live</p>
+                                <p className="mt-2 font-heading text-2xl sm:text-3xl font-extrabold tracking-[-0.03em]">See it for yourself.</p>
                             </div>
-                        </motion.div>
-                    )}
-
-                    {/* Metadata Fragments */}
-                    {post.tags && post.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-4 mt-12">
-                            {post.tags.map((tag, idx) => {
-                                const label = typeof tag === 'string' ? tag : (tag?.name || tag?.label || String(tag));
-                                return (
-                                    <span key={label || idx} className="px-6 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-neon-blue hover:border-neon-blue/20 hover:bg-neon-blue/5 transition-all cursor-pointer">
-                                        {label}
-                                    </span>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    {/* Visual Separator */}
-                    <div className="h-px w-full bg-gradient-to-r from-gray-900 dark:from-white/5 via-gray-900 dark:via-white/10 to-gray-900 dark:to-white/5 mt-12" />
-                    
-                    {/* Editorial Ad Slot */}
-                    <AdSlot className="mt-16 mb-8" format="horizontal" slot={import.meta.env.VITE_ADSENSE_SLOT_ARTICLE_FOOTER} />
-                </div>
-
-                {/* High-Fidelity Sidebar */}
-                <aside className="lg:col-span-3 space-y-20">
-                    {/* Sponsor Slot */}
-                    {post.sponsorName && (
-                        <div className="p-8 rounded-[2.5rem] bg-white/[0.02] border border-black/10 dark:border-white/5 space-y-8 sticky top-48">
-                            <div className="flex items-center gap-3">
-                                <Star size={16} className="text-neon-blue" />
-                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-900 dark:text-white/40">SUPPORTED BY</h4>
-                            </div>
-                            
-                            <a 
-                                href={post.sponsorLink} 
-                                target="_blank" 
+                            <a
+                                href={post.ticketingLink}
+                                target="_blank"
                                 rel="noopener noreferrer"
-                                className="block space-y-6 group"
+                                className="self-start sm:self-auto h-12 px-6 inline-flex items-center gap-2 rounded-full bg-[var(--cz-accent)] text-black font-heading font-bold hover:scale-[1.03] active:scale-[0.98] transition"
                             >
-                                {post.sponsorLogo && (
-                                    <div className="aspect-video rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-6 flex items-center justify-center overflow-hidden">
-                                        <img src={post.sponsorLogo} className="w-full h-full object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" alt={post.sponsorName} />
-                                    </div>
-                                )}
-                                <div className="space-y-2">
-                                    <p className="text-lg font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white group-hover:text-neon-blue transition-colors">{post.sponsorName}</p>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 flex items-center gap-2">
-                                        Visit Partner <ExternalLink size={12} />
-                                    </p>
-                                </div>
+                                {post.ticketingButtonText || 'Get tickets'} <ArrowUpRight size={17} aria-hidden="true" />
                             </a>
                         </div>
                     )}
-                </aside>
-            </div>
 
-            {/* Horizontal Suggested Articles Segment */}
-            {relatedPosts.length > 0 && (
-                <div className="max-w-[1800px] mx-auto px-6 md:px-24 mb-16">
-                    <div className="flex items-center gap-5 mb-10 px-4">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: accentColor, boxShadow: `0 0 15px ${accentColor}` }} />
-                        <h4 className="text-xs font-black uppercase tracking-[0.5em] text-gray-900 dark:text-white/40">
-                            SUGGESTED ARTICLES
-                        </h4>
-                        <div className="flex-1 h-px bg-black/5 dark:bg-white/5 ml-10" />
-                    </div>
-                    
-                    <div className="relative group">
-                        {/* Mobile Scroll Indicators */}
-                        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-black via-black/80 to-transparent z-20 pointer-events-none md:hidden" />
-                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-black via-black/80 to-transparent z-20 pointer-events-none md:hidden" />
+                    {post.sponsorName && (
+                        <a href={post.sponsorLink || undefined} target="_blank" rel="noopener noreferrer sponsored" className="mt-8 flex items-center gap-4 rounded-2xl ring-1 ring-black/10 dark:ring-white/10 p-4 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors">
+                            {post.sponsorLogo && (
+                                <span className="w-16 h-12 shrink-0 rounded-xl bg-white flex items-center justify-center p-2">
+                                    <img src={post.sponsorLogo} alt="" className="max-w-full max-h-full object-contain" />
+                                </span>
+                            )}
+                            <span className="min-w-0">
+                                <span className="block text-[11px] font-bold uppercase tracking-[0.24em] text-gray-500 dark:text-zinc-500">Supported by</span>
+                                <span className="block font-heading font-bold text-gray-950 dark:text-white truncate">{post.sponsorName}</span>
+                            </span>
+                            {post.sponsorLink && <ArrowUpRight size={18} className="ml-auto shrink-0 text-gray-400" aria-hidden="true" />}
+                        </a>
+                    )}
 
-                        <div className="flex flex-row flex-nowrap overflow-x-auto no-scrollbar md:grid md:grid-cols-2 lg:grid-cols-3 gap-8 px-4 md:px-0 pb-12 -mb-8 snap-x snap-mandatory scroll-smooth w-full">
-                            {relatedPosts.map(p => (
-                                <div key={p.id} className="min-w-[80vw] xs:min-w-[320px] md:min-w-0 snap-start shrink-0">
-                                    <BlogCard post={p} variant="compact" />
-                                </div>
+                    {tags.length > 0 && (
+                        <ul aria-label="Tags" className="mt-10 flex flex-wrap gap-2">
+                            {tags.map((tag) => (
+                                <li key={tag} className="h-8 px-3 inline-flex items-center rounded-full bg-black/[0.05] dark:bg-white/[0.06] text-[13px] text-gray-700 dark:text-zinc-300">#{tag}</li>
                             ))}
-                        </div>
+                        </ul>
+                    )}
+
+                    <div className="mt-10 pt-8 border-t border-black/[0.08] dark:border-white/10">
+                        <Label className="mb-3">Share this story</Label>
+                        <ShareRow post={post} />
                     </div>
+
+                    {import.meta.env.VITE_ADSENSE_SLOT_ARTICLE_FOOTER && (
+                        <AdSenseSlot className="mt-12" adSlot={import.meta.env.VITE_ADSENSE_SLOT_ARTICLE_FOOTER} adFormat="horizontal" style={{ display: 'block', minHeight: '96px' }} />
+                    )}
                 </div>
+            </article>
+
+            {relatedPosts.length > 0 && (
+                <section aria-labelledby="cz-more" className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 mt-16 md:mt-24">
+                    <div className="flex items-baseline justify-between gap-4 mb-6">
+                        <h2 id="cz-more" className="font-heading text-2xl md:text-3xl font-extrabold tracking-[-0.03em]">Keep reading</h2>
+                        <Link to="/concertzone" className="min-h-[44px] inline-flex items-center text-sm font-semibold underline underline-offset-4 decoration-2 decoration-[var(--cz-accent)]">All stories</Link>
+                    </div>
+                    <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                        {relatedPosts.map((p) => <li key={p.id}><StoryCard post={p} /></li>)}
+                    </ul>
+                </section>
             )}
 
-
-
-            {/* Bottom Content Row */}
-            <div className="max-w-[1800px] mx-auto px-6 md:px-24 mt-12">
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 mt-16 md:mt-24 mb-16">
                 <BlogNewsletter />
             </div>
-
-            {/* Modals Interface */}
-            <AnimatePresence>
-                {/* Share Modal */}
-                {isShareOpen && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[1000] flex items-center justify-center p-6"
-                    >
-                        <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md" onClick={() => setIsShareOpen(false)} />
-                        <motion.div 
-                            initial={{ scale: 0.9, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-xl bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[3rem] p-12 overflow-hidden shadow-2xl"
-                        >
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/10 blur-[100px] -mr-32 -mt-32" />
-                            
-                            <h2 className="text-4xl font-black font-heading tracking-tighter uppercase italic mb-4 text-gray-900 dark:text-white">SHARE ARTICLE</h2>
-                            <p className="text-gray-500 text-sm font-medium mb-12 tracking-widest">TRANSMIT TO YOUR TRIBE</p>
-
-                            <div className="grid grid-cols-2 gap-6 mb-12">
-                                {[
-                                    { icon: MessageCircle, label: 'whatsapp', color: 'text-green-400', bg: 'bg-green-400/5 hover:bg-green-400/10' },
-                                    { icon: Twitter, label: 'twitter', color: 'text-sky-400', bg: 'bg-sky-400/5 hover:bg-sky-400/10' },
-                                    { icon: Linkedin, label: 'linkedin', color: 'text-blue-500', bg: 'bg-blue-500/5 hover:bg-blue-500/10' },
-                                    { icon: ExternalLink, label: 'copy link', color: 'text-gray-900 dark:text-white', bg: 'bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10' }
-                                ].map((s, i) => (
-                                    <button 
-                                        key={i}
-                                        onClick={() => {
-                                            if (s.label === 'copy link') {
-                                                navigator.clipboard.writeText(window.location.href);
-                                                useStore.getState().addToast('Link copied.', 'success');
-                                            } else {
-                                                handleShare(s.label);
-                                            }
-                                        }}
-                                        className={cn("h-32 rounded-3xl flex flex-col items-center justify-center gap-4 border border-black/10 dark:border-white/5 transition-all group relative overflow-hidden", s.bg)}
-                                    >
-                                        <s.icon size={28} className={cn(s.color, "transition-transform group-hover:scale-110 relative z-10")} />
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 group-hover:opacity-100 transition-opacity relative z-10">{s.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-
-                            <button onClick={() => setIsShareOpen(false)} className="w-full h-16 bg-black text-white dark:bg-white dark:text-black hover:bg-neon-blue hover:text-black dark:hover:bg-neon-blue dark:hover:text-black border border-black/10 dark:border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] transition-all shadow-md">
-                                CLOSE
-                            </button>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
+        </CzShell>
     );
 };
 
