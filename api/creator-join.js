@@ -9,6 +9,7 @@ import { cleanHandle as cleanInstagramHandle, lookupInstagram, readCreatorSettin
 import { CREATOR_APP_ACTIONS, handleCreatorAppAction } from './_lib/creatorApp.js';
 import { verifyIdTokenSafe } from './_lib/auth.js';
 import { OUTREACH_ACTIONS, handleOutreachAction } from './_lib/outreach.js';
+import { HANDOFF_ACTIONS, handleHandoffAction } from './_lib/adminHandoff.js';
 
 export const maxDuration = 60;
 let adminDb = null;
@@ -279,7 +280,7 @@ const sendWelcomeEmail = async (toEmail, creatorName, verificationUrl, creatorDa
 
 
 // ── Access control ──────────────────────────────────────────────────────────
-const PROD_ORIGINS = ['https://newbi.live', 'https://www.newbi.live', 'https://app.newbi.live', 'https://artistant.in', 'https://www.artistant.in'];
+const PROD_ORIGINS = ['https://newbi.live', 'https://www.newbi.live', 'https://app.newbi.live', 'https://admin.newbi.live', 'https://artistant.in', 'https://www.artistant.in'];
 
 // True only for local development (Vite middleware or `vercel dev`), never on a deployed site.
 const isDevRuntime = () => (process.env.VERCEL_ENV
@@ -289,7 +290,7 @@ const isDevRuntime = () => (process.env.VERCEL_ENV
 const isAllowedOrigin = (origin) => {
     if (!origin) return false;
     if (PROD_ORIGINS.includes(origin)) return true;
-    return isDevRuntime() && /^http:\/\/((app\.)?localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+    return isDevRuntime() && /^http:\/\/(((app|admin)\.)?localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 };
 
 const isLocalDevRequest = (req) => {
@@ -471,6 +472,11 @@ export default async function handler(req, res) {
     // Campaign outreach: the public application form and the admin shortlist (api/_lib/outreach.js).
     if (OUTREACH_ACTIONS.has(action)) {
         return handleOutreachAction(action, req, res, { decodedToken });
+    }
+
+    // Staff sign-in carried over to admin.newbi.live (api/_lib/adminHandoff.js).
+    if (HANDOFF_ACTIONS.has(action)) {
+        return handleHandoffAction(action, req, res, { decodedToken, db: adminDb, adminAuth });
     }
 
     if (!PUBLIC_ACTIONS.has(action) && !decodedToken) {

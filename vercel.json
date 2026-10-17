@@ -259,50 +259,6 @@
             "permanent": true
         },
         {
-            "source": "/admin",
-            "has": [
-                {
-                    "type": "host",
-                    "value": "^app\\.newbi\\.live$"
-                }
-            ],
-            "destination": "https://admin.newbi.live/admin",
-            "permanent": false
-        },
-        {
-            "source": "/admin/:path*",
-            "has": [
-                {
-                    "type": "host",
-                    "value": "^app\\.newbi\\.live$"
-                }
-            ],
-            "destination": "https://admin.newbi.live/admin/:path*",
-            "permanent": false
-        },
-        {
-            "source": "/admin",
-            "has": [
-                {
-                    "type": "host",
-                    "value": "^(www\\.)?newbi\\.live$"
-                }
-            ],
-            "destination": "https://admin.newbi.live/admin",
-            "permanent": false
-        },
-        {
-            "source": "/admin/:path*",
-            "has": [
-                {
-                    "type": "host",
-                    "value": "^(www\\.)?newbi\\.live$"
-                }
-            ],
-            "destination": "https://admin.newbi.live/admin/:path*",
-            "permanent": false
-        },
-        {
             "source": "/",
             "has": [
                 {

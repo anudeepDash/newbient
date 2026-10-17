@@ -8,6 +8,9 @@ const APP_BASE = (import.meta.env.VITE_APP_URL || (import.meta.env.DEV ? '/app' 
 
 export const appUrl = (path = '/') => `${APP_BASE}${path === '/' ? '' : path}` || '/';
 
+// The admin (admin.newbi.live; /admin on localhost). Linked quietly from the footer.
+export const ADMIN_URL = import.meta.env.DEV ? '/admin' : 'https://admin.newbi.live';
+
 export const APP_LINKS = {
     home: appUrl('/'),
     creatorApply: appUrl('/creator/apply'),

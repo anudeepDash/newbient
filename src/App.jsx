@@ -8,6 +8,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { requestNotificationPermission, initForegroundMessaging } from './lib/notifications';
 import GlobalLoader from './components/ui/GlobalLoader';
 import { isAppHost, isAdminHost, adminUrl, landingAppBase, LANDING_ORIGIN } from './app/host';
+import { withHandoff, hasHandoffCode, redeemHandoff } from './app/adminHandoff';
 
 const Home = lazy(() => import('./pages/Home'));
 const CreatorLanding = lazy(() => import('./pages/CreatorLanding'));
@@ -120,16 +121,30 @@ function ToLanding() {
   return inPlace ? <Outlet /> : <div className="min-h-dvh bg-[#F4F2EC] dark:bg-[#050505]" />;
 }
 
+const ADMIN_ROLES = ['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'];
+
 // The admin lives on admin.newbi.live: /admin on the other production hosts makes a
-// full load there. Localhost and previews keep it in place.
+// full load there, and signed-in staff carry their sign-in over (src/app/adminHandoff.js).
+// Localhost and previews keep it in place.
 function ToAdmin() {
   const location = useLocation();
   const target = adminUrl(`${location.pathname}${location.search}${location.hash}`);
   const away = /^https?:/.test(target);
+  const authInitialized = useStore(s => s.authInitialized);
+  const role = useStore(s => s.user?.role);
   useEffect(() => {
-    if (away) window.location.replace(target);
-  }, [away, target]);
-  return away ? <div className="min-h-dvh bg-[#F4F2EC] dark:bg-[#050505]" /> : <Outlet />;
+    if (!away) return undefined;
+    let done = false;
+    const go = (url) => { if (!done) { done = true; window.location.replace(url); } };
+    // Wait for the sign-in to load (at most 5s), then go.
+    const fallback = setTimeout(() => go(target), 5000);
+    if (authInitialized) {
+      if (ADMIN_ROLES.includes(role)) withHandoff(target).then(go);
+      else go(target);
+    }
+    return () => clearTimeout(fallback);
+  }, [away, target, authInitialized, role]);
+  return away ? <GlobalLoader color="#00F0FF" /> : <Outlet />;
 }
 
 // admin.newbi.live serves only the admin; any other path goes to the same path on newbi.live.
@@ -154,12 +169,25 @@ function AppContent() {
 
   const currentColor = getColorByPath(location.pathname);
   const adminHost = isAdminHost();
+  // admin.newbi.live opened from the app with a sign-in code: sign in before showing the admin.
+  // 'pending' while the code is used, then the uid until the store has loaded that user.
+  const [handoff, setHandoff] = useState(() => (adminHost && hasHandoffCode() ? 'pending' : null));
+  useEffect(() => {
+    if (handoff !== 'pending') return;
+    redeemHandoff().then(uid => setHandoff(uid || null));
+  }, [handoff]);
+  useEffect(() => {
+    if (!handoff) return undefined;
+    const t = setTimeout(() => setHandoff(null), 8000);
+    return () => clearTimeout(t);
+  }, [handoff]);
+  const handoffBusy = handoff === 'pending' || Boolean(handoff && user?.uid !== handoff);
   const appHost = isAppHost();
   const appBase = landingAppBase();
   const onAdminPath = location.pathname === '/admin' || location.pathname.startsWith('/admin/');
   // The app's own screens; the admin (also served on app.newbi.live) is not one of them.
   const inApp = (appHost && !onAdminPath) || Boolean(appBase && (location.pathname === appBase || location.pathname.startsWith(`${appBase}/`)));
-  const isAdmin = ['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'].includes(user?.role) || safeLocalStorage.getItem('adminAuth') === 'true';
+  const isAdmin = ADMIN_ROLES.includes(user?.role) || safeLocalStorage.getItem('adminAuth') === 'true';
 
   // Foreground push handler: once per page load, not on every auth change.
   useEffect(() => {
@@ -289,7 +317,9 @@ function AppContent() {
       </AnimatePresence>
 
       <Suspense fallback={<GlobalLoader color={currentColor} />}>
-        {adminHost ? (
+        {handoffBusy ? (
+          <GlobalLoader color={currentColor} />
+        ) : adminHost ? (
           // admin.newbi.live: the admin, and nothing else.
           <Routes>
             <Route path="auth/action" element={<ActionHandler />} />
