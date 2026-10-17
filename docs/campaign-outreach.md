@@ -200,7 +200,7 @@ When the API is set up, **Messages** shows a WhatsApp API card. **Send to N** qu
 - They can also add a **UPI ID** for payment. Nothing else financial is collected: no bank account numbers, no PAN.
 - Submissions are stored on the application (`deliverables.{taskId}`, with a short history). They're rate-limited per network and audited.
 
-### Review (Outreach → Deliverables)
+### Review (Outreach → Review posts)
 
 - **Approve**, or **Ask for changes** with a reason. The reason goes to the creator on WhatsApp (`campaign_deliverable_changes`) with their link, and they send it again.
 - When every **required** deliverable is approved, the person moves to **Posted** automatically.

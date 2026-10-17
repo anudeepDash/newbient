@@ -115,7 +115,7 @@ const TaskCard = ({ token, task, onDone }) => {
                         {[task.required ? 'Required' : 'Optional', task.deadline && `due ${formatDeadline(String(task.deadline).slice(0, 10))}`].filter(Boolean).join(' · ')}
                     </p>
                 </div>
-                <ToneChip tone={meta.tone === 'rose' ? 'red' : meta.tone}>{meta.label}</ToneChip>
+                <ToneChip tone={meta.tone === 'rose' ? 'red' : meta.tone} className="shrink-0 whitespace-nowrap">{meta.label}</ToneChip>
             </div>
             {isPresent(task.description) && <p className="text-[14px] text-gray-600 dark:text-zinc-400">{task.description}</p>}
             {task.status === 'rejected' && task.reason && <Notice tone="warn" title="What to change">{task.reason}</Notice>}
