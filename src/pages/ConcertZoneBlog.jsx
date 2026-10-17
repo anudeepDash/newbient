@@ -1,570 +1,287 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../lib/utils';
 import Search from 'lucide-react/dist/esm/icons/search';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import Play from 'lucide-react/dist/esm/icons/play';
-import Users from 'lucide-react/dist/esm/icons/users';
-import BookOpen from 'lucide-react/dist/esm/icons/book-open';
-import Newspaper from 'lucide-react/dist/esm/icons/newspaper';
+import X from 'lucide-react/dist/esm/icons/x';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
-import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import User from 'lucide-react/dist/esm/icons/user';
-import Star from 'lucide-react/dist/esm/icons/star';
-import Home from 'lucide-react/dist/esm/icons/home';
-import Instagram from 'lucide-react/dist/esm/icons/instagram';
-import Eye from 'lucide-react/dist/esm/icons/eye';
+import Newspaper from 'lucide-react/dist/esm/icons/newspaper';
+import { cn } from '../lib/utils';
 import { useStore } from '../lib/store';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import BlogNewsletter from '../components/blog/BlogNewsletter';
 import AdSenseSlot from '../components/blog/AdSenseSlot';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { TEST_POSTS } from './concertzone/testPosts';
+import { CATEGORIES, CzShell, StoryCard, PostMedia, CategoryChip, Meta, Label, postPath, formatDate } from './concertzone/czShared';
 
-// Ad Slot wrapper
-const AdSlot = ({ className = '', format = 'horizontal', slot = '' }) => (
-    <AdSenseSlot 
-        className={className} 
-        adSlot={slot} 
-        adFormat={format === 'horizontal' ? 'horizontal' : 'auto'}
-        style={{ display: 'block', minHeight: format === 'horizontal' ? '96px' : '280px' }}
-    />
-);
+// Only where an ad unit is configured: an empty slot would leave a blank gap.
+const AdSlot = ({ className = '', slot = '' }) => (slot
+    ? <AdSenseSlot className={className} adSlot={slot} adFormat="horizontal" style={{ display: 'block', minHeight: '96px' }} />
+    : null);
 
-const isRawVideo = (url) => {
-    if (!url) return false;
-    return !!(url.match(/\.(mp4|webm|ogg|mov)$/i) || url.includes('cloudinary.com') || url.includes('firebasestorage.googleapis.com'));
-};
+const ROTATE_MS = 8000;
 
-const getVideoEmbedUrl = (url) => {
-    if (!url) return null;
-    let id = '';
-    if (url.includes('youtube.com/watch?v=')) {
-        id = url.split('v=')[1]?.split('&')[0];
-    } else if (url.includes('youtu.be/')) {
-        id = url.split('/').pop();
-    } else if (url.includes('youtube.com/shorts/')) {
-        id = url.split('shorts/')[1]?.split('?')[0]?.split('&')[0];
-    } else if (url.includes('youtube.com/embed/')) {
-        id = url.split('embed/')[1]?.split('?')[0]?.split('&')[0];
-    }
-
-    if (id) {
-        return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&playsinline=1&showinfo=0&rel=0&modestbranding=1`;
-    }
-
-    if (url.includes('vimeo.com/')) {
-        const id = url.split('/').pop()?.split('?')[0];
-        return `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&background=1&loop=1&byline=0&title=0`;
-    }
-    if (url.includes('instagram.com/')) {
-        const base = url.split('?')[0];
-        return `${base}${base.endsWith('/') ? '' : '/'}embed/`;
-    }
-    return url;
-};
-
-const CATEGORIES = [
-    { id: 'all', label: 'All', icon: Newspaper },
-    { id: 'live-events', label: 'Live Events', icon: Play },
-    { id: 'artists', label: 'Artists', icon: Users },
-    { id: 'guides', label: 'Guides', icon: BookOpen },
-    { id: 'buzz', label: 'Buzz', icon: Zap }
-];
-
-// Tiny reusable card for sidebar / compact lists
-const MiniCard = ({ post, isActive, progress = 0 }) => {
-    const slug = post.category?.toLowerCase().replace(' ', '-') || 'news';
-    return (
-        <Link to={`/concertzone/${slug}/${post.slug}`} 
-            className={cn(
-                "group relative flex gap-3 md:gap-5 items-center py-4 md:py-5 px-2 md:px-4 bg-white/[0.01] border border-white/0 transition-all duration-500 rounded-2xl overflow-hidden",
-                isActive ? "bg-white/[0.05] border-black/10 dark:border-white/10" : "hover:border-black/10 dark:hover:border-white/5 hover:bg-white/[0.03]"
-            )}
-        >
-            {/* Active Progress Overlay */}
-            {isActive && (
-                <div className="absolute bottom-0 left-0 h-0.5 bg-neon-blue z-20 transition-all duration-100 ease-linear" style={{ width: `${progress}%` }} />
-            )}
-
-            <div className="relative w-24 h-16 rounded-xl overflow-hidden shrink-0 border border-black/10 dark:border-white/10 group-hover:border-neon-blue/30 transition-colors">
-                <img 
-                    src={post.coverImage} 
-                    alt="" 
-                    className="w-full h-full grayscale-[30%] group-hover:grayscale-0 transition-all duration-700" 
-                    style={{ 
-                        objectFit: 'cover', 
-                        transform: `scale(${post.coverImageScale || 1})`,
-                        transformOrigin: `${post.coverImagePosX ?? 50}% ${post.coverImagePosY ?? 50}%`
-                    }}
-                />
-            </div>
-            <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1.5">
-                    <span className={cn("text-[8px] font-black uppercase tracking-[0.2em]", isActive ? "text-neon-blue" : "text-neon-blue/80")}>{post.category}</span>
-                    <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
-                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-600 flex items-center gap-1"><Eye size={10} className="text-neon-blue/40" /> {post.viewCount || 0}</span>
-                    <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
-                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-600">{post.readingTime || 5} MIN</span>
-                </div>
-                <h4 className={cn("text-sm font-bold leading-tight tracking-tight transition-colors line-clamp-2", isActive ? "text-gray-900 dark:text-white" : "text-gray-900 dark:text-white/60 group-hover:text-gray-900 dark:group-hover:text-white")}>{post.title}</h4>
-            </div>
-        </Link>
-    );
-};
-
-// Standard grid card (compact)
-const StoryCard = ({ post }) => {
-    const slug = post.category?.toLowerCase().replace(' ', '-') || 'news';
-    return (
-        <Link to={`/concertzone/${slug}/${post.slug}`} className="group flex flex-col h-full relative bg-gray-100 dark:bg-slate-900/30 backdrop-blur-3xl border border-black/10 dark:border-white/5 rounded-[2rem] overflow-hidden hover:border-white/15 transition-all duration-500 hover:-translate-y-1">
-
-            <div className="relative aspect-[16/10] overflow-hidden">
-                <img 
-                    src={post.coverImage} 
-                    alt="" 
-                    className="w-full h-full transition-transform duration-700 group-hover:scale-105" 
-                    style={{ 
-                        objectFit: 'cover', 
-                        transform: `scale(${post.coverImageScale || 1})`,
-                        transformOrigin: `${post.coverImagePosX ?? 50}% ${post.coverImagePosY ?? 50}%`
-                    }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#060606]/80 via-transparent to-transparent" />
-                <div className="absolute top-4 left-4 flex items-center gap-2">
-                    <span className="px-3 py-1 bg-white dark:bg-black/60 backdrop-blur-md text-[8px] font-black uppercase tracking-[0.2em] rounded-xl border border-black/10 dark:border-white/10 text-gray-900 dark:text-white/90">{post.category}</span>
-                </div>
-            </div>
-            
-            <div className="p-6">
-                <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.3em] text-gray-500 mb-4">
-                    <span className="flex items-center gap-1.5"><Clock size={10} className="text-neon-blue" /> {post.readingTime || 5} MIN</span>
-                    <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
-                    <span className="flex items-center gap-1.5"><Eye size={10} className="text-neon-blue" /> {post.viewCount || 0}</span>
-                    <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
-                    <span>{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                </div>
-                
-                <h3 className="text-lg md:text-xl font-extrabold leading-tight tracking-tight mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-gray-900 dark:group-hover:from-white group-hover:to-blue-500 dark:group-hover:to-neon-blue transition-all duration-500 line-clamp-2">
-                    {post.title}
-                </h3>
-                
-                <p className="text-gray-500 text-xs line-clamp-2 leading-relaxed font-medium mb-6 opacity-70 group-hover:opacity-100 transition-opacity">
-                    {post.shortDescription}
-                </p>
-                
-                <div className="flex items-center justify-between pt-5 border-t border-black/10 dark:border-white/5 mt-auto">
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center">
-                            <User size={10} className="text-gray-600 dark:text-gray-400" />
-                        </div>
-                        <span className="text-[8px] font-black uppercase tracking-widest text-gray-600">{post.author || 'NEWBI TEAM'}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-neon-blue group-hover:translate-x-1 transition-transform">
-                        READ <ArrowRight size={10} />
-                    </div>
-                </div>
-            </div>
-        </Link>
-    );
-};
+// The featured story rotates every few seconds (not for people who prefer reduced motion,
+// and not while the pointer or keyboard focus is on it).
+function useRotation(count) {
+    const [index, setIndex] = useState(0);
+    const [paused, setPaused] = useState(false);
+    const [reduced, setReduced] = useState(false);
+    useEffect(() => {
+        const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+        setReduced(Boolean(mq?.matches));
+    }, []);
+    useEffect(() => { if (index >= count) setIndex(0); }, [count, index]);
+    useEffect(() => {
+        if (count <= 1 || paused || reduced) return undefined;
+        const t = setTimeout(() => setIndex((i) => (i + 1) % count), ROTATE_MS);
+        return () => clearTimeout(t);
+    }, [count, index, paused, reduced]);
+    const running = count > 1 && !paused && !reduced;
+    return { index: Math.min(index, Math.max(count - 1, 0)), setIndex, setPaused, running };
+}
 
 const ConcertZoneBlog = () => {
     useStoreSubscription(['posts']);
-    useDynamicMeta({
-        page: 'concertzone',
-        url: window.location.href
-    });
+    useDynamicMeta({ page: 'concertzone', url: window.location.href });
 
     const { category } = useParams();
     const navigate = useNavigate();
     const { posts, siteSettings } = useStore();
     const [searchQuery, setSearchQuery] = useState('');
-    const [visibleCount, setVisibleCount] = useState(12);
-    const [scrolled, setScrolled] = useState(false);
+    const [visibleCount, setVisibleCount] = useState(9);
 
-    const layout = siteSettings?.concertzone || {
-        mastheadVol: 'VOL 01',
-        mastheadEst: 'EST. 2026',
-        heroSubtitle: 'MUSIC, LIFE & CULTURE.',
-        accentColor: '#00ffff'
-    };
-
-
-    const activeCategory = category || 'all';
-
-    const tickerItems = siteSettings?.blogTicker || [
-        'Welcome to ConcertZone — India\'s music culture hub',
+    const layout = siteSettings?.concertzone || {};
+    const eyebrow = [layout.mastheadVol || 'Vol 01', layout.heroSubtitle || 'Music, life & culture'].filter(Boolean).join(' · ');
+    const tickerItems = (siteSettings?.blogTicker?.length ? siteSettings.blogTicker : [
+        "Welcome to ConcertZone, India's music culture hub",
         'New artist spotlights every week',
-        'Submit your story → editorial@newbi.live'
-    ];
+        'Submit your story: editorial@newbi.live',
+    ]).filter(Boolean);
 
-    useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 300);
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    const activeCategory = CATEGORIES.some((c) => c.id === category) ? category : 'all';
+    const activeLabel = CATEGORIES.find((c) => c.id === activeCategory)?.label;
+
+    useEffect(() => { setVisibleCount(9); }, [activeCategory, searchQuery]);
 
     const filteredPosts = useMemo(() => {
-        let result = posts.filter(p => p.status === 'Published');
+        let result = posts.filter((p) => p.status === 'Published');
         if (result.length === 0) result = [...TEST_POSTS];
-
-        if (activeCategory !== 'all') {
-            const label = CATEGORIES.find(c => c.id === activeCategory)?.label;
-            result = result.filter(p => p.category === label);
-        }
-        if (searchQuery) {
-            result = result.filter(p =>
-                p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                p.shortDescription?.toLowerCase().includes(searchQuery.toLowerCase())
+        if (activeCategory !== 'all') result = result.filter((p) => p.category === activeLabel);
+        const q = searchQuery.trim().toLowerCase();
+        if (q) {
+            result = result.filter((p) =>
+                p.title?.toLowerCase().includes(q) || p.shortDescription?.toLowerCase().includes(q)
             );
         }
         return result.sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate));
-    }, [posts, activeCategory, searchQuery]);
+    }, [posts, activeCategory, activeLabel, searchQuery]);
 
+    // While searching, show plain results: no featured split.
+    const searching = Boolean(searchQuery.trim());
     const featuredPosts = useMemo(() => {
-        const featured = filteredPosts.filter(p => p.featured);
-        return featured.length > 0 ? featured : filteredPosts.slice(0, 3);
-    }, [filteredPosts]);
+        if (searching) return [];
+        const featured = filteredPosts.filter((p) => p.featured);
+        return (featured.length > 0 ? featured : filteredPosts).slice(0, 4);
+    }, [filteredPosts, searching]);
 
-    const [leadIndex, setLeadIndex] = useState(0);
-    const [rotationProgress, setRotationProgress] = useState(0);
-
-    useEffect(() => {
-        if (featuredPosts.length <= 1) return;
-        
-        const duration = 8000; // 8 seconds per slide
-        const interval = 50; 
-        const step = (interval / duration) * 100;
-
-        const timer = setInterval(() => {
-            setRotationProgress(prev => {
-                if (prev >= 100) {
-                    setLeadIndex(idx => (idx + 1) % featuredPosts.length);
-                    return 0;
-                }
-                return prev + step;
-            });
-        }, interval);
-
-        return () => clearInterval(timer);
-    }, [featuredPosts.length]);
-
+    const { index: leadIndex, setIndex: setLeadIndex, setPaused, running } = useRotation(featuredPosts.length);
     const leadPost = featuredPosts[leadIndex];
-    // Filtered lists for the rest of the layout
-    const gridPosts = filteredPosts.filter(p => !featuredPosts.find(f => f.id === p.id)).slice(0, visibleCount);
+    const restPosts = filteredPosts.filter((p) => !featuredPosts.some((f) => f.id === p.id));
+    const gridPosts = restPosts.slice(0, visibleCount);
 
-    const handleCategoryChange = (catId) => {
-        if (catId === 'all') navigate('/concertzone');
-        else navigate(`/concertzone/${catId}`);
-    };
-
-    const leadSlug = leadPost?.category?.toLowerCase().replace(' ', '-') || 'news';
+    const goCategory = (id) => navigate(id === 'all' ? '/concertzone' : `/concertzone/${id}`);
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-dark text-gray-900 dark:text-white pb-32 relative selection:bg-neon-blue selection:text-black">
+        <CzShell>
+            {/* Masthead */}
+            <section className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 pt-10 md:pt-16 pb-8">
+                <Label>{eyebrow}</Label>
+                <h1 className="mt-3 font-heading font-extrabold tracking-[-0.05em] leading-[0.88] text-[13.5vw] sm:text-[11vw] lg:text-[9.5rem] text-gray-950 dark:text-white">
+                    {activeCategory === 'all' ? (
+                        <>Concert<span className="text-gray-400 dark:text-zinc-600">Zone</span><span className="text-[var(--cz-accent)] [-webkit-text-stroke:2px_rgba(0,0,0,0.3)] dark:[-webkit-text-stroke:0]">.</span></>
+                    ) : (
+                        <>{activeLabel}<span className="text-[var(--cz-accent)] [-webkit-text-stroke:2px_rgba(0,0,0,0.3)] dark:[-webkit-text-stroke:0]">.</span></>
+                    )}
+                </h1>
+                <p className="mt-5 max-w-xl text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400">
+                    {activeCategory === 'all'
+                        ? "India's music culture, written down: live events, artists, guides and the buzz."
+                        : `Every ${activeLabel.toLowerCase()} story on ConcertZone, newest first.`}
+                </p>
+            </section>
 
-
-            {/* Anchored Top Bar (Ticker + Navigation) */}
-            <div className="fixed top-0 left-0 right-0 z-[200] bg-white dark:bg-black/60 backdrop-blur-3xl border-b border-black/10 dark:border-white/5 flex items-center h-16 px-6 md:px-12 gap-8">
-                <Link to="/" className="flex items-center gap-2 group whitespace-nowrap">
-                    <Home size={14} className="text-neon-blue group-hover:scale-110 transition-transform" />
-                    <span className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">newbi.live</span>
-                </Link>
-                <div className="w-[1px] h-6 bg-black/10 dark:bg-white/10 hidden md:block" />
-
-
-
-
-                <div className="flex-1 overflow-hidden h-full flex items-center">
-                    <div className="flex whitespace-nowrap animate-marquee">
-                        {[1, 2, 3, 4, 5].map(i => (
-                            <div key={i} className="flex items-center gap-10 px-6">
-                                {tickerItems.map((item, idx) => (
-                                    <React.Fragment key={idx}>
-                                        <span className="text-[9px] font-semibold uppercase tracking-widest text-neon-blue/70">{item}</span>
-                                        <span className="text-neon-blue/20 text-xs">◆</span>
+            {/* Ticker */}
+            {tickerItems.length > 0 && (
+                <div className="border-y border-black/[0.08] dark:border-white/10 h-11 overflow-hidden flex items-center" aria-label="ConcertZone news">
+                    <div className="flex whitespace-nowrap animate-marquee motion-reduce:animate-none">
+                        {[0, 1, 2, 3].map((n) => (
+                            <div key={n} className="flex items-center gap-6 pr-6" aria-hidden={n > 0 ? 'true' : undefined}>
+                                {tickerItems.map((item, i) => (
+                                    <React.Fragment key={i}>
+                                        <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-gray-700 dark:text-zinc-300">{item}</span>
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--cz-accent)]" />
                                     </React.Fragment>
                                 ))}
                             </div>
                         ))}
                     </div>
                 </div>
-            </div>
+            )}
 
-            {/* Immersive Background Effects (Newbi Home Feel) */}
-            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-                {/* Dynamic Glows */}
-                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-neon-blue/10 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-neon-pink/10 rounded-full blur-[120px]" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-radial from-transparent via-black/40 to-dark z-10" />
-
-                {/* Animated Grid / Mesh Pattern */}
-                <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
-            </div>
-
-            {/* Vertical Sidebar Identity */}
-            <div className="fixed left-5 top-1/2 -translate-y-1/2 hidden xl:flex flex-col items-center gap-8 z-50 mix-blend-difference">
-                <span className="text-[8px] font-black uppercase tracking-[0.6em] rotate-180 [writing-mode:vertical-lr] text-gray-900 dark:text-white/25">Concert Zone</span>
-                <div className="w-[1px] h-20 bg-black/10 dark:bg-white/10" />
-                <span className="text-[8px] font-black uppercase tracking-[0.6em] rotate-180 [writing-mode:vertical-lr] text-neon-blue/60">Vol. 01 · 2026</span>
-            </div>
-
-            {/* Floating Bottom Nav (Desktop Only on Scroll) */}
-            <nav className={`hidden md:block fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 ${scrolled ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
-                <div className="bg-gray-100 dark:bg-slate-900/40 backdrop-blur-3xl border border-black/10 dark:border-white/5 rounded-2xl px-2 py-1.5 flex items-center gap-1 shadow-inner">
-                    {CATEGORIES.map((cat) => (
-                        <button key={cat.id} onClick={() => handleCategoryChange(cat.id)}
-                            className={cn("h-8 px-4 rounded-xl flex items-center gap-1.5 transition-all text-[8px] font-bold uppercase tracking-wider",
-                                activeCategory === cat.id ? "bg-white text-black" : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
-                            )}>
-                            <cat.icon size={10} />
-                            <span className="hidden md:inline">{cat.label}</span>
-                        </button>
-                    ))}
-                </div>
-            </nav>
-
-            {/* ═══ MAGAZINE LAYOUT ═══ */}
-            <div className="max-w-[1800px] mx-auto px-4 md:px-16 pt-32 md:pt-40 relative z-10 overflow-x-hidden">
-                
-
-
-                {/* Redesigned High-Fidelity Masthead */}
-                <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col items-start mb-12 md:mb-20 px-4 md:px-0 w-full"
-                >
-                    <div className="flex items-center gap-4 mb-4 md:mb-6">
-                        <div className="w-1.5 h-1.5 rounded-full bg-neon-blue shadow-[0_0_10px_#00ffff]" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">The Editorial Hub</span>
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 pb-20">
+                {/* Sections + search */}
+                <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-10">
+                    <div role="group" aria-label="Sections" className="-mx-4 px-4 sm:mx-0 sm:px-0 flex gap-2 overflow-x-auto no-scrollbar">
+                        {CATEGORIES.map((c) => (
+                            <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => goCategory(c.id)}
+                                aria-pressed={activeCategory === c.id}
+                                className={cn(
+                                    'shrink-0 min-h-[44px] px-5 rounded-full text-sm font-semibold transition-colors ring-1 ring-inset',
+                                    activeCategory === c.id
+                                        ? 'bg-gray-950 text-white ring-gray-950 dark:bg-white dark:text-black dark:ring-white'
+                                        : 'bg-white/60 dark:bg-white/[0.04] text-gray-700 dark:text-zinc-300 ring-black/10 dark:ring-white/15 hover:ring-black/30 dark:hover:ring-white/40'
+                                )}
+                            >
+                                {c.label}
+                            </button>
+                        ))}
                     </div>
-                    <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[8rem] font-extrabold font-heading uppercase tracking-tight leading-[0.95] text-gray-900 dark:text-white flex flex-row flex-wrap md:flex-nowrap items-center justify-start gap-x-3 md:gap-8 w-full overflow-hidden text-left">
-                        <span>Concert</span> <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-950 via-gray-800 to-gray-500 dark:from-white dark:via-white to-neon-blue">Zone.</span>
-                    </h1>
-                </motion.div>
-
-                {/* Control Bar — Categories + Search Integrated */}
-                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-8 mb-16">
-                    {/* Category Bar — Floating Glass Pill Aesthetic */}
-                    <div className="flex-1 overflow-hidden relative group w-full">
-                        {/* Fade Edges for Scroll Suggestion */}
-                        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-dark via-dark/80 to-transparent z-20 pointer-events-none md:hidden" />
-                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-dark via-dark/80 to-transparent z-20 pointer-events-none md:hidden" />
-                        
-                        <div className="flex items-center gap-3 md:gap-4 overflow-x-auto no-scrollbar pb-6 -mb-6 px-4 md:px-0 scroll-smooth">
-                            {CATEGORIES.map((cat) => (
-                                <button
-                                    key={cat.id}
-                                    onClick={() => handleCategoryChange(cat.id)}
-                                    className={cn(
-                                        "flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border shrink-0",
-                                        activeCategory === cat.id 
-                                            ? "bg-white text-black border-white shadow-[0_10px_30px_rgba(255,255,255,0.2)]" 
-                                            : "bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 border-black/10 dark:border-white/5 hover:bg-black/10 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
-                                    )}
-                                >
-                                    <cat.icon size={12} className={cn("hidden xs:block md:size-[14px]", activeCategory === cat.id ? "text-black" : "text-neon-blue/60")} />
-                                    {cat.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="relative group flex-1 max-w-md w-full">
-                        <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-900 dark:text-white/40 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-all" size={18} />
-                        <input 
-                            type="text" 
-                            placeholder="SEARCH ARTICLES..." 
-                            value={searchQuery} 
+                    <div className="relative lg:ml-auto lg:w-80">
+                        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 pointer-events-none" aria-hidden="true" />
+                        <input
+                            type="search"
+                            value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-gray-100 dark:bg-slate-950/40 border border-black/10 dark:border-white/5 rounded-2xl pl-20 pr-8 h-16 w-full text-[11px] font-black uppercase tracking-widest focus:outline-none focus:border-neon-blue/20 focus:bg-gray-100 dark:focus:bg-slate-950/60 transition-all placeholder:text-gray-500 backdrop-blur-3xl"
+                            placeholder="Search stories"
+                            aria-label="Search stories"
+                            className="w-full h-12 pl-11 pr-11 rounded-full bg-white dark:bg-white/[0.04] ring-1 ring-inset ring-black/10 dark:ring-white/15 text-base text-gray-950 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[var(--cz-accent)] [&::-webkit-search-cancel-button]:hidden"
                         />
+                        {searchQuery && (
+                            <button type="button" onClick={() => setSearchQuery('')} aria-label="Clear search" className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-gray-500 hover:text-gray-950 dark:hover:text-white">
+                                <X size={16} aria-hidden="true" />
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                {/* ═══ LEAD STORY + SIDEBAR (Magazine Split) ═══ */}
+                {/* Lead story + the other featured stories */}
                 {leadPost && (
-                    <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-16">
-                        {/* Lead Story — 2/3 width */}
-                        <div className="lg:col-span-2 relative group overflow-hidden rounded-[2.5rem] md:rounded-[3rem]">
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={leadPost.id}
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                    transition={{ duration: 0.8, ease: "easeOut" }}
-                                    className="relative"
-                                >
-                                    <Link to={`/concertzone/${leadSlug}/${leadPost.slug}`} className="block relative rounded-[2.5rem] md:rounded-[3rem] overflow-hidden aspect-[4/5] sm:aspect-[16/10] border border-black/10 dark:border-white/5 group-hover:border-black/20 dark:group-hover:border-white/20 transition-all duration-700">
-                                        {leadPost.videoUrl ? (
-                                            isRawVideo(leadPost.videoUrl) ? (
-                                                <video 
-                                                    src={leadPost.videoUrl} 
-                                                    autoPlay 
-                                                    muted 
-                                                    loop 
-                                                    playsInline
-                                                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full pointer-events-none transition-transform duration-1000 group-hover:scale-110 relative overflow-hidden">
-                                                    <iframe 
-                                                        src={getVideoEmbedUrl(leadPost.videoUrl)} 
-                                                        className="absolute top-1/2 left-1/2 w-[130%] h-[130%] -translate-x-1/2 -translate-y-1/2 pointer-events-none object-cover border-none" 
-                                                        allow="autoplay; encrypted-media" 
-                                                        title={leadPost.title}
-                                                    />
-                                                </div>
-                                            )
-                                        ) : (
-                                            <img 
-                                                src={leadPost.coverImage} 
-                                                alt={leadPost.title}
-                                                className="w-full h-full transition-transform duration-1000 group-hover:scale-110" 
-                                                style={{ 
-                                                    objectFit: 'cover', 
-                                                    transform: `scale(${leadPost.coverImageScale || 1})`,
-                                                    transformOrigin: `${leadPost.coverImagePosX ?? 50}% ${leadPost.coverImagePosY ?? 50}%`
-                                                }}
-                                            />
-                                        )}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                                        <div className="absolute inset-0 bg-white dark:bg-black/20 group-hover:bg-white dark:group-hover:bg-black/0 transition-all duration-700" />
-
-                                        <div className="absolute top-8 left-8 flex items-center gap-3">
-                                            <span className="px-5 py-2 bg-neon-blue text-black text-[10px] font-black uppercase tracking-widest rounded-2xl italic shadow-[0_10px_30px_rgba(0,255,255,0.3)]">{leadPost.category}</span>
-                                            <span className="px-5 py-2 bg-white dark:bg-black/60 backdrop-blur-xl text-gray-900 dark:text-white/70 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-black/10 dark:border-white/10 flex items-center gap-2">
-                                                <Clock size={12} className="text-neon-blue" /> {leadPost.readingTime || 5} MIN
-                                            </span>
-                                            <span className="px-5 py-2 bg-white dark:bg-black/60 backdrop-blur-xl text-gray-900 dark:text-white/70 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-black/10 dark:border-white/10 flex items-center gap-2">
-                                                <Eye size={12} className="text-neon-blue" /> {leadPost.viewCount || 0}
-                                            </span>
-                                        </div>
-
-                                        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12">
-                                            <motion.h2 
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className="text-3xl sm:text-4xl md:text-6xl font-extrabold font-heading tracking-tight leading-[1.05] mb-4 md:mb-6 group-hover:translate-x-2 transition-transform duration-700"
-                                            >
-                                                {leadPost.title.split(' ').map((word, i) => (
-                                                    <span key={i} className={i % 2 === 1 ? "text-transparent bg-clip-text bg-gradient-to-r from-black to-neon-blue dark:from-white dark:to-neon-blue" : "text-gray-900 dark:text-white"}>
-                                                        {word}{' '}
-                                                    </span>
-                                                ))}
-                                            </motion.h2>
-                                            <p className="text-gray-700 dark:text-gray-300 text-xs md:text-lg font-medium max-w-2xl line-clamp-3 md:line-clamp-2 opacity-70 group-hover:opacity-100 transition-opacity mb-6 md:mb-8 leading-relaxed italic">{leadPost.shortDescription}</p>
-                                            <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.4em] text-gray-900 dark:text-white/30">
-                                                <span className="flex items-center gap-2"><User size={12} className="text-neon-blue" /> {leadPost.author || 'NEWBI TEAM'}</span>
-                                                <div className="w-1 h-1 rounded-full bg-black/20 dark:bg-white/20" />
-                                                <span>{new Date(leadPost.publishDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="absolute bottom-12 right-12 w-20 h-20 bg-white text-black rounded-[2rem] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 shadow-2xl rotate-12 group-hover:rotate-0">
-                                            <ArrowUpRight size={32} />
-                                        </div>
-                                    </Link>
-                                </motion.div>
-                            </AnimatePresence>
-                        </div>
-
-                        {/* Sidebar — 1/3 width */}
-                        <div className="lg:col-span-1">
-                            <div className="bg-gray-100 dark:bg-slate-900/20 border border-black/10 dark:border-white/5 rounded-2xl p-2 md:p-4 h-full">
-                                <div className="flex items-center gap-2 mb-3 py-3 px-2 border-b border-black/10 dark:border-white/5">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-neon-pink shadow-[0_0_10px_rgba(255,0,85,0.5)]" />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-900 dark:text-white">Featured Stories</span>
-                                </div>
-                                {featuredPosts.map((post, idx) => (
-                                    <MiniCard 
-                                        key={post.id} 
-                                        post={post} 
-                                        isActive={idx === leadIndex}
-                                        progress={idx === leadIndex ? rotationProgress : 0}
-                                    />
-                                ))}
+                    <section aria-label="Featured" className="grid gap-6 lg:grid-cols-[1.75fr_1fr] mb-14">
+                        <Link
+                            to={postPath(leadPost)}
+                            onMouseEnter={() => setPaused(true)}
+                            onMouseLeave={() => setPaused(false)}
+                            onFocus={() => setPaused(true)}
+                            onBlur={() => setPaused(false)}
+                            className="group relative block overflow-hidden rounded-[1.75rem] aspect-[4/5] sm:aspect-[16/10] bg-zinc-900 ring-1 ring-black/10 dark:ring-white/10"
+                        >
+                            <PostMedia key={leadPost.id} post={leadPost} video eager className="transition-transform duration-[1200ms] group-hover:scale-[1.03]" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
+                            <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 md:p-10 text-white">
+                                {leadPost.category && <CategoryChip>{leadPost.category}</CategoryChip>}
+                                <h2 className="mt-4 max-w-3xl font-heading font-extrabold tracking-[-0.03em] leading-[1.02] text-[2rem] sm:text-5xl lg:text-6xl">
+                                    {leadPost.title}
+                                </h2>
+                                {leadPost.shortDescription && (
+                                    <p className="mt-3 max-w-2xl text-sm sm:text-base leading-relaxed text-white/80 line-clamp-3 sm:line-clamp-2">{leadPost.shortDescription}</p>
+                                )}
+                                <Meta post={leadPost} className="mt-4 text-white/70" />
                             </div>
-                        </div>
+                        </Link>
+
+                        {featuredPosts.length > 1 && (
+                            <div className="flex flex-col">
+                                <Label className="mb-2">Featured</Label>
+                                <ol className="flex flex-col divide-y divide-black/[0.08] dark:divide-white/10 border-y border-black/[0.08] dark:border-white/10">
+                                    {featuredPosts.map((post, idx) => {
+                                        const active = idx === leadIndex;
+                                        return (
+                                            <li key={post.id} className="relative">
+                                                <Link
+                                                    to={postPath(post)}
+                                                    onMouseEnter={() => { setLeadIndex(idx); setPaused(true); }}
+                                                    onMouseLeave={() => setPaused(false)}
+                                                    className="group flex items-center gap-4 py-4"
+                                                >
+                                                    <span className={cn('w-20 h-14 sm:w-24 sm:h-16 shrink-0 overflow-hidden rounded-xl bg-gray-200 dark:bg-zinc-900 transition-opacity', active ? 'opacity-100' : 'opacity-70 group-hover:opacity-100')}>
+                                                        <PostMedia post={post} />
+                                                    </span>
+                                                    <span className="min-w-0">
+                                                        <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-gray-500 dark:text-zinc-500">{post.category}{post.publishDate && ` · ${formatDate(post.publishDate)}`}</span>
+                                                        <span className={cn('mt-1 block font-heading font-bold leading-snug line-clamp-2 transition-colors', active ? 'text-gray-950 dark:text-white' : 'text-gray-600 dark:text-zinc-400 group-hover:text-gray-950 dark:group-hover:text-white')}>
+                                                            {post.title}
+                                                        </span>
+                                                    </span>
+                                                </Link>
+                                                {active && (
+                                                    <span aria-hidden="true" className="absolute left-0 right-0 -bottom-px h-0.5 overflow-hidden">
+                                                        <span
+                                                            key={`${leadIndex}-${running}`}
+                                                            className={cn('block h-full bg-[var(--cz-accent)] origin-left', running && 'animate-[czProgress_8s_linear_forwards]')}
+                                                            style={running ? undefined : { transform: 'scaleX(1)' }}
+                                                        />
+                                                    </span>
+                                                )}
+                                            </li>
+                                        );
+                                    })}
+                                </ol>
+                            </div>
+                        )}
                     </section>
                 )}
 
-                {/* Ad Slot — Between Sections */}
-                <AdSlot className="my-10" format="horizontal" slot={import.meta.env.VITE_ADSENSE_SLOT_HUB_TOP} />
+                <AdSlot className="mb-14" slot={import.meta.env.VITE_ADSENSE_SLOT_HUB_TOP} />
 
-                {/* ═══ GRID SECTION ═══ */}
+                {/* Everything else */}
                 {gridPosts.length > 0 && (
-                    <section className="mb-20">
-                        <div className="flex items-center gap-3 mb-8 px-6 md:px-0">
-                            <div className="w-1.5 h-1.5 rounded-full bg-neon-blue" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600 dark:text-gray-400">MORE STORIES</span>
-                            <div className="flex-1 h-[1px] bg-black/5 dark:bg-white/5" />
+                    <section aria-labelledby="cz-latest" className="mb-16">
+                        <div className="flex items-baseline justify-between gap-4 mb-6">
+                            <h2 id="cz-latest" className="font-heading text-2xl md:text-3xl font-extrabold tracking-[-0.03em]">
+                                {searching ? `Results for “${searchQuery.trim()}”` : 'Latest stories'}
+                            </h2>
+                            <Label>{restPosts.length} {restPosts.length === 1 ? 'story' : 'stories'}</Label>
                         </div>
-
-                        <div className="relative group">
-                            {/* Mobile Scroll Indicators */}
-                            <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-dark via-dark/80 to-transparent z-20 pointer-events-none md:hidden" />
-                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-dark via-dark/80 to-transparent z-20 pointer-events-none md:hidden" />
-
-                            <div className="flex flex-row flex-nowrap overflow-x-auto no-scrollbar lg:grid lg:grid-cols-3 gap-6 md:gap-10 px-0 pb-12 -mb-8 snap-x snap-mandatory scroll-smooth w-full">
-                                <AnimatePresence mode="popLayout">
-                                    {gridPosts.slice(0, visibleCount).map((post, index) => (
-                                        <motion.div 
-                                            key={post.id} 
-                                            layout 
-                                            initial={{ opacity: 0, y: 10 }} 
-                                            animate={{ opacity: 1, y: 0 }} 
-                                            transition={{ delay: index * 0.04 }}
-                                            className="min-w-[70%] sm:min-w-[280px] lg:min-w-0 snap-start shrink-0"
-                                        >
-                                            <StoryCard post={post} />
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
-                            </div>
-                        </div>
-
-                        {gridPosts.length > visibleCount && (
-                            <div className="flex justify-center pt-12 md:flex hidden">
-                                <button onClick={() => setVisibleCount(prev => prev + 6)}
-                                    className="h-10 px-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-bold uppercase tracking-wider text-[10px] hover:bg-black/10 dark:hover:bg-white/10 transition-all rounded-lg flex items-center gap-2">
-                                    Load More <ArrowRight size={12} />
+                        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                            {gridPosts.map((post) => <li key={post.id}><StoryCard post={post} /></li>)}
+                        </ul>
+                        {restPosts.length > visibleCount && (
+                            <div className="flex justify-center mt-10">
+                                <button
+                                    type="button"
+                                    onClick={() => setVisibleCount((n) => n + 9)}
+                                    className="h-12 px-7 inline-flex items-center gap-2 rounded-full bg-gray-950 text-white dark:bg-white dark:text-black font-heading font-bold hover:scale-[1.03] active:scale-[0.98] transition"
+                                >
+                                    More stories <ArrowRight size={16} aria-hidden="true" />
                                 </button>
                             </div>
                         )}
                     </section>
                 )}
 
-                {/* Empty State */}
                 {filteredPosts.length === 0 && (
-                    <div className="text-center py-24">
-                        <div className="w-16 h-16 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 flex items-center justify-center mx-auto mb-4">
-                            <Newspaper size={24} className="text-gray-600" />
+                    <div className="text-center py-20">
+                        <div className="w-14 h-14 rounded-2xl bg-black/5 dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-4">
+                            <Newspaper size={22} className="text-gray-500" aria-hidden="true" />
                         </div>
-                        <h3 className="text-lg font-bold mb-1">No stories found</h3>
-                        <p className="text-gray-500 text-sm">Try a different category or search term.</p>
+                        <h2 className="font-heading text-xl font-extrabold">No stories found</h2>
+                        <p className="mt-1 text-gray-600 dark:text-zinc-400">Try another section or a different search.</p>
+                        {(searching || activeCategory !== 'all') && (
+                            <button type="button" onClick={() => { setSearchQuery(''); goCategory('all'); }} className="mt-6 h-12 px-6 rounded-full ring-1 ring-black/15 dark:ring-white/20 font-semibold hover:bg-black/5 dark:hover:bg-white/10">
+                                Show all stories
+                            </button>
+                        )}
                     </div>
                 )}
 
-                {/* Ad Slot — Before Newsletter */}
-                <AdSlot className="mb-10" format="horizontal" slot={import.meta.env.VITE_ADSENSE_SLOT_HUB_BOTTOM} />
+                <AdSlot className="mb-14" slot={import.meta.env.VITE_ADSENSE_SLOT_HUB_BOTTOM} />
 
-                {/* Newsletter */}
-                <section className="rounded-[3rem] bg-gray-100 dark:bg-slate-900/10 border border-black/10 dark:border-white/5 p-8 md:p-20 overflow-hidden relative">
-                    <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-neon-blue/5 blur-[200px] rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2" />
-                    
-                    <div className="max-w-4xl mx-auto relative z-10">
-                        <BlogNewsletter />
-                    </div>
-                </section>            </div>
-
-        </div>
+                <BlogNewsletter />
+            </div>
+        </CzShell>
     );
 };
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import ScrollToTop from './components/ScrollToTop';
 import { useStore } from './lib/store'; 
@@ -96,6 +96,28 @@ function RedirectKeepQuery({ to }) {
   const params = useParams();
   const target = to.replace(/:([A-Za-z]+)/g, (_, key) => encodeURIComponent(params[key] || ''));
   return <Navigate to={`${target}${location.search}${location.hash}`} replace />;
+}
+
+// The landing pages (newbi.live: /, /creator, /contact, /terms, /privacy) are their own
+// prerendered entry with the new navbar (src/landing). A link inside this app that lands on
+// one loads it for real instead of drawing it inside the old site layout. If the load comes
+// straight back here (a host without the landing rewrites), the page renders in place.
+function ToLanding() {
+  const location = useLocation();
+  const [inPlace] = useState(() => {
+    try {
+      const last = JSON.parse(sessionStorage.getItem('nb-to-landing') || 'null');
+      if (last && last.path === location.pathname && Date.now() - last.at < 5000) return true;
+      sessionStorage.setItem('nb-to-landing', JSON.stringify({ path: location.pathname, at: Date.now() }));
+      return false;
+    } catch {
+      return true; // no storage, no loop guard: stay here
+    }
+  });
+  useEffect(() => {
+    if (!inPlace) window.location.replace(`${location.pathname}${location.search}${location.hash}`);
+  }, [inPlace, location.pathname, location.search, location.hash]);
+  return inPlace ? <Outlet /> : <div className="min-h-dvh bg-[#F4F2EC] dark:bg-[#050505]" />;
 }
 
 function AppContent() {
@@ -254,16 +276,22 @@ function AppContent() {
         <Routes>
           {/* Dev and previews: the same app tree under /app (Safari can't open app.localhost). */}
           {appBase && <Route path={`${appBase}/*`} element={<AppRoutes />} />}
+          <Route element={<ToLanding />}>
+            <Route element={<Layout />}>
+              <Route index element={<MaintenanceGuard isPage featureId="home"><Home /></MaintenanceGuard>} />
+              <Route path="contact" element={<MaintenanceGuard isPage featureId="contact"><Contact /></MaintenanceGuard>} />
+              <Route path="creator" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorLanding /></MaintenanceGuard>} />
+              <Route path="terms" element={<Terms />} />
+              <Route path="privacy" element={<Privacy />} />
+            </Route>
+          </Route>
           <Route path="/" element={<Layout />}>
-            <Route index element={<MaintenanceGuard isPage featureId="home"><Home /></MaintenanceGuard>} />
-            <Route path="contact" element={<MaintenanceGuard isPage featureId="contact"><Contact /></MaintenanceGuard>} />
             <Route path="invoice/:id" element={<Invoice />} />
             <Route path="proposal/:id" element={<MaintenanceGuard isPage featureId="docs"><Proposal /></MaintenanceGuard>} />
             <Route path="agreement/:id" element={<MaintenanceGuard isPage featureId="docs"><Agreement /></MaintenanceGuard>} />
             <Route path="community" element={<ToAppRedirect />} />
             <Route path="community-join" element={<ToAppRedirect />} />
 
-            <Route path="creator" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorLanding /></MaintenanceGuard>} />
             {/* Retired creator pages and their aliases: they live in the app now (src/app/redirects.jsx). */}
             {['creator/join', 'creator-dashboard', 'creator-dashboard/*', 'campaigns', 'campaigns/:id', 'campaign/:id',
               'creator/campaign/:id', 'creator/campaigns/:id', 'creator/dashboard', 'creator/hub', 'creator/studio',
@@ -283,8 +311,6 @@ function AppContent() {
             <Route path="concertzone/:category" element={<MaintenanceGuard isPage featureId="concerts"><ConcertZoneBlog /></MaintenanceGuard>} />
             <Route path="concertzone/:category/:slug" element={<MaintenanceGuard isPage featureId="concerts"><BlogPostDetail /></MaintenanceGuard>} />
             <Route path="artistant" element={<MaintenanceGuard isPage featureId="artistant_public"><ArtistAnt /></MaintenanceGuard>} />
-            <Route path="terms" element={<Terms />} />
-            <Route path="privacy" element={<Privacy />} />
             <Route path="register-payment" element={<PayeeRegistration />} />
             <Route path="verify-payout" element={<VerifyPayout />} />
             <Route path="verify-creator" element={<VerifyCreator />} />

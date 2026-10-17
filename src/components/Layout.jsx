@@ -45,6 +45,9 @@ const Layout = () => {
         location.pathname.startsWith('/proposal/') ||
         location.pathname.startsWith('/agreement/') ||
         location.pathname.startsWith('/artistant') ||
+        // ConcertZone is its own brand with its own header and footer (src/pages/concertzone/czShared.jsx).
+        location.pathname === '/concertzone' ||
+        location.pathname.startsWith('/concertzone/') ||
         location.pathname.startsWith('/campaign/') ||
         location.pathname.startsWith('/doc/') ||
         location.pathname === '/creator' ||

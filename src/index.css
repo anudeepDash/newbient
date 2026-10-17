@@ -1514,3 +1514,42 @@
 .nb-brief img { max-width: 100%; height: auto; border-radius: 1rem; margin: 0.75rem 0; }
 .nb-brief-sm { font-size: 14px; line-height: 1.6; }
 .nb-brief-sm p:has(> strong:only-child), .nb-brief-sm p:has(> b:only-child) { font-size: 14px; margin-top: 1rem; }
+
+/* ConcertZone (src/pages/concertzone/czShared.jsx): the featured story's timer bar and article type. */
+@keyframes czProgress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+.cz-article { font-family: 'Inter', sans-serif; font-size: 17px; line-height: 1.75; color: #374151; }
+.dark .cz-article { color: #d4d4d8; }
+.cz-article > div > *:first-child { margin-top: 0 !important; }
+.cz-article h1, .cz-article h2, .cz-article h3, .cz-article h4 {
+  font-family: 'Outfit', sans-serif; font-weight: 800; font-style: normal; text-transform: none;
+  letter-spacing: -0.02em; line-height: 1.15; color: #0a0a0a; border: 0; padding: 0;
+}
+.dark .cz-article h1, .dark .cz-article h2, .dark .cz-article h3, .dark .cz-article h4 { color: #fff; }
+.cz-article h1 { font-size: 2rem; margin: 2.5rem 0 1rem; }
+.cz-article h2 { font-size: 1.65rem; margin: 2.25rem 0 0.85rem; }
+.cz-article h3 { font-size: 1.3rem; margin: 1.75rem 0 0.6rem; }
+.cz-article h4 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+.cz-article p { font-size: inherit; line-height: inherit; color: inherit; margin: 0 0 1.25rem; letter-spacing: 0; }
+.cz-article li { font-size: inherit; line-height: 1.65; font-weight: 400; margin-bottom: 0.4rem; }
+.cz-article strong, .cz-article b { font-weight: 700; color: #0a0a0a; }
+.dark .cz-article strong, .dark .cz-article b { color: #fff; }
+.cz-article em, .cz-article i { color: inherit; }
+.cz-article a {
+  color: inherit; font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px;
+  text-underline-offset: 4px; text-decoration-color: var(--cz-accent, #00F0FF);
+}
+.cz-article blockquote {
+  margin: 2rem 0; padding: 0.25rem 0 0.25rem 1.25rem; border-left: 3px solid var(--cz-accent, #00F0FF);
+  font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 600; line-height: 1.4; color: #0a0a0a;
+}
+.dark .cz-article blockquote { color: #fff; }
+.cz-article img { border-radius: 1.25rem; margin: 2rem 0; max-width: 100%; height: auto; border: 0; box-shadow: none; }
+.cz-article iframe, .cz-article video { max-width: 100%; border-radius: 1.25rem; }
+.cz-article table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 15px; display: block; overflow-x: auto; }
+.cz-article th, .cz-article td { border: 1px solid rgba(0,0,0,0.1); padding: 0.6rem 0.75rem; text-align: left; }
+.dark .cz-article th, .dark .cz-article td { border-color: rgba(255,255,255,0.12); }
+@media (min-width: 768px) { .cz-article { font-size: 18px; } .cz-article h1 { font-size: 2.4rem; } .cz-article h2 { font-size: 1.9rem; } }
+.cz-article ul { list-style: disc outside; padding-left: 1.4rem; margin: 0 0 1.25rem; }
+.cz-article ol { list-style: decimal outside; padding-left: 1.4rem; margin: 0 0 1.25rem; }
+.cz-article li p { margin: 0; display: inline; }
