@@ -34,6 +34,8 @@ import Instagram from 'lucide-react/dist/esm/icons/instagram';
 import Layers from 'lucide-react/dist/esm/icons/layers';
 import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
 import Undo2 from 'lucide-react/dist/esm/icons/undo-2';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import MailCheck from 'lucide-react/dist/esm/icons/mail-check';
 import { cn, getCampaignSpotsInfo, normalizePhoneNumber } from '../../../lib/utils';
 import { useStore } from '../../../lib/store';
 import { notifySpecificUser } from '../../../lib/notificationTriggers';
@@ -51,6 +53,8 @@ import CreatorDetailModal from '../CreatorDetailModal';
 import ApplicantSheet from './ApplicantSheet';
 import { MessageSheet, PayoutSheet, ChangesSheet } from './ActionSheets';
 import TicketsSheet from './TicketsSheet';
+import ShortlistUploadSheet from './ShortlistUploadSheet';
+import { clientSheetSpec, newbiIdOf } from './shortlistModel';
 import CampaignTickets from './CampaignTickets';
 import { canGetTicket, passFor, passesByCreator, useCampaignPasses } from './ticketModel';
 import { passesPost } from '../../../lib/passesApi';
@@ -107,6 +111,7 @@ const CampaignManage = ({
     const [taskFilter, setTaskFilter] = useState('review');
     const [showBrief, setShowBrief] = useState(false);
     const [ticketsFor, setTicketsFor] = useState(null); // entries for the Send tickets sheet
+    const [uploadOpen, setUploadOpen] = useState(false); // the client's shortlist CSV
     const { passes, loaded: passesLoaded, error: passesError } = useCampaignPasses(campaign?.id);
     const passMap = useMemo(() => passesByCreator(passes), [passes]);
 
@@ -189,22 +194,41 @@ const CampaignManage = ({
         if (sent) addToast(`${sent === 1 ? 'Ticket' : `${sent} tickets`} sent automatically.`, 'success');
     };
 
+    /*
+     * The welcome for shortlisted creators: the server sends email, WhatsApp (template
+     * campaign_shortlisted), push and the in-app alert with the group link, once per creator.
+     * `again` resends to people who already got it.
+     */
+    const sendWelcome = async (entries, again = false) => {
+        const ids = entries.map(e => e.creator.id || e.key);
+        if (!ids.length) return;
+        const res = await notifyEvent('campaign-shortlisted', { campaignId: campaign.id, creatorIds: ids, again });
+        if (!res?.success) {
+            addToast(`The welcome wasn't sent: ${res?.error || 'try again'}. Use “Send the welcome again”.`, 'warning');
+            return;
+        }
+        const sent = (res.results || []).filter(r => r.delivery);
+        const wa = sent.filter(r => r.delivery.whatsapp === 'sent').length;
+        const mail = sent.filter(r => ['sent', 'queued', 'duplicate'].includes(r.delivery.email)).length;
+        if (!sent.length) { addToast(again ? 'Nobody to send it to.' : 'They already had the welcome.', 'info'); return; }
+        addToast(`Welcome sent to ${sent.length}: ${mail} by email, ${wa} on WhatsApp${wa < sent.length ? ' (the rest have no verified number, or the template isn’t live yet)' : ''}.`, 'success');
+    };
+
     const selectEntries = (entries, notify = true) => guard(async () => {
         try {
             const keys = entries.map(e => e.key);
             const result = await useStore.getState().bulkShortlistCreators(campaign.id, keys, true);
-            if (notify) {
-                await Promise.allSettled(result.done.map(k => notifySpecificUser(
-                    k, "You're in!", `You've been selected for "${campaign.title}". Open your Creator Studio to see your tasks.`, creatorCampaignPath(campaign.id), 'campaign'
-                )));
-            }
-            reportPartial(result, result.done.length === 1 ? 'Creator selected.' : `${result.done.length} creators selected.`);
+            reportPartial(result, result.done.length === 1 ? 'Creator shortlisted.' : `${result.done.length} creators shortlisted.`);
             setChecked(new Set());
-            await autoIssue(entries.filter(e => result.done.includes(e.key)), 'selected');
+            const done = entries.filter(e => result.done.includes(e.key));
+            if (notify) await sendWelcome(done);
+            await autoIssue(done, 'selected');
         } catch {
-            addToast("Couldn't select those creators. Please try again.", 'error');
+            addToast("Couldn't shortlist those creators. Please try again.", 'error');
         }
     });
+
+    const resendWelcome = (entries) => guard(() => sendWelcome(entries, true));
 
     const unselectEntries = (entries) => guard(async () => {
         try {
@@ -224,7 +248,7 @@ const CampaignManage = ({
                     k, `About ${campaign.title}`, `Thanks for applying to "${campaign.title}". You weren't picked this time, but keep an eye out for the next one.`, '/creator-dashboard', 'campaign'
                 )));
             }
-            const label = stage === 'declined' ? 'Marked as not selected.' : stage === 'shortlisted' ? 'Added to the shortlist.' : 'Moved back to applied.';
+            const label = stage === 'declined' ? 'Marked as not selected.' : stage === 'shortlisted' ? 'Marked as considering.' : 'Moved back to applied.';
             reportPartial(result, label);
             setChecked(new Set());
         } catch {
@@ -317,10 +341,11 @@ const CampaignManage = ({
         setConfirm({
             kind: 'select',
             entries,
-            title: entries.length === 1 ? `Select ${entries[0].creator.name || 'this creator'}?` : `Select ${entries.length} creators?`,
+            title: entries.length === 1 ? `Shortlist ${entries[0].creator.name || 'this creator'}?` : `Shortlist ${entries.length} creators?`,
             message: (
                 <>
-                    They&apos;ll see the deliverables in their Creator Studio{campaign.whatsappLink ? ' and the WhatsApp group link' : ''}.
+                    They can then see and submit the deliverables in the campaign{campaign.whatsappLink ? ', and get the WhatsApp group link' : ''}.
+                    {!campaign.whatsappLink && <span className="mt-2 block text-[13px] text-gray-500">No WhatsApp group link yet. Add one in the editor to include it in the welcome.</span>}
                     {spots.hasSpots && spots.totalSpots && selectedCount + entries.length > spots.totalSpots && (
                         <span className="mt-2 block font-semibold text-amber-600 dark:text-amber-300">
                             That makes {selectedCount + entries.length} selected for {spots.totalSpots} spots{left !== null ? ` (${left} left)` : ''}.
@@ -328,8 +353,8 @@ const CampaignManage = ({
                     )}
                 </>
             ),
-            confirmLabel: 'Select',
-            toggleLabel: 'Send them a “You’re in” notification',
+            confirmLabel: 'Shortlist',
+            toggleLabel: 'Send the welcome: email, WhatsApp and the app',
         });
     };
     const askDecline = (entries) => {
@@ -385,6 +410,7 @@ const CampaignManage = ({
         rows: visible,
         totals: { paid: true },
         columns: [
+            { header: 'Newbi ID', value: a => newbiIdOf(a.creator) },
             { header: 'Name', width: 24, value: a => a.creator.name || '' },
             { header: 'Instagram', value: a => (creatorHandle(a.creator) ? `@${creatorHandle(a.creator)}` : '') },
             { header: 'Followers', type: 'number', value: a => a.criteria.followers },
@@ -414,7 +440,7 @@ const CampaignManage = ({
                 ? <Button as="a" size="sm" variant="secondary" href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" className="h-10"><MessageCircle size={13} className="text-emerald-500" /> Chat</Button>
                 : <Button size="sm" variant="secondary" onClick={() => setMessageTo([a])} className="h-10"><Send size={13} /> Message</Button>;
         }
-        return <Button size="sm" variant="accent" onClick={() => askSelect([a])} disabled={busy} className="h-10"><UserCheck size={13} /> Select</Button>;
+        return <Button size="sm" variant="accent" onClick={() => askSelect([a])} disabled={busy} className="h-10"><UserCheck size={13} /> Shortlist</Button>;
     };
 
     const tasksTab = (
@@ -553,7 +579,6 @@ const CampaignManage = ({
                     <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
                         {settingsRow('Accepting applications', status === 'draft' ? 'Draft: turning this on publishes it' : 'Open campaigns take new applicants', status === 'open', (v) => onSetStatus(campaign, v ? 'Open' : 'Closed'))}
                         {settingsRow('Apply from the website', 'From the public campaign page', campaign.websiteApplyEnabled !== false, (v) => onPatch(campaign, { websiteApplyEnabled: v }, v ? 'Website applications are on.' : 'Website applications are off.'))}
-                        {settingsRow('Auto-select creators who qualify', 'When they apply and meet the rules', Boolean(campaign.autoShortlistEligible), (v) => onPatch(campaign, { autoShortlistEligible: v }, v ? 'Qualifying applicants will be selected automatically.' : 'Auto-select is off.'))}
                         {settingsRow('Pinned to the top', 'Shows first in lists', Boolean(campaign.isPinned), () => onTogglePin(campaign))}
                     </div>
                 </Card>
@@ -584,12 +609,12 @@ const CampaignManage = ({
                         <p className="text-[14px] font-bold">{qualifyingUndecided.length} applicant{qualifyingUndecided.length === 1 ? ' meets' : 's meet'} the rules</p>
                         <p className="text-[12px] text-gray-600 dark:text-zinc-400">
                             {Number(campaign.minInstagramFollowers) > 0 ? `${formatCount(campaign.minInstagramFollowers)}+ followers` : 'Any follower count'}
-                            {!isUniversalCity(campaign.targetCity) ? `, based in ${campaign.targetCity}` : ''}. Select them all at once, or go one by one.
+                            {!isUniversalCity(campaign.targetCity) ? `, based in ${campaign.targetCity}` : ''}. Shortlist them all at once, go one by one, or upload the client&apos;s picks.
                         </p>
                     </div>
                     <div className="flex gap-2">
                         <Button variant="secondary" onClick={() => { setFit('match'); setParams({ stage: 'applied' }); }} className="h-11 flex-1 sm:flex-none">Review them</Button>
-                        <Button variant="accent" onClick={() => askSelect(qualifyingUndecided)} disabled={busy} className="h-11 flex-1 sm:flex-none"><UserCheck size={14} /> Select {qualifyingUndecided.length}</Button>
+                        <Button variant="accent" onClick={() => askSelect(qualifyingUndecided)} disabled={busy} className="h-11 flex-1 sm:flex-none"><UserCheck size={14} /> Shortlist {qualifyingUndecided.length}</Button>
                     </div>
                 </div>
             )}
@@ -603,7 +628,9 @@ const CampaignManage = ({
                         { value: 'below', label: "Doesn't meet them" },
                     ]} />
                     <Select value={sort} onChange={setSort} label="Sort" className="hidden min-w-0 flex-1 sm:inline-flex xl:w-48 xl:flex-none" options={SORTS} />
-                    <ExportMenu getSpec={exportSpec} />
+                    <ExportMenu getSpec={() => clientSheetSpec(campaign, applicants, { fileDate, exportSubtitle })} label="Client sheet" hint="Every applicant, no phone or email, with a Shortlist column" />
+                    <Button variant="secondary" onClick={() => setUploadOpen(true)} disabled={!applicants.length} className="h-11"><Upload size={14} /><span className="hidden sm:inline">Upload shortlist</span></Button>
+                    <ExportMenu getSpec={exportSpec} label="Export" hint="Everything we hold, with phone and email (internal)" className="hidden sm:inline-flex" />
                 </div>
             </div>
 
@@ -705,7 +732,7 @@ const CampaignManage = ({
                         <span className="px-2 text-[13px] font-bold">{checkedEntries.length} ticked</span>
                         <div className="ml-auto flex flex-wrap items-center gap-1.5">
                             {checkedEntries.some(a => !SELECTED_STAGES.includes(a.stage)) && (
-                                <Button size="sm" variant="accent" onClick={() => askSelect(checkedEntries.filter(a => !SELECTED_STAGES.includes(a.stage)))} disabled={busy} className="h-10"><UserCheck size={13} /> Select</Button>
+                                <Button size="sm" variant="accent" onClick={() => askSelect(checkedEntries.filter(a => !SELECTED_STAGES.includes(a.stage)))} disabled={busy} className="h-10"><UserCheck size={13} /> Shortlist</Button>
                             )}
                             {checkedEntries.some(a => a.stage === 'approved' || a.stage === 'selected' || a.stage === 'review') && (
                                 <Button size="sm" variant="success" onClick={() => setPayTo(checkedEntries.filter(a => SELECTED_STAGES.includes(a.stage) && a.stage !== 'paid'))} disabled={busy} className="hidden h-10 sm:inline-flex"><Wallet size={13} /> Mark paid</Button>
@@ -718,13 +745,16 @@ const CampaignManage = ({
                                 <Button size="sm" variant="secondary" onClick={toggle} aria-label="More bulk actions" className="h-10 w-10 px-0"><MoreHorizontal size={15} /></Button>
                             )}>
                                 {checkedEntries.some(a => a.stage === 'applied' || a.stage === 'declined') && (
-                                    <MenuItem icon={Star} onClick={() => setStage(checkedEntries.filter(a => a.stage === 'applied' || a.stage === 'declined'), 'shortlisted')} hint="Your private shortlist; they aren't told">Add to shortlist</MenuItem>
+                                    <MenuItem icon={Star} onClick={() => setStage(checkedEntries.filter(a => a.stage === 'applied' || a.stage === 'declined'), 'shortlisted')} hint="Your private list; they aren't told">Mark as considering</MenuItem>
                                 )}
                                 {checkedEntries.some(a => a.stage === 'applied' || a.stage === 'shortlisted') && (
                                     <MenuItem icon={UserX} onClick={() => askDecline(checkedEntries.filter(a => a.stage === 'applied' || a.stage === 'shortlisted'))}>Mark as not selected</MenuItem>
                                 )}
                                 {checkedEntries.some(a => a.stage === 'shortlisted' || a.stage === 'declined') && (
                                     <MenuItem icon={Undo2} onClick={() => setStage(checkedEntries.filter(a => a.stage === 'shortlisted' || a.stage === 'declined'), null)}>Move back to applied</MenuItem>
+                                )}
+                                {checkedEntries.some(a => SELECTED_STAGES.includes(a.stage)) && (
+                                    <MenuItem icon={MailCheck} onClick={() => resendWelcome(checkedEntries.filter(a => SELECTED_STAGES.includes(a.stage)))} hint="Email, WhatsApp and the app, with the group link">Send the welcome again</MenuItem>
                                 )}
                                 {checkedEntries.some(a => SELECTED_STAGES.includes(a.stage) && a.stage !== 'paid') && (
                                     <MenuItem icon={Wallet} onClick={() => setPayTo(checkedEntries.filter(a => SELECTED_STAGES.includes(a.stage) && a.stage !== 'paid'))}>Mark paid</MenuItem>
@@ -777,7 +807,6 @@ const CampaignManage = ({
                         <div className="flex flex-wrap items-center gap-2">
                             <CampaignStatusPill campaign={campaign} />
                             {campaign.isPinned && <Badge tone="blue"><Pin size={10} /> Pinned</Badge>}
-                            {campaign.autoShortlistEligible && <Badge tone="violet"><Zap size={10} /> Auto-select on</Badge>}
                             {campaign.websiteApplyEnabled === false && <Badge tone="gray">Website apply off</Badge>}
                             <BrandMark campaign={campaign} />
                         </div>
@@ -801,8 +830,8 @@ const CampaignManage = ({
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
                 <StatTile icon={Users} tone="blue" label="Applied" value={counts.applied} hint={counts.declined ? `${counts.declined} not selected` : `${applicants.length} in total`} active={stageFilter === 'applied' && tab === 'applicants'} onClick={() => showStage('applied')} />
-                <StatTile icon={Star} tone="violet" label="Shortlisted" value={counts.shortlisted} hint="Not told yet" active={stageFilter === 'shortlisted' && tab === 'applicants'} onClick={() => showStage('shortlisted')} />
-                <StatTile icon={UserCheck} tone="pink" label="Selected" value={selectedCount} hint={spots.totalSpots ? `of ${spots.totalSpots} spots` : 'Working on tasks'} active={stageFilter === 'selected' && tab === 'applicants'} onClick={() => showStage('selected')} />
+                <StatTile icon={Star} tone="violet" label="Considering" value={counts.shortlisted} hint="Not told yet" active={stageFilter === 'shortlisted' && tab === 'applicants'} onClick={() => showStage('shortlisted')} />
+                <StatTile icon={UserCheck} tone="pink" label="Shortlisted" value={selectedCount} hint={spots.totalSpots ? `of ${spots.totalSpots} spots` : 'Working on deliverables'} active={stageFilter === 'selected' && tab === 'applicants'} onClick={() => showStage('selected')} />
                 <StatTile icon={Inbox} tone={totalToReview ? 'amber' : 'gray'} label="To review" value={totalToReview} hint={counts.review ? `From ${counts.review} creator${counts.review === 1 ? '' : 's'}` : 'All caught up'} active={tab === 'deliverables'} onClick={() => setParam('tab', tab === 'deliverables' ? null : 'deliverables')} />
                 <StatTile icon={CheckCheck} tone="green" label="Approved" value={counts.approved} hint="Ready to pay" active={stageFilter === 'approved' && tab === 'applicants'} onClick={() => showStage('approved')} />
                 <StatTile icon={Wallet} tone="teal" label="Paid" value={inr(paidOut)} hint={`${counts.paid} creator${counts.paid === 1 ? '' : 's'}${campaign.payoutPerCreator ? ` · ${inr(campaign.payoutPerCreator)} each` : ''}`} active={stageFilter === 'paid' && tab === 'applicants'} onClick={() => showStage('paid')} />
@@ -851,6 +880,14 @@ const CampaignManage = ({
                 applicants={applicants}
                 preselected={ticketsFor || []}
                 passes={passes}
+            />
+
+            <ShortlistUploadSheet
+                open={uploadOpen}
+                onClose={() => setUploadOpen(false)}
+                campaign={campaign}
+                applicants={applicants}
+                onShortlist={(entries, welcome) => selectEntries(entries, welcome)}
             />
 
             <MessageSheet open={Boolean(messageTo)} onClose={() => setMessageTo(null)} campaign={campaign} entries={messageTo || []} />

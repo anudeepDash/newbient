@@ -3868,21 +3868,10 @@ export const useStore = create((set, get) => ({
         if (snap.exists()) {
             const data = snap.data();
             const joined = data.joinedCampaigns || [];
-            const shortlisted = data.shortlistedCampaigns || [];
-            
-            const campaign = (get().campaigns || []).find(c => c.id === campaignId);
-            const minFollowers = Number(campaign?.minInstagramFollowers || 0);
-            const creatorFollowers = Number(data.instagramFollowers || 0);
-            const meetsFollowers = creatorFollowers >= minFollowers;
-            const meetsCity = isCampaignCityMatch(campaign?.targetCity, data.city);
-            const shouldAutoShortlist = Boolean(campaign?.autoShortlistEligible) && meetsFollowers && meetsCity;
-
+            // Applying never shortlists; the team decides from the admin.
             const updates = {};
             if (!joined.includes(campaignId)) {
                 updates.joinedCampaigns = [...joined, campaignId];
-            }
-            if (shouldAutoShortlist && !shortlisted.includes(campaignId)) {
-                updates.shortlistedCampaigns = [...shortlisted, campaignId];
             }
 
             if (Object.keys(updates).length > 0) {

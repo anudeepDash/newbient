@@ -19,9 +19,11 @@ import { isRequiredTask } from '../../../lib/creator/tasks';
  *   task.submissions  { [creator uid or id]: { status: 'submitted' | 'approved' | 'rejected', contentLink, proofUrl, … } }
  *                     App submissions live in campaigns/{id}/submissions/{uid}; the store merges
  *                     them in here (store: 'app'), so these screens read both.
- *   creator doc       joinedCampaigns[] (applied), shortlistedCampaigns[] (selected: sees the tasks)
+ *   creator doc       joinedCampaigns[] (applied), shortlistedCampaigns[] (shortlisted by the team: sees and
+ *                     submits the deliverables; applying never adds to it)
  * New, admin-only, on the creator doc:
- *   campaignStages   { [campaignId]: 'shortlisted' | 'declined' | null }
+ *   campaignStages   { [campaignId]: 'shortlisted' (shown as "Considering") | 'declined' | null }
+ *   campaignWelcome  { [campaignId]: { sentAt, channels } }   written by the server's shortlist welcome
  *   campaignPayouts  { [campaignId]: { status: 'paid', amount, paidAt, note } | null }
  */
 
@@ -207,8 +209,10 @@ export const isPaid = (campaign, creator) => payoutOf(campaign, creator)?.status
 
 export const STAGES = [
     { value: 'applied', label: 'Applied', tone: 'blue', hint: 'Waiting for a decision' },
-    { value: 'shortlisted', label: 'Shortlisted', tone: 'violet', hint: 'On your shortlist, not told yet' },
-    { value: 'selected', label: 'In progress', tone: 'pink', hint: 'Selected, working on their tasks' },
+    // 'shortlisted' is the team's private pick list (campaignStages); 'selected' is the real shortlist
+    // (creator.shortlistedCampaigns): told, sees the deliverables, the only ones who can submit.
+    { value: 'shortlisted', label: 'Considering', tone: 'violet', hint: 'Your private list, not told yet' },
+    { value: 'selected', label: 'Shortlisted', tone: 'pink', hint: 'Told, working on the deliverables' },
     { value: 'review', label: 'To review', tone: 'amber', hint: 'Sent content for review' },
     { value: 'approved', label: 'Approved', tone: 'green', hint: 'All required tasks approved' },
     { value: 'paid', label: 'Paid', tone: 'teal', hint: 'Payment recorded' },

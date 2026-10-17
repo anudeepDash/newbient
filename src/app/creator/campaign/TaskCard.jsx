@@ -5,6 +5,7 @@ import Video from 'lucide-react/dist/esm/icons/video';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Upload from 'lucide-react/dist/esm/icons/upload';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import { cn } from '../../../lib/utils';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { isPresent } from '../../../lib/present';
@@ -15,7 +16,11 @@ import { Button } from '../../../components/app';
 import { dueLabel } from '../format';
 import { ToneChip } from '../ui';
 
-/* One deliverable: what to make, its links, and (for picked creators) its status and submit button. */
+/*
+ * One deliverable: what to make, its links, and (for shortlisted creators) its status and submit buttons.
+ * A deliverable with a Google Form shows the form and "Mark as submitted" to shortlisted creators only;
+ * everyone else sees what to make, not where to send it.
+ */
 
 const TYPES = {
     content_post: { label: 'Feed post', icon: Camera },
@@ -41,14 +46,18 @@ const STATUS = {
     rejected: { label: 'Changes needed', tone: 'amber' },
 };
 
-const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, highlight }) => {
+export const hasSubmitForm = (task) => /^https?:\/\//i.test(String(task?.googleFormLink || '').trim());
+
+const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, onMarkSubmitted, marking, highlight }) => {
     const required = isRequiredTask(task);
     const type = typeOf(task);
-    const links = useMemo(() => extractTaskActionLinks(task), [task]);
+    const allLinks = useMemo(() => extractTaskActionLinks(task), [task]);
+    const links = useMemo(() => (canSubmit ? allLinks : allLinks.filter(l => l.type !== 'google_form')), [allLinks, canSubmit]);
+    const withForm = canSubmit && hasSubmitForm(task);
     const description = useMemo(() => {
-        const cleaned = cleanTaskDescription(task.description || '', links);
+        const cleaned = cleanTaskDescription(task.description || '', allLinks);
         return isPresent(cleaned?.replace(/<[^>]+>/g, '')) ? linkifyContent(cleaned) : null;
-    }, [task.description, links]);
+    }, [task.description, allLinks]);
     const meta = STATUS[status];
     const caption = String(task.captionScript || '').trim();
     const [copied, setCopied] = useState(false);
@@ -106,14 +115,27 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, highli
             )}
 
             {canSubmit && status !== 'approved' && (
-                <Button
-                    variant={status === 'not_started' || status === 'rejected' ? 'primary' : 'secondary'}
-                    size="sm"
-                    icon={Upload}
-                    onClick={() => onSubmit(task)}
-                >
-                    {status === 'rejected' ? 'Resubmit' : status === 'submitted' ? 'Update submission' : 'Submit'}
-                </Button>
+                withForm ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                        {status !== 'submitted' && (
+                            <Button size="sm" icon={CircleCheck} loading={marking} onClick={() => onMarkSubmitted?.(task)}>
+                                {status === 'rejected' ? 'Mark as resubmitted' : 'Mark as submitted'}
+                            </Button>
+                        )}
+                        <Button size="sm" variant="secondary" icon={Upload} onClick={() => onSubmit(task)}>
+                            {status === 'submitted' ? 'Add a link or screenshot' : 'Send a link instead'}
+                        </Button>
+                    </div>
+                ) : (
+                    <Button
+                        variant={status === 'not_started' || status === 'rejected' ? 'primary' : 'secondary'}
+                        size="sm"
+                        icon={Upload}
+                        onClick={() => onSubmit(task)}
+                    >
+                        {status === 'rejected' ? 'Resubmit' : status === 'submitted' ? 'Update submission' : 'Submit'}
+                    </Button>
+                )
             )}
         </li>
     );

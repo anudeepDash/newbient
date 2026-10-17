@@ -199,6 +199,64 @@ const campaignInvite = async ({ campaignId, again = false }, caller) => {
     return { emailCampaignId: queued?.campaignId || null, emailed: queued?.queued || 0, pushed };
 };
 
+// Campaign pages live in the app (app.newbi.live/c/:id); the URL button suffix is the campaign id.
+const CAMPAIGN_ORIGIN = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace(/\/+$/, '');
+
+/**
+ * The shortlist welcome: email, WhatsApp (template `campaign_shortlisted`), push and the in-app alert,
+ * with the campaign's WhatsApp group link. Only for creators who are on the shortlist; once per
+ * creator per campaign unless `again` (the admin's "Send the welcome again").
+ *   { campaignId, creatorIds: [doc id or uid], message?, again? } → { results: [{ id, delivery | skipped }] }
+ */
+const campaignShortlisted = async ({ campaignId, creatorIds = [], message = '', again = false }, caller) => {
+    if (!caller.staff) throw new EventError('Forbidden', 403);
+    if (!idOk(campaignId)) throw new EventError('Missing campaign.');
+    const db = getDb();
+    const campSnap = await db.collection('campaigns').doc(campaignId).get();
+    if (!campSnap.exists) throw new EventError('Campaign not found.', 404);
+    const campaign = campSnap.data();
+    const ids = Array.from(new Set((Array.isArray(creatorIds) ? creatorIds : []).filter(idOk))).slice(0, 200);
+    const campaignUrl = `${CAMPAIGN_ORIGIN}/c/${encodeURIComponent(campaignId)}`;
+    const groupLink = /^https:\/\//.test(String(campaign.whatsappLink || '')) ? String(campaign.whatsappLink) : '';
+    const note = String(message || '').slice(0, 600);
+
+    const results = [];
+    for (let i = 0; i < ids.length; i += 10) {
+        const batch = await Promise.all(ids.slice(i, i + 10).map(async (id) => {
+            let snap = await db.collection('creators').doc(id).get();
+            if (!snap.exists) {
+                const q = await db.collection('creators').where('uid', '==', id).limit(1).get();
+                snap = q.empty ? null : q.docs[0];
+            }
+            if (!snap) return { id, skipped: 'Creator not found' };
+            const creator = snap.data();
+            if (!(creator.shortlistedCampaigns || []).includes(campaignId)) return { id, skipped: 'Not shortlisted' };
+            if (!again && creator.campaignWelcome?.[campaignId]?.sentAt) return { id, skipped: 'Already sent' };
+            const uid = creator.uid || snap.id;
+            const delivery = await notify('campaign-shortlisted', uid, {
+                name: creator.displayName || creator.name,
+                campaignTitle: campaign.title,
+                brand: campaign.brand || campaign.brandName,
+                reward: campaign.reward,
+                deadline: campaign.deadline || campaign.endDate,
+                groupLink,
+                campaignUrl,
+                campaignId,
+                message: note,
+            }, {
+                // WhatsApp only to a number the creator verified (same rule as the approval message).
+                to: { email: creator.email, phone: creator.isPhoneVerified ? (creator.whatsapp || creator.phone) : '', name: creator.displayName || creator.name },
+                idempotencyKey: `shortlisted_${campaignId}_${snap.id}${again ? `_${Date.now() - (Date.now() % 60000)}` : ''}`,
+            });
+            const channels = Object.fromEntries(Object.entries(delivery).map(([k, v]) => [k, v?.status || 'unknown']));
+            await snap.ref.set({ campaignWelcome: { [campaignId]: { sentAt: nowIso(), channels } } }, { merge: true }).catch(() => {});
+            return { id, delivery: channels };
+        }));
+        results.push(...batch);
+    }
+    return { results };
+};
+
 const submissionReviewed = async ({ campaignId, reviews = [], campaignPath }, caller) => {
     if (!caller.staff) throw new EventError('Forbidden', 403);
     if (!idOk(campaignId)) throw new EventError('Missing campaign.');
@@ -301,6 +359,7 @@ const HANDLERS = {
     'creator-approved': creatorDecision('creator-approved'),
     'creator-rejected': creatorDecision('creator-rejected'),
     'campaign-invite': campaignInvite,
+    'campaign-shortlisted': campaignShortlisted,
     'submission-reviewed': submissionReviewed,
     'giveaway-entry': giveawayEntry,
     'payee-registered': payeeRegistered,
