@@ -10,9 +10,6 @@ import GlobalLoader from './components/ui/GlobalLoader';
 import { isAppHost, isAdminHost, adminUrl, landingAppBase, LANDING_ORIGIN } from './app/host';
 import { withHandoff, hasHandoffCode, redeemHandoff } from './app/adminHandoff';
 
-const Home = lazy(() => import('./pages/Home'));
-const CreatorLanding = lazy(() => import('./pages/CreatorLanding'));
-const Contact = lazy(() => import('./pages/Contact'));
 
 // Lazy-loaded Public Pages
 const ConcertZone = lazy(() => import('./pages/ConcertZone'));
@@ -23,8 +20,6 @@ const ActionHandler = lazy(() => import('./pages/Auth/ActionHandler'));
 const ConcertZoneBlog = lazy(() => import('./pages/ConcertZoneBlog'));
 const BlogPostDetail = lazy(() => import('./pages/BlogPostDetail'));
 const ArtistAnt = lazy(() => import('./pages/ArtistAnt'));
-const Terms = lazy(() => import('./pages/Terms'));
-const Privacy = lazy(() => import('./pages/Privacy'));
 const ToApp = lazy(() => import('./app/ToApp'));
 const PayeeRegistration = lazy(() => import('./pages/PayeeRegistration'));
 const VerifyPayout = lazy(() => import('./pages/VerifyPayout'));
@@ -103,22 +98,39 @@ function RedirectKeepQuery({ to }) {
 // prerendered entry with the new navbar (src/landing). A link inside this app that lands on
 // one loads it for real instead of drawing it inside the old site layout. If the load comes
 // straight back here (a host without the landing rewrites), the page renders in place.
+// newbi.live's own pages (prerendered, landing.html). Reaching one inside this
+// app (a link, the logo or Back from ConcertZone, a doc or the admin) makes a
+// full load so the new landing serves it; the old pages are gone. If that load
+// comes straight back here (a host without the landing rewrites), a plain
+// "continue" screen shows instead of reloading forever.
+const LANDING_PATHS = ['', 'work', 'creator', 'contact', 'terms', 'privacy'];
+
 function ToLanding() {
   const location = useLocation();
-  const [inPlace] = useState(() => {
+  const target = `${location.pathname}${location.search}${location.hash}`;
+  const [looping] = useState(() => {
     try {
       const last = JSON.parse(sessionStorage.getItem('nb-to-landing') || 'null');
-      if (last && last.path === location.pathname && Date.now() - last.at < 5000) return true;
-      sessionStorage.setItem('nb-to-landing', JSON.stringify({ path: location.pathname, at: Date.now() }));
-      return false;
+      // A real loop bounces back within a second or two; going Back and Back by hand is slower.
+      const bounce = Boolean(last && last.path === location.pathname && Date.now() - last.at < 2000);
+      sessionStorage.setItem('nb-to-landing', JSON.stringify({ path: location.pathname, at: Date.now(), n: bounce ? (last.n || 1) + 1 : 1 }));
+      return bounce && (last.n || 1) >= 2;
     } catch {
-      return true; // no storage, no loop guard: stay here
+      return false;
     }
   });
   useEffect(() => {
-    if (!inPlace) window.location.replace(`${location.pathname}${location.search}${location.hash}`);
-  }, [inPlace, location.pathname, location.search, location.hash]);
-  return inPlace ? <Outlet /> : <div className="min-h-dvh bg-[#F4F2EC] dark:bg-[#050505]" />;
+    if (!looping) window.location.replace(target);
+  }, [looping, target]);
+  return (
+    <div className="min-h-dvh flex items-center justify-center bg-[#F4F2EC] dark:bg-[#050505] px-6">
+      {looping && (
+        <a href={target} className="inline-flex h-12 items-center rounded-full bg-neon-green px-6 font-heading text-sm font-bold text-black">
+          Continue to newbi.live
+        </a>
+      )}
+    </div>
+  );
 }
 
 const ADMIN_ROLES = ['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'];
@@ -338,37 +350,33 @@ function AppContent() {
         <Routes>
           {/* Dev and previews: the same app tree under /app (Safari can't open app.localhost). */}
           {appBase && <Route path={`${appBase}/*`} element={<AppRoutes />} />}
-          <Route element={<ToLanding />}>
-            <Route element={<Layout />}>
-              <Route index element={<MaintenanceGuard isPage featureId="home"><Home /></MaintenanceGuard>} />
-              <Route path="contact" element={<MaintenanceGuard isPage featureId="contact"><Contact /></MaintenanceGuard>} />
-              <Route path="creator" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorLanding /></MaintenanceGuard>} />
-              <Route path="terms" element={<Terms />} />
-              <Route path="privacy" element={<Privacy />} />
-            </Route>
-          </Route>
+          {/* The landing site's pages: always a full load of the new landing, never an old page. */}
+          {LANDING_PATHS.map(path => (
+            <Route key={path || 'home'} {...(path ? { path } : { index: true })} element={<ToLanding />} />
+          ))}
+          {/* Old links into the app: they redirect straight away, outside the old site's layout (no old navbar on the way). */}
+          <Route path="community" element={<ToAppRedirect />} />
+          <Route path="community-join" element={<ToAppRedirect />} />
+
+          {/* Retired creator pages and their aliases: they live in the app now (src/app/redirects.jsx). */}
+          {['creator/join', 'creator-dashboard', 'creator-dashboard/*', 'campaigns', 'campaigns/:id', 'campaign/:id',
+            'creator/campaign/:id', 'creator/campaigns/:id', 'creator/dashboard', 'creator/hub', 'creator/studio',
+            'creator/campaigns', 'creators', 'creator-hub', 'creator-studio', 'creator-join', 'creator/apply',
+            'creator/register', 'creator/signup', 'creator/landing'].map(path => (
+            <Route key={path} path={path} element={<ToAppRedirect />} />
+          ))}
+          <Route path="forms" element={<ToAppRedirect />} />
+          <Route path="forms/:id" element={<ToAppRedirect />} />
+          <Route path="form/:id" element={<ToAppRedirect />} />
+          <Route path="form" element={<ToAppRedirect />} />
+          {/* Passes and giveaways live in the app now (Phase 5). */}
+          <Route path="giveaway/:slug" element={<ToApp to="/community/giveaways/:slug" />} />
+          <Route path="ticket/:id" element={<ToApp to="/p/:id" />} />
+
           <Route path="/" element={<Layout />}>
             <Route path="invoice/:id" element={<Invoice />} />
             <Route path="proposal/:id" element={<MaintenanceGuard isPage featureId="docs"><Proposal /></MaintenanceGuard>} />
             <Route path="agreement/:id" element={<MaintenanceGuard isPage featureId="docs"><Agreement /></MaintenanceGuard>} />
-            <Route path="community" element={<ToAppRedirect />} />
-            <Route path="community-join" element={<ToAppRedirect />} />
-
-            {/* Retired creator pages and their aliases: they live in the app now (src/app/redirects.jsx). */}
-            {['creator/join', 'creator-dashboard', 'creator-dashboard/*', 'campaigns', 'campaigns/:id', 'campaign/:id',
-              'creator/campaign/:id', 'creator/campaigns/:id', 'creator/dashboard', 'creator/hub', 'creator/studio',
-              'creator/campaigns', 'creators', 'creator-hub', 'creator-studio', 'creator-join', 'creator/apply',
-              'creator/register', 'creator/signup', 'creator/landing'].map(path => (
-              <Route key={path} path={path} element={<ToAppRedirect />} />
-            ))}
-            <Route path="forms" element={<ToAppRedirect />} />
-            <Route path="forms/:id" element={<ToAppRedirect />} />
-            <Route path="form/:id" element={<ToAppRedirect />} />
-            <Route path="form" element={<ToAppRedirect />} />
-            {/* Passes and giveaways live in the app now (Phase 5). */}
-            <Route path="giveaway/:slug" element={<ToApp to="/community/giveaways/:slug" />} />
-            <Route path="ticket/:id" element={<ToApp to="/p/:id" />} />
-            
             <Route path="concertzone" element={<MaintenanceGuard isPage featureId="concerts"><ConcertZoneBlog /></MaintenanceGuard>} />
             <Route path="concertzone/:category" element={<MaintenanceGuard isPage featureId="concerts"><ConcertZoneBlog /></MaintenanceGuard>} />
             <Route path="concertzone/:category/:slug" element={<MaintenanceGuard isPage featureId="concerts"><BlogPostDetail /></MaintenanceGuard>} />
@@ -382,19 +390,19 @@ function AppContent() {
             <Route path="doc/:id" element={<DocumentViewer />} />
             <Route path="auth/action" element={<ActionHandler />} />
 
-            {/* 404 catch-all */}
-            <Route path="*" element={
-              <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center p-6">
-                <div className="text-center space-y-4 max-w-md">
-                  <h1 className="text-6xl font-black text-gray-900 dark:text-white">404</h1>
-                  <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">Page not found</p>
-                  <a href="/" className="inline-block px-8 py-3 bg-neon-green text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-105 active:scale-95 transition-all">
-                    Return Home
-                  </a>
-                </div>
-              </div>
-            } />
           </Route>
+          {/* 404, in the landing's colours and outside the old layout (no old navbar). */}
+          <Route path="*" element={
+            <div className="min-h-dvh bg-[#F4F2EC] dark:bg-[#050505] flex items-center justify-center p-6">
+              <div className="text-center space-y-4 max-w-md">
+                <h1 className="font-heading text-5xl font-bold text-gray-950 dark:text-white">404</h1>
+                <p className="text-gray-600 dark:text-zinc-400">This page does not exist.</p>
+                <a href="/" className="inline-flex h-12 px-6 items-center rounded-xl bg-gray-950 text-white dark:bg-white dark:text-black font-semibold">
+                  Go to the home page
+                </a>
+              </div>
+            </div>
+          } />
         </Routes>
         )}
       </Suspense>
