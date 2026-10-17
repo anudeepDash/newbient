@@ -9,7 +9,7 @@ import LogOut from 'lucide-react/dist/esm/icons/log-out';
 import Sun from 'lucide-react/dist/esm/icons/sun';
 import Moon from 'lucide-react/dist/esm/icons/moon';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
-import Camera from 'lucide-react/dist/esm/icons/camera';
+import Zap from 'lucide-react/dist/esm/icons/zap';
 import Users from 'lucide-react/dist/esm/icons/users';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import IdCard from 'lucide-react/dist/esm/icons/id-card';
@@ -48,11 +48,12 @@ const ProfileDetails = () => {
     const newbiId = creatorPassId(creator);
 
     const shortcuts = [
+        // Creator things first, community after.
+        isCreator
+            ? { to: appPath('/creator/profile'), icon: Zap, label: 'Creator profile', hint: 'Rates, bio and your Newbi ID' }
+            : { to: appPath('/creator/apply'), icon: Zap, label: 'Become a Newbi creator', hint: 'Get your creator ID in 30 seconds' },
         { to: appPath('/community'), icon: Users, label: 'My guestlists', hint: 'Passes for guestlists you joined' },
         { to: appPath('/tickets'), icon: Ticket, label: 'Tickets', hint: 'Shows on sale' },
-        isCreator
-            ? { to: appPath('/creator/profile'), icon: Camera, label: 'Creator profile', hint: 'Rates, bio and your Newbi ID' }
-            : { to: appPath('/creator/apply'), icon: Camera, label: 'Become a Newbi creator', hint: 'Get your creator ID in 30 seconds' },
     ];
 
     return (
