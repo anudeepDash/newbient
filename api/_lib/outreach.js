@@ -16,6 +16,11 @@
  *   POST ?action=outreach-cancel             { campaignId }  stop queued invites
  *   POST ?action=outreach-queue-run          admin: a short pass; Bearer CRON_SECRET: the worker (chains itself)
  *
+ * Phase 3 (api/_lib/outreachDeliver.js, api/_lib/outreachInbox.js):
+ *   public  outreach-deliverables, outreach-submit, outreach-upi        (the creator's personal link)
+ *   admin   outreach-review, outreach-ticket, outreach-payout, outreach-resend-link,
+ *           inbox-list, inbox-thread, inbox-reply, inbox-template, inbox-state, inbox-media
+ *
  * Data (see docs/campaign-outreach.md):
  *   campaigns/{id}                              public campaign fields (slug, artist, cities, dates, perks…)
  *   campaigns/{id}/private/outreach             whatsappGroupLink, messageTemplate (admin only)
@@ -40,12 +45,23 @@ import {
     contactIdFor, enqueueInvites, cancelQueued, runQueue, queueStatus, rateStatus, kickWorker, defaultReminderHours,
 } from './outreachQueue.js';
 import { isWhatsAppConfigured } from './whatsapp.js';
+import { submitUrlFor } from './outreachQueue.js';
+import {
+    handleCreatorDeliverables, handleCreatorSubmit, handleCreatorUpi, handleReview, handleTicket, handlePayout, handleResendLink,
+} from './outreachDeliver.js';
+import {
+    handleInboxList, handleInboxThread, handleInboxReply, handleInboxTemplate, handleInboxState, handleInboxMedia,
+} from './outreachInbox.js';
+import { ticketRuleOf, TICKET_RULES } from '../../src/lib/outreach/deliverables.js';
 
 export const OUTREACH_ACTIONS = new Set([
     'outreach-campaign', 'outreach-apply', 'outreach-list', 'outreach-status', 'outreach-settings', 'outreach-audit',
     'outreach-send', 'outreach-cancel', 'outreach-queue-run',
+    'outreach-deliverables', 'outreach-submit', 'outreach-upi',
+    'outreach-review', 'outreach-ticket', 'outreach-payout', 'outreach-resend-link',
+    'inbox-list', 'inbox-thread', 'inbox-reply', 'inbox-template', 'inbox-state', 'inbox-media',
 ]);
-const PUBLIC = new Set(['outreach-campaign', 'outreach-apply']);
+const PUBLIC = new Set(['outreach-campaign', 'outreach-apply', 'outreach-deliverables', 'outreach-submit', 'outreach-upi']);
 
 /* Personal data is for these roles only (narrower than the creator admin roles on purpose). */
 export const OUTREACH_ROLES = ['founder', 'super_admin', 'developer', 'admin'];
@@ -249,8 +265,14 @@ const handleList = async (req, res, { db }) => {
     if (!campaignId) return send(res, 400, { success: false, error: 'campaignId is required' });
     const campRef = db.collection('campaigns').doc(campaignId);
     const [appsSnap, privSnap] = await Promise.all([campRef.collection('applications').get(), privateRef(campRef).get()]);
-    const applications = appsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => String(b.lastSubmittedAt || '').localeCompare(String(a.lastSubmittedAt || '')));
+    const campSnap = await campRef.get();
+    const hasDeliverables = (campSnap.data()?.tasks || []).length > 0;
+    const applications = appsSnap.docs.map(d => ({
+        id: d.id,
+        ...d.data(),
+        // Their personal "send your posts" link, for {submit_link} in the wa.me message.
+        ...(hasDeliverables ? { submitUrl: submitUrlFor(campaignId, d.id) } : {}),
+    })).sort((a, b) => String(b.lastSubmittedAt || '').localeCompare(String(a.lastSubmittedAt || '')));
     const priv = privSnap.exists ? privSnap.data() : {};
     const configured = isWhatsAppConfigured();
     const [queue, rate] = configured ? await Promise.all([queueStatus(db, campaignId), rateStatus(db)]) : [null, null];
@@ -262,6 +284,7 @@ const handleList = async (req, res, { db }) => {
             messageTemplate: priv.messageTemplate || DEFAULT_TEMPLATE,
             remindersEnabled: priv.remindersEnabled !== false,
             joinReminderHours: Number(priv.joinReminderHours) || defaultReminderHours(),
+            ticketRule: ticketRuleOf(priv),
             updatedAt: priv.updatedAt || null,
             updatedBy: priv.updatedBy || null,
         },
@@ -335,6 +358,7 @@ const handleSettings = async (req, res, { db, token, now = nowIso() }) => {
         return send(res, 400, { success: false, field: 'whatsappGroupLink', error: 'Paste a WhatsApp group invite link (https://chat.whatsapp.com/…).' });
     }
     const remindersEnabled = body.remindersEnabled !== false;
+    const ticketRule = TICKET_RULES.some(r => r.value === body.ticketRule) ? body.ticketRule : null;
     const hoursRaw = body.joinReminderHours;
     const joinReminderHours = hoursRaw === undefined || hoursRaw === null || hoursRaw === '' ? null : Number(hoursRaw);
     if (joinReminderHours !== null && (!Number.isInteger(joinReminderHours) || joinReminderHours < 1 || joinReminderHours > 336)) {
@@ -357,9 +381,13 @@ const handleSettings = async (req, res, { db, token, now = nowIso() }) => {
             messageTemplate: messageTemplate.trim() || DEFAULT_TEMPLATE,
             remindersEnabled,
             joinReminderHours: joinReminderHours || defaultReminderHours(),
+            ...(ticketRule ? { ticketRule } : {}),
             updatedAt: now,
             updatedBy: actorEmail,
         }, { merge: true });
+        if (ticketRule && ticketRuleOf(prev) !== ticketRule) {
+            tx.set(campRef.collection('audit').doc(), { appId: null, field: 'ticketRule', from: ticketRuleOf(prev), to: ticketRule, source: 'admin', actorUid, actorEmail, at: now });
+        }
         if ((prev.remindersEnabled !== false) !== remindersEnabled || (joinReminderHours && Number(prev.joinReminderHours || defaultReminderHours()) !== joinReminderHours)) {
             tx.set(campRef.collection('audit').doc(), { appId: null, field: 'reminders', from: null, to: remindersEnabled ? `after ${joinReminderHours || defaultReminderHours()} h` : 'off', source: 'admin', actorUid, actorEmail, at: now });
         }
@@ -440,6 +468,9 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
     try {
         if (action === 'outreach-campaign') return await handleCampaign(req, res, { db });
         if (action === 'outreach-apply') return await handleApply(req, res, { db });
+        if (action === 'outreach-deliverables') return await handleCreatorDeliverables(req, res, { db });
+        if (action === 'outreach-submit') return await handleCreatorSubmit(req, res, { db, rateLimit: checkRateLimit });
+        if (action === 'outreach-upi') return await handleCreatorUpi(req, res, { db });
         if (PUBLIC.has(action)) return send(res, 400, { success: false, error: 'Unknown action.' });
         if (action === 'outreach-queue-run' && isCronCall(req)) return await handleQueueRun(req, res, { db, cron: true });
 
@@ -454,6 +485,17 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         if (action === 'outreach-send') return await handleSend(req, res, ctx);
         if (action === 'outreach-cancel') return await handleCancel(req, res, ctx);
         if (action === 'outreach-queue-run') return await handleQueueRun(req, res, { ...ctx, cron: false });
+        const withActor = { db, actor: actorOf(decodedToken) };
+        if (action === 'outreach-review') return await handleReview(req, res, withActor);
+        if (action === 'outreach-ticket') return await handleTicket(req, res, withActor);
+        if (action === 'outreach-payout') return await handlePayout(req, res, withActor);
+        if (action === 'outreach-resend-link') return await handleResendLink(req, res, withActor);
+        if (action === 'inbox-list') return await handleInboxList(req, res, withActor);
+        if (action === 'inbox-thread') return await handleInboxThread(req, res, withActor);
+        if (action === 'inbox-reply') return await handleInboxReply(req, res, withActor);
+        if (action === 'inbox-template') return await handleInboxTemplate(req, res, withActor);
+        if (action === 'inbox-state') return await handleInboxState(req, res, withActor);
+        if (action === 'inbox-media') return await handleInboxMedia(req, res, withActor);
         return send(res, 400, { success: false, error: 'Unknown action.' });
     } catch (err) {
         // Never log request bodies: they carry phones and emails.

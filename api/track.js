@@ -119,7 +119,9 @@ const handleWhatsAppWebhook = async (req, res, raw, body) => {
     const messages = [];
     (body.entry || []).forEach(e => (e.changes || []).forEach(c => {
         (c.value?.statuses || []).forEach(st => statuses.push(st));
-        (c.value?.messages || []).forEach(m => messages.push(m));
+        // The sender's WhatsApp profile name, for the inbox.
+        const names = Object.fromEntries((c.value?.contacts || []).map(ct => [ct.wa_id, ct.profile?.name || null]));
+        (c.value?.messages || []).forEach(m => messages.push({ m, name: names[m.from] || null }));
     }));
     try {
         await Promise.all(statuses.slice(0, 100).map(async (st) => {
@@ -127,9 +129,9 @@ const handleWhatsAppWebhook = async (req, res, raw, body) => {
             // Campaign outreach: a failed invite goes back under "To message".
             if (saved?.log) await onOutreachStatus(saved.log, st);
         }).map(p => p.catch(err => console.warn('[TRACK API] WhatsApp status not saved:', err.message))));
-        // Replies: "Joined ✅" marks a creator joined; anything else marks them replied.
-        for (const m of messages.slice(0, 50)) {
-            await onOutreachInbound(m).catch(err => console.warn('[TRACK API] WhatsApp message not handled:', err.message));
+        // Replies go to the outreach inbox; "Joined ✅" marks a creator joined, anything else replied.
+        for (const { m, name } of messages.slice(0, 50)) {
+            await onOutreachInbound(m, { name }).catch(err => console.warn('[TRACK API] WhatsApp message not handled:', err.message));
         }
     } catch (err) {
         console.error('[TRACK API] WhatsApp webhook failed:', err.message);

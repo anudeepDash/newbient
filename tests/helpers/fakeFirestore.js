@@ -11,6 +11,25 @@ const clone = (v) => (v === undefined ? undefined : structuredClone(v));
 const isSentinel = (v) => v !== null && typeof v === 'object' && typeof v.isEqual === 'function';
 const stripSentinels = (data) => Object.fromEntries(Object.entries(data || {}).filter(([, v]) => !isSentinel(v)));
 const deletedKeys = (data) => Object.entries(data || {}).filter(([, v]) => isSentinel(v)).map(([k]) => k);
+const isPlain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date);
+// set(..., { merge: true }) merges nested maps, like Firestore.
+const deepMerge = (a, b) => {
+    const out = { ...a };
+    Object.entries(b).forEach(([k, v]) => { out[k] = isPlain(v) && isPlain(a?.[k]) ? deepMerge(a[k], v) : v; });
+    return out;
+};
+// update() treats "a.b.c" keys as paths, like Firestore.
+const applyPaths = (base, data) => {
+    const out = structuredClone(base || {});
+    Object.entries(data).forEach(([k, v]) => {
+        const parts = k.split('.');
+        let node = out;
+        parts.slice(0, -1).forEach(p => { if (!isPlain(node[p])) node[p] = {}; node = node[p]; });
+        if (isSentinel(v)) delete node[parts[parts.length - 1]];
+        else node[parts[parts.length - 1]] = clone(v);
+    });
+    return out;
+};
 
 class DocSnap {
     constructor(ref, data) { this.ref = ref; this.id = ref.id; this._data = data; this.exists = data !== undefined; }
@@ -24,7 +43,7 @@ class DocRef {
     async set(data, opts) { this.db._write(this.path, data, opts); }
     async update(data) {
         if (!this.db.store.has(this.path)) throw new Error(`No document to update: ${this.path}`);
-        this.db._write(this.path, data, { merge: true });
+        this.db._update(this.path, data);
     }
 }
 
@@ -73,9 +92,13 @@ export class FakeFirestore {
 
     _write(path, data, opts) {
         const prev = this.store.get(path);
-        const next = opts?.merge && prev ? { ...prev, ...clone(stripSentinels(data)) } : clone(stripSentinels(data));
+        const next = opts?.merge && prev ? deepMerge(prev, clone(stripSentinels(data))) : clone(stripSentinels(data));
         deletedKeys(data).forEach(k => delete next[k]);
         this.store.set(path, next);
+    }
+
+    _update(path, data) {
+        this.store.set(path, applyPaths(this.store.get(path), data));
     }
 
     async runTransaction(fn) {
@@ -91,7 +114,7 @@ export class FakeFirestore {
                 wrote = true;
                 writes.push(() => {
                     if (!this.store.has(ref.path)) throw new Error(`No document to update: ${ref.path}`);
-                    this._write(ref.path, data, { merge: true });
+                    this._update(ref.path, data);
                 });
             },
         };

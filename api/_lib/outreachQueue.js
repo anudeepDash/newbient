@@ -18,11 +18,13 @@
  * (campaign setting, default OUTREACH_JOIN_REMINDER_HOURS or 48). When it
  * comes due it only goes out if the person still hasn't joined.
  */
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { getDb, nowIso, istDate } from './db.js';
-import { sendTemplate, isWhatsAppConfigured } from './whatsapp.js';
+import { sendTemplate, sendText, isWhatsAppConfigured } from './whatsapp.js';
+import { makeSignedToken } from './linkSign.js';
+import { contactIdFor, appendThreadMessage, windowOpen } from './outreachThreads.js';
 import { canTransition, canSystemTransition } from '../../src/lib/outreach/status.js';
-import { templateParamsFor, WA_TEMPLATES } from '../../src/lib/outreach/whatsappTemplate.js';
+import { templateParamsFor, renderTemplatePreview, WA_TEMPLATES } from '../../src/lib/outreach/whatsappTemplate.js';
 import { maskPhone } from '../../src/lib/outreach/normalize.js';
 
 export const BACKOFF_MIN = [1, 5, 30, 120];
@@ -35,8 +37,9 @@ export const dailyCap = () => Math.max(1, Number(process.env.OUTREACH_WA_DAILY_C
 export const defaultReminderHours = () => Math.max(1, Number(process.env.OUTREACH_JOIN_REMINDER_HOURS) || 48);
 
 const appsPath = (campaignId) => `campaigns/${campaignId}/applications`;
-/** creator_contacts doc id: one per phone, without the number in the id. */
-export const contactIdFor = (phone) => `p_${createHash('sha256').update(String(phone)).digest('hex').slice(0, 24)}`;
+export { contactIdFor };
+const SUBMIT_LINK_TTL = 60 * 24 * 3600; // personal "send your posts" links: 60 days
+const APP_URL = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace(/\/+$/, '');
 const jobId = (campaignId, appId, kind) => `${campaignId}_${appId}_${kind}`;
 const iso = (ms) => new Date(ms).toISOString();
 
@@ -189,8 +192,39 @@ const claimJob = async (db, ref, now) => db.runTransaction(async (tx) => {
 
 const finishJob = (ref, patch) => ref.set({ ...patch, nextAttemptAt: patch.nextAttemptAt ?? null }, { merge: true });
 
-/** Loads what the message needs; null (with a reason) when it shouldn't go out any more. */
+/*
+ * What each kind of message is. Templates are approved in Meta (see
+ * src/lib/outreach/whatsappTemplate.js); inbox_text is a free-text reply.
+ *   button  'join': the signed "Joined" quick reply · 'link': URL button with their submit link
+ *   badge   writes the delivery status onto the application (the main message only)
+ */
+const KINDS = {
+    invite: { button: 'join', badge: true, groupLink: true },
+    reminder: { button: 'join', badge: true, groupLink: true },
+    deliverables: { button: 'link' },
+    changes: { button: 'link' },
+    payout: {},
+    inbox_text: { text: true },
+};
+
+/** Their personal "send your posts" token (linkSign, 60 days). '' when no signing key is set. */
+export const submitToken = (campaignId, appId) => makeSignedToken({ k: 'd', c: campaignId, a: appId }, SUBMIT_LINK_TTL);
+export const submitUrlFor = (campaignId, appId) => {
+    const token = submitToken(campaignId, appId);
+    return token ? `${APP_URL}/d/${token}` : '';
+};
+
+/** Loads what the message needs, or { skip } when it shouldn't go out any more. */
 const loadContext = async (db, job) => {
+    const spec = KINDS[job.kind];
+    if (!spec) return { skip: 'unknown_kind' };
+    if (spec.text) {
+        const tRef = db.collection('outreach_inbox').doc(String(job.data?.threadId || ''));
+        const thread = await tRef.get();
+        if (!thread.exists) return { skip: 'not_found' };
+        if (!windowOpen(thread.data())) return { skip: 'window_closed' };
+        return { thread: thread.data(), tRef };
+    }
     const campRef = db.collection('campaigns').doc(job.campaignId);
     const [campSnap, privSnap, appSnap] = await Promise.all([
         campRef.get(),
@@ -201,12 +235,15 @@ const loadContext = async (db, job) => {
     const campaign = campSnap.data();
     const settings = privSnap.exists ? privSnap.data() : {};
     const app = appSnap.data();
-    if (!settings.whatsappGroupLink) return { skip: 'no_group_link' };
+    if (spec.groupLink && !settings.whatsappGroupLink) return { skip: 'no_group_link' };
+    if (app.status === 'removed') return { skip: 'removed' };
     if (job.kind === 'invite' && app.status !== 'message_queued') return { skip: 'status_changed' };
     if (job.kind === 'reminder') {
         if (settings.remindersEnabled === false) return { skip: 'reminders_off' };
         if (!['message_sent', 'replied'].includes(app.status) || app.joinedAt) return { skip: 'already_joined' };
     }
+    if (job.kind === 'deliverables' && !(campaign.tasks || []).length) return { skip: 'no_deliverables' };
+    if (spec.button === 'link' && !submitToken(job.campaignId, job.appId)) return { skip: 'no_link_secret' };
     return { campaign, settings, app };
 };
 
@@ -216,72 +253,156 @@ const SKIP_NOTE = {
     status_changed: 'Their status changed before it was sent.',
     reminders_off: 'Reminders are off for this campaign.',
     already_joined: 'They joined (or moved on) before the reminder was due.',
+    removed: 'They were removed from the shortlist.',
+    no_deliverables: 'The campaign has no deliverables to send.',
+    no_link_secret: 'LINK_SIGNING_SECRET isn’t set, so personal links can’t be made.',
+    window_closed: 'More than 24 hours since their last message: WhatsApp only allows a template now.',
+    unknown_kind: 'Unknown message type.',
 };
+
+const appRefOf = (db, job) => db.collection(appsPath(job.campaignId)).doc(job.appId);
 
 /** Sends one claimed job. → 'sent' | 'retry' | 'failed' | 'cancelled' */
 export const sendJob = async (db, job, { now = Date.now() } = {}) => {
     const ref = db.collection('outreach_queue').doc(job.id);
+    const spec = KINDS[job.kind] || {};
     const ctx = await loadContext(db, job);
     if (ctx.skip) {
         await finishJob(ref, { status: 'cancelled', lastError: SKIP_NOTE[ctx.skip] });
-        if (job.kind === 'invite') {
-            await db.collection(appsPath(job.campaignId)).doc(job.appId)
-                .set({ delivery: { whatsapp: { status: 'cancelled', at: iso(now), error: SKIP_NOTE[ctx.skip] } } }, { merge: true }).catch(() => {});
+        if (spec.badge && job.kind === 'invite') {
+            await appRefOf(db, job).set({ delivery: { whatsapp: { status: 'cancelled', at: iso(now), error: SKIP_NOTE[ctx.skip] } } }, { merge: true }).catch(() => {});
+        }
+        if (spec.text) {
+            await db.collection('outreach_inbox').doc(String(job.data?.threadId || '')).collection('inbox_messages').doc(String(job.data?.messageId || 'x'))
+                .set({ status: 'failed', error: SKIP_NOTE[ctx.skip] }, { merge: true }).catch(() => {});
         }
         return 'cancelled';
     }
-    const { campaign, settings, app } = ctx;
     const attempts = Number(job.attempts || 0) + 1;
-    const result = await sendTemplate({
-        to: app.phone,
-        template: WA_TEMPLATES[job.kind].name,
-        bodyParams: templateParamsFor(job.kind, { application: app, campaign, groupLink: settings.whatsappGroupLink }),
-        buttons: [{ index: 0, payload: joinPayload(job.campaignId, job.appId) }],
-        event: `outreach-${job.kind}`,
-        ref: { collection: appsPath(job.campaignId), id: job.appId },
-        autoRetry: false,
-    });
+    let result;
+    let phone;
+    let text;
+    if (spec.text) {
+        phone = ctx.thread.phone;
+        result = await sendText({
+            to: phone,
+            text: job.data.text,
+            ref: { collection: `outreach_inbox/${job.data.threadId}/inbox_messages`, id: job.data.messageId },
+        });
+    } else {
+        const { campaign, settings, app } = ctx;
+        phone = app.phone;
+        const buttons = spec.button === 'join' ? [{ index: 0, payload: joinPayload(job.campaignId, job.appId) }]
+            : spec.button === 'link' ? [{ index: 0, param: submitToken(job.campaignId, job.appId) }] : [];
+        const tplCtx = { application: app, campaign, groupLink: settings.whatsappGroupLink, data: job.data || {} };
+        text = renderTemplatePreview(job.kind, tplCtx);
+        result = await sendTemplate({
+            to: app.phone,
+            template: WA_TEMPLATES[job.kind].name,
+            bodyParams: templateParamsFor(job.kind, tplCtx),
+            buttons,
+            event: `outreach-${job.kind}`,
+            ref: spec.badge ? { collection: appsPath(job.campaignId), id: job.appId } : null,
+            autoRetry: false,
+        });
+    }
     const at = iso(Date.now());
 
     if (result.ok) {
         await finishJob(ref, { status: 'sent', attempts, sentAt: at, messageId: result.messageId, lastError: null, errorCode: null });
-        if (job.kind === 'invite') {
-            await moveApplication(db, job.campaignId, job.appId, 'message_sent', {
-                source: 'whatsapp_api',
-                note: 'Sent with the WhatsApp API',
-                patch: { messageSentAt: at, messageSentBy: 'WhatsApp API', lastMessageText: null, lastMessageId: result.messageId },
-                now: at,
-            });
-            // The reminder waits in the queue; when it's due it checks they still haven't joined.
-            if (settings.remindersEnabled !== false) {
-                const hours = Number(settings.joinReminderHours) || defaultReminderHours();
-                await db.collection('outreach_queue').doc(jobId(job.campaignId, job.appId, 'reminder')).set({
-                    campaignId: job.campaignId, appId: job.appId, kind: 'reminder', status: 'queued', attempts: 0,
-                    nextAttemptAt: iso(Date.now() + hours * 3600_000), createdAt: at, createdBy: 'WhatsApp API', lastError: null, errorCode: null,
-                });
-            }
-        } else {
-            await db.collection(appsPath(job.campaignId)).doc(job.appId).set({ reminderSentAt: at, updatedAt: at }, { merge: true });
-            await auditRef(db, job.campaignId).set({ appId: job.appId, field: 'reminder', from: null, to: 'sent', source: 'reminder', note: 'Join reminder sent', ...SYSTEM_ACTOR, at });
+        if (!spec.text) {
+            // A copy in their inbox thread, so the conversation shows what we sent.
+            await appendThreadMessage(db, {
+                phone, direction: 'out', type: 'template', text, wamid: result.messageId, status: 'sent',
+                sentBy: job.createdBy || 'WhatsApp API', campaignId: job.campaignId, appId: job.appId, at, id: `j_${job.id}`.slice(0, 120),
+            }).catch(e => console.warn('[outreach] inbox copy not saved:', e.message));
         }
+        await afterSent(db, job, ctx, { at, messageId: result.messageId });
         return 'sent';
     }
 
     if (result.retriable && attempts < MAX_ATTEMPTS) {
         const next = iso(Date.now() + BACKOFF_MIN[attempts - 1] * 60_000);
         await finishJob(ref, { status: 'queued', attempts, nextAttemptAt: next, lastError: result.error || null, errorCode: result.errorCode || null });
-        await db.collection(appsPath(job.campaignId)).doc(job.appId)
-            .set({ delivery: { whatsapp: { status: 'retrying', at, error: result.error || null, nextAttemptAt: next } } }, { merge: true }).catch(() => {});
+        if (spec.badge) {
+            await appRefOf(db, job).set({ delivery: { whatsapp: { status: 'retrying', at, error: result.error || null, nextAttemptAt: next } } }, { merge: true }).catch(() => {});
+        }
         return 'retry';
     }
 
     await finishJob(ref, { status: 'failed', attempts, failedAt: at, lastError: result.error || 'Not sent', errorCode: result.errorCode || null });
-    await auditRef(db, job.campaignId).set({
-        appId: job.appId, field: 'whatsapp', from: null, to: 'failed', source: job.kind === 'reminder' ? 'reminder' : 'whatsapp_api',
-        note: String(result.error || 'Not sent').slice(0, 300), ...SYSTEM_ACTOR, at,
-    });
-    if (result.status === 'skipped') console.warn(`[outreach] ${job.kind} not sent to ${maskPhone(app.phone)}: ${result.error}`);
+    if (job.campaignId) {
+        await auditRef(db, job.campaignId).set({
+            appId: job.appId, field: 'whatsapp', from: null, to: 'failed', source: job.kind === 'reminder' ? 'reminder' : 'whatsapp_api',
+            note: `${job.kind === 'invite' ? '' : `${job.kind}: `}${String(result.error || 'Not sent').slice(0, 280)}`, ...SYSTEM_ACTOR, at,
+        });
+    }
+    if (result.status === 'skipped') console.warn(`[outreach] ${job.kind} not sent to ${maskPhone(phone)}: ${result.error}`);
     return 'failed';
+};
+
+/* What happens on the application once a message has gone out. */
+const afterSent = async (db, job, ctx, { at, messageId }) => {
+    if (job.kind === 'invite') {
+        await moveApplication(db, job.campaignId, job.appId, 'message_sent', {
+            source: 'whatsapp_api',
+            note: 'Sent with the WhatsApp API',
+            patch: { messageSentAt: at, messageSentBy: 'WhatsApp API', lastMessageText: null, lastMessageId: messageId },
+            now: at,
+        });
+        // The reminder waits in the queue; when it's due it checks they still haven't joined.
+        if (ctx.settings.remindersEnabled !== false) {
+            const hours = Number(ctx.settings.joinReminderHours) || defaultReminderHours();
+            await enqueueJob(db, { campaignId: job.campaignId, appId: job.appId, kind: 'reminder', createdBy: 'WhatsApp API', dueAt: Date.now() + hours * 3600_000 });
+        }
+    } else if (job.kind === 'reminder') {
+        await appRefOf(db, job).set({ reminderSentAt: at, updatedAt: at }, { merge: true });
+        await auditRef(db, job.campaignId).set({ appId: job.appId, field: 'reminder', from: null, to: 'sent', source: 'reminder', note: 'Join reminder sent', ...SYSTEM_ACTOR, at });
+    } else if (job.kind === 'deliverables') {
+        await appRefOf(db, job).set({ submitLinkSentAt: at, updatedAt: at }, { merge: true });
+        await auditRef(db, job.campaignId).set({ appId: job.appId, field: 'submit_link', from: null, to: 'sent', source: 'whatsapp_api', note: 'Personal link to send their posts', ...SYSTEM_ACTOR, at });
+    } else if (job.kind === 'payout') {
+        await appRefOf(db, job).update({ 'payout.noticeSentAt': at, updatedAt: at }).catch(() => {});
+    }
+};
+
+/* ── Queue any message ────────────────────────────────────────────────── */
+
+const ONCE = new Set(['invite', 'reminder', 'deliverables', 'payout']);
+
+/**
+ * Queues one message. Kinds that go once per person (invite, reminder,
+ * deliverables, payout) use a fixed id, so a second call while one is
+ * waiting does nothing; a sent one is replaced only with `again`.
+ * → the job id, or null when one is already waiting
+ */
+export const enqueueJob = async (db, { campaignId = null, appId = null, kind, data = {}, createdBy = null, dueAt = Date.now(), again = false, id = null }) => {
+    const jobKey = id || (ONCE.has(kind) ? jobId(campaignId, appId, kind) : `${campaignId || 'inbox'}_${appId || data.threadId || 'x'}_${kind}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`);
+    const ref = db.collection('outreach_queue').doc(jobKey);
+    return db.runTransaction(async (tx) => {
+        const cur = await tx.get(ref);
+        const status = cur.exists ? cur.data().status : null;
+        if (status === 'queued' || status === 'sending') return null;
+        if (status === 'sent' && !again) return null;
+        tx.set(ref, {
+            campaignId, appId, kind, data, status: 'queued', attempts: 0, nextAttemptAt: iso(dueAt),
+            createdAt: nowIso(), createdBy, lastError: null, errorCode: null,
+        });
+        return jobKey;
+    });
+};
+
+/**
+ * Sends a queued job now if the rate limit has room (an admin is waiting on
+ * it); otherwise it stays queued for the worker. → the outcome or 'queued'
+ */
+export const sendSoon = async (db, id) => {
+    if (!id || !isWhatsAppConfigured()) return 'queued';
+    const slot = await acquireSlot(db, Date.now());
+    if (!slot.ok) return 'queued';
+    const job = await claimJob(db, db.collection('outreach_queue').doc(id), Date.now());
+    if (!job) return 'queued';
+    return sendJob(db, job);
 };
 
 /* ── The worker ───────────────────────────────────────────────────────── */
@@ -409,56 +530,88 @@ export const onOutreachStatus = async (log, status, { db = getDb() } = {}) => {
 
 const phoneOf = (waId) => (waId ? `+${String(waId).replace(/\D/g, '')}` : '');
 
+/* What an incoming message holds, for the inbox. */
+const inboundParts = (msg) => {
+    const type = String(msg?.type || 'unknown');
+    const media = msg?.[type] && typeof msg[type] === 'object' ? msg[type] : {};
+    if (type === 'text') return { type, text: msg.text?.body || '' };
+    if (type === 'button') return { type, text: msg.button?.text || '' };
+    if (type === 'interactive') return { type, text: msg.interactive?.button_reply?.title || msg.interactive?.list_reply?.title || '' };
+    return { type, caption: media.caption || '', mediaId: media.id || null, mimeType: media.mime_type || null, text: type === 'location' ? `${media.name || ''} ${media.address || ''}`.trim() : '' };
+};
+
+/* The application a number's message is about: their latest campaign's. */
+const latestApplicationFor = async (db, from) => {
+    const contact = await db.collection('creator_contacts').doc(contactIdFor(from)).get();
+    const campaigns = contact.exists ? [...(contact.data().campaignIds || [])].reverse() : [];
+    for (const campaignId of campaigns) {
+        const key = await db.collection('campaigns').doc(campaignId).collection('application_keys').doc(`p:${from}`).get();
+        if (key.exists) return { campaignId, appId: key.data().appId };
+    }
+    return null;
+};
+
 /**
- * An incoming message. "Joined ✅" (a quick-reply with our payload) marks the
- * person joined; any other message marks them replied. The text itself isn't
- * stored yet (the Phase 3 inbox will).
+ * An incoming message. Every message goes into the person's inbox thread.
+ * "Joined ✅" (a quick-reply with our payload) marks them joined, sends their
+ * personal link to submit posts and, if the campaign releases tickets on
+ * joining, their ticket. Any other message marks them replied.
  * → 'joined' | 'replied' | null
  */
-export const onOutreachInbound = async (msg, { db = getDb(), now = nowIso() } = {}) => {
+export const onOutreachInbound = async (msg, { db = getDb(), now = nowIso(), name = null } = {}) => {
     const from = phoneOf(msg?.from);
     if (!from) return null;
+    const at = msg.timestamp ? new Date(Number(msg.timestamp) * 1000).toISOString() : now;
     const payload = msg.type === 'button' ? msg.button?.payload
         : msg.type === 'interactive' ? (msg.interactive?.button_reply?.id || '') : '';
+    const store = (target) => appendThreadMessage(db, {
+        phone: from, name, direction: 'in', wamid: msg.id || null, at, campaignId: target?.campaignId || null, appId: target?.appId || null, ...inboundParts(msg),
+    }).catch(e => console.warn('[outreach] inbox message not saved:', e.message));
 
-    if (payload) {
-        const target = readJoinPayload(payload);
-        if (!target) return null;
-        const appRef = db.collection(appsPath(target.campaignId)).doc(target.appId);
+    const joinTarget = payload ? readJoinPayload(payload) : null;
+    if (payload && !joinTarget) {
+        // A button we didn't sign (or one from another system): keep the message, change nothing.
+        await store(null);
+        return null;
+    }
+    if (joinTarget) {
+        const appRef = db.collection(appsPath(joinTarget.campaignId)).doc(joinTarget.appId);
         const appSnap = await appRef.get();
         // The tap must come from the number we sent it to.
         if (!appSnap.exists || appSnap.data().phone !== from) {
             console.warn(`[outreach] "Joined" from ${maskPhone(from)} doesn't match the application; ignored.`);
+            await store(null);
             return null;
         }
-        const moved = await moveApplication(db, target.campaignId, target.appId, 'joined', {
+        await store(joinTarget);
+        const moved = await moveApplication(db, joinTarget.campaignId, joinTarget.appId, 'joined', {
             source: 'whatsapp_webhook',
             note: 'Tapped “Joined” in WhatsApp',
             patch: { joinedAt: now, joinedVia: 'button', lastReplyAt: now },
             now,
         });
-        await db.collection('outreach_queue').doc(jobId(target.campaignId, target.appId, 'reminder'))
+        await db.collection('outreach_queue').doc(jobId(joinTarget.campaignId, joinTarget.appId, 'reminder'))
             .set({ status: 'cancelled', nextAttemptAt: null, lastError: 'They joined.' }, { merge: true });
-        if (!moved) await appRef.set({ lastReplyAt: now }, { merge: true });
-        return moved ? 'joined' : null;
+        if (!moved) {
+            await appRef.set({ lastReplyAt: now }, { merge: true });
+            return null;
+        }
+        // Loaded here, not at the top: that module imports this one.
+        const { afterJoined } = await import('./outreachDeliver.js');
+        await afterJoined(db, joinTarget).catch(e => console.warn('[outreach] after-joined steps failed:', e.message));
+        return 'joined';
     }
 
-    // Any other message: the most recent outreach application on this number that's waiting on them.
-    const contact = await db.collection('creator_contacts').doc(contactIdFor(from)).get();
-    const campaigns = contact.exists ? [...(contact.data().campaignIds || [])].reverse() : [];
-    for (const campaignId of campaigns) {
-        const key = await db.collection('campaigns').doc(campaignId).collection('application_keys').doc(`p:${from}`).get();
-        if (!key.exists) continue;
-        const appId = key.data().appId;
-        const moved = await moveApplication(db, campaignId, appId, 'replied', {
-            source: 'whatsapp_webhook',
-            note: 'Replied in WhatsApp',
-            patch: { lastReplyAt: now },
-            now,
-        });
-        if (!moved) await db.collection(appsPath(campaignId)).doc(appId).set({ lastReplyAt: now }, { merge: true }).catch(() => {});
-        // Only their latest campaign: an old one shouldn't flip to "replied" because of a new chat.
-        return moved ? 'replied' : null;
-    }
-    return null;
+    // Any other message: their latest outreach application, if they have one.
+    const target = await latestApplicationFor(db, from);
+    await store(target);
+    if (!target) return null;
+    const moved = await moveApplication(db, target.campaignId, target.appId, 'replied', {
+        source: 'whatsapp_webhook',
+        note: 'Replied in WhatsApp',
+        patch: { lastReplyAt: now },
+        now,
+    });
+    if (!moved) await db.collection(appsPath(target.campaignId)).doc(target.appId).set({ lastReplyAt: now }, { merge: true }).catch(() => {});
+    return moved ? 'replied' : null;
 };

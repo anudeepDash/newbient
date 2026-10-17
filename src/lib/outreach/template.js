@@ -8,11 +8,12 @@ import { firstNameOf, waDigits } from './normalize.js';
  *   {campaign_title}  the campaign's title
  *   {group_link}      the campaign's WhatsApp group invite
  *   {deadline_line}   "Please post by Monday, 2 November." or nothing when there's no posting deadline
+ *   {submit_link}     their personal link to send their posts (Phase 3); empty when the campaign has no deliverables
  *
  * Phase 2 maps the same four values onto the approved Meta template's variables.
  */
 
-export const PLACEHOLDERS = ['first_name', 'campaign_title', 'group_link', 'deadline_line'];
+export const PLACEHOLDERS = ['first_name', 'campaign_title', 'group_link', 'deadline_line', 'submit_link'];
 
 export const DEFAULT_TEMPLATE = [
     'Hey {first_name}! 👋',
@@ -69,8 +70,9 @@ export const renderMessage = (template, { application, campaign }) => {
         campaign_title: String(campaign?.title || '').trim(),
         group_link: String(campaign?.whatsappGroupLink || '').trim(),
         deadline_line: deadlineLineFor(campaign),
+        submit_link: String(application?.submitUrl || '').trim(),
     };
-    text = text.replace(/\{(first_name|campaign_title|group_link|deadline_line)\}/g, (_, key) => values[key]);
+    text = text.replace(/\{(first_name|campaign_title|group_link|deadline_line|submit_link)\}/g, (_, key) => values[key]);
     // Tidy what empty values leave behind: "Thanks , see" → "Thanks, see", and blank-line runs.
     return text
         .split('\n')
