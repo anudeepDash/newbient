@@ -43,7 +43,7 @@ const OutreachTab = ({ campaign }) => {
     const [view, setView] = useState('applications');
     const [filters, setFilters] = useState(BLANK_FILTERS);
     const [selected, setSelected] = useState(() => new Set());
-    const [pasteOpen, setPasteOpen] = useState(false);
+    const [pasteOpen, setPasteOpen] = useState(null); // 'handles' | 'phones'
     const [openId, setOpenId] = useState(null);
     const [confirmRemove, setConfirmRemove] = useState(null);
     const [refreshKey, setRefreshKey] = useState(0);
@@ -268,7 +268,8 @@ const OutreachTab = ({ campaign }) => {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="text-[13px] text-gray-500">{visible.length} of {apps.length} shown</p>
                         <div className="flex flex-wrap gap-2">
-                            <Button onClick={() => setPasteOpen(true)} className="h-11"><ClipboardPaste size={14} /> Paste handles</Button>
+                            <Button onClick={() => setPasteOpen('handles')} className="h-11"><ClipboardPaste size={14} /> Paste handles</Button>
+                            <Button onClick={() => setPasteOpen('phones')} className="h-11"><ClipboardPaste size={14} /> Paste group members</Button>
                             <ExportMenu label="Export shortlist" getSpec={() => exportSpecFor({ title: campaign.title, rows: shortlist })} hint="Everyone on the shortlist, every column" />
                             <ExportMenu label="Export shown" getSpec={() => exportSpecFor({ title: campaign.title, rows: visible, label: 'applications' })} />
                         </div>
@@ -291,7 +292,15 @@ const OutreachTab = ({ campaign }) => {
                 <Card className="p-4"><ActivityList campaignId={campaign.id} nameOf={nameOf} refreshKey={refreshKey} /></Card>
             )}
 
-            <PasteSheet open={pasteOpen} onClose={() => setPasteOpen(false)} applications={apps} onShortlist={addToShortlist} />
+            <PasteSheet
+                key={pasteOpen || 'closed'}
+                open={Boolean(pasteOpen)}
+                mode={pasteOpen || 'handles'}
+                onClose={() => setPasteOpen(null)}
+                applications={apps}
+                onShortlist={addToShortlist}
+                onMark={(ids, to, source) => changeStatus(ids, to, { source })}
+            />
             <ApplicationSheet app={openId ? byId.get(openId) : null} campaign={campaign} campaignId={campaign.id} onClose={() => setOpenId(null)} onStatus={changeStatus} nameOf={nameOf} refreshKey={refreshKey} />
             <ConfirmSheet
                 open={Boolean(confirmRemove)}
