@@ -15,7 +15,7 @@ describe('seed data', () => {
         expect(apps.find(a => a.instagramHandle === 'riya.sharma')).toMatchObject({ followerCount: 13100, submitCount: 2 });
         expect(apps.every(a => a.phone.startsWith('+1202555'))).toBe(true);
         const byStatus = apps.reduce((m, a) => ({ ...m, [a.status]: (m[a.status] || 0) + 1 }), {});
-        expect(byStatus).toEqual({ applied: 14, shortlisted: 4, message_queued: 1, joined: 1 });
+        expect(byStatus).toEqual({ applied: 14, message_sent: 5, joined: 1 });
         expect(db.store.get(`campaigns/${CAMPAIGN_ID}/private/outreach`).whatsappGroupLink).toContain('chat.whatsapp.com');
     });
 });

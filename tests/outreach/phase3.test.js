@@ -252,14 +252,15 @@ describe('Joined, inbox and replies', () => {
     const thread = () => db.store.get(`outreach_inbox/${contactIdFor('+919876500001')}`);
     const threadId = () => contactIdFor('+919876500001');
 
-    it('after Joined sends their personal link, and their ticket when the campaign releases on joining', async () => {
+    it('after Joined sends their personal link, and never releases a ticket just for joining', async () => {
+        // An old campaign set to "when they tap Joined" now waits for deliverables instead.
         db.store.set('campaigns/c1/private/outreach', { ...db.store.get('campaigns/c1/private/outreach'), ticketRule: 'joined' });
         expect(await tap()).toBe('joined');
         const linkMsg = sent.find(m => m.template?.name === 'campaign_deliverables');
         expect(linkMsg.template.components[1].parameters[0].text).toBe(link());
         expect(app().submitLinkSentAt).toBeTruthy();
-        expect(releaseApplicationPass).toHaveBeenCalledTimes(1);
-        expect(app().ticket.rule).toBe('joined');
+        expect(releaseApplicationPass).not.toHaveBeenCalled();
+        expect((await call('outreach-list', { campaignId: 'c1' })).body.settings.ticketRule).toBe('deliverables');
     });
 
     it('keeps every message in the person’s thread, once, with their WhatsApp name', async () => {
@@ -323,6 +324,53 @@ describe('Joined, inbox and replies', () => {
         const report = await runQueue({ db, clock: () => Date.now(), sleep: async () => {}, deadline: Date.now() + 10_000 });
         expect(report.cancelled).toBe(1);
         expect(db.store.get(`outreach_inbox/${threadId()}/inbox_messages/${res.body.messageId}`).status).toBe('failed');
+    });
+});
+
+describe('the creator’s campaign page: groups and “I’ve joined”', () => {
+    beforeEach(() => {
+        db.store.set('campaigns/c1/applications/a1', { ...app(), uid: 'u-riya', contactId: contactIdFor('+919876500001'), cityGroup: { city: 'Bengaluru', title: 'Bengaluru Creators Community', url: 'https://chat.whatsapp.com/BlrGroup123456' } });
+        db.store.set('outreach_members/u-riya', { apps: { c1_a1: { campaignId: 'c1', appId: 'a1', at: '2026-10-30T00:00:00Z' } } });
+    });
+
+    it('shows both groups once shortlisted, and hides the campaign group before', async () => {
+        let view = await call('outreach-deliverables', { token: link() }, { token: null });
+        expect(view.body.groups).toEqual({
+            campaign: { url: 'https://chat.whatsapp.com/AbCdEf1234567', joined: false },
+            city: { city: 'Bengaluru', title: 'Bengaluru Creators Community', url: 'https://chat.whatsapp.com/BlrGroup123456', joined: false },
+        });
+        db.store.set('campaigns/c1/applications/a1', { ...app(), status: 'applied' });
+        view = await call('outreach-deliverables', { token: link() }, { token: null });
+        expect(view.body.groups.campaign).toBeNull();
+        expect(view.body.groups.city).not.toBeNull();
+    });
+
+    it('marks them joined when they tap I’ve joined, and stops the reminder', async () => {
+        db.store.set('outreach_queue/c1_a1_reminder', { campaignId: 'c1', appId: 'a1', kind: 'reminder', status: 'queued', nextAttemptAt: '2026-11-03T00:00:00Z' });
+        const res = await call('outreach-joined', { token: link(), which: 'campaign' }, { token: null });
+        expect(res.body).toMatchObject({ success: true, status: 'joined' });
+        expect(app()).toMatchObject({ status: 'joined', joinedVia: 'app' });
+        expect(db.store.get('outreach_queue/c1_a1_reminder').status).toBe('cancelled');
+        expect(audit()).toContainEqual(expect.objectContaining({ appId: 'a1', from: 'message_sent', to: 'joined', source: 'creator' }));
+        await call('outreach-joined', { token: link(), which: 'city' }, { token: null });
+        expect(app().cityGroupJoinedAt).toBeTruthy();
+        const view = await call('outreach-deliverables', { token: link() }, { token: null });
+        expect(view.body.groups.campaign.joined && view.body.groups.city.joined).toBe(true);
+    });
+
+    it('lets them join from the app before the WhatsApp message lands, but not before the shortlist', async () => {
+        db.store.set('campaigns/c1/applications/a1', { ...app(), status: 'message_queued' });
+        expect((await call('outreach-joined', { token: link(), which: 'campaign' }, { token: null })).body.status).toBe('joined');
+        db.store.set('campaigns/c1/applications/a1', { ...app(), status: 'applied' });
+        expect((await call('outreach-joined', { token: link(), which: 'campaign' }, { token: null })).statusCode).toBe(409);
+    });
+
+    it('lists the signed-in creator’s own campaigns, and nobody else’s', async () => {
+        const mine = await call('outreach-mine', {}, { token: { uid: 'u-riya' } });
+        expect(mine.body.items).toEqual([expect.objectContaining({ campaignId: 'c1', appId: 'a1', title: 'Arijit Singh Live', status: 'message_sent', hubUrl: `https://app.newbi.live/d/${link()}` })]);
+        db.store.set('outreach_members/u-other', { apps: { c1_a1: { campaignId: 'c1', appId: 'a1' } } });
+        expect((await call('outreach-mine', {}, { token: { uid: 'u-other' } })).body.items).toEqual([]);
+        expect((await call('outreach-mine', {}, { token: null })).statusCode).toBe(401);
     });
 });
 

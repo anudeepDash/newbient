@@ -5,6 +5,7 @@ import ImagePlus from 'lucide-react/dist/esm/icons/image-plus';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import Wallet from 'lucide-react/dist/esm/icons/wallet';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
+import Users from 'lucide-react/dist/esm/icons/users';
 import { Button, TextInput } from '../../../../components/app';
 import { cn } from '../../../../lib/utils';
 import { isPresent } from '../../../../lib/present';
@@ -17,12 +18,43 @@ import { validateSubmission, DELIVERABLE_STATUS, normalizeUpi } from '../../../.
 import { formatDeadline } from '../../../../lib/outreach/template';
 
 /*
- * /d/:token: a creator's own page for a campaign (Phase 3). The token is
- * their personal signed link, sent on WhatsApp after they tap "Joined"; no
- * sign-in. They send each deliverable (a post link, or a story screenshot),
- * see what's approved or what to change, add a UPI ID for payment, and open
- * their ticket once it's released.
+ * /d/:token: a creator's own page for a campaign. The token is their personal
+ * signed link (in their Newbi notifications, and on WhatsApp once the API is
+ * set up); the page itself needs no sign-in. It has the WhatsApp groups to
+ * join with an "I've joined" button (WhatsApp never tells us who's in a
+ * group), each deliverable to send (a post link, or a story screenshot), what
+ * to change, a UPI ID for payment, and their ticket once it's released.
  */
+
+const GroupCard = ({ token, which, title, hint, group, onDone }) => {
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+    const joined = async () => {
+        setBusy(true);
+        const r = await callCreatorApi('outreach-joined', { token, which });
+        setBusy(false);
+        if (!r.ok) { setError(r.error); return; }
+        onDone();
+    };
+    return (
+        <section className="space-y-3 rounded-[1.5rem] bg-white p-4 ring-1 ring-inset ring-black/[0.06] dark:bg-[#0c0e14] dark:ring-white/[0.08]">
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <p className="flex items-center gap-2 text-[16px] font-bold"><Users size={17} /> {title}</p>
+                    <p className="text-[13px] text-gray-500 dark:text-zinc-400">{hint}</p>
+                </div>
+                {group.joined && <ToneChip tone="green" className="shrink-0 whitespace-nowrap">Joined</ToneChip>}
+            </div>
+            {!group.joined && (
+                <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button href={group.url} target="_blank" rel="noopener noreferrer" className="flex-1">Join on WhatsApp</Button>
+                    <Button variant="secondary" loading={busy} onClick={joined} className="flex-1">I’ve joined</Button>
+                </div>
+            )}
+            {error && <Notice tone="error" title={error} />}
+        </section>
+    );
+};
 
 const TaskForm = ({ token, task, onDone }) => {
     const [link, setLink] = useState(task.link || '');
@@ -172,7 +204,7 @@ const DeliverablesPage = () => {
     }, [token]);
     useEffect(() => { load(); }, [load]);
     const d = state.data;
-    useDynamicMeta({ page: 'campaign-deliverables', title: d ? `Your posts: ${d.campaign.title}` : 'Your posts' });
+    useDynamicMeta({ page: 'campaign-deliverables', title: d ? `Your campaign: ${d.campaign.title}` : 'Your campaign' });
 
     if (state.loading) {
         return <PageBody><div className="mx-auto max-w-xl space-y-3"><div className="h-10 w-2/3 animate-pulse rounded-full bg-black/[0.06] dark:bg-white/[0.06]" /><div className="h-64 animate-pulse rounded-[2rem] bg-black/[0.04] dark:bg-white/[0.04]" /></div></PageBody>;
@@ -192,7 +224,7 @@ const DeliverablesPage = () => {
         <PageBody>
             <div className="mx-auto max-w-xl space-y-4">
                 <header className="space-y-2">
-                    <PanelLabel>Your posts</PanelLabel>
+                    <PanelLabel>Your campaign</PanelLabel>
                     <h1 className="font-heading text-[28px] font-extrabold leading-[1.05] tracking-[-0.03em]">{d.firstName ? `Hey ${d.firstName}!` : 'Hey!'} {d.campaign.title}</h1>
                     <p className="text-[15px] text-gray-600 dark:text-zinc-400">
                         Send each post here once it’s live{d.instagramHandle ? ` on @${d.instagramHandle}` : ''}.{d.campaign.postingDeadline ? ` Please post by ${formatDeadline(d.campaign.postingDeadline)}.` : ''}
@@ -201,8 +233,15 @@ const DeliverablesPage = () => {
                 {d.ticket && (
                     <Button href={d.ticket.url} icon={Ticket} className="w-full">Open my ticket</Button>
                 )}
+                {d.groups?.campaign && (
+                    <GroupCard token={token} which="campaign" title="Campaign group" hint="The brief, passes and updates for this campaign." group={d.groups.campaign} onDone={load} />
+                )}
+                {d.groups?.city && (
+                    <GroupCard token={token} which="city" title={d.groups.city.title} hint={`Gigs, guestlists and meetups in ${d.groups.city.city}.`} group={d.groups.city} onDone={load} />
+                )}
                 {done && <Notice tone="success" title="All your required posts are approved.">{d.payout ? `We’ve paid ₹${Number(d.payout.amount).toLocaleString('en-IN')}.` : 'We’ll process your payout next.'}</Notice>}
-                {d.tasks.length === 0 && <Notice tone="info" title="Nothing to send yet.">The Newbi team will share what to post in the group.</Notice>}
+                {d.tasks.length === 0 && d.status !== 'applied' && <Notice tone="info" title="Nothing to send yet.">The Newbi team will share what to post in the group.</Notice>}
+                {d.status === 'applied' && <Notice tone="info" title="You’ve applied.">If you’re shortlisted, you’ll get a notification in the Newbi app and this page will show the campaign group.</Notice>}
                 {d.tasks.map(t => <TaskCard key={t.id} token={token} task={t} onDone={load} />)}
                 <UpiCard token={token} saved={d.upi} onSaved={load} />
             </div>

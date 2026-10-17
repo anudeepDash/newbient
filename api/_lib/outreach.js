@@ -50,6 +50,7 @@ import { isWhatsAppConfigured } from './whatsapp.js';
 import { submitUrlFor } from './outreachQueue.js';
 import {
     handleCreatorDeliverables, handleCreatorSubmit, handleCreatorUpi, handleReview, handleTicket, handlePayout, handleResendLink,
+    handleCreatorJoined, handleMine,
 } from './outreachDeliver.js';
 import {
     handleInboxList, handleInboxThread, handleInboxReply, handleInboxTemplate, handleInboxState, handleInboxMedia,
@@ -59,17 +60,18 @@ import { ticketRuleOf, TICKET_RULES } from '../../src/lib/outreach/deliverables.
 export const OUTREACH_ACTIONS = new Set([
     'outreach-campaign', 'outreach-apply', 'outreach-list', 'outreach-status', 'outreach-settings', 'outreach-audit',
     'outreach-send', 'outreach-cancel', 'outreach-queue-run',
-    'outreach-deliverables', 'outreach-submit', 'outreach-upi',
+    'outreach-deliverables', 'outreach-submit', 'outreach-upi', 'outreach-joined', 'outreach-mine',
     'outreach-review', 'outreach-ticket', 'outreach-payout', 'outreach-resend-link',
     'inbox-list', 'inbox-thread', 'inbox-reply', 'inbox-template', 'inbox-state', 'inbox-media',
 ]);
-const PUBLIC = new Set(['outreach-campaign', 'outreach-apply', 'outreach-deliverables', 'outreach-submit', 'outreach-upi']);
+const PUBLIC = new Set(['outreach-campaign', 'outreach-apply', 'outreach-deliverables', 'outreach-submit', 'outreach-upi', 'outreach-joined', 'outreach-mine']);
 
 /* Personal data is for these roles only (narrower than the creator admin roles on purpose). */
 export const OUTREACH_ROLES = ['founder', 'super_admin', 'developer', 'admin'];
 
 const MAX_IDS_PER_CALL = 200;
 const send = (res, status, body) => res.status(status).json(body);
+const APP_ORIGIN = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace(/\/+$/, '');
 const str = (v, max = 200) => String(v ?? '').trim().slice(0, max);
 const sha = (s) => createHash('sha256').update(String(s)).digest('hex');
 
@@ -384,7 +386,53 @@ export const handleStatus = async (req, res, { db, token, now = nowIso() }) => {
         });
         return { updated, skipped };
     });
-    return send(res, 200, { success: true, ...result });
+    const followUps = to === 'shortlisted' && result.updated.length
+        ? await afterShortlisted(req, db, campaignId, result.updated.map(u => u.id), { actorUid, actorEmail })
+        : null;
+    return send(res, 200, { success: true, ...result, ...(followUps ? { followUps } : {}) });
+};
+
+/*
+ * Shortlisted: tell them without anyone opening WhatsApp. Everyone with a
+ * Newbi account gets an in-app notification and push with the campaign
+ * group and their campaign page. With the WhatsApp API set up, the invite
+ * template is queued too (it moves them along when it's sent); without it,
+ * the in-app notice counts as the message. People without an account (from
+ * before sign-in was required) stay shortlisted for the capped wa.me fallback.
+ */
+const afterShortlisted = async (req, db, campaignId, ids, actor) => {
+    const campRef = db.collection('campaigns').doc(campaignId);
+    const [campSnap, privSnap] = await Promise.all([campRef.get(), privateRef(campRef).get()]);
+    const campaign = campSnap.data() || {};
+    const groupLink = privSnap.exists ? privSnap.data().whatsappGroupLink || '' : '';
+    const apiOn = isWhatsAppConfigured();
+    const out = { inApp: 0, api: 0, byHand: 0 };
+    for (const appId of ids) {
+        const snap = await campRef.collection('applications').doc(appId).get();
+        const app = snap.data();
+        if (!app?.uid) { out.byHand += 1; continue; }
+        const hubUrl = submitUrlFor(campaignId, appId) || `${APP_ORIGIN}/creator`;
+        const result = await notify('outreach-shortlisted', app.uid, {
+            name: app.fullName, campaignTitle: campaign.title, groupLink, hubUrl,
+        }, { skip: ['email', 'whatsapp'] }).catch(e => { console.warn('[outreach] shortlist notice failed:', e.message); return null; });
+        if (result?.inApp?.status !== 'sent') continue;
+        out.inApp += 1;
+        if (!apiOn) {
+            const now = nowIso();
+            await db.runTransaction(async (tx) => {
+                const fresh = await tx.get(snap.ref);
+                if (fresh.data()?.status !== 'shortlisted') return;
+                tx.update(snap.ref, { status: 'message_sent', statusUpdatedAt: now, statusUpdatedBy: 'Newbi app', messageSentAt: now, messageSentBy: 'Newbi app', updatedAt: now });
+                tx.set(campRef.collection('audit').doc(), { appId, field: 'status', from: 'shortlisted', to: 'message_sent', source: 'in_app', note: 'Told in the Newbi app (notification and push)', ...actor, at: now });
+            });
+        }
+    }
+    if (apiOn) {
+        const queued = await enqueueInvites(db, { campaignId, appIds: ids, actor });
+        out.api = queued.queued.length;
+        if (out.api) await startWorker(req, db);
+    }
+    return out;
 };
 
 /* ── Admin: group link and message template ───────────────────────────── */
@@ -514,6 +562,8 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         if (action === 'outreach-deliverables') return await handleCreatorDeliverables(req, res, { db });
         if (action === 'outreach-submit') return await handleCreatorSubmit(req, res, { db, rateLimit: checkRateLimit });
         if (action === 'outreach-upi') return await handleCreatorUpi(req, res, { db });
+        if (action === 'outreach-joined') return await handleCreatorJoined(req, res, { db });
+        if (action === 'outreach-mine') return await handleMine(req, res, { db, token: decodedToken });
         if (PUBLIC.has(action)) return send(res, 400, { success: false, error: 'Unknown action.' });
         if (action === 'outreach-queue-run' && isCronCall(req)) return await handleQueueRun(req, res, { db, cron: true });
 

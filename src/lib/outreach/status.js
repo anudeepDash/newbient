@@ -55,8 +55,12 @@ export const statusLabel = (s) => STATUS_META[s]?.label || 'Applied';
  *     after the message (not everyone taps "Joined").
  *   - A payout recorded with an admin's written override → paid early.
  *   - A payout cancelled → back to posted.
+ *   - Shortlisted people with a Newbi account are told in the app → message sent.
+ *   - They tap "I've joined" in the app, even before the WhatsApp message lands → joined.
  */
 export const SYSTEM_TRANSITIONS = {
+    shortlisted: ['message_sent', 'joined'],
+    message_queued: ['joined'],
     message_sent: ['message_queued', 'posted', 'paid'],
     replied: ['posted', 'paid'],
     joined: ['paid'],
