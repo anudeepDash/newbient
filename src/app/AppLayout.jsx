@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Bell from 'lucide-react/dist/esm/icons/bell';
 import Sun from 'lucide-react/dist/esm/icons/sun';
 import Moon from 'lucide-react/dist/esm/icons/moon';
-import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
 import { isAdminRole } from '../constants/roles';
 import { cn } from '../lib/utils';
 import { useTheme } from '../hooks/useTheme';
@@ -139,12 +139,14 @@ const AppLayout = () => {
                     </nav>
                     <div className="flex items-center lg:w-48 lg:justify-end">
                         {isStaff && (
+                            // Staff only: into the admin (same host, no second sign-in).
                             <Link
                                 to="/admin"
                                 aria-label="Open admin"
-                                className="flex h-11 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-gray-700 dark:text-zinc-300"
+                                className="mr-1 flex h-9 items-center gap-2 rounded-full bg-white/70 pl-1 pr-3.5 font-heading text-[13px] font-bold text-gray-900 ring-1 ring-inset ring-black/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition-colors hover:bg-white dark:bg-white/[0.08] dark:text-white dark:ring-white/15 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] dark:hover:bg-white/[0.12]"
                             >
-                                <ShieldCheck size={17} /> Admin
+                                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-neon-green text-black"><LayoutDashboard size={14} strokeWidth={2.4} /></span>
+                                Admin
                             </Link>
                         )}
                         <button
