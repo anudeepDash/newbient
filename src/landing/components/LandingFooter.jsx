@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Instagram, Linkedin, Mail } from 'lucide-react';
 import Logo from './Logo';
 import { usePublicFeed } from '../feed';
+import { ADMIN_URL } from '../links';
 
 const col = 'flex flex-col';
 const item = 'inline-flex items-center min-h-[44px] text-sm text-gray-600 dark:text-zinc-400 hover:text-gray-950 dark:hover:text-white transition-colors';
@@ -59,8 +60,12 @@ export default function LandingFooter() {
                     <Link to="/privacy" className={item}>Privacy</Link>
                 </nav>
             </div>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 border-t border-black/[0.06] dark:border-white/[0.06] text-xs text-gray-500 dark:text-zinc-500">
-                © <span suppressHydrationWarning>{new Date().getFullYear()}</span> Newbi Entertainment &amp; Marketing LLP
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between gap-4 text-xs text-gray-500 dark:text-zinc-500">
+                <span>© <span suppressHydrationWarning>{new Date().getFullYear()}</span> Newbi Entertainment &amp; Marketing LLP</span>
+                {/* Staff only, kept quiet: same size as the copyright, fainter until hovered. */}
+                <a href={ADMIN_URL} rel="nofollow" className="-my-3 inline-flex min-h-[44px] items-center px-2 -mr-2 font-mono text-[11px] uppercase tracking-[0.2em] text-gray-400/70 dark:text-zinc-600 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors">
+                    Team
+                </a>
             </div>
         </footer>
     );
