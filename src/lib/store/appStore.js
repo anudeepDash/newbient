@@ -6,6 +6,7 @@ import { createCommunitySlice } from './community';
 import { createPassesSlice } from './passes';
 import { createCreatorSlice } from './creator';
 import { createNotificationsSlice, bindLegacyNotifications } from './notifications';
+import { writeSessionHint, clearSessionHint } from '../sessionHint';
 
 /*
  * The app's store (app.newbi.live), built from slices.
@@ -45,6 +46,18 @@ export function useAppSession() {
         const unsubs = [subscribeProfile(uid), subscribeCreator(uid), subscribePasses(uid)];
         return () => unsubs.forEach(fn => fn?.());
     }, [uid]);
+
+    // Lets the landing site show who's signed in (lib/sessionHint).
+    const authReady = useAppStore(s => s.authReady);
+    // This account's loaded profile (it drops placeholder names like "Member").
+    const profileReady = useAppStore(s => Boolean(uid && s.profileLoaded && s.profile?.uid === uid));
+    const firstName = useAppStore(s => (s.profile?.name || '').trim().split(/\s+/)[0]);
+    const photo = useAppStore(s => s.profile?.photoURL || '');
+    useEffect(() => {
+        if (!authReady) return;
+        if (!uid) clearSessionHint();
+        else if (profileReady) writeSessionHint({ name: firstName, photo });
+    }, [authReady, uid, profileReady, firstName, photo]);
 }
 
 /* Capability check: the profile flag, or (for creators) an existing creator profile. */

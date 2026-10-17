@@ -23,6 +23,7 @@ import { plainText } from '../community/communityParts';
 import { isUpcomingPass, passCard } from '../passes/passCards';
 import PageHeader, { PageBody } from './PageHeader';
 import { requirementsFor } from '../profile/requirements';
+import JoinCommunitySheet from '../community/JoinCommunitySheet';
 import { usePublicContact } from '../usePublicFeed';
 import { CardGrid, CardSkeleton, EmptyState, SectionHeader, Rail, GLASS } from './parts';
 
@@ -95,19 +96,13 @@ const GigSheet = ({ gig, onClose }) => {
 const JoinPanel = () => {
     const authUser = useAppStore(s => s.authUser);
     const profile = useAppStore(s => s.profile);
-    const joinCommunity = useAppStore(s => s.joinCommunity);
     const whatsappCommunity = usePublicContact().whatsappCommunity;
     const gate = useAuthGate();
-    const [busy, setBusy] = useState(false);
-    const [error, setError] = useState('');
+    const [joinOpen, setJoinOpen] = useState(false);
     const member = Boolean(profile?.capabilities?.member);
 
-    const join = async () => {
-        setBusy(true);
-        setError('');
-        try { await joinCommunity(); } catch { setError('We couldn’t add you just now. Please try again.'); }
-        setBusy(false);
-    };
+    // Joining opens the welcome form; signed-out visitors sign in first.
+    const join = () => setJoinOpen(true);
     useResumeIntent(INTENTS.joinCommunity, join);
 
     if (authUser && !profile) return null;
@@ -125,10 +120,10 @@ const JoinPanel = () => {
         <div className={`flex flex-col gap-3 rounded-3xl px-5 py-5 sm:flex-row sm:items-center ${GLASS}`}>
             <div className="min-w-0 flex-1">
                 <p className="font-heading text-[19px] font-extrabold tracking-[-0.02em]">Join the Newbi community</p>
-                <p className="text-[14px] text-gray-600 dark:text-zinc-400">First word on guestlists, gigs and giveaways. One tap, no forms.</p>
+                <p className="text-[14px] text-gray-600 dark:text-zinc-400">First word on guestlists, gigs and giveaways near you. Free.</p>
             </div>
-            <Button loading={busy} onClick={() => gate.run({ type: INTENTS.joinCommunity }, join, { require: requirementsFor('community') })}>Join</Button>
-            {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
+            <Button onClick={() => gate.run({ type: INTENTS.joinCommunity }, join, { require: requirementsFor('community') })}>Join</Button>
+            <JoinCommunitySheet open={joinOpen} onClose={() => setJoinOpen(false)} />
         </div>
     );
 };

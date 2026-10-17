@@ -40,7 +40,8 @@ import MapPin from 'lucide-react/dist/esm/icons/map-pin';
  *   what's on in the community · the WhatsApp community. Creator things come first.
  */
 
-const ONBOARDING_FIELDS = ['name', 'phoneVerified', 'city'];
+// The phone has its own banner (auth/PhoneBanner), so it isn't listed here.
+const ONBOARDING_FIELDS = ['name', 'city'];
 
 // Creator things first, community after.
 const QUICK = [
@@ -174,7 +175,7 @@ const HomePage = () => {
                     <span className="min-w-0 flex-1">
                         <span className="block text-[15px] font-bold">Finish your profile</span>
                         <span className="block text-[13px] text-gray-600 dark:text-zinc-400">
-                            Add your {missing.map(f => fieldLabel(f).toLowerCase()).join(', ')} once for every pass and application.
+                            Add your {missing.map(f => fieldLabel(f).toLowerCase().replace(/^your /, '')).join(' and ')} once for every pass and application.
                         </span>
                     </span>
                 </button>

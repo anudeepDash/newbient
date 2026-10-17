@@ -4,6 +4,7 @@ import { Menu, X, Sun, Moon, ArrowUpRight, UserRound } from 'lucide-react';
 import Logo from './Logo';
 import { useTheme } from '../../hooks/useTheme';
 import { APP_LINKS } from '../links';
+import { readSessionHint } from '../../lib/sessionHint';
 
 const LINKS = [
     { label: 'Work', to: '/work' },
@@ -31,9 +32,30 @@ export function ThemeToggle({ className = '' }) {
     );
 }
 
+// Who's signed in to the app, read after hydration so the prerendered HTML stays the same for everyone.
+function useSignedIn() {
+    const [hint, setHint] = useState(null);
+    useEffect(() => { setHint(readSessionHint()); }, []);
+    return hint;
+}
+
+function Avatar({ hint, size = 28 }) {
+    const [broken, setBroken] = useState(false);
+    const initial = (hint.name || '').charAt(0).toUpperCase();
+    if (hint.photo && !broken) {
+        return <img src={hint.photo} alt="" width={size} height={size} referrerPolicy="no-referrer" onError={() => setBroken(true)} className="shrink-0 rounded-full object-cover" style={{ width: size, height: size }} />;
+    }
+    return (
+        <span aria-hidden="true" className="flex shrink-0 items-center justify-center rounded-full bg-neon-green text-black text-[13px] font-bold" style={{ width: size, height: size }}>
+            {initial || <UserRound size={14} />}
+        </span>
+    );
+}
+
 export default function LandingNav() {
     const [open, setOpen] = useState(false);
     const location = useLocation();
+    const signedIn = useSignedIn();
 
     useEffect(() => { setOpen(false); }, [location.pathname, location.hash]);
     useEffect(() => {
@@ -61,10 +83,17 @@ export default function LandingNav() {
 
                 <div className="flex items-center gap-1 sm:gap-1.5">
                     <ThemeToggle className="hidden sm:flex" />
-                    {/* Into the app: sign in, passes, campaigns. */}
-                    <a href={APP_LINKS.home} className="h-11 px-3 sm:px-5 inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white/70 dark:bg-white/[0.08] ring-1 ring-inset ring-black/10 dark:ring-white/15 text-gray-950 dark:text-white font-heading text-sm font-bold hover:bg-white dark:hover:bg-white/[0.14] transition-colors">
-                        <UserRound size={15} aria-hidden="true" className="hidden sm:block" /> Sign in
-                    </a>
+                    {/* Into the app: sign in, passes, campaigns. Signed in already: their name, straight to the app. */}
+                    {signedIn ? (
+                        <a href={APP_LINKS.home} aria-label={signedIn.name ? `Open the app, signed in as ${signedIn.name}` : 'Open the app'} className="h-11 pl-1.5 pr-3 sm:pr-4 inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-white/70 dark:bg-white/[0.08] ring-1 ring-inset ring-black/10 dark:ring-white/15 text-gray-950 dark:text-white font-heading text-sm font-bold hover:bg-white dark:hover:bg-white/[0.14] transition-colors">
+                            <Avatar hint={signedIn} size={32} />
+                            <span className="max-w-[5.5rem] truncate sm:max-w-[8rem]">{signedIn.name || 'Open app'}</span>
+                        </a>
+                    ) : (
+                        <a href={APP_LINKS.home} className="h-11 px-3 sm:px-5 inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white/70 dark:bg-white/[0.08] ring-1 ring-inset ring-black/10 dark:ring-white/15 text-gray-950 dark:text-white font-heading text-sm font-bold hover:bg-white dark:hover:bg-white/[0.14] transition-colors">
+                            <UserRound size={15} aria-hidden="true" className="hidden sm:block" /> Sign in
+                        </a>
+                    )}
                     <Link to="/#enquire" className="h-11 px-4 sm:px-5 inline-flex whitespace-nowrap items-center rounded-full bg-neon-green text-black font-heading text-sm font-bold hover:scale-[1.03] transition-transform">
                         Work with us
                     </Link>
@@ -94,7 +123,7 @@ export default function LandingNav() {
                     </ul>
                     <div className="mt-3 flex items-center gap-2">
                         <a href={APP_LINKS.home} className="flex-1 h-12 inline-flex items-center justify-center gap-1.5 rounded-xl bg-black/5 dark:bg-white/10 text-sm font-semibold text-gray-900 dark:text-white">
-                            Sign in <ArrowUpRight size={15} aria-hidden="true" />
+                            {signedIn ? 'Open the app' : 'Sign in'} <ArrowUpRight size={15} aria-hidden="true" />
                         </a>
                         <ThemeToggle className="bg-black/5 dark:bg-white/10 h-12 w-12" />
                     </div>

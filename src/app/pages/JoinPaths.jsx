@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppStore, useCapability } from '../../lib/store/appStore';
-import { useStore as useLegacyStore } from '../../lib/store.js';
 import { Button } from '../../components/app';
 import { appPath } from '../host';
 import { useAuthGate, useResumeIntent, INTENTS } from '../auth/AuthGate';
@@ -9,6 +8,7 @@ import Zap from 'lucide-react/dist/esm/icons/zap';
 import Users from 'lucide-react/dist/esm/icons/users';
 import { cn } from '../../lib/utils';
 import { GLASS } from './parts';
+import JoinCommunitySheet from '../community/JoinCommunitySheet';
 
 /*
  * The ways into the app on Home: become a creator (campaigns) and join the
@@ -17,8 +17,8 @@ import { GLASS } from './parts';
  * of big cards; the hero above is the only big panel.
  *
  * Applying opens the application in place (a sheet over Home). Joining the
- * community is one tap; signed-out visitors sign in first and the join
- * finishes when they come back.
+ * community opens the short welcome form (JoinCommunitySheet); signed-out
+ * visitors sign in first and the form opens when they come back.
  */
 
 const Row = ({ icon: Icon, accent, title, text, action }) => (
@@ -37,24 +37,13 @@ const Row = ({ icon: Icon, accent, title, text, action }) => (
 const JoinPaths = () => {
     const authUser = useAppStore(s => s.authUser);
     const profileLoaded = useAppStore(s => s.profileLoaded);
-    const joinCommunity = useAppStore(s => s.joinCommunity);
     const isCreator = useCapability('creator');
     const isMember = useCapability('member');
     const { run } = useAuthGate();
     const location = useLocation();
-    const [busy, setBusy] = useState(false);
+    const [joinOpen, setJoinOpen] = useState(false);
 
-    const join = async () => {
-        setBusy(true);
-        try {
-            await joinCommunity();
-            useLegacyStore.getState().addToast?.('You’re in. Guestlists, gigs and giveaways are open to you.', 'success');
-        } catch (err) {
-            useLegacyStore.getState().addToast?.('Couldn’t join just now. Please try again.', 'error');
-        } finally {
-            setBusy(false);
-        }
-    };
+    const join = () => setJoinOpen(true);
     useResumeIntent(INTENTS.joinCommunity, join);
 
     // Signed-in users: wait for the profile so a member never sees "Join".
@@ -73,17 +62,20 @@ const JoinPaths = () => {
             key: 'community',
             icon: Users,
             title: 'Join the community',
-            text: 'Guestlists, gigs and giveaways near you. Free, one tap.',
-            action: <Button size="sm" variant="secondary" loading={busy} onClick={() => run({ type: INTENTS.joinCommunity }, join)}>Join</Button>,
+            text: 'Guestlists, gigs and giveaways near you. Free.',
+            action: <Button size="sm" variant="secondary" onClick={() => run({ type: INTENTS.joinCommunity }, join)}>Join</Button>,
         },
     ].filter(Boolean);
 
     if (!tiles.length) return null;
 
     return (
-        <section aria-label="Ways in" className={cn('rounded-[1.75rem] px-5 py-5 lg:grid lg:gap-8 lg:px-7', GLASS, tiles.length > 1 && 'divide-y divide-black/[0.06] dark:divide-white/[0.08] lg:grid-cols-2 lg:divide-y-0')}>
-            {tiles.map(({ key, ...t }) => <Row key={key} {...t} />)}
-        </section>
+        <>
+            <section aria-label="Ways in" className={cn('rounded-[1.75rem] px-5 py-5 lg:grid lg:gap-8 lg:px-7', GLASS, tiles.length > 1 && 'divide-y divide-black/[0.06] dark:divide-white/[0.08] lg:grid-cols-2 lg:divide-y-0')}>
+                {tiles.map(({ key, ...t }) => <Row key={key} {...t} />)}
+            </section>
+            <JoinCommunitySheet open={joinOpen} onClose={() => setJoinOpen(false)} />
+        </>
     );
 };
 

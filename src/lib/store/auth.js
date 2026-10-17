@@ -14,19 +14,25 @@ import { signInWithGoogle, finishRedirectSignIn } from '../googleSignIn';
 const pickAuthUser = (user) => (user?.uid ? {
     uid: user.uid,
     email: user.email || null,
-    displayName: user.displayName || '',
+    // 'Member' is the placeholder a new phone sign-in gets (checkUserRole), not a name.
+    displayName: user.displayName && user.displayName !== 'Member' ? user.displayName : '',
     phoneNumber: user.phoneNumber || null,
     // The legacy user object doesn't carry the photo; the Firebase user does.
     photoURL: user.photoURL || (auth?.currentUser?.uid === user.uid ? auth.currentUser.photoURL : null) || null,
     role: user.role || null,
 } : null);
 
-export const createAuthSlice = (set) => ({
+export const createAuthSlice = (set, get) => ({
     authUser: null,
     authReady: false,
 
     _syncAuth: (legacyState) => {
-        set({ authUser: pickAuthUser(legacyState.user), authReady: Boolean(legacyState.authInitialized) });
+        const authUser = pickAuthUser(legacyState.user);
+        const next = { authUser, authReady: Boolean(legacyState.authInitialized) };
+        // A different account: drop the old profile in the same update, so nothing
+        // reads the signed-out (empty) profile as this account's before it loads.
+        if (authUser?.uid !== get().authUser?.uid) Object.assign(next, { profile: null, profileDoc: null, profileLoaded: !authUser });
+        set(next);
     },
 
     /*

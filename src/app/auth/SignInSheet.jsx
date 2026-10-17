@@ -92,7 +92,8 @@ const SignInSheet = () => {
 
     // On the details step, work out what's missing once the profile is in; nothing missing → done.
     useEffect(() => {
-        if (!isOpen || step !== 'details' || !authUser || !profileLoaded || detailFields) return;
+        // Wait for this account's own profile: until it loads, every field looks missing.
+        if (!isOpen || step !== 'details' || !authUser || !profileLoaded || profile?.uid !== authUser.uid || detailFields) return;
         const missing = missingFields(profile, accountRequire);
         if (missing.length) setDetailFields(missing);
         else finish();

@@ -10,6 +10,7 @@ import { CONTRACT_STATUS, CONTRACT_NON_COPYABLE_FIELDS } from './contracts';
 import { isProposalClosed, isProposalExpired, nextProposalNumber, proposalValue, PROPOSAL_NON_COPYABLE_FIELDS, PROPOSAL_STATUS } from './proposals';
 import { extractSocialUsername, hasDisallowedLink } from './socialUtils';
 import { safeLocalStorage } from './storage';
+import { clearSessionHint } from './sessionHint';
 import { DEFAULT_CREATOR_GROUPS, isCampaignCityMatch } from './constants';
 import { TOAST_TYPES, toFriendlyMessage, getSupportHint, getToastDuration } from './toastCopy';
 import { indexAppSubmissions, mergeAppSubmissions, isAppSubmission } from './creator/appSubmissions';
@@ -5066,6 +5067,7 @@ export const useStore = create((set, get) => ({
         const auth = getAuth();
         await auth.signOut();
         safeLocalStorage.removeItem(AUTH_CACHE_KEY);
+        clearSessionHint();
         set({ user: null, userListenerUnsubscribe: null });
 
     },
