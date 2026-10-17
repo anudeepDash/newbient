@@ -652,13 +652,11 @@ const handleCampaignApply = async (req, res, { db, token }) => {
         if (applied >= total) return send(res, 409, { success: false, code: 'full', error: 'All spots are taken.' });
     }
 
-    const shortlisted = Boolean(c.autoShortlistEligible && creator.profileStatus === 'approved');
-    const patch = { joinedCampaigns: FieldValue.arrayUnion(campaignId), updatedAt: nowIso() };
-    if (shortlisted) patch.shortlistedCampaigns = FieldValue.arrayUnion(campaignId);
-    await creatorSnap.ref.update(patch);
+    // Applying never shortlists: the team (or the client's sheet) decides, from the admin.
+    await creatorSnap.ref.update({ joinedCampaigns: FieldValue.arrayUnion(campaignId), updatedAt: nowIso() });
     // How they applied, per campaign (a nested map, so set+merge rather than a dotted path).
     await creatorSnap.ref.set({ campaignApplyVia: { [campaignId]: { via, at: nowIso() } } }, { merge: true }).catch(() => {});
-    return send(res, 200, { success: true, shortlisted, via });
+    return send(res, 200, { success: true, shortlisted: false, via });
 };
 
 /* ── campaign-submit ──────────────────────────────────────────────────── */
@@ -671,8 +669,10 @@ const handleCampaignSubmit = async (req, res, { db, token }) => {
     const contentLink = str(body.contentLink, 1000);
     const proofUrl = str(body.proofUrl, 1000);
     const note = str(body.note, 600);
+    // 'google_form': "Mark as submitted" after sending the deliverable's Google Form (no link needed).
+    const via = body.via === 'google_form' ? 'google_form' : 'app';
     if (!campaignId || !taskId) return send(res, 400, { success: false, error: 'campaignId and taskId are required' });
-    if (!contentLink && !proofUrl) return send(res, 400, { success: false, error: 'Add a link or a screenshot.' });
+    if (via === 'app' && !contentLink && !proofUrl) return send(res, 400, { success: false, error: 'Add a link or a screenshot.' });
     if (contentLink && !isHttpUrl(contentLink)) return send(res, 400, { success: false, field: 'contentLink', error: 'Paste the full link, starting with https://' });
     if (proofUrl && !/^https:\/\//.test(proofUrl)) return send(res, 400, { success: false, error: 'The screenshot did not upload. Try again.' });
 
@@ -681,11 +681,14 @@ const handleCampaignSubmit = async (req, res, { db, token }) => {
     const creator = creatorSnap.data();
     const task = (campSnap.data().tasks || []).find(t => String(t.id) === taskId);
     if (!task) return send(res, 404, { success: false, error: 'This deliverable no longer exists.' });
-    const inCampaign = (creator.joinedCampaigns || []).includes(campaignId) || (creator.shortlistedCampaigns || []).includes(campaignId);
-    if (!inCampaign) return send(res, 403, { success: false, error: 'Apply to this campaign first.' });
+    // Only shortlisted creators work on (and submit) deliverables; applying isn't enough.
+    if (!(creator.shortlistedCampaigns || []).includes(campaignId)) {
+        return send(res, 403, { success: false, code: 'not_shortlisted', error: 'Only shortlisted creators can submit for this campaign.' });
+    }
+    if (via === 'google_form' && !isHttpUrl(task.googleFormLink)) return send(res, 400, { success: false, error: 'This deliverable has no Google Form. Add a link or a screenshot.' });
 
     const ref = db.collection('campaigns').doc(campaignId).collection('submissions').doc(token.uid);
-    const submission = { status: 'submitted', contentLink, proofUrl, note, submittedAt: nowIso(), reviewedAt: null, rejectionReason: '' };
+    const submission = { status: 'submitted', via, contentLink, proofUrl, note, submittedAt: nowIso(), reviewedAt: null, rejectionReason: '' };
     const result = await db.runTransaction(async (tx) => {
         const snap = await tx.get(ref);
         const current = snap.exists ? snap.data()?.tasks?.[taskId] : null;

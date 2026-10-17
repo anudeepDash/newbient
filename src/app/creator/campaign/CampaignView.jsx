@@ -26,7 +26,7 @@ import { callCreatorApi } from '../api';
 import { compactCount, dueLabel } from '../format';
 import { creatorWho, isShortlisted, matchesCollege } from '../useCreatorData';
 import { Notice } from '../ui';
-import TaskCard from './TaskCard';
+import TaskCard, { hasSubmitForm } from './TaskCard';
 import SubmitTaskSheet from './SubmitTaskSheet';
 import TicketSlot from './TicketSlot';
 import ApplyPanel from './ApplyPanel';
@@ -115,6 +115,7 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
     const [submitting, setSubmitting] = useState(null);
     const [formOpen, setFormOpen] = useState(false);
     const [pendingApply, setPendingApply] = useState(false);
+    const [marking, setMarking] = useState(null); // task id being marked as submitted
 
     const id = campaign.id;
     const method = applyMethodOf(campaign);
@@ -145,9 +146,19 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
         setApplying(false);
         if (!res.ok) { setApplyError(res.error); return false; }
         setJustApplied({ shortlisted: Boolean(res.data.shortlisted) });
-        addToast?.(res.data.shortlisted ? 'You’re in. Your deliverables are below.' : 'Applied. We’ll let you know if you’re picked.', 'success');
+        addToast?.(res.data.shortlisted ? 'You’re in. Your deliverables are below.' : 'Applied. We’ll message you if you’re shortlisted.', 'success');
         return true;
     }, [id, addToast]);
+
+    // A deliverable sent through its Google Form: one tap tells the team it's in.
+    const markSubmitted = useCallback(async (task) => {
+        if (marking) return;
+        setMarking(String(task.id));
+        const res = await callCreatorApi('campaign-submit', { campaignId: id, taskId: String(task.id), via: 'google_form' });
+        setMarking(null);
+        if (!res.ok) { addToast?.(res.error, 'error'); return; }
+        addToast?.('Marked as submitted. The team will review it.', 'success');
+    }, [id, marking, addToast]);
 
     // No Newbi ID yet: the 30-second creator form, which applies to this campaign when it's done.
     const getId = useCallback(() => {
@@ -197,6 +208,9 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
             status = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-bold text-emerald-700 dark:text-neon-green"><CircleCheck size={18} className="shrink-0" /> All required deliverables approved</p>;
         } else if (nextTask) {
             status = <Button className="flex-1" size="lg" onClick={() => setSubmitting(nextTask)}>Submit {tasks.length > 1 ? 'next deliverable' : 'deliverable'}</Button>;
+            if (hasSubmitForm(nextTask)) {
+                status = <Button className="flex-1" size="lg" href={nextTask.googleFormLink} target="_blank" rel="noopener noreferrer">Open the submission form</Button>;
+            }
         } else if (tasks.length) {
             status = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-semibold text-gray-700 dark:text-zinc-300"><Hourglass size={17} className="shrink-0 text-sky-600 dark:text-sky-300" /> Everything’s in review</p>;
         } else {
@@ -284,7 +298,7 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
                         ? 'Every required deliverable is approved. Nice work.'
                         : shortlisted
                             ? (tasks.length ? `${progress.approved ? `${progress.approved} of ${tasks.length} approved. ` : ''}Submit each deliverable below once it’s live.` : 'You’re picked for this campaign.')
-                            : 'The brand is picking creators. You’ll hear from us either way.'}
+                            : 'The brand is picking creators. If you’re shortlisted, we’ll send the WhatsApp group and your deliverables by email and WhatsApp.'}
                 </Notice>
             )}
             {applyError && <Notice tone="error">{applyError}</Notice>}
@@ -322,6 +336,8 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
                                     submission={sub}
                                     canSubmit={shortlisted}
                                     onSubmit={setSubmitting}
+                                    onMarkSubmitted={markSubmitted}
+                                    marking={marking === String(task.id)}
                                     highlight={String(task.id) === String(initialTaskId)}
                                 />
                             );

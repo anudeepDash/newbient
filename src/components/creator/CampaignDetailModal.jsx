@@ -552,13 +552,8 @@ const CampaignDetailModal = ({
             const isManualFollowers = Boolean(isManualFollowerEntry || !instagramVerifiedData);
             const shouldAutoVerify = !isManualFollowers;
 
-            const meetsFollowers = parsedFollowers >= (Number(campaign?.minInstagramFollowers) || 0);
-            const meetsCity = isCampaignCityMatch(campaign?.targetCity, creatorCity);
-            const shouldAutoShortlist = Boolean(campaign?.autoShortlistEligible) && meetsFollowers && meetsCity;
-            const currentShortlisted = profile?.shortlistedCampaigns || [];
-            const nextShortlisted = shouldAutoShortlist && !currentShortlisted.includes(campaign.id)
-                ? [...currentShortlisted, campaign.id]
-                : currentShortlisted;
+            // Applying never shortlists; the team decides from the admin.
+            const nextShortlisted = profile?.shortlistedCampaigns || [];
 
             const creatorData = {
                 uid: user?.uid || null,

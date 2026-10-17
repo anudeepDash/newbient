@@ -145,7 +145,7 @@ const TaskCard = ({
                         </div>
                         <LinkPair
                             icon={FileText} tone="violet" title="Submission form"
-                            hint="A Google Form where they upload proof or files."
+                            hint="Optional. Shortlisted creators open it, then tap “Mark as submitted”. Only they see it."
                             label={task.googleFormLabel} url={task.googleFormLink}
                             onLabel={(v) => set({ googleFormLabel: v })} onUrl={(v) => set({ googleFormLink: v })}
                             labelPlaceholder="Submit via Google Form" urlPlaceholder="https://forms.gle/…"

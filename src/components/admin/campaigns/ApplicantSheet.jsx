@@ -82,10 +82,10 @@ const ApplicantSheet = ({
             {!selected ? (
                 <>
                     {stage !== 'declined' && <Button variant="secondary" onClick={() => onStage(entry, 'declined')} disabled={busy} className="h-11"><UserX size={14} /> Not selected</Button>}
-                    {stage === 'applied' && <Button variant="secondary" onClick={() => onStage(entry, 'shortlisted')} disabled={busy} className="h-11"><Star size={14} /> Shortlist</Button>}
+                    {stage === 'applied' && <Button variant="secondary" onClick={() => onStage(entry, 'shortlisted')} disabled={busy} className="h-11"><Star size={14} /> Considering</Button>}
                     {(stage === 'shortlisted' || stage === 'declined') && <Button variant="ghost" onClick={() => onStage(entry, null)} disabled={busy} className="h-11"><Undo2 size={14} /> Back to applied</Button>}
                     <Button variant="accent" onClick={() => onSelect(entry)} disabled={busy} className="h-11 min-w-[140px] flex-1">
-                        {busy ? <Spinner /> : <UserCheck size={14} />} Select and notify
+                        {busy ? <Spinner /> : <UserCheck size={14} />} Shortlist and welcome
                     </Button>
                 </>
             ) : (
@@ -162,6 +162,9 @@ const ApplicantSheet = ({
                                                     </p>
                                                     {status === 'rejected' && sub?.rejectionReason && (
                                                         <p className="mt-1.5 text-[12px] text-rose-600 dark:text-rose-300">You asked: {sub.rejectionReason}</p>
+                                                    )}
+                                                    {sub?.via === 'google_form' && (
+                                                        <p className="mt-1.5 text-[12px] font-semibold text-violet-600 dark:text-violet-300">Marked as submitted via the Google Form{task.googleFormLink ? <> · <a href={task.googleFormLink} target="_blank" rel="noopener noreferrer" className="underline">open the form</a></> : null}</p>
                                                     )}
                                                     {sub?.note && (
                                                         <p className="mt-1.5 break-words text-[12px] text-gray-600 dark:text-zinc-300">Note: {sub.note}</p>

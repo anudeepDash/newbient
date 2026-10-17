@@ -45,7 +45,7 @@ const blankForm = (uid) => ({
     title: '', brand: '', brandLogo: '', description: '', whatsappLink: '',
     targetCity: 'Any', targetCollege: '', minInstagramFollowers: '', preferredNiches: [],
     reward: '', payoutPerCreator: '', totalSpots: '', spotsLeft: '',
-    thumbnail: '', websiteApplyEnabled: true, autoShortlistEligible: true, isPinned: false,
+    thumbnail: '', websiteApplyEnabled: true, autoShortlistEligible: false, isPinned: false,
     applyMethod: 'newbi', applyFormUrl: '', applyFormNeedsSignIn: false,
     eventId: '', ticketsPerCreator: '', ticketAutoIssue: '',
     status: 'Open', tasks: [], createdBy: uid || '',
@@ -120,7 +120,7 @@ const toPayload = (f) => ({
     applyMethod: f.applyFormUrl.trim() ? f.applyMethod : 'newbi',
     applyFormUrl: f.applyFormUrl.trim(),
     applyFormNeedsSignIn: Boolean(f.applyFormUrl.trim() && f.applyFormNeedsSignIn),
-    autoShortlistEligible: f.autoShortlistEligible,
+    autoShortlistEligible: false, // retired: applying never shortlists
     isPinned: f.isPinned,
     status: f.status,
     tasks: f.tasks.map((t, i) => ({
@@ -405,7 +405,7 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                                 <RichEditor value={form.description} onChange={(v) => set({ description: v })} placeholder="The brand, the goal, the tone, do's and don'ts…" minHeight={180} label="Campaign brief" />
                                 {err('description')}
                             </div>
-                            <Field label="WhatsApp group for selected creators" optional hint="Selected creators see a button to join it.">
+                            <Field label="WhatsApp group for shortlisted creators" optional hint="Sent in the shortlist welcome (email and WhatsApp), and shown as a button in the campaign.">
                                 <input className={fieldCls} value={form.whatsappLink} onChange={(e) => set({ whatsappLink: e.target.value })} placeholder="https://chat.whatsapp.com/…" inputMode="url" autoCapitalize="off" />
                             </Field>
                         </div>
@@ -643,7 +643,6 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                                     )}
                                 </div>
                             )}
-                            <div className="py-2"><Toggle label="Auto-select creators who qualify" hint="Applicants who meet the city and follower rules are selected straight away" checked={form.autoShortlistEligible} onChange={(v) => set({ autoShortlistEligible: v })} /></div>
                             <div className="py-2"><Toggle label="Pin to the top" hint="Shows first in lists" checked={form.isPinned} onChange={(v) => set({ isPinned: v })} /></div>
                             {goingLive && (
                                 <div className="py-2"><Toggle label="Tell matching creators" hint="Email and app notification to creators in the target city when it goes live" checked={announce} onChange={setAnnounce} /></div>

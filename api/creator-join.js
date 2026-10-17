@@ -357,20 +357,11 @@ const tokenPhoneMatches = (decodedToken, phone) => {
     return Boolean(tokenPhone) && tokenPhone === normalizePhoneNumber(phone || '');
 };
 
-// Creators may add a campaign to their own shortlist only when that campaign auto-shortlists.
+// Only the team shortlists. Creators may withdraw from a shortlist, never add themselves to one.
 const filterSelfShortlist = async (requested, current = []) => {
     if (!Array.isArray(requested)) return undefined;
     const currentSet = new Set(current || []);
-    const additions = requested.filter(id => !currentSet.has(id));
-    const allowedAdditions = [];
-    for (const campaignId of additions.slice(0, 20)) {
-        try {
-            const snap = await adminDb.collection('campaigns').doc(String(campaignId)).get();
-            if (snap.exists && snap.data()?.autoShortlistEligible) allowedAdditions.push(campaignId);
-        } catch (e) { /* skip unknown campaign */ }
-    }
-    const kept = requested.filter(id => currentSet.has(id));
-    return Array.from(new Set([...kept, ...allowedAdditions]));
+    return Array.from(new Set(requested.filter(id => currentSet.has(id))));
 };
 
 // Finds a creator doc by doc id, uid field, or creatorId.
@@ -787,7 +778,7 @@ export default async function handler(req, res) {
                 // Unchanged values are fine (the app re-sends whole profiles); changes are dropped.
                 const same = (k) => JSON.stringify(updates[k] ?? null) === JSON.stringify(data[k] ?? null);
                 const ADMIN_ONLY = ['adminBadges', 'badges', 'isFeatured', 'featured', 'isBlocked', 'blocked', 'role',
-                    'campaignStages', 'campaignPayouts', 'verifiedBy', 'verifiedAt', 'points', 'totalPoints', 'rewardPoints',
+                    'campaignStages', 'campaignPayouts', 'campaignWelcome', 'campaignApplyVia', 'verifiedBy', 'verifiedAt', 'points', 'totalPoints', 'rewardPoints',
                     'creatorId', 'uid', 'email'];
                 for (const k of ADMIN_ONLY) {
                     if (k in updates && !same(k)) { ignored.push(k); delete updates[k]; }
@@ -799,17 +790,10 @@ export default async function handler(req, res) {
                 if ('profileStatus' in updates && !same('profileStatus') && updates.profileStatus !== 'pending') {
                     ignored.push('profileStatus'); delete updates.profileStatus;
                 }
-                // Shortlist: creators may withdraw, and may only add campaigns that auto-shortlist eligible creators.
+                // Shortlist: creators may withdraw; only the team adds anyone.
                 if ('shortlistedCampaigns' in updates && !same('shortlistedCampaigns')) {
-                    const before = new Set(Array.isArray(data.shortlistedCampaigns) ? data.shortlistedCampaigns : []);
                     const wanted = Array.isArray(updates.shortlistedCampaigns) ? updates.shortlistedCampaigns : [];
-                    const added = wanted.filter(id => !before.has(id));
-                    const allowed = new Set();
-                    for (const cid of added) {
-                        const camp = await adminDb.collection('campaigns').doc(String(cid)).get().catch(() => null);
-                        if (camp?.exists && camp.data()?.autoShortlistEligible) allowed.add(cid);
-                    }
-                    const next = wanted.filter(id => before.has(id) || allowed.has(id));
+                    const next = await filterSelfShortlist(wanted, data.shortlistedCampaigns);
                     if (next.length !== wanted.length) ignored.push('shortlistedCampaigns');
                     updates.shortlistedCampaigns = next;
                 }
@@ -935,6 +919,12 @@ export default async function handler(req, res) {
                 if (!isCreatorOwner(creatorSnap, decodedToken) && !(await isStaff())) {
                     return res.status(403).json({ success: false, error: 'You can only submit tasks for your own profile.' });
                 }
+            }
+            // Only shortlisted creators submit deliverables (staff may record one for them).
+            const submitterSnap = await findCreatorDoc(creatorUid) || await findCreatorDoc(callerUid);
+            const isShortlisted = (submitterSnap?.data()?.shortlistedCampaigns || []).includes(String(campaignId));
+            if (!isShortlisted && !(await isStaff())) {
+                return res.status(403).json({ success: false, code: 'not_shortlisted', error: 'Only shortlisted creators can submit for this campaign.' });
             }
 
             const campRef = adminDb.collection('campaigns').doc(String(campaignId));
