@@ -39,6 +39,7 @@ const GiveawayPage = lazy(() => import('./community/GiveawayPage'));
 const FormPage = lazy(() => import('./community/FormPage'));
 const PassPage = lazy(() => import('./passes/PassPage'));
 const TicketLinkPage = lazy(() => import('./passes/TicketLinkPage'));
+const CampaignApplyPage = lazy(() => import('./creator/campaign/apply/CampaignApplyPage'));
 
 export const APP_MODULES = [
     {
@@ -137,12 +138,15 @@ export function moduleForPath(pathname = '/') {
 
 /*
  * Pages that belong to no tab: a pass (opened from Community or a campaign),
- * the signed ticket link from WhatsApp/email, and a single form.
+ * the signed ticket link from WhatsApp/email, a single form, and the open
+ * campaign application.
  */
 export const STANDALONE_ROUTES = [
     { path: 'p/:ref', Component: PassPage },
     { path: 't/:token', Component: TicketLinkPage },
     { path: 'forms/:id', Component: FormPage },
+    // The open campaign application (no sign-in), shared instead of a Google Form.
+    { path: 'c/:slug/apply', Component: CampaignApplyPage },
 ];
 
 /* Route definitions for the router, relative to the app root. */
