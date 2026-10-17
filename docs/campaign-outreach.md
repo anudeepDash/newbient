@@ -2,7 +2,7 @@
 
 Replaces the Google Form → sheet → WhatsApp Web routine for creator campaigns. Creators apply through an open form with no sign-in. Admins shortlist them, send each person a WhatsApp message by hand from a ready-made link, and track them through joined, posted and paid. Every status change is logged.
 
-Phase 1 (this) has no WhatsApp API. Messages open in WhatsApp through `wa.me` and **an admin presses send**. Nothing is sent from the browser automatically, and nothing drives WhatsApp Web.
+Phase 1 sends by hand: messages open in WhatsApp through `wa.me` and **an admin presses send**. Nothing is sent from the browser automatically, and nothing drives WhatsApp Web. Phase 2 adds sending through the WhatsApp Cloud API (below) when it's set up. The by-hand flow stays as the fallback.
 
 ## Where things are
 
@@ -13,6 +13,7 @@ Phase 1 (this) has no WhatsApp API. Messages open in WhatsApp through `wa.me` an
 | Open-form settings | Campaign editor → **Open application form** card (`outreach/OpenFormCard.jsx`) |
 | Shared rules (browser and server) | `src/lib/outreach/` (normalise, template, status, match, application, export) |
 | Server | `api/_lib/outreach.js`, reached through `api/creator-join.js?action=outreach-*`. The project is at Vercel's function limit, so it can't have its own function. |
+| WhatsApp API queue (Phase 2) | `api/_lib/outreachQueue.js`; webhook in `api/track.js`; daily run in `api/mail.js` |
 | Tests | `tests/outreach/` (Vitest; server handlers run against an in-memory Firestore) |
 | Seed | `scripts/seed-outreach.mjs` (local emulator only) |
 
@@ -62,6 +63,8 @@ rate_limits/{hash of ip}                    per-IP counter for the public form (
   match /campaigns/{campaignId}/private/{doc} { allow read, write: if false; }
   match /creator_contacts/{doc} { allow read, write: if false; }
   match /rate_limits/{doc} { allow read, write: if false; }
+  match /outreach_queue/{doc} { allow read, write: if false; }
+  match /outreach_rate/{doc} { allow read, write: if false; }
   ```
 
   Check that no broader rule (such as `match /campaigns/{id}/{document=**} { allow read: if true; }`) opens these subcollections.
@@ -85,7 +88,7 @@ rate_limits/{hash of ip}                    per-IP counter for the public form (
 npm test
 ```
 
-110 tests cover:
+132 tests cover:
 - handle and phone normalisation
 - the duplicate merge
 - bulk-paste matching
@@ -93,6 +96,7 @@ npm test
 - status transitions
 - the server handlers: validation, rate limit, admin-only access, the audit log and log masking
 - the seed data
+- the WhatsApp API queue: rate limit, daily cap, backoff, permanent failures, Joined (including a forged or wrong-number tap), replies, reminders and failed deliveries
 
 ## Trying it locally with sample data
 
@@ -127,12 +131,51 @@ The seed phones are in +1 202-555-01xx, a range reserved for fiction, so "Open W
    2. Press send in WhatsApp.
    3. Click **Mark sent**.
 
-   **Copy message** is the fallback when WhatsApp Web won't open. After 15 chats in 10 minutes the panel suggests a break, because WhatsApp Web signed us out after ~44 quick sends.
+   With the WhatsApp API set up, use **Send to N** on the WhatsApp API card instead: it sends everyone at the rate limit, and people tap **Joined ✅** themselves. **Copy message** is the fallback when WhatsApp Web won't open. After 15 chats in 10 minutes the panel suggests a break, because WhatsApp Web signed us out after ~44 quick sends.
 7. Track **joined**, **replied**, **posted** and **paid** from the Messages card or the person's sheet. **Activity** shows every change and who made it.
 8. **Export shortlist** downloads Excel or CSV with every column.
 9. When the event starts, set the status to **Live**. Applications close, and the shortlist keeps working.
 
-## Phase 2 and 3 (not built)
+## Phase 2: sending with the WhatsApp Cloud API
 
-- **Phase 2:** WhatsApp Cloud API templates mapped to the same four placeholders, a delivery and read webhook, a "Joined" quick reply with a reminder, and a rate-limited send queue. `api/_lib/whatsapp.js` already has the sender and the message log to build on.
-- **Phase 3:** a replies inbox, deliverable submission with approve/reject, and payout or ticket release against approved deliverables.
+When the API is set up, **Messages** shows a WhatsApp API card. **Send to N** queues everyone waiting for a message. The server then sends Meta's approved template with a **Joined ✅** button, never faster than the rate limit. Badges on each person follow Sent → Delivered → Read, or Not delivered (with Meta's reason). Open WhatsApp and Copy still work for anyone, for example when a send fails.
+
+### Set up (once)
+
+1. **Create two templates** in WhatsApp Manager (Message templates → Create), language English. The category is Utility, or Marketing if Meta asks.
+
+   **`campaign_shortlist`**
+   - Body: `Hey {{1}}! You're shortlisted for {{2}} with Newbi. Join the creators group for the brief, passes and next steps: {{3}} {{4}}`
+   - Samples: `Riya` / `Arijit Singh Live, Bangalore` / `https://chat.whatsapp.com/AbCdEf123` / `Please post by Monday, 2 November.`
+   - Button: **Quick reply**, text `Joined ✅`
+
+   **`campaign_join_reminder`**
+   - Body: `Hey {{1}}, a reminder to join the {{2}} creators group: {{3}}`
+   - Button: **Quick reply**, text `Joined ✅`
+
+   The variables are the Phase 1 placeholders, in order: {{1}} `{first_name}`, {{2}} `{campaign_title}`, {{3}} `{group_link}`, {{4}} `{deadline_line}`. Meta rejects empty variables, so an unclear name is sent as "there" and a missing posting deadline as "Details are in the group." If you name the templates differently, set `WHATSAPP_TEMPLATE_CAMPAIGN_SHORTLIST` and `WHATSAPP_TEMPLATE_CAMPAIGN_JOIN_REMINDER`. The text in `src/lib/outreach/whatsappTemplate.js` is only for the admin preview, so keep it the same as what Meta approved.
+2. **Env vars** (Vercel, never in code): `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `CRON_SECRET`, `LINK_SIGNING_SECRET`. Optional: `OUTREACH_WA_PER_MINUTE` (20), `OUTREACH_WA_DAILY_CAP` (250) and `OUTREACH_JOIN_REMINDER_HOURS` (48). See `.env.example`.
+3. **Webhook:** in the Meta app's WhatsApp → Configuration, set the callback URL to `https://app.newbi.live/api/track?type=whatsapp` and the verify token to `WHATSAPP_VERIFY_TOKEN`. Subscribe to **messages**, which covers both delivery statuses and replies.
+
+### How it works
+
+- **Queue:** `outreach_queue/{campaignId}_{appId}_{invite|reminder}` holds one job per person per message, so it can't be queued or sent twice. A transaction on `outreach_rate/whatsapp` keeps every worker under `OUTREACH_WA_PER_MINUTE` and `OUTREACH_WA_DAILY_CAP` (India day).
+- **Status:** queued people move shortlisted → **To send**. When Meta accepts a message they move to message_sent. If Meta later reports it failed, the system moves them back to To send, a move only the system can make. Every step goes into the audit log, with the actor shown as "WhatsApp".
+- **Retries:** temporary errors (rate limits, Meta 5xx) retry after 1, 5, 30 and 120 minutes. Permanent ones (not on WhatsApp, template paused or missing) fail at once with Meta's reason. A failed person can be sent again or messaged by hand.
+- **Joined ✅:** the button carries a signed payload for the campaign and application. The webhook marks the person **joined** only if the tap comes from the number we sent to, and it cancels their reminder. Any other message marks them **replied** and stores the time, but not the text (the text waits for the Phase 3 inbox).
+- **Reminder:** queued when the invite is sent and due after `joinReminderHours` (Message setup, default 48). When it comes due it goes out only if the person still hasn't joined and reminders are on.
+- **Who drains the queue:** Vercel Hobby only allows daily crons, so three things take turns:
+  1. After **Send**, the server starts a worker that sends at the rate limit and calls itself again before its 60-second limit, the same way `/api/mail` does. This needs `CRON_SECRET`. Without it, the Send request sends one first batch itself.
+  2. While someone has the Outreach tab open and sends are waiting, the tab nudges the queue every 30 seconds.
+  3. The daily `/api/mail` cron drains leftovers and sends reminders that have come due.
+
+  Reminders are therefore only on time if a worker runs near their due time. To make that reliable, call the worker every 15 minutes from any scheduler, e.g. a GitHub Actions `schedule`, or move to Vercel Pro:
+
+  ```bash
+  curl -X POST https://app.newbi.live/api/creator-join?action=outreach-queue-run -H "Authorization: Bearer $CRON_SECRET"
+  ```
+- **Logs:** each message is in `message_log` (event `outreach-invite` or `outreach-reminder`). Phones are masked in server logs, and the access token never leaves the env.
+
+## Phase 3 (not built)
+
+A replies inbox, deliverable submission with approve/reject, and payout or ticket release against approved deliverables.
