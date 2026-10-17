@@ -7,14 +7,15 @@ import { auth } from '../../lib/firebase';
  * Status, follower counts and approvals are decided by the server; the app
  * only sends what the person chose.
  */
-export async function callCreatorApi(action, body = {}, { method = 'POST', timeoutMs = 20000 } = {}) {
+export async function callCreatorApi(action, body = {}, { method = 'POST', timeoutMs = 20000, query = null } = {}) {
     const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
     const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
     try {
         const headers = { 'Content-Type': 'application/json' };
         const token = await auth?.currentUser?.getIdToken?.().catch(() => null);
         if (token) headers.Authorization = `Bearer ${token}`;
-        const url = `/api/creator-join?action=${encodeURIComponent(action)}`;
+        const params = new URLSearchParams({ action, ...(query || {}) });
+        const url = `/api/creator-join?${params.toString()}`;
         const res = await fetch(url, {
             method,
             headers,
@@ -31,6 +32,7 @@ export async function callCreatorApi(action, body = {}, { method = 'POST', timeo
             error: data?.error || 'Something went wrong. Please try again.',
             missing: data?.missing || null,
             field: data?.field || null,
+            errors: data?.errors || null,
         };
     } catch (e) {
         return { ok: false, status: 0, error: 'Check your connection and try again.' };
