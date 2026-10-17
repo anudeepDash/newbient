@@ -661,9 +661,10 @@ const ticketSignature = (t) => (t ? [t.kind, t.kind === 'pdf' ? `${t.filename ||
  * mode 'qr': a Newbi QR pass. mode 'external': the partner's ticket (link or PDF).
  * Returns { ref, outcome: 'issued' | 'updated' | 'unchanged' | 'exists' }.
  */
-const upsertCampaignPass = async (db, { campaign, event, creator, mode, ticket = null, qty, tier, note, staffEmail, uploadId }) => {
-    const holder = holderOf(creator);
-    const keyRef = db.collection('pass_keys').doc(`campaign_${campaign.id}_${holder.holderUid}`);
+const upsertCampaignPass = async (db, { campaign, event, creator, holder: holderIn = null, keyId = null, mode, ticket = null, qty, tier, note, staffEmail, uploadId }) => {
+    // Outreach passes come with their own holder (from the application) and key.
+    const holder = holderIn || holderOf(creator);
+    const keyRef = db.collection('pass_keys').doc(`campaign_${campaign.id}_${keyId || holder.holderUid}`);
     return db.runTransaction(async (tx) => {
         const keySnap = await tx.get(keyRef);
         let existing = null;
@@ -708,7 +709,7 @@ const upsertCampaignPass = async (db, { campaign, event, creator, mode, ticket =
             issuedAt: now,
             issuedBy: staffEmail || 'staff',
         }));
-        tx.set(keyRef, { ref, source: 'campaign', sourceId: campaign.id, uid: holder.holderUid, creatorId: creator.id, at: now });
+        tx.set(keyRef, compact({ ref, source: 'campaign', sourceId: campaign.id, uid: holder.holderUid, creatorId: holder.creatorId || creator?.id, at: now }));
         return { ref, outcome: 'issued' };
     });
 };
@@ -1073,4 +1074,43 @@ export const handlePasses = async (req, res) => {
 };
 
 // For tests and the migration script.
+/* ---------- Outreach (open-form applicants) ---------- */
+
+/*
+ * Campaign outreach applicants mostly have no creator profile, so their pass
+ * holder comes from the application: the phone and email they applied with
+ * (they agreed to WhatsApp updates on the form). When the application is
+ * linked to a registered creator, the pass is keyed to their login as usual,
+ * so they never get two, and it shows in their app.
+ */
+export const releaseApplicationPass = async (db, { campaignId, appId, staffEmail, qty, tier, note }) => {
+    const { campaign, event } = await loadCampaignContext(db, campaignId);
+    const appSnap = await db.collection('campaigns').doc(campaignId).collection('applications').doc(String(appId)).get();
+    if (!appSnap.exists) throw new PassError('NOT_FOUND', 'Application not found.', 404);
+    const app = appSnap.data();
+    const creator = app.creatorId ? await loadCreator(db, app.creatorId) : null;
+    const holder = {
+        holderUid: creator?.uid || null,
+        creatorId: creator?.id || null,
+        holderName: str(app.fullName, 120),
+        holderEmail: normalizeEmail(app.email) || '',
+        holderPhone: toE164(app.phone) || '',
+        applicationId: appSnap.id,
+    };
+    const { ref, outcome } = await upsertCampaignPass(db, {
+        campaign, event, holder, keyId: holder.holderUid || `app_${appSnap.id}`, mode: 'qr',
+        qty: qty || campaign.ticketsPerCreator, tier, note, staffEmail,
+    });
+    const delivery = outcome === 'exists' ? null : await deliverCampaignPass(db, ref);
+    return { ref, outcome, channels: delivery ? channelSummary(delivery) : null };
+};
+
+export const revokePassForOutreach = (db, ref, { reason, staffEmail }) => revokeAction(db, { ref, reason }, { staff: true, email: staffEmail });
+
+/** The signed /t/<token> link to a pass, for the creator's deliverables page. */
+export const ticketLinkFor = (ref) => {
+    const token = makeSignedToken({ r: ref }, TICKET_LINK_TTL);
+    return token ? ticketLinkUrl(token) : passUrl(ref);
+};
+
 export const _internal = { actions: ACTIONS, upsertCampaignPass, deliverCampaignPass, publicPass, cleanExternalRow, passFromGuestlistEntry };

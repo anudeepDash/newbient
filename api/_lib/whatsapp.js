@@ -50,6 +50,7 @@ const text = (value) => ({ type: 'text', text: String(value ?? '').replace(/[\r\
  *   header: { type: 'document', link, filename } | { type: 'image', link } | { type: 'text', text }
  *   bodyParams: ['Ann', 'Campaign', ...]
  *   buttons: [{ index: 0, param: 'token' }]   (URL buttons with a dynamic suffix)
+ *            [{ index: 0, payload: 'j1.…' }]  (quick-reply buttons; the payload comes back in the webhook)
  */
 export const buildComponents = ({ header, bodyParams = [], buttons = [] }) => {
     const components = [];
@@ -62,7 +63,9 @@ export const buildComponents = ({ header, bodyParams = [], buttons = [] }) => {
     }
     if (bodyParams.length) components.push({ type: 'body', parameters: bodyParams.map(text) });
     buttons.forEach((b) => {
-        if (b && b.param !== undefined && b.param !== null && b.param !== '') {
+        if (b && typeof b.payload === 'string' && b.payload) {
+            components.push({ type: 'button', sub_type: 'quick_reply', index: String(b.index ?? 0), parameters: [{ type: 'payload', payload: b.payload }] });
+        } else if (b && b.param !== undefined && b.param !== null && b.param !== '') {
             components.push({ type: 'button', sub_type: 'url', index: String(b.index ?? 0), parameters: [{ type: 'text', text: String(b.param) }] });
         }
     });
@@ -89,10 +92,14 @@ const PERMANENT_CODES = new Set([100, 131008, 131009, 131026, 131030, 131047, 13
 
 /**
  * sendTemplate({ to, template, language, header, bodyParams, buttons, event, uid, ref })
- * → { ok, status: 'sent'|'failed'|'retry'|'skipped', messageId, error, logId }
+ * → { ok, status: 'sent'|'failed'|'retry'|'skipped', messageId, error, errorCode, retriable, logId }
  * Never throws.
+ *
+ * autoRetry: false leaves retries to the caller (the outreach queue, which has
+ * its own rate limit): a failure is logged as 'failed' and the daily worker
+ * won't resend it. `retriable` says whether trying again could work.
  */
-export const sendTemplate = async ({ to, template, language, header, bodyParams = [], buttons = [], event = '', uid = null, ref = null, logId = null }) => {
+export const sendTemplate = async ({ to, template, language, header, bodyParams = [], buttons = [], event = '', uid = null, ref = null, logId = null, autoRetry = true }) => {
     if (!isWhatsAppConfigured()) return { ok: false, status: 'skipped', error: 'WhatsApp is not set up' };
     const phone = toE164(to);
     if (!phone) return { ok: false, status: 'skipped', error: 'No valid WhatsApp number' };
@@ -132,7 +139,7 @@ export const sendTemplate = async ({ to, template, language, header, bodyParams 
     let attempts = 0;
     try { attempts = Number((await logRef.get()).data()?.attempts || 0); } catch { attempts = 0; }
     attempts += 1;
-    const retry = !permanent && attempts <= RETRY_DELAYS_MIN.length;
+    const retry = autoRetry && !permanent && attempts <= RETRY_DELAYS_MIN.length;
     await logRef.set({
         ...base,
         status: retry ? 'retry' : 'failed',
@@ -142,7 +149,57 @@ export const sendTemplate = async ({ to, template, language, header, bodyParams 
         ...(retry ? { nextAttemptAt: new Date(Date.now() + RETRY_DELAYS_MIN[attempts - 1] * 60 * 1000).toISOString(), payload: { to: phone, template, language: language || null, header: header || null, bodyParams, buttons, event, uid, ref } } : { payload: FieldValue.delete() }),
     }, { merge: true }).catch(() => {});
     await writeDelivery(ref, { status: retry ? 'retrying' : 'failed', at: nowIso(), error: message });
-    return { ok: false, status: retry ? 'retry' : 'failed', error: message, logId: logRef.id };
+    return { ok: false, status: retry ? 'retry' : 'failed', error: message, errorCode: code || null, retriable: !permanent, logId: logRef.id };
+};
+
+/**
+ * A free-text message (inbox replies). Meta only delivers these within 24
+ * hours of the person's last message; the caller checks that window.
+ * → { ok, status, messageId, error, errorCode, retriable }. Never throws, never auto-retries.
+ */
+export const sendText = async ({ to, text, event = 'inbox-reply', ref = null }) => {
+    if (!isWhatsAppConfigured()) return { ok: false, status: 'skipped', error: 'WhatsApp is not set up' };
+    const phone = toE164(to);
+    if (!phone) return { ok: false, status: 'skipped', error: 'No valid WhatsApp number' };
+    const body = String(text || '').slice(0, 4096);
+    const db = getDb();
+    const logRef = db.collection('message_log').doc();
+    const base = { channel: 'whatsapp', to: phone, template: null, event, ref, createdAt: nowIso(), updatedAt: nowIso() };
+    let result;
+    try {
+        result = await callMeta({ messaging_product: 'whatsapp', recipient_type: 'individual', to: phone.slice(1), type: 'text', text: { body, preview_url: true } });
+    } catch (err) {
+        result = { ok: false, status: 0, data: { error: { message: err.message } } };
+    }
+    if (result.ok && result.data?.messages?.[0]?.id) {
+        const messageId = result.data.messages[0].id;
+        await logRef.set({ ...base, status: 'sent', messageId }).catch(() => {});
+        await writeDelivery(ref, { status: 'sent', messageId, at: nowIso(), error: null });
+        return { ok: true, status: 'sent', messageId, logId: logRef.id };
+    }
+    const err = result.data?.error || {};
+    const code = Number(err.code || 0);
+    const message = String(err.error_data?.details || err.message || `HTTP ${result.status}`).slice(0, 300);
+    const permanent = PERMANENT_CODES.has(code) || (result.status >= 400 && result.status < 500 && result.status !== 429 && code !== 130429 && code !== 131056);
+    await logRef.set({ ...base, status: 'failed', error: message, errorCode: code || null }).catch(() => {});
+    await writeDelivery(ref, { status: 'failed', at: nowIso(), error: message });
+    return { ok: false, status: 'failed', error: message, errorCode: code || null, retriable: !permanent, logId: logRef.id };
+};
+
+/** Downloads media someone sent us (inbox). → { mimeType, base64 } or null. The token never leaves the server. */
+export const fetchWhatsAppMedia = async (mediaId, { maxBytes = 5 * 1024 * 1024 } = {}) => {
+    if (!isWhatsAppConfigured() || !/^[A-Za-z0-9_-]{4,128}$/.test(String(mediaId || ''))) return null;
+    const doFetch = testFetch || fetch;
+    const auth = { Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}` };
+    const meta = await doFetch(`https://graph.facebook.com/${API_VERSION()}/${mediaId}`, { headers: auth });
+    if (!meta.ok) return null;
+    const info = await meta.json().catch(() => ({}));
+    if (!info.url || Number(info.file_size || 0) > maxBytes) return null;
+    const file = await doFetch(info.url, { headers: auth });
+    if (!file.ok) return null;
+    const buf = Buffer.from(await file.arrayBuffer());
+    if (buf.length > maxBytes) return null;
+    return { mimeType: info.mime_type || 'application/octet-stream', base64: buf.toString('base64') };
 };
 
 /** Mirrors a WhatsApp status onto the record it was about (e.g. a pass). */
@@ -179,7 +236,7 @@ export const retryFailedWhatsApp = async ({ limit = 20, deadline = Date.now() + 
 
 const STATUS_RANK = { sent: 1, delivered: 2, read: 3, failed: 4 };
 
-/** One status from the webhook: sent / delivered / read / failed. */
+/** One status from the webhook: sent / delivered / read / failed. Resolves to { log } (the message_log doc) when it matched one. */
 export const recordWhatsAppStatus = async (status) => {
     const messageId = status?.id;
     if (!messageId) return false;
@@ -202,7 +259,7 @@ export const recordWhatsAppStatus = async (status) => {
         updatedAt: nowIso(),
     }, { merge: true });
     if (!keep) await writeDelivery(current.ref, { status: status.status, messageId, at, error });
-    return true;
+    return { log: { id: docSnap.id, ...current }, kept: keep, error };
 };
 
 /** Phone verification link for new creators (template `creator_verification`, en_US). */

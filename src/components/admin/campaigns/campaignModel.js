@@ -88,6 +88,8 @@ export const campaignStatus = (c) => {
     const s = String(c?.status || 'Open').toLowerCase();
     if (s === 'open') return 'open';
     if (s === 'draft') return 'draft';
+    // Live: the event is running. Applications are closed, the shortlist keeps working.
+    if (s === 'live') return 'live';
     return 'closed';
 };
 
@@ -95,6 +97,7 @@ export const CAMPAIGN_STATUS = {
     open: { label: 'Open', tone: 'green' },
     draft: { label: 'Draft', tone: 'gray' },
     closed: { label: 'Closed', tone: 'rose' },
+    live: { label: 'Live', tone: 'amber' },
 };
 
 /* ---------- money and dates ---------- */
