@@ -326,11 +326,8 @@ const AuthOverlay = () => {
         try {
             const result = await confirmationResult.confirm(code);
             const user = result.user;
-            if (!user.displayName) {
-                setMode('complete_profile');
-            } else {
-                onClose();
-            }
+            // Signing in is only the sign-in: a missing name or email is asked later, in the app.
+            if (user) onClose();
         } catch (err) {
             console.error("OTP Auto Verification Error:", err);
             setError(getFriendlyErrorMessage(err));
@@ -352,11 +349,8 @@ const AuthOverlay = () => {
             const user = result.user;
             
             // Check if profile is incomplete (common for first-time phone signups)
-            if (!user.displayName) {
-                setMode('complete_profile');
-            } else {
-                onClose();
-            }
+            // Signing in is only the sign-in: a missing name or email is asked later, in the app.
+            if (user) onClose();
         } catch (err) {
             console.error("OTP Verification Error:", err);
             setError(getFriendlyErrorMessage(err));
