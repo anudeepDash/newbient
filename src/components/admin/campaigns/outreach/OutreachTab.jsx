@@ -206,9 +206,9 @@ const OutreachTab = ({ campaign }) => {
             </Card>
 
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <StatTile icon={Inbox} tone="blue" label="Applied" value={apps.length} hint={`${counts.applied} not decided`} active={view === 'applications' && filters.status === 'applied'} onClick={() => { setView('applications'); setFilter({ ...BLANK_FILTERS, status: 'applied' }); }} />
+                <StatTile icon={Inbox} tone="blue" label="Applied" value={apps.length} hint={`${counts.applied} new`} active={view === 'applications' && filters.status === 'applied'} onClick={() => { setView('applications'); setFilter({ ...BLANK_FILTERS, status: 'applied' }); }} />
                 <StatTile icon={Star} tone="violet" label="Shortlist" value={shortlist.length} hint={`${counts.shortlisted + counts.message_queued} to message`} active={view === 'messages'} onClick={() => setView('messages')} />
-                <StatTile icon={Send} tone="green" label="Messaged" value={counts.message_sent + counts.replied + counts.joined + counts.posted + counts.paid} hint={`${counts.joined} joined the group`} />
+                <StatTile icon={Send} tone="green" label="Messaged" value={counts.message_sent + counts.replied + counts.joined + counts.posted + counts.paid} hint={`${counts.joined} joined`} />
                 <StatTile icon={UserPlus} tone="teal" label="Posted" value={counts.posted + counts.paid} hint={`${counts.paid} paid`} />
             </div>
 
