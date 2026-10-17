@@ -12,7 +12,7 @@ import { when } from './parts';
  * the server in the same transaction as the change.
  */
 
-const SOURCE = { admin: '', bulk_paste: ' (bulk paste)', public_form: ' (form)', whatsapp_api: ' (API send)', whatsapp_webhook: ' (from WhatsApp)', reminder: ' (reminder)' };
+const SOURCE = { admin: '', bulk_paste: ' (bulk paste)', public_form: ' (form)', whatsapp_api: ' (API send)', whatsapp_webhook: ' (from WhatsApp)', reminder: ' (reminder)', creator: ' (their link)', rule: ' (automatic)' };
 
 const describe = (e, nameOf) => {
     const who = e.appId ? nameOf(e.appId) : null;
@@ -26,6 +26,16 @@ const describe = (e, nameOf) => {
     if (e.field === 'whatsapp') return `${who ? `${who}: ` : ''}${e.to === 'failed' ? 'WhatsApp message not sent' : 'Queued for the WhatsApp API'}`;
     if (e.field === 'reminder') return `${who ? `${who}: ` : ''}join reminder sent`;
     if (e.field === 'reminders') return e.to === 'off' ? 'Turned join reminders off' : `Join reminders ${e.to}`;
+    if (String(e.field).startsWith('deliverable:')) {
+        const title = e.field.slice('deliverable:'.length);
+        const verb = { submitted: 'sent', approved: 'approved', rejected: 'changes asked on' }[e.to] || e.to;
+        return `${who ? `${who}: ` : ''}${title} ${verb}`;
+    }
+    if (e.field === 'ticket') return `${who ? `${who}: ` : ''}ticket ${e.to}`;
+    if (e.field === 'payout') return `${who ? `${who}: ` : ''}payout ${e.to}`;
+    if (e.field === 'payout_details') return `${who ? `${who}: ` : ''}added payment details`;
+    if (e.field === 'submit_link') return `${who ? `${who}: ` : ''}got their posts link`;
+    if (e.field === 'ticketRule') return `Ticket rule: ${e.to}`;
     return `${e.field}: ${e.from ?? '–'} → ${e.to ?? '–'}`;
 };
 

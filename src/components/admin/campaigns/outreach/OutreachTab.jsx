@@ -23,6 +23,10 @@ import MessagesPanel from './MessagesPanel';
 import SetupPanel from './SetupPanel';
 import ActivityList from './ActivityList';
 import ApplicationSheet from './ApplicationSheet';
+import DeliverablesReview from './DeliverablesReview';
+import PayoutsPanel from './PayoutsPanel';
+import InboxPanel from './InboxPanel';
+import { deliverableSummary } from '../../../../lib/outreach/deliverables';
 
 /*
  * The campaign's Outreach tab: open-form applications → shortlist → WhatsApp
@@ -89,6 +93,7 @@ const OutreachTab = ({ campaign }) => {
     const shortlist = useMemo(() => apps.filter(a => isOnShortlist(a.status)), [apps]);
     const counts = useMemo(() => Object.fromEntries(STATUSES.map(s => [s, apps.filter(a => (a.status || 'applied') === s).length])), [apps]);
     const cities = campaignCities(campaign);
+    const toReview = useMemo(() => apps.reduce((n, a) => n + deliverableSummary(campaign, a).toReview, 0), [apps, campaign]);
     const setFilter = (patch) => { setFilters(f => ({ ...f, ...patch })); setSelected(new Set()); };
 
     /* Every status change goes through here. Applies the server's result locally. */
@@ -249,6 +254,9 @@ const OutreachTab = ({ campaign }) => {
                     items={[
                         { value: 'applications', label: 'Applications', count: apps.length },
                         { value: 'messages', label: 'Messages', count: counts.shortlisted + counts.message_queued || undefined, highlight: counts.shortlisted + counts.message_queued > 0 },
+                        { value: 'deliverables', label: 'Deliverables', count: toReview || undefined, highlight: toReview > 0 },
+                        { value: 'payouts', label: 'Payouts and tickets' },
+                        { value: 'inbox', label: 'Inbox' },
                         { value: 'setup', label: 'Message setup' },
                         { value: 'activity', label: 'Activity' },
                     ]}
@@ -276,12 +284,15 @@ const OutreachTab = ({ campaign }) => {
             {view === 'setup' && (
                 <SetupPanel campaign={campaign} settings={data.settings} api={data.api} sampleApplication={shortlist[0] || apps[0]} onSaved={load} />
             )}
+            {view === 'deliverables' && <DeliverablesReview campaign={campaign} applications={apps} onChanged={() => { setRefreshKey(k => k + 1); load(); }} />}
+            {view === 'payouts' && <PayoutsPanel campaign={campaign} applications={apps} onChanged={() => { setRefreshKey(k => k + 1); load(); }} />}
+            {view === 'inbox' && <InboxPanel campaign={campaign} configured={Boolean(data.api?.configured)} />}
             {view === 'activity' && (
                 <Card className="p-4"><ActivityList campaignId={campaign.id} nameOf={nameOf} refreshKey={refreshKey} /></Card>
             )}
 
             <PasteSheet open={pasteOpen} onClose={() => setPasteOpen(false)} applications={apps} onShortlist={addToShortlist} />
-            <ApplicationSheet app={openId ? byId.get(openId) : null} campaignId={campaign.id} onClose={() => setOpenId(null)} onStatus={changeStatus} nameOf={nameOf} refreshKey={refreshKey} />
+            <ApplicationSheet app={openId ? byId.get(openId) : null} campaign={campaign} campaignId={campaign.id} onClose={() => setOpenId(null)} onStatus={changeStatus} nameOf={nameOf} refreshKey={refreshKey} />
             <ConfirmSheet
                 open={Boolean(confirmRemove)}
                 onClose={() => setConfirmRemove(null)}
