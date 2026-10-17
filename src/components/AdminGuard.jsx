@@ -13,7 +13,7 @@ import useDynamicMeta from '../hooks/useDynamicMeta';
 
 const getAdminTitle = (pathname) => {
     const path = pathname.replace(/\/$/, '');
-    if (path === '/admin') return 'Admin Dashboard';
+    if (path === '/admin') return 'Dashboard';
     if (path === '/admin/system-command' || path === '/admin/settings' || path === '/admin/dev-settings') return 'System Settings';
     if (path === '/admin/manage-admins') return 'Manage Admins';
     if (path === '/admin/invoices') return 'Invoice Management';
@@ -50,7 +50,7 @@ const getAdminTitle = (pathname) => {
     if (path === '/admin/newsletter/studio') return 'Newsletter Studio';
     if (path === '/admin/scanner') return 'Event Scanner';
     if (path === '/admin/ticketing') return 'Ticketing Management';
-    return 'Admin Command';
+    return 'Admin';
 };
 
 const AdminGuard = ({ children }) => {
@@ -60,11 +60,7 @@ const AdminGuard = ({ children }) => {
     const [requesting, setRequesting] = useState(false);
 
     const adminTitle = getAdminTitle(location.pathname);
-    useDynamicMeta({
-        title: adminTitle,
-        description: "Newbi Administrative Command.",
-        url: window.location.href
-    });
+    useDynamicMeta({ page: 'admin', title: adminTitle, url: window.location.href });
 
     const getColorByPath = (path) => {
         if (path.startsWith('/admin')) return '#00F0FF';
