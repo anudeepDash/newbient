@@ -19,11 +19,14 @@ import newbiIcon from '../../assets/logo/newbi-icon.svg';
  *   start  → Google · phone · email
  *   phone  → number + SMS code (signs in, or creates the account)
  *   email  → sign in / create account, with "forgot password"
- *   details → right after sign-in, only a missing name: signing in never asks
- *            for a phone or an email. Whatever the next action still needs
- *            (accountRequire: a verified phone, an email, a city) is asked
- *            when it resumes, in this same sheet opened on this step for a
- *            signed-in user, with the reason in the title.
+ *   Signing in is only the method: once Google, the phone code or the email
+ *   password goes through, the sheet closes. Nothing else is asked on the
+ *   way; Home's account banner (AccountBanner) asks for a missing phone,
+ *   email or name afterwards.
+ *   details → for a signed-in user: whatever the action they started still
+ *            needs (accountRequire: a verified phone, an email, a city),
+ *            with the reason in the title. A signed-out action resumes
+ *            after sign-in and opens this step if anything is missing.
  *
  * It opens and closes on the same `isAuthOpen` flag as AuthOverlay, so
  * useAuthGate().requestSignIn() and every existing "Sign in" button work.
@@ -87,15 +90,12 @@ const SignInSheet = () => {
     const [notice, setNotice] = useState('');
     // The fields the details step asks for, frozen once the profile has loaded.
     const [detailFields, setDetailFields] = useState(null);
-    // Opened to sign in (not for an action's details): afterwards only the name is asked.
-    const [signingIn, setSigningIn] = useState(false);
 
     // Already signed in (only details missing): open on the details step.
     useEffect(() => {
         if (!isOpen) return;
         // It can reopen right after closing (an action asking for its details), before the close reset ran.
         setDetailFields(null); setError(''); setNotice('');
-        setSigningIn(!authUser);
         setStep(authUser ? 'details' : 'start');
         // Only when the sheet opens.
         // eslint-disable-next-line
@@ -105,7 +105,7 @@ const SignInSheet = () => {
     useEffect(() => {
         // Wait for this account's own profile: until it loads, every field looks missing.
         if (!isOpen || step !== 'details' || !authUser || !profileLoaded || profile?.uid !== authUser.uid || detailFields) return;
-        const missing = missingFields(profile, signingIn ? ['name'] : accountRequire);
+        const missing = missingFields(profile, accountRequire);
         if (missing.length) setDetailFields(missing);
         else finish();
         // eslint-disable-next-line
@@ -121,8 +121,8 @@ const SignInSheet = () => {
     }, [isOpen]);
 
     const close = () => setAuthModal(false);
-    // Signed in: move on to any missing details (the effect above closes if there are none).
-    const signedIn = () => setStep('details');
+    // Signed in: that's all sign-in does. The sheet closes; a started action resumes through its intent.
+    const signedIn = () => finish();
     // Details done: close, then run what a signed-in user was doing (signed-out flows resume via their intent).
     const finish = () => {
         const action = takeAccountAction();
@@ -168,9 +168,7 @@ const SignInSheet = () => {
         email: emailMode === 'signUp' ? ['Create your account', 'Use your email and a password.']
             : emailMode === 'forgot' ? ['Reset your password', 'We’ll email you a link.']
                 : ['Sign in with email', 'Welcome back.'],
-        details: signingIn
-            ? ['Welcome to Newbi', 'What should we call you?']
-            : ['A few details first', `This needs ${listOf((detailFields || []).map(f => NEEDS[f] || fieldLabel(f).toLowerCase()))}. You only add ${(detailFields || []).length > 1 ? 'them' : 'it'} once.`],
+        details: ['A few details first', `This needs ${listOf((detailFields || []).map(f => NEEDS[f] || fieldLabel(f).toLowerCase()))}. You only add ${(detailFields || []).length > 1 ? 'them' : 'it'} once.`],
     };
     const [title, subtitle] = titles[step];
 

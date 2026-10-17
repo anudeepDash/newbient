@@ -20,6 +20,7 @@ import { appPath } from '../host';
 import { useAuthGate } from '../auth/AuthGate';
 import { missingFields, fieldLabel } from '../profile/requirements';
 import CompleteProfileSheet from '../profile/CompleteProfileSheet';
+import AccountBanner from '../auth/AccountBanner';
 import JoinPaths from './JoinPaths';
 import { useAppContent } from '../useAppContent';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
@@ -41,8 +42,8 @@ import MapPin from 'lucide-react/dist/esm/icons/map-pin';
  *   what's on in the community · the WhatsApp community. Creator things come first.
  */
 
-// The phone has its own banner (auth/PhoneBanner), so it isn't listed here.
-const ONBOARDING_FIELDS = ['name', 'city'];
+// Phone, email and name are asked by the account banner (auth/AccountBanner) above.
+const ONBOARDING_FIELDS = ['city'];
 
 // Creator things first, community after.
 const QUICK = [
@@ -140,6 +141,9 @@ const HomePage = () => {
 
     return (
         <PageBody>
+            {/* Signed in but missing a verified phone, an email or a name: one banner, after sign-in. */}
+            <AccountBanner />
+
             {/* The greeting: today's date, hello and your name, and one line for right now. */}
             <HeroPanel
                 eyebrow={format(new Date(), 'EEEE, d MMMM')}

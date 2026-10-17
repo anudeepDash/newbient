@@ -16,7 +16,6 @@ import { appPath, stripAppBase } from './host';
 import { AuthResumer } from './auth/AuthGate';
 import NotificationsSheet from './NotificationsSheet';
 import SignInSheet from './auth/SignInSheet';
-import PhoneBanner from './auth/PhoneBanner';
 import NewbiLogo from '../components/brand/NewbiLogo';
 
 /*
@@ -166,7 +165,6 @@ const AppLayout = () => {
 
             {/* ── Page ── */}
             <main className="min-w-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-[calc(3.5rem+env(safe-area-inset-top))] lg:pb-16 lg:pt-[4.5rem]">
-                <PhoneBanner />
                 <Suspense fallback={<PageFallback />}>
                     <Outlet />
                 </Suspense>
