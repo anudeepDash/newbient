@@ -33,6 +33,8 @@ import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
 import Wallet from 'lucide-react/dist/esm/icons/wallet';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
 
 import { buildAttention, attentionNeeds } from '../../components/admin/dashboard/attention';
 import { useStore } from '../../lib/store';
@@ -47,6 +49,8 @@ import { accent } from '../../components/admin/theme';
 import { RoleBadge } from '../../components/admin/workspace/roles';
 import { invoiceTotal, invoiceBalance, isInvoiceOverdue, invoiceState, invoiceCollectedSince } from '../../lib/invoicing';
 import { proposalState } from '../../lib/proposals';
+import { campaignStatus } from '../../components/admin/campaigns/campaignModel';
+import { giveawayState } from '../../components/admin/giveaways/giveawayUtils';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -128,6 +132,36 @@ const MetricTile = ({ link, tone, icon: Icon, label, value, detail }) => {
 };
 
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/* One part of the admin (Landing site, App, Money): its key numbers, each opening its page, then extras. */
+const AreaCard = ({ title, subtitle, icon: Icon, tone, to, rows = [], children }) => (
+    <Card className="space-y-4 rounded-2xl p-4 sm:p-5">
+        <Link to={to} className="group flex items-center gap-3">
+            <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', accent(tone).chip)}><Icon size={18} /></span>
+            <span className="min-w-0 flex-1">
+                <span className="block text-[16px] font-extrabold tracking-tight">{title}</span>
+                <span className="block text-[12px] text-gray-500">{subtitle}</span>
+            </span>
+            <ChevronRight size={16} className="shrink-0 text-gray-300 transition-transform group-hover:translate-x-0.5 dark:text-zinc-600" />
+        </Link>
+        {rows.length > 0 && (
+            <ul className="divide-y divide-black/[0.05] rounded-xl border border-black/[0.05] dark:divide-white/[0.05] dark:border-white/[0.06]">
+                {rows.map(r => (
+                    <li key={r.label}>
+                        <Link to={r.to} className="flex min-h-[52px] items-center gap-3 px-3.5 py-2 transition-colors hover:bg-black/[0.02] dark:hover:bg-white/[0.02]">
+                            <span className="min-w-0 flex-1">
+                                <span className="block truncate text-[13px] font-bold">{r.label}</span>
+                                {r.hint && <span className="block truncate text-[11px] text-gray-500">{r.hint}</span>}
+                            </span>
+                            <span className={cn('shrink-0 text-[15px] font-extrabold tabular-nums', r.tone && accent(r.tone).text)}>{r.value}</span>
+                        </Link>
+                    </li>
+                ))}
+            </ul>
+        )}
+        {children}
+    </Card>
+);
 
 const SectionTitle = ({ children, action }) => (
     <div className="mb-3 flex items-center justify-between gap-3">
@@ -322,6 +356,14 @@ const Dashboard = () => {
     const baseNeeds = useMemo(() => {
         const keys = attentionNeeds(visible, { isFinance });
         if (visible.has('upcoming')) keys.push('upcomingEvents');
+        // The Landing site and App areas.
+        if (visible.has('inbox')) keys.push('messages');
+        if (visible.has('portfolio')) keys.push('portfolio');
+        if (visible.has('blog')) keys.push('posts');
+        if (visible.has('creators') || visible.has('campaigns')) keys.push('creators', 'campaigns');
+        if (visible.has('giveaways')) keys.push('giveaways');
+        if (visible.has('gigs')) keys.push('volunteerGigs');
+        if (visible.has('forms')) keys.push('forms');
         return keys;
     }, [visible, isFinance]);
 
@@ -416,6 +458,52 @@ const Dashboard = () => {
         };
     }, [state.invoices, visible]);
 
+    // ── Landing site area ──
+    const siteArea = useMemo(() => {
+        if (!['site', 'portfolio', 'brands', 'blog', 'inbox'].some(id => visible.has(id))) return null;
+        const ss = state.siteSettings || {};
+        const locked = Boolean(state.maintenanceState?.global);
+        const sectionsOn = ['showUpcomingEvents', 'showPastClients', 'showCreatorTestimonials'].filter(k => ss[k] !== false).length;
+        const posts = state.posts || [];
+        const published = posts.filter(p => String(p.status || '').toLowerCase() === 'published').length;
+        const unread = (state.messages || []).filter(m => m.status === 'new').length;
+        const rows = [];
+        if (visible.has('site')) {
+            rows.push({ label: 'Status', value: locked ? 'Locked' : 'Live', tone: locked ? 'red' : 'green', hint: locked ? 'Visitors see the maintenance page' : 'Open to everyone', to: '/admin/site' });
+            rows.push({ label: 'Sections on', value: `${sectionsOn} of 3`, hint: 'Upcoming events, partner brands, testimonials', to: '/admin/site' });
+        }
+        if (visible.has('inbox')) rows.push({ label: 'New enquiries', value: unread, tone: unread ? 'amber' : undefined, hint: 'From the contact form', to: '/admin/messages' });
+        if (visible.has('portfolio')) rows.push({ label: 'Work', value: (state.portfolio || []).length, hint: 'Projects in “Nights we built”', to: '/admin/concertzone' });
+        if (visible.has('blog')) rows.push({ label: 'ConcertZone stories', value: published, hint: posts.length - published ? `${posts.length - published} in drafts` : 'Published', to: '/admin/blog' });
+        return rows;
+    }, [state.siteSettings, state.maintenanceState, state.posts, state.messages, state.portfolio, visible]);
+
+    // ── App area ──
+    const appArea = useMemo(() => {
+        if (!['campaigns', 'creators', 'guestlists', 'giveaways', 'gigs', 'forms', 'upcoming', 'ticketing'].some(id => visible.has(id))) return null;
+        const now = new Date();
+        const rows = [];
+        if (visible.has('creators')) {
+            const waiting = (state.creators || []).filter(c => !c.profileStatus || c.profileStatus === 'pending' || c.profileStatus === 'pending_verification').length;
+            rows.push({ label: 'Creators waiting', value: waiting, tone: waiting ? 'amber' : undefined, hint: 'New applications to review', to: '/admin/creators?status=pending' });
+        }
+        if (visible.has('campaigns')) {
+            const open = (state.campaigns || []).filter(c => campaignStatus(c) === 'open').length;
+            rows.push({ label: 'Open campaigns', value: open, tone: open ? 'pink' : undefined, hint: `${(state.campaigns || []).length} in total`, to: '/admin/campaigns' });
+        }
+        if (visible.has('guestlists')) {
+            const lists = (state.upcomingEvents || []).filter(e => (e.isGuestlistEnabled || e.guestlistEnabled) && (toDate(e.date)?.getTime() || 0) >= now.getTime() - 6 * 3600000).length;
+            rows.push({ label: 'Guestlists coming up', value: lists, hint: 'Upcoming events with a guestlist', to: '/admin/guestlists' });
+        }
+        if (visible.has('giveaways')) {
+            const open = (state.giveaways || []).filter(g => giveawayState(g, now) === 'open').length;
+            rows.push({ label: 'Giveaways running', value: open, hint: 'Open for entries', to: '/admin/giveaways' });
+        }
+        if (visible.has('gigs')) rows.push({ label: 'Volunteer gigs', value: (state.volunteerGigs || []).length, hint: 'Listed in Community', to: '/admin/volunteer-gigs' });
+        if (visible.has('forms')) rows.push({ label: 'Forms', value: (state.forms || []).length, hint: 'Public forms', to: '/admin/forms' });
+        return rows;
+    }, [state.creators, state.campaigns, state.upcomingEvents, state.giveaways, state.volunteerGigs, state.forms, visible]);
+
     const saveWidgets = async (keys) => {
         try {
             await saveDashboardWidgets(keys);
@@ -476,132 +564,67 @@ const Dashboard = () => {
                 </div>
             </section>
 
-            <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
-                <div className="space-y-8 xl:col-span-2">
-                    {/* Needs attention */}
-                    <section>
-                        <SectionTitle action={attention.length > 0 && (
-                            <span className="text-[12px] font-semibold text-gray-500">
-                                {attention.filter(i => i.priority === 1).length ? `${attention.filter(i => i.priority === 1).length} urgent · ` : ''}{plural(attention.length, 'thing')}
-                            </span>
-                        )}>Needs attention</SectionTitle>
-                        <Card className="overflow-hidden rounded-2xl">
-                            {attention.length === 0 ? (
-                                <div className="flex items-center gap-3 p-5">
-                                    <span className={cn('flex h-10 w-10 items-center justify-center rounded-xl', chip('green'))}><CheckCircle2 size={18} /></span>
-                                    <div>
-                                        <p className="text-sm font-bold">You're all caught up</p>
-                                        <p className="text-[12px] text-gray-500">Nothing is waiting on you right now.</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <>
-                                    <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
-                                        {attentionShown.map(item => {
-                                            const Icon = item.icon;
-                                            return (
-                                                <li key={item.id}>
-                                                    <Link to={item.link} className="relative flex min-h-[68px] items-center gap-3 px-4 py-3 transition-colors hover:bg-black/[0.02] active:bg-black/[0.04] dark:hover:bg-white/[0.02] dark:active:bg-white/[0.04] sm:px-5">
-                                                        {item.priority === 1 && <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-red-500" aria-hidden="true" />}
-                                                        <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', chip(item.tone))}><Icon size={18} /></span>
-                                                        <span className="min-w-0 flex-1">
-                                                            <span className="flex items-center gap-2">
-                                                                <span className="min-w-0 truncate text-sm font-bold">{item.title}</span>
-                                                                {item.priority === 1 && <Badge tone="red" className="shrink-0">Urgent</Badge>}
-                                                            </span>
-                                                            <span className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-gray-500 dark:text-zinc-400">{item.detail}</span>
-                                                        </span>
-                                                        <ChevronRight size={16} className="shrink-0 text-gray-300 dark:text-zinc-600" />
-                                                    </Link>
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
-                                    {attention.length > 6 && (
-                                        <button type="button" onClick={() => setShowAllAttention(v => !v)} className="flex h-11 w-full items-center justify-center border-t border-black/[0.05] text-[13px] font-semibold text-gray-500 hover:text-gray-900 dark:border-white/[0.05] dark:hover:text-white">
-                                            {showAllAttention ? 'Show fewer' : `Show all ${attention.length}`}
-                                        </button>
-                                    )}
-                                </>
-                            )}
-                        </Card>
-                    </section>
-
-                    {/* Recent documents */}
-                    {recent.length > 0 && (
-                        <section>
-                            <SectionTitle>Recently edited</SectionTitle>
-                            <Card className="overflow-hidden rounded-2xl">
-                                <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
-                                    {recent.map(row => {
-                                        const Icon = row.icon;
-                                        return (
-                                            <li key={row.id}>
-                                                <Link to={row.link} className="flex min-h-[60px] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-black/[0.02] active:bg-black/[0.04] dark:hover:bg-white/[0.02] sm:px-5">
-                                                    <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', chip(row.tone))}><Icon size={16} /></span>
-                                                    <span className="min-w-0 flex-1">
-                                                        <span className="block truncate text-[14px] font-bold">{row.title}</span>
-                                                        <span className="block truncate text-[12px] text-gray-500">{row.kind}{row.meta ? ` · ${row.meta}` : ''} · {relative(row.at)}</span>
+            {/* Needs attention: everything waiting on you, across the site, the app and money. */}
+            <div className="mb-8">
+            <section>
+                <SectionTitle action={attention.length > 0 && (
+                    <span className="text-[12px] font-semibold text-gray-500">
+                        {attention.filter(i => i.priority === 1).length ? `${attention.filter(i => i.priority === 1).length} urgent · ` : ''}{plural(attention.length, 'thing')}
+                    </span>
+                )}>Needs attention</SectionTitle>
+                <Card className="overflow-hidden rounded-2xl">
+                    {attention.length === 0 ? (
+                        <div className="flex items-center gap-3 p-5">
+                            <span className={cn('flex h-10 w-10 items-center justify-center rounded-xl', chip('green'))}><CheckCircle2 size={18} /></span>
+                            <div>
+                                <p className="text-sm font-bold">You're all caught up</p>
+                                <p className="text-[12px] text-gray-500">Nothing is waiting on you right now.</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                                {attentionShown.map(item => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <li key={item.id}>
+                                            <Link to={item.link} className="relative flex min-h-[68px] items-center gap-3 px-4 py-3 transition-colors hover:bg-black/[0.02] active:bg-black/[0.04] dark:hover:bg-white/[0.02] dark:active:bg-white/[0.04] sm:px-5">
+                                                {item.priority === 1 && <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-red-500" aria-hidden="true" />}
+                                                <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', chip(item.tone))}><Icon size={18} /></span>
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="flex items-center gap-2">
+                                                        <span className="min-w-0 truncate text-sm font-bold">{item.title}</span>
+                                                        {item.priority === 1 && <Badge tone="red" className="shrink-0">Urgent</Badge>}
                                                     </span>
-                                                    {row.status && <Badge tone={statusTone(row.status)} className="hidden shrink-0 sm:inline-flex">{row.status}</Badge>}
-                                                </Link>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            </Card>
-                        </section>
-                    )}
-                </div>
-
-                <div className="space-y-8">
-                    {/* Finance snapshot */}
-                    {finance && (
-                        <section>
-                            <SectionTitle action={<Link to="/admin/finance" className="text-[12px] font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white">Finance board</Link>}>Money</SectionTitle>
-                            <Card className="grid grid-cols-2 divide-x divide-black/[0.05] rounded-2xl dark:divide-white/[0.05]">
-                                <Link to="/admin/invoices?filter=unpaid" className="p-4 sm:p-5">
-                                    <p className="text-[12px] font-bold text-gray-500">Outstanding</p>
-                                    <p className={cn('mt-1 truncate text-xl font-extrabold tracking-tight tabular-nums', finance.outstanding > 0 && accent('amber').text)}>{inr(finance.outstanding)}</p>
-                                    <p className="text-[11px] text-gray-500">{finance.unpaidCount} unpaid {finance.unpaidCount === 1 ? 'invoice' : 'invoices'}</p>
-                                </Link>
-                                <Link to="/admin/invoices" className="p-4 sm:p-5">
-                                    <p className="text-[12px] font-bold text-gray-500">Collected this month</p>
-                                    <p className="mt-1 truncate text-xl font-extrabold tracking-tight tabular-nums text-emerald-700 dark:text-neon-green">{inr(finance.paidThisMonth)}</p>
-                                    <p className="text-[11px] text-gray-500">{finance.total} invoices in total</p>
-                                </Link>
-                            </Card>
-                            {finance.byClient.length > 0 && (
-                                <Card className="mt-3 overflow-hidden rounded-2xl">
-                                    <p className="px-4 pb-1 pt-3 text-[12px] font-bold text-gray-500 sm:px-5">Outstanding by client</p>
-                                    <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
-                                        {finance.byClient.slice(0, 6).map(c => (
-                                            <li key={c.name}>
-                                                <Link to={`/admin/invoices?filter=unpaid&q=${encodeURIComponent(c.name)}`} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-black/[0.02] dark:hover:bg-white/[0.02] sm:px-5">
-                                                    <span className="min-w-0 flex-1">
-                                                        <span className="block truncate text-[14px] font-bold">{c.name}</span>
-                                                        <span className={cn('block text-[11px]', c.overdue ? 'font-semibold text-red-600 dark:text-red-400' : 'text-gray-500')}>
-                                                            {c.count} {c.count === 1 ? 'invoice' : 'invoices'}{c.overdue ? ' · overdue' : ''}
-                                                        </span>
-                                                    </span>
-                                                    <span className="shrink-0 text-[14px] font-extrabold tabular-nums">{inr(c.balance)}</span>
-                                                </Link>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    {finance.byClient.length > 6 && (
-                                        <Link to="/admin/invoices?filter=unpaid" className="block border-t border-black/[0.05] px-4 py-2.5 text-[12px] font-bold text-gray-500 hover:text-gray-900 dark:border-white/[0.05] dark:hover:text-white sm:px-5">
-                                            +{finance.byClient.length - 6} more clients
-                                        </Link>
-                                    )}
-                                </Card>
+                                                    <span className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-gray-500 dark:text-zinc-400">{item.detail}</span>
+                                                </span>
+                                                <ChevronRight size={16} className="shrink-0 text-gray-300 dark:text-zinc-600" />
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                            {attention.length > 6 && (
+                                <button type="button" onClick={() => setShowAllAttention(v => !v)} className="flex h-11 w-full items-center justify-center border-t border-black/[0.05] text-[13px] font-semibold text-gray-500 hover:text-gray-900 dark:border-white/[0.05] dark:hover:text-white">
+                                    {showAllAttention ? 'Show fewer' : `Show all ${attention.length}`}
+                                </button>
                             )}
-                        </section>
+                        </>
                     )}
+                </Card>
+            </section>
 
-                    {/* Schedule */}
+            </div>
+
+            {/* The three parts of the admin, like the sidebar: Landing site · App · Money. */}
+            <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 xl:grid-cols-3">
+                {siteArea && (
+                    <AreaCard title="Landing site" subtitle="newbi.live" icon={Globe} tone="cyan" to="/admin/site" rows={siteArea} />
+                )}
+                {appArea && (
+                    <AreaCard title="App" subtitle="app.newbi.live" icon={Smartphone} tone="pink" to="/admin/campaigns" rows={appArea}>
                     {visible.has('upcoming') && (
-                        <section>
+                        <section className="pt-2">
                             <SectionTitle action={<Link to="/admin/upcoming-events" className="text-[12px] font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white">All events</Link>}>Coming up</SectionTitle>
                             <Card className="overflow-hidden rounded-2xl">
                                 {upcoming.length === 0 ? (
@@ -644,14 +667,89 @@ const Dashboard = () => {
                             </Card>
                         </section>
                     )}
-                </div>
+                    </AreaCard>
+                )}
+                {(finance || recent.length > 0) && (
+                    <AreaCard title="Money" subtitle="Finance & documents" icon={Wallet} tone="teal" to={visible.has('finance') ? '/admin/finance' : '/admin/proposals'}>
+                    {finance && (
+                        <section>
+                            <SectionTitle action={<Link to="/admin/finance" className="text-[12px] font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white">Finance board</Link>}>Invoices</SectionTitle>
+                            <Card className="grid grid-cols-2 divide-x divide-black/[0.05] rounded-2xl dark:divide-white/[0.05]">
+                                <Link to="/admin/invoices?filter=unpaid" className="p-4 sm:p-5">
+                                    <p className="text-[12px] font-bold text-gray-500">Outstanding</p>
+                                    <p className={cn('mt-1 truncate text-xl font-extrabold tracking-tight tabular-nums', finance.outstanding > 0 && accent('amber').text)}>{inr(finance.outstanding)}</p>
+                                    <p className="text-[11px] text-gray-500">{finance.unpaidCount} unpaid {finance.unpaidCount === 1 ? 'invoice' : 'invoices'}</p>
+                                </Link>
+                                <Link to="/admin/invoices" className="p-4 sm:p-5">
+                                    <p className="text-[12px] font-bold text-gray-500">Collected this month</p>
+                                    <p className="mt-1 truncate text-xl font-extrabold tracking-tight tabular-nums text-emerald-700 dark:text-neon-green">{inr(finance.paidThisMonth)}</p>
+                                    <p className="text-[11px] text-gray-500">{finance.total} invoices in total</p>
+                                </Link>
+                            </Card>
+                            {finance.byClient.length > 0 && (
+                                <Card className="mt-3 overflow-hidden rounded-2xl">
+                                    <p className="px-4 pb-1 pt-3 text-[12px] font-bold text-gray-500 sm:px-5">Outstanding by client</p>
+                                    <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                                        {finance.byClient.slice(0, 6).map(c => (
+                                            <li key={c.name}>
+                                                <Link to={`/admin/invoices?filter=unpaid&q=${encodeURIComponent(c.name)}`} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-black/[0.02] dark:hover:bg-white/[0.02] sm:px-5">
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="block truncate text-[14px] font-bold">{c.name}</span>
+                                                        <span className={cn('block text-[11px]', c.overdue ? 'font-semibold text-red-600 dark:text-red-400' : 'text-gray-500')}>
+                                                            {c.count} {c.count === 1 ? 'invoice' : 'invoices'}{c.overdue ? ' · overdue' : ''}
+                                                        </span>
+                                                    </span>
+                                                    <span className="shrink-0 text-[14px] font-extrabold tabular-nums">{inr(c.balance)}</span>
+                                                </Link>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    {finance.byClient.length > 6 && (
+                                        <Link to="/admin/invoices?filter=unpaid" className="block border-t border-black/[0.05] px-4 py-2.5 text-[12px] font-bold text-gray-500 hover:text-gray-900 dark:border-white/[0.05] dark:hover:text-white sm:px-5">
+                                            +{finance.byClient.length - 6} more clients
+                                        </Link>
+                                    )}
+                                </Card>
+                            )}
+                        </section>
+                    )}
+
+                    {recent.length > 0 && (
+                        <section>
+                            <SectionTitle>Recently edited</SectionTitle>
+                            <Card className="overflow-hidden rounded-2xl">
+                                <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                                    {recent.map(row => {
+                                        const Icon = row.icon;
+                                        return (
+                                            <li key={row.id}>
+                                                <Link to={row.link} className="flex min-h-[60px] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-black/[0.02] active:bg-black/[0.04] dark:hover:bg-white/[0.02] sm:px-5">
+                                                    <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', chip(row.tone))}><Icon size={16} /></span>
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="block truncate text-[14px] font-bold">{row.title}</span>
+                                                        <span className="block truncate text-[12px] text-gray-500">{row.kind}{row.meta ? ` · ${row.meta}` : ''} · {relative(row.at)}</span>
+                                                    </span>
+                                                    {row.status && <Badge tone={statusTone(row.status)} className="hidden shrink-0 sm:inline-flex">{row.status}</Badge>}
+                                                </Link>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </Card>
+                        </section>
+                    )}
+                    </AreaCard>
+                )}
             </div>
 
             {/* All tools (desktop: the sidebar covers this on phones via "More") */}
-            <section className="mt-10 hidden sm:block">
+            <section className="mt-10 hidden space-y-5 sm:block">
                 <SectionTitle>All tools</SectionTitle>
+                {nav.filter(g => g.id !== 'overview').map(group => (
+                <div key={group.id}>
+                <p className="mb-2 text-[12px] font-bold text-gray-500">{group.title}</p>
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-                    {nav.filter(g => g.id !== 'overview').flatMap(g => g.items).map(item => {
+                    {group.items.map(item => {
                         const Icon = item.icon;
                         return (
                             <Link key={item.id} to={item.path} className="group">
@@ -665,6 +763,8 @@ const Dashboard = () => {
                         );
                     })}
                 </div>
+                </div>
+                ))}
             </section>
 
             {isFullAccess && (
