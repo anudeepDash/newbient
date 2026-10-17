@@ -195,6 +195,14 @@ details[open] > summary .nb-plus { transform: rotate(45deg); }
     .nb-story-progress { display: block; }
     .nb-story-hint { display: flex; }
     @keyframes nb-pan { to { transform: translate3d(calc(-100% + 100vw), 0, 0); } }
+
+    /* "Keep scrolling" on the sideways sections: in as the section pins, out near its end, and the chevron bobs down. */
+    .nb-scroll-cue { display: flex; animation: nb-cue-fade linear both; animation-range: contain 0% contain 100%; }
+    .nb-story .nb-scroll-cue { animation-timeline: --nb-story; }
+    .nb-film .nb-scroll-cue { animation-timeline: --nb-film; bottom: 2.25rem; }
+    @keyframes nb-cue-fade { 0% { opacity: 0; } 4%, 82% { opacity: 1; } 96%, 100% { opacity: 0; } }
+    .nb-cue-bob { animation: nb-cue-bob 1.4s ease-in-out infinite; }
+    @keyframes nb-cue-bob { 0%, 100% { transform: translate3d(0, -2px, 0); } 50% { transform: translate3d(0, 4px, 0); } }
     @keyframes nb-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
     .nb-story-bar { transform-origin: left; animation: nb-grow-x linear both; animation-timeline: --nb-story; animation-range: contain 0% contain 100%; }
     @media (min-width: 640px) {

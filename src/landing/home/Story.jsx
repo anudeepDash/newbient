@@ -1,6 +1,7 @@
 import Sticker from '../components/Sticker';
 import SectionLabel from '../components/SectionLabel';
-import { ArrowRight } from 'lucide-react';
+import { ArrowDown } from 'lucide-react';
+import ScrollCue from '../components/ScrollCue';
 
 // What Newbi runs, one panel per service. On desktop the section pins and the
 // panels slide sideways with the scroll; on phones they stack.
@@ -59,7 +60,7 @@ export default function Story() {
                             <p className="mt-6 max-w-lg text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400">
                                 Newbi is an event marketing and live entertainment company. You bring a goal, a date and a budget; we bring the artists, the venue, the build, the creators and the crew, run it, and report on it. One team, so nothing falls between vendors.
                             </p>
-                            <p className="nb-story-hint mt-8 hidden items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">Five things we run <ArrowRight size={14} aria-hidden="true" /></p>
+                            <p className="nb-story-hint mt-8 hidden items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">Scroll for the five things we run <ArrowDown size={14} aria-hidden="true" /></p>
                         </div>
                     </div>
 
@@ -84,6 +85,8 @@ export default function Story() {
                         </article>
                     ))}
                 </div>
+
+                <ScrollCue />
 
                 {/* Progress bar while the section is pinned */}
                 <div aria-hidden="true" className="nb-story-progress hidden absolute inset-x-0 bottom-0 h-1 bg-gray-950/10 dark:bg-white/10">

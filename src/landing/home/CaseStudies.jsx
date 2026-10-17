@@ -1,3 +1,4 @@
+import ScrollCue from '../components/ScrollCue';
 import Sticker from '../components/Sticker';
 import SectionLabel from '../components/SectionLabel';
 import { Link } from 'react-router-dom';
@@ -51,6 +52,8 @@ export default function CaseStudies({ items = [] }) {
                         </Link>
                     </li>
                 </ol>
+
+                <ScrollCue dark />
 
                 <div aria-hidden="true" className="nb-film-progress hidden absolute inset-x-0 bottom-0 h-1 bg-white/10">
                     <div className="nb-film-bar h-full w-full bg-neon-green" />
