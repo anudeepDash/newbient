@@ -15,7 +15,9 @@
  *   FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 \
  *     node scripts/migrate-creators-to-uid.mjs --project demo-newbi
  *
- * Credentials: FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY,
+ * Credentials: --key <service-account.json> (Firebase console → Project settings →
+ * Service accounts → Generate new private key), or FIREBASE_PROJECT_ID /
+ * FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY,
  * read from the environment or .env.local / .env in the working directory.
  * Applying to production needs --apply AND --project <id> matching the key.
  *
@@ -35,7 +37,7 @@
  *   creators/*.referredBy
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
@@ -54,7 +56,7 @@ const PROJECT_ARG = option('project');
 const usingEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 
 if (flag('help') || flag('h')) {
-    console.log('Usage: node scripts/migrate-creators-to-uid.mjs [--apply] [--project <id>] [--report <file.json>]');
+    console.log('Usage: node scripts/migrate-creators-to-uid.mjs [--apply] [--project <id>] [--key <service-account.json>] [--report <file.json>]');
     process.exit(0);
 }
 
@@ -64,6 +66,29 @@ for (const file of ['.env.local', '.env']) {
         try { process.loadEnvFile(file); } catch (e) { /* malformed file: rely on the shell env */ }
     }
 }
+
+// --key <file.json>: the service-account key downloaded from Firebase console →
+// Project settings → Service accounts. Overrides the FIREBASE_* variables.
+const KEY_PATH = option('key');
+if (KEY_PATH) {
+    let key;
+    try { key = JSON.parse(readFileSync(KEY_PATH, 'utf8')); } catch (e) {
+        console.error(`Couldn't read the key file ${KEY_PATH}: ${e.message}`);
+        process.exit(1);
+    }
+    if (!key.client_email || !key.private_key) {
+        console.error(`${KEY_PATH} isn't a service-account key (no client_email / private_key).`);
+        process.exit(1);
+    }
+    if (PROJECT_ARG && key.project_id && key.project_id !== PROJECT_ARG) {
+        console.error(`The key is for project ${key.project_id}, not ${PROJECT_ARG}.`);
+        process.exit(1);
+    }
+    if (key.project_id) process.env.FIREBASE_PROJECT_ID = key.project_id;
+    process.env.FIREBASE_CLIENT_EMAIL = key.client_email;
+    process.env.FIREBASE_PRIVATE_KEY = key.private_key;
+}
+
 
 const projectId = (PROJECT_ARG || process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || '').trim();
 if (!projectId) {
@@ -86,7 +111,12 @@ const formatKey = (raw) => {
 
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
 const privateKey = process.env.FIREBASE_PRIVATE_KEY?.trim();
-const app = usingEmulator || !(clientEmail && privateKey)
+if (!usingEmulator && !(clientEmail && privateKey)) {
+    console.error('No admin key. Download one from Firebase console → Project settings → Service accounts →');
+    console.error('"Generate new private key", save it outside this folder, and pass it with --key <file.json>.');
+    process.exit(1);
+}
+const app = usingEmulator
     ? initializeApp({ projectId })
     : initializeApp({ credential: cert({ projectId, clientEmail, privateKey: formatKey(privateKey) }), projectId });
 
