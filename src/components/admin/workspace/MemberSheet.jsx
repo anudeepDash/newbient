@@ -9,6 +9,7 @@ import { cn } from '../../../lib/utils';
 import Sheet from '../Sheet';
 import { Avatar, Badge, Button } from '../ui';
 import { formatDateTime, formatDay, relativeTime, whatsappLink } from './format';
+import { interestLabel } from '../../../app/community/welcomeForm';
 
 /** Coloured tags for what someone is to Newbi (creator, team, tribe…). */
 export const memberTags = (m) => {
@@ -89,6 +90,13 @@ const MemberSheet = ({ open, onClose, member, onSuspend, onReinstate, onSignOut,
             <section className="divide-y divide-black/[0.06] rounded-2xl border border-black/[0.06] px-4 dark:divide-white/[0.06] dark:border-white/[0.08]">
                 <Row label="Email">{member.email || '—'}</Row>
                 {member.phone && <Row label="Phone">{member.phone}</Row>}
+                {/* From the community welcome form, when they've filled it. */}
+                {member.city && <Row label="City">{member.city}</Row>}
+                {member.isStudent === true && <Row label="Student">{member.college || 'Yes'}</Row>}
+                {member.isStudent === false && <Row label="Does">{member.occupation || 'Not a student'}</Row>}
+                {member.gender && <Row label="Gender">{member.gender}</Row>}
+                {Array.isArray(member.interests) && member.interests.length > 0 && <Row label="Into">{member.interests.map(interestLabel).join(', ')}</Row>}
+                {typeof member.instagramHandle === 'string' && member.instagramHandle && <Row label="Instagram">@{member.instagramHandle}</Row>}
                 <Row label="Joined">{member.createdAt ? formatDay(member.createdAt) : 'Unknown'}</Row>
                 <Row label="Last seen">{member.lastSeen ? `${relativeTime(member.lastSeen)} · ${formatDateTime(member.lastSeen)}` : 'Not recorded'}</Row>
                 <Row label="Account">{member.hasAccount ? (member.isBlocked ? 'Suspended' : 'Active') : 'No sign-in account'}</Row>

@@ -6,6 +6,7 @@ import { firstPresent, isPresent } from '../present';
  * Profile slice: `users/{uid}` is the one profile for the whole app.
  *
  *   name, photoURL, email, city, collegeId, college
+ *   isStudent, occupation, gender, interests (the community welcome form)
  *   phone (E.164, no spaces) + phoneVerified
  *   instagram { handle, igUserId, followers, verifiedVia, verifiedAt }
  *   capabilities { member, creator, campus }
@@ -41,6 +42,8 @@ const normaliseInstagram = (data = {}) => {
     };
 };
 
+const PLACEHOLDER_NAME = 'Member';
+
 /* One normalised profile from the users/{uid} doc plus the Firebase auth user. */
 export function toProfile(data = {}, authUser = null) {
     const caps = data.capabilities || {};
@@ -48,7 +51,8 @@ export function toProfile(data = {}, authUser = null) {
     const phone = toE164(firstPresent(data.phone, data.phoneNumber, authPhone));
     return {
         uid: authUser?.uid || data.uid || null,
-        name: firstPresent(data.name, data.displayName, authUser?.displayName) || '',
+        // 'Member' is the placeholder a new phone sign-in gets, not a name.
+        name: firstPresent(data.name, data.displayName === PLACEHOLDER_NAME ? null : data.displayName, authUser?.displayName) || '',
         photoURL: firstPresent(data.photoURL, authUser?.photoURL) || null,
         email: firstPresent(data.email, authUser?.email) || null,
         phone,
@@ -57,6 +61,11 @@ export function toProfile(data = {}, authUser = null) {
         city: firstPresent(data.city) || null,
         collegeId: firstPresent(data.collegeId) || null,
         college: firstPresent(data.college, data.collegeName) || null,
+        // From the community welcome form (community/JoinCommunitySheet).
+        isStudent: typeof data.isStudent === 'boolean' ? data.isStudent : null,
+        occupation: firstPresent(data.occupation) || null,
+        gender: firstPresent(data.gender) || null,
+        interests: Array.isArray(data.interests) ? data.interests : [],
         instagram: normaliseInstagram(data),
         capabilities: {
             member: Boolean(caps.member ?? data.hasJoinedTribe),
@@ -73,7 +82,7 @@ export function toProfile(data = {}, authUser = null) {
  * Phone verification, capabilities.creator/campus and Instagram verification
  * are set by their own flows (verification hook, server), never by a form.
  */
-const SELF_EDITABLE = new Set(['name', 'photoURL', 'city', 'collegeId', 'college', 'onboarding', 'emailPrefs']);
+const SELF_EDITABLE = new Set(['name', 'photoURL', 'city', 'collegeId', 'college', 'onboarding', 'emailPrefs', 'isStudent', 'occupation', 'gender', 'interests', 'instagramHandle']);
 
 export const createProfileSlice = (set, get) => ({
     profile: null,
@@ -116,6 +125,10 @@ export const createProfileSlice = (set, get) => ({
         }
         if (typeof clean.city === 'string') clean.city = clean.city.trim();
         if (typeof clean.college === 'string') clean.college = clean.college.trim();
+        if (typeof clean.instagramHandle === 'string') {
+            clean.instagramHandle = clean.instagramHandle.trim();
+            if (!clean.instagramHandle) delete clean.instagramHandle;
+        }
         clean.updatedAt = new Date().toISOString();
         await setDoc(doc(db, 'users', uid), clean, { merge: true });
         if (clean.displayName) {
