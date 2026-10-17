@@ -66,6 +66,7 @@ import {
 } from './campaignModel';
 import { isRequiredTask } from '../../../lib/creator/tasks';
 import OutreachTab from './outreach/OutreachTab';
+import { stripPastedStyles } from '../../../lib/taskLinks';
 import { canSeeOutreach } from './outreach/outreachApi';
 
 const SELECTED_STAGES = ['selected', 'review', 'approved', 'paid'];
@@ -558,7 +559,7 @@ const CampaignManage = ({
             <Card className="rounded-2xl p-5">
                 <h3 className="text-[15px] font-bold">Brief</h3>
                 {campaign.description ? (
-                    <div className="prose prose-sm mt-3 max-w-none text-gray-700 dark:prose-invert dark:text-zinc-300 [&_a]:text-sky-600" dangerouslySetInnerHTML={{ __html: campaign.description }} />
+                    <div className="prose prose-sm mt-3 max-w-none text-gray-700 dark:prose-invert dark:text-zinc-300 [&_a]:text-sky-600" dangerouslySetInnerHTML={{ __html: stripPastedStyles(campaign.description) }} />
                 ) : <p className="mt-2 text-[13px] text-gray-500">No brief yet.</p>}
                 {tasks.length > 0 && (
                     <>
@@ -823,7 +824,7 @@ const CampaignManage = ({
                         </div>
                         {campaign.description && (
                             <div className="mt-3">
-                                <div className={cn('prose prose-sm max-w-none text-[13px] text-gray-600 dark:prose-invert dark:text-zinc-400', !showBrief && 'line-clamp-2')} dangerouslySetInnerHTML={{ __html: campaign.description }} />
+                                <div className={cn('prose prose-sm max-w-none text-[13px] text-gray-600 dark:prose-invert dark:text-zinc-400', !showBrief && 'line-clamp-2')} dangerouslySetInnerHTML={{ __html: stripPastedStyles(campaign.description) }} />
                                 <button type="button" onClick={() => setShowBrief(v => !v)} className="mt-1 h-8 text-[12px] font-semibold text-pink-600 dark:text-neon-pink">{showBrief ? 'Show less' : 'Read the brief'}</button>
                             </div>
                         )}
