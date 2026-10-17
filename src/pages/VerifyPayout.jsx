@@ -61,8 +61,8 @@ const VerifyPayout = () => {
 
     useEffect(() => {
         document.title = isValid
-            ? `Payment Verified — ₹${Number(amt).toLocaleString('en-IN')} to ${payee} | Newbi`
-            : check.status === 'checking' ? 'Checking Payment | Newbi' : 'Unverified Payment | Newbi';
+            ? `Payment Verified — ₹${Number(amt).toLocaleString('en-IN')} to ${payee} | newbi.live`
+            : check.status === 'checking' ? 'Checking Payment | newbi.live' : 'Unverified Payment | newbi.live';
     }, [isValid, amt, payee, check.status]);
 
     const formattedAmount = useMemo(() => {

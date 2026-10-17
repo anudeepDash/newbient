@@ -14,6 +14,7 @@ import {
     LANDING_ORIGIN,
     brandOf,
     defaultOgImage,
+    formatTitle,
     originFor,
     pageUrl,
     productionSiteOf,
@@ -247,7 +248,7 @@ const loaders = {
         const brand = stripHtml(data.brandName);
         const payout = stripHtml(data.payout || data.budget);
         return {
-            title: `${stripHtml(data.title) || 'Brand Campaign'} | Newbi Creators`,
+            title: stripHtml(data.title) || 'Brand campaign',
             description: [brand && `Brand: ${brand}.`, payout && `Compensation: ${payout}.`, stripHtml(data.description) || PAGES.campaign.description].filter(Boolean).join(' '),
             image: firstImage(data.thumbnail, data.image, data.coverImage),
             alt: stripHtml(data.title),
@@ -262,7 +263,7 @@ const loaders = {
             const data = eventSnap.data();
             const title = stripHtml(data.title) || 'Newbi event';
             return {
-                title: `${title}${data.city ? ` | ${stripHtml(data.city)}` : ''} | Newbi`,
+                title: `${title}${data.city ? ` | ${stripHtml(data.city)}` : ''}`,
                 description: eventDescription(data) || PAGES.guestlist.description,
                 image: firstImage(data.image, data.posterUrl, data.coverImage),
                 alt: title,
@@ -273,7 +274,7 @@ const loaders = {
         const data = glSnap.data();
         const title = stripHtml(data.title) || 'Newbi event';
         return {
-            title: `${title} | Guestlist | Newbi`,
+            title: `${title} | Guestlist`,
             description: eventDescription(data) || `Get on the guestlist for ${title}.`,
             image: firstImage(data.image, data.posterUrl),
             alt: title,
@@ -286,7 +287,7 @@ const loaders = {
         const data = snap.data();
         const title = stripHtml(data.title);
         return {
-            title: `${title} | Volunteer Gig | Newbi`,
+            title: `${title} | Volunteer gig`,
             description: stripHtml(data.description) || `Volunteer with the Newbi crew for ${title}.`,
             image: firstImage(data.image),
             alt: title,
@@ -299,7 +300,7 @@ const loaders = {
         const data = snaps.docs[0].data();
         const name = stripHtml(data.name);
         return {
-            title: `${name} | Newbi Giveaway`,
+            title: `${name} | Giveaway`,
             description: stripHtml(data.description) || `Enter the Newbi giveaway to win ${name}.`,
             image: firstImage(data.posterUrl, data.image),
             alt: name,
@@ -308,7 +309,7 @@ const loaders = {
 
     async form(db, { id }) {
         const formResult = (data, docId) => ({
-            title: `${stripHtml(data.title)} | Newbi Forms`,
+            title: stripHtml(data.title),
             description: stripHtml(data.description) || `Fill in ${stripHtml(data.title)} on Newbi.`,
             image: firstImage(data.image),
             alt: stripHtml(data.title),
@@ -367,7 +368,7 @@ const loaders = {
             const data = gigSnap.data();
             return {
                 ...formResult(data, id),
-                title: `${stripHtml(data.title)} | Volunteer Form | Newbi`,
+                title: `${stripHtml(data.title)} | Volunteer form`,
                 initialData: {
                     id: gigSnap.id,
                     title: data.title,
@@ -406,7 +407,7 @@ const loaders = {
         if (!snap.exists) return null;
         const data = snap.data();
         return {
-            title: `${stripHtml(data.proposalNumber) || 'Proposal'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi`,
+            title: `${stripHtml(data.proposalNumber) || 'Proposal'} | ${stripHtml(data.clientName) || 'Valued Partner'}`,
             description: `Proposal for ${stripHtml(data.campaignName) || 'your campaign'} from Newbi Entertainment & Marketing.`,
         };
     },
@@ -416,7 +417,7 @@ const loaders = {
         if (!snap.exists) return null;
         const data = snap.data();
         return {
-            title: `${stripHtml(data.invoiceNumber) || 'Tax Invoice'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi`,
+            title: `${stripHtml(data.invoiceNumber) || 'Tax Invoice'} | ${stripHtml(data.clientName) || 'Valued Partner'}`,
             description: `Tax invoice for ${stripHtml(data.campaignName) || 'services'} from Newbi Entertainment & Marketing.`,
         };
     },
@@ -426,7 +427,7 @@ const loaders = {
         if (!snap.exists) return null;
         const data = snap.data();
         return {
-            title: `${stripHtml(data.agreementNumber) || 'Agreement'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi`,
+            title: `${stripHtml(data.agreementNumber) || 'Agreement'} | ${stripHtml(data.clientName) || 'Valued Partner'}`,
             description: `Service agreement for ${stripHtml(data.campaignName) || 'services'} from Newbi Entertainment & Marketing.`,
         };
     },
@@ -436,7 +437,7 @@ const loaders = {
         if (!snap.exists) return null;
         const data = snap.data();
         return {
-            title: `${stripHtml(data.title) || 'Official Document'} | Newbi`,
+            title: stripHtml(data.title) || 'Official Document',
             description: `${stripHtml(data.documentType) || 'Official document'} #${stripHtml(data.docNumber) || id}, issued by Newbi Entertainment & Marketing.`,
         };
     },
@@ -486,7 +487,7 @@ export async function buildPreview({ host, query = {}, url = '/', userAgent = ''
     }
 
     const brand = brandOf(route);
-    const title = stripHtml(result?.title) || page.title;
+    const title = formatTitle(result?.title || page.title, brand);
     const image = toOgImage(result?.image, originFor(page.site, host)) || defaultOgImage(originFor('landing', host), brand.image);
 
     return {

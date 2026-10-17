@@ -7,9 +7,9 @@ export const LANDING_ORIGIN = 'https://www.newbi.live';
 export const APP_ORIGIN = 'https://app.newbi.live';
 export const ARTISTANT_ORIGIN = 'https://artistant.in';
 
-export const SITE_NAME = 'Newbi';
+export const SITE_NAME = 'newbi.live';
 export const TWITTER_SITE = '@newbi_live';
-export const DEFAULT_TITLE = 'Newbi — We build the nights you remember';
+export const DEFAULT_TITLE = 'newbi.live — We build the nights you remember';
 export const DEFAULT_DESCRIPTION = 'Concerts, college fests, brand activations and creator campaigns across India, planned, produced and run end to end by the Newbi crew.';
 
 // public/og-default.jpg: the default share image for every Newbi page (1200×630
@@ -31,12 +31,20 @@ export const CONCERTZONE_IMAGE = {
     alt: 'Concert Zone',
 };
 
+// Each part of Newbi signs its titles with its own name: newbi.live (the
+// landing site), newbi.app (the app) and newbi.admin (the admin panel).
 export const BRANDS = {
-    newbi: { siteName: SITE_NAME, twitterSite: TWITTER_SITE, titleSuffix: ' | Newbi', image: DEFAULT_IMAGE },
+    newbi: { siteName: SITE_NAME, twitterSite: TWITTER_SITE, titleSuffix: ' | newbi.live', image: DEFAULT_IMAGE },
+    app: { siteName: 'newbi.app', twitterSite: TWITTER_SITE, titleSuffix: ' | newbi.app', image: DEFAULT_IMAGE },
+    admin: { siteName: 'newbi.admin', twitterSite: TWITTER_SITE, titleSuffix: ' | newbi.admin', image: DEFAULT_IMAGE },
     concertzone: { siteName: 'Concert Zone', twitterSite: '', titleSuffix: ' | Concert Zone', image: CONCERTZONE_IMAGE },
 };
 
-export const brandOf = (pageKey) => BRANDS[PAGES[pageKey]?.brand] || BRANDS.newbi;
+/** A page's brand: its own (Concert Zone, admin), else the one for its site. */
+export const brandOf = (pageKey) => {
+    const page = PAGES[pageKey];
+    return BRANDS[page?.brand] || (page?.site === 'app' ? BRANDS.app : BRANDS.newbi);
+};
 
 const PRODUCTION_HOSTS = {
     'newbi.live': 'landing',
@@ -96,7 +104,7 @@ export const PAGES = {
     },
     creator: {
         site: 'landing', path: '/creator',
-        title: 'Newbi Creators — Brand deals, backstage access',
+        title: 'Creators — Brand deals, backstage access',
         description: 'Get matched to paid brand campaigns in your city and niche, plus access to the shows we run. Free to join, no agency cut.',
     },
     concertzone: {
@@ -116,63 +124,70 @@ export const PAGES = {
     },
     contact: {
         site: 'landing', path: '/contact',
-        title: "Let's make some noise | Newbi",
+        title: "Let's make some noise",
         description: 'Planning a college activation, a live show or a creator campaign? Tell us about it. We reply within a working day.',
     },
     terms: {
         site: 'landing', path: '/terms',
-        title: 'Terms of Service | Newbi',
+        title: 'Terms of Service',
         description: 'The terms for using newbi.live, app.newbi.live and Newbi services.',
     },
     privacy: {
         site: 'landing', path: '/privacy',
-        title: 'Privacy Policy | Newbi',
+        title: 'Privacy Policy',
         description: 'How Newbi collects, uses and protects your data.',
     },
     forms: {
         site: 'landing', path: '/forms',
-        title: 'Forms & Registrations | Newbi',
+        title: 'Forms & Registrations',
         description: 'Submit applications and registrations for Newbi events, community initiatives, and creator opportunities.',
     },
     form: {
         site: 'landing', path: '/forms/:id',
-        title: 'Forms | Newbi',
+        title: 'Forms',
         description: 'Fill in this form on Newbi.',
     },
     'verify-creator': {
         site: 'landing', path: '/verify-creator', noindex: true,
-        title: 'Verify your profile | Newbi Creators',
+        title: 'Verify your creator profile',
         description: 'Verify and activate your Newbi Creator profile to access brand deals and campaigns.',
     },
     'verify-payout': {
         site: 'landing', path: '/verify-payout', noindex: true,
-        title: 'Verify a payout | Newbi',
+        title: 'Verify a payout',
         description: 'Check that a payout receipt was issued by Newbi Entertainment.',
     },
     'register-payment': {
         site: 'landing', path: '/register-payment', noindex: true,
-        title: 'Payee registration | Newbi',
+        title: 'Payee registration',
         description: 'Register banking and payee details for vendor and creator payouts.',
     },
     proposal: {
         site: 'landing', path: '/proposal/:id', noindex: true,
-        title: 'Proposal | Newbi',
+        title: 'Proposal',
         description: 'A proposal from Newbi Entertainment & Marketing.',
     },
     invoice: {
         site: 'landing', path: '/invoice/:id', noindex: true,
-        title: 'Tax Invoice | Newbi',
+        title: 'Tax Invoice',
         description: 'A tax invoice from Newbi Entertainment & Marketing.',
     },
     agreement: {
         site: 'landing', path: '/agreement/:id', noindex: true,
-        title: 'Agreement | Newbi',
+        title: 'Agreement',
         description: 'A service agreement from Newbi Entertainment & Marketing.',
     },
     doc: {
         site: 'landing', path: '/doc/:id', noindex: true,
-        title: 'Official Document | Newbi',
+        title: 'Official Document',
         description: 'An official document issued by Newbi Entertainment & Marketing.',
+    },
+
+    // newbi.live/admin
+    admin: {
+        site: 'landing', path: '/admin', brand: 'admin', noindex: true,
+        title: 'Admin',
+        description: 'The Newbi admin panel.',
     },
 
     // artistant.in
@@ -185,73 +200,73 @@ export const PAGES = {
     // app.newbi.live
     'app-home': {
         site: 'app', path: '/',
-        title: 'Newbi — Your passes, guestlists & gigs',
+        title: 'newbi.app — Your passes, guestlists & gigs',
         description: 'Your passes, guestlists, gigs, giveaways and creator campaigns from Newbi, in one place.',
     },
     community: {
         site: 'app', path: '/community',
-        title: 'Get on the list | Newbi Community',
+        title: 'Community — Get on the list',
         description: 'Get on guestlists, sign up for backstage volunteer gigs, enter giveaways and join the Newbi community.',
     },
     // Community deep links that stay on /community (?gig=, ?form=).
     gig: {
         site: 'app', path: '/community', query: 'gig',
-        title: 'Work the show | Newbi Gigs',
+        title: 'Volunteer gig — Work the show',
         description: 'Volunteer with the Newbi crew: backstage gigs at concerts and events.',
     },
     'community-form': {
         site: 'app', path: '/community', query: 'form',
-        title: 'Forms | Newbi',
+        title: 'Forms',
         description: 'Fill in this form on Newbi.',
     },
     guestlist: {
         site: 'app', path: '/community/g/:id',
-        title: 'Guestlist | Newbi Community',
+        title: 'Guestlist',
         description: 'Get on the guestlist for this Newbi event.',
     },
     giveaway: {
         site: 'app', path: '/community/giveaways/:id',
-        title: 'Giveaway | Newbi Community',
+        title: 'Giveaway',
         description: 'Enter this Newbi giveaway.',
     },
     'app-creator': {
         site: 'app', path: '/creator',
-        title: 'Creator Dashboard | Newbi Creators',
+        title: 'Creator dashboard',
         description: 'Find open brand campaigns, submit deliverables and track your payouts with the Newbi Creator Network.',
     },
     'creator-apply': {
         site: 'app', path: '/creator/apply',
-        title: 'Join Newbi Creators — Apply in 45 seconds',
+        title: 'Become a creator — Apply in 45 seconds',
         description: 'Connect with top brands and live events in your city. Fast creator onboarding with zero agency fees.',
     },
     campaign: {
         site: 'app', path: '/c/:id',
-        title: 'Brand Campaign | Newbi Creators',
+        title: 'Brand campaign',
         description: 'See the brief and apply to this brand campaign on the Newbi Creator Network.',
     },
     tickets: {
         site: 'app', path: '/tickets',
-        title: 'Tickets | Newbi',
+        title: 'Tickets',
         description: 'Tickets for the shows Newbi runs: pick your night, pay once and your pass lands in the app.',
     },
     pass: {
         site: 'app', path: '/p/:id', noindex: true,
-        title: 'Your pass | Newbi',
+        title: 'Your pass',
         description: 'Open this pass on your phone and show the QR code at the entry.',
     },
     campus: {
         site: 'app', path: '/campus',
-        title: 'Newbi Campus — Fests, creators & college crews',
+        title: 'Campus — Fests, creators & college crews',
         description: 'Newbi on campus: college fests, campus creators and student communities.',
     },
     notifications: {
         site: 'app', path: '/notifications', noindex: true,
-        title: 'Notifications | Newbi',
+        title: 'Notifications',
         description: 'Your Newbi updates.',
     },
     profile: {
         site: 'app', path: '/profile', noindex: true,
-        title: 'Your profile | Newbi',
+        title: 'Your profile',
         description: 'Your Newbi profile.',
     },
 };
@@ -303,12 +318,12 @@ export const toDescription = (input, max = 160) => {
     return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).replace(/[\s,.;:–—-]+$/, '')}…`;
 };
 
-/** Adds the brand to a bare page title ("Contact Us" → "Contact Us | Newbi"). */
+/** Adds the brand to a bare page title ("Contact Us" → "Contact Us | newbi.live"). */
 export const formatTitle = (title, brand = BRANDS.newbi) => {
     const clean = stripHtml(title);
-    if (!clean) return brand === BRANDS.concertzone ? 'Concert Zone' : DEFAULT_TITLE;
+    if (!clean) return brand === BRANDS.concertzone ? 'Concert Zone' : brand === BRANDS.newbi ? DEFAULT_TITLE : brand.siteName;
     if (brand === BRANDS.concertzone) return /concert ?zone/i.test(clean) ? clean : `${clean}${brand.titleSuffix}`;
-    return /newbi|artistant/i.test(clean) ? clean : `${clean}${brand.titleSuffix}`;
+    return /newbi\.(live|app|admin)|artistant/i.test(clean) ? clean : `${clean}${brand.titleSuffix}`;
 };
 
 const IMAGE_TYPES = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' };

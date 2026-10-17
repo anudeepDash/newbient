@@ -73,7 +73,7 @@ const DocumentViewer = () => {
                 }
 
                 setDocument(data);
-                window.document.title = `${data.title} — Newbi Entertainment`;
+                window.document.title = `${data.title} | newbi.live`;
             } catch (err) {
                 console.error('Failed to fetch document:', err);
                 setError('error');
@@ -85,7 +85,7 @@ const DocumentViewer = () => {
         fetchDocument();
 
         return () => {
-            window.document.title = 'Newbi Entertainment';
+            window.document.title = 'newbi.live';
         };
     }, [id]);
 
