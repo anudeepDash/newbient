@@ -1,7 +1,18 @@
 import React, { useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { format } from 'date-fns';
 import UserRoundPen from 'lucide-react/dist/esm/icons/user-round-pen';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
+import Ticket from 'lucide-react/dist/esm/icons/ticket';
+import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
+import Gift from 'lucide-react/dist/esm/icons/gift';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import Sticker from '../../components/brand/Sticker';
+import { usePublicFeed } from '../usePublicFeed';
+import { fromPrice, useTicketedEvents } from '../tickets/useTicketedEvents';
+import { greetingFor } from './greeting';
 import { useAppStore } from '../../lib/store/appStore';
 import { Card, Button } from '../../components/app';
 import { appPath } from '../host';
@@ -13,20 +24,72 @@ import { useAppContent } from '../useAppContent';
 import { campaignCard, feedCard } from '../cards';
 import { bySoonest, isUpcomingPass, passCard } from '../passes/passCards';
 import { PageBody } from './PageHeader';
-import { SectionHeader, Rail, CardSkeleton, EmptyState, HeroPanel } from './parts';
+import { SectionHeader, Rail, CardSkeleton, EmptyState, HeroPanel, GLASS } from './parts';
+import { cn } from '../../lib/utils';
+import { isPresent } from '../../lib/present';
+import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 
 /*
- * Home: what's next for you. Open campaigns and what's on in the community,
- * plus a prompt to finish your profile and your upcoming passes (guestlist
- * passes and campaign tickets), soonest first.
+ * Home, top to bottom:
+ *   a greeting (time of day, your name, one warm line; your next pass when it's close)
+ *   quick actions · the ways in (until you've done them) · finish your profile
+ *   your passes · upcoming shows (tickets or the guestlist) · open campaigns
+ *   what's on in the community · the WhatsApp community.
  */
 
 const ONBOARDING_FIELDS = ['name', 'phoneVerified', 'city'];
 
-const greeting = () => {
-    const h = new Date().getHours();
-    return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+const QUICK = [
+    { to: '/tickets', icon: Ticket, label: 'Tickets' },
+    { to: '/community', icon: ListChecks, label: 'Guestlists' },
+    { to: '/community', icon: Gift, label: 'Giveaways' },
+    { to: '/creator', icon: Zap, label: 'Campaigns' },
+];
+
+const dayLabel = (day) => {
+    const d = day ? new Date(`${day}T00:00:00`) : null;
+    return d && !Number.isNaN(d.getTime()) ? format(d, 'EEE d MMM') : null;
 };
+
+/* Upcoming shows: ticketed events (Tickets) and the public feed's upcoming events, soonest first. */
+const useUpcomingShows = () => {
+    const { events: ticketed, loaded } = useTicketedEvents();
+    const feed = usePublicFeed();
+    return useMemo(() => {
+        const byId = new Map();
+        (feed?.events || []).forEach(e => byId.set(e.id, {
+            id: e.id, title: e.title, image: e.image, day: e.date, time: e.time, venue: e.location, city: e.city,
+            category: e.category, ticketed: e.isTicketed, guestlist: e.hasGuestlist,
+        }));
+        (ticketed || []).forEach(e => byId.set(e.id, {
+            ...(byId.get(e.id) || {}),
+            id: e.id, title: e.title, image: e.image || e.poster || null, day: e.day, time: e.time, venue: e.venue || e.location,
+            city: e.city, category: e.category || e.performanceType, ticketed: true, price: fromPrice(e),
+        }));
+        const list = [...byId.values()].filter(e => e.day).sort((a, b) => String(a.day).localeCompare(String(b.day))).slice(0, 8);
+        return { shows: list, loaded: loaded || Boolean(feed) };
+    }, [ticketed, loaded, feed]);
+};
+
+const showCard = (e) => ({
+    type: 'event',
+    image: e.image || null,
+    title: e.title,
+    eyebrow: e.category || null,
+    chips: [{ icon: MapPin, label: e.city }],
+    meta: [
+        { icon: CalendarDays, label: dayLabel(e.day) },
+        { icon: Clock, label: isPresent(e.time) ? e.time : null },
+    ],
+    stats: [
+        { label: e.ticketed ? 'Tickets' : 'Entry', value: e.ticketed ? (e.price ? `From ₹${Number(e.price).toLocaleString('en-IN')}` : 'On sale') : e.guestlist ? 'Guestlist' : null, tone: 'accent' },
+        { label: 'Venue', value: e.venue },
+    ],
+    cta: e.ticketed || e.guestlist ? { label: e.ticketed ? 'Get tickets' : 'Get on the list' } : false,
+    to: e.ticketed ? `${appPath('/tickets')}?event=${encodeURIComponent(e.id)}` : e.guestlist ? appPath(`/community/g/${e.id}`) : undefined,
+});
 
 const HomePage = () => {
     useAppContent();
@@ -47,23 +110,43 @@ const HomePage = () => {
     const firstName = (profile?.name || authUser?.displayName || '').trim().split(/\s+/)[0];
     const missing = authUser && profileLoaded ? missingFields(profile, ONBOARDING_FIELDS) : [];
     const joined = new Set(creator?.joinedCampaigns || []);
+    const { shows, loaded: showsLoaded } = useUpcomingShows();
+    const whatsapp = usePublicFeed()?.contact?.whatsappCommunity;
+
+    const next = upcoming[0];
+    const nextWhen = next?.event?.date ? new Date(next.event.date) : null;
+    const greet = greetingFor({
+        name: firstName,
+        city: profile?.city || '',
+        signedIn: Boolean(authUser),
+        nextPass: next ? { title: next.event?.title || next.campaignTitle, when: nextWhen } : null,
+    });
 
     return (
         <PageBody>
-            {authUser ? (
-                <header>
-                    <p className="text-[14px] font-semibold text-gray-500 dark:text-zinc-400">{greeting()}</p>
-                    <h1 className="font-heading text-[30px] font-extrabold leading-tight tracking-[-0.035em] sm:text-[34px] lg:text-[48px]">{firstName ? `Hi, ${firstName}` : 'Welcome back'}</h1>
-                </header>
-            ) : (
-                <HeroPanel eyebrow="Newbi" title="Concerts, campaigns and the community, in one place.">
-                    <p className="text-[15px] text-gray-600 dark:text-zinc-300">Get on guestlists, enter giveaways and apply to creator campaigns with one account.</p>
+            {/* The greeting: today's date, hello and your name, and one line for right now. */}
+            <HeroPanel
+                eyebrow={format(new Date(), 'EEEE, d MMMM')}
+                title={greet.name ? <>{greet.hello}, <Sticker subtle>{greet.name}.</Sticker></> : <>{greet.hello}<span className="text-emerald-600 dark:text-neon-green">.</span></>}
+            >
+                <p className="text-[16px] text-gray-700 dark:text-zinc-300 lg:text-[18px]">{greet.line}</p>
+                {!authUser && (
                     <div className="flex flex-wrap gap-3 pt-1">
                         <Button onClick={() => requestSignIn()}>Sign in</Button>
                         <Button variant="secondary" to={appPath('/community')}>Explore</Button>
                     </div>
-                </HeroPanel>
-            )}
+                )}
+            </HeroPanel>
+
+            {/* Quick ways to the most-used places. */}
+            <nav aria-label="Quick links" className="grid grid-cols-4 gap-2 sm:gap-3">
+                {QUICK.map(({ to, icon: Icon, label }) => (
+                    <Link key={label} to={appPath(to)} className={cn('flex flex-col items-center gap-2 rounded-2xl px-1 py-3.5 text-center transition-transform active:scale-95', GLASS)}>
+                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:bg-neon-green/10 dark:text-neon-green"><Icon size={19} /></span>
+                        <span className="text-[12px] font-bold sm:text-[13px]">{label}</span>
+                    </Link>
+                ))}
+            </nav>
 
             <JoinPaths />
 
@@ -92,6 +175,17 @@ const HomePage = () => {
                 </section>
             )}
 
+            {(!showsLoaded || shows.length > 0) && (
+                <section className="space-y-3">
+                    <SectionHeader title="Upcoming" to={appPath('/tickets')} />
+                    {!showsLoaded ? (
+                        <Rail><CardSkeleton /><CardSkeleton /></Rail>
+                    ) : (
+                        <Rail>{shows.map(e => <Card key={e.id} {...showCard(e)} />)}</Rail>
+                    )}
+                </section>
+            )}
+
             <section className="space-y-3">
                 <SectionHeader title="Open campaigns" to={appPath('/creator')} />
                 {!campaignsLoaded ? (
@@ -114,6 +208,17 @@ const HomePage = () => {
                         <Rail>{feed.slice(0, 6).map(item => <Card key={item.key} {...feedCard(item)} />)}</Rail>
                     )}
                 </section>
+            )}
+
+            {isPresent(whatsapp) && (
+                <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={cn('flex items-center gap-4 rounded-[1.75rem] p-4', GLASS)}>
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#25D366] text-white"><MessageCircle size={20} /></span>
+                    <span className="min-w-0 flex-1">
+                        <span className="block font-heading text-[16px] font-extrabold tracking-[-0.02em]">The Newbi WhatsApp community</span>
+                        <span className="block text-[13px] text-gray-600 dark:text-zinc-400">First word on drops, guestlists and giveaways.</span>
+                    </span>
+                    <ChevronRight size={18} className="shrink-0 text-gray-400" />
+                </a>
             )}
 
             <CompleteProfileSheet
