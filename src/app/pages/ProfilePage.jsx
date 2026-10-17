@@ -52,7 +52,7 @@ const ProfileDetails = () => {
         { to: appPath('/tickets'), icon: Ticket, label: 'Tickets', hint: 'Shows on sale' },
         isCreator
             ? { to: appPath('/creator/profile'), icon: Camera, label: 'Creator profile', hint: 'Rates, bio and your Newbi ID' }
-            : { to: appPath('/creator/apply'), icon: Camera, label: 'Become a creator', hint: 'Get your Newbi ID in 30 seconds' },
+            : { to: appPath('/creator/apply'), icon: Camera, label: 'Become a Newbi creator', hint: 'Get your creator ID in 30 seconds' },
     ];
 
     return (

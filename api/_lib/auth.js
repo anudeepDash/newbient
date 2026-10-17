@@ -2,6 +2,8 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 
 let app;
+// True when the service-account key is set (needed to read/write Firestore and check revoked sign-ins).
+export const hasAdminCredentials = Boolean(process.env.FIREBASE_CLIENT_EMAIL?.trim() && process.env.FIREBASE_PRIVATE_KEY?.trim());
 
 try {
     if (!getApps().length) {
@@ -76,10 +78,27 @@ export const verifyToken = async (req) => {
 
     const token = authHeader.split('Bearer ')[1];
     try {
-        const decodedToken = await auth.verifyIdToken(token, true);
-        return decodedToken;
+        return await verifyIdTokenSafe(auth, token);
     } catch (error) {
         console.error('Error verifying Firebase ID token:', error.message);
         return null;
+    }
+};
+
+/*
+ * Verifies a Firebase ID token. With the service-account key, revoked sign-ins
+ * are rejected too. Without it (local dev, an environment missing the key) the
+ * revocation check can't run, so the signature alone is checked (public keys,
+ * project ID only) instead of treating every signed-in person as signed out.
+ */
+export const verifyIdTokenSafe = async (adminAuth, token) => {
+    if (!hasAdminCredentials) return adminAuth.verifyIdToken(token, false);
+    try {
+        return await adminAuth.verifyIdToken(token, true);
+    } catch (error) {
+        const code = String(error?.code || '');
+        if (['auth/id-token-revoked', 'auth/user-disabled', 'auth/id-token-expired', 'auth/argument-error'].includes(code)) throw error;
+        // The revocation lookup itself failed (credentials or network): fall back to the signature check.
+        return adminAuth.verifyIdToken(token, false);
     }
 };

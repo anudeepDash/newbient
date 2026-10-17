@@ -7,6 +7,7 @@ import { isTicketAction, handleTicketAction } from './_lib/tickets.js';
 import { safeSiteOrigin } from './_lib/linkSign.js';
 import { cleanHandle as cleanInstagramHandle, lookupInstagram, readCreatorSettings } from './_lib/instagram.js';
 import { CREATOR_APP_ACTIONS, handleCreatorAppAction } from './_lib/creatorApp.js';
+import { verifyIdTokenSafe } from './_lib/auth.js';
 
 export const maxDuration = 60;
 let adminDb = null;
@@ -444,7 +445,7 @@ export default async function handler(req, res) {
     if (authHeader && authHeader.startsWith('Bearer ') && adminAuth) {
         try {
             const token = authHeader.split('Bearer ')[1];
-            decodedToken = await adminAuth.verifyIdToken(token, true);
+            decodedToken = await verifyIdTokenSafe(adminAuth, token);
         } catch (e) {
             console.warn('[API/CREATOR-JOIN] Token decode notice:', e.message);
         }
