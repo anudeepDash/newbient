@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/circle-check';
 import { Button, TextInput } from '../../components/app/controls';
 import { usePhoneVerification } from './usePhoneVerification';
+import MergeConfirm from './MergeConfirm';
 
 /*
  * Phone number + OTP in one block, on top of usePhoneVerification.
  * The code field uses one-time-code autofill, so iOS offers the SMS code.
+ * A number that already has its own Newbi account is merged into this one
+ * (MergeConfirm), so one number never means two accounts.
  */
 const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile number', mode, sendLabel = 'Send code' }) => {
     const [number, setNumber] = useState(initialPhone || '');
@@ -18,6 +21,18 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
                 <CheckCircle2 size={18} />
                 <span className="min-w-0 flex-1 truncate">{phone.phone} verified{phone.testMode ? ' (test mode)' : ''}</span>
             </div>
+        );
+    }
+
+    if (phone.conflict) {
+        return (
+            <MergeConfirm
+                proof={phone.conflict.proof}
+                preview={phone.conflict.preview}
+                what={phone.phone || 'This number'}
+                onMerged={phone.completeMerge}
+                onCancel={() => { setCode(''); phone.reset(); }}
+            />
         );
     }
 
