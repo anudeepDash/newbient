@@ -293,7 +293,10 @@ export default async function handler(req, res) {
 
         try {
             const destUrl = new URL(destination, 'https://newbi.live');
-            if (destUrl.hostname.includes('newbi.live') || destUrl.hostname.includes('newbient.com') || destination.startsWith('/')) {
+            // Only append the recipient's email/campaign params to our own hosts,
+            // so they're never leaked to an external site via the "leaving" page.
+            const isInternalDest = (destination.startsWith('/') && !destination.startsWith('//')) || isOwnHost(destUrl.hostname);
+            if (isInternalDest) {
                 if (email) {
                     destUrl.searchParams.set('email', email);
                     destUrl.searchParams.set('via', 'email');

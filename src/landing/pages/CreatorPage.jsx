@@ -7,7 +7,7 @@ import CampaignTeaser from '../components/CampaignTeaser';
 import Proof from '../home/Proof';
 import Wordmark from '../home/Wordmark';
 import { usePublicFeed, isOff } from '../feed';
-import { APP_LINKS } from '../links';
+import { APP_LINKS, sizedImage } from '../links';
 
 const STEPS = [
     { t: 'Apply', d: 'Tell us your Instagram, city and niche. It takes a few minutes and it is free.' },
@@ -141,7 +141,7 @@ export default function CreatorPage() {
                                     <p className="flex gap-0.5 text-amber-400" aria-label={`${t.rating} out of 5`}>{Array.from({ length: t.rating }).map((_, i) => <Star key={i} size={14} className="fill-current" aria-hidden="true" />)}</p>
                                     <p className="mt-4 text-lg leading-relaxed text-gray-800 dark:text-zinc-200">“{t.quote}”</p>
                                     <div className="mt-6 pt-5 border-t border-gray-950/10 dark:border-white/10 flex items-center gap-3">
-                                        {t.avatarUrl ? <img src={t.avatarUrl} alt="" width="40" height="40" loading="lazy" className="w-10 h-10 rounded-full object-cover" /> : <span className="w-10 h-10 rounded-full bg-neon-green/20 text-emerald-700 dark:text-neon-green font-bold text-xs flex items-center justify-center">{t.name.slice(0, 2).toUpperCase()}</span>}
+                                        {t.avatarUrl ? <img src={sizedImage(t.avatarUrl, 80)} alt="" width="40" height="40" loading="lazy" decoding="async" className="w-10 h-10 rounded-full object-cover" /> : <span className="w-10 h-10 rounded-full bg-neon-green/20 text-emerald-700 dark:text-neon-green font-bold text-xs flex items-center justify-center">{t.name.slice(0, 2).toUpperCase()}</span>}
                                         <div><p className="font-heading font-bold text-gray-950 dark:text-white">{t.name}</p><p className="font-mono text-[11px] uppercase tracking-[0.15em] text-gray-500 dark:text-zinc-500">{[t.city, t.niche || t.handle].filter(Boolean).join(' · ')}</p></div>
                                     </div>
                                 </li>
