@@ -17,6 +17,7 @@
  * typed (no scraping, no third-party APIs).
  */
 import { getDb, nowIso, FieldValue } from './db.js';
+import { hasAdminCredentials } from './auth.js';
 import { makeSignedToken, readSignedToken, isOwnHost } from './linkSign.js';
 import { sendTransactional } from './mail/send.js';
 import { notify } from './notify.js';
@@ -797,6 +798,11 @@ export const handleCreatorAppAction = async (action, req, res, { decodedToken })
             return await handleLookup(req, res, { db, token: decodedToken || null });
         }
         if (!decodedToken) return send(res, 401, { success: false, error: 'Please sign in to continue.' });
+        // Without the service-account key this server can't read or save profiles: say so plainly.
+        if (!hasAdminCredentials) {
+            console.error('[creator-app] FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY are not set on this server.');
+            return send(res, 503, { success: false, code: 'not_configured', error: 'This server can’t save creator profiles yet (its Firebase admin key isn’t set). It works on newbi.live.' });
+        }
         const ctx = { db, token: decodedToken };
         if (action === 'ig-connect') return await handleConnect(req, res, ctx);
         if (action === 'creator-apply') return await handleApply(req, res, ctx);

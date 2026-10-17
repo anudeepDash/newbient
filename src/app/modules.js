@@ -53,7 +53,7 @@ export const APP_MODULES = [
     {
         id: 'creator',
         path: '/creator',
-        tab: { label: 'Creator', icon: Zap, lockedLabel: 'Become a creator' },
+        tab: { label: 'Creator', icon: Zap, lockedLabel: 'Become a Newbi creator' },
         capability: 'creator',
         showLocked: true,
         launched: true,

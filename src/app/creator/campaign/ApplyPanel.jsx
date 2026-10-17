@@ -14,7 +14,7 @@ import { compactCount, creatorPassId } from '../format';
  * How you apply to a campaign.
  *
  *   Newbi ID   your creator card (photo, @handle, followers, ID) and one
- *              button: "1-click apply". No Newbi ID yet? "Get my Newbi ID"
+ *              button: "1-click apply". No creator ID yet? "Get my creator ID"
  *              opens the 30-second creator form and applies you on the way back.
  *   Form       the campaign's Google Form, opened in the app.
  *
@@ -59,7 +59,7 @@ const primaryFor = ({ method, signedIn, loading, creator, blocker, applying, onA
     }
     if (!signedIn) return { label: 'Apply with Newbi ID', icon: Zap, onClick: onSignIn, hint: 'Sign in, then it’s one tap.' };
     if (loading) return { label: 'Loading', loading: true };
-    if (!creator) return { label: 'Get my Newbi ID', icon: IdCard, onClick: onGetId, hint: '30 seconds. We apply you to this campaign right after.' };
+    if (!creator) return { label: 'Get my creator ID', icon: IdCard, onClick: onGetId, hint: '30 seconds. We apply you to this campaign right after.' };
     if (blocker) return null;
     return { label: '1-click apply', icon: Zap, onClick: onApply, loading: applying, hint: 'Your Newbi ID is sent to the brand.' };
 };

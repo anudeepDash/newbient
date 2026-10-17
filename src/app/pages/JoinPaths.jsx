@@ -65,7 +65,7 @@ const JoinPaths = () => {
             key: 'creator',
             icon: Zap,
             accent: true,
-            title: 'Become a creator',
+            title: 'Become a Newbi creator',
             text: 'Passes, products and paid work for posting about shows.',
             action: <Button size="sm" to={appPath('/creator/apply')} state={{ backgroundLocation: location }}>Apply</Button>,
         },

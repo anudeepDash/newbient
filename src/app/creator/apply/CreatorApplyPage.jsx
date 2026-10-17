@@ -176,7 +176,7 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
     const referredBy = useMemo(() => readRef(params), [params]);
     const next = safeNext(params.get('next'));
     const app = useCreatorApplication({ referredBy, initialCity: profile?.city || '' });
-    // Opened from a campaign ("Get my Newbi ID"): apply to it as soon as the creator profile exists.
+    // Opened from a campaign ("Get my creator ID"): apply to it as soon as the creator profile exists.
     const [campaignApply, setCampaignApply] = useState(null);
     useEffect(() => {
         if (!app.result || !next || campaignApply) return;
