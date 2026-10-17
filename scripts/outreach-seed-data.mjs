@@ -112,8 +112,7 @@ export const seedOutreach = async (db) => {
         messageTemplate: '',
     }, { token: ADMIN });
     await call('outreach-status', { campaignId: CAMPAIGN_ID, appIds: ids('riya.sharma', 'arjun.k', 'kabir.m', 'ananya.eats', 'rj_99', 'blr.gigs'), to: 'shortlisted' }, { token: ADMIN });
-    await call('outreach-status', { campaignId: CAMPAIGN_ID, appIds: ids('arjun.k', 'kabir.m'), to: 'message_queued' }, { token: ADMIN });
-    await call('outreach-status', { campaignId: CAMPAIGN_ID, appIds: ids('kabir.m'), to: 'message_sent', messageText: '(seed) message' }, { token: ADMIN });
+    // Everyone signed in to apply, so shortlisting told them in the app (→ message sent).
     await call('outreach-status', { campaignId: CAMPAIGN_ID, appIds: ids('kabir.m'), to: 'joined' }, { token: ADMIN });
 
     return { created };

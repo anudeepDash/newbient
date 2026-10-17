@@ -131,7 +131,8 @@ describe('outreach-apply', () => {
         const id = apps()[0].id;
         await call('outreach-status', { campaignId: 'c1', appIds: [id], to: 'shortlisted' }, { token: ADMIN });
         await call('outreach-apply', applicant({ followerCount: '20000' }));
-        expect(apps()[0]).toMatchObject({ status: 'shortlisted', followerCount: 20000 });
+        // Shortlisting told them in the app, so they're at message_sent; reapplying keeps that.
+        expect(apps()[0]).toMatchObject({ status: 'message_sent', followerCount: 20000 });
     });
 
     it('flags both applications when the phone is one person and the handle another', async () => {
@@ -196,6 +197,8 @@ describe('admin actions', () => {
 
     it('applies allowed status changes, skips the rest, and audits each change with the actor', async () => {
         const [a, b] = apps().map(x => x.id);
+        // Applicants from before sign-in was required: no account, so they're messaged by hand.
+        [a, b].forEach(id => { const d = db.store.get(`campaigns/c1/applications/${id}`); delete d.uid; });
         let res = await call('outreach-status', { campaignId: 'c1', appIds: [a, b], to: 'shortlisted', source: 'bulk_paste' }, { token: ADMIN });
         expect(res.body.updated).toHaveLength(2);
         res = await call('outreach-status', { campaignId: 'c1', appIds: [a], to: 'message_sent' }, { token: ADMIN });
@@ -211,6 +214,19 @@ describe('admin actions', () => {
         expect(changes.map(e => `${e.from}>${e.to}`)).toEqual(['applied>shortlisted', 'applied>shortlisted', 'shortlisted>message_queued', 'message_queued>message_sent']);
         changes.forEach(e => expect(e).toMatchObject({ actorEmail: 'ops@newbi.live', actorUid: 'u-admin' }));
         expect(changes[0].source).toBe('bulk_paste');
+    });
+
+    it('tells shortlisted people in the app, and leaves people without an account for the fallback', async () => {
+        const [a, b] = apps().map(x => x.id);
+        db.store.set('campaigns/c1/private/outreach', { whatsappGroupLink: 'https://chat.whatsapp.com/AbCdEf1234567' });
+        delete db.store.get(`campaigns/c1/applications/${b}`).uid;
+        const res = await call('outreach-status', { campaignId: 'c1', appIds: [a, b], to: 'shortlisted' }, { token: ADMIN });
+        expect(res.body.followUps).toEqual({ inApp: 1, api: 0, byHand: 1 });
+        expect(apps().find(x => x.id === a)).toMatchObject({ status: 'message_sent', messageSentBy: 'Newbi app' });
+        expect(apps().find(x => x.id === b).status).toBe('shortlisted');
+        const note = Object.values(db.dump('notifications')).find(n => n.title.startsWith("You're shortlisted"));
+        expect(note).toMatchObject({ userId: apps().find(x => x.id === a).uid, type: 'campaign' });
+        expect(note.message).toContain('I’ve joined');
     });
 
     it('rejects unknown statuses and setting someone back to applied', async () => {
@@ -235,7 +251,8 @@ describe('admin actions', () => {
         const [a] = apps().map(x => x.id);
         await call('outreach-status', { campaignId: 'c1', appIds: [a], to: 'shortlisted' }, { token: ADMIN });
         const res = await call('outreach-audit', { campaignId: 'c1', appId: a }, { token: ADMIN });
-        expect(res.body.entries.map(e => e.to).sort()).toEqual(['applied', 'shortlisted']);
+        expect(res.body.entries.map(e => e.to).sort()).toEqual(['applied', 'message_sent', 'shortlisted']);
+        expect(res.body.entries.find(e => e.to === 'message_sent')).toMatchObject({ source: 'in_app' });
     });
 });
 
