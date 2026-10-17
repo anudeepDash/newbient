@@ -20,7 +20,7 @@ const describe = (e, nameOf) => {
         if (!e.from) return `${who || 'Someone'} applied`;
         return `${who ? `${who}: ` : ''}${statusLabel(e.from)} → ${statusLabel(e.to)}`;
     }
-    if (e.field === 'submission') return `${who || 'Someone'} sent the form again (time ${e.to})`;
+    if (e.field === 'submission') return `${who || 'Someone'} sent the form again (submission ${e.to})`;
     if (e.field === 'whatsappGroupLink') return e.to ? 'Changed the WhatsApp group link' : 'Removed the WhatsApp group link';
     if (e.field === 'messageTemplate') return 'Edited the message template';
     return `${e.field}: ${e.from ?? '–'} → ${e.to ?? '–'}`;
