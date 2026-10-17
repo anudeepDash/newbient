@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getApp, getApps, initializeApp } from 'firebase/app';
 import {
     RecaptchaVerifier, PhoneAuthProvider, signInWithPhoneNumber, linkWithCredential, updatePhoneNumber,
-    initializeAuth, inMemoryPersistence, signInWithCredential, signOut,
 } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { toE164 } from '../../lib/store/profile';
-import { callCreatorApi } from '../creator/api';
+import { proveWithCredential, previewMerge } from './accountMerge';
 
 /*
  * Phone OTP verification, shared by every flow. Built from the copies in
@@ -21,9 +19,10 @@ import { callCreatorApi } from '../creator/api';
  * mode
  *   'link'   (default when signed in) proves the number and adds it to the
  *            current account. A number that already signs in to another
- *            account can't be added to this one by Firebase; the right code
- *            still proves it's yours, so the server records it as verified
- *            on this profile instead (phone-proof).
+ *            account can't be on two: the right code signs in to that account
+ *            in a throwaway session, and status becomes 'conflict' with
+ *            `conflict` = { proof, preview } so the caller offers to merge it
+ *            (MergeConfirm). After merging, call completeMerge(result).
  *   'signIn' (default when signed out) signs in with the number.
  *
  * The invisible reCAPTCHA lives in one off-screen container per hook that is
@@ -54,37 +53,14 @@ const friendlyError = (err) => {
     return 'We couldn’t verify your number right now. Please try again.';
 };
 
-/*
- * A throwaway, in-memory Firebase session for proving a number that signs in
- * to another account: signing in there never touches the main session.
- */
-let proofAuth = null;
-const getProofAuth = () => {
-    if (proofAuth) return proofAuth;
-    const name = 'nb-phone-proof';
-    const app = getApps().find(a => a.name === name) || initializeApp(getApp().options, name);
-    proofAuth = initializeAuth(app, { persistence: inMemoryPersistence });
-    return proofAuth;
-};
-
-const proveNumberOwnership = async (credential) => {
-    const proof = getProofAuth();
-    try {
-        const { user } = await signInWithCredential(proof, credential);
-        const res = await callCreatorApi('phone-proof', { proofToken: await user.getIdToken() });
-        if (!res.ok) throw Object.assign(new Error(res.error), { code: 'proof-failed', friendly: res.error });
-    } finally {
-        await signOut(proof).catch(() => {});
-    }
-};
-
 const isTestMode = () => import.meta.env.DEV && import.meta.env.VITE_PHONE_TEST_MODE === 'true';
 
 export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified } = {}) {
-    const [status, setStatus] = useState('idle'); // idle | sending | sent | verifying | verified
+    const [status, setStatus] = useState('idle'); // idle | sending | sent | verifying | conflict | verified
     const [error, setError] = useState('');
     const [cooldown, setCooldown] = useState(0);
     const [phone, setPhone] = useState(null); // E.164 of the number in flight or verified
+    const [conflict, setConflict] = useState(null); // { proof, preview }: the number signs in to another account
 
     const verifierRef = useRef(null);
     const containerRef = useRef(null);
@@ -194,19 +170,32 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         try {
             if (typeof pending === 'string') {
                 const credential = PhoneAuthProvider.credential(pending, clean);
-                let linked = true;
+                const inUse = (err) => err?.code === 'auth/credential-already-in-use' || err?.code === 'auth/account-exists-with-different-credential';
+                let taken = null;
                 try {
                     await linkWithCredential(auth.currentUser, credential);
                 } catch (err) {
+                    if (inUse(err)) taken = err;
                     // The account already has a phone: replace it with the newly verified one.
-                    if (err?.code === 'auth/provider-already-linked') await updatePhoneNumber(auth.currentUser, credential);
-                    // The number signs in to another account: prove it's yours and keep it on this profile.
-                    else if (err?.code === 'auth/credential-already-in-use' || err?.code === 'auth/account-exists-with-different-credential') {
-                        await proveNumberOwnership(PhoneAuthProvider.credentialFromError(err) || credential);
-                        linked = false;
+                    else if (err?.code === 'auth/provider-already-linked') {
+                        await updatePhoneNumber(auth.currentUser, credential).catch((e) => { if (inUse(e)) taken = e; else throw e; });
                     } else throw err;
                 }
-                await finish(phone, { linked });
+                if (taken) {
+                    // The number signs in to another account: the code was right, so sign in there (throwaway session) and offer to merge.
+                    confirmationRef.current = null;
+                    try {
+                        const proof = await proveWithCredential(PhoneAuthProvider.credentialFromError(taken) || credential);
+                        setConflict({ proof, preview: await previewMerge(proof) });
+                        setStatus('conflict');
+                    } catch (err) {
+                        // Can't merge (a team account, two creator profiles…): that number can't be used here.
+                        setStatus('idle');
+                        setError(err?.friendly || 'This number is on another Newbi account that can’t be merged from here.');
+                    }
+                    return false;
+                }
+                await finish(phone, { linked: true });
             } else {
                 const result = await pending.confirm(clean);
                 await finish(phone, { user: result.user });
@@ -220,11 +209,18 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         }
     }, [phone, finish]);
 
+    /* After MergeConfirm merged the other account: the number is on this one now. */
+    const completeMerge = useCallback(async (result) => {
+        setConflict(null);
+        await finish(phone, { linked: true, merged: result || true });
+    }, [phone, finish]);
+
     const reset = useCallback(() => {
         confirmationRef.current = null;
         setStatus('idle');
         setError('');
         setPhone(null);
+        setConflict(null);
     }, []);
 
     return {
@@ -236,10 +232,12 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         isVerifying: status === 'verifying',
         codeSent: status === 'sent' || status === 'verifying',
         verified: status === 'verified',
+        conflict: status === 'conflict' ? conflict : null,
         testMode: isTestMode() && (mode || (auth?.currentUser ? 'link' : 'signIn')) !== 'signIn',
         send,
         verify,
         reset,
+        completeMerge,
         setError,
     };
 }

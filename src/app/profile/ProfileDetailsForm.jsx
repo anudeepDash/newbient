@@ -3,11 +3,15 @@ import { Button, TextInput } from '../../components/app';
 import { useAppStore } from '../../lib/store/appStore';
 import { fieldLabel } from './requirements';
 import PhoneVerifyField from '../auth/PhoneVerifyField';
+import AccountMergeFlow from '../auth/AccountMergeFlow';
+import { findOtherAccounts } from '../auth/accountMerge';
 
 /*
  * The profile fields a flow still needs (name, city, college, verified phone),
  * and their save. Used by the account sheet's details step and by
- * CompleteProfileSheet, so both ask the same way.
+ * CompleteProfileSheet, so both ask the same way. An email that's already on
+ * another Newbi account isn't saved as a second one: that account is merged
+ * into this one instead (AccountMergeFlow), as with phone numbers.
  *
  *   <ProfileDetailsForm fields={['name', 'phoneVerified']} onSaved={next} />
  */
@@ -27,6 +31,7 @@ const ProfileDetailsForm = ({ fields = [], onSaved, submitLabel = 'Continue', ed
     const [phoneDone, setPhoneDone] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [emailMatch, setEmailMatch] = useState(null);
 
     const needsPhone = fields.includes('phoneVerified') || fields.includes('phone');
     const textFields = useMemo(() => fields.filter(f => TEXT_FIELDS[f]), [fields]);
@@ -42,6 +47,10 @@ const ProfileDetailsForm = ({ fields = [], onSaved, submitLabel = 'Continue', ed
         setSaving(true);
         setError('');
         try {
+            if (needsEmail && email.toLowerCase() !== (profile?.email || '').toLowerCase()) {
+                const match = (await findOtherAccounts(email)).find(m => m.matchedBy?.includes('email'));
+                if (match) return setEmailMatch(match);
+            }
             const patch = Object.fromEntries(textFields.map(f => [f, String(values[f] || '').trim()]));
             if (needsEmail) patch.email = email.toLowerCase();
             if (Object.keys(patch).length) await updateProfile(patch);
@@ -55,6 +64,21 @@ const ProfileDetailsForm = ({ fields = [], onSaved, submitLabel = 'Continue', ed
     };
 
     const button = <Button className="w-full" size="lg" onClick={save} loading={saving}>{submitLabel}</Button>;
+
+    if (emailMatch) {
+        return (
+            <div className="space-y-4">
+                <p className="text-[15px] font-bold leading-snug">{String(values.email).trim()} is on another Newbi account</p>
+                <AccountMergeFlow
+                    match={emailMatch}
+                    email={String(values.email).trim()}
+                    onDone={() => { setEmailMatch(null); save(); }}
+                    onCancel={() => { setEmailMatch(null); setError('That email is on another account. Merge it, or use a different email.'); }}
+                    cancelLabel="Use a different email"
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-4">

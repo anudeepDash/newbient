@@ -13,14 +13,15 @@
  *   ?action=campaign-submit  POST { campaignId, taskId, contentLink, proofUrl, note }
  *   ?action=creator-self-delete POST {}       the signed-in creator deletes their own creator profile
  *   ?action=creator-sync-profile POST {}      copies name, city and phone from users/{uid} onto the creator profile
- *   ?action=phone-proof      POST { proofToken } marks a number verified that Firebase won't link (it signs in to another account)
+ *   ?action=account-matches  POST { email? }  other accounts with your phone or email (api/_lib/accountMerge.js)
+ *   ?action=account-merge    POST { proofToken, confirm? } merges one of them into this account
  *
  * Instagram verification is behind site_settings/general.instagramMetaVerification.
  * While it's off, applications go to admin review with the handle the creator
  * typed (no scraping, no third-party APIs).
  */
 import { getDb, nowIso, FieldValue } from './db.js';
-import { hasAdminCredentials, auth as adminAuth, verifyIdTokenSafe } from './auth.js';
+import { hasAdminCredentials, auth as defaultAdminAuth, verifyIdTokenSafe } from './auth.js';
 import { makeSignedToken, readSignedToken, isOwnHost } from './linkSign.js';
 import { sendTransactional } from './mail/send.js';
 import { notify } from './notify.js';
@@ -30,13 +31,14 @@ import {
 } from './instagram.js';
 import { NICHE_IDS, COLLAB_IDS, BIO_MAX, isCollegeNiche } from '../../src/lib/creator/options.js';
 import { isCampaignCityMatch } from '../../src/lib/constants.js';
+import { findMatches, readProof, checkMergeable, describeAccount, mergeAccounts, MergeError } from './accountMerge.js';
 
 /* The app's own origin (links in emails, the OAuth fallback). PUBLIC_APP_URL overrides it on previews. */
 const APP_URL = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace(/\/+$/, '');
 
 export const CREATOR_APP_ACTIONS = new Set([
     'ig-lookup', 'ig-connect', 'ig-callback', 'instagram-cron', 'creator-apply', 'campaign-apply', 'campaign-submit',
-    'creator-self-delete', 'creator-sync-profile', 'phone-proof',
+    'creator-self-delete', 'creator-sync-profile', 'account-matches', 'account-merge',
 ]);
 /* Actions that don't take a Firebase ID token (they carry their own proof). */
 export const CREATOR_APP_PUBLIC = new Set(['ig-callback', 'instagram-cron']);
@@ -808,42 +810,37 @@ const handleCron = async (req, res, { db }) => {
 
 /* ── Router ───────────────────────────────────────────────────────────── */
 
-/* ── phone-proof ──────────────────────────────────────────────────────── */
+/* ── account-matches / account-merge ───────────────────────────────── */
+
+/* Other accounts with this person's phone or email (masked hints), so the app can offer to merge them. */
+export const handleAccountMatches = async (req, res, { db, token, adminAuth = defaultAdminAuth }) => {
+    if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
+    const email = str(req.body?.email, 200);
+    const { matches } = await findMatches({ db, adminAuth, token, email });
+    return send(res, 200, { success: true, matches });
+};
 
 /*
- * Verifying a number that already signs in to another Firebase account: the
- * link is refused (one number, one sign-in), but the SMS code was right. The
- * app signs in to that number's account in a throwaway session and sends its
- * fresh ID token here as proof; the number is then recorded as verified on
- * the caller's own profile. The proof must be a phone sign-in from the last
- * 10 minutes.
+ * Merges another account into the signed-in one. The proof is a fresh ID
+ * token from signing in to that account in a throwaway session. Without
+ * confirm it only says what would move (or why it can't).
  */
-const PROOF_MAX_AGE_S = 10 * 60;
-export const handlePhoneProof = async (req, res, { db, token, verifyProof = (t) => verifyIdTokenSafe(adminAuth, t) }) => {
+export const handleAccountMerge = async (req, res, { db, token, adminAuth = defaultAdminAuth, verifyProof = (t) => verifyIdTokenSafe(adminAuth, t) }) => {
     if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
-    const proofToken = str(req.body?.proofToken, 4096);
-    if (!proofToken) return send(res, 400, { success: false, error: 'Verify your number first.' });
-    let proof;
-    try { proof = await verifyProof(proofToken); } catch {
-        return send(res, 400, { success: false, error: 'That verification expired. Send a new code.' });
+    try {
+        const proof = await readProof({ token, proofToken: str(req.body?.proofToken, 4096), verifyProof });
+        if (!req.body?.confirm) {
+            const { from, fromAuth } = await checkMergeable({ db, adminAuth, toUid: token.uid, fromUid: proof.uid });
+            const holds = await describeAccount(db, proof.uid);
+            const name = str(from.name || from.displayName || fromAuth?.displayName, 120);
+            return send(res, 200, { success: true, preview: { name, holds, phone: fromAuth?.phoneNumber || null, email: fromAuth?.email || from.email || null } });
+        }
+        const result = await mergeAccounts({ db, adminAuth, toUid: token.uid, fromUid: proof.uid, tokenRef, ownerRef });
+        return send(res, 200, { success: true, ...result });
+    } catch (err) {
+        if (err instanceof MergeError) return send(res, err.status, { success: false, code: err.code, error: err.message });
+        throw err;
     }
-    const phone = toE164(proof?.phone_number || '');
-    const fresh = Number(proof?.auth_time) && (Date.now() / 1000 - Number(proof.auth_time)) <= PROOF_MAX_AGE_S;
-    if (!phone || proof?.firebase?.sign_in_provider !== 'phone' || !fresh) {
-        return send(res, 400, { success: false, error: 'That verification expired. Send a new code.' });
-    }
-    const now = nowIso();
-    await db.collection('users').doc(token.uid).set({
-        phone,
-        phoneVerified: true,
-        phoneNumber: phone,
-        isPhoneVerified: true,
-        phoneVerifiedAt: now,
-        // The number also signs in to this other account (a phone sign-in made earlier).
-        phoneSignInAccount: proof.uid && proof.uid !== token.uid ? proof.uid : FieldValue.delete(),
-        updatedAt: now,
-    }, { merge: true });
-    return send(res, 200, { success: true, phone });
 };
 
 /* ── creator-sync-profile ─────────────────────────────────────────────── */
@@ -947,7 +944,8 @@ export const handleCreatorAppAction = async (action, req, res, { decodedToken })
         if (action === 'campaign-submit') return await handleCampaignSubmit(req, res, ctx);
         if (action === 'creator-self-delete') return await handleSelfDelete(req, res, ctx);
         if (action === 'creator-sync-profile') return await handleSyncProfile(req, res, ctx);
-        if (action === 'phone-proof') return await handlePhoneProof(req, res, ctx);
+        if (action === 'account-matches') return await handleAccountMatches(req, res, ctx);
+        if (action === 'account-merge') return await handleAccountMerge(req, res, ctx);
         return send(res, 400, { success: false, error: 'Unknown action.' });
     } catch (err) {
         console.error(`[creatorApp] ${action}:`, err);
