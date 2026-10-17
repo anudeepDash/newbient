@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { FakeFirestore } from '../helpers/fakeFirestore.js';
+import { setDbForTests } from '../../api/_lib/db.js';
 import { seedOutreach, CAMPAIGN_ID, PEOPLE } from '../../scripts/outreach-seed-data.mjs';
 
 describe('seed data', () => {
     it('creates 20 applicants through the real handlers, merges the repeat and fills every panel', async () => {
         const db = new FakeFirestore();
+        setDbForTests(db);
         const { created } = await seedOutreach(db);
         expect(PEOPLE).toHaveLength(20);
         expect(created).toBe(20);

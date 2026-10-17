@@ -80,6 +80,7 @@ class Query {
 class CollectionRef extends Query {
     constructor(db, path) { super(db, path); this.id = path.split('/').pop(); }
     doc(id) { return new DocRef(this.db, `${this.path}/${id || nextId()}`); }
+    async add(data) { const ref = this.doc(); await ref.set(data); return ref; }
 }
 
 export class FakeFirestore {

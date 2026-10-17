@@ -24,7 +24,7 @@ import { sendTemplate, sendText, isWhatsAppConfigured } from './whatsapp.js';
 import { makeSignedToken } from './linkSign.js';
 import { contactIdFor, appendThreadMessage, windowOpen } from './outreachThreads.js';
 import { canTransition, canSystemTransition } from '../../src/lib/outreach/status.js';
-import { templateParamsFor, renderTemplatePreview, WA_TEMPLATES } from '../../src/lib/outreach/whatsappTemplate.js';
+import { templateParamsFor, renderTemplatePreview, WA_TEMPLATES, STOP_PAYLOAD } from '../../src/lib/outreach/whatsappTemplate.js';
 import { maskPhone } from '../../src/lib/outreach/normalize.js';
 
 export const BACKOFF_MIN = [1, 5, 30, 120];
@@ -195,14 +195,17 @@ const finishJob = (ref, patch) => ref.set({ ...patch, nextAttemptAt: patch.nextA
 /*
  * What each kind of message is. Templates are approved in Meta (see
  * src/lib/outreach/whatsappTemplate.js); inbox_text is a free-text reply.
- *   button  'join': the signed "Joined" quick reply · 'link': URL button with their submit link
+ *   button  'join': the signed "Joined" quick reply, then "Stop updates" · 'link': URL button with
+ *           their submit link · 'stop': only "Stop updates"
  *   badge   writes the delivery status onto the application (the main message only)
+ * Every template checks the number hasn't opted out (STOP) first.
  */
 const KINDS = {
     invite: { button: 'join', badge: true, groupLink: true },
     reminder: { button: 'join', badge: true, groupLink: true },
     deliverables: { button: 'link' },
     changes: { button: 'link' },
+    city_group: { button: 'stop' },
     payout: {},
     inbox_text: { text: true },
 };
@@ -236,6 +239,8 @@ const loadContext = async (db, job) => {
     const settings = privSnap.exists ? privSnap.data() : {};
     const app = appSnap.data();
     if (spec.groupLink && !settings.whatsappGroupLink) return { skip: 'no_group_link' };
+    const contact = await db.collection('creator_contacts').doc(contactIdFor(app.phone)).get();
+    if (contact.exists && contact.data().whatsappOptOut?.at) return { skip: 'opted_out' };
     if (app.status === 'removed') return { skip: 'removed' };
     if (job.kind === 'invite' && app.status !== 'message_queued') return { skip: 'status_changed' };
     if (job.kind === 'reminder') {
@@ -257,6 +262,7 @@ const SKIP_NOTE = {
     no_deliverables: 'The campaign has no deliverables to send.',
     no_link_secret: 'LINK_SIGNING_SECRET isn’t set, so personal links can’t be made.',
     window_closed: 'More than 24 hours since their last message: WhatsApp only allows a template now.',
+    opted_out: 'They asked to stop WhatsApp updates.',
     unknown_kind: 'Unknown message type.',
 };
 
@@ -292,8 +298,10 @@ export const sendJob = async (db, job, { now = Date.now() } = {}) => {
     } else {
         const { campaign, settings, app } = ctx;
         phone = app.phone;
-        const buttons = spec.button === 'join' ? [{ index: 0, payload: joinPayload(job.campaignId, job.appId) }]
-            : spec.button === 'link' ? [{ index: 0, param: submitToken(job.campaignId, job.appId) }] : [];
+        const stop = (index) => ({ index, payload: STOP_PAYLOAD });
+        const buttons = spec.button === 'join' ? [{ index: 0, payload: joinPayload(job.campaignId, job.appId) }, stop(1)]
+            : spec.button === 'link' ? [{ index: 0, param: submitToken(job.campaignId, job.appId) }]
+                : spec.button === 'stop' ? [stop(0)] : [];
         const tplCtx = { application: app, campaign, groupLink: settings.whatsappGroupLink, data: job.data || {} };
         text = renderTemplatePreview(job.kind, tplCtx);
         result = await sendTemplate({
@@ -368,7 +376,7 @@ const afterSent = async (db, job, ctx, { at, messageId }) => {
 
 /* ── Queue any message ────────────────────────────────────────────────── */
 
-const ONCE = new Set(['invite', 'reminder', 'deliverables', 'payout']);
+const ONCE = new Set(['invite', 'reminder', 'deliverables', 'payout', 'city_group']);
 
 /**
  * Queues one message. Kinds that go once per person (invite, reminder,

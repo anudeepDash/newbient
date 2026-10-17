@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { FakeFirestore, fakeReq, fakeRes } from '../helpers/fakeFirestore.js';
 import { handleOutreachAction } from '../../api/_lib/outreach.js';
+import { setDbForTests } from '../../api/_lib/db.js';
 
 const CAMPAIGN = {
     title: 'Arijit Singh Live, Bangalore',
@@ -29,9 +30,12 @@ const ADMIN = { uid: 'u-admin', email: 'ops@newbi.live', email_verified: true };
 const EDITOR = { uid: 'u-editor', email: 'editor@newbi.live', email_verified: true };
 
 let db;
-const call = async (action, body, { token = null, method = 'POST', ip } = {}) => {
+// Applying needs a signed-in account; by default each phone number is its own account.
+const accountFor = (body) => ({ uid: `u-${String(body.phone || '').replace(/\D/g, '')}`, email: body.email });
+const call = async (action, body, { token, method = 'POST', ip } = {}) => {
     const res = fakeRes();
-    await handleOutreachAction(action, fakeReq({ method, body, query: method === 'GET' ? body : {}, ip }), res, { decodedToken: token, db });
+    const decodedToken = token !== undefined ? token : action === 'outreach-apply' ? accountFor(body) : null;
+    await handleOutreachAction(action, fakeReq({ method, body, query: method === 'GET' ? body : {}, ip }), res, { decodedToken, db });
     return res;
 };
 const apps = () => Object.entries(db.dump('campaigns/c1/applications')).map(([id, d]) => ({ id, ...d }));
@@ -44,6 +48,7 @@ beforeEach(() => {
         'admins/a2': { email: 'editor@newbi.live', role: 'editor' },
         'creators/cr1': { instagram: 'riya.s', name: 'Riya' },
     });
+    setDbForTests(db);
 });
 
 describe('public campaign info', () => {
@@ -62,9 +67,37 @@ describe('public campaign info', () => {
 });
 
 describe('outreach-apply', () => {
+    it('needs a signed-in account, and links the application to it', async () => {
+        expect((await call('outreach-apply', applicant(), { token: null })).body.code).toBe('sign_in');
+        await call('outreach-apply', applicant(), { token: { uid: 'u-riya', email: 'riya@gmail.com', phone_number: '+919876543210' } });
+        expect(apps()[0]).toMatchObject({ uid: 'u-riya', accountEmail: 'riya@gmail.com', phoneVerified: true });
+        expect(db.store.get('outreach_members/u-riya').apps).toEqual({ [`c1_${apps()[0].id}`]: expect.objectContaining({ campaignId: 'c1', appId: apps()[0].id }) });
+        expect(db.store.get('campaigns/c1/application_keys/u:u-riya')).toEqual({ appId: apps()[0].id });
+    });
+
+    it('updates the same application when the same account applies with a new phone and handle', async () => {
+        const me = { uid: 'u-riya', email: 'riya@example.com' };
+        await call('outreach-apply', applicant(), { token: me });
+        await call('outreach-apply', applicant({ phone: '9123456789', instagram: 'riya.new' }), { token: me });
+        expect(apps()).toHaveLength(1);
+        expect(apps()[0]).toMatchObject({ phone: '+919123456789', instagramHandle: 'riya.new', submitCount: 2 });
+    });
+
+    it('gives their city’s creator community straight away, in the response and in the app', async () => {
+        db.store.set('creator_groups/g1', { city: 'Bengaluru', title: 'Bengaluru Creators Community', groupUrl: 'https://chat.whatsapp.com/BlrGroup123456', isActive: true });
+        const res = await call('outreach-apply', applicant(), { token: { uid: 'u-riya', email: 'riya@example.com' } });
+        expect(res.body.cityGroup).toEqual({ city: 'Bengaluru', title: 'Bengaluru Creators Community', url: 'https://chat.whatsapp.com/BlrGroup123456' });
+        expect(apps()[0].cityGroup).toMatchObject({ url: 'https://chat.whatsapp.com/BlrGroup123456' });
+        const notes = Object.values(db.dump('notifications'));
+        expect(notes).toEqual([expect.objectContaining({ userId: 'u-riya', link: 'https://chat.whatsapp.com/BlrGroup123456', type: 'creator' })]);
+        // Applying again (same city) doesn't notify twice.
+        await call('outreach-apply', applicant({ followerCount: '13000' }), { token: { uid: 'u-riya', email: 'riya@example.com' } });
+        expect(Object.values(db.dump('notifications'))).toHaveLength(1);
+    });
+
     it('stores a clean application, a contact, the consent time and an audit entry', async () => {
         const res = await call('outreach-apply', applicant());
-        expect(res.body).toEqual({ success: true, updated: false });
+        expect(res.body).toMatchObject({ success: true, updated: false });
         const [app] = apps();
         expect(app).toMatchObject({
             status: 'applied', phone: '+919876543210', instagramHandle: 'riya.s', followerCount: 12500,
