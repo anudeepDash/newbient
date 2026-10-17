@@ -21,7 +21,7 @@ export const followers = (n) => formatCount(Number(n) || 0);
 /* Actions for moving someone along, in the order an admin would use them. */
 export const STATUS_ACTIONS = {
     shortlisted: 'Add to shortlist',
-    message_queued: 'Mark WhatsApp opened',
+    message_queued: 'Move to To send',
     message_sent: 'Mark sent',
     replied: 'Mark replied',
     joined: 'Mark joined the group',
@@ -44,4 +44,5 @@ export const SKIP_REASON = {
     already: 'already there',
     not_allowed: 'not allowed from their current status',
     not_found: 'no longer exists',
+    no_phone: 'no phone number',
 };

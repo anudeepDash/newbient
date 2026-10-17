@@ -10,14 +10,19 @@ import { copyToClipboard } from '../../../../lib/clipboard';
 import { Button, Card, EmptyState, Menu, MenuItem } from '../../ui';
 import { renderMessage, waLink } from '../../../../lib/outreach/template';
 import { TRANSITIONS } from '../../../../lib/outreach/status';
+import { IN_FLIGHT } from '../../../../lib/outreach/whatsappTemplate';
 import { StatusBadge, Handle, STATUS_ACTIONS, when } from './parts';
+import ApiSendCard, { DeliveryNote } from './ApiSendCard';
 
 /*
- * The message queue (Phase 1, by hand): for each shortlisted person, their
- * message with their own details, "Open WhatsApp" (wa.me in a new tab, the
- * admin presses send there) and "Copy message" as a fallback. Opening or
- * copying marks them "WhatsApp opened"; only "Mark sent" marks them sent.
- * Nothing is ever sent from the browser.
+ * Messaging shortlisted people, two ways:
+ *   - WhatsApp API (Phase 2, when it's set up): "Send to N" queues everyone
+ *     waiting; the server sends the approved template at the rate limit and
+ *     the badges follow delivery, read and "Joined".
+ *   - By hand (Phase 1, always there): each person's message, "Open WhatsApp"
+ *     (wa.me in a new tab, the admin presses send there) and "Copy message".
+ *     Opening or copying moves them to "To send"; only "Mark sent" marks them
+ *     sent. Nothing is sent from the browser.
  *
  * WhatsApp Web logged us out after ~44 quick sends, so the panel counts how
  * many chats were opened in the last 10 minutes and suggests a pause.
@@ -46,6 +51,7 @@ const MessageCard = ({ app, text, canSend, onQueue, onMarkSent, onStatus, onOpen
                 <button type="button" onClick={() => onOpen(app)} className="min-w-0 text-left">
                     <p className="truncate text-[15px] font-bold">{app.fullName}</p>
                     <p className="truncate text-[13px] text-gray-500 dark:text-zinc-400"><Handle handle={app.instagramHandle} /> · {app.phone}</p>
+                    <div className="mt-1"><DeliveryNote delivery={app.delivery?.whatsapp} joinedVia={app.joinedVia} lastReplyAt={app.lastReplyAt} /></div>
                 </button>
                 <StatusBadge status={app.status} />
             </div>
@@ -95,13 +101,14 @@ const MessageCard = ({ app, text, canSend, onQueue, onMarkSent, onStatus, onOpen
     );
 };
 
-const MessagesPanel = ({ campaign, applications, settings, onStatus, onOpen, onSetup }) => {
+const MessagesPanel = ({ campaign, applications, settings, api, onStatus, onOpen, onSetup, onSendApi, onStopApi }) => {
     const [show, setShow] = useState('to_message');
     const template = settings?.messageTemplate;
     const linkMissing = /\{group_link\}/.test(template || '') && !settings?.whatsappGroupLink;
     const renderFor = (app) => renderMessage(template, { application: app, campaign: { ...campaign, whatsappGroupLink: settings?.whatsappGroupLink } });
 
     const toMessage = applications.filter(a => TO_MESSAGE.has(a.status));
+    const sendable = toMessage.filter(a => !IN_FLIGHT.has(a.delivery?.whatsapp?.status));
     const messaged = applications.filter(a => MESSAGED.has(a.status));
     const list = show === 'to_message' ? toMessage : messaged;
 
@@ -121,6 +128,7 @@ const MessagesPanel = ({ campaign, applications, settings, onStatus, onOpen, onS
                     <Button variant="accent" onClick={onSetup}>Set it up</Button>
                 </Card>
             )}
+            <ApiSendCard api={api} campaign={campaign} settings={settings} sendable={linkMissing ? [] : sendable} onSend={onSendApi} onStop={onStopApi} />
             {openedRecently >= PACE_WARN_AT && (
                 <Card className="border-amber-500/30 p-4 text-[13.5px]">
                     <p className="font-semibold">You’ve opened {openedRecently} chats in the last 10 minutes.</p>

@@ -12,7 +12,7 @@ import { when } from './parts';
  * the server in the same transaction as the change.
  */
 
-const SOURCE = { admin: '', bulk_paste: ' (bulk paste)', public_form: ' (form)' };
+const SOURCE = { admin: '', bulk_paste: ' (bulk paste)', public_form: ' (form)', whatsapp_api: ' (API send)', whatsapp_webhook: ' (from WhatsApp)', reminder: ' (reminder)' };
 
 const describe = (e, nameOf) => {
     const who = e.appId ? nameOf(e.appId) : null;
@@ -23,6 +23,9 @@ const describe = (e, nameOf) => {
     if (e.field === 'submission') return `${who || 'Someone'} sent the form again (submission ${e.to})`;
     if (e.field === 'whatsappGroupLink') return e.to ? 'Changed the WhatsApp group link' : 'Removed the WhatsApp group link';
     if (e.field === 'messageTemplate') return 'Edited the message template';
+    if (e.field === 'whatsapp') return `${who ? `${who}: ` : ''}${e.to === 'failed' ? 'WhatsApp message not sent' : 'Queued for the WhatsApp API'}`;
+    if (e.field === 'reminder') return `${who ? `${who}: ` : ''}join reminder sent`;
+    if (e.field === 'reminders') return e.to === 'off' ? 'Turned join reminders off' : `Join reminders ${e.to}`;
     return `${e.field}: ${e.from ?? '–'} → ${e.to ?? '–'}`;
 };
 
