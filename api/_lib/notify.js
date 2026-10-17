@@ -91,6 +91,16 @@ export const EVENTS = {
         push: (d) => ({ title: "You're shortlisted", body: `${short(d.campaignTitle || 'Your campaign', 80)}: join the group and see your deliverables.`, link: d.campaignUrl }),
         inApp: (d) => ({ title: `You're shortlisted: ${d.campaignTitle || 'campaign'}`, message: d.groupLink ? 'Join the campaign WhatsApp group, then submit your deliverables in the campaign.' : 'Your deliverables are in the campaign.', type: 'campaign', link: d.campaignUrl || '' }),
     },
+    // Campaign outreach (api/_lib/outreach.js): in the app and as push only. WhatsApp for these goes
+    // through the outreach send queue (rate limit, opt-outs), never from here; there's no email.
+    'outreach-city-group': {
+        push: (d) => ({ title: `Join the ${short(d.city || 'city', 40)} creators community`, body: 'Gigs, guestlist passes and meetups drop there first. Tap to join on WhatsApp.', link: d.groupUrl }),
+        inApp: (d) => ({ title: `Your ${d.city || 'city'} creators community`, message: `${d.campaignTitle ? `Thanks for applying to ${d.campaignTitle}. ` : ''}Join ${d.groupTitle || 'the Newbi creators group'} on WhatsApp for gigs, passes and meetups.`, type: 'creator', link: d.groupUrl || '' }),
+    },
+    'outreach-shortlisted': {
+        push: (d) => ({ title: "You're shortlisted 🎉", body: `${short(d.campaignTitle || 'Your campaign', 80)}: join the creators group and see what to post.`, link: d.hubUrl }),
+        inApp: (d) => ({ title: `You're shortlisted: ${d.campaignTitle || 'campaign'}`, message: d.groupLink ? 'Join the campaign WhatsApp group, then tap “I’ve joined”. Your posts, ticket and payout are on the same page.' : 'See what to post, your ticket and payout on your campaign page.', type: 'campaign', link: d.hubUrl || '' }),
+    },
     'submission-reviewed': {
         email: 'pref:creator',
         push: (d) => ({ title: d.status === 'approved' ? 'Submission approved' : 'Update on your submission', body: `${d.campaignTitle || 'Your campaign'}${d.taskTitle ? ` · ${d.taskTitle}` : ''}`, link: d.campaignUrl }),

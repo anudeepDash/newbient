@@ -2,6 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Send from 'lucide-react/dist/esm/icons/send';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
+import LogIn from 'lucide-react/dist/esm/icons/log-in';
+import Users from 'lucide-react/dist/esm/icons/users';
+import { useAppStore } from '../../../../lib/store/appStore';
+import { useAuthGate } from '../../../auth/AuthGate';
 import { Button, TextInput, INPUT, ERROR_RING } from '../../../../components/app';
 import { cn } from '../../../../lib/utils';
 import { isPresent } from '../../../../lib/present';
@@ -14,8 +18,12 @@ import { validateApplication, CATEGORIES, REFERRAL_SOURCES, CONSENT_TEXT, TIERS 
 import { formatDeadline } from '../../../../lib/outreach/template';
 
 /*
- * /c/:slug/apply: the open campaign application. No sign-in, so anyone we
- * share the link with can apply in a minute. Replaces the Google Form.
+ * /c/:slug/apply: the open campaign application. Replaces the Google Form.
+ *
+ * Applying needs a Newbi account (Google or phone, a few seconds), so every
+ * update reaches them in the app and as push: their city's creator community
+ * right after applying, then the shortlist, the campaign group, their posts
+ * page, ticket and payout. Nobody is messaged one by one on WhatsApp.
  *
  * The browser checks fields as you go (same rules as the server), but the
  * server decides: it validates again, rate-limits per network and merges a
@@ -50,6 +58,10 @@ const Select = ({ id, value, onChange, error, children, label }) => (
 
 const CampaignApplyPage = () => {
     const { slug } = useParams();
+    const authUser = useAppStore(s => s.authUser);
+    const profile = useAppStore(s => s.profile);
+    const gate = useAuthGate();
+    const signIn = () => gate.requestSignIn({ type: 'outreach-apply', payload: { slug } });
     const [state, setState] = useState({ loading: true, campaign: null, open: false, reason: null });
     const [form, setForm] = useState(BLANK);
     const [errors, setErrors] = useState({});
@@ -74,6 +86,17 @@ const CampaignApplyPage = () => {
     useEffect(() => {
         if (campaign?.cities?.length === 1) setForm(f => (f.city ? f : { ...f, city: campaign.cities[0] }));
     }, [campaign]);
+
+    // What the account already knows fills the empty fields (they can still change it).
+    useEffect(() => {
+        if (!authUser) return;
+        setForm(f => ({
+            ...f,
+            fullName: f.fullName || profile?.name || authUser.displayName || '',
+            email: f.email || profile?.email || authUser.email || '',
+            phone: f.phone || profile?.phone || authUser.phoneNumber || '',
+        }));
+    }, [authUser, profile]);
 
     useDynamicMeta({ page: 'campaign-apply', title: campaign ? `Apply: ${campaign.title}` : 'Apply', image: campaign?.image || undefined });
 
@@ -104,10 +127,11 @@ const CampaignApplyPage = () => {
         const r = await callCreatorApi('outreach-apply', { ...form, registeredNewbiCreator: form.registeredNewbiCreator === true, slug });
         setSending(false);
         if (r.ok) {
-            setDone({ updated: Boolean(r.data.updated), firstName: local.value.firstName });
+            setDone({ updated: Boolean(r.data.updated), firstName: local.value.firstName, cityGroup: r.data.cityGroup || null });
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
+        if (r.code === 'sign_in') { signIn(); return; }
         if (r.code === 'invalid' && r.errors) setErrors(r.errors);
         setServerError(r.error);
     };
@@ -186,8 +210,15 @@ const CampaignApplyPage = () => {
                     <p className="text-[15px] text-gray-600 dark:text-zinc-400">
                         {done.updated
                             ? 'We already had an application from you, so we’ve updated it with these details.'
-                            : `We’ve got your application for ${campaign.title}. If you’re shortlisted, we’ll message you on WhatsApp.`}
+                            : `We’ve got your application for ${campaign.title}. If you’re shortlisted, you’ll see it in your Newbi notifications.`}
                     </p>
+                    {done.cityGroup && (
+                        <div className="space-y-3 rounded-[1.5rem] bg-white p-5 text-left ring-1 ring-inset ring-black/[0.06] dark:bg-[#0c0e14] dark:ring-white/[0.08]">
+                            <p className="flex items-center gap-2 text-[16px] font-bold"><Users size={18} /> Join the {done.cityGroup.city} creators community</p>
+                            <p className="text-[14px] text-gray-600 dark:text-zinc-400">Paid gigs, guestlist passes and meetups in {done.cityGroup.city} drop there first.</p>
+                            <Button href={done.cityGroup.url} target="_blank" rel="noopener noreferrer" className="w-full">Join on WhatsApp</Button>
+                        </div>
+                    )}
                 </div>
             </PageBody>
         );
@@ -199,6 +230,12 @@ const CampaignApplyPage = () => {
                 {header}
                 {!state.open ? (
                     <Notice tone="warn" title={CLOSED_COPY[state.reason] || CLOSED_COPY.closed} />
+                ) : !authUser ? (
+                    <div className="space-y-4 rounded-[2rem] bg-white p-6 ring-1 ring-inset ring-black/[0.06] dark:bg-[#0c0e14] dark:ring-white/[0.08]">
+                        <p className="text-[18px] font-bold">Sign in to apply</p>
+                        <p className="text-[15px] text-gray-600 dark:text-zinc-400">With Google or your phone, in a few seconds. Your city’s creator community, the shortlist, your ticket and payout all show up in your Newbi notifications.</p>
+                        <Button size="lg" icon={LogIn} onClick={signIn} className="w-full">Sign in and apply</Button>
+                    </div>
                 ) : (
                     <form ref={formRef} noValidate onSubmit={submit} className="relative space-y-5 rounded-[2rem] bg-white p-5 ring-1 ring-inset ring-black/[0.06] dark:bg-[#0c0e14] dark:ring-white/[0.08] sm:p-7">
                         {/* Honeypot: hidden from people and screen readers; bots fill it. */}

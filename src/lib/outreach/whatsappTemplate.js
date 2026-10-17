@@ -13,6 +13,9 @@ import { deadlineLineFor } from './template.js';
  */
 
 export const JOIN_BUTTON = 'Joined ✅';
+export const STOP_BUTTON = 'Stop updates';
+/* The quick-reply payload of "Stop updates" (and texts like STOP) opts the number out of every template. */
+export const STOP_PAYLOAD = 'stop';
 
 export const WA_TEMPLATES = {
     invite: {
@@ -38,6 +41,12 @@ export const WA_TEMPLATES = {
         placeholders: ['first_name', 'task_title', 'reason'],
         button: 'Send it again',
     },
+    // Sent when someone applies (the city creator community). Quick reply: Stop updates.
+    city_group: {
+        name: 'creator_city_group',
+        body: 'Hey {{1}}! Thanks for applying to {{2}}. Join the Newbi {{3}} creators community on WhatsApp for gigs, passes and meetups: {{4}}',
+        placeholders: ['first_name', 'campaign_title', 'city', 'city_group_link'],
+    },
     payout: {
         name: 'campaign_payout_sent',
         body: "Hey {{1}}, we've sent ₹{{2}} for {{3}}. Reference: {{4}}. Thanks for creating with Newbi!",
@@ -59,6 +68,8 @@ export const templateParamsFor = (kind, { application, campaign, groupLink, data
         reason: String(data.reason || 'Please check the brief.').trim(),
         amount: Number(data.amount || 0).toLocaleString('en-IN'),
         reference: String(data.reference || '').trim() || 'shared separately',
+        city: String(data.city || application?.city || 'your city').trim(),
+        city_group_link: String(data.groupUrl || '').trim(),
     };
     return (WA_TEMPLATES[kind] || WA_TEMPLATES.invite).placeholders.map(p => values[p]);
 };

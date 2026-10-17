@@ -12,7 +12,7 @@ import { when } from './parts';
  * the server in the same transaction as the change.
  */
 
-const SOURCE = { admin: '', bulk_paste: ' (bulk paste)', public_form: ' (form)', whatsapp_api: ' (API send)', whatsapp_webhook: ' (from WhatsApp)', reminder: ' (reminder)', creator: ' (their link)', rule: ' (automatic)' };
+const SOURCE = { admin: '', bulk_paste: ' (bulk paste)', public_form: ' (form)', whatsapp_api: ' (API send)', whatsapp_webhook: ' (from WhatsApp)', reminder: ' (reminder)', creator: ' (their page)', rule: ' (automatic)', in_app: ' (Newbi app)', wame: ' (opened by hand)' };
 
 const describe = (e, nameOf) => {
     const who = e.appId ? nameOf(e.appId) : null;
@@ -36,6 +36,8 @@ const describe = (e, nameOf) => {
     if (e.field === 'payout_details') return `${who ? `${who}: ` : ''}added payment details`;
     if (e.field === 'submit_link') return `${who ? `${who}: ` : ''}got their posts link`;
     if (e.field === 'ticketRule') return `Ticket rule: ${e.to}`;
+    if (e.field === 'whatsapp_opt_out') return `${who ? `${who}: ` : ''}${e.to === 'stopped' ? 'stopped WhatsApp updates' : 'turned WhatsApp updates back on'}`;
+    if (e.field === 'city_group') return `${who ? `${who}: ` : ''}joined the city community`;
     return `${e.field}: ${e.from ?? '–'} → ${e.to ?? '–'}`;
 };
 

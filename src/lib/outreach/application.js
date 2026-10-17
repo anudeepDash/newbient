@@ -145,13 +145,14 @@ export const validateApplication = (input = {}, campaign = {}) => {
 
 /**
  * Which existing application a new submission updates.
- *   byPhone / byHandle: the appId each key points at, or null.
- * The phone match wins. When phone and handle point at two different
+ *   byUid / byPhone / byHandle: the appId each key points at, or null.
+ * The account match wins, then the phone. When phone and handle point at two different
  * applications, the other one is reported so an admin can look at both.
  */
-export const resolveDuplicate = ({ byPhone, byHandle }) => {
-    const targetId = byPhone || byHandle || null;
-    const conflictWith = byPhone && byHandle && byPhone !== byHandle ? byHandle : null;
+export const resolveDuplicate = ({ byUid = null, byPhone, byHandle }) => {
+    // Their Newbi account first (sign-in is required), then phone, then handle.
+    const targetId = byUid || byPhone || byHandle || null;
+    const conflictWith = [byPhone, byHandle].find(id => id && id !== targetId) || null;
     return { targetId, conflictWith };
 };
 

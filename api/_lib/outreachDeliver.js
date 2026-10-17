@@ -2,7 +2,8 @@
  * Campaign outreach, Phase 3: deliverables, tickets and payouts.
  *
  * Creators (no sign-in, their personal signed link app.newbi.live/d/<token>):
- *   POST ?action=outreach-deliverables   { token }                                 what to post, what they've sent
+ *   POST ?action=outreach-deliverables   { token }                                 their campaign page: groups, posts, ticket, payout
+ *   POST ?action=outreach-joined         { token, which: 'campaign'|'city' }       "I've joined" (WhatsApp can't tell us)
  *   POST ?action=outreach-submit         { token, taskId, link, screenshotUrl, note }   rate-limited per IP
  *   POST ?action=outreach-upi            { token, upiId, upiName }                  where to pay them
  *
@@ -20,8 +21,8 @@
 import { nowIso } from './db.js';
 import { readSignedToken } from './linkSign.js';
 import { releaseApplicationPass, revokePassForOutreach, ticketLinkFor } from './passes.js';
-import { enqueueJob, sendSoon } from './outreachQueue.js';
-import { canTransition, canSystemTransition } from '../../src/lib/outreach/status.js';
+import { enqueueJob, sendSoon, submitUrlFor } from './outreachQueue.js';
+import { canTransition, canSystemTransition, isOnShortlist } from '../../src/lib/outreach/status.js';
 import { firstNameOf } from '../../src/lib/outreach/normalize.js';
 import {
     deliverablesFor, validateSubmission, deliverableSummary, preEventApproved, ticketRuleOf, normalizeUpi,
@@ -48,8 +49,10 @@ const fromToken = async (db, token) => {
     if (!campSnap.exists || !appSnap.exists) return null;
     const app = appSnap.data();
     if (app.status === 'removed') return null;
-    return { campaignId: campSnap.id, appId: appSnap.id, campaign: campSnap.data(), app, appRef: appSnap.ref };
+    return { campaignId: campSnap.id, appId: appSnap.id, campaign: campSnap.data(), app, appRef: appSnap.ref, campRef };
 };
+
+const JOINED = new Set(['joined', 'posted', 'paid']);
 
 const maskUpi = (upi) => {
     const [user, bank] = String(upi || '').split('@');
@@ -57,8 +60,20 @@ const maskUpi = (upi) => {
     return `${user.slice(0, 2)}${'•'.repeat(Math.max(1, user.length - 2))}@${bank}`;
 };
 
-/* What the creator's page shows. Only their own submissions, no reviewer emails. */
-const creatorView = ({ campaign, app }) => ({
+/*
+ * What the creator's page shows. Only their own submissions, no reviewer emails.
+ * The campaign group link only once they're on the shortlist (it's private).
+ */
+const creatorView = ({ campaign, app }, settings = {}) => ({
+    status: app.status,
+    groups: {
+        campaign: isOnShortlist(app.status) && settings.whatsappGroupLink
+            ? { url: settings.whatsappGroupLink, joined: JOINED.has(app.status) || Boolean(app.joinedAt) }
+            : null,
+        city: app.cityGroup?.url
+            ? { city: app.cityGroup.city, title: app.cityGroup.title, url: app.cityGroup.url, joined: Boolean(app.cityGroupJoinedAt) }
+            : null,
+    },
     campaign: {
         title: campaign.title || '',
         artist: campaign.artist || '',
@@ -87,7 +102,59 @@ const creatorView = ({ campaign, app }) => ({
 export const handleCreatorDeliverables = async (req, res, { db }) => {
     const ctx = await fromToken(db, req.body?.token || req.query?.token);
     if (!ctx) return send(res, 404, { success: false, error: 'This link isn’t active. Ask the Newbi team for a new one.' });
-    return send(res, 200, { success: true, ...creatorView(ctx) });
+    const priv = await ctx.campRef.collection('private').doc('outreach').get();
+    return send(res, 200, { success: true, ...creatorView(ctx, priv.exists ? priv.data() : {}) });
+};
+
+/*
+ * "I've joined": WhatsApp never tells us who joined a group, so the creator
+ * says so on their page. The campaign group moves them to joined (and stops
+ * the reminder); the city community is just noted.
+ */
+export const handleCreatorJoined = async (req, res, { db, now = nowIso() }) => {
+    if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
+    const ctx = await fromToken(db, req.body?.token);
+    if (!ctx) return send(res, 404, { success: false, error: 'This link isn’t active. Ask the Newbi team for a new one.' });
+    if (req.body?.which === 'city') {
+        if (!ctx.app.cityGroup?.url) return send(res, 409, { success: false, error: 'There’s no city community for your city yet.' });
+        if (!ctx.app.cityGroupJoinedAt) {
+            await ctx.appRef.update({ cityGroupJoinedAt: now, updatedAt: now });
+            await db.collection('creator_contacts').doc(ctx.app.contactId || 'x').set({ cityGroupJoinedAt: now }, { merge: true }).catch(() => {});
+            await auditRef(db, ctx.campaignId).set({ appId: ctx.appId, field: 'city_group', from: null, to: 'joined', source: 'creator', note: ctx.app.cityGroup.title, actorUid: null, actorEmail: null, at: now });
+        }
+        return send(res, 200, { success: true });
+    }
+    if (!isOnShortlist(ctx.app.status)) return send(res, 409, { success: false, error: 'You can join the campaign group once you’re shortlisted.' });
+    if (JOINED.has(ctx.app.status)) return send(res, 200, { success: true, already: true });
+    const moved = await systemMove(db, ctx.campaignId, ctx.appId, 'joined', { source: 'creator', note: 'Tapped “I’ve joined” on their campaign page', actor: { actorUid: null, actorEmail: null }, now });
+    if (moved) {
+        await ctx.appRef.update({ joinedAt: now, joinedVia: 'app', updatedAt: now });
+        await db.collection('outreach_queue').doc(`${ctx.campaignId}_${ctx.appId}_reminder`)
+            .set({ status: 'cancelled', nextAttemptAt: null, lastError: 'They joined.' }, { merge: true });
+    }
+    return send(res, 200, { success: true, status: moved || ctx.app.status });
+};
+
+/* The signed-in creator's own outreach applications, for "Your campaigns" in the app. */
+export const handleMine = async (req, res, { db, token }) => {
+    if (!token?.uid) return send(res, 401, { success: false, error: 'Please sign in.' });
+    const member = await db.collection('outreach_members').doc(token.uid).get();
+    const entries = Object.values(member.exists ? member.data().apps || {} : {});
+    const items = (await Promise.all(entries.slice(0, 50).map(async ({ campaignId, appId }) => {
+        const campRef = db.collection('campaigns').doc(campaignId);
+        const [camp, app] = await Promise.all([campRef.get(), campRef.collection('applications').doc(appId).get()]);
+        if (!camp.exists || !app.exists || app.data().uid !== token.uid) return null;
+        const a = app.data();
+        return {
+            campaignId, appId,
+            title: camp.data().title || '',
+            image: camp.data().image || camp.data().thumbnail || '',
+            status: a.status,
+            appliedAt: a.firstSubmittedAt || null,
+            hubUrl: a.status === 'removed' ? null : submitUrlFor(campaignId, appId) || null,
+        };
+    }))).filter(Boolean).sort((x, y) => String(y.appliedAt || '').localeCompare(String(x.appliedAt || '')));
+    return send(res, 200, { success: true, items });
 };
 
 export const handleCreatorSubmit = async (req, res, { db, rateLimit, now = nowIso() }) => {
@@ -188,14 +255,13 @@ const revokeTicket = async (db, { campaignId, appId, actor, reason }) => {
     return 'revoked';
 };
 
-/* After "Joined": their personal link, and the ticket when the campaign releases on joining. */
+/* After "Joined ✅" in WhatsApp: their personal link to send posts. (Joining no longer releases tickets.) */
 export const afterJoined = async (db, { campaignId, appId }) => {
-    const [campSnap, settings] = await Promise.all([db.collection('campaigns').doc(campaignId).get(), settingsOf(db, campaignId)]);
+    const campSnap = await db.collection('campaigns').doc(campaignId).get();
     if ((campSnap.data()?.tasks || []).length) {
         const id = await enqueueJob(db, { campaignId, appId, kind: 'deliverables', createdBy: 'WhatsApp' });
         await sendSoon(db, id);
     }
-    if (ticketRuleOf(settings) === 'joined') await releaseTicket(db, { campaignId, appId, actor: WHATSAPP, rule: 'joined' });
 };
 
 /* ── Admin: review ────────────────────────────────────────────────────── */

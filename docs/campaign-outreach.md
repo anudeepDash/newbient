@@ -67,6 +67,7 @@ rate_limits/{hash of ip}                    per-IP counter for the public form (
   match /rate_limits/{doc} { allow read, write: if false; }
   match /outreach_queue/{doc} { allow read, write: if false; }
   match /outreach_rate/{doc} { allow read, write: if false; }
+  match /outreach_members/{uid} { allow read, write: if false; }
   match /outreach_inbox/{thread} { allow read, write: if false;
     match /inbox_messages/{doc} { allow read, write: if false; } }
   ```
@@ -85,6 +86,49 @@ rate_limits/{hash of ip}                    per-IP counter for the public form (
   ```
 
 - **Indexes:** none needed. Every query is a single-field equality or order.
+
+## Staying safe on WhatsApp (read this first)
+
+Sending many messages from your own number through WhatsApp Web, even to people who agreed, is what gets numbers restricted. Reports and blocks from people who haven't saved the number add up quickly. So the module now avoids messaging anyone one by one:
+
+- **Applying needs a Newbi account** (Google or phone). Every update then reaches them in the **Newbi app and by push**, with no WhatsApp message needed:
+  - the city community right after applying;
+  - the shortlist with the campaign group;
+  - their campaign page;
+  - review, ticket and payout.
+- **City community on apply:** from **Creators → Groups**, by the city on the form. It's shown as a **Join** button on the success screen and sent as an in-app notification. With the API, the `creator_city_group` template goes out too.
+- **Shortlisting** notifies everyone with an account at once.
+  - Without the API, that counts as the message (status Message sent, audited as *Newbi app*).
+  - With the API, the `campaign_shortlist` template is queued as well.
+- **Joined:** WhatsApp never tells anyone who joined a group. Creators tap **I’ve joined** on their campaign page, or you **Paste group members** (numbers copied from Group info) to mark many at once. Joining no longer releases tickets.
+- **STOP:** the **Stop updates** button, or a reply like STOP or unsubscribe, opts the number out of every template, cancels queued sends and confirms once. START turns updates back on.
+- **WhatsApp by hand** (wa.me, and the city invite screen) is only for people without an account who haven't said STOP. It's capped for the whole team at **`OUTREACH_WAME_DAILY_CAP`** (default 20) chats a day, counted on the server.
+
+### Full automation with the WhatsApp Cloud API
+
+The Cloud API is the official channel for business messages, so it doesn't carry the WhatsApp Web risk. Its own guardrails:
+
+- **Messaging limit:** set per business portfolio. A new portfolio can start conversations with 250 unique people a day. That rises to 2,000 after business verification, or after 2,000 well-rated template messages in 30 days. It then grows automatically while quality stays high ([Meta: messaging limits](https://developers.facebook.com/documentation/business-messaging/whatsapp/messaging-limits)).
+- **Quality rating:** blocks and reports lower it. A low rating stops growth and can pause templates or flag the number. Keep it high by:
+  - messaging only people who applied and agreed (the form's consent box, plus their account);
+  - using **Utility** templates;
+  - sending one invite and at most one reminder;
+  - honouring STOP at once;
+  - using a verified sender name.
+- **Cost (India, January 2026 rates, approximate):** Utility about ₹0.115 and Marketing about ₹0.86 per delivered template. Replies within 24 hours of their last message are free ([Meta pricing](https://whatsappbusiness.com/products/platform-pricing/)).
+- **Groups:** Meta's Groups API allows only 8 people per group, needs a green-tick account and can't add people. So the city and campaign groups stay normal WhatsApp groups run from a phone, and the API only sends the invite link. A tapped link carries no risk for any number.
+
+**Set up:**
+1. **Business verification** in Meta Business Manager, as Newbi Entertainment (GST or incorporation documents, newbi.live).
+2. **A dedicated number for the API** that isn't on the WhatsApp app, with the display name "Newbi Creators". Keep the groups on a different phone. (Meta's coexistence setup can put an existing Business-app number on the API; a separate number keeps the groups out of harm's way.)
+3. **A Meta app with WhatsApp**, a System User with a permanent token, and a payment method.
+4. **Env vars and the webhook**, as below.
+5. **Submit the templates as Utility.** `campaign_shortlist` and `campaign_join_reminder` have two quick replies: **Joined ✅** and **Stop updates**. `creator_city_group` has **Stop updates**.
+
+**`creator_city_group`** (new):
+- Body: `Hey {{1}}! Thanks for applying to {{2}}. Join the Newbi {{3}} creators community on WhatsApp for gigs, passes and meetups: {{4}}`
+- Variables: first name, campaign, city, city group link.
+- Quick reply: `Stop updates`
 
 ## Setup
 
