@@ -25,6 +25,10 @@ export async function callOutreach(action, body = {}) {
     }
 }
 
+/* Roles that see applications and contact details (the server checks the same list). */
+export const OUTREACH_ROLES = ['founder', 'super_admin', 'developer', 'admin'];
+export const canSeeOutreach = (role) => OUTREACH_ROLES.includes(role);
+
 /* The public form's full link: app.newbi.live in production, this origin in dev and previews. */
 export const applyUrlFor = (slug) => {
     const path = appUrl(`/c/${encodeURIComponent(slug)}/apply`);
