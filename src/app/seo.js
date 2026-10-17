@@ -5,6 +5,7 @@
 
 export const LANDING_ORIGIN = 'https://www.newbi.live';
 export const APP_ORIGIN = 'https://app.newbi.live';
+export const ADMIN_ORIGIN = 'https://admin.newbi.live';
 export const ARTISTANT_ORIGIN = 'https://artistant.in';
 
 export const SITE_NAME = 'newbi.live';
@@ -50,6 +51,7 @@ const PRODUCTION_HOSTS = {
     'newbi.live': 'landing',
     'www.newbi.live': 'landing',
     'app.newbi.live': 'app',
+    'admin.newbi.live': 'admin',
     'artistant.in': 'artistant',
     'www.artistant.in': 'artistant',
 };
@@ -57,12 +59,13 @@ const PRODUCTION_HOSTS = {
 const PRODUCTION_ORIGINS = {
     landing: LANDING_ORIGIN,
     app: APP_ORIGIN,
+    admin: ADMIN_ORIGIN,
     artistant: ARTISTANT_ORIGIN,
 };
 
 const cleanHost = (host) => String(host || '').split(',')[0].trim().toLowerCase();
 
-/** 'landing' | 'app' | 'artistant' for a production host, otherwise null. */
+/** 'landing' | 'app' | 'admin' | 'artistant' for a production host, otherwise null. */
 export const productionSiteOf = (host) => PRODUCTION_HOSTS[cleanHost(host).replace(/:\d+$/, '')] || null;
 
 export const isAppHostname = (host) => {
@@ -183,9 +186,9 @@ export const PAGES = {
         description: 'An official document issued by Newbi Entertainment & Marketing.',
     },
 
-    // newbi.live/admin
+    // admin.newbi.live/admin
     admin: {
-        site: 'landing', path: '/admin', brand: 'admin', noindex: true,
+        site: 'admin', path: '/admin', brand: 'admin', noindex: true,
         title: 'Admin',
         description: 'The Newbi admin panel.',
     },
