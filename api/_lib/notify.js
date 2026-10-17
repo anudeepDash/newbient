@@ -75,6 +75,22 @@ export const EVENTS = {
         push: (d) => ({ title: `New campaign: ${short(d.campaignTitle, 80)}`, body: d.reward ? `Reward: ${short(d.reward, 80)}` : 'Tap to see the brief and apply.', link: d.campaignUrl }),
         inApp: (d) => ({ title: `New campaign: ${d.campaignTitle || ''}`, message: `${d.reward ? `Reward: ${d.reward}. ` : ''}Check the brief and apply.`, type: 'campaign', link: d.campaignUrl || '' }),
     },
+    // Sent when the team shortlists a creator: the campaign link, the WhatsApp group and what's next.
+    // WhatsApp template `campaign_shortlisted` (see docs/campaign-flow.md): body {{1}} name, {{2}} campaign,
+    // {{3}} group link (or the campaign link), URL button suffix = campaign id.
+    'campaign-shortlisted': {
+        email: 'always',
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'campaign_shortlisted',
+            build: (d) => ({
+                bodyParams: [firstName(d.name), short(d.campaignTitle || 'the campaign', 80), d.groupLink || d.campaignUrl || '-'],
+                buttons: d.campaignId ? [{ index: 0, param: d.campaignId }] : [],
+            }),
+        },
+        push: (d) => ({ title: "You're shortlisted", body: `${short(d.campaignTitle || 'Your campaign', 80)}: join the group and see your deliverables.`, link: d.campaignUrl }),
+        inApp: (d) => ({ title: `You're shortlisted: ${d.campaignTitle || 'campaign'}`, message: d.groupLink ? 'Join the campaign WhatsApp group, then submit your deliverables in the campaign.' : 'Your deliverables are in the campaign.', type: 'campaign', link: d.campaignUrl || '' }),
+    },
     'submission-reviewed': {
         email: 'pref:creator',
         push: (d) => ({ title: d.status === 'approved' ? 'Submission approved' : 'Update on your submission', body: `${d.campaignTitle || 'Your campaign'}${d.taskTitle ? ` · ${d.taskTitle}` : ''}`, link: d.campaignUrl }),
