@@ -12,6 +12,9 @@
  *   POST ?action=outreach-status             { campaignId, appIds[], to, source?, note?, messageText? }
  *   POST ?action=outreach-settings           { campaignId, whatsappGroupLink, messageTemplate }
  *   POST ?action=outreach-audit              { campaignId, appId? }
+ *   POST ?action=outreach-send               { campaignId, appIds[] }  queue invites for the WhatsApp API (Phase 2)
+ *   POST ?action=outreach-cancel             { campaignId }  stop queued invites
+ *   POST ?action=outreach-queue-run          admin: a short pass; Bearer CRON_SECRET: the worker (chains itself)
  *
  * Data (see docs/campaign-outreach.md):
  *   campaigns/{id}                              public campaign fields (slug, artist, cities, dates, perks…)
@@ -33,9 +36,14 @@ import {
 import { canTransition, isStatus } from '../../src/lib/outreach/status.js';
 import { maskPhone, normalizePhone } from '../../src/lib/outreach/normalize.js';
 import { unknownPlaceholders, DEFAULT_TEMPLATE } from '../../src/lib/outreach/template.js';
+import {
+    contactIdFor, enqueueInvites, cancelQueued, runQueue, queueStatus, rateStatus, kickWorker, defaultReminderHours,
+} from './outreachQueue.js';
+import { isWhatsAppConfigured } from './whatsapp.js';
 
 export const OUTREACH_ACTIONS = new Set([
     'outreach-campaign', 'outreach-apply', 'outreach-list', 'outreach-status', 'outreach-settings', 'outreach-audit',
+    'outreach-send', 'outreach-cancel', 'outreach-queue-run',
 ]);
 const PUBLIC = new Set(['outreach-campaign', 'outreach-apply']);
 
@@ -144,7 +152,6 @@ const handleCampaign = async (req, res, { db }) => {
 
 /* ── Public apply ─────────────────────────────────────────────────────── */
 
-const contactIdFor = (phone) => `p_${sha(phone).slice(0, 24)}`;
 
 /* A registered Newbi creator with this handle (creator profiles store it lowercase, no @). */
 const findCreatorByHandle = async (db, handle) => {
@@ -245,15 +252,20 @@ const handleList = async (req, res, { db }) => {
     const applications = appsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
         .sort((a, b) => String(b.lastSubmittedAt || '').localeCompare(String(a.lastSubmittedAt || '')));
     const priv = privSnap.exists ? privSnap.data() : {};
+    const configured = isWhatsAppConfigured();
+    const [queue, rate] = configured ? await Promise.all([queueStatus(db, campaignId), rateStatus(db)]) : [null, null];
     return send(res, 200, {
         success: true,
         applications,
         settings: {
             whatsappGroupLink: priv.whatsappGroupLink || '',
             messageTemplate: priv.messageTemplate || DEFAULT_TEMPLATE,
+            remindersEnabled: priv.remindersEnabled !== false,
+            joinReminderHours: Number(priv.joinReminderHours) || defaultReminderHours(),
             updatedAt: priv.updatedAt || null,
             updatedBy: priv.updatedBy || null,
         },
+        whatsappApi: { configured, queue, rate },
     });
 };
 
@@ -322,6 +334,12 @@ const handleSettings = async (req, res, { db, token, now = nowIso() }) => {
     if (whatsappGroupLink && !GROUP_LINK.test(whatsappGroupLink)) {
         return send(res, 400, { success: false, field: 'whatsappGroupLink', error: 'Paste a WhatsApp group invite link (https://chat.whatsapp.com/…).' });
     }
+    const remindersEnabled = body.remindersEnabled !== false;
+    const hoursRaw = body.joinReminderHours;
+    const joinReminderHours = hoursRaw === undefined || hoursRaw === null || hoursRaw === '' ? null : Number(hoursRaw);
+    if (joinReminderHours !== null && (!Number.isInteger(joinReminderHours) || joinReminderHours < 1 || joinReminderHours > 336)) {
+        return send(res, 400, { success: false, field: 'joinReminderHours', error: 'Remind after 1 to 336 hours (two weeks).' });
+    }
     const unknown = unknownPlaceholders(messageTemplate);
     if (unknown.length) {
         return send(res, 400, { success: false, field: 'messageTemplate', error: `Unknown placeholder${unknown.length > 1 ? 's' : ''}: ${unknown.map(u => `{${u}}`).join(', ')}` });
@@ -334,7 +352,17 @@ const handleSettings = async (req, res, { db, token, now = nowIso() }) => {
     await db.runTransaction(async (tx) => {
         const before = await tx.get(ref);
         const prev = before.exists ? before.data() : {};
-        tx.set(ref, { whatsappGroupLink, messageTemplate: messageTemplate.trim() || DEFAULT_TEMPLATE, updatedAt: now, updatedBy: actorEmail }, { merge: true });
+        tx.set(ref, {
+            whatsappGroupLink,
+            messageTemplate: messageTemplate.trim() || DEFAULT_TEMPLATE,
+            remindersEnabled,
+            joinReminderHours: joinReminderHours || defaultReminderHours(),
+            updatedAt: now,
+            updatedBy: actorEmail,
+        }, { merge: true });
+        if ((prev.remindersEnabled !== false) !== remindersEnabled || (joinReminderHours && Number(prev.joinReminderHours || defaultReminderHours()) !== joinReminderHours)) {
+            tx.set(campRef.collection('audit').doc(), { appId: null, field: 'reminders', from: null, to: remindersEnabled ? `after ${joinReminderHours || defaultReminderHours()} h` : 'off', source: 'admin', actorUid, actorEmail, at: now });
+        }
         if ((prev.whatsappGroupLink || '') !== whatsappGroupLink) {
             tx.set(campRef.collection('audit').doc(), { appId: null, field: 'whatsappGroupLink', from: prev.whatsappGroupLink || null, to: whatsappGroupLink || null, source: 'admin', actorUid, actorEmail, at: now });
         }
@@ -358,6 +386,54 @@ const handleAudit = async (req, res, { db }) => {
     return send(res, 200, { success: true, entries });
 };
 
+/* ── Admin: WhatsApp API sending (Phase 2) ─────────────────────────────── */
+
+const isCronCall = (req) => {
+    const secretKey = process.env.CRON_SECRET;
+    return Boolean(secretKey) && String(req.headers?.authorization || '') === `Bearer ${secretKey}`;
+};
+
+/* Without CRON_SECRET the worker can't start itself, so the request sends a first batch before answering. */
+const startWorker = async (req, db) => {
+    if (await kickWorker(req, 0)) return { started: true };
+    const report = await runQueue({ db, deadline: Date.now() + 20_000 });
+    return { started: false, report };
+};
+
+const handleSend = async (req, res, { db, token }) => {
+    if (!isWhatsAppConfigured()) return send(res, 409, { success: false, error: 'The WhatsApp API isn’t set up yet. Use Open WhatsApp instead.' });
+    const campaignId = str(req.body?.campaignId, 120);
+    const ids = [...new Set((Array.isArray(req.body?.appIds) ? req.body.appIds : []).map(id => str(id, 120)).filter(Boolean))];
+    if (!campaignId || !ids.length) return send(res, 400, { success: false, error: 'Choose at least one person.' });
+    if (ids.length > MAX_IDS_PER_CALL) return send(res, 400, { success: false, error: `Up to ${MAX_IDS_PER_CALL} at a time.` });
+    const priv = await privateRef(db.collection('campaigns').doc(campaignId)).get();
+    if (!priv.exists || !priv.data().whatsappGroupLink) return send(res, 409, { success: false, error: 'Add the WhatsApp group link in Message setup first.' });
+    const result = await enqueueInvites(db, { campaignId, appIds: ids, actor: actorOf(token) });
+    const worker = result.queued.length ? await startWorker(req, db) : { started: false };
+    return send(res, 200, { success: true, ...result, worker });
+};
+
+const handleCancel = async (req, res, { db, token }) => {
+    const campaignId = str(req.body?.campaignId, 120);
+    if (!campaignId) return send(res, 400, { success: false, error: 'campaignId is required' });
+    const result = await cancelQueued(db, { campaignId, actor: actorOf(token) });
+    return send(res, 200, { success: true, ...result });
+};
+
+/* The worker (cron or a chained call) runs most of a minute and hands over; an admin tick is a short pass. */
+const handleQueueRun = async (req, res, { db, cron }) => {
+    if (cron) {
+        const depth = Number(req.headers?.['x-outreach-chain'] || 0) || 0;
+        const report = await runQueue({ db, deadline: Date.now() + 48_000 });
+        const chained = report.more && !report.capped ? await kickWorker(req, depth) : false;
+        return send(res, 200, { success: true, ...report, chained });
+    }
+    const report = await runQueue({ db, deadline: Date.now() + 8_000 });
+    const campaignId = str(req.body?.campaignId, 120);
+    const queue = campaignId ? await queueStatus(db, campaignId) : null;
+    return send(res, 200, { success: true, ...report, queue });
+};
+
 /* ── Router ───────────────────────────────────────────────────────────── */
 
 export const handleOutreachAction = async (action, req, res, { decodedToken, db = getDb() } = {}) => {
@@ -365,6 +441,7 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         if (action === 'outreach-campaign') return await handleCampaign(req, res, { db });
         if (action === 'outreach-apply') return await handleApply(req, res, { db });
         if (PUBLIC.has(action)) return send(res, 400, { success: false, error: 'Unknown action.' });
+        if (action === 'outreach-queue-run' && isCronCall(req)) return await handleQueueRun(req, res, { db, cron: true });
 
         if (!decodedToken) return send(res, 401, { success: false, error: 'Please sign in to continue.' });
         if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
@@ -374,6 +451,9 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         if (action === 'outreach-status') return await handleStatus(req, res, ctx);
         if (action === 'outreach-settings') return await handleSettings(req, res, ctx);
         if (action === 'outreach-audit') return await handleAudit(req, res, ctx);
+        if (action === 'outreach-send') return await handleSend(req, res, ctx);
+        if (action === 'outreach-cancel') return await handleCancel(req, res, ctx);
+        if (action === 'outreach-queue-run') return await handleQueueRun(req, res, { ...ctx, cron: false });
         return send(res, 400, { success: false, error: 'Unknown action.' });
     } catch (err) {
         // Never log request bodies: they carry phones and emails.

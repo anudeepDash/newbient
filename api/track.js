@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import { recordUnsubscribe, recordResubscribe, unsubscribePage, isValidEmail, normalizeEmail } from './_lib/mailing.js';
 import { isValidSignature, isOwnHost, isValidUnsubscribeSig, readSignedToken } from './_lib/linkSign.js';
 import { recordWhatsAppStatus } from './_lib/whatsapp.js';
+import { onOutreachStatus, onOutreachInbound } from './_lib/outreachQueue.js';
 
 // The WhatsApp webhook signs the exact bytes Meta sent, so this function reads
 // the body itself (see readBody) instead of letting the runtime parse it.
@@ -115,14 +116,26 @@ const handleWhatsAppWebhook = async (req, res, raw, body) => {
         return res.status(401).json({ error: 'Invalid signature' });
     }
     const statuses = [];
-    (body.entry || []).forEach(e => (e.changes || []).forEach(c => (c.value?.statuses || []).forEach(st => statuses.push(st))));
+    const messages = [];
+    (body.entry || []).forEach(e => (e.changes || []).forEach(c => {
+        (c.value?.statuses || []).forEach(st => statuses.push(st));
+        (c.value?.messages || []).forEach(m => messages.push(m));
+    }));
     try {
-        await Promise.all(statuses.slice(0, 100).map(st => recordWhatsAppStatus(st).catch(err => console.warn('[TRACK API] WhatsApp status not saved:', err.message))));
+        await Promise.all(statuses.slice(0, 100).map(async (st) => {
+            const saved = await recordWhatsAppStatus(st);
+            // Campaign outreach: a failed invite goes back under "To message".
+            if (saved?.log) await onOutreachStatus(saved.log, st);
+        }).map(p => p.catch(err => console.warn('[TRACK API] WhatsApp status not saved:', err.message))));
+        // Replies: "Joined ✅" marks a creator joined; anything else marks them replied.
+        for (const m of messages.slice(0, 50)) {
+            await onOutreachInbound(m).catch(err => console.warn('[TRACK API] WhatsApp message not handled:', err.message));
+        }
     } catch (err) {
         console.error('[TRACK API] WhatsApp webhook failed:', err.message);
     }
     // Always 200 once the signature checks out, or Meta keeps retrying.
-    return res.status(200).json({ received: statuses.length });
+    return res.status(200).json({ received: statuses.length + messages.length });
 };
 
 export default async function handler(req, res) {
