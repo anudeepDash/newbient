@@ -40,5 +40,5 @@ export const toCsv = (rows, columns = EXPORT_COLUMNS) => {
     const head = columns.map(c => csvCell(c.label)).join(',');
     const body = (rows || []).map(row => columns.map(c => csvCell(c.get ? c.get(row) : row[c.key])).join(','));
     // BOM so Excel opens UTF-8 names (Devanagari, emoji) correctly.
-    return `﻿${[head, ...body].join('\r\n')}\r\n`;
+    return `\uFEFF${[head, ...body].join('\r\n')}\r\n`;
 };

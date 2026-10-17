@@ -180,7 +180,7 @@ describe('csv', () => {
         expect(csvCell('+919876543210')).toBe('+919876543210');
         expect(csvCell('a,b')).toBe('"a,b"');
         const csv = toCsv([{ fullName: 'Riya', instagramHandle: 'riya', status: 'message_sent' }]);
-        expect(csv.startsWith('﻿Name,Instagram')).toBe(true);
+        expect(csv.startsWith('\uFEFFName,Instagram')).toBe(true);
         expect(csv).toContain('Riya,@riya');
         expect(csv).toContain('Message sent');
     });
