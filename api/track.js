@@ -52,6 +52,18 @@ const TRANSPARENT_1PX_GIF = Buffer.from(
     'base64'
 );
 
+// Our own hosts (exact match or a subdomain), used to decide whether a click
+// may redirect straight away. A substring check like hostname.includes('newbi.live')
+// is unsafe because 'newbi.live.evil.com' would pass it.
+const isOwnHost = (hostname = '') => {
+    const host = String(hostname).toLowerCase();
+    return ['newbi.live', 'newbient.com', 'artistant.in'].some(d => host === d || host.endsWith(`.${d}`));
+};
+
+const escapeHtml = (s = '') => String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 export default async function handler(req, res) {
     if (!res.status) {
         res.status = function (code) {
@@ -108,7 +120,7 @@ export default async function handler(req, res) {
         } catch (e) {}
 
         // Fallback for empty / invalid destinations
-        if (!destination || destination === '#' || destination.startsWith('javascript:')) {
+        if (!destination || destination === '#' || /^\s*(javascript|data|vbscript):/i.test(destination)) {
             destination = 'https://newbi.live';
         }
 
@@ -117,19 +129,27 @@ export default async function handler(req, res) {
             destination = `https://${destination}`;
         }
 
+        // Only our own sites, or relative paths, may redirect straight away.
+        // Anything else gets a "you're leaving" page, so this endpoint can't be
+        // used as an open redirector in phishing links.
+        let trusted = destination.startsWith('/') && !destination.startsWith('//');
         try {
             const destUrl = new URL(destination, 'https://newbi.live');
-            if (destUrl.hostname.includes('newbi.live') || destUrl.hostname.includes('newbient.com') || destination.startsWith('/')) {
+            if (trusted || isOwnHost(destUrl.hostname)) {
+                trusted = true;
+                // Only append the recipient's email/campaign params to our own hosts,
+                // so they're never leaked to an external site.
                 if (email) {
                     destUrl.searchParams.set('email', email);
                     destUrl.searchParams.set('via', 'email');
                 }
                 if (cid) destUrl.searchParams.set('cid', cid);
                 if (tid) destUrl.searchParams.set('tid', tid);
-                
+
                 destination = destination.startsWith('/') ? `${destUrl.pathname}${destUrl.search}${destUrl.hash}` : destUrl.href;
             }
         } catch (e) {
+            trusted = false;
             console.warn('[TRACK API] URL parse error:', e.message);
         }
 
@@ -192,6 +212,18 @@ export default async function handler(req, res) {
             } catch (err) {
                 console.error('[TRACK API] Click log error:', err);
             }
+        }
+
+        // External, unsigned destination: show an interstitial instead of an
+        // automatic 302, so /api/track can't be abused as an open redirect.
+        if (!trusted) {
+            const safeHref = escapeHtml(destination);
+            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+            return res.end(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Leaving Newbi</title></head>
+<body style="margin:0;font-family:-apple-system,system-ui,sans-serif;background:#0b0c10;color:#f2f2f2;display:flex;min-height:100dvh;align-items:center;justify-content:center;padding:24px">
+<div style="max-width:420px;text-align:center"><p style="font-size:18px;font-weight:700;margin:0 0 8px">You're leaving newbi.live</p>
+<p style="font-size:14px;color:#a0a0a8;margin:0 0 20px;word-break:break-all">${safeHref}</p>
+<a href="${safeHref}" rel="noopener noreferrer nofollow" style="display:inline-block;background:#39FF14;color:#000;font-weight:700;padding:12px 22px;border-radius:12px;text-decoration:none">Continue</a></div></body></html>`);
         }
 
         res.writeHead(302, {

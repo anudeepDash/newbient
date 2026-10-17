@@ -127,7 +127,21 @@ export default async function handler(req, res) {
             return res.status(404).json({ success: false, message: 'No forms available' });
         }
 
-        // Case 3: Fetch specific form across all tiers
+        // Case 3: Fetch specific form across all tiers.
+        // Guard the id first: a Firestore document id can't contain '/', be '.'/'..',
+        // or match __*__. Passing those into .doc() throws INVALID_ARGUMENT and the
+        // raw error (incl. the project id) was being returned to the client. Reject
+        // them as a plain 404 before any lookup.
+        const isValidDocId = (v) =>
+            typeof v === 'string' &&
+            v.length > 0 && v.length <= 1500 &&
+            !v.includes('/') &&
+            v !== '.' && v !== '..' &&
+            !/^__.*__$/.test(v);
+        if (!isValidDocId(targetId)) {
+            return res.status(404).json({ success: false, message: 'Form not found' });
+        }
+
         const clean = normalizeString(targetId);
         const cleanSlug = createSlug(targetId);
 
@@ -270,6 +284,8 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, message: 'Form not found' });
     } catch (err) {
         console.error('[API/FORMS] Error:', err);
-        return res.status(500).json({ success: false, error: err.message });
+        // Never echo the raw backend error to the client (it leaks internals such as
+        // the Firestore project id); log it above and return a generic message.
+        return res.status(500).json({ success: false, error: "Couldn't load that just now. Please try again." });
     }
 }
