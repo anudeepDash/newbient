@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import { Link } from 'react-router-dom';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import MessageSquareQuote from 'lucide-react/dist/esm/icons/message-square-quote';
@@ -12,28 +11,86 @@ import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import ShieldAlert from 'lucide-react/dist/esm/icons/shield-alert';
 import Save from 'lucide-react/dist/esm/icons/save';
-import Users from 'lucide-react/dist/esm/icons/users';
+import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Radio from 'lucide-react/dist/esm/icons/radio';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
-import CityGroupManager from '../../components/admin/CityGroupManager';
 import CreatorTestimonialsManager from '../../components/admin/CreatorTestimonialsManager';
 import { useStore } from '../../lib/store';
 import { cn } from '../../lib/utils';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
-import { Button, Badge, SegmentedTabs } from '../../components/admin/ui';
+import { Button, Badge } from '../../components/admin/ui';
 import { accent } from '../../components/admin/theme';
 import { fieldCls, areaCls, Toggle } from '../../components/admin/uploads/UploadKit';
 import { BuilderCard } from '../../components/admin/events/EditorParts';
-import { CONTENT_TABS, CharCount, LabelRow } from '../../components/admin/content/ContentKit';
+import { CharCount, LabelRow } from '../../components/admin/content/ContentKit';
 import PartnerBrandsCard from '../../components/admin/content/PartnerBrandsCard';
 
 const DETAIL_FIELDS = ['title', 'tagline', 'description', 'phone', 'email', 'whatsappCommunity', 'instagram', 'linkedin', 'address'];
 const pickDetails = (d) => DETAIL_FIELDS.reduce((acc, k) => ({ ...acc, [k]: d?.[k] && d[k] !== '#' ? d[k] : '' }), {});
 
-const SECTIONS = [
-    { value: 'website', label: 'Website', icon: Globe },
-    { value: 'groups', label: 'Creator groups', icon: Users },
-    { value: 'testimonials', label: 'Testimonials', icon: MessageSquareQuote },
-];
+/*
+ * One page, three sidebar entries:
+ *   site    Landing site → Site settings: what newbi.live shows (sections, home numbers),
+ *           contact details, search and sharing, and the site status.
+ *   brands  Landing site → Brands & quotes: partner logos and creator testimonials.
+ *   app     App → App settings: the WhatsApp community link and where the app's other
+ *           settings live (creator settings, announcements, maintenance).
+ */
+const VIEWS = {
+    site: { title: 'Site settings', icon: Globe, description: 'What newbi.live shows, and how people reach you' },
+    brands: { title: 'Brands & quotes', icon: MessageSquareQuote, description: 'Partner logos and creator testimonials on newbi.live' },
+    app: { title: 'App settings', icon: Smartphone, description: 'Settings for app.newbi.live' },
+};
+
+/* The numbers strip on the home page (site_settings/general.stats), up to four. Nothing shows until you add them. */
+const HomeNumbersCard = ({ stats = [], onSave }) => {
+    const toRows = (list) => [...(Array.isArray(list) ? list : []).map(x => ({ value: x?.value || '', label: x?.label || '' }))];
+    const [rows, setRows] = useState(() => toRows(stats));
+    const [saving, setSaving] = useState(false);
+    const savedJson = JSON.stringify(toRows(stats).filter(r => r.value.trim() && r.label.trim()));
+    const cleaned = rows.map(r => ({ value: r.value.trim(), label: r.label.trim() })).filter(r => r.value && r.label).slice(0, 4);
+    const dirty = JSON.stringify(cleaned) !== savedJson;
+    useEffect(() => { if (!dirty) setRows(toRows(stats)); }, [JSON.stringify(stats)]); // eslint-disable-line react-hooks/exhaustive-deps
+    const set = (i, k, v) => setRows(list => list.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
+    const save = async () => { setSaving(true); try { await onSave(cleaned); } finally { setSaving(false); } };
+    return (
+        <BuilderCard title="Numbers on the home page" hint="Up to four, like “120+ · College activations”. Leave empty to hide the strip.">
+            <div className="space-y-2">
+                {rows.map((r, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                        <input className={cn(fieldCls, 'w-28 shrink-0')} value={r.value} maxLength={16} onChange={(e) => set(i, 'value', e.target.value)} placeholder="120+" />
+                        <input className={cn(fieldCls, 'min-w-0 flex-1')} value={r.label} maxLength={40} onChange={(e) => set(i, 'label', e.target.value)} placeholder="College activations" />
+                        <button type="button" aria-label="Remove" onClick={() => setRows(list => list.filter((_, j) => j !== i))} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gray-400 hover:bg-black/5 hover:text-red-600 dark:hover:bg-white/10"><Trash2 size={16} /></button>
+                    </div>
+                ))}
+                <div className="flex items-center justify-between gap-2 pt-1">
+                    {rows.length < 4
+                        ? <Button variant="ghost" onClick={() => setRows(list => [...list, { value: '', label: '' }])} className="h-10"><Plus size={15} /> Add a number</Button>
+                        : <span />}
+                    {dirty && <Button variant="accent" onClick={save} disabled={saving} className="h-10 px-4"><Save size={15} /> {saving ? 'Saving…' : 'Save numbers'}</Button>}
+                </div>
+            </div>
+        </BuilderCard>
+    );
+};
+
+const LinkRow = ({ to, href, icon: Icon, tone, title, hint }) => {
+    const body = (
+        <>
+            <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', accent(tone).chip)}><Icon size={18} /></span>
+            <span className="min-w-0 flex-1">
+                <span className="block text-[14px] font-semibold">{title}</span>
+                <span className="block text-[12px] text-gray-500">{hint}</span>
+            </span>
+            {href ? <ExternalLink size={15} className="shrink-0 text-gray-400" /> : <ChevronRight size={16} className="shrink-0 text-gray-400" />}
+        </>
+    );
+    const cls = 'flex min-h-[56px] items-center gap-3 rounded-xl border border-black/[0.06] p-3 transition-colors hover:border-black/15 dark:border-white/[0.08] dark:hover:border-white/20';
+    return href ? <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>{body}</a> : <Link to={to} className={cls}>{body}</Link>;
+};
 
 const IconField = ({ icon: Icon, label, hint, right, children }) => (
     <label className="block min-w-0">
@@ -46,11 +103,9 @@ const IconField = ({ icon: Icon, label, hint, right, children }) => (
     </label>
 );
 
-const SiteContentManager = () => {
+const SiteContentManager = ({ view = 'site' }) => {
     const { siteDetails, updateSiteDetails, siteSettings = {}, updateGeneralSettings, maintenanceState = {}, addToast } = useStore();
-    const [params, setParams] = useSearchParams();
-    const tab = SECTIONS.some(s => s.value === params.get('tab')) ? params.get('tab') : 'website';
-    const setTab = (v) => { const next = new URLSearchParams(params); if (v === 'website') next.delete('tab'); else next.set('tab', v); setParams(next, { replace: true }); };
+    const tab = view === 'site' ? 'website' : view;
 
     const [form, setForm] = useState(() => pickDetails(siteDetails));
     const [dirty, setDirty] = useState(false);
@@ -112,26 +167,44 @@ const SiteContentManager = () => {
 
     const locked = !!maintenanceState.global;
     const sectionToggles = [
-        { key: 'showUpcomingEvents', label: 'Upcoming events', hint: 'The events section on the home page', on: !!siteSettings.showUpcomingEvents, value: (v) => v, href: '/#upcoming' },
+        // Defaults match what newbi.live does when a setting was never saved (on).
+        { key: 'showUpcomingEvents', label: 'Upcoming events', hint: 'Upcoming shows on the home page', on: siteSettings.showUpcomingEvents !== false, value: (v) => v, href: '/' },
         { key: 'showPastClients', label: 'Partner brands', hint: 'The logo strip on the home and creator pages', on: siteSettings.showPastClients !== false, value: (v) => v, href: '/' },
-        { key: 'showVolunteerGigs', label: 'Volunteer gigs', hint: 'The gigs list on the community page', on: siteSettings.showVolunteerGigs !== false, value: (v) => v, href: '/community' },
-        { key: 'enableTribeForm', label: 'Community joining form', hint: 'The sign-up step on the community page', on: siteSettings.enableTribeForm !== false, value: (v) => v, href: '/community' },
+        { key: 'showCreatorTestimonials', label: 'Creator testimonials', hint: 'Quotes from creators on the creator page', on: siteSettings.showCreatorTestimonials !== false, value: (v) => v, href: '/creator' },
     ];
 
     const sticky = dirty && changed.length > 0;
 
     return (
-        <AdminCommunityHubLayout
-            studioHeader={{ title: 'Site content', icon: LayoutGrid, description: 'What the public website shows, and how people reach you' }}
-            tabs={CONTENT_TABS}
-        >
+        <AdminCommunityHubLayout studioHeader={VIEWS[view] || VIEWS.site} hideTabs>
             <div className="space-y-5">
-                <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
-                    <SegmentedTabs value={tab} onChange={setTab} items={SECTIONS} />
-                </div>
+                {tab === 'brands' && (
+                    <>
+                        <PartnerBrandsCard visible={siteSettings.showPastClients !== false} />
+                        <CreatorTestimonialsManager />
+                    </>
+                )}
 
-                {tab === 'groups' && <CityGroupManager />}
-                {tab === 'testimonials' && <CreatorTestimonialsManager />}
+                {tab === 'app' && (
+                    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+                        <div className="min-w-0 space-y-5">
+                            <BuilderCard title="Community" hint="The WhatsApp group button members see in the app's Community tab">
+                                <IconField icon={MessageCircle} label="WhatsApp community link">
+                                    <input className={cn(fieldCls, 'pl-10', waBad && 'border-red-400')} value={form.whatsappCommunity} onChange={(e) => set('whatsappCommunity', e.target.value)} placeholder="https://chat.whatsapp.com/…" inputMode="url" autoCapitalize="off" autoCorrect="off" />
+                                    {waBad && <span role="alert" className="mt-1 block text-[12px] font-semibold text-red-600 dark:text-red-400">Paste the full link, starting with https://</span>}
+                                </IconField>
+                            </BuilderCard>
+                            <BuilderCard title="More app settings" hint="The rest lives with the part of the app it changes">
+                                <div className="space-y-2">
+                                    <LinkRow to="/admin/creators/settings" icon={Zap} tone="pink" title="Creator settings" hint="Instagram check, minimum followers, welcome points, new sign-ups" />
+                                    <LinkRow to="/admin/announcements" icon={Radio} tone="amber" title="Announcements" hint="Notices and updates for app users" />
+                                    <LinkRow to="/admin/system-command" icon={ShieldAlert} tone="red" title="Maintenance" hint="Switch pages and features off for everyone" />
+                                    <LinkRow href="https://app.newbi.live" icon={Smartphone} tone="green" title="Open the app" hint="app.newbi.live" />
+                                </div>
+                            </BuilderCard>
+                        </div>
+                    </div>
+                )}
 
                 {tab === 'website' && (
                     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -174,7 +247,15 @@ const SiteContentManager = () => {
                                 </ul>
                             </BuilderCard>
 
-                            <BuilderCard title="Contact details" hint="Shown on the contact page; the WhatsApp link is the community page's join button">
+                            <HomeNumbersCard
+                                stats={siteSettings.stats}
+                                onSave={async (stats) => {
+                                    try { await updateGeneralSettings({ stats }); addToast(stats.length ? 'Home page numbers saved.' : 'Home page numbers removed.', 'success'); }
+                                    catch (err) { console.error(err); addToast("Couldn't save the numbers. Please try again.", 'error'); }
+                                }}
+                            />
+
+                            <BuilderCard title="Contact details" hint="Shown on the contact page and in the site footer">
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <IconField icon={Phone} label="Phone" hint="Also used for the WhatsApp chat button">
                                         <input className={cn(fieldCls, 'pl-10')} value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="+91 98765 43210" inputMode="tel" autoComplete="off" />
@@ -182,10 +263,6 @@ const SiteContentManager = () => {
                                     <IconField icon={Mail} label="Email" hint={emailBad ? undefined : 'Where the contact page sends people'}>
                                         <input className={cn(fieldCls, 'pl-10', emailBad && 'border-red-400')} value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="hello@newbi.live" inputMode="email" autoCapitalize="off" autoComplete="off" />
                                         {emailBad && <span role="alert" className="mt-1 block text-[12px] font-semibold text-red-600 dark:text-red-400">That doesn't look like an email address.</span>}
-                                    </IconField>
-                                    <IconField icon={MessageCircle} label="WhatsApp community link">
-                                        <input className={cn(fieldCls, 'pl-10', waBad && 'border-red-400')} value={form.whatsappCommunity} onChange={(e) => set('whatsappCommunity', e.target.value)} placeholder="https://chat.whatsapp.com/…" inputMode="url" autoCapitalize="off" autoCorrect="off" />
-                                        {waBad && <span role="alert" className="mt-1 block text-[12px] font-semibold text-red-600 dark:text-red-400">Paste the full link, starting with https://</span>}
                                     </IconField>
                                     <IconField icon={Instagram} label="Instagram">
                                         <input className={cn(fieldCls, 'pl-10')} value={form.instagram} onChange={(e) => set('instagram', e.target.value)} placeholder="@newbi.live or a link" autoCapitalize="off" autoCorrect="off" />
@@ -228,8 +305,6 @@ const SiteContentManager = () => {
                                     <p className="text-[12px] text-gray-500">These are saved for the team. The website's own page title is set in its code, so changing them here doesn't change Google results yet.</p>
                                 </div>
                             </BuilderCard>
-
-                            <PartnerBrandsCard visible={siteSettings.showPastClients !== false} />
                         </div>
 
                         <aside className="hidden space-y-3 xl:sticky xl:top-24 xl:block xl:self-start">
@@ -238,7 +313,7 @@ const SiteContentManager = () => {
                         </aside>
                     </div>
                 )}
-                {tab === 'website' && sticky && (
+                {(tab === 'website' || tab === 'app') && sticky && (
                     <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 lg:bottom-4">
                         <div className="flex items-center gap-2 rounded-2xl border border-black/[0.08] bg-white/95 p-2 pl-4 shadow-xl backdrop-blur-xl dark:border-white/[0.1] dark:bg-[#0d0f15]/95">
                             <p className="min-w-0 flex-1 truncate text-[13px] font-semibold text-gray-600 dark:text-zinc-300">
@@ -273,9 +348,6 @@ const ContactPreview = ({ form }) => {
                     </span>
                 </div>
             ))}
-            <div className={cn('flex h-11 items-center justify-center gap-2 rounded-xl text-[13px] font-bold', form.whatsappCommunity ? 'bg-emerald-500 text-white dark:bg-neon-green dark:text-black' : 'bg-black/5 text-gray-400 dark:bg-white/5')}>
-                <MessageCircle size={15} /> Join the WhatsApp community
-            </div>
         </div>
     );
 };

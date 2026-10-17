@@ -16,7 +16,7 @@ import { imageProblem, MAX_IMAGE_MB } from './contentRules';
 /* Pieces shared by the Content screens (site content, announcements, blog, portfolio). */
 
 export const CONTENT_TABS = [
-    { name: 'Site content', path: '/admin/content', icon: LayoutGrid },
+    { name: 'Site settings', path: '/admin/site', icon: LayoutGrid },
     { name: 'Announcements', path: '/admin/announcements', icon: Radio },
     { name: 'Blog', path: '/admin/blog', icon: PenSquare },
     { name: 'Portfolio', path: '/admin/concertzone', icon: Music },

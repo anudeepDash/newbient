@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
 import Calendar from 'lucide-react/dist/esm/icons/calendar';
@@ -72,12 +72,13 @@ const EventBadges = ({ event, availability, pending }) => (
     </div>
 );
 
-const EventList = ({ events, ordersByEvent, onOpen, canSeeMoney, onNewGuestlist, isScanner }) => {
+const EventList = ({ events, ordersByEvent, onOpen, canSeeMoney, onNewGuestlist, isScanner, fixedKind }) => {
     const [params, setParams] = useSearchParams();
     const [search, setSearch] = useState('');
     const [view, setView] = useViewMode('ticketing_events', 'cards');
     const when = params.get('when') || 'upcoming';
-    const kind = params.get('kind') || 'all';
+    // Ticket sales and Guestlists are two sidebar entries over this one list, each fixed to its kind.
+    const kind = fixedKind || params.get('kind') || 'all';
     const now = Date.now() - 12 * 3600000; // tonight's event stays under "upcoming"
 
     const setParam = (key, value, fallback) => {
@@ -145,17 +146,20 @@ const EventList = ({ events, ordersByEvent, onOpen, canSeeMoney, onNewGuestlist,
                 <StatTile icon={Ticket} tone="green" label="Tickets sold" value={stats.sold.toLocaleString('en-IN')} hint="Upcoming events" />
                 {canSeeMoney && !isScanner
                     ? <StatTile icon={IndianRupee} tone="blue" label="Ticket revenue" value={inr(stats.revenue)} hint="Verified, upcoming events" />
-                    : <StatTile icon={ListChecks} tone="fuchsia" label="Guestlists" value={stats.guestlists} hint="Open and upcoming" onClick={() => setParam('kind', 'guestlist', 'all')} active={kind === 'guestlist'} />}
+                    : <StatTile icon={ListChecks} tone="fuchsia" label="Guestlists" value={stats.guestlists} hint="Open and upcoming" onClick={fixedKind ? undefined : () => setParam('kind', 'guestlist', 'all')} active={kind === 'guestlist'} />}
             </div>
 
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
                 <SearchInput value={search} onChange={setSearch} placeholder="Search events or venues" className="lg:w-80" />
                 <div className="flex flex-1 items-center gap-2">
-                    <Select value={kind} onChange={(v) => setParam('kind', v, 'all')} label="Kind" className="min-w-0 flex-1 lg:w-52 lg:flex-none" options={[
-                        { value: 'all', label: 'Tickets and guestlists' },
-                        { value: 'tickets', label: 'Ticketed' },
-                        { value: 'guestlist', label: 'Guestlists' },
-                    ]} />
+                    {!fixedKind && (
+                        <Select value={kind} onChange={(v) => setParam('kind', v, 'all')} label="Kind" className="min-w-0 flex-1 lg:w-52 lg:flex-none" options={[
+                            { value: 'all', label: 'Tickets and guestlists' },
+                            { value: 'tickets', label: 'Ticketed' },
+                            { value: 'guestlist', label: 'Guestlists' },
+                        ]} />
+                    )}
+                    {fixedKind && <span className="flex-1" />}
                     {!isScanner && (
                         <ExportMenu label="Export" getSpec={() => ordersSpec(filtered, Object.values(ordersByEvent).flat(), 'Ticket orders')} hint="Every order for the events shown" />
                     )}
@@ -274,7 +278,11 @@ const EventTabs = ({ tabs, active, onChange }) => {
     );
 };
 
-const TicketingManagement = () => {
+/*
+ * mode: 'tickets' (App · Events & tickets → Ticket sales) or 'guestlists' (App · Community →
+ * Guestlists). Same screens; the list is fixed to that kind and the header matches the sidebar.
+ */
+const TicketingManagement = ({ mode = 'tickets' }) => {
     useStoreSubscription(['upcomingEvents', 'portfolio', 'ticketOrders', 'guestlists', 'coupons', 'volunteerGigs']);
     const user = useStore(s => s.user);
     const ticketOrders = useStore(s => s.ticketOrders);
@@ -338,7 +346,10 @@ const TicketingManagement = () => {
         setParams(next);
     };
 
-    const header = { title: 'Ticketing', icon: Ticket, description: 'Orders, guestlists, check-in and coupons for every event' };
+    const guestlists = mode === 'guestlists';
+    const header = guestlists
+        ? { title: 'Guestlists', icon: ListChecks, description: 'Requests, tasks, capacity and check-in for community guestlists' }
+        : { title: 'Ticket sales', icon: Ticket, description: 'Orders, payments, check-in and coupons for ticketed events' };
 
     const editorSheet = (
         <GuestlistEditor
@@ -349,6 +360,12 @@ const TicketingManagement = () => {
         />
     );
 
+    // Old links to the guestlist filter on the Ticket sales page open the Guestlists page.
+    if (!guestlists && !selectedEventId && params.get('kind') === 'guestlist') {
+        const next = new URLSearchParams(params); next.delete('kind');
+        return <Navigate to={`/admin/guestlists${next.toString() ? `?${next}` : ''}`} replace />;
+    }
+
     if (!selectedEventId) {
         return (
             <AdminCommunityHubLayout
@@ -357,7 +374,7 @@ const TicketingManagement = () => {
                 action={(
                     <div className="flex w-full gap-2 sm:w-auto">
                         <Button as={Link} to="/admin/scanner" variant="secondary" className="h-11 flex-1 sm:flex-none"><ScanLine size={15} /> Gate scanner</Button>
-                        {!isScanner && <Button variant="accent" className="h-11 flex-1 sm:flex-none" onClick={() => setEditor({ guestlist: null })}><Plus size={15} /> New guestlist</Button>}
+                        {guestlists && !isScanner && <Button variant="accent" className="h-11 flex-1 sm:flex-none" onClick={() => setEditor({ guestlist: null })}><Plus size={15} /> New guestlist</Button>}
                     </div>
                 )}
             >
@@ -368,6 +385,7 @@ const TicketingManagement = () => {
                     canSeeMoney={canSeeMoney}
                     isScanner={isScanner}
                     onNewGuestlist={() => setEditor({ guestlist: null })}
+                    fixedKind={guestlists ? 'guestlist' : 'tickets'}
                 />
                 {editorSheet}
             </AdminCommunityHubLayout>

@@ -1,18 +1,17 @@
 import React from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
+import TicketingManagement from './TicketingManagement';
 
 /*
- * Guestlists now live in Ticketing: the list (filtered to guestlists), the
- * per-event Guestlist tab (requests, tasks, capacity), check-in, export, and
- * "New guestlist" for standalone lists. This route only forwards old links.
+ * App · Community → Guestlists: the ticketing screens fixed to guestlists (the
+ * list, each event's Guestlist tab with requests, tasks and capacity, check-in,
+ * export, and "New guestlist"). Old ?id= links open that guestlist.
  */
 const GuestlistManager = () => {
     const [params] = useSearchParams();
-    const id = params.get('id') || params.get('eventId');
-    const to = id
-        ? `/admin/ticketing?eventId=${encodeURIComponent(id)}&tab=guestlist`
-        : '/admin/ticketing?kind=guestlist';
-    return <Navigate to={to} replace />;
+    const id = params.get('id');
+    if (id) return <Navigate to={`/admin/guestlists?eventId=${encodeURIComponent(id)}&tab=guestlist`} replace />;
+    return <TicketingManagement mode="guestlists" />;
 };
 
 export default GuestlistManager;

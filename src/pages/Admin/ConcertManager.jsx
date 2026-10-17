@@ -149,7 +149,7 @@ const ConcertManager = () => {
 
     return (
         <AdminCommunityHubLayout
-            studioHeader={{ title: 'Portfolio', icon: Music, description: 'Past events and campaigns on the home page' }}
+            studioHeader={{ title: 'Work', icon: Music, description: 'Past events and campaigns: “Nights we built” on the home page and the /work archive' }}
             tabs={CONTENT_TABS}
             action={(
                 <div className="flex w-full gap-2 sm:w-auto">

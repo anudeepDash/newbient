@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Shield from 'lucide-react/dist/esm/icons/shield';
 import Users from 'lucide-react/dist/esm/icons/users';
 import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
@@ -56,6 +56,9 @@ import { toDate, formatDay, relativeTime } from '../../components/admin/workspac
 
 const PAGE_SIZE = 24;
 const TABS = ['admins', 'requests', 'active', 'members'];
+// One page, two sidebar entries: Team (staff and access requests) and App users (everyone with an account).
+const VIEW_TABS = { team: ['admins', 'requests'], users: ['members', 'active'] };
+const VIEW_PATH = { team: '/admin/manage-admins', users: '/admin/users' };
 const ROLE_ORDER = ['founder', 'developer', 'super_admin', 'content_admin', 'editor', 'blog_writer', 'gate_manager', 'scanner', 'admin'];
 const DAY = 86400000;
 const WINDOWS = [
@@ -93,7 +96,8 @@ const SeenDot = ({ date }) => {
     return <span className={cn('inline-block h-2 w-2 shrink-0 rounded-full', accent(tone).dot)} aria-hidden="true" />;
 };
 
-const AdminManager = () => {
+const AdminManager = ({ view = 'team' }) => {
+    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const user = useStore(s => s.user);
     const authInitialized = useStore(s => s.authInitialized);
@@ -115,7 +119,8 @@ const AdminManager = () => {
 
     // ── URL state ──
     const rawTab = searchParams.get('tab');
-    const tab = TABS.includes(rawTab) && (rawTab !== 'requests' || canAuthorizeStaff) ? rawTab : 'admins';
+    const allowedTabs = VIEW_TABS[view] || TABS;
+    const tab = allowedTabs.includes(rawTab) && (rawTab !== 'requests' || canAuthorizeStaff) ? rawTab : allowedTabs[0];
     const memberFilter = MEMBER_FILTERS.some(f => f.value === searchParams.get('filter')) ? searchParams.get('filter') : 'all';
     const activeWindow = WINDOWS.some(w => w.value === searchParams.get('window')) ? searchParams.get('window') : 'month';
     const setParams = useCallback((patch) => {
@@ -508,7 +513,7 @@ const AdminManager = () => {
             <AccessNotice
                 icon={Lock}
                 tone="indigo"
-                title="Members is for founders and admins"
+                title={view === 'users' ? 'App users is for founders and admins' : 'Team is for founders and admins'}
                 actions={<Button as={Link} to="/admin" variant="primary" className="h-12 w-full"><LayoutDashboard size={15} /> Back to the dashboard</Button>}
             >
                 Your role can't open the team and member list. Ask a founder if you need something here.
@@ -558,9 +563,17 @@ const AdminManager = () => {
     const tabs = [
         { value: 'admins', label: 'Team', count: team.length, icon: Shield },
         ...(canAuthorizeStaff ? [{ value: 'requests', label: 'Requests', count: pendingRequests.length, highlight: pendingRequests.length > 0, icon: Clock }] : []),
-        { value: 'active', label: 'Active users', icon: Activity },
         { value: 'members', label: 'All members', count: totalCount, icon: Users },
-    ];
+        { value: 'active', label: 'Active users', icon: Activity },
+    ].filter(t => allowedTabs.includes(t.value));
+
+    // A stat tile for a tab on the other page (Team ↔ App users) opens that page.
+    const goTab = (patch) => {
+        const target = Object.keys(VIEW_TABS).find(v => VIEW_TABS[v].includes(patch.tab)) || view;
+        if (target === view) { setParams(patch); return; }
+        const q = new URLSearchParams(Object.entries(patch).filter(([, v]) => v != null && v !== VIEW_TABS[target][0]));
+        navigate(`${VIEW_PATH[target]}${q.toString() ? `?${q}` : ''}`);
+    };
 
     const peopleList = (rows, { showSeen }) => (
         <Card className="overflow-hidden rounded-2xl">
@@ -632,22 +645,24 @@ const AdminManager = () => {
 
     return (
         <AdminCommunityHubLayout
-            studioHeader={{ title: 'Members', icon: Shield, description: 'Your team, who can open what, and everyone with an account' }}
+            studioHeader={view === 'users'
+                ? { title: 'App users', icon: Users, description: 'Everyone with a Newbi account: creators, community members and ticket buyers' }
+                : { title: 'Team', icon: Shield, description: 'Your team, who can open what, and access requests' }}
             hideTabs
-            action={canAuthorizeStaff ? (
+            action={canAuthorizeStaff && view !== 'users' ? (
                 <Button variant="primary" onClick={() => setInviteOpen(true)} className="h-11 w-full sm:w-auto"><UserPlus size={15} /> Invite teammate</Button>
             ) : null}
         >
             <div className="space-y-5">
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    <StatTile icon={Shield} tone="indigo" label="Team" value={team.length} hint={`${founderCount} ${founderCount === 1 ? 'founder' : 'founders'}`} active={tab === 'admins'} onClick={() => setParams({ tab: 'admins', filter: null, window: null })} />
+                    <StatTile icon={Shield} tone="indigo" label="Team" value={team.length} hint={`${founderCount} ${founderCount === 1 ? 'founder' : 'founders'}`} active={tab === 'admins'} onClick={() => goTab({ tab: 'admins', filter: null, window: null })} />
                     {canAuthorizeStaff ? (
-                        <StatTile icon={Clock} tone={pendingRequests.length ? 'amber' : 'gray'} label="Requests" value={pendingRequests.length} hint={pendingRequests.length ? 'Waiting for you' : 'Nothing waiting'} active={tab === 'requests'} onClick={() => setParams({ tab: 'requests', filter: null, window: null })} />
+                        <StatTile icon={Clock} tone={pendingRequests.length ? 'amber' : 'gray'} label="Requests" value={pendingRequests.length} hint={pendingRequests.length ? 'Waiting for you' : 'Nothing waiting'} active={tab === 'requests'} onClick={() => goTab({ tab: 'requests', filter: null, window: null })} />
                     ) : (
-                        <StatTile icon={ShieldAlert} tone={suspendedCount ? 'red' : 'gray'} label="Suspended" value={suspendedCount} hint="Accounts on hold" active={tab === 'members' && memberFilter === 'suspended'} onClick={() => setParams({ tab: 'members', filter: 'suspended', window: null })} />
+                        <StatTile icon={ShieldAlert} tone={suspendedCount ? 'red' : 'gray'} label="Suspended" value={suspendedCount} hint="Accounts on hold" active={tab === 'members' && memberFilter === 'suspended'} onClick={() => goTab({ tab: 'members', filter: 'suspended', window: null })} />
                     )}
-                    <StatTile icon={UserCheck} tone="green" label="Active" value={activeThisWeek.toLocaleString('en-IN')} hint="Signed in this week" active={tab === 'active' && activeWindow === 'week'} onClick={() => setParams({ tab: 'active', window: 'week', filter: null })} />
-                    <StatTile icon={Users} tone="blue" label="All members" value={totalCount.toLocaleString('en-IN')} hint={suspendedCount ? `${suspendedCount} suspended` : 'Everyone we know'} active={tab === 'members' && memberFilter === 'all'} onClick={() => setParams({ tab: 'members', filter: null, window: null })} />
+                    <StatTile icon={UserCheck} tone="green" label="Active" value={activeThisWeek.toLocaleString('en-IN')} hint="Signed in this week" active={tab === 'active' && activeWindow === 'week'} onClick={() => goTab({ tab: 'active', window: 'week', filter: null })} />
+                    <StatTile icon={Users} tone="blue" label="All members" value={totalCount.toLocaleString('en-IN')} hint={suspendedCount ? `${suspendedCount} suspended` : 'Everyone we know'} active={tab === 'members' && memberFilter === 'all'} onClick={() => goTab({ tab: 'members', filter: null, window: null })} />
                 </div>
 
                 <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">

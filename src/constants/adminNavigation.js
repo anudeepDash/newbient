@@ -14,77 +14,113 @@ import Calendar from 'lucide-react/dist/esm/icons/calendar';
 import Radio from 'lucide-react/dist/esm/icons/radio';
 import PenSquare from 'lucide-react/dist/esm/icons/pen-square';
 import Music from 'lucide-react/dist/esm/icons/music';
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import ScanLine from 'lucide-react/dist/esm/icons/scan-line';
 import Users from 'lucide-react/dist/esm/icons/users';
 import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
-import Star from 'lucide-react/dist/esm/icons/star';
 import Gift from 'lucide-react/dist/esm/icons/gift';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 import Shield from 'lucide-react/dist/esm/icons/shield';
 import Mail from 'lucide-react/dist/esm/icons/mail';
 import Settings from 'lucide-react/dist/esm/icons/settings';
 import Plus from 'lucide-react/dist/esm/icons/plus';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Quote from 'lucide-react/dist/esm/icons/quote';
+import Target from 'lucide-react/dist/esm/icons/target';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import SlidersHorizontal from 'lucide-react/dist/esm/icons/sliders-horizontal';
+import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
+import UserRound from 'lucide-react/dist/esm/icons/user-round';
+import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
+import Receipt from 'lucide-react/dist/esm/icons/receipt';
+import Wallet from 'lucide-react/dist/esm/icons/wallet';
 import { FINANCE_ROLES, FULL_ACCESS_ROLES, SCANNER_ROLES, CONTENT_ROLES } from './roles';
 
 const NOT_SCANNER = { deny: [...SCANNER_ROLES] };
 const OPERATIONS = { deny: [...SCANNER_ROLES, 'blog_writer'] };
 
+/*
+ * Grouped by what each page controls:
+ *   Overview · Landing site (newbi.live) · App (Creators, Community, Events & tickets,
+ *   Everyone) · Finance & documents · Team.
+ * Item ids are used by quick actions and the dashboard; keep them stable.
+ */
 export const ADMIN_NAV_GROUPS = [
     {
         id: 'overview',
         title: 'Overview',
         items: [
             { id: 'dashboard', accent: 'green', name: 'Dashboard', path: '/admin', icon: LayoutDashboard, exact: true },
+            { id: 'inbox', accent: 'blue', name: 'Inbox', path: '/admin/messages', icon: Mail, card: 'messages', ...OPERATIONS, badgeKey: 'inbox' },
+        ],
+    },
+    {
+        id: 'site',
+        title: 'Landing site',
+        items: [
+            { id: 'site', accent: 'cyan', name: 'Site settings', path: '/admin/site', icon: Globe, ...NOT_SCANNER, match: ['/admin/content'] },
+            { id: 'portfolio', accent: 'violet', name: 'Work', path: '/admin/concertzone', icon: Music, card: 'concerts', ...NOT_SCANNER },
+            { id: 'brands', accent: 'amber', name: 'Brands & quotes', path: '/admin/brands', icon: Quote, ...NOT_SCANNER },
+            { id: 'blog', accent: 'indigo', name: 'ConcertZone', path: '/admin/blog', icon: PenSquare, card: 'blog_announcements', ...NOT_SCANNER, match: ['/admin/concertzone/studio', '/admin/newsletter'] },
+        ],
+    },
+    {
+        id: 'app-creators',
+        title: 'App · Creators',
+        items: [
+            { id: 'campaigns', accent: 'pink', name: 'Campaigns', path: '/admin/campaigns', icon: Target, card: 'influencer', ...OPERATIONS },
+            { id: 'creators', accent: 'rose', name: 'Creators', path: '/admin/creators', icon: Zap, card: 'influencer', ...OPERATIONS },
+            { id: 'creator-groups', accent: 'green', name: 'Groups', path: '/admin/creators/groups', icon: MessageCircle, card: 'influencer', ...OPERATIONS, match: ['/admin/city-groups'] },
+            { id: 'creator-settings', accent: 'gray', name: 'Creator settings', path: '/admin/creators/settings', icon: SlidersHorizontal, card: 'influencer', ...OPERATIONS },
+        ],
+    },
+    {
+        id: 'app-community',
+        title: 'App · Community',
+        items: [
+            { id: 'guestlists', accent: 'green', name: 'Guestlists', path: '/admin/guestlists', icon: ListChecks, card: 'guestlists', ...OPERATIONS },
+            { id: 'gigs', accent: 'orange', name: 'Volunteer gigs', path: '/admin/volunteer-gigs', icon: Users, card: 'community', ...OPERATIONS },
+            { id: 'giveaways', accent: 'rose', name: 'Giveaways', path: '/admin/giveaways', icon: Gift, card: 'giveaways', ...OPERATIONS },
+            { id: 'forms', accent: 'indigo', name: 'Forms', path: '/admin/forms', icon: ClipboardList, card: 'forms_public', ...OPERATIONS },
+        ],
+    },
+    {
+        id: 'events',
+        title: 'App · Events & tickets',
+        items: [
+            { id: 'upcoming', accent: 'green', name: 'Events', path: '/admin/upcoming-events', icon: Calendar, card: 'upcoming_events', ...NOT_SCANNER },
+            { id: 'ticketing', accent: 'orange', name: 'Ticket sales', path: '/admin/ticketing', icon: Ticket, card: 'ticketing' },
+            { id: 'scanner', accent: 'teal', name: 'Gate scanner', path: '/admin/scanner', icon: ScanLine, card: 'ticketing' },
+        ],
+    },
+    {
+        id: 'app-everyone',
+        title: 'App · Everyone',
+        items: [
+            { id: 'announcements', accent: 'amber', name: 'Announcements', path: '/admin/announcements', icon: Radio, card: 'blog_announcements', ...NOT_SCANNER },
+            { id: 'mailing', accent: 'fuchsia', name: 'Mailing', path: '/admin/mailing', icon: Megaphone, card: 'mailing', ...OPERATIONS },
+            { id: 'users', accent: 'blue', name: 'App users', path: '/admin/users', icon: UserRound, card: 'admins', deny: [...SCANNER_ROLES, ...CONTENT_ROLES], match: ['/admin/active-users'] },
+            { id: 'app-settings', accent: 'gray', name: 'App settings', path: '/admin/app-settings', icon: Smartphone, ...NOT_SCANNER },
         ],
     },
     {
         id: 'finance',
         title: 'Finance & documents',
         items: [
-            { id: 'finance', accent: 'teal', name: 'Finance board', path: '/admin/finance', icon: TrendingUp, roles: FINANCE_ROLES, card: 'invoices', match: ['/admin/spends', '/admin/other-income', '/admin/payees'] },
+            { id: 'finance', accent: 'teal', name: 'Finance board', path: '/admin/finance', icon: TrendingUp, roles: FINANCE_ROLES, card: 'invoices', match: ['/admin/other-income'] },
             { id: 'invoices', accent: 'blue', name: 'Invoices', path: '/admin/invoices', icon: FileText, roles: FINANCE_ROLES, card: 'invoices', match: ['/admin/create-invoice', '/admin/edit-invoice'] },
             { id: 'proposals', accent: 'violet', name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet, card: 'docs', ...OPERATIONS, match: ['/admin/create-proposal', '/admin/edit-proposal', '/admin/ai-studio'] },
             { id: 'contracts', accent: 'amber', name: 'Contracts', path: '/admin/agreements', icon: Scale, card: 'docs', ...OPERATIONS },
+            { id: 'spends', accent: 'rose', name: 'Spends', path: '/admin/spends', icon: Receipt, roles: FINANCE_ROLES, card: 'invoices' },
+            { id: 'payees', accent: 'green', name: 'Payees', path: '/admin/payees', icon: Wallet, roles: FINANCE_ROLES, card: 'invoices' },
         ],
     },
     {
-        id: 'community',
-        title: 'Community',
+        id: 'team',
+        title: 'Team',
         items: [
-            { id: 'creators', accent: 'pink', name: 'Creators', path: '/admin/creators', icon: Star, card: 'influencer', ...OPERATIONS, match: ['/admin/campaigns'] },
-            { id: 'gigs', accent: 'orange', name: 'Volunteer gigs', path: '/admin/volunteer-gigs', icon: Users, card: 'community', ...OPERATIONS },
-            { id: 'forms', accent: 'indigo', name: 'Forms', path: '/admin/forms', icon: ClipboardList, card: 'forms_public', ...OPERATIONS },
-            { id: 'giveaways', accent: 'rose', name: 'Giveaways', path: '/admin/giveaways', icon: Gift, card: 'giveaways', ...OPERATIONS },
-            { id: 'mailing', accent: 'fuchsia', name: 'Mailing', path: '/admin/mailing', icon: Megaphone, card: 'mailing', ...OPERATIONS },
-        ],
-    },
-    {
-        id: 'events',
-        title: 'Events & tickets',
-        items: [
-            { id: 'upcoming', accent: 'green', name: 'Events', path: '/admin/upcoming-events', icon: Calendar, card: 'upcoming_events', ...NOT_SCANNER },
-            { id: 'ticketing', accent: 'orange', name: 'Ticketing', path: '/admin/ticketing', icon: Ticket, card: 'ticketing', match: ['/admin/guestlists'] },
-            { id: 'scanner', accent: 'teal', name: 'Gate scanner', path: '/admin/scanner', icon: ScanLine, card: 'ticketing' },
-        ],
-    },
-    {
-        id: 'content',
-        title: 'Content',
-        items: [
-            { id: 'site', accent: 'cyan', name: 'Site content', path: '/admin/content', icon: LayoutGrid, ...NOT_SCANNER },
-            { id: 'announcements', accent: 'amber', name: 'Announcements', path: '/admin/announcements', icon: Radio, card: 'blog_announcements', ...NOT_SCANNER },
-            { id: 'blog', accent: 'indigo', name: 'Blog', path: '/admin/blog', icon: PenSquare, card: 'blog_announcements', ...NOT_SCANNER, match: ['/admin/concertzone/studio', '/admin/newsletter'] },
-            { id: 'portfolio', accent: 'violet', name: 'Portfolio', path: '/admin/concertzone', icon: Music, card: 'concerts', ...NOT_SCANNER },
-        ],
-    },
-    {
-        id: 'workspace',
-        title: 'Workspace',
-        items: [
-            { id: 'inbox', accent: 'blue', name: 'Inbox', path: '/admin/messages', icon: Mail, card: 'messages', ...OPERATIONS, badgeKey: 'inbox' },
-            { id: 'members', accent: 'indigo', name: 'Members', path: '/admin/manage-admins', icon: Shield, card: 'admins', deny: [...SCANNER_ROLES, ...CONTENT_ROLES] },
+            { id: 'members', accent: 'indigo', name: 'Team', path: '/admin/manage-admins', icon: Shield, card: 'admins', deny: [...SCANNER_ROLES, ...CONTENT_ROLES] },
             { id: 'system', accent: 'gray', name: 'System', path: '/admin/system-command', icon: Settings, roles: FULL_ACCESS_ROLES },
         ],
     },
