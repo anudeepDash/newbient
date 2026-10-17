@@ -347,13 +347,30 @@ export const cleanTaskDescription = (description, actionLinks = []) => {
     return result;
 };
 
+/*
+ * Briefs are often pasted from Docs, Notion or a web page and carry inline
+ * colours and sizes (color: rgb(0,0,0), <font color="#fff">) that beat the
+ * app's light and dark styles. Drop those so the brief follows the theme;
+ * bold, lists and links stay.
+ */
+const PASTED_STYLE_PROPS = /^(color|background|background-color|caret-color|font-size|font-family|line-height)$/i;
+export const stripPastedStyles = (html) => String(html || '')
+    .replace(/\sstyle\s*=\s*("([^"]*)"|'([^']*)')/gi, (match, _q, dq, sq) => {
+        const kept = String(dq ?? sq ?? '').split(';')
+            .map(d => d.trim())
+            .filter(d => d && !PASTED_STYLE_PROPS.test(d.split(':')[0].trim()));
+        return kept.length ? ` style="${kept.join('; ').replace(/"/g, '&quot;')}"` : '';
+    })
+    .replace(/<font\b[^>]*>/gi, tag => tag.replace(/\s(color|face|size)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, ''));
+
 /**
  * Safely linkifies plain text or HTML content so any remaining URLs become clickable.
  */
-export const linkifyContent = (htmlOrText) => {
-    if (!htmlOrText || typeof htmlOrText !== 'string') return '';
+export const linkifyContent = (input) => {
+    if (!input || typeof input !== 'string') return '';
 
-    const hasHtmlTags = /<[a-z][\s\S]*>/i.test(htmlOrText);
+    const hasHtmlTags = /<[a-z][\s\S]*>/i.test(input);
+    const htmlOrText = hasHtmlTags ? stripPastedStyles(input) : input;
 
     if (hasHtmlTags) {
         // Only linkify text outside existing <a>…</a> elements and outside tags.

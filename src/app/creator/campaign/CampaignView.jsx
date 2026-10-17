@@ -24,7 +24,7 @@ import { INTENTS, useAuthGate, useResumeIntent } from '../../auth/AuthGate';
 import { appPath, appUrl, APP_ORIGIN } from '../../host';
 import { callCreatorApi } from '../api';
 import { compactCount, dueLabel } from '../format';
-import { creatorWho, isShortlisted, matchesCollege } from '../useCreatorData';
+import { creatorWho, isShortlisted, matchesCollege, creatorCity } from '../useCreatorData';
 import { Notice } from '../ui';
 import TaskCard, { hasSubmitForm } from './TaskCard';
 import SubmitTaskSheet from './SubmitTaskSheet';
@@ -87,14 +87,14 @@ export const campaignShareUrl = (id) => {
 };
 
 /* Why this creator can't apply, or null. Mirrors the server's checks for the message only. */
-const blockerFor = (campaign, creator) => {
+const blockerFor = (campaign, creator, profile) => {
     if (!isOpen(campaign)) return 'This campaign isn’t taking applications.';
     if (isFull(campaign)) return 'All spots are taken.';
     if (['rejected', 'suspended'].includes(creator?.profileStatus)) return 'Your creator profile can’t apply right now.';
     const min = Number(campaign.minInstagramFollowers) || 0;
     if (min > 0 && (Number(creator?.instagramFollowers) || 0) < min) return `Needs ${compactCount(min)}+ Instagram followers.`;
-    if (!isCampaignCityMatch(campaign.targetCity, creator?.city)) return `For creators in ${campaign.targetCity}.`;
-    if (!matchesCollege(campaign, creator)) return `For ${campaign.targetCollege} students.`;
+    if (!isCampaignCityMatch(campaign.targetCity, creatorCity(creator, profile))) return `For creators in ${campaign.targetCity}.`;
+    if (!matchesCollege(campaign, creator, profile)) return `For ${campaign.targetCollege} students.`;
     return null;
 };
 
@@ -171,7 +171,7 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
         if (!pendingApply || !authUser || !creatorLoaded) return;
         setPendingApply(false);
         if (inCampaign) return;
-        if (creator) { if (!blockerFor(campaign, creator)) apply(); } else getId();
+        if (creator) { if (!blockerFor(campaign, creator, profile)) apply(); } else getId();
     }, [pendingApply, authUser, creatorLoaded, creator, inCampaign, campaign, apply, getId]);
 
     const share = () => {
@@ -196,7 +196,7 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
     const city = isCampaignCityMatch(campaign.targetCity, '') ? null : campaign.targetCity;
     const min = Number(campaign.minInstagramFollowers) || 0;
     const brief = isPresent(String(campaign.description || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ')) ? linkifyContent(campaign.description) : null;
-    const blocker = creator && !inCampaign ? blockerFor(campaign, creator) : null;
+    const blocker = creator && !inCampaign ? blockerFor(campaign, creator, profile) : null;
     const nextTask = shortlisted ? tasks.find(t => ['not_started', 'rejected'].includes(submissionFor(t, who)?.status || 'not_started')) : null;
 
     /* ── Once you're in the campaign: your status (or the next thing to do) ── */

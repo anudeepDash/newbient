@@ -135,6 +135,16 @@ export const createProfileSlice = (set, get) => ({
             const { updateProfile } = await import('firebase/auth');
             if (auth?.currentUser?.uid === uid) await updateProfile(auth.currentUser, { displayName: clean.displayName }).catch(() => {});
         }
+        if ('name' in clean || 'city' in clean) get()._syncCreatorProfile();
+    },
+
+    /* A creator's name, city and phone also live on their creator doc: let the server copy them over. */
+    _syncCreatorProfile: () => {
+        if (!get().creatorProfile) return;
+        import('../../app/creator/api')
+            .then(({ callCreatorApi }) => callCreatorApi('creator-sync-profile'))
+            .then((res) => { if (res && !res.ok) console.warn('[app/profile] creator sync:', res.error); })
+            .catch(() => {});
     },
 
     /* Records a phone number that was just verified by OTP (usePhoneVerification). */
@@ -149,6 +159,7 @@ export const createProfileSlice = (set, get) => ({
             isPhoneVerified: true,
             phoneVerifiedAt: new Date().toISOString(),
         }, { merge: true });
+        get()._syncCreatorProfile();
     },
 
     setOnboardingFlag: async (key, value = true) => {
