@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { getApp, getApps, initializeApp } from 'firebase/app';
 import {
     RecaptchaVerifier, PhoneAuthProvider, signInWithPhoneNumber, linkWithCredential, updatePhoneNumber,
+    initializeAuth, inMemoryPersistence, signInWithCredential, signOut,
 } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { toE164 } from '../../lib/store/profile';
+import { callCreatorApi } from '../creator/api';
 
 /*
  * Phone OTP verification, shared by every flow. Built from the copies in
@@ -17,7 +20,10 @@ import { toE164 } from '../../lib/store/profile';
  *
  * mode
  *   'link'   (default when signed in) proves the number and adds it to the
- *            current account. A number already on another account is refused.
+ *            current account. A number that already signs in to another
+ *            account can't be added to this one by Firebase; the right code
+ *            still proves it's yours, so the server records it as verified
+ *            on this profile instead (phone-proof).
  *   'signIn' (default when signed out) signs in with the number.
  *
  * The invisible reCAPTCHA lives in one off-screen container per hook that is
@@ -46,6 +52,30 @@ const friendlyError = (err) => {
     if (code.includes('requires-recent-login')) return 'For your security, sign out and back in, then verify your number.';
     if (code.includes('unauthorized-domain') || code.includes('operation-not-allowed')) return 'Phone verification isn’t available on this site right now.';
     return 'We couldn’t verify your number right now. Please try again.';
+};
+
+/*
+ * A throwaway, in-memory Firebase session for proving a number that signs in
+ * to another account: signing in there never touches the main session.
+ */
+let proofAuth = null;
+const getProofAuth = () => {
+    if (proofAuth) return proofAuth;
+    const name = 'nb-phone-proof';
+    const app = getApps().find(a => a.name === name) || initializeApp(getApp().options, name);
+    proofAuth = initializeAuth(app, { persistence: inMemoryPersistence });
+    return proofAuth;
+};
+
+const proveNumberOwnership = async (credential) => {
+    const proof = getProofAuth();
+    try {
+        const { user } = await signInWithCredential(proof, credential);
+        const res = await callCreatorApi('phone-proof', { proofToken: await user.getIdToken() });
+        if (!res.ok) throw Object.assign(new Error(res.error), { code: 'proof-failed', friendly: res.error });
+    } finally {
+        await signOut(proof).catch(() => {});
+    }
 };
 
 const isTestMode = () => import.meta.env.DEV && import.meta.env.VITE_PHONE_TEST_MODE === 'true';
@@ -164,14 +194,19 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         try {
             if (typeof pending === 'string') {
                 const credential = PhoneAuthProvider.credential(pending, clean);
+                let linked = true;
                 try {
                     await linkWithCredential(auth.currentUser, credential);
                 } catch (err) {
                     // The account already has a phone: replace it with the newly verified one.
                     if (err?.code === 'auth/provider-already-linked') await updatePhoneNumber(auth.currentUser, credential);
-                    else throw err;
+                    // The number signs in to another account: prove it's yours and keep it on this profile.
+                    else if (err?.code === 'auth/credential-already-in-use' || err?.code === 'auth/account-exists-with-different-credential') {
+                        await proveNumberOwnership(PhoneAuthProvider.credentialFromError(err) || credential);
+                        linked = false;
+                    } else throw err;
                 }
-                await finish(phone, { linked: true });
+                await finish(phone, { linked });
             } else {
                 const result = await pending.confirm(clean);
                 await finish(phone, { user: result.user });
@@ -180,7 +215,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         } catch (err) {
             console.warn('[phone] verify failed:', err?.code || err);
             setStatus('sent');
-            setError(friendlyError(err));
+            setError(err?.friendly || friendlyError(err));
             return false;
         }
     }, [phone, finish]);

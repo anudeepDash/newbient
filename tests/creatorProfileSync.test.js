@@ -48,7 +48,7 @@ describe('creator-sync-profile', () => {
     it('copies name, city and a verified phone onto the creator doc', async () => {
         const res = await run(handleSyncProfile);
         expect(res.statusCode).toBe(200);
-        expect(res.body.updated.sort()).toEqual(['displayName', 'isPhoneVerified', 'name', 'needsPhoneVerificationNotice', 'phone', 'phoneVerificationPending', 'phoneVerifiedAt', 'city'].sort());
+        expect(res.body.updated.sort()).toEqual(['displayName', 'isPhoneVerified', 'name', 'needsPhoneVerificationNotice', 'phone', 'phoneVerificationPending', 'phoneVerifiedAt', 'city', 'email'].sort());
         const creator = db.dump('creators')[UID];
         expect(creator).toMatchObject({ name: 'Riya Sharma', city: 'Mumbai', phone: '+919811111111', isPhoneVerified: true, profileStatus: 'approved' });
     });
