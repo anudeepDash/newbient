@@ -254,7 +254,7 @@ const OutreachTab = ({ campaign }) => {
                     items={[
                         { value: 'applications', label: 'Applications', count: apps.length },
                         { value: 'messages', label: 'Messages', count: counts.shortlisted + counts.message_queued || undefined, highlight: counts.shortlisted + counts.message_queued > 0 },
-                        { value: 'deliverables', label: 'Deliverables', count: toReview || undefined, highlight: toReview > 0 },
+                        { value: 'deliverables', label: 'Review posts', count: toReview || undefined, highlight: toReview > 0 },
                         { value: 'payouts', label: 'Payouts and tickets' },
                         { value: 'inbox', label: 'Inbox' },
                         { value: 'setup', label: 'Message setup' },
