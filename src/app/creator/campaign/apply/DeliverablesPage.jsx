@@ -47,8 +47,8 @@ const GroupCard = ({ token, which, title, hint, group, onDone }) => {
             </div>
             {!group.joined && (
                 <div className="flex flex-col gap-2 sm:flex-row">
-                    <Button href={group.url} target="_blank" rel="noopener noreferrer" className="flex-1">Join on WhatsApp</Button>
-                    <Button variant="secondary" loading={busy} onClick={joined} className="flex-1">I’ve joined</Button>
+                    <Button href={group.url} target="_blank" rel="noopener noreferrer" className="w-full sm:flex-1">Join on WhatsApp</Button>
+                    <Button variant="secondary" loading={busy} onClick={joined} className="w-full sm:flex-1">I’ve joined</Button>
                 </div>
             )}
             {error && <Notice tone="error" title={error} />}
