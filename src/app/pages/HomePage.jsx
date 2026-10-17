@@ -35,17 +35,18 @@ import MapPin from 'lucide-react/dist/esm/icons/map-pin';
  * Home, top to bottom:
  *   a greeting (time of day, your name, one warm line; your next pass when it's close)
  *   quick actions · the ways in (until you've done them) · finish your profile
- *   your passes · upcoming shows (tickets or the guestlist) · open campaigns
- *   what's on in the community · the WhatsApp community.
+ *   your passes · open campaigns · upcoming shows (tickets or the guestlist)
+ *   what's on in the community · the WhatsApp community. Creator things come first.
  */
 
 const ONBOARDING_FIELDS = ['name', 'phoneVerified', 'city'];
 
+// Creator things first, community after.
 const QUICK = [
+    { to: '/creator', icon: Zap, label: 'Campaigns' },
     { to: '/tickets', icon: Ticket, label: 'Tickets' },
     { to: '/community', icon: ListChecks, label: 'Guestlists' },
     { to: '/community', icon: Gift, label: 'Giveaways' },
-    { to: '/creator', icon: Zap, label: 'Campaigns' },
 ];
 
 const dayLabel = (day) => {
@@ -184,17 +185,6 @@ const HomePage = () => {
                 </section>
             )}
 
-            {(!showsLoaded || shows.length > 0) && (
-                <section className="space-y-3">
-                    <SectionHeader title="Upcoming" to={appPath('/tickets')} />
-                    {!showsLoaded ? (
-                        <Rail><CardSkeleton /><CardSkeleton /></Rail>
-                    ) : (
-                        <Rail>{shows.map(e => <Card key={e.id} {...showCard(e)} />)}</Rail>
-                    )}
-                </section>
-            )}
-
             <section className="space-y-3">
                 <SectionHeader title="Open campaigns" to={appPath('/creator')} />
                 {!campaignsLoaded ? (
@@ -207,6 +197,17 @@ const HomePage = () => {
                     <EmptyState icon={Megaphone} title="No open campaigns right now" message="New brand and event campaigns show up here first." />
                 )}
             </section>
+
+            {(!showsLoaded || shows.length > 0) && (
+                <section className="space-y-3">
+                    <SectionHeader title="Upcoming" to={appPath('/tickets')} />
+                    {!showsLoaded ? (
+                        <Rail><CardSkeleton /><CardSkeleton /></Rail>
+                    ) : (
+                        <Rail>{shows.map(e => <Card key={e.id} {...showCard(e)} />)}</Rail>
+                    )}
+                </section>
+            )}
 
             {(!feedLoaded || feed.length > 0) && (
                 <section className="space-y-3">
