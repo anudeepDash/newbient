@@ -4,6 +4,7 @@ import Sheet from '../../Sheet';
 import { Button } from '../../ui';
 import { TRANSITIONS } from '../../../../lib/outreach/status';
 import { formatCount } from '../campaignModel';
+import { deliverableSummary, DELIVERABLE_STATUS, TICKET_STATUS } from '../../../../lib/outreach/deliverables';
 import ActivityList from './ActivityList';
 import { StatusBadge, Handle, STATUS_ACTIONS, when } from './parts';
 
@@ -16,7 +17,8 @@ const Row = ({ label, children }) => (children === null || children === undefine
     </div>
 ));
 
-const ApplicationSheet = ({ app, campaignId, onClose, onStatus, nameOf, refreshKey }) => {
+const ApplicationSheet = ({ app, campaign, campaignId, onClose, onStatus, nameOf, refreshKey }) => {
+    const summary = app && campaign ? deliverableSummary(campaign, app) : null;
     const next = app ? TRANSITIONS[app.status || 'applied'] || [] : [];
     return (
         <Sheet open={Boolean(app)} onClose={onClose} title={app?.fullName || ''} subtitle={app ? `Applied ${when(app.firstSubmittedAt)}` : ''} size="md">
@@ -50,8 +52,29 @@ const ApplicationSheet = ({ app, campaignId, onClose, onStatus, nameOf, refreshK
                         <Row label="Heard via">{app.referralSource}</Row>
                         <Row label="WhatsApp consent">{app.consentAt ? new Date(app.consentAt).toLocaleString('en-IN') : null}</Row>
                         <Row label="Times submitted">{app.submitCount > 1 ? String(app.submitCount) : null}</Row>
+                        <Row label="Their posts link">{app.submitUrl ? <a href={app.submitUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">Open{app.submitLinkSentAt ? ` (sent ${when(app.submitLinkSentAt)})` : ''}</a> : null}</Row>
+                        <Row label="Ticket">{app.ticket?.status ? `${TICKET_STATUS[app.ticket.status]?.label || app.ticket.status}${app.ticket.passRef ? ` · ${app.ticket.passRef}` : ''}` : null}</Row>
+                        <Row label="UPI">{app.payoutDetails?.upiId || null}</Row>
+                        <Row label="Payout">{app.payout?.status === 'paid' ? `₹${Number(app.payout.amount).toLocaleString('en-IN')} on ${app.payout.paidAt}${app.payout.reference ? ` · ${app.payout.reference}` : ''}` : app.payout?.status === 'cancelled' ? 'Cancelled' : null}</Row>
                         <Row label="Last message">{app.lastMessageText ? <span className="whitespace-pre-wrap text-left font-normal">{app.lastMessageText}</span> : null}</Row>
                     </dl>
+                    {summary?.total > 0 && (
+                        <section className="space-y-1">
+                            <p className="text-[12px] font-bold text-gray-500">Deliverables · {summary.requiredApproved} of {summary.requiredCount} required approved</p>
+                            <ul className="space-y-1 text-[13px]">
+                                {summary.items.map(({ task, sub, status }) => (
+                                    <li key={task.id} className="flex items-center justify-between gap-2">
+                                        <span className="min-w-0 truncate">{task.title}{task.required ? '' : ' (optional)'}</span>
+                                        <span className="flex items-center gap-2">
+                                            {sub?.link && <a href={sub.link} target="_blank" rel="noopener noreferrer" className="text-[12px] underline">post</a>}
+                                            {sub?.screenshotUrl && <a href={sub.screenshotUrl} target="_blank" rel="noopener noreferrer" className="text-[12px] underline">screenshot</a>}
+                                            <span className="text-[12px] text-gray-500">{DELIVERABLE_STATUS[status].label}</span>
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    )}
                     <section className="space-y-1">
                         <p className="text-[12px] font-bold text-gray-500">History</p>
                         <ActivityList campaignId={campaignId} appId={app.id} nameOf={nameOf} refreshKey={refreshKey} />

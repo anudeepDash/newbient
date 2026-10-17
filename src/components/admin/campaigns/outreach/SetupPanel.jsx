@@ -3,8 +3,9 @@ import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
 import { cn } from '../../../../lib/utils';
 import { useStore } from '../../../../lib/store';
 import { Button, Card } from '../../ui';
-import { Field, fieldCls, Toggle } from '../../uploads/UploadKit';
+import { Field, fieldCls, Toggle, Choice } from '../../uploads/UploadKit';
 import { WA_TEMPLATES, JOIN_BUTTON, renderTemplatePreview } from '../../../../lib/outreach/whatsappTemplate';
+import { TICKET_RULES } from '../../../../lib/outreach/deliverables';
 import { DEFAULT_TEMPLATE, PLACEHOLDERS, renderMessage, unknownPlaceholders } from '../../../../lib/outreach/template';
 import { callOutreach } from './outreachApi';
 
@@ -25,6 +26,7 @@ const SetupPanel = ({ campaign, settings, api, sampleApplication, onSaved }) => 
         messageTemplate: settings?.messageTemplate || DEFAULT_TEMPLATE,
         remindersEnabled: settings?.remindersEnabled !== false,
         joinReminderHours: String(settings?.joinReminderHours || 48),
+        ticketRule: settings?.ticketRule || 'deliverables',
     }), [settings, campaign.whatsappLink]);
     const [form, setForm] = useState(initial);
     const [errors, setErrors] = useState({});
@@ -36,8 +38,13 @@ const SetupPanel = ({ campaign, settings, api, sampleApplication, onSaved }) => 
     const linkError = form.whatsappGroupLink && !GROUP_LINK.test(form.whatsappGroupLink.trim()) ? 'Paste a group invite link (https://chat.whatsapp.com/…).' : null;
     const hours = Number(form.joinReminderHours);
     const hoursError = form.remindersEnabled && !(Number.isInteger(hours) && hours >= 1 && hours <= 336) ? 'Use 1 to 336 hours.' : null;
-    const dirty = ['whatsappGroupLink', 'messageTemplate', 'remindersEnabled', 'joinReminderHours'].some(k => form[k] !== initial[k]) || !settings?.updatedAt;
-    const apiSample = { application: sampleApplication || SAMPLE, campaign, groupLink: form.whatsappGroupLink.trim() || 'https://chat.whatsapp.com/…' };
+    const dirty = ['whatsappGroupLink', 'messageTemplate', 'remindersEnabled', 'joinReminderHours', 'ticketRule'].some(k => form[k] !== initial[k]) || !settings?.updatedAt;
+    const apiSample = {
+        application: sampleApplication || SAMPLE,
+        campaign,
+        groupLink: form.whatsappGroupLink.trim() || 'https://chat.whatsapp.com/…',
+        data: { taskTitle: campaign.tasks?.[0]?.title || 'Instagram reel 1', reason: 'Tag @newbi.live in the caption.', amount: 1500, reference: '412345678901' },
+    };
     const preview = renderMessage(form.messageTemplate, { application: sampleApplication || SAMPLE, campaign: { ...campaign, whatsappGroupLink: form.whatsappGroupLink.trim() } });
     const fallbackPreview = renderMessage(form.messageTemplate, { application: { fullName: 'rj_99' }, campaign: { ...campaign, whatsappGroupLink: form.whatsappGroupLink.trim() } });
 
@@ -61,6 +68,7 @@ const SetupPanel = ({ campaign, settings, api, sampleApplication, onSaved }) => 
             messageTemplate: form.messageTemplate,
             remindersEnabled: form.remindersEnabled,
             joinReminderHours: form.remindersEnabled ? hours : undefined,
+            ticketRule: form.ticketRule,
         });
         setSaving(false);
         if (!r.ok) {
@@ -107,10 +115,10 @@ const SetupPanel = ({ campaign, settings, api, sampleApplication, onSaved }) => 
                 <div className="space-y-3 rounded-2xl border border-black/[0.06] p-4 dark:border-white/[0.08]">
                     <p className="text-[13px] font-bold">WhatsApp API {api?.configured ? <span className="font-semibold text-emerald-600">· set up</span> : <span className="font-semibold text-gray-500">· not set up (sending by hand)</span>}</p>
                     <p className="text-[12.5px] text-gray-500">API messages use templates approved by Meta, so they can’t be edited here. The template above is for Open WhatsApp. Both use the same details.</p>
-                    {['invite', 'reminder'].map(kind => (
+                    {['invite', 'reminder', 'deliverables', 'changes', 'payout'].map(kind => (
                         <div key={kind} className="space-y-1">
                             <p className="font-mono text-[12px] text-gray-500">{WA_TEMPLATES[kind].name}</p>
-                            <div className="whitespace-pre-wrap rounded-xl bg-black/[0.03] p-3 text-[13px] dark:bg-white/[0.04]">{renderTemplatePreview(kind, apiSample)}<span className="mt-1 block font-semibold text-sky-600">{JOIN_BUTTON}</span></div>
+                            <div className="whitespace-pre-wrap rounded-xl bg-black/[0.03] p-3 text-[13px] dark:bg-white/[0.04]">{renderTemplatePreview(kind, apiSample)}{(['invite', 'reminder'].includes(kind) ? JOIN_BUTTON : WA_TEMPLATES[kind].button) && <span className="mt-1 block font-semibold text-sky-600">{['invite', 'reminder'].includes(kind) ? JOIN_BUTTON : WA_TEMPLATES[kind].button}</span>}</div>
                         </div>
                     ))}
                     <Toggle
@@ -126,6 +134,9 @@ const SetupPanel = ({ campaign, settings, api, sampleApplication, onSaved }) => 
                         </Field>
                     )}
                 </div>
+                <Field label="Send tickets" hint={campaign.eventId ? 'Tickets are Newbi passes for the linked event, sent by email and WhatsApp.' : 'Tickets are Newbi passes (QR). Link an event in Edit → Event tickets so the gate scanner knows it.'}>
+                    <Choice value={form.ticketRule} onChange={(v) => setForm(f => ({ ...f, ticketRule: v }))} options={TICKET_RULES} />
+                </Field>
                 <div className="flex justify-end">
                     <Button variant="accent" onClick={save} disabled={saving || !dirty || Boolean(linkError) || Boolean(hoursError) || unknown.length > 0}>{saving ? 'Saving…' : 'Save message setup'}</Button>
                 </div>

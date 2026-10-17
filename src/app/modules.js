@@ -40,6 +40,7 @@ const FormPage = lazy(() => import('./community/FormPage'));
 const PassPage = lazy(() => import('./passes/PassPage'));
 const TicketLinkPage = lazy(() => import('./passes/TicketLinkPage'));
 const CampaignApplyPage = lazy(() => import('./creator/campaign/apply/CampaignApplyPage'));
+const DeliverablesPage = lazy(() => import('./creator/campaign/apply/DeliverablesPage'));
 
 export const APP_MODULES = [
     {
@@ -147,6 +148,8 @@ export const STANDALONE_ROUTES = [
     { path: 'forms/:id', Component: FormPage },
     // The open campaign application (no sign-in), shared instead of a Google Form.
     { path: 'c/:slug/apply', Component: CampaignApplyPage },
+    // A creator's own deliverables page, from their personal WhatsApp link (no sign-in).
+    { path: 'd/:token', Component: DeliverablesPage },
 ];
 
 /* Route definitions for the router, relative to the app root. */
