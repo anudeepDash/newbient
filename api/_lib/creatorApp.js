@@ -11,6 +11,7 @@
  *   ?action=creator-apply    POST {...}       the application (status decided here)
  *   ?action=campaign-apply   POST { campaignId }
  *   ?action=campaign-submit  POST { campaignId, taskId, contentLink, proofUrl, note }
+ *   ?action=creator-self-delete POST {}       the signed-in creator deletes their own creator profile
  *
  * Instagram verification is behind site_settings/general.instagramMetaVerification.
  * While it's off, applications go to admin review with the handle the creator
@@ -33,6 +34,7 @@ const APP_URL = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace
 
 export const CREATOR_APP_ACTIONS = new Set([
     'ig-lookup', 'ig-connect', 'ig-callback', 'instagram-cron', 'creator-apply', 'campaign-apply', 'campaign-submit',
+    'creator-self-delete',
 ]);
 /* Actions that don't take a Firebase ID token (they carry their own proof). */
 export const CREATOR_APP_PUBLIC = new Set(['ig-callback', 'instagram-cron']);
@@ -791,6 +793,53 @@ const handleCron = async (req, res, { db }) => {
 
 /* ── Router ───────────────────────────────────────────────────────────── */
 
+/* ── creator-self-delete ──────────────────────────────────────────────── */
+
+/*
+ * The signed-in creator deletes their own creator profile: every creators doc
+ * that is theirs, their Instagram link (token and ownership, so the account can
+ * be used again), and the creator flag on users/{uid}. Their account, passes
+ * and tickets stay. A suspended or rejected profile can't be deleted this way,
+ * so it can't be used to apply again from scratch.
+ */
+export const handleSelfDelete = async (req, res, { db, token }) => {
+    if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
+    const uid = token.uid;
+    const direct = await db.collection('creators').doc(uid).get();
+    const legacy = await db.collection('creators').where('uid', '==', uid).get();
+    const docs = [direct, ...legacy.docs].filter((d, i, all) => d.exists && all.findIndex(o => o.ref.path === d.ref.path) === i);
+    if (docs.some(d => ['suspended', 'rejected'].includes(d.data()?.profileStatus))) {
+        return send(res, 403, { success: false, error: "Your creator profile can't be deleted from the app right now. Contact creators@newbi.live." });
+    }
+
+    const userSnap = await db.collection('users').doc(uid).get();
+    const user = userSnap.exists ? userSnap.data() : {};
+    const igUserIds = new Set([user.instagram?.igUserId, ...docs.map(d => d.data()?.igUserId)].filter(Boolean).map(String));
+    for (const igUserId of igUserIds) {
+        const owner = await ownerRef(igUserId, db).get();
+        if (owner.exists && owner.data()?.uid === uid) await ownerRef(igUserId, db).delete();
+    }
+    await tokenRef(uid, db).delete().catch(() => {});
+    for (const d of docs) await d.ref.delete();
+
+    await db.collection('users').doc(uid).set({
+        capabilities: { creator: false },
+        creatorStatus: FieldValue.delete(),
+        creatorDeletedAt: nowIso(),
+        updatedAt: nowIso(),
+    }, { merge: true });
+    // The Instagram stays on the profile as a plain handle; its verification went with the creator profile.
+    if (user.instagram?.igUserId) {
+        await db.collection('users').doc(uid).update({
+            'instagram.igUserId': FieldValue.delete(),
+            'instagram.followers': FieldValue.delete(),
+            'instagram.verifiedVia': FieldValue.delete(),
+            'instagram.verifiedAt': FieldValue.delete(),
+        });
+    }
+    return send(res, 200, { success: true, deleted: docs.length });
+};
+
 export const handleCreatorAppAction = async (action, req, res, { decodedToken }) => {
     const db = getDb();
     try {
@@ -812,6 +861,7 @@ export const handleCreatorAppAction = async (action, req, res, { decodedToken })
         if (action === 'creator-apply') return await handleApply(req, res, ctx);
         if (action === 'campaign-apply') return await handleCampaignApply(req, res, ctx);
         if (action === 'campaign-submit') return await handleCampaignSubmit(req, res, ctx);
+        if (action === 'creator-self-delete') return await handleSelfDelete(req, res, ctx);
         return send(res, 400, { success: false, error: 'Unknown action.' });
     } catch (err) {
         console.error(`[creatorApp] ${action}:`, err);

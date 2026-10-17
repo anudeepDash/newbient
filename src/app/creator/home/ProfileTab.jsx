@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Mail from 'lucide-react/dist/esm/icons/mail';
 import Phone from 'lucide-react/dist/esm/icons/phone';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
@@ -11,6 +11,8 @@ import Handshake from 'lucide-react/dist/esm/icons/handshake';
 import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
 import BadgeCheck from 'lucide-react/dist/esm/icons/badge-check';
 import UserRound from 'lucide-react/dist/esm/icons/user-round';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import { useStore as useLegacyStore } from '../../../lib/store.js';
 import { Button, Field, Section, Sheet, hasContent } from '../../../components/app';
 import { CREATOR_NICHE_OPTIONS, COLLAB_OPTIONS } from '../../../lib/creator/options';
 import { appPath } from '../../host';
@@ -23,7 +25,8 @@ import { oauthErrorMessage } from '../apply/instagramCopy';
 /*
  * Profile: contact details come from /profile (one place to edit them); the
  * creator fields are edited here and saved through the server, which keeps
- * the review status as it is.
+ * the review status as it is. At the bottom, the creator can delete their
+ * creator profile (the server's creator-self-delete); the account stays.
  */
 
 /* A titled list of Fields; hidden when none of them has a value. */
@@ -100,6 +103,54 @@ const InstagramSection = ({ creator, settings }) => {
     );
 };
 
+/* Deletes the creator profile after a confirm sheet that says what goes and what stays. */
+const DeleteCreatorProfile = () => {
+    const navigate = useNavigate();
+    const [open, setOpen] = useState(false);
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState(null);
+
+    const remove = async () => {
+        setBusy(true);
+        setError(null);
+        const res = await callCreatorApi('creator-self-delete');
+        setBusy(false);
+        if (!res.ok) return setError(res.error);
+        setOpen(false);
+        useLegacyStore.getState().addToast?.('Your creator profile is deleted. Your account and passes are still here.', 'success');
+        navigate(appPath('/profile'), { replace: true });
+        return undefined;
+    };
+
+    return (
+        <>
+            <div className="space-y-2 border-t border-black/[0.06] pt-6 dark:border-white/[0.08]">
+                <Button variant="danger" icon={Trash2} onClick={() => { setError(null); setOpen(true); }}>Delete creator profile</Button>
+                <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-400">Your Newbi account, passes and tickets stay. You can apply again later.</p>
+            </div>
+            <Sheet
+                open={open}
+                onClose={() => !busy && setOpen(false)}
+                title="Delete your creator profile?"
+                subtitle="This can’t be undone."
+                footer={(
+                    <div className="space-y-2">
+                        {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
+                        <Button className="w-full" variant="danger" icon={Trash2} loading={busy} onClick={remove}>Delete creator profile</Button>
+                        <Button className="w-full" variant="secondary" disabled={busy} onClick={() => setOpen(false)}>Keep it</Button>
+                    </div>
+                )}
+            >
+                <ul className="list-disc space-y-2 pb-2 pl-5 text-[15px] text-gray-700 dark:text-zinc-300">
+                    <li>Your Newbi ID, niches, rates, bio and campaign applications go.</li>
+                    <li>Your Instagram is unlinked, so its verification goes too.</li>
+                    <li>Your account, guestlist passes and tickets stay.</li>
+                </ul>
+            </Sheet>
+        </>
+    );
+};
+
 const ProfileTab = ({ creator, profile, settings }) => {
     const [editing, setEditing] = useState(false);
     const [details, setDetails] = useState(() => detailsFrom(creator));
@@ -162,6 +213,8 @@ const ProfileTab = ({ creator, profile, settings }) => {
                     <span className="shrink-0 text-[14px] font-bold text-emerald-700 dark:text-neon-green">Add</span>
                 </button>
             )}
+
+            <DeleteCreatorProfile />
 
             <Sheet
                 open={editing}

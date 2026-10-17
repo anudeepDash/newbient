@@ -13,6 +13,10 @@ import Zap from 'lucide-react/dist/esm/icons/zap';
 import Users from 'lucide-react/dist/esm/icons/users';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import IdCard from 'lucide-react/dist/esm/icons/id-card';
+import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import Heart from 'lucide-react/dist/esm/icons/heart';
+import UserRound from 'lucide-react/dist/esm/icons/user-round';
+import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
 import { Link } from 'react-router-dom';
 import { useAppStore, hasCapability } from '../../lib/store/appStore';
 import { useTheme } from '../../hooks/useTheme';
@@ -21,28 +25,29 @@ import { appPath } from '../host';
 import { creatorPassId } from '../creator/format';
 import { Panel, ROW } from './DetailLayout';
 import AuthGate from '../auth/AuthGate';
-import { missingFields } from '../profile/requirements';
 import CompleteProfileSheet from '../profile/CompleteProfileSheet';
+import JoinCommunitySheet from '../community/JoinCommunitySheet';
+import { interestLabel } from '../community/welcomeForm';
 import PageHeader, { PageBody } from './PageHeader';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
 
 /*
- * Profile: the one place for your details. Phase 5 adds security, email
- * preferences and Instagram here as ProfilePanel retires.
+ * Profile: the one place for your details. "Edit profile" opens the same
+ * questions as the community welcome form, plus your name; the phone number
+ * is changed (and verified) on its own. Creator details live on the creator
+ * profile, which is also where it can be deleted.
  */
-
-const EDITABLE = ['name', 'city', 'college', 'phoneVerified'];
 
 const ProfileDetails = () => {
     const authUser = useAppStore(s => s.authUser);
     const profile = useAppStore(s => s.profile);
     const signOut = useAppStore(s => s.signOut);
     const { isDark, toggleTheme } = useTheme();
-    const [sheet, setSheet] = useState(null); // null | { required, title }
+    const [editOpen, setEditOpen] = useState(false);
+    const [phoneOpen, setPhoneOpen] = useState(false);
 
     const photo = profile?.photoURL || authUser?.photoURL;
     const name = profile?.name || authUser?.displayName;
-    const missing = missingFields(profile, EDITABLE);
     const handle = profile?.instagram?.handle ? `@${profile.instagram.handle}` : null;
     const isCreator = useAppStore(st => hasCapability(st, 'creator'));
     const creator = useAppStore(st => st.creatorProfile);
@@ -81,10 +86,10 @@ const ProfileDetails = () => {
                 </section>
 
                 <div className="grid gap-2">
-                    {missing.length > 0 && (
-                        <Button className="w-full" onClick={() => setSheet({ required: missing, title: 'Complete your profile' })}>Complete profile</Button>
-                    )}
-                    <Button className="w-full" variant="secondary" onClick={() => setSheet({ required: ['name', 'city', 'college'], title: 'Edit details', force: true })}>Edit details</Button>
+                    <Button className="w-full" icon={UserRound} onClick={() => setEditOpen(true)}>Edit profile</Button>
+                    <Button className="w-full" variant="secondary" icon={Smartphone} onClick={() => setPhoneOpen(true)}>
+                        {profile?.phoneVerified ? 'Change phone number' : 'Verify phone number'}
+                    </Button>
                     <div className="grid grid-cols-2 gap-2">
                         <Button variant="secondary" icon={isDark ? Sun : Moon} onClick={() => toggleTheme()}>
                             {isDark ? 'Light' : 'Dark'}
@@ -109,6 +114,9 @@ const ProfileDetails = () => {
                         <Field label="Email" icon={Mail} value={profile?.email} />
                         <Field label="City" icon={MapPin} value={profile?.city} />
                         <Field label="College" icon={GraduationCap} value={profile?.college} />
+                        <Field label="What you do" icon={Briefcase} value={profile?.isStudent === false ? profile?.occupation : null} />
+                        <Field label="Gender" icon={UserRound} value={profile?.gender} />
+                        <Field label="Into" icon={Heart} value={profile?.interests?.length ? profile.interests.map(interestLabel).join(', ') : null} />
                         <Field label="Instagram" icon={Instagram} value={handle} />
                     </div>
                 </Panel>
@@ -131,12 +139,13 @@ const ProfileDetails = () => {
                 </Panel>
             </div>
 
+            <JoinCommunitySheet mode="edit" open={editOpen} onClose={() => setEditOpen(false)} />
             <CompleteProfileSheet
-                open={Boolean(sheet)}
-                onClose={() => setSheet(null)}
-                required={sheet?.required || []}
-                editAll={Boolean(sheet?.force)}
-                title={sheet?.title}
+                open={phoneOpen}
+                onClose={() => setPhoneOpen(false)}
+                required={['phoneVerified']}
+                editAll
+                title={profile?.phoneVerified ? 'Change phone number' : 'Verify phone number'}
             />
         </div>
     );
