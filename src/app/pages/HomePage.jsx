@@ -14,6 +14,7 @@ import { usePublicFeed } from '../usePublicFeed';
 import { fromPrice, useTicketedEvents } from '../tickets/useTicketedEvents';
 import { greetingFor } from './greeting';
 import { useAppStore } from '../../lib/store/appStore';
+import { useStore as useLegacyStore } from '../../lib/store.js';
 import { Card, Button } from '../../components/app';
 import { appPath } from '../host';
 import { useAuthGate } from '../auth/AuthGate';
@@ -121,7 +122,9 @@ const HomePage = () => {
     const upcoming = useMemo(() => passes.filter(isUpcomingPass).sort(bySoonest).slice(0, 6), [passes]);
 
     const firstName = (profile?.name || authUser?.displayName || '').trim().split(/\s+/)[0];
-    const missing = authUser && profileLoaded ? missingFields(profile, ONBOARDING_FIELDS) : [];
+    // Not while the account sheet is open: what's missing is asked after sign-in, not during it.
+    const signingIn = useLegacyStore(s => s.isAuthOpen);
+    const missing = authUser && profileLoaded && !signingIn ? missingFields(profile, ONBOARDING_FIELDS) : [];
     const joined = new Set(creator?.joinedCampaigns || []);
     const { shows, loaded: showsLoaded } = useUpcomingShows();
     const whatsapp = usePublicFeed()?.contact?.whatsappCommunity;

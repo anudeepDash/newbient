@@ -54,6 +54,8 @@ const friendly = (err) => {
     return 'Sign-in didn’t work. Please try again.';
 };
 
+/* How each field reads in "This needs …". */
+const NEEDS = { name: 'your name', email: 'an email', phone: 'a phone number', phoneVerified: 'a verified phone number', city: 'your city', college: 'your college', photo: 'a profile photo', instagram: 'your Instagram', instagramVerified: 'a verified Instagram' };
 const listOf = (items) => (items.length <= 1 ? items[0] || 'a few details' : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`);
 
 const OptionButton = ({ icon: Icon, children, onClick, loading }) => (
@@ -168,7 +170,7 @@ const SignInSheet = () => {
                 : ['Sign in with email', 'Welcome back.'],
         details: signingIn
             ? ['Welcome to Newbi', 'What should we call you?']
-            : ['A few details first', `This needs ${listOf((detailFields || []).map(f => fieldLabel(f).toLowerCase().replace(/^your /, '')))}. You only add ${(detailFields || []).length > 1 ? 'them' : 'it'} once.`],
+            : ['A few details first', `This needs ${listOf((detailFields || []).map(f => NEEDS[f] || fieldLabel(f).toLowerCase()))}. You only add ${(detailFields || []).length > 1 ? 'them' : 'it'} once.`],
     };
     const [title, subtitle] = titles[step];
 
