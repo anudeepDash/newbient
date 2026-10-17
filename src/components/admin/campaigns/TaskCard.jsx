@@ -188,6 +188,7 @@ const TaskCard = ({
                             placeholder="What to post, what to tag (@newbi.live), how long to keep it up…"
                             minHeight={120}
                             label="Deliverable instructions"
+                            stripStyles
                         />
                     </div>
 

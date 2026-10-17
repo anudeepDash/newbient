@@ -423,7 +423,7 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                     <BuilderCard id="cm-brief" title="Brief" hint="What the brand wants and the vibe. Creators read this before applying.">
                         <div className="space-y-4">
                             <div id="cm-field-description">
-                                <RichEditor value={form.description} onChange={(v) => set({ description: v })} placeholder="The brand, the goal, the tone, do's and don'ts…" minHeight={180} label="Campaign brief" />
+                                <RichEditor value={form.description} onChange={(v) => set({ description: v })} placeholder="The brand, the goal, the tone, do's and don'ts…" minHeight={180} label="Campaign brief" stripStyles />
                                 {err('description')}
                             </div>
                             <Field label="WhatsApp group for shortlisted creators" optional hint="Sent in the shortlist welcome (email and WhatsApp), and shown as a button in the campaign.">

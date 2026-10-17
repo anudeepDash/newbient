@@ -5,9 +5,15 @@ import List from 'lucide-react/dist/esm/icons/list';
 import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import ImageIcon from 'lucide-react/dist/esm/icons/image';
 import { cn } from '../../lib/utils';
+import { stripPastedStyles } from '../../lib/taskLinks';
 
-/** Small HTML editor for admin emails: bold, italic, bullets, links, images. */
-const RichEditor = ({ value, onChange, placeholder, minHeight = 180, label = 'Email message' }) => {
+/**
+ * Small HTML editor for admin emails: bold, italic, bullets, links, images.
+ * stripStyles (campaign briefs, task descriptions): pasted text loses its
+ * colours, backgrounds and font sizes (Docs and web pages paste black text,
+ * unreadable in dark mode), and so does an existing brief when it loads.
+ */
+const RichEditor = ({ value, onChange, placeholder, minHeight = 180, label = 'Email message', stripStyles = false }) => {
     const editorRef = useRef(null);
     const savedRange = useRef(null);
     const [linkOpen, setLinkOpen] = useState(false);
@@ -16,8 +22,24 @@ const RichEditor = ({ value, onChange, placeholder, minHeight = 180, label = 'Em
     useEffect(() => {
         const el = editorRef.current;
         if (!el || document.activeElement === el) return;
-        if ((value || '') !== el.innerHTML) el.innerHTML = value || '';
-    }, [value]);
+        const html = stripStyles ? stripPastedStyles(value || '') : (value || '');
+        if (html !== el.innerHTML) el.innerHTML = html;
+    }, [value, stripStyles]);
+
+    const onPaste = (e) => {
+        if (!stripStyles) return;
+        const data = e.clipboardData;
+        const html = data?.getData('text/html');
+        if (!html) return; // plain text pastes as it is
+        e.preventDefault();
+        // Keep the content, not the source page's head, scripts or styles.
+        const body = html.replace(/^[\s\S]*<body[^>]*>/i, '').replace(/<\/body>[\s\S]*$/i, '')
+            .replace(/<(script|style|meta|link|title)\b[\s\S]*?(<\/\1>|>)/gi, '')
+            .replace(/<!--[\s\S]*?-->/g, '')
+            .replace(/\sclass\s*=\s*("[^"]*"|'[^']*')/gi, '');
+        document.execCommand('insertHTML', false, stripPastedStyles(body));
+        onChange(editorRef.current.innerHTML);
+    };
 
     const exec = (cmd, val = null) => {
         editorRef.current.focus();
@@ -82,6 +104,7 @@ const RichEditor = ({ value, onChange, placeholder, minHeight = 180, label = 'Em
                 aria-multiline="true"
                 aria-label={label}
                 onInput={(e) => onChange(e.currentTarget.innerHTML)}
+                onPaste={onPaste}
                 data-placeholder={placeholder}
                 style={{ minHeight }}
                 className="p-3.5 text-[15px] leading-relaxed text-gray-900 outline-none empty:before:text-gray-400 empty:before:content-[attr(data-placeholder)] dark:text-zinc-100 [&_a]:text-sky-600 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5"
