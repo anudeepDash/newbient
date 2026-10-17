@@ -13,10 +13,15 @@ import { CITIES, INTERESTS, GENDERS } from './welcomeForm';
  * profile and joins the community in one go. Creators apply through the
  * creator form instead; this doesn't ask creator questions.
  *
+ * mode="edit" is the Profile page's "Edit profile": the same questions plus
+ * your name, saved without joining anything, and only the name is required.
+ *
  *   <JoinCommunitySheet open={open} onClose={close} />
+ *   <JoinCommunitySheet mode="edit" open={open} onClose={close} />
  */
 
 const initialValues = (profile) => ({
+    name: profile?.name || '',
     student: typeof profile?.isStudent === 'boolean' ? profile.isStudent : null,
     college: profile?.college || '',
     occupation: profile?.occupation || '',
@@ -26,7 +31,8 @@ const initialValues = (profile) => ({
     interests: Array.isArray(profile?.interests) ? profile.interests : [],
 });
 
-const JoinCommunitySheet = ({ open, onClose, onJoined }) => {
+const JoinCommunitySheet = ({ open, onClose, onJoined, mode = 'join' }) => {
+    const editing = mode === 'edit';
     const profile = useAppStore(s => s.profile);
     const updateProfile = useAppStore(s => s.updateProfile);
     const joinCommunity = useAppStore(s => s.joinCommunity);
@@ -53,28 +59,35 @@ const JoinCommunitySheet = ({ open, onClose, onJoined }) => {
     const igLocked = isPresent(profile?.instagram?.handle);
 
     const save = async () => {
-        if (v.student === null) return setError('Tell us if you’re a student.');
+        if (editing && !v.name.trim()) return setError('Add your name.');
+        if (!editing && v.student === null) return setError('Tell us if you’re a student.');
         if (v.student && !v.college.trim()) return setError('Add your college.');
-        if (!v.city.trim()) return setError('Add your city.');
-        if (!v.interests.length) return setError('Pick at least one thing you’re into.');
+        if (!editing && !v.city.trim()) return setError('Add your city.');
+        if (!editing && !v.interests.length) return setError('Pick at least one thing you’re into.');
         setSaving(true);
         setError('');
         try {
             await updateProfile({
-                isStudent: v.student,
-                ...(v.student ? { college: v.college.trim() } : { occupation: v.occupation.trim() }),
+                ...(editing ? { name: v.name.trim() } : {}),
+                ...(v.student === null ? {} : { isStudent: v.student }),
+                ...(v.student === true ? { college: v.college.trim() } : {}),
+                ...(v.student === false ? { college: '', occupation: v.occupation.trim() } : {}),
                 city: v.city.trim(),
                 gender: v.gender,
                 interests: v.interests,
                 ...(igLocked ? {} : { instagramHandle: v.instagram.trim().replace(/^@+/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/\/.*$/, '') }),
             });
-            await joinCommunity();
-            useLegacyStore.getState().addToast?.('You’re in. Guestlists, gigs and giveaways are open to you.', 'success');
-            onJoined?.();
+            if (editing) {
+                useLegacyStore.getState().addToast?.('Profile saved.', 'success');
+            } else {
+                await joinCommunity();
+                useLegacyStore.getState().addToast?.('You’re in. Guestlists, gigs and giveaways are open to you.', 'success');
+                onJoined?.();
+            }
             onClose?.();
         } catch (err) {
-            console.warn('[community] join failed:', err);
-            setError('We couldn’t add you just now. Check your connection and try again.');
+            console.warn(`[profile] ${editing ? 'save' : 'join'} failed:`, err);
+            setError(editing ? 'We couldn’t save your profile. Check your connection and try again.' : 'We couldn’t add you just now. Check your connection and try again.');
         } finally {
             setSaving(false);
         }
@@ -86,16 +99,19 @@ const JoinCommunitySheet = ({ open, onClose, onJoined }) => {
         <Sheet
             open={open}
             onClose={onClose}
-            title="Join the community"
-            subtitle="A few details so we bring the right guestlists, gigs and giveaways to you."
+            title={editing ? 'Edit profile' : 'Join the community'}
+            subtitle={editing ? 'Used for every pass, giveaway and application.' : 'A few details so we bring the right guestlists, gigs and giveaways to you.'}
             footer={(
                 <div className="space-y-2">
                     {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
-                    <Button className="w-full" size="lg" onClick={save} loading={saving}>Join</Button>
+                    <Button className="w-full" size="lg" onClick={save} loading={saving}>{editing ? 'Save' : 'Join'}</Button>
                 </div>
             )}
         >
             <div className="space-y-6 pb-2">
+                {editing && (
+                    <TextInput label="Your name" value={v.name} onChange={(e) => set({ name: e.target.value })} placeholder="Full name" autoComplete="name" />
+                )}
                 <FormBlock label="Are you a student?">
                     <div className="flex flex-wrap gap-2">
                         <ChoiceChip selected={v.student === true} onClick={() => set({ student: true })}>Yes, in college</ChoiceChip>

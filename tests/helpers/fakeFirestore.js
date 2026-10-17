@@ -45,6 +45,7 @@ class DocRef {
         if (!this.db.store.has(this.path)) throw new Error(`No document to update: ${this.path}`);
         this.db._update(this.path, data);
     }
+    async delete() { this.db.store.delete(this.path); }
 }
 
 class Query {
