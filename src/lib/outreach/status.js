@@ -49,11 +49,17 @@ export const isOnShortlist = (s) => ON_SHORTLIST.has(s);
 export const statusLabel = (s) => STATUS_META[s]?.label || 'Applied';
 
 /*
- * Moves only the system makes (never offered to admins): when Meta reports a
- * message it accepted as failed, the person goes back to "To send"
- * (message_queued) so they show under "To message" again.
+ * Moves only the system makes (never offered as buttons):
+ *   - Meta reports a message it accepted as failed → back to "To send".
+ *   - Every required deliverable approved → posted, from wherever they were
+ *     after the message (not everyone taps "Joined").
+ *   - A payout recorded with an admin's written override → paid early.
+ *   - A payout cancelled → back to posted.
  */
 export const SYSTEM_TRANSITIONS = {
-    message_sent: ['message_queued'],
+    message_sent: ['message_queued', 'posted', 'paid'],
+    replied: ['posted', 'paid'],
+    joined: ['paid'],
+    paid: ['posted'],
 };
 export const canSystemTransition = (from, to) => canTransition(from, to) || Boolean(SYSTEM_TRANSITIONS[from]?.includes(to));

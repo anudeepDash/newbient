@@ -152,6 +152,56 @@ export const sendTemplate = async ({ to, template, language, header, bodyParams 
     return { ok: false, status: retry ? 'retry' : 'failed', error: message, errorCode: code || null, retriable: !permanent, logId: logRef.id };
 };
 
+/**
+ * A free-text message (inbox replies). Meta only delivers these within 24
+ * hours of the person's last message; the caller checks that window.
+ * → { ok, status, messageId, error, errorCode, retriable }. Never throws, never auto-retries.
+ */
+export const sendText = async ({ to, text, event = 'inbox-reply', ref = null }) => {
+    if (!isWhatsAppConfigured()) return { ok: false, status: 'skipped', error: 'WhatsApp is not set up' };
+    const phone = toE164(to);
+    if (!phone) return { ok: false, status: 'skipped', error: 'No valid WhatsApp number' };
+    const body = String(text || '').slice(0, 4096);
+    const db = getDb();
+    const logRef = db.collection('message_log').doc();
+    const base = { channel: 'whatsapp', to: phone, template: null, event, ref, createdAt: nowIso(), updatedAt: nowIso() };
+    let result;
+    try {
+        result = await callMeta({ messaging_product: 'whatsapp', recipient_type: 'individual', to: phone.slice(1), type: 'text', text: { body, preview_url: true } });
+    } catch (err) {
+        result = { ok: false, status: 0, data: { error: { message: err.message } } };
+    }
+    if (result.ok && result.data?.messages?.[0]?.id) {
+        const messageId = result.data.messages[0].id;
+        await logRef.set({ ...base, status: 'sent', messageId }).catch(() => {});
+        await writeDelivery(ref, { status: 'sent', messageId, at: nowIso(), error: null });
+        return { ok: true, status: 'sent', messageId, logId: logRef.id };
+    }
+    const err = result.data?.error || {};
+    const code = Number(err.code || 0);
+    const message = String(err.error_data?.details || err.message || `HTTP ${result.status}`).slice(0, 300);
+    const permanent = PERMANENT_CODES.has(code) || (result.status >= 400 && result.status < 500 && result.status !== 429 && code !== 130429 && code !== 131056);
+    await logRef.set({ ...base, status: 'failed', error: message, errorCode: code || null }).catch(() => {});
+    await writeDelivery(ref, { status: 'failed', at: nowIso(), error: message });
+    return { ok: false, status: 'failed', error: message, errorCode: code || null, retriable: !permanent, logId: logRef.id };
+};
+
+/** Downloads media someone sent us (inbox). → { mimeType, base64 } or null. The token never leaves the server. */
+export const fetchWhatsAppMedia = async (mediaId, { maxBytes = 5 * 1024 * 1024 } = {}) => {
+    if (!isWhatsAppConfigured() || !/^[A-Za-z0-9_-]{4,128}$/.test(String(mediaId || ''))) return null;
+    const doFetch = testFetch || fetch;
+    const auth = { Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}` };
+    const meta = await doFetch(`https://graph.facebook.com/${API_VERSION()}/${mediaId}`, { headers: auth });
+    if (!meta.ok) return null;
+    const info = await meta.json().catch(() => ({}));
+    if (!info.url || Number(info.file_size || 0) > maxBytes) return null;
+    const file = await doFetch(info.url, { headers: auth });
+    if (!file.ok) return null;
+    const buf = Buffer.from(await file.arrayBuffer());
+    if (buf.length > maxBytes) return null;
+    return { mimeType: info.mime_type || 'application/octet-stream', base64: buf.toString('base64') };
+};
+
 /** Mirrors a WhatsApp status onto the record it was about (e.g. a pass). */
 const writeDelivery = async (ref, value) => {
     if (!ref?.collection || !ref?.id) return;
