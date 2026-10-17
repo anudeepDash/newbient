@@ -7,6 +7,10 @@
 let autoId = 0;
 const nextId = () => `auto${String(++autoId).padStart(5, '0')}`;
 const clone = (v) => (v === undefined ? undefined : structuredClone(v));
+// FieldValue.delete() and friends: objects with isEqual(). Only delete is supported.
+const isSentinel = (v) => v !== null && typeof v === 'object' && typeof v.isEqual === 'function';
+const stripSentinels = (data) => Object.fromEntries(Object.entries(data || {}).filter(([, v]) => !isSentinel(v)));
+const deletedKeys = (data) => Object.entries(data || {}).filter(([, v]) => isSentinel(v)).map(([k]) => k);
 
 class DocSnap {
     constructor(ref, data) { this.ref = ref; this.id = ref.id; this._data = data; this.exists = data !== undefined; }
@@ -39,6 +43,10 @@ class Query {
                 if (op === '==') return v === value;
                 if (op === 'in') return value.includes(v);
                 if (op === 'array-contains') return Array.isArray(v) && v.includes(value);
+                if (op === '<=') return v !== undefined && v !== null && v <= value;
+                if (op === '<') return v !== undefined && v !== null && v < value;
+                if (op === '>=') return v !== undefined && v !== null && v >= value;
+                if (op === '>') return v !== undefined && v !== null && v > value;
                 throw new Error(`fake firestore: unsupported op ${op}`);
             }));
         if (this.order) {
@@ -65,7 +73,9 @@ export class FakeFirestore {
 
     _write(path, data, opts) {
         const prev = this.store.get(path);
-        this.store.set(path, opts?.merge && prev ? { ...prev, ...clone(data) } : clone(data));
+        const next = opts?.merge && prev ? { ...prev, ...clone(stripSentinels(data)) } : clone(stripSentinels(data));
+        deletedKeys(data).forEach(k => delete next[k]);
+        this.store.set(path, next);
     }
 
     async runTransaction(fn) {

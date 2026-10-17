@@ -6,8 +6,10 @@
  *   applied → shortlisted → message_queued → message_sent → replied / joined → posted → paid
  *   Any step before paid can go to removed; removed can be restored to shortlisted.
  *
- * message_queued means "WhatsApp was opened for this person"; it never means sent.
- * Only the admin's "Mark sent" moves someone to message_sent.
+ * message_queued ("To send") means WhatsApp was opened or the message copied
+ * (by hand), or the message is in the WhatsApp API send queue. It never means
+ * sent: by hand only "Mark sent" moves someone on; through the API, only Meta
+ * accepting the message does.
  */
 
 export const STATUSES = ['applied', 'shortlisted', 'message_queued', 'message_sent', 'replied', 'joined', 'posted', 'paid', 'removed'];
@@ -15,7 +17,7 @@ export const STATUSES = ['applied', 'shortlisted', 'message_queued', 'message_se
 export const STATUS_META = {
     applied: { label: 'Applied', tone: 'blue' },
     shortlisted: { label: 'Shortlisted', tone: 'violet' },
-    message_queued: { label: 'WhatsApp opened', tone: 'amber' },
+    message_queued: { label: 'To send', tone: 'amber' },
     message_sent: { label: 'Message sent', tone: 'green' },
     replied: { label: 'Replied', tone: 'teal' },
     joined: { label: 'Joined group', tone: 'pink' },
@@ -45,3 +47,13 @@ export const ON_SHORTLIST = new Set(['shortlisted', 'message_queued', 'message_s
 export const isOnShortlist = (s) => ON_SHORTLIST.has(s);
 
 export const statusLabel = (s) => STATUS_META[s]?.label || 'Applied';
+
+/*
+ * Moves only the system makes (never offered to admins): when Meta reports a
+ * message it accepted as failed, the person goes back to "To send"
+ * (message_queued) so they show under "To message" again.
+ */
+export const SYSTEM_TRANSITIONS = {
+    message_sent: ['message_queued'],
+};
+export const canSystemTransition = (from, to) => canTransition(from, to) || Boolean(SYSTEM_TRANSITIONS[from]?.includes(to));
