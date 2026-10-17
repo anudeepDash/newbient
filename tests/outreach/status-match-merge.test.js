@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { STATUSES, TRANSITIONS, canTransition, isOnShortlist } from '../../src/lib/outreach/status.js';
-import { parsePastedHandles, matchPastedHandles } from '../../src/lib/outreach/match.js';
+import { parsePastedHandles, matchPastedHandles, parsePastedPhones, matchPastedPhones } from '../../src/lib/outreach/match.js';
 import { mergeApplication, resolveDuplicate, validateApplication, tierFor, applicationsOpen, parseFollowers, filterApplications } from '../../src/lib/outreach/application.js';
 import { exportSpecFor, EXPORT_COLUMNS } from '../../src/lib/outreach/export.js';
 
@@ -73,6 +73,18 @@ describe('bulk paste', () => {
         expect(matched.map(m => m.application.id)).toEqual(['a1', 'a2']);
         expect(unmatched).toEqual(['arjun.k', 'kabir.m', 'one', 'two_2', 'three']);
         expect(invalid).toHaveLength(2);
+    });
+});
+
+describe('pasted group members', () => {
+    const pasted = ['+91 98765 43210', '~Riya ✨ +91 91234-56789', '9876543210', 'Arjun Kapoor', '+1 (202) 555-0100', 'Group admin'].join('\n');
+    it('reads numbers in the shapes WhatsApp shows them, once each', () => {
+        expect(parsePastedPhones(pasted)).toEqual({ phones: ['+919876543210', '+919123456789', '+12025550100'], invalid: ['Arjun Kapoor', 'Group admin'] });
+    });
+    it('matches them to applications by phone', () => {
+        const { matched, unmatched } = matchPastedPhones(pasted, [{ id: 'a1', phone: '+919876543210' }, { id: 'a2', phone: '+12025550100' }]);
+        expect(matched.map(m => m.application.id)).toEqual(['a1', 'a2']);
+        expect(unmatched).toEqual(['+919123456789']);
     });
 });
 

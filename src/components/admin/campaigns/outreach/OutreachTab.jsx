@@ -43,7 +43,7 @@ const OutreachTab = ({ campaign }) => {
     const [view, setView] = useState('applications');
     const [filters, setFilters] = useState(BLANK_FILTERS);
     const [selected, setSelected] = useState(() => new Set());
-    const [pasteOpen, setPasteOpen] = useState(false);
+    const [pasteOpen, setPasteOpen] = useState(null); // 'handles' | 'phones'
     const [openId, setOpenId] = useState(null);
     const [confirmRemove, setConfirmRemove] = useState(null);
     const [refreshKey, setRefreshKey] = useState(0);
@@ -51,7 +51,7 @@ const OutreachTab = ({ campaign }) => {
     const load = useCallback(async () => {
         const r = await callOutreach('outreach-list', { campaignId: campaign.id });
         setData(r.ok
-            ? { loading: false, error: '', applications: r.data.applications, settings: r.data.settings, api: r.data.whatsappApi || null }
+            ? { loading: false, error: '', applications: r.data.applications, settings: r.data.settings, api: r.data.whatsappApi || null, wame: r.data.wame || null }
             : { loading: false, error: r.status === 403 ? 'Only founders and admins can see applications and contact details.' : r.error, applications: [], settings: null, api: null });
     }, [campaign.id]);
     useEffect(() => { load(); }, [load]);
@@ -101,8 +101,10 @@ const OutreachTab = ({ campaign }) => {
         const r = await callOutreach('outreach-status', { campaignId: campaign.id, appIds: ids, to, source, messageText, note });
         if (!r.ok) {
             addToast(r.error, 'error');
+            if (r.status === 429) setData(d => ({ ...d, wame: d.wame ? { ...d.wame, usedToday: d.wame.cap } : d.wame }));
             return false;
         }
+        if (source === 'wame') setData(d => ({ ...d, wame: d.wame ? { ...d.wame, usedToday: d.wame.usedToday + r.data.updated.length } : d.wame }));
         const now = new Date().toISOString();
         const stamp = { message_queued: 'messageQueuedAt', message_sent: 'messageSentAt' }[to];
         const done = new Set(r.data.updated.map(u => u.id));
@@ -187,6 +189,8 @@ const OutreachTab = ({ campaign }) => {
                                 <td className="max-w-[180px] px-3 py-2.5 font-semibold">
                                     <span className="block truncate">{a.fullName}</span>
                                     {a.possibleDuplicateOf && <Badge tone="amber">Check duplicate</Badge>}
+                                    {a.whatsappOptOut && <Badge tone="gray">No WhatsApp</Badge>}
+                                    {!a.uid && <Badge tone="gray">No app account</Badge>}
                                 </td>
                                 <td className="px-3 py-2.5"><Handle handle={a.instagramHandle} /></td>
                                 <td className="px-3 py-2.5 tabular-nums">{followers(a.followerCount)} <span className="text-gray-400">{a.tier}</span></td>
@@ -268,7 +272,8 @@ const OutreachTab = ({ campaign }) => {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="text-[13px] text-gray-500">{visible.length} of {apps.length} shown</p>
                         <div className="flex flex-wrap gap-2">
-                            <Button onClick={() => setPasteOpen(true)} className="h-11"><ClipboardPaste size={14} /> Paste handles</Button>
+                            <Button onClick={() => setPasteOpen('handles')} className="h-11"><ClipboardPaste size={14} /> Paste handles</Button>
+                            <Button onClick={() => setPasteOpen('phones')} className="h-11"><ClipboardPaste size={14} /> Paste group members</Button>
                             <ExportMenu label="Export shortlist" getSpec={() => exportSpecFor({ title: campaign.title, rows: shortlist })} hint="Everyone on the shortlist, every column" />
                             <ExportMenu label="Export shown" getSpec={() => exportSpecFor({ title: campaign.title, rows: visible, label: 'applications' })} />
                         </div>
@@ -279,7 +284,7 @@ const OutreachTab = ({ campaign }) => {
                 </div>
             )}
             {view === 'messages' && (
-                <MessagesPanel campaign={campaign} applications={apps} settings={data.settings} api={data.api} onStatus={changeStatus} onOpen={(a) => setOpenId(a.id)} onSetup={() => setView('setup')} onSendApi={sendWithApi} onStopApi={stopApi} />
+                <MessagesPanel campaign={campaign} applications={apps} settings={data.settings} api={data.api} wame={data.wame} onStatus={changeStatus} onOpen={(a) => setOpenId(a.id)} onSetup={() => setView('setup')} onSendApi={sendWithApi} onStopApi={stopApi} />
             )}
             {view === 'setup' && (
                 <SetupPanel campaign={campaign} settings={data.settings} api={data.api} sampleApplication={shortlist[0] || apps[0]} onSaved={load} />
@@ -291,7 +296,15 @@ const OutreachTab = ({ campaign }) => {
                 <Card className="p-4"><ActivityList campaignId={campaign.id} nameOf={nameOf} refreshKey={refreshKey} /></Card>
             )}
 
-            <PasteSheet open={pasteOpen} onClose={() => setPasteOpen(false)} applications={apps} onShortlist={addToShortlist} />
+            <PasteSheet
+                key={pasteOpen || 'closed'}
+                open={Boolean(pasteOpen)}
+                mode={pasteOpen || 'handles'}
+                onClose={() => setPasteOpen(null)}
+                applications={apps}
+                onShortlist={addToShortlist}
+                onMark={(ids, to, source) => changeStatus(ids, to, { source })}
+            />
             <ApplicationSheet app={openId ? byId.get(openId) : null} campaign={campaign} campaignId={campaign.id} onClose={() => setOpenId(null)} onStatus={changeStatus} nameOf={nameOf} refreshKey={refreshKey} />
             <ConfirmSheet
                 open={Boolean(confirmRemove)}

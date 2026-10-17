@@ -100,9 +100,9 @@ export const preEventApproved = (campaign, application) => {
 
 /* ── Tickets ──────────────────────────────────────────────────────────── */
 
+/* Joining can't be confirmed (WhatsApp doesn't say who's in a group), so it never releases tickets. */
 export const TICKET_RULES = [
     { value: 'deliverables', label: 'When their pre-event deliverables are approved' },
-    { value: 'joined', label: 'When they tap Joined' },
     { value: 'manual', label: 'Only when I release them' },
 ];
 export const ticketRuleOf = (settings) => (TICKET_RULES.some(r => r.value === settings?.ticketRule) ? settings.ticketRule : 'deliverables');

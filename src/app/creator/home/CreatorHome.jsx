@@ -20,6 +20,7 @@ import OpeningsTab from './OpeningsTab';
 import DeliverablesTab from './DeliverablesTab';
 import ReferralsTab from './ReferralsTab';
 import ProfileTab from './ProfileTab';
+import MyOutreachCampaigns from './MyOutreachCampaigns';
 
 /*
  * /creator: creator home. Openings, Deliverables, Referrals and Profile are
@@ -172,6 +173,7 @@ const CreatorHome = () => {
 
     return (
         <PageBody>
+            <MyOutreachCampaigns />
             {loading ? (
                 <div className="h-48 animate-pulse rounded-[2rem] bg-black/[0.04] dark:bg-white/[0.04]" />
             ) : !creator ? (

@@ -52,6 +52,9 @@ const ApplicationSheet = ({ app, campaign, campaignId, onClose, onStatus, nameOf
                         <Row label="Heard via">{app.referralSource}</Row>
                         <Row label="WhatsApp consent">{app.consentAt ? new Date(app.consentAt).toLocaleString('en-IN') : null}</Row>
                         <Row label="Times submitted">{app.submitCount > 1 ? String(app.submitCount) : null}</Row>
+                        <Row label="Newbi account">{app.uid ? `Yes${app.accountEmail ? ` (${app.accountEmail})` : ''}${app.phoneVerified ? ' · phone verified' : ''}` : 'No (applied before sign-in was required)'}</Row>
+                        <Row label="WhatsApp updates">{app.whatsappOptOut ? 'Stopped by them (STOP)' : null}</Row>
+                        <Row label="City community">{app.cityGroup?.title ? `${app.cityGroup.title}${app.cityGroupJoinedAt ? ' · joined' : ''}` : null}</Row>
                         <Row label="Their posts link">{app.submitUrl ? <a href={app.submitUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">Open{app.submitLinkSentAt ? ` (sent ${when(app.submitLinkSentAt)})` : ''}</a> : null}</Row>
                         <Row label="Ticket">{app.ticket?.status ? `${TICKET_STATUS[app.ticket.status]?.label || app.ticket.status}${app.ticket.passRef ? ` · ${app.ticket.passRef}` : ''}` : null}</Row>
                         <Row label="UPI">{app.payoutDetails?.upiId || null}</Row>

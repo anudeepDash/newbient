@@ -24,7 +24,7 @@ import { sendTemplate, sendText, isWhatsAppConfigured } from './whatsapp.js';
 import { makeSignedToken } from './linkSign.js';
 import { contactIdFor, appendThreadMessage, windowOpen } from './outreachThreads.js';
 import { canTransition, canSystemTransition } from '../../src/lib/outreach/status.js';
-import { templateParamsFor, renderTemplatePreview, WA_TEMPLATES } from '../../src/lib/outreach/whatsappTemplate.js';
+import { templateParamsFor, renderTemplatePreview, WA_TEMPLATES, STOP_PAYLOAD } from '../../src/lib/outreach/whatsappTemplate.js';
 import { maskPhone } from '../../src/lib/outreach/normalize.js';
 
 export const BACKOFF_MIN = [1, 5, 30, 120];
@@ -195,14 +195,17 @@ const finishJob = (ref, patch) => ref.set({ ...patch, nextAttemptAt: patch.nextA
 /*
  * What each kind of message is. Templates are approved in Meta (see
  * src/lib/outreach/whatsappTemplate.js); inbox_text is a free-text reply.
- *   button  'join': the signed "Joined" quick reply · 'link': URL button with their submit link
+ *   button  'join': the signed "Joined" quick reply, then "Stop updates" · 'link': URL button with
+ *           their submit link · 'stop': only "Stop updates"
  *   badge   writes the delivery status onto the application (the main message only)
+ * Every template checks the number hasn't opted out (STOP) first.
  */
 const KINDS = {
     invite: { button: 'join', badge: true, groupLink: true },
     reminder: { button: 'join', badge: true, groupLink: true },
     deliverables: { button: 'link' },
     changes: { button: 'link' },
+    city_group: { button: 'stop' },
     payout: {},
     inbox_text: { text: true },
 };
@@ -236,6 +239,8 @@ const loadContext = async (db, job) => {
     const settings = privSnap.exists ? privSnap.data() : {};
     const app = appSnap.data();
     if (spec.groupLink && !settings.whatsappGroupLink) return { skip: 'no_group_link' };
+    const contact = await db.collection('creator_contacts').doc(contactIdFor(app.phone)).get();
+    if (contact.exists && contact.data().whatsappOptOut?.at) return { skip: 'opted_out' };
     if (app.status === 'removed') return { skip: 'removed' };
     if (job.kind === 'invite' && app.status !== 'message_queued') return { skip: 'status_changed' };
     if (job.kind === 'reminder') {
@@ -257,6 +262,7 @@ const SKIP_NOTE = {
     no_deliverables: 'The campaign has no deliverables to send.',
     no_link_secret: 'LINK_SIGNING_SECRET isn’t set, so personal links can’t be made.',
     window_closed: 'More than 24 hours since their last message: WhatsApp only allows a template now.',
+    opted_out: 'They asked to stop WhatsApp updates.',
     unknown_kind: 'Unknown message type.',
 };
 
@@ -292,8 +298,10 @@ export const sendJob = async (db, job, { now = Date.now() } = {}) => {
     } else {
         const { campaign, settings, app } = ctx;
         phone = app.phone;
-        const buttons = spec.button === 'join' ? [{ index: 0, payload: joinPayload(job.campaignId, job.appId) }]
-            : spec.button === 'link' ? [{ index: 0, param: submitToken(job.campaignId, job.appId) }] : [];
+        const stop = (index) => ({ index, payload: STOP_PAYLOAD });
+        const buttons = spec.button === 'join' ? [{ index: 0, payload: joinPayload(job.campaignId, job.appId) }, stop(1)]
+            : spec.button === 'link' ? [{ index: 0, param: submitToken(job.campaignId, job.appId) }]
+                : spec.button === 'stop' ? [stop(0)] : [];
         const tplCtx = { application: app, campaign, groupLink: settings.whatsappGroupLink, data: job.data || {} };
         text = renderTemplatePreview(job.kind, tplCtx);
         result = await sendTemplate({
@@ -368,7 +376,7 @@ const afterSent = async (db, job, ctx, { at, messageId }) => {
 
 /* ── Queue any message ────────────────────────────────────────────────── */
 
-const ONCE = new Set(['invite', 'reminder', 'deliverables', 'payout']);
+const ONCE = new Set(['invite', 'reminder', 'deliverables', 'payout', 'city_group']);
 
 /**
  * Queues one message. Kinds that go once per person (invite, reminder,
@@ -540,6 +548,47 @@ const inboundParts = (msg) => {
     return { type, caption: media.caption || '', mediaId: media.id || null, mimeType: media.mime_type || null, text: type === 'location' ? `${media.name || ''} ${media.address || ''}`.trim() : '' };
 };
 
+/* ── STOP / START ─────────────────────────────────────────────────────── */
+
+const STOP_TEXT = /^\s*(stop|stop updates|stop all|unsubscribe|opt ?out)\s*[.!]*\s*$/i;
+const START_TEXT = /^\s*(start|resume|subscribe|opt ?in)\s*[.!]*\s*$/i;
+
+/* A free-text reply into their thread (they just wrote, so the 24-hour window is open). */
+const replyInThread = async (db, phone, text) => {
+    const tRef = db.collection('outreach_inbox').doc(contactIdFor(phone));
+    const now = nowIso();
+    const mRef = tRef.collection('inbox_messages').doc();
+    await mRef.set({ direction: 'out', type: 'text', text, status: 'queued', sentBy: 'Newbi (automatic)', at: now, expiresAt: new Date(Date.parse(now) + 365 * 86_400_000) });
+    await tRef.set({ lastMessageAt: now, lastText: text.slice(0, 140), lastDirection: 'out', updatedAt: now }, { merge: true });
+    const id = await enqueueJob(db, { kind: 'inbox_text', data: { threadId: tRef.id, messageId: mRef.id, text }, createdBy: 'Newbi (automatic)' });
+    return sendSoon(db, id);
+};
+
+/*
+ * Opts a number out of (or back into) every outreach template, across all
+ * their campaigns: the contact, each application (so admins see it), and
+ * anything already queued for them. Replies in the inbox still work: those
+ * are answers to their own messages.
+ */
+export const setWhatsAppOptOut = async (db, phone, { optOut, via, now = nowIso() }) => {
+    const contactRef = db.collection('creator_contacts').doc(contactIdFor(phone));
+    const contact = await contactRef.get();
+    await contactRef.set({ whatsappOptOut: optOut ? { at: now, via } : null, updatedAt: now }, { merge: true });
+    for (const campaignId of contact.exists ? contact.data().campaignIds || [] : []) {
+        const key = await db.collection('campaigns').doc(campaignId).collection('application_keys').doc(`p:${phone}`).get();
+        if (!key.exists) continue;
+        const appId = key.data().appId;
+        await db.collection(appsPath(campaignId)).doc(appId).set({ whatsappOptOut: optOut, updatedAt: now }, { merge: true }).catch(() => {});
+        await auditRef(db, campaignId).set({ appId, field: 'whatsapp_opt_out', from: null, to: optOut ? 'stopped' : 'resumed', source: 'whatsapp_webhook', note: `They replied ${via}`, ...SYSTEM_ACTOR, at: now });
+        if (optOut) {
+            const jobs = await db.collection('outreach_queue').where('campaignId', '==', campaignId).where('appId', '==', appId).get();
+            for (const j of jobs.docs) {
+                if (j.data().status === 'queued') await j.ref.set({ status: 'cancelled', nextAttemptAt: null, lastError: SKIP_NOTE.opted_out }, { merge: true });
+            }
+        }
+    }
+};
+
 /* The application a number's message is about: their latest campaign's. */
 const latestApplicationFor = async (db, from) => {
     const contact = await db.collection('creator_contacts').doc(contactIdFor(from)).get();
@@ -567,6 +616,18 @@ export const onOutreachInbound = async (msg, { db = getDb(), now = nowIso(), nam
     const store = (target) => appendThreadMessage(db, {
         phone: from, name, direction: 'in', wamid: msg.id || null, at, campaignId: target?.campaignId || null, appId: target?.appId || null, ...inboundParts(msg),
     }).catch(e => console.warn('[outreach] inbox message not saved:', e.message));
+
+    // STOP (the "Stop updates" button, or a reply like STOP) and START, before anything else.
+    const text = msg.type === 'text' ? String(msg.text?.body || '') : '';
+    if (payload === STOP_PAYLOAD || STOP_TEXT.test(text) || START_TEXT.test(text)) {
+        const optOut = !START_TEXT.test(text);
+        await store(await latestApplicationFor(db, from));
+        await setWhatsAppOptOut(db, from, { optOut, via: payload === STOP_PAYLOAD ? '“Stop updates”' : `“${text.trim().slice(0, 30)}”`, now });
+        await replyInThread(db, from, optOut
+            ? 'Done. You won’t get campaign updates from Newbi on WhatsApp any more. You’ll still see them in the Newbi app. Reply START to turn WhatsApp updates back on.'
+            : 'Welcome back! You’ll get campaign updates from Newbi on WhatsApp again. Reply STOP any time.').catch(() => null);
+        return optOut ? 'stopped' : 'started';
+    }
 
     const joinTarget = payload ? readJoinPayload(payload) : null;
     if (payload && !joinTarget) {
