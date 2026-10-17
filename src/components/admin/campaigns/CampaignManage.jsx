@@ -61,6 +61,8 @@ import {
     inr, stageMeta, taskTypeOf, platformOf, daysUntil, waNumber, isUniversalCity,
 } from './campaignModel';
 import { isRequiredTask } from '../../../lib/creator/tasks';
+import OutreachTab from './outreach/OutreachTab';
+import { canSeeOutreach } from './outreach/outreachApi';
 
 const SELECTED_STAGES = ['selected', 'review', 'approved', 'paid'];
 const SORTS = [
@@ -76,10 +78,11 @@ const CampaignManage = ({
     const creators = useStore(s => s.creators);
     const loaded = useStore(s => Boolean(s.subscriptionsLoaded?.campaigns));
     const addToast = useStore(s => s.addToast);
+    const showOutreach = useStore(s => canSeeOutreach(s.user?.role));
     const campaign = findCampaignById(campaigns, campaignId);
 
     const [searchParams, setSearchParams] = useSearchParams();
-    const tab = ['applicants', 'deliverables', 'tickets', 'brief'].includes(searchParams.get('tab')) ? searchParams.get('tab') : 'applicants';
+    const tab = ['applicants', 'deliverables', 'tickets', 'brief', ...(showOutreach ? ['outreach'] : [])].includes(searchParams.get('tab')) ? searchParams.get('tab') : 'applicants';
     const stageFilter = ['all', ...STAGES.map(s => s.value)].includes(searchParams.get('stage')) ? searchParams.get('stage') : 'all';
     const openKey = searchParams.get('creator') || '';
     const setParams = (patch, push = false) => {
@@ -816,12 +819,13 @@ const CampaignManage = ({
                         { value: 'applicants', label: 'Applicants', count: applicants.length },
                         { value: 'deliverables', label: 'Deliverables', count: totalToReview || undefined, highlight: totalToReview > 0 },
                         ...(campaign.eventId || passes.length ? [{ value: 'tickets', label: 'Tickets', count: passes.filter(p => p.status !== 'revoked').length || undefined }] : []),
+                        ...(showOutreach ? [{ value: 'outreach', label: 'Outreach' }] : []),
                         { value: 'brief', label: 'Brief and settings' },
                     ]}
                 />
             </div>
 
-            {tab === 'applicants' ? applicantsTab : tab === 'deliverables' ? tasksTab : tab === 'tickets' ? (
+            {tab === 'applicants' ? applicantsTab : tab === 'deliverables' ? tasksTab : tab === 'outreach' ? <OutreachTab campaign={campaign} /> : tab === 'tickets' ? (
                 <CampaignTickets campaign={campaign} applicants={applicants} passes={passes} loaded={passesLoaded} error={passesError} onSend={() => setTicketsFor([])} />
             ) : briefTab}
 
