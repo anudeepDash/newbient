@@ -42,8 +42,10 @@ import { canTransition, isStatus } from '../../src/lib/outreach/status.js';
 import { maskPhone, normalizePhone } from '../../src/lib/outreach/normalize.js';
 import { unknownPlaceholders, DEFAULT_TEMPLATE } from '../../src/lib/outreach/template.js';
 import {
-    contactIdFor, enqueueInvites, cancelQueued, runQueue, queueStatus, rateStatus, kickWorker, defaultReminderHours,
+    contactIdFor, enqueueInvites, cancelQueued, runQueue, queueStatus, rateStatus, kickWorker, defaultReminderHours, enqueueJob, sendSoon,
 } from './outreachQueue.js';
+import { notify } from './notify.js';
+import { cityGroupFor } from '../../src/lib/outreach/cityGroups.js';
 import { isWhatsAppConfigured } from './whatsapp.js';
 import { submitUrlFor } from './outreachQueue.js';
 import {
@@ -175,11 +177,27 @@ const findCreatorByHandle = async (db, handle) => {
     return snap.docs.length === 1 ? snap.docs[0].id : null;
 };
 
-export const handleApply = async (req, res, { db, now = nowIso() }) => {
+/* The creator profile of the signed-in account, if they have one (doc id = uid, or older ones with a uid field). */
+const findCreatorForUser = async (db, uid) => {
+    const direct = await db.collection('creators').doc(uid).get();
+    if (direct.exists) return direct.id;
+    const byUid = await db.collection('creators').where('uid', '==', uid).limit(1).get();
+    return byUid.empty ? null : byUid.docs[0].id;
+};
+
+/* The admin's city groups (Creators → Groups); the defaults when there are none. */
+export const loadCityGroups = async (db) => {
+    const snap = await db.collection('creator_groups').get().catch(() => null);
+    return snap ? snap.docs.map(d => ({ id: d.id, ...d.data() })) : [];
+};
+
+export const handleApply = async (req, res, { db, token, now = nowIso() }) => {
     if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
     const body = req.body || {};
     // Honeypot: a field people never see. Bots fill it; pretend it worked.
     if (str(body.website)) return send(res, 200, { success: true });
+    // Applying needs a Newbi account, so every update can reach them in the app (no one-by-one WhatsApp).
+    if (!token?.uid) return send(res, 401, { success: false, code: 'sign_in', error: 'Sign in to apply. It takes a few seconds.' });
 
     const campDoc = await findCampaign(db, body.slug);
     const campaign = campDoc?.data();
@@ -196,16 +214,20 @@ export const handleApply = async (req, res, { db, now = nowIso() }) => {
     const { limited } = await checkRateLimit(db, req);
     if (limited) return send(res, 429, { success: false, code: 'rate_limited', error: 'Too many applications from this network. Try again in a few minutes.' });
 
-    const creatorId = await findCreatorByHandle(db, value.instagramHandle).catch(() => null);
+    const uid = token.uid;
+    const creatorId = (await findCreatorForUser(db, uid).catch(() => null)) || (await findCreatorByHandle(db, value.instagramHandle).catch(() => null));
     const campRef = campDoc.ref;
     const apps = campRef.collection('applications');
+    const uidKey = campRef.collection('application_keys').doc(`u:${uid}`);
     const phoneKey = campRef.collection('application_keys').doc(`p:${value.phone}`);
     const handleKey = campRef.collection('application_keys').doc(`ig:${value.instagramHandle}`);
     const contactRef = db.collection('creator_contacts').doc(contactIdFor(value.phone));
+    const memberRef = db.collection('outreach_members').doc(uid);
 
     const result = await db.runTransaction(async (tx) => {
-        const [pk, hk, contactSnap] = await Promise.all([tx.get(phoneKey), tx.get(handleKey), tx.get(contactRef)]);
+        const [uk, pk, hk, contactSnap] = await Promise.all([tx.get(uidKey), tx.get(phoneKey), tx.get(handleKey), tx.get(contactRef)]);
         const { targetId, conflictWith } = resolveDuplicate({
+            byUid: uk.exists ? uk.data().appId : null,
             byPhone: pk.exists ? pk.data().appId : null,
             byHandle: hk.exists ? hk.data().appId : null,
         });
@@ -221,10 +243,16 @@ export const handleApply = async (req, res, { db, now = nowIso() }) => {
         doc.campaignId = campDoc.id;
         doc.contactId = contactRef.id;
         doc.creatorId = creatorId || existing?.creatorId || null;
+        // The account they applied with: in-app notifications and push go to it.
+        doc.uid = uid;
+        doc.accountEmail = token.email || null;
+        doc.phoneVerified = Boolean(token.phone_number) && token.phone_number === value.phone;
         if (conflictExists) doc.possibleDuplicateOf = conflictWith;
         tx.set(appRef, doc);
 
+        tx.set(uidKey, { appId: appRef.id });
         tx.set(phoneKey, { appId: appRef.id });
+        tx.set(memberRef, { apps: { [`${campDoc.id}_${appRef.id}`]: { campaignId: campDoc.id, appId: appRef.id, at: existing?.firstSubmittedAt || now } }, updatedAt: now }, { merge: true });
         // A handle already used by someone else's application keeps pointing there; both are flagged.
         if (conflictExists) tx.update(apps.doc(conflictWith), { possibleDuplicateOf: appRef.id, updatedAt: now });
         else tx.set(handleKey, { appId: appRef.id });
@@ -240,6 +268,7 @@ export const handleApply = async (req, res, { db, now = nowIso() }) => {
             collegeOrEmployer: value.collegeOrEmployer,
             category: value.category,
             creatorId: doc.creatorId || contact.creatorId || null,
+            uids: [...new Set([...(contact.uids || []), uid])],
             campaignIds: [...new Set([...(contact.campaignIds || []), campDoc.id])],
             whatsappConsent: { granted: true, at: now, campaignId: campDoc.id, text: CONSENT_TEXT },
             createdAt: contact.createdAt || now,
@@ -250,10 +279,24 @@ export const handleApply = async (req, res, { db, now = nowIso() }) => {
             ? { appId: appRef.id, field: 'submission', from: existing.submitCount || 1, to: doc.submitCount, source: 'public_form', actorUid: null, actorEmail: null, at: now }
             : { appId: appRef.id, field: 'status', from: null, to: 'applied', source: 'public_form', actorUid: null, actorEmail: null, at: now });
 
-        return { appId: appRef.id, updated: Boolean(existing) };
+        return { appId: appRef.id, updated: Boolean(existing), prevCityGroupUrl: existing?.cityGroup?.url || null, optedOut: Boolean(contact.whatsappOptOut?.at) };
     });
 
-    return send(res, 200, { success: true, updated: result.updated });
+    // Their city's creator community, straight away: on the success screen, in the app and as push,
+    // and on WhatsApp through the API once it's set up. Nobody sends anything by hand.
+    const cityGroup = cityGroupFor(await loadCityGroups(db), value.city);
+    if (cityGroup && cityGroup.url !== result.prevCityGroupUrl) {
+        await apps.doc(result.appId).set({ cityGroup: { ...cityGroup, sentAt: now } }, { merge: true });
+        await notify('outreach-city-group', uid, {
+            name: value.fullName, city: cityGroup.city, groupTitle: cityGroup.title, groupUrl: cityGroup.url, campaignTitle: campaign.title,
+        }, { skip: ['email', 'whatsapp'], ref: { collection: apps.path, id: result.appId } }).catch(e => console.warn('[outreach] city group notice failed:', e.message));
+        if (isWhatsAppConfigured() && !result.optedOut) {
+            const id = await enqueueJob(db, { campaignId: campDoc.id, appId: result.appId, kind: 'city_group', data: { city: cityGroup.city, groupUrl: cityGroup.url }, createdBy: 'WhatsApp API' });
+            await sendSoon(db, id).catch(() => null);
+        }
+    }
+
+    return send(res, 200, { success: true, updated: result.updated, cityGroup });
 };
 
 /* ── Admin: list ──────────────────────────────────────────────────────── */
@@ -467,7 +510,7 @@ const handleQueueRun = async (req, res, { db, cron }) => {
 export const handleOutreachAction = async (action, req, res, { decodedToken, db = getDb() } = {}) => {
     try {
         if (action === 'outreach-campaign') return await handleCampaign(req, res, { db });
-        if (action === 'outreach-apply') return await handleApply(req, res, { db });
+        if (action === 'outreach-apply') return await handleApply(req, res, { db, token: decodedToken });
         if (action === 'outreach-deliverables') return await handleCreatorDeliverables(req, res, { db });
         if (action === 'outreach-submit') return await handleCreatorSubmit(req, res, { db, rateLimit: checkRateLimit });
         if (action === 'outreach-upi') return await handleCreatorUpi(req, res, { db });

@@ -90,7 +90,7 @@ export const seedOutreach = async (db) => {
             registeredNewbiCreator: i % 3 === 0,
             referralSource: ['Instagram', 'WhatsApp group', 'A friend'][i % 3],
             consentWhatsApp: true,
-        }, { ip: `203.0.113.${10 + i}` });
+        }, { ip: `203.0.113.${10 + i}`, token: { uid: `seed-user-${i}`, email: `seed${i}@example.com` } });
         if (!r.body?.success) throw new Error(`Applicant ${i} failed: ${JSON.stringify(r.body)}`);
         created += r.body.updated ? 0 : 1;
     }
@@ -100,7 +100,7 @@ export const seedOutreach = async (db) => {
         slug: 'seed-arijit-blr', fullName: 'Riya Sharma', email: 'seed0@example.com', phone: phoneFor(0), instagram: 'riya.sharma',
         followerCount: '13100', collegeOrEmployer: 'Christ University', city: 'Bangalore', category: 'Music & Dance',
         registeredNewbiCreator: true, consentWhatsApp: true,
-    }, { ip: '203.0.113.99' });
+    }, { ip: '203.0.113.99', token: { uid: 'seed-user-0', email: 'seed0@example.com' } });
 
     // Move a few along so every panel has something in it.
     const apps = (await db.collection('campaigns').doc(CAMPAIGN_ID).collection('applications').get()).docs;
