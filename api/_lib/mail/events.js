@@ -16,6 +16,9 @@ import { isCampaignCityMatch } from '../../../src/lib/constants.js';
 import { normalizeEmail, isValidEmail } from '../mailing.js';
 import { deliverGuestlistPass, ensureOrderPass, passUrl } from '../passes.js';
 
+// The admin has its own host; staff emails link there.
+const ADMIN_URL = 'https://admin.newbi.live';
+
 class EventError extends Error {
     constructor(message, status = 400) { super(message); this.status = status; }
 }
@@ -334,7 +337,7 @@ const staffAuthorized = async ({ email, role }, caller) => {
     if (!isValidEmail(to)) throw new EventError('Invalid email.');
     const admins = await getDb().collection('admins').where('email', '==', to).limit(1).get();
     if (admins.empty) throw new EventError('That person isn’t on the team yet.', 409);
-    const result = await sendTransactional('staff-authorized', to, { role: String(role || admins.docs[0].data().role || '').slice(0, 40), adminUrl: `${SITE_URL}/admin` }, { idempotencyKey: `staff_${to}_${role}_${istDate()}` });
+    const result = await sendTransactional('staff-authorized', to, { role: String(role || admins.docs[0].data().role || '').slice(0, 40), adminUrl: `${ADMIN_URL}/admin` }, { idempotencyKey: `staff_${to}_${role}_${istDate()}` });
     return { email: result.status, ok: result.ok };
 };
 

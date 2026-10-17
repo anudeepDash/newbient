@@ -101,7 +101,9 @@ export default defineConfig(({ mode }) => {
           server.middlewares.use((req, res, next) => {
             const [pathname] = (req.url || '').split('?');
             const clean = pathname.replace(/\/+$/, '') || '/';
-            if (req.method === 'GET' && LANDING.has(clean) && (req.headers.accept || '').includes('text/html')) {
+            // As in vercel.json: app.* and admin.* hosts never get the landing pages.
+            const appOrAdminHost = /^(app|admin)\./i.test(req.headers.host || '');
+            if (req.method === 'GET' && !appOrAdminHost && LANDING.has(clean) && (req.headers.accept || '').includes('text/html')) {
               req.url = '/landing.html' + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '');
             }
             next();

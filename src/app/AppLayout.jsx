@@ -140,7 +140,7 @@ const AppLayout = () => {
                     </nav>
                     <div className="flex items-center lg:w-48 lg:justify-end">
                         {isStaff && (
-                            // Staff only: into the admin (same host, no second sign-in).
+                            // Staff only: into the admin (admin.newbi.live in production).
                             <Link
                                 to="/admin"
                                 aria-label="Open admin"

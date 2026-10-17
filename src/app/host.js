@@ -13,10 +13,14 @@
 
 export const APP_ORIGIN = 'https://app.newbi.live';
 export const LANDING_ORIGIN = 'https://newbi.live';
+export const ADMIN_ORIGIN = 'https://admin.newbi.live';
 
 const hostname = () => (typeof window !== 'undefined' ? window.location.hostname : '');
 
 export const isAppHost = (host = hostname()) => /^app\./i.test(host || '');
+
+/* admin.newbi.live serves only the admin (still under /admin, so admin links don't change). */
+export const isAdminHost = (host = hostname()) => /^admin\./i.test(host || '');
 
 const normaliseBase = (base) => {
     const trimmed = String(base || '').trim().replace(/\/+$/, '');
@@ -34,6 +38,16 @@ export const landingAppBase = (host = hostname()) => {
     const fromEnv = normaliseBase(import.meta.env.VITE_APP_BASE);
     if (fromEnv) return fromEnv;
     return import.meta.env.DEV || isPreviewHost(host) ? '/app' : null;
+};
+
+/*
+ * Where an admin path opens: here on admin.newbi.live, localhost and previews;
+ * on admin.newbi.live from the other production hosts.
+ */
+export const adminUrl = (path = '/admin', host = hostname()) => {
+    const clean = path.startsWith('/') ? path : `/${path}`;
+    if (isAdminHost(host) || isPreviewHost(host) || import.meta.env.DEV) return clean;
+    return `${ADMIN_ORIGIN}${clean}`;
 };
 
 /* The prefix every app path gets on this page load: '' on the app host. */

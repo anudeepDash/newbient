@@ -7,7 +7,7 @@ import { auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { requestNotificationPermission, initForegroundMessaging } from './lib/notifications';
 import GlobalLoader from './components/ui/GlobalLoader';
-import { isAppHost, landingAppBase } from './app/host';
+import { isAppHost, isAdminHost, adminUrl, landingAppBase, LANDING_ORIGIN } from './app/host';
 
 const Home = lazy(() => import('./pages/Home'));
 const CreatorLanding = lazy(() => import('./pages/CreatorLanding'));
@@ -120,6 +120,27 @@ function ToLanding() {
   return inPlace ? <Outlet /> : <div className="min-h-dvh bg-[#F4F2EC] dark:bg-[#050505]" />;
 }
 
+// The admin lives on admin.newbi.live: /admin on the other production hosts makes a
+// full load there. Localhost and previews keep it in place.
+function ToAdmin() {
+  const location = useLocation();
+  const target = adminUrl(`${location.pathname}${location.search}${location.hash}`);
+  const away = /^https?:/.test(target);
+  useEffect(() => {
+    if (away) window.location.replace(target);
+  }, [away, target]);
+  return away ? <div className="min-h-dvh bg-[#F4F2EC] dark:bg-[#050505]" /> : <Outlet />;
+}
+
+// admin.newbi.live serves only the admin; any other path goes to the same path on newbi.live.
+function ToSite() {
+  const location = useLocation();
+  useEffect(() => {
+    window.location.replace(`${LANDING_ORIGIN}${location.pathname}${location.search}${location.hash}`);
+  }, [location.pathname, location.search, location.hash]);
+  return <div className="min-h-dvh bg-[#F4F2EC] dark:bg-[#050505]" />;
+}
+
 function AppContent() {
   const { user, subscribeToData, subscribeToNotifications, checkUserRole, loading, authInitialized } = useStore();
   const location = useLocation();
@@ -132,6 +153,7 @@ function AppContent() {
   };
 
   const currentColor = getColorByPath(location.pathname);
+  const adminHost = isAdminHost();
   const appHost = isAppHost();
   const appBase = landingAppBase();
   const onAdminPath = location.pathname === '/admin' || location.pathname.startsWith('/admin/');
@@ -179,9 +201,10 @@ function AppContent() {
   }, [subscribeToNotifications, user?.uid]);
 
 
-  // The admin route tree. Served on newbi.live/admin and on app.newbi.live/admin, so staff
-  // signed in to the app reach it without a second sign-in.
+  // The admin route tree. Served on admin.newbi.live/admin; ToAdmin sends /admin on
+  // newbi.live and app.newbi.live there (localhost and previews keep it in place).
   const adminRoutes = (
+    <Route element={<ToAdmin />}>
     <Route element={<AdminShell />}>
       <Route path="admin" element={<AdminGuard><Dashboard /></AdminGuard>} />
       <Route path="admin/manage-admins" element={<AdminGuard><MaintenanceGuard featureId="admins"><AdminManager /></MaintenanceGuard></AdminGuard>} />
@@ -254,6 +277,7 @@ function AppContent() {
       <Route path="admin/settings" element={<Navigate to="/admin/system-command" replace />} />
       <Route path="admin/dev-settings" element={<Navigate to="/admin/system-command" replace />} />
     </Route>
+    </Route>
   );
 
   return (
@@ -265,7 +289,15 @@ function AppContent() {
       </AnimatePresence>
 
       <Suspense fallback={<GlobalLoader color={currentColor} />}>
-        {appHost ? (
+        {adminHost ? (
+          // admin.newbi.live: the admin, and nothing else.
+          <Routes>
+            <Route path="auth/action" element={<ActionHandler />} />
+            <Route index element={<Navigate to="/admin" replace />} />
+            <Route element={<Layout />}>{adminRoutes}</Route>
+            <Route path="*" element={<ToSite />} />
+          </Routes>
+        ) : appHost ? (
           // app.newbi.live: the app owns every path.
           <Routes>
             <Route path="auth/action" element={<ActionHandler />} />

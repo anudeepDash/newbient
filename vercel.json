@@ -266,7 +266,7 @@
                     "value": "^app\\.newbi\\.live$"
                 }
             ],
-            "destination": "https://www.newbi.live/admin",
+            "destination": "https://admin.newbi.live/admin",
             "permanent": false
         },
         {
@@ -277,7 +277,40 @@
                     "value": "^app\\.newbi\\.live$"
                 }
             ],
-            "destination": "https://www.newbi.live/admin/:path*",
+            "destination": "https://admin.newbi.live/admin/:path*",
+            "permanent": false
+        },
+        {
+            "source": "/admin",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                }
+            ],
+            "destination": "https://admin.newbi.live/admin",
+            "permanent": false
+        },
+        {
+            "source": "/admin/:path*",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^(www\\.)?newbi\\.live$"
+                }
+            ],
+            "destination": "https://admin.newbi.live/admin/:path*",
+            "permanent": false
+        },
+        {
+            "source": "/",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "^admin\\.newbi\\.live$"
+                }
+            ],
+            "destination": "/admin",
             "permanent": false
         },
         {
@@ -426,32 +459,32 @@
         },
         {
             "source": "/",
-            "missing": [{ "type": "host", "value": "app.newbi.live" }],
+            "missing": [{ "type": "host", "value": "^(app|admin)\\.newbi\\.live$" }],
             "destination": "/_landing/index.html"
         },
         {
             "source": "/work",
-            "missing": [{ "type": "host", "value": "app.newbi.live" }],
+            "missing": [{ "type": "host", "value": "^(app|admin)\\.newbi\\.live$" }],
             "destination": "/_landing/work/index.html"
         },
         {
             "source": "/creator",
-            "missing": [{ "type": "host", "value": "app.newbi.live" }],
+            "missing": [{ "type": "host", "value": "^(app|admin)\\.newbi\\.live$" }],
             "destination": "/_landing/creator/index.html"
         },
         {
             "source": "/contact",
-            "missing": [{ "type": "host", "value": "app.newbi.live" }],
+            "missing": [{ "type": "host", "value": "^(app|admin)\\.newbi\\.live$" }],
             "destination": "/_landing/contact/index.html"
         },
         {
             "source": "/terms",
-            "missing": [{ "type": "host", "value": "app.newbi.live" }],
+            "missing": [{ "type": "host", "value": "^(app|admin)\\.newbi\\.live$" }],
             "destination": "/_landing/terms/index.html"
         },
         {
             "source": "/privacy",
-            "missing": [{ "type": "host", "value": "app.newbi.live" }],
+            "missing": [{ "type": "host", "value": "^(app|admin)\\.newbi\\.live$" }],
             "destination": "/_landing/privacy/index.html"
         },
         {
