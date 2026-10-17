@@ -35,7 +35,7 @@ const BLANK_FILTERS = { q: '', minFollowers: '', maxFollowers: '', category: 'al
 
 const OutreachTab = ({ campaign }) => {
     const addToast = useStore(s => s.addToast);
-    const [data, setData] = useState({ loading: true, error: '', applications: [], settings: null });
+    const [data, setData] = useState({ loading: true, error: '', applications: [], settings: null, api: null });
     const [view, setView] = useState('applications');
     const [filters, setFilters] = useState(BLANK_FILTERS);
     const [selected, setSelected] = useState(() => new Set());
@@ -47,10 +47,40 @@ const OutreachTab = ({ campaign }) => {
     const load = useCallback(async () => {
         const r = await callOutreach('outreach-list', { campaignId: campaign.id });
         setData(r.ok
-            ? { loading: false, error: '', applications: r.data.applications, settings: r.data.settings }
-            : { loading: false, error: r.status === 403 ? 'Only founders and admins can see applications and contact details.' : r.error, applications: [], settings: null });
+            ? { loading: false, error: '', applications: r.data.applications, settings: r.data.settings, api: r.data.whatsappApi || null }
+            : { loading: false, error: r.status === 403 ? 'Only founders and admins can see applications and contact details.' : r.error, applications: [], settings: null, api: null });
     }, [campaign.id]);
     useEffect(() => { load(); }, [load]);
+
+    /*
+     * While API sends are waiting, nudge the queue every 30 s and refresh the
+     * badges. The server keeps to its own rate limit, so this only helps it
+     * along when the background worker isn't running.
+     */
+    const waiting = (data.api?.queue?.queued || 0) + (data.api?.queue?.sending || 0);
+    useEffect(() => {
+        if (!waiting) return undefined;
+        const timer = setInterval(async () => {
+            if (document.hidden) return;
+            await callOutreach('outreach-queue-run', { campaignId: campaign.id });
+            load();
+        }, 30_000);
+        return () => clearInterval(timer);
+    }, [waiting, campaign.id, load]);
+
+    const sendWithApi = async (ids) => {
+        const r = await callOutreach('outreach-send', { campaignId: campaign.id, appIds: ids });
+        if (!r.ok) { addToast(r.error, 'error'); return; }
+        const skipped = r.data.skipped.length ? ` ${r.data.skipped.length} skipped (${[...new Set(r.data.skipped.map(s => SKIP_REASON[s.reason] || s.reason))].join(', ')}).` : '';
+        addToast(`${r.data.queued.length} queued to send.${skipped}`, r.data.queued.length ? 'success' : 'info');
+        setRefreshKey(k => k + 1);
+        load();
+    };
+    const stopApi = async () => {
+        const r = await callOutreach('outreach-cancel', { campaignId: campaign.id });
+        addToast(r.ok ? `Stopped. ${r.data.cancelled} won’t be sent.` : r.error, r.ok ? 'success' : 'error');
+        load();
+    };
 
     const apps = data.applications;
     const byId = useMemo(() => new Map(apps.map(a => [a.id, a])), [apps]);
@@ -241,10 +271,10 @@ const OutreachTab = ({ campaign }) => {
                 </div>
             )}
             {view === 'messages' && (
-                <MessagesPanel campaign={campaign} applications={apps} settings={data.settings} onStatus={changeStatus} onOpen={(a) => setOpenId(a.id)} onSetup={() => setView('setup')} />
+                <MessagesPanel campaign={campaign} applications={apps} settings={data.settings} api={data.api} onStatus={changeStatus} onOpen={(a) => setOpenId(a.id)} onSetup={() => setView('setup')} onSendApi={sendWithApi} onStopApi={stopApi} />
             )}
             {view === 'setup' && (
-                <SetupPanel campaign={campaign} settings={data.settings} sampleApplication={shortlist[0] || apps[0]} onSaved={load} />
+                <SetupPanel campaign={campaign} settings={data.settings} api={data.api} sampleApplication={shortlist[0] || apps[0]} onSaved={load} />
             )}
             {view === 'activity' && (
                 <Card className="p-4"><ActivityList campaignId={campaign.id} nameOf={nameOf} refreshKey={refreshKey} /></Card>

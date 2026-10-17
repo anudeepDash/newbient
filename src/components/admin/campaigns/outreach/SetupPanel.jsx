@@ -3,7 +3,8 @@ import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
 import { cn } from '../../../../lib/utils';
 import { useStore } from '../../../../lib/store';
 import { Button, Card } from '../../ui';
-import { Field, fieldCls } from '../../uploads/UploadKit';
+import { Field, fieldCls, Toggle } from '../../uploads/UploadKit';
+import { WA_TEMPLATES, JOIN_BUTTON, renderTemplatePreview } from '../../../../lib/outreach/whatsappTemplate';
 import { DEFAULT_TEMPLATE, PLACEHOLDERS, renderMessage, unknownPlaceholders } from '../../../../lib/outreach/template';
 import { callOutreach } from './outreachApi';
 
@@ -16,12 +17,14 @@ import { callOutreach } from './outreachApi';
 const GROUP_LINK = /^https:\/\/chat\.whatsapp\.com\/(?:invite\/)?[A-Za-z0-9]{10,40}\/?$/;
 const SAMPLE = { fullName: 'Riya Sharma' };
 
-const SetupPanel = ({ campaign, settings, sampleApplication, onSaved }) => {
+const SetupPanel = ({ campaign, settings, api, sampleApplication, onSaved }) => {
     const addToast = useStore(s => s.addToast);
     // An empty private link starts from the campaign's own group link, so nothing is typed twice.
     const initial = useMemo(() => ({
         whatsappGroupLink: settings?.whatsappGroupLink || (GROUP_LINK.test(campaign.whatsappLink || '') ? campaign.whatsappLink : ''),
         messageTemplate: settings?.messageTemplate || DEFAULT_TEMPLATE,
+        remindersEnabled: settings?.remindersEnabled !== false,
+        joinReminderHours: String(settings?.joinReminderHours || 48),
     }), [settings, campaign.whatsappLink]);
     const [form, setForm] = useState(initial);
     const [errors, setErrors] = useState({});
@@ -31,7 +34,10 @@ const SetupPanel = ({ campaign, settings, sampleApplication, onSaved }) => {
 
     const unknown = unknownPlaceholders(form.messageTemplate);
     const linkError = form.whatsappGroupLink && !GROUP_LINK.test(form.whatsappGroupLink.trim()) ? 'Paste a group invite link (https://chat.whatsapp.com/…).' : null;
-    const dirty = form.whatsappGroupLink !== initial.whatsappGroupLink || form.messageTemplate !== initial.messageTemplate || !settings?.updatedAt;
+    const hours = Number(form.joinReminderHours);
+    const hoursError = form.remindersEnabled && !(Number.isInteger(hours) && hours >= 1 && hours <= 336) ? 'Use 1 to 336 hours.' : null;
+    const dirty = ['whatsappGroupLink', 'messageTemplate', 'remindersEnabled', 'joinReminderHours'].some(k => form[k] !== initial[k]) || !settings?.updatedAt;
+    const apiSample = { application: sampleApplication || SAMPLE, campaign, groupLink: form.whatsappGroupLink.trim() || 'https://chat.whatsapp.com/…' };
     const preview = renderMessage(form.messageTemplate, { application: sampleApplication || SAMPLE, campaign: { ...campaign, whatsappGroupLink: form.whatsappGroupLink.trim() } });
     const fallbackPreview = renderMessage(form.messageTemplate, { application: { fullName: 'rj_99' }, campaign: { ...campaign, whatsappGroupLink: form.whatsappGroupLink.trim() } });
 
@@ -47,9 +53,15 @@ const SetupPanel = ({ campaign, settings, sampleApplication, onSaved }) => {
     };
 
     const save = async () => {
-        if (linkError || unknown.length) return;
+        if (linkError || unknown.length || hoursError) return;
         setSaving(true);
-        const r = await callOutreach('outreach-settings', { campaignId: campaign.id, whatsappGroupLink: form.whatsappGroupLink.trim(), messageTemplate: form.messageTemplate });
+        const r = await callOutreach('outreach-settings', {
+            campaignId: campaign.id,
+            whatsappGroupLink: form.whatsappGroupLink.trim(),
+            messageTemplate: form.messageTemplate,
+            remindersEnabled: form.remindersEnabled,
+            joinReminderHours: form.remindersEnabled ? hours : undefined,
+        });
         setSaving(false);
         if (!r.ok) {
             setErrors(r.field ? { [r.field]: r.error } : {});
@@ -92,8 +104,30 @@ const SetupPanel = ({ campaign, settings, sampleApplication, onSaved }) => {
                     {unknown.length > 0 && <p className="mt-1 text-[12px] font-semibold text-rose-600 dark:text-rose-300">Unknown placeholder{unknown.length > 1 ? 's' : ''}: {unknown.map(u => `{${u}}`).join(', ')}. Use the buttons above.</p>}
                     <p className="mt-1 text-[12px] text-gray-500">When a first name isn’t clear (a handle, one letter, numbers), “Hey {'{first_name}'}!” becomes “Hey!”.</p>
                 </Field>
+                <div className="space-y-3 rounded-2xl border border-black/[0.06] p-4 dark:border-white/[0.08]">
+                    <p className="text-[13px] font-bold">WhatsApp API {api?.configured ? <span className="font-semibold text-emerald-600">· set up</span> : <span className="font-semibold text-gray-500">· not set up (sending by hand)</span>}</p>
+                    <p className="text-[12.5px] text-gray-500">API messages use templates approved by Meta, so they can’t be edited here. The template above is for Open WhatsApp. Both use the same details.</p>
+                    {['invite', 'reminder'].map(kind => (
+                        <div key={kind} className="space-y-1">
+                            <p className="font-mono text-[12px] text-gray-500">{WA_TEMPLATES[kind].name}</p>
+                            <div className="whitespace-pre-wrap rounded-xl bg-black/[0.03] p-3 text-[13px] dark:bg-white/[0.04]">{renderTemplatePreview(kind, apiSample)}<span className="mt-1 block font-semibold text-sky-600">{JOIN_BUTTON}</span></div>
+                        </div>
+                    ))}
+                    <Toggle
+                        label="Remind people who haven’t tapped Joined"
+                        hint="One reminder with the API, only if they still haven’t joined."
+                        checked={form.remindersEnabled}
+                        onChange={(v) => setForm(f => ({ ...f, remindersEnabled: v }))}
+                    />
+                    {form.remindersEnabled && (
+                        <Field label="Remind after (hours)">
+                            <input className={cn(fieldCls, 'w-32', (hoursError || errors.joinReminderHours) && 'border-rose-500/60')} inputMode="numeric" value={form.joinReminderHours} onChange={(e) => setForm(f => ({ ...f, joinReminderHours: e.target.value.replace(/\D/g, '') }))} />
+                            {(hoursError || errors.joinReminderHours) && <p className="mt-1 text-[12px] font-semibold text-rose-600 dark:text-rose-300">{hoursError || errors.joinReminderHours}</p>}
+                        </Field>
+                    )}
+                </div>
                 <div className="flex justify-end">
-                    <Button variant="accent" onClick={save} disabled={saving || !dirty || Boolean(linkError) || unknown.length > 0}>{saving ? 'Saving…' : 'Save message setup'}</Button>
+                    <Button variant="accent" onClick={save} disabled={saving || !dirty || Boolean(linkError) || Boolean(hoursError) || unknown.length > 0}>{saving ? 'Saving…' : 'Save message setup'}</Button>
                 </div>
             </Card>
             <div className="space-y-3">

@@ -51,9 +51,12 @@ export const renderTemplatePreview = (kind, ctx) => {
 export const DELIVERY_META = {
     queued: { label: 'In the send queue', tone: 'amber' },
     retrying: { label: 'Retrying', tone: 'amber' },
-    sent: { label: 'Sent', tone: 'blue' },
-    delivered: { label: 'Delivered', tone: 'teal' },
-    read: { label: 'Read', tone: 'green' },
+    sent: { label: 'Sent ✓', tone: 'blue' },
+    delivered: { label: 'Delivered ✓✓', tone: 'teal' },
+    read: { label: 'Read ✓✓', tone: 'green' },
     failed: { label: 'Not delivered', tone: 'rose' },
-    cancelled: { label: 'Send cancelled', tone: 'gray' },
+    cancelled: { label: 'Send stopped', tone: 'gray' },
 };
+
+/* Has this person got an API message on its way or delivered? */
+export const IN_FLIGHT = new Set(['queued', 'retrying', 'sent', 'delivered', 'read']);
