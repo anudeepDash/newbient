@@ -8,18 +8,19 @@ import { Card } from '../../../components/app';
 import { campaignCard } from '../../cards';
 import { CardGrid, CardSkeleton, EmptyState } from '../../pages/parts';
 import { ChoiceChip } from '../ui';
-import { isInCampaign, matchesCollege } from '../useCreatorData';
+import { isInCampaign, matchesCollege, creatorCity } from '../useCreatorData';
 
 /* Openings: open campaigns you can apply to. Campaigns for another college are left out. */
 const OpeningsTab = ({ creator }) => {
     const location = useLocation();
     const campaigns = useAppStore(s => s.openCampaigns);
     const loaded = useAppStore(s => s.campaignsLoaded);
+    const profile = useAppStore(s => s.profile);
     const [query, setQuery] = useState('');
     const [filter, setFilter] = useState('all');
 
-    const available = useMemo(() => campaigns.filter(c => matchesCollege(c, creator)), [campaigns, creator]);
-    const city = creator?.city || null;
+    const available = useMemo(() => campaigns.filter(c => matchesCollege(c, creator, profile)), [campaigns, creator, profile]);
+    const city = creatorCity(creator, profile);
     const filters = [
         { id: 'all', label: 'All' },
         { id: 'new', label: 'Not applied' },

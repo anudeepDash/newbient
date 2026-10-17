@@ -22,13 +22,17 @@ export const isInCampaign = (creator, campaignId) =>
     (creator?.joinedCampaigns || []).includes(campaignId) || (creator?.shortlistedCampaigns || []).includes(campaignId);
 export const isShortlisted = (creator, campaignId) => (creator?.shortlistedCampaigns || []).includes(campaignId);
 
-/* Campaigns aimed at a college are shown only to creators from it. */
-export const matchesCollege = (campaign, creator) => {
+/* Campaigns aimed at a college are shown only to creators from it (the creator's college or the profile's). */
+export const matchesCollege = (campaign, creator, profile) => {
     const target = String(campaign?.targetCollege || '').trim();
-    if (!isPresent(target)) return true;
-    const mine = String(creator?.collegeName || '').toLowerCase();
-    return Boolean(mine) && mine.includes(target.toLowerCase());
+    if (!isPresent(target) || target.toLowerCase() === 'any') return true;
+    return [creator?.collegeName, profile?.college]
+        .map(v => String(v || '').toLowerCase())
+        .some(mine => mine && mine.includes(target.toLowerCase()));
 };
+
+/* The city campaigns are matched against: the profile's (where people change it), else the creator doc's. Same as the server. */
+export const creatorCity = (creator, profile) => profile?.city || creator?.city || null;
 
 /* Campaigns you applied to or were picked for, open or not, with your progress on each. */
 export function useMyCampaigns(creator) {

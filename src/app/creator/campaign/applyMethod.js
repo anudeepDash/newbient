@@ -20,7 +20,7 @@ export const formValuesFor = ({ creator, profile }) => ({
     phone: profile?.phone || creator?.phone || '',
     instagram: creator?.instagram ? `@${String(creator.instagram).replace(/^@/, '')}` : '',
     followers: creator?.instagramFollowers ? String(creator.instagramFollowers) : '',
-    city: creator?.city || profile?.city || '',
+    city: profile?.city || creator?.city || '',
     newbiId: creatorPassId(creator) || '',
 });
 

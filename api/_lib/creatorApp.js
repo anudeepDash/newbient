@@ -12,6 +12,7 @@
  *   ?action=campaign-apply   POST { campaignId }
  *   ?action=campaign-submit  POST { campaignId, taskId, contentLink, proofUrl, note }
  *   ?action=creator-self-delete POST {}       the signed-in creator deletes their own creator profile
+ *   ?action=creator-sync-profile POST {}      copies name, city and phone from users/{uid} onto the creator profile
  *
  * Instagram verification is behind site_settings/general.instagramMetaVerification.
  * While it's off, applications go to admin review with the handle the creator
@@ -34,7 +35,7 @@ const APP_URL = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace
 
 export const CREATOR_APP_ACTIONS = new Set([
     'ig-lookup', 'ig-connect', 'ig-callback', 'instagram-cron', 'creator-apply', 'campaign-apply', 'campaign-submit',
-    'creator-self-delete',
+    'creator-self-delete', 'creator-sync-profile',
 ]);
 /* Actions that don't take a Firebase ID token (they carry their own proof). */
 export const CREATOR_APP_PUBLIC = new Set(['ig-callback', 'instagram-cron']);
@@ -613,18 +614,26 @@ const notifyReferrer = async (db, referredBy, creator) => {
 // 'live' means the event is on: applications are closed (see src/lib/outreach/application.js).
 const OPEN_STATUSES = new Set(['open', 'active', 'published']);
 
-const handleCampaignApply = async (req, res, { db, token }) => {
+export const handleCampaignApply = async (req, res, { db, token }) => {
     if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
     const campaignId = str(req.body?.campaignId, 120);
     if (!campaignId) return send(res, 400, { success: false, error: 'campaignId is required' });
     // 'newbi': the 1-click apply. 'google_form': the creator says they sent the campaign's Google Form.
     const via = req.body?.via === 'google_form' ? 'google_form' : 'newbi';
 
-    const [creatorSnap, campSnap] = await Promise.all([findOwnCreator(db, token.uid), db.collection('campaigns').doc(campaignId).get()]);
+    const [creatorSnap, campSnap, userSnap] = await Promise.all([
+        findOwnCreator(db, token.uid),
+        db.collection('campaigns').doc(campaignId).get(),
+        db.collection('users').doc(token.uid).get().catch(() => null),
+    ]);
     if (!creatorSnap) return send(res, 409, { success: false, code: 'no_profile', error: 'Apply as a creator first.' });
     if (!campSnap.exists) return send(res, 404, { success: false, error: 'This campaign no longer exists.' });
     const creator = creatorSnap.data();
     const c = campSnap.data();
+    // The profile (users/{uid}) is where people change their city and college, so it wins over the creator doc.
+    const user = userSnap?.exists ? userSnap.data() : {};
+    const city = str(user.city, 80) || creator.city;
+    const colleges = [creator.collegeName, user.college, user.collegeName].map(v => String(v || '').toLowerCase()).filter(Boolean);
 
     if (['rejected', 'suspended'].includes(creator.profileStatus)) return send(res, 403, { success: false, error: "Your creator profile can't apply to campaigns right now." });
     if ((creator.joinedCampaigns || []).includes(campaignId)) return send(res, 200, { success: true, already: true, shortlisted: (creator.shortlistedCampaigns || []).includes(campaignId) });
@@ -638,9 +647,9 @@ const handleCampaignApply = async (req, res, { db, token }) => {
     const followers = Number(creator.instagramFollowers) || 0;
     const min = Number(c.minInstagramFollowers) || 0;
     if (min > 0 && followers < min) return send(res, 409, { success: false, code: 'followers', error: `This campaign needs ${min.toLocaleString('en-IN')}+ Instagram followers.` });
-    if (!isCampaignCityMatch(c.targetCity, creator.city)) return send(res, 409, { success: false, code: 'city', error: `This campaign is for creators in ${c.targetCity}.` });
+    if (!isCampaignCityMatch(c.targetCity, city)) return send(res, 409, { success: false, code: 'city', error: `This campaign is for creators in ${c.targetCity}.` });
     const college = String(c.targetCollege || '').trim();
-    if (college && college.toLowerCase() !== 'any' && !String(creator.collegeName || '').toLowerCase().includes(college.toLowerCase())) {
+    if (college && college.toLowerCase() !== 'any' && !colleges.some(mine => mine.includes(college.toLowerCase()))) {
         return send(res, 409, { success: false, code: 'college', error: `This campaign is for ${college} students.` });
     }
 
@@ -656,7 +665,12 @@ const handleCampaignApply = async (req, res, { db, token }) => {
     }
 
     // Applying never shortlists: the team (or the client's sheet) decides, from the admin.
-    await creatorSnap.ref.update({ joinedCampaigns: FieldValue.arrayUnion(campaignId), updatedAt: nowIso() });
+    await creatorSnap.ref.update({
+        joinedCampaigns: FieldValue.arrayUnion(campaignId),
+        // Keep the creator doc's city in step with the profile it was checked against.
+        ...(city && city !== creator.city ? { city } : {}),
+        updatedAt: nowIso(),
+    });
     // How they applied, per campaign (a nested map, so set+merge rather than a dotted path).
     await creatorSnap.ref.set({ campaignApplyVia: { [campaignId]: { via, at: nowIso() } } }, { merge: true }).catch(() => {});
     return send(res, 200, { success: true, shortlisted: false, via });
@@ -793,6 +807,36 @@ const handleCron = async (req, res, { db }) => {
 
 /* ── Router ───────────────────────────────────────────────────────────── */
 
+/* ── creator-sync-profile ─────────────────────────────────────────────── */
+
+/*
+ * After someone edits their profile (name, city, phone), the creator doc
+ * catches up, so the admin and campaign checks see the same details. Only
+ * fields that changed are written; nothing about status or Instagram.
+ */
+export const handleSyncProfile = async (req, res, { db, token }) => {
+    if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
+    const snap = await findOwnCreator(db, token.uid);
+    if (!snap) return send(res, 200, { success: true, updated: [] });
+    const creator = snap.data();
+    const id = await loadIdentity(db, token);
+    const patch = {};
+    if (id.name && id.name !== creator.name) { patch.name = id.name; patch.displayName = id.name; }
+    if (id.city && id.city !== creator.city) patch.city = id.city;
+    if (id.phone && id.phoneVerified && (id.phone !== toE164(creator.phone) || !creator.isPhoneVerified)) {
+        Object.assign(patch, {
+            phone: id.phone,
+            isPhoneVerified: true,
+            phoneVerifiedAt: creator.phoneVerifiedAt || nowIso(),
+            phoneVerificationPending: false,
+            needsPhoneVerificationNotice: false,
+        });
+    }
+    const updated = Object.keys(patch);
+    if (updated.length) await snap.ref.set({ ...patch, updatedAt: nowIso() }, { merge: true });
+    return send(res, 200, { success: true, updated });
+};
+
 /* ── creator-self-delete ──────────────────────────────────────────────── */
 
 /*
@@ -862,6 +906,7 @@ export const handleCreatorAppAction = async (action, req, res, { decodedToken })
         if (action === 'campaign-apply') return await handleCampaignApply(req, res, ctx);
         if (action === 'campaign-submit') return await handleCampaignSubmit(req, res, ctx);
         if (action === 'creator-self-delete') return await handleSelfDelete(req, res, ctx);
+        if (action === 'creator-sync-profile') return await handleSyncProfile(req, res, ctx);
         return send(res, 400, { success: false, error: 'Unknown action.' });
     } catch (err) {
         console.error(`[creatorApp] ${action}:`, err);

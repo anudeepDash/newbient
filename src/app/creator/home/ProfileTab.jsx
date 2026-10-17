@@ -12,26 +12,31 @@ import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
 import BadgeCheck from 'lucide-react/dist/esm/icons/badge-check';
 import UserRound from 'lucide-react/dist/esm/icons/user-round';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
 import { useStore as useLegacyStore } from '../../../lib/store.js';
-import { Button, Field, Section, Sheet, hasContent } from '../../../components/app';
+import { Button, Field, Section, Sheet, TextInput, hasContent } from '../../../components/app';
 import { CREATOR_NICHE_OPTIONS, COLLAB_OPTIONS } from '../../../lib/creator/options';
 import { appPath } from '../../host';
 import { callCreatorApi } from '../api';
 import { compactCount, handleOf } from '../format';
-import { Notice } from '../ui';
+import { ChoiceChip, FormBlock, Notice } from '../ui';
+import JoinCommunitySheet from '../../community/JoinCommunitySheet';
+import CompleteProfileSheet from '../../profile/CompleteProfileSheet';
+import { CITIES } from '../../community/welcomeForm';
 import DetailsStep, { validateDetails } from '../apply/DetailsStep';
 import { oauthErrorMessage } from '../apply/instagramCopy';
 
 /*
- * Profile: contact details come from /profile (one place to edit them); the
- * creator fields are edited here and saved through the server, which keeps
- * the review status as it is. At the bottom, the creator can delete their
+ * Profile: contact details are the account's own (the same "Edit profile"
+ * sheet as /profile, opened here); city, Instagram and the creator fields are
+ * edited in one sheet and saved through the server, which keeps the review
+ * status as it is (a new Instagram username is checked again). At the bottom, the creator can delete their
  * creator profile (the server's creator-self-delete); the account stays.
  */
 
-/* A titled list of Fields; hidden when none of them has a value. */
-const FieldCard = ({ title, action, children }) => (
-    <Section title={title} action={action} when={hasContent(children)}>
+/* A titled list of Fields; hidden when none of them has a value, unless `always`. */
+const FieldCard = ({ title, action, always, children }) => (
+    <Section title={title} action={action} when={always || hasContent(children)}>
         <div className="divide-y divide-black/[0.05] rounded-3xl border border-black/[0.06] bg-white px-4 dark:divide-white/[0.06] dark:border-white/[0.07] dark:bg-[#0c0e14]">{children}</div>
     </Section>
 );
@@ -153,48 +158,70 @@ const DeleteCreatorProfile = () => {
 
 const ProfileTab = ({ creator, profile, settings }) => {
     const [editing, setEditing] = useState(false);
+    const [contactOpen, setContactOpen] = useState(false);
+    const [phoneOpen, setPhoneOpen] = useState(false);
     const [details, setDetails] = useState(() => detailsFrom(creator));
+    const [city, setCity] = useState('');
+    const [otherCity, setOtherCity] = useState(false);
+    const [handle, setHandle] = useState('');
     const [fieldError, setFieldError] = useState(null);
     const [error, setError] = useState(null);
     const [saving, setSaving] = useState(false);
+    const currentHandle = handleOf(creator.instagram) || '';
 
     const openEdit = () => {
+        const c = profile?.city || creator.city || '';
         setDetails(detailsFrom(creator));
+        setCity(c);
+        setOtherCity(Boolean(c) && !CITIES.includes(c));
+        setHandle(currentHandle);
         setFieldError(null);
         setError(null);
         setEditing(true);
     };
 
     const save = async () => {
-        const invalid = validateDetails(details, profile?.college);
+        const cleanHandle = handle.trim().replace(/^@+/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[/?#].*$/, '');
+        const invalid = !city.trim() ? { field: 'city', error: 'Add your city.' }
+            : !cleanHandle ? { field: 'handle', error: 'Add your Instagram username.' }
+                : validateDetails(details, profile?.college);
         setFieldError(invalid);
         if (invalid) return;
         setSaving(true);
-        const res = await callCreatorApi('creator-apply', { ...details, handle: handleOf(creator.instagram) || '' });
+        const res = await callCreatorApi('creator-apply', { ...details, city: city.trim(), handle: cleanHandle });
         setSaving(false);
         if (!res.ok) {
-            if (res.field && res.field !== 'handle') setFieldError({ field: res.field, error: res.error });
+            if (res.code === 'connect_required') setError('To use a new Instagram account, connect it with "Connect Instagram" on this page.');
+            else if (res.field) setFieldError({ field: res.field, error: res.error });
             else setError(res.error);
             return;
         }
-        // The creator listener picks up the change.
+        // The creator and profile listeners pick up the change.
         setEditing(false);
     };
+
+    const cityChoices = city && !CITIES.includes(city) && !otherCity ? [city, ...CITIES] : CITIES;
+    const fieldNote = (field) => (fieldError?.field === field ? <p role="alert" className="px-1 text-[13px] font-medium text-red-600 dark:text-red-400">{fieldError.error}</p> : null);
 
     const collab = COLLAB_OPTIONS.find(o => o.id === creator.doBarter)?.label || null;
 
     return (
         <div className="space-y-6">
-            <FieldCard title="Contact" action={<Button variant="ghost" size="sm" to={appPath('/profile')}>Edit</Button>}>
+            <FieldCard title="Contact" always action={<Button variant="ghost" size="sm" onClick={() => setContactOpen(true)}>Edit</Button>}>
                 <Field label="Name" icon={UserRound} value={profile?.name || creator.name} />
                 <Field label="Email" icon={Mail} value={profile?.email || creator.email} />
                 <Field label="Phone" icon={Phone} value={profile?.phone || creator.phone} />
                 <Field label="City" icon={MapPin} value={profile?.city || creator.city} />
             </FieldCard>
+            <div className="-mt-3 px-1">
+                <Button variant="ghost" size="sm" icon={Smartphone} onClick={() => setPhoneOpen(true)}>
+                    {profile?.phoneVerified ? 'Change phone number' : 'Verify phone number'}
+                </Button>
+            </div>
 
             <InstagramSection creator={creator} settings={settings} />
 
-            <FieldCard title="Creator details" action={<Button variant="ghost" size="sm" onClick={openEdit}>Edit</Button>}>
+            <FieldCard title="Creator details" always action={<Button variant="ghost" size="sm" onClick={openEdit}>Edit</Button>}>
                 <Field label="Niche" icon={Sparkles} value={nicheLabel(creator)} />
                 <Field label="College" icon={GraduationCap} value={creator.collegeName} />
                 <Field label="Works on" icon={Handshake} value={collab} />
@@ -228,8 +255,33 @@ const ProfileTab = ({ creator, profile, settings }) => {
                     </div>
                 )}
             >
-                <DetailsStep details={details} setDetails={setDetails} profileCollege={profile?.college} fieldError={fieldError} />
+                <div className="space-y-6">
+                    <FormBlock label="Your city">
+                        <div className="flex flex-wrap gap-2">
+                            {cityChoices.map(c => (
+                                <ChoiceChip key={c} selected={city === c && !otherCity} onClick={() => { setOtherCity(false); setCity(c); }} className="py-2">{c}</ChoiceChip>
+                            ))}
+                            <ChoiceChip selected={otherCity} onClick={() => { setOtherCity(true); setCity(''); }} className="py-2">Other</ChoiceChip>
+                        </div>
+                        {otherCity && <TextInput label="City" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Mysuru" autoComplete="address-level2" />}
+                        {fieldNote('city')}
+                    </FormBlock>
+                    <FormBlock label="Instagram username" hint={handle.replace(/^@+/, '').trim() !== currentHandle ? 'A new username is checked again: followers and verification come from the new account.' : null}>
+                        <TextInput value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="@yourhandle" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
+                        {fieldNote('handle')}
+                    </FormBlock>
+                    <DetailsStep details={details} setDetails={setDetails} profileCollege={profile?.college} fieldError={fieldError} />
+                </div>
             </Sheet>
+
+            <JoinCommunitySheet mode="edit" open={contactOpen} onClose={() => setContactOpen(false)} />
+            <CompleteProfileSheet
+                open={phoneOpen}
+                onClose={() => setPhoneOpen(false)}
+                required={['phoneVerified']}
+                editAll
+                title={profile?.phoneVerified ? 'Change phone number' : 'Verify phone number'}
+            />
         </div>
     );
 };
