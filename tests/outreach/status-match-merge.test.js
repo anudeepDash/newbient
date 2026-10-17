@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { STATUSES, TRANSITIONS, canTransition, isOnShortlist } from '../../src/lib/outreach/status.js';
 import { parsePastedHandles, matchPastedHandles } from '../../src/lib/outreach/match.js';
 import { mergeApplication, resolveDuplicate, validateApplication, tierFor, applicationsOpen, parseFollowers, filterApplications } from '../../src/lib/outreach/application.js';
-import { toCsv, csvCell } from '../../src/lib/outreach/csv.js';
+import { exportSpecFor, EXPORT_COLUMNS } from '../../src/lib/outreach/export.js';
 
 describe('status transitions', () => {
     it('follows the outreach order', () => {
@@ -174,14 +174,21 @@ describe('filterApplications', () => {
     });
 });
 
-describe('csv', () => {
-    it('escapes quotes and blocks formulas, but keeps phone numbers readable', () => {
-        expect(csvCell('=HYPERLINK("x")')).toBe('"\'=HYPERLINK(""x"")"');
-        expect(csvCell('+919876543210')).toBe('+919876543210');
-        expect(csvCell('a,b')).toBe('"a,b"');
-        const csv = toCsv([{ fullName: 'Riya', instagramHandle: 'riya', status: 'message_sent' }]);
-        expect(csv.startsWith('\uFEFFName,Instagram')).toBe(true);
-        expect(csv).toContain('Riya,@riya');
-        expect(csv).toContain('Message sent');
+describe('shortlist export', () => {
+    const row = {
+        fullName: 'Riya', instagramHandle: 'riya', followerCount: 12500, tier: 'micro', city: 'Bangalore', collegeOrEmployer: 'Christ University',
+        category: 'Music & Dance', registeredNewbiCreator: true, phone: '+919876543210', email: 'riya@example.com', status: 'message_sent',
+    };
+    it('has every shortlist table column and readable values', () => {
+        const headers = EXPORT_COLUMNS.map(c => c.header);
+        ['Name', 'Instagram handle', 'Followers', 'City', 'College or employer', 'Category', 'Registered on Newbi', 'Phone', 'Status']
+            .forEach(h => expect(headers).toContain(h));
+        const spec = exportSpecFor({ title: 'Arijit Singh / BLR', rows: [row], date: '2026-10-17' });
+        expect(spec.filename).toBe('Arijit_Singh_BLR_shortlist_2026-10-17');
+        const values = Object.fromEntries(spec.columns.map(c => [c.header, c.value(row)]));
+        expect(values).toMatchObject({ Name: 'Riya', 'Instagram handle': 'riya', Followers: 12500, 'Registered on Newbi': 'Yes', Phone: '+919876543210', Status: 'Message sent' });
+    });
+    it('returns null with nothing to export', () => {
+        expect(exportSpecFor({ title: 'x', rows: [] })).toBeNull();
     });
 });
