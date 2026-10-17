@@ -1619,6 +1619,8 @@ export const useStore = create((set, get) => ({
                 isTicketed: event.isTicketed || false,
                 isGuestlistEnabled: event.isGuestlistEnabled || false,
                 ticketCategories: event.ticketCategories || [],
+                // A sale switched off for newbi.live stays off the Work page too.
+                ...(event.showOnSite === false ? { isHidden: true } : {}),
                 archivedAt: new Date().toISOString()
             });
 

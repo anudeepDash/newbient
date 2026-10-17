@@ -53,24 +53,33 @@ const dayLabel = (day) => {
     return d && !Number.isNaN(d.getTime()) ? format(d, 'EEE d MMM') : null;
 };
 
-/* Upcoming shows: ticketed events (Tickets) and the public feed's upcoming events, soonest first. */
+/*
+ * Upcoming shows for Home, soonest first: ticket sales (Tickets), the site's upcoming
+ * events and guestlists, each only when "Where it shows → App home" is on in the admin.
+ */
 const useUpcomingShows = () => {
     const { events: ticketed, loaded } = useTicketedEvents();
     const feed = usePublicFeed();
+    const community = useAppStore(s => s.communityFeed);
     return useMemo(() => {
         const byId = new Map();
-        (feed?.events || []).forEach(e => byId.set(e.id, {
+        (feed?.events || []).filter(e => e.showInApp !== false).forEach(e => byId.set(e.id, {
             id: e.id, title: e.title, image: e.image, day: e.date, time: e.time, venue: e.location, city: e.city,
             category: e.category, ticketed: e.isTicketed, guestlist: e.hasGuestlist,
         }));
-        (ticketed || []).forEach(e => byId.set(e.id, {
+        (community || []).filter(i => i.type === 'guestlist' && i.showInApp && i.date).forEach(i => {
+            const day = i.date instanceof Date ? format(i.date, 'yyyy-MM-dd') : String(i.date).slice(0, 10);
+            if (!byId.has(i.id)) byId.set(i.id, { id: i.id, title: i.title, image: i.image, day, venue: i.venue, city: i.city, guestlist: true });
+        });
+        (ticketed || []).filter(e => e.showInApp !== false).forEach(e => byId.set(e.id, {
             ...(byId.get(e.id) || {}),
             id: e.id, title: e.title, image: e.image || e.poster || null, day: e.day, time: e.time, venue: e.venue || e.location,
             city: e.city, category: e.category || e.performanceType, ticketed: true, price: fromPrice(e),
         }));
-        const list = [...byId.values()].filter(e => e.day).sort((a, b) => String(a.day).localeCompare(String(b.day))).slice(0, 8);
+        const today = format(new Date(), 'yyyy-MM-dd');
+        const list = [...byId.values()].filter(e => e.day && e.day >= today).sort((a, b) => String(a.day).localeCompare(String(b.day))).slice(0, 8);
         return { shows: list, loaded: loaded || Boolean(feed) };
-    }, [ticketed, loaded, feed]);
+    }, [ticketed, loaded, feed, community]);
 };
 
 const showCard = (e) => ({

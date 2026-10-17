@@ -90,9 +90,14 @@ function publicContact(info) {
     };
 }
 
-function upcomingEvents(list) {
+// Upcoming for newbi.live's home: events (unless "Show on newbi.live" is off) and standalone
+// guestlists that have it switched on. Each says whether the app's Home should list it too.
+function upcomingEvents(list, guestlists = []) {
     const today = todayIST();
-    return list
+    const lists = guestlists
+        .filter((g) => g.showOnSite === true && !g.isEmbedded && !g.eventId && !g.linkedEventId && String(g.status || '').toLowerCase() !== 'closed')
+        .map((g) => ({ ...g, isGuestlistEnabled: true, isTicketed: false, standaloneList: true }));
+    return [...list.filter((e) => e.showOnSite !== false), ...lists]
         .filter((e) => !isHidden(e) && str(e.title))
         .map((e) => ({ e, day: eventDay(e.date) }))
         .filter(({ day }) => day && day >= today)
@@ -109,6 +114,8 @@ function upcomingEvents(list) {
             category: str(e.category || e.performanceType, 40),
             isTicketed: Boolean(e.isTicketed),
             hasGuestlist: Boolean(e.isGuestlistEnabled || e.guestlistEnabled),
+            // Guestlists opt in to the app's Home; events opt out.
+            showInApp: e.standaloneList ? e.showInApp === true : e.showInApp !== false,
         }));
 }
 
@@ -197,7 +204,7 @@ function openCampaigns(list) {
 }
 
 export async function getPublicFeed(db, { maintenanceDoc = 'maintenance' } = {}) {
-    const [general, contact, maintenance, events, clients, portfolio, categories, quotes, campaigns] = await Promise.all([
+    const [general, contact, maintenance, events, clients, portfolio, categories, quotes, campaigns, guestlists] = await Promise.all([
         readDoc(db, 'site_settings', 'general'),
         readDoc(db, 'site_settings', 'contact_info'),
         readDoc(db, 'app_state', maintenanceDoc),
@@ -207,6 +214,7 @@ export async function getPublicFeed(db, { maintenanceDoc = 'maintenance' } = {})
         readCollection(db, 'portfolio_categories'),
         readCollection(db, 'creator_testimonials'),
         readCollection(db, 'campaigns'),
+        readCollection(db, 'guestlists'),
     ]);
 
     const settings = publicSettings(general);
@@ -222,7 +230,7 @@ export async function getPublicFeed(db, { maintenanceDoc = 'maintenance' } = {})
             pages: boolMap(maintenance.pages),
             sections: boolMap(maintenance.sections),
         },
-        events: settings.showUpcomingEvents ? upcomingEvents(events) : [],
+        events: settings.showUpcomingEvents ? upcomingEvents(events, guestlists) : [],
         clients: settings.showPastClients ? pastClients(clients) : [],
         caseStudies: caseStudies(portfolio, categories),
         testimonials: settings.showCreatorTestimonials ? testimonials(quotes) : [],

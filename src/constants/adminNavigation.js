@@ -79,7 +79,6 @@ export const ADMIN_NAV_GROUPS = [
         id: 'app-community',
         title: 'App · Community',
         items: [
-            { id: 'guestlists', accent: 'green', name: 'Guestlists', path: '/admin/guestlists', icon: ListChecks, card: 'guestlists', ...OPERATIONS },
             { id: 'gigs', accent: 'orange', name: 'Volunteer gigs', path: '/admin/volunteer-gigs', icon: Users, card: 'community', ...OPERATIONS },
             { id: 'giveaways', accent: 'rose', name: 'Giveaways', path: '/admin/giveaways', icon: Gift, card: 'giveaways', ...OPERATIONS },
             { id: 'forms', accent: 'indigo', name: 'Forms', path: '/admin/forms', icon: ClipboardList, card: 'forms_public', ...OPERATIONS },
@@ -91,6 +90,7 @@ export const ADMIN_NAV_GROUPS = [
         items: [
             { id: 'upcoming', accent: 'green', name: 'Events', path: '/admin/upcoming-events', icon: Calendar, card: 'upcoming_events', ...NOT_SCANNER },
             { id: 'ticketing', accent: 'orange', name: 'Ticket sales', path: '/admin/ticketing', icon: Ticket, card: 'ticketing' },
+            { id: 'guestlists', accent: 'fuchsia', name: 'Guestlists', path: '/admin/guestlists', icon: ListChecks, card: 'guestlists', ...OPERATIONS },
             { id: 'scanner', accent: 'teal', name: 'Gate scanner', path: '/admin/scanner', icon: ScanLine, card: 'ticketing' },
         ],
     },
