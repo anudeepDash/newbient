@@ -247,7 +247,7 @@ const loaders = {
         const brand = stripHtml(data.brandName);
         const payout = stripHtml(data.payout || data.budget);
         return {
-            title: `${stripHtml(data.title) || 'Brand Campaign'} | Newbi Creator Network`,
+            title: `${stripHtml(data.title) || 'Brand Campaign'} | Newbi Creators`,
             description: [brand && `Brand: ${brand}.`, payout && `Compensation: ${payout}.`, stripHtml(data.description) || PAGES.campaign.description].filter(Boolean).join(' '),
             image: firstImage(data.thumbnail, data.image, data.coverImage),
             alt: stripHtml(data.title),
@@ -406,7 +406,7 @@ const loaders = {
         if (!snap.exists) return null;
         const data = snap.data();
         return {
-            title: `${stripHtml(data.proposalNumber) || 'Proposal'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi Ent.`,
+            title: `${stripHtml(data.proposalNumber) || 'Proposal'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi`,
             description: `Proposal for ${stripHtml(data.campaignName) || 'your campaign'} from Newbi Entertainment & Marketing.`,
         };
     },
@@ -416,7 +416,7 @@ const loaders = {
         if (!snap.exists) return null;
         const data = snap.data();
         return {
-            title: `${stripHtml(data.invoiceNumber) || 'Tax Invoice'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi Ent.`,
+            title: `${stripHtml(data.invoiceNumber) || 'Tax Invoice'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi`,
             description: `Tax invoice for ${stripHtml(data.campaignName) || 'services'} from Newbi Entertainment & Marketing.`,
         };
     },
@@ -426,7 +426,7 @@ const loaders = {
         if (!snap.exists) return null;
         const data = snap.data();
         return {
-            title: `${stripHtml(data.agreementNumber) || 'Agreement'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi Ent.`,
+            title: `${stripHtml(data.agreementNumber) || 'Agreement'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi`,
             description: `Service agreement for ${stripHtml(data.campaignName) || 'services'} from Newbi Entertainment & Marketing.`,
         };
     },
@@ -436,7 +436,7 @@ const loaders = {
         if (!snap.exists) return null;
         const data = snap.data();
         return {
-            title: `${stripHtml(data.title) || 'Official Document'} | Newbi Ent.`,
+            title: `${stripHtml(data.title) || 'Official Document'} | Newbi`,
             description: `${stripHtml(data.documentType) || 'Official document'} #${stripHtml(data.docNumber) || id}, issued by Newbi Entertainment & Marketing.`,
         };
     },

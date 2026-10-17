@@ -10,6 +10,7 @@ import { cn } from '../../../lib/utils';
 import { CREATOR_NICHE_OPTIONS } from '../../../lib/creator/options';
 import { INTENTS, useAuthGate, useResumeIntent } from '../../auth/AuthGate';
 import { appPath } from '../../host';
+import useDynamicMeta from '../../../hooks/useDynamicMeta';
 import { PageBody } from '../../pages/PageHeader';
 import { GLASS } from '../../pages/parts';
 import Sticker from '../../../components/brand/Sticker';
@@ -369,6 +370,7 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
 };
 
 const CreatorApplyPage = ({ overlay = false }) => {
+    useDynamicMeta({ page: 'creator-apply' });
     const navigate = useNavigate();
     const location = useLocation();
     const close = useCallback(() => {

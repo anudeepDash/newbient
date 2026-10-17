@@ -21,6 +21,7 @@ import { missingFields, fieldLabel } from '../profile/requirements';
 import CompleteProfileSheet from '../profile/CompleteProfileSheet';
 import JoinPaths from './JoinPaths';
 import { useAppContent } from '../useAppContent';
+import useDynamicMeta from '../../hooks/useDynamicMeta';
 import { campaignCard, feedCard } from '../cards';
 import { bySoonest, isUpcomingPass, passCard } from '../passes/passCards';
 import { PageBody } from './PageHeader';
@@ -102,6 +103,7 @@ const showCard = (e) => ({
 });
 
 const HomePage = () => {
+    useDynamicMeta({ page: 'app-home' });
     useAppContent();
     const location = useLocation();
     const authUser = useAppStore(s => s.authUser);

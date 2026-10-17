@@ -9,6 +9,7 @@ import { copyToClipboard } from '../../../lib/clipboard';
 import { useStore as useLegacyStore } from '../../../lib/store.js';
 import { appPath, stripAppBase } from '../../host';
 import { useAppContent } from '../../useAppContent';
+import useDynamicMeta from '../../../hooks/useDynamicMeta';
 import { campaignCard } from '../../cards';
 import PageHeader, { PageBody } from '../../pages/PageHeader';
 import { CardGrid, CardSkeleton, EmptyState, HeroPanel, SectionHeader } from '../../pages/parts';
@@ -122,6 +123,7 @@ const BecomeCreator = () => {
 };
 
 const CreatorHome = () => {
+    useDynamicMeta({ page: 'app-creator' });
     useAppContent({ feed: false });
     const location = useLocation();
     const section = stripAppBase(location.pathname).split('/')[2] || '';

@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import {
     PAGES,
-    BRANDS,
     DEFAULT_TITLE,
     DEFAULT_DESCRIPTION,
     brandOf,
@@ -71,12 +70,36 @@ const applyMeta = ({ title, description, url, image, type, noindex, brand }) => 
     setTag('name', 'twitter:image:alt', image.alt);
 };
 
+const META_TAGS = [
+    ['name', 'description'], ['name', 'robots'],
+    ['property', 'og:site_name'], ['property', 'og:type'], ['property', 'og:title'], ['property', 'og:description'],
+    ['property', 'og:url'], ['property', 'og:image'], ['property', 'og:image:secure_url'], ['property', 'og:image:type'],
+    ['property', 'og:image:width'], ['property', 'og:image:height'], ['property', 'og:image:alt'],
+    ['name', 'twitter:card'], ['name', 'twitter:site'], ['name', 'twitter:url'], ['name', 'twitter:title'],
+    ['name', 'twitter:description'], ['name', 'twitter:image'], ['name', 'twitter:image:alt'],
+];
+
+// What was in <head> before a page set its own tags: the page underneath a
+// sheet, or the defaults from index.html.
+const snapshotMeta = () => ({
+    title: document.title,
+    canonical: document.head.querySelector('link[rel="canonical"]')?.getAttribute('href') || '',
+    tags: META_TAGS.map(([attr, key]) => [attr, key, document.head.querySelector(`meta[${attr}="${key}"]`)?.getAttribute('content') ?? '']),
+});
+
+const restoreMeta = ({ title, canonical, tags }) => {
+    document.title = title;
+    setCanonical(canonical);
+    tags.forEach(([attr, key, content]) => setTag(attr, key, content));
+};
+
 /**
  * Sets the page's title, description and share tags while the page is mounted.
  * `page` is a key of PAGES in src/app/seo.js; title/description/url fall back to
  * that entry, and the entry's brand (Newbi or Concert Zone) picks the site name,
  * title suffix and default image. Server-side previews come from api/og.js,
- * which uses the same table.
+ * which uses the same table. On unmount the previous tags come back, so closing
+ * a sheet gives the page underneath its title again.
  */
 const useDynamicMeta = ({ page, title, description, image, imageAlt, url, type, noindex } = {}) => {
     useEffect(() => {
@@ -90,6 +113,7 @@ const useDynamicMeta = ({ page, title, description, image, imageAlt, url, type, 
         const fallbackImage = defaultOgImage(originFor('landing', host), brand.image);
         const resolved = (!LEGACY_DEFAULT_IMAGE.test(image || '') && toOgImage(image, window.location.origin)) || fallbackImage;
 
+        const previous = snapshotMeta();
         applyMeta({
             title: pageTitle,
             description: pageDesc,
@@ -100,17 +124,7 @@ const useDynamicMeta = ({ page, title, description, image, imageAlt, url, type, 
             brand,
         });
 
-        return () => {
-            applyMeta({
-                title: DEFAULT_TITLE,
-                description: DEFAULT_DESCRIPTION,
-                url: '',
-                image: defaultOgImage(originFor('landing', host)),
-                type: 'website',
-                noindex: false,
-                brand: BRANDS.newbi,
-            });
-        };
+        return () => restoreMeta(previous);
     }, [page, title, description, image, imageAlt, url, type, noindex]);
 };
 

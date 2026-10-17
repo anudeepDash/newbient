@@ -24,6 +24,7 @@ import AuthGate from '../auth/AuthGate';
 import { missingFields } from '../profile/requirements';
 import CompleteProfileSheet from '../profile/CompleteProfileSheet';
 import PageHeader, { PageBody } from './PageHeader';
+import useDynamicMeta from '../../hooks/useDynamicMeta';
 
 /*
  * Profile: the one place for your details. Phase 5 adds security, email
@@ -141,13 +142,16 @@ const ProfileDetails = () => {
     );
 };
 
-const ProfilePage = () => (
-    <PageBody>
-        <PageHeader eyebrow="Profile" title="Your" highlight="profile." subtitle="Used for every pass, giveaway and application, so you only fill it once." />
-        <AuthGate title="Sign in to see your profile" message="Your passes, campaigns and details live in one account.">
-            <ProfileDetails />
-        </AuthGate>
-    </PageBody>
-);
+const ProfilePage = () => {
+    useDynamicMeta({ page: 'profile' });
+    return (
+        <PageBody>
+            <PageHeader eyebrow="Profile" title="Your" highlight="profile." subtitle="Used for every pass, giveaway and application, so you only fill it once." />
+            <AuthGate title="Sign in to see your profile" message="Your passes, campaigns and details live in one account.">
+                <ProfileDetails />
+            </AuthGate>
+        </PageBody>
+    );
+};
 
 export default ProfilePage;

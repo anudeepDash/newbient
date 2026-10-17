@@ -12,6 +12,7 @@ import PageHeader, { PageBody } from '../pages/PageHeader';
 import { CardGrid, CardSkeleton, EmptyState } from '../pages/parts';
 import { fromPrice, useTicketedEvents } from './useTicketedEvents';
 import { useAuthGate, useResumeIntent } from '../auth/AuthGate';
+import useDynamicMeta from '../../hooks/useDynamicMeta';
 
 /*
  * /tickets: upcoming shows that sell tickets. Tapping one opens the ticket
@@ -52,6 +53,7 @@ export const ticketCard = (e, onOpen) => ({
 });
 
 const TicketsPage = () => {
+    useDynamicMeta({ page: 'tickets' });
     const { events, loaded } = useTicketedEvents();
     const [params, setParams] = useSearchParams();
     const openId = params.get('event');
