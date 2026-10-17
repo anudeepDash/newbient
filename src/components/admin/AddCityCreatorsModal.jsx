@@ -18,18 +18,21 @@ import { queueCreatorGroupsBroadcast } from '../../lib/creatorGroupsMail';
 import { cn } from '../../lib/utils';
 import Sheet from './Sheet';
 import { Button, Badge, SearchInput, Select, SegmentedTabs, Avatar, Menu, MenuItem, EmptyState } from './ui';
+import { callOutreach } from './campaigns/outreach/outreachApi';
+import Bell from 'lucide-react/dist/esm/icons/bell';
 
 /*
  * Group invites, mostly on autopilot:
  *  - every creator gets the group for their own city (no more one link for all);
  *  - the people who need an invite (never sent, or sent days ago and still not
  *    in) are picked automatically;
- *  - each person goes out on the best channel: WhatsApp when they have a phone,
- *    email when they don't;
- *  - the WhatsApp queue opens one chat at a time and moves on by itself as soon
- *    as you come back from WhatsApp, so it's one tap per creator.
- * Browsers only allow one chat window per tap, which is why WhatsApp can't be
- * fully hands-free; email goes out in the background.
+ *  - each person goes out on the safest channel: the Newbi app (notification
+ *    and push) when they have a login, email when they don't, and WhatsApp by
+ *    hand last;
+ *  - WhatsApp by hand shares the team's daily cap (OUTREACH_WAME_DAILY_CAP,
+ *    20), because many chats from one number in a day get it restricted. The
+ *    queue opens one chat at a time and moves on when you come back.
+ * In-app and email go out in the background.
  */
 
 const FOLLOW_UP_DAYS = 3;
@@ -120,6 +123,9 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
     const [followUp, setFollowUp] = useState(() => readStored(FOLLOW_UP_KEY, DEFAULT_FOLLOW_UP));
     const [run, setRun] = useState(null); // { queue: [...ids], index, emailed, emailTotal, emailing, done }
     const [busy, setBusy] = useState(false);
+    const [wame, setWame] = useState(null); // { cap, usedToday }: chats opened by hand today, team-wide
+    useEffect(() => { callOutreach('outreach-wame', {}).then(r => { if (r.ok) setWame({ cap: r.data.cap, usedToday: r.data.usedToday }); }); }, []);
+    const wameLeft = wame ? Math.max(0, wame.cap - wame.usedToday) : Infinity;
     const awaitingReturn = useRef(false);
 
     useEffect(() => writeStored(TEMPLATE_KEY, template), [template]);
@@ -201,27 +207,37 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
     // Who goes where, for the current selection.
     const plan = useMemo(() => {
         const chosen = inScope.filter(p => selected.has(p.id) && p.stage !== 'joined' && p.stage !== 'blocked');
+        const app = [];
         const wa = [];
         const mail = [];
         chosen.forEach(p => {
             if (channel === 'whatsapp') { if (p.phone) wa.push(p); }
             else if (channel === 'email') { if (p.email) mail.push(p); }
-            else if (p.phone) wa.push(p);
+            else if (channel === 'app') { if (p.c?.uid && p.group) app.push(p); }
+            // Best channel each: the app, then email, then WhatsApp by hand.
+            else if (p.c?.uid && p.group) app.push(p);
             else if (p.email) mail.push(p);
+            else if (p.phone) wa.push(p);
         });
-        const skipped = chosen.length - wa.length - mail.length;
+        const skipped = chosen.length - app.length - wa.length - mail.length;
         const noGroupCities = [...new Set(inScope.filter(p => !p.group && p.stage !== 'joined').map(p => p.cityName).filter(Boolean))];
-        return { wa, mail, skipped, noGroupCities, chosen };
+        return { app, wa, mail, skipped, noGroupCities, chosen };
     }, [inScope, selected, channel]);
 
     const messageFor = useCallback((p) => fill(p.stage === 'follow_up' ? followUp : template, p.c, p.group), [template, followUp]);
 
     const openWhatsApp = useCallback((p) => {
+        if (wameLeft <= 0) {
+            addToast(`Today’s limit of ${wame?.cap} WhatsApp chats by hand is reached. Use the app or email, or try tomorrow.`, 'error');
+            return;
+        }
+        setWame(w => (w ? { ...w, usedToday: w.usedToday + 1 } : w));
+        callOutreach('outreach-wame', { use: 1 });
         const text = messageFor(p).replace(/\r?\n/g, '\r\n');
         // api.whatsapp.com keeps emoji intact where wa.me sometimes mangles them.
         window.open(`https://api.whatsapp.com/send?phone=${p.phone}&text=${encodeURIComponent(text)}`, '_blank', 'noopener');
         useStore.getState().markCreatorInviteSent(p.id, 'whatsapp');
-    }, [messageFor]);
+    }, [messageFor, wameLeft, wame, addToast]);
 
     // ---------- Running the invites ----------
     const queuePeople = useMemo(() => {
@@ -309,19 +325,29 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
     };
 
     const start = async () => {
-        if (!plan.wa.length && !plan.mail.length) {
+        if (!plan.app.length && !plan.wa.length && !plan.mail.length) {
             addToast('No one selected can be invited on that channel.', 'info');
             return;
         }
         if (plan.mail.length && !window.confirm(`Email the group invite to ${plan.mail.length} creator${plan.mail.length === 1 ? '' : 's'} now?`)) return;
+        if (plan.app.length) {
+            const r = await callOutreach('outreach-city-notify', { creatorIds: plan.app.map(p => p.id) });
+            const sentIds = r.ok ? r.data.results.filter(x => x.outcome === 'sent').map(x => x.id) : [];
+            if (sentIds.length) await useStore.getState().bulkMarkCreatorInvitesSent(sentIds, 'app');
+            addToast(r.ok ? `${sentIds.length} told in the Newbi app.` : r.error, r.ok ? 'success' : 'error');
+        }
+        // WhatsApp by hand only up to what's left of today's cap.
+        const waQueue = plan.wa.slice(0, Number.isFinite(wameLeft) ? wameLeft : plan.wa.length);
+        if (waQueue.length < plan.wa.length) addToast(`${plan.wa.length - waQueue.length} left for tomorrow: today’s WhatsApp-by-hand limit.`, 'warning');
+        if (!waQueue.length && !plan.mail.length) return;
         setRun({
-            queue: plan.wa.map(p => p.id),
+            queue: waQueue.map(p => p.id),
             index: 0,
             emailTotal: plan.mail.length,
             emailed: 0,
             emailFailed: 0,
             emailing: plan.mail.length > 0,
-            done: plan.wa.length === 0 && plan.mail.length === 0,
+            done: waQueue.length === 0 && plan.mail.length === 0,
         });
         if (plan.mail.length) {
             const { sent, failed } = await sendEmails(plan.mail);
@@ -455,7 +481,8 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
             ) : (
                 <div className="space-y-3">
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] font-semibold text-gray-600 dark:text-zinc-400">
-                        <span className="inline-flex items-center gap-1.5"><MessageCircle size={13} className="text-emerald-500" /> {plan.wa.length} on WhatsApp</span>
+                        <span className="inline-flex items-center gap-1.5"><Bell size={13} className="text-violet-500" /> {plan.app.length} in the app</span>
+                        <span className="inline-flex items-center gap-1.5"><MessageCircle size={13} className="text-emerald-500" /> {plan.wa.length} on WhatsApp{wame ? ` (${wameLeft} left today)` : ''}</span>
                         <span className="inline-flex items-center gap-1.5"><Mail size={13} className="text-sky-500" /> {plan.mail.length} by email</span>
                         {plan.skipped > 0 && <span className="text-amber-600">{plan.skipped} skipped (no {channel === 'email' ? 'email' : 'phone'})</span>}
                     </div>
@@ -469,8 +496,8 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                                 Mark {selectedJoinable.length} as in group
                             </MenuItem>
                         </Menu>
-                        <Button variant="primary" className="h-12 flex-1" onClick={start} disabled={!plan.wa.length && !plan.mail.length}>
-                            <Zap size={15} /> Invite {plan.wa.length + plan.mail.length || ''}
+                        <Button variant="primary" className="h-12 flex-1" onClick={start} disabled={!plan.app.length && !plan.wa.length && !plan.mail.length}>
+                            <Zap size={15} /> Invite {plan.app.length + plan.wa.length + plan.mail.length || ''}
                         </Button>
                     </div>
                 </div>
@@ -486,6 +513,7 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                         ]} />
                         <Select value={channel} onChange={setChannel} label="Channel" options={[
                             { value: 'auto', label: 'Best channel each' },
+                            { value: 'app', label: 'Newbi app only' },
                             { value: 'whatsapp', label: 'WhatsApp only' },
                             { value: 'email', label: 'Email only' },
                         ]} />

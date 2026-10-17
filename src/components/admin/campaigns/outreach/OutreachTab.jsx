@@ -51,7 +51,7 @@ const OutreachTab = ({ campaign }) => {
     const load = useCallback(async () => {
         const r = await callOutreach('outreach-list', { campaignId: campaign.id });
         setData(r.ok
-            ? { loading: false, error: '', applications: r.data.applications, settings: r.data.settings, api: r.data.whatsappApi || null }
+            ? { loading: false, error: '', applications: r.data.applications, settings: r.data.settings, api: r.data.whatsappApi || null, wame: r.data.wame || null }
             : { loading: false, error: r.status === 403 ? 'Only founders and admins can see applications and contact details.' : r.error, applications: [], settings: null, api: null });
     }, [campaign.id]);
     useEffect(() => { load(); }, [load]);
@@ -101,8 +101,10 @@ const OutreachTab = ({ campaign }) => {
         const r = await callOutreach('outreach-status', { campaignId: campaign.id, appIds: ids, to, source, messageText, note });
         if (!r.ok) {
             addToast(r.error, 'error');
+            if (r.status === 429) setData(d => ({ ...d, wame: d.wame ? { ...d.wame, usedToday: d.wame.cap } : d.wame }));
             return false;
         }
+        if (source === 'wame') setData(d => ({ ...d, wame: d.wame ? { ...d.wame, usedToday: d.wame.usedToday + r.data.updated.length } : d.wame }));
         const now = new Date().toISOString();
         const stamp = { message_queued: 'messageQueuedAt', message_sent: 'messageSentAt' }[to];
         const done = new Set(r.data.updated.map(u => u.id));
@@ -187,6 +189,8 @@ const OutreachTab = ({ campaign }) => {
                                 <td className="max-w-[180px] px-3 py-2.5 font-semibold">
                                     <span className="block truncate">{a.fullName}</span>
                                     {a.possibleDuplicateOf && <Badge tone="amber">Check duplicate</Badge>}
+                                    {a.whatsappOptOut && <Badge tone="gray">No WhatsApp</Badge>}
+                                    {!a.uid && <Badge tone="gray">No app account</Badge>}
                                 </td>
                                 <td className="px-3 py-2.5"><Handle handle={a.instagramHandle} /></td>
                                 <td className="px-3 py-2.5 tabular-nums">{followers(a.followerCount)} <span className="text-gray-400">{a.tier}</span></td>
@@ -280,7 +284,7 @@ const OutreachTab = ({ campaign }) => {
                 </div>
             )}
             {view === 'messages' && (
-                <MessagesPanel campaign={campaign} applications={apps} settings={data.settings} api={data.api} onStatus={changeStatus} onOpen={(a) => setOpenId(a.id)} onSetup={() => setView('setup')} onSendApi={sendWithApi} onStopApi={stopApi} />
+                <MessagesPanel campaign={campaign} applications={apps} settings={data.settings} api={data.api} wame={data.wame} onStatus={changeStatus} onOpen={(a) => setOpenId(a.id)} onSetup={() => setView('setup')} onSendApi={sendWithApi} onStopApi={stopApi} />
             )}
             {view === 'setup' && (
                 <SetupPanel campaign={campaign} settings={data.settings} api={data.api} sampleApplication={shortlist[0] || apps[0]} onSaved={load} />

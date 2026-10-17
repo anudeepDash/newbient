@@ -34,7 +34,7 @@
  * through here, so personal fields reach admins only. Phones are masked in logs.
  */
 import { createHash } from 'node:crypto';
-import { getDb, nowIso } from './db.js';
+import { getDb, nowIso, istDate } from './db.js';
 import {
     validateApplication, mergeApplication, resolveDuplicate, applicationsOpen, campaignCities, CONSENT_TEXT,
 } from '../../src/lib/outreach/application.js';
@@ -63,6 +63,7 @@ export const OUTREACH_ACTIONS = new Set([
     'outreach-deliverables', 'outreach-submit', 'outreach-upi', 'outreach-joined', 'outreach-mine',
     'outreach-review', 'outreach-ticket', 'outreach-payout', 'outreach-resend-link',
     'inbox-list', 'inbox-thread', 'inbox-reply', 'inbox-template', 'inbox-state', 'inbox-media',
+    'outreach-city-notify', 'outreach-wame',
 ]);
 const PUBLIC = new Set(['outreach-campaign', 'outreach-apply', 'outreach-deliverables', 'outreach-submit', 'outreach-upi', 'outreach-joined', 'outreach-mine']);
 
@@ -334,6 +335,7 @@ const handleList = async (req, res, { db }) => {
             updatedBy: priv.updatedBy || null,
         },
         whatsappApi: { configured, queue, rate },
+        wame: await wameStatus(db),
     });
 };
 
@@ -355,7 +357,7 @@ export const handleStatus = async (req, res, { db, token, now = nowIso() }) => {
     const campaignId = str(body.campaignId, 120);
     const to = str(body.to, 40);
     const ids = [...new Set((Array.isArray(body.appIds) ? body.appIds : []).map(id => str(id, 120)).filter(Boolean))];
-    const source = body.source === 'bulk_paste' ? 'bulk_paste' : 'admin';
+    const source = ['bulk_paste', 'wame'].includes(body.source) ? body.source : 'admin';
     const note = str(body.note, 500) || null;
     const messageText = str(body.messageText, 4000) || null;
     if (!campaignId || !ids.length) return send(res, 400, { success: false, error: 'Choose at least one applicant.' });
@@ -364,6 +366,11 @@ export const handleStatus = async (req, res, { db, token, now = nowIso() }) => {
 
     const campRef = db.collection('campaigns').doc(campaignId);
     const { actorUid, actorEmail } = actorOf(token);
+    // Opening WhatsApp by hand: capped per day across the whole team, to protect the number.
+    if (source === 'wame') {
+        const quota = await useWameQuota(db, ids.length);
+        if (!quota.ok) return send(res, 429, { success: false, code: 'wame_cap', error: `That’s ${quota.cap} WhatsApp chats opened by hand today, the daily limit that keeps your number safe. Use the Newbi app or the WhatsApp API, or try tomorrow.`, wame: quota });
+    }
     const result = await db.runTransaction(async (tx) => {
         const refs = ids.map(id => campRef.collection('applications').doc(id));
         const snaps = await Promise.all(refs.map(r => tx.get(r)));
@@ -390,6 +397,60 @@ export const handleStatus = async (req, res, { db, token, now = nowIso() }) => {
         ? await afterShortlisted(req, db, campaignId, result.updated.map(u => u.id), { actorUid, actorEmail })
         : null;
     return send(res, 200, { success: true, ...result, ...(followUps ? { followUps } : {}) });
+};
+
+/* ── wa.me by hand: a daily cap for the whole team ─────────────────────── */
+
+export const wameCap = () => Math.max(1, Number(process.env.OUTREACH_WAME_DAILY_CAP) || 20);
+const wameRef = (db) => db.collection('outreach_rate').doc('wame');
+
+/* Counts chats opened by hand today (India day). → { ok, cap, usedToday } */
+export const useWameQuota = async (db, n = 1, now = new Date()) => db.runTransaction(async (tx) => {
+    const snap = await tx.get(wameRef(db));
+    const day = istDate(now);
+    const used = snap.exists && snap.data().day === day ? Number(snap.data().count || 0) : 0;
+    if (used + n > wameCap()) return { ok: false, cap: wameCap(), usedToday: used };
+    tx.set(wameRef(db), { day, count: used + n, updatedAt: now.toISOString() });
+    return { ok: true, cap: wameCap(), usedToday: used + n };
+});
+
+export const wameStatus = async (db, now = new Date()) => {
+    const snap = await wameRef(db).get();
+    const used = snap.exists && snap.data().day === istDate(now) ? Number(snap.data().count || 0) : 0;
+    return { cap: wameCap(), usedToday: used };
+};
+
+/*
+ * City group invites for existing creators (Creators → Groups → Invite): in
+ * the app and by push for everyone with a login, instead of opening WhatsApp
+ * one by one. → { results: [{ id, outcome: 'sent' | 'no_account' | 'no_group' | 'not_found' }] }
+ */
+const handleCityNotify = async (req, res, { db }) => {
+    const ids = [...new Set((Array.isArray(req.body?.creatorIds) ? req.body.creatorIds : []).map(id => str(id, 128)).filter(Boolean))].slice(0, 300);
+    if (!ids.length) return send(res, 400, { success: false, error: 'Choose at least one creator.' });
+    const groups = await loadCityGroups(db);
+    const results = [];
+    for (const id of ids) {
+        const snap = await db.collection('creators').doc(id).get();
+        if (!snap.exists) { results.push({ id, outcome: 'not_found' }); continue; }
+        const c = snap.data();
+        const uid = c.uid || null;
+        const group = cityGroupFor(groups, c.city);
+        if (!uid) { results.push({ id, outcome: 'no_account' }); continue; }
+        if (!group) { results.push({ id, outcome: 'no_group' }); continue; }
+        const out = await notify('outreach-city-group', uid, { name: c.name, city: group.city, groupTitle: group.title, groupUrl: group.url }, { skip: ['email', 'whatsapp'] }).catch(() => null);
+        results.push({ id, outcome: out?.inApp?.status === 'sent' ? 'sent' : 'failed' });
+    }
+    return send(res, 200, { success: true, results });
+};
+
+/* The by-hand WhatsApp cap: { use: n } spends n chats (refused past the cap); without it, just the numbers. */
+const handleWame = async (req, res, { db }) => {
+    const use = Math.max(0, Math.min(50, Number(req.body?.use) || 0));
+    if (!use) return send(res, 200, { success: true, ...(await wameStatus(db)) });
+    const quota = await useWameQuota(db, use);
+    if (!quota.ok) return send(res, 429, { success: false, code: 'wame_cap', error: `Today’s limit of ${quota.cap} WhatsApp chats opened by hand is reached.`, ...quota });
+    return send(res, 200, { success: true, ...quota });
 };
 
 /*
@@ -589,6 +650,8 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         if (action === 'inbox-template') return await handleInboxTemplate(req, res, withActor);
         if (action === 'inbox-state') return await handleInboxState(req, res, withActor);
         if (action === 'inbox-media') return await handleInboxMedia(req, res, withActor);
+        if (action === 'outreach-city-notify') return await handleCityNotify(req, res, withActor);
+        if (action === 'outreach-wame') return await handleWame(req, res, withActor);
         return send(res, 400, { success: false, error: 'Unknown action.' });
     } catch (err) {
         // Never log request bodies: they carry phones and emails.
