@@ -5,7 +5,7 @@ import { collection, getDocs, query } from 'firebase/firestore';
 /**
  * Triggers an in-app and potentially a push notification.
  */
-export const triggerNotification = async ({ userId, type, title, content, link, image }) => {
+export const triggerNotification = async ({ userId, type, title, content, link, image, audience }) => {
     try {
         const { addNotification } = useStore.getState();
         
@@ -17,6 +17,8 @@ export const triggerNotification = async ({ userId, type, title, content, link, 
             link: link || '',
             // Only real images (event posters, avatars) are stored; the app draws category icons itself.
             image: image || '',
+            // 'creators': only people with a creator profile see it in the app. Omitted = everyone.
+            ...(audience === 'creators' ? { audience: 'creators' } : {}),
         };
 
         await addNotification(notificationData);

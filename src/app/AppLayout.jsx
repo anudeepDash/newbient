@@ -11,6 +11,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useSafariChrome } from '../hooks/useSafariChrome';
 import { useAppStore, useAppSession, hasCapability } from '../lib/store/appStore';
 import { visibleTabs, moduleForPath } from './modules';
+import { visibleUnreadCount } from '../lib/store/notifications';
 import { appPath, stripAppBase } from './host';
 import { AuthResumer } from './auth/AuthGate';
 import NotificationsSheet from './NotificationsSheet';
@@ -59,7 +60,7 @@ const AppLayout = () => {
     const location = useLocation();
     const path = stripAppBase(location.pathname);
     const authUser = useAppStore(s => s.authUser);
-    const unreadCount = useAppStore(s => (s.authUser ? s.unreadCount : 0));
+    const unreadCount = useAppStore(s => (s.authUser ? visibleUnreadCount(s) : 0));
     const isCreator = useAppStore(s => hasCapability(s, 'creator'));
     const isCampus = useAppStore(s => hasCapability(s, 'campus'));
     // Staff get a way into the admin (served on this same host, so no second sign-in).

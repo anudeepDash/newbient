@@ -30,3 +30,13 @@ export const bindLegacyNotifications = (appStore) => {
         if (state.notifications !== prev.notifications || state.unreadNotificationsCount !== prev.unreadNotificationsCount) sync(state);
     });
 };
+
+/*
+ * Who a notification is for. Admin-sent notifications can be for everyone or
+ * `audience: 'creators'` (shown only to people with a creator profile).
+ */
+export const isNotificationForViewer = (n, isCreator) => n?.audience !== 'creators' || isCreator;
+export const visibleUnreadCount = (state) => {
+    const creator = Boolean(state.profile?.capabilities?.creator || state.creatorProfile);
+    return (state.notifications || []).filter(n => !n.isRead && isNotificationForViewer(n, creator)).length;
+};

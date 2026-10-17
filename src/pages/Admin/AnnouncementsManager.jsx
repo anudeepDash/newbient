@@ -25,6 +25,7 @@ import { Card, Button, Badge, StatTile, SearchInput, SegmentedTabs, EmptyState, 
 import ExportMenu from '../../components/admin/ExportMenu';
 import { CONTENT_TABS, ConfirmSheet, framedBackground } from '../../components/admin/content/ContentKit';
 import AnnouncementComposer, { sendAnnouncementNotification } from '../../components/admin/content/AnnouncementComposer';
+import NotificationComposer from '../../components/admin/notifications/NotificationComposer';
 import {
     announcementCategory, announcementState, announcementWindow, ANNOUNCEMENT_STATE_LABEL, ANNOUNCEMENT_PRIORITIES,
     formatDay, formatDayTime, relativeTime, stripHtml,
@@ -51,6 +52,12 @@ const AnnouncementsManager = () => {
     const { announcements, updateAnnouncement, togglePinAnnouncement, deleteAnnouncement, reorderAnnouncements, addToast } = useStore();
     const navigate = useNavigate();
     const [params, setParams] = useSearchParams();
+    // "Send notification" (also opened from the Dashboard with ?compose=notification).
+    const [notifyOpen, setNotifyOpen] = useState(() => params.get('compose') === 'notification');
+    const closeNotify = () => {
+        setNotifyOpen(false);
+        if (params.get('compose')) { const next = new URLSearchParams(params); next.delete('compose'); setParams(next, { replace: true }); }
+    };
     const [search, setSearch] = useState('');
     const [view, setView] = useViewMode('announcements', 'cards');
     const [composer, setComposer] = useState(null); // { record } | { copyOf } | {}
@@ -254,10 +261,16 @@ const AnnouncementsManager = () => {
 
     return (
         <AdminCommunityHubLayout
-            studioHeader={{ title: 'Announcements', icon: Radio, description: 'The website banner and notifications to everyone' }}
+            studioHeader={{ title: 'Announcements', icon: Radio, description: 'The website banner, and notifications on the app’s notification page' }}
             tabs={CONTENT_TABS}
-            action={<Button variant="accent" onClick={() => setComposer({})} className="w-full sm:w-auto"><Plus size={15} /> New announcement</Button>}
+            action={(
+                <div className="flex w-full gap-2 sm:w-auto">
+                    <Button variant="secondary" onClick={() => setComposer({})} className="flex-1 sm:flex-none"><Plus size={15} /> New announcement</Button>
+                    <Button variant="accent" onClick={() => setNotifyOpen(true)} className="flex-1 sm:flex-none"><Bell size={15} /> Send notification</Button>
+                </div>
+            )}
         >
+            <NotificationComposer open={notifyOpen} onClose={closeNotify} />
             <div className="space-y-5">
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                     <StatTile icon={Radio} tone="green" label="Live" value={counts.live} hint={counts.live ? 'Inside their show dates' : 'Nothing live'} active={filter === 'live'} onClick={() => setFilter(filter === 'live' ? 'all' : 'live')} />
