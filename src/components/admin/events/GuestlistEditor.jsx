@@ -10,6 +10,7 @@ import LivePreview from '../LivePreview';
 import { useStore } from '../../../lib/store';
 import { notifyAllUsers } from '../../../lib/notificationTriggers';
 import { cn } from '../../../lib/utils';
+import WhereItShows from '../ticketing/WhereItShows';
 
 /*
  * Create or edit a standalone guestlist (one that isn't part of an event made
@@ -28,6 +29,7 @@ const EMPTY = {
     maxSpots: 100, currentSpots: 0, perUserLimit: 2,
     image: '', highlightColor: '#2ebfff', isPinned: false, imageTransform: { scale: 1.05, x: 0, y: 0 },
     guestlistEnabled: true, guestlistMode: 'qr', hasGuestlistTask: false, guestlistTask: null, externalLink: '',
+    showOnSite: true, showInApp: true,
 };
 
 const fromDoc = (gl) => ({
@@ -48,6 +50,9 @@ const fromDoc = (gl) => ({
     hasGuestlistTask: !!gl.hasGuestlistTask,
     guestlistTask: gl.guestlistTask || null,
     externalLink: gl.externalLink || '',
+    // Lists made before these switches existed only showed in the app's Community tab.
+    showOnSite: gl.showOnSite === true,
+    showInApp: gl.showInApp === true,
 });
 
 const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
@@ -160,7 +165,7 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
             onClose={saving ? () => {} : onClose}
             size="xl"
             title={editing ? 'Edit guestlist' : 'New guestlist'}
-            subtitle="A sign-up list that isn't part of an event in Events"
+            subtitle="Sign-ups for a show. No event in Events needed."
             bodyClassName="space-y-7"
             footer={(
                 <div className="space-y-2">
@@ -175,7 +180,7 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
             )}
         >
             <form id="guestlist-editor" onSubmit={save} className="space-y-7" noValidate>
-                <Section title="Basics">
+                <Section title="The guestlist">
                     <Field label="Name">
                         <input className={fieldCls} value={form.title} onChange={(e) => set({ title: e.target.value })} placeholder="Skyline soirée" />
                     </Field>
@@ -236,7 +241,7 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
                     )}
                 </Section>
 
-                <Section title="Look">
+                <Section title="Poster and look">
                     <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                         <ImageSlot
                             label={uploading ? 'Cover image · uploading…' : 'Cover image'}
@@ -274,6 +279,8 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
                         </div>
                     </div>
                 </Section>
+
+                <WhereItShows value={form} onChange={set} kind="guestlist" />
 
                 {!editing && (
                     <Section title="When you create it">

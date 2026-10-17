@@ -445,7 +445,10 @@ const UpcomingEventsManager = () => {
         }
     };
 
-    const filteredEvents = upcomingEvents.filter(event => {
+    // Ticket sales made in Ticket sales are managed there, not in this list.
+    const ownEvents = upcomingEvents.filter(e => e.createdIn !== 'ticketing');
+    const salesElsewhere = upcomingEvents.length - ownEvents.length;
+    const filteredEvents = ownEvents.filter(event => {
         if (eventFilter === 'upcoming') {
             return !isPastEvent(event);
         } else if (eventFilter === 'past') {
@@ -857,12 +860,13 @@ const UpcomingEventsManager = () => {
                 <div className="space-y-5">
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <SegmentedTabs value={eventFilter} onChange={setEventFilter} items={[
-                                    { value: 'upcoming', label: 'Upcoming', count: upcomingEvents.filter(e => !isPastEvent(e)).length },
-                                    { value: 'past', label: 'Past', count: upcomingEvents.filter(e => isPastEvent(e)).length },
-                                    { value: 'all', label: 'All', count: upcomingEvents.length },
+                                    { value: 'upcoming', label: 'Upcoming', count: ownEvents.filter(e => !isPastEvent(e)).length },
+                                    { value: 'past', label: 'Past', count: ownEvents.filter(e => isPastEvent(e)).length },
+                                    { value: 'all', label: 'All', count: ownEvents.length },
                                 ]} />
                                 <p className="text-[12px] text-gray-500">
-                                    {upcomingEvents.filter(e => e.isTicketed).length} ticketed · {upcomingEvents.filter(e => e.isGuestlistEnabled).length} with guestlist
+                                    {ownEvents.filter(e => e.isTicketed).length} ticketed · {ownEvents.filter(e => e.isGuestlistEnabled).length} with guestlist
+                                    {salesElsewhere > 0 && <> · <Link to="/admin/ticketing" className="font-semibold text-gray-700 underline underline-offset-2 dark:text-zinc-300">{salesElsewhere} in Ticket sales</Link></>}
                                 </p>
                             </div>
 

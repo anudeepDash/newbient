@@ -16,6 +16,8 @@ import Plus from 'lucide-react/dist/esm/icons/plus';
 import Clock from 'lucide-react/dist/esm/icons/clock';
 import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
 import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
+import TicketSaleEditor from '../../components/admin/ticketing/TicketSaleEditor';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import { Button, Badge, SearchInput, Select, SegmentedTabs, EmptyState, StatTile, ViewToggle, useViewMode } from '../../components/admin/ui';
 import ExportMenu from '../../components/admin/ExportMenu';
@@ -72,7 +74,7 @@ const EventBadges = ({ event, availability, pending }) => (
     </div>
 );
 
-const EventList = ({ events, ordersByEvent, onOpen, canSeeMoney, onNewGuestlist, isScanner, fixedKind }) => {
+const EventList = ({ events, ordersByEvent, onOpen, canSeeMoney, onNewGuestlist, onNewSale, isScanner, fixedKind }) => {
     const [params, setParams] = useSearchParams();
     const [search, setSearch] = useState('');
     const [view, setView] = useViewMode('ticketing_events', 'cards');
@@ -179,14 +181,18 @@ const EventList = ({ events, ordersByEvent, onOpen, canSeeMoney, onNewGuestlist,
                 <Panel>
                     <EmptyState
                         icon={kind === 'guestlist' ? ListChecks : Ticket}
-                        title={events.length ? 'Nothing here' : 'No ticketed events yet'}
-                        description={events.length
+                        title={byKind.length ? 'Nothing here' : kind === 'guestlist' ? 'No guestlists yet' : 'No ticket sales yet'}
+                        description={byKind.length
                             ? 'Try another filter or search.'
-                            : 'Turn on tickets or a guestlist when you create an event in Events, or start a standalone guestlist.'}
+                            : kind === 'guestlist'
+                                ? 'Start a guestlist here, or turn one on for an event in Events.'
+                                : 'Start a ticket sale here, or turn on tickets for an event in Events.'}
                         action={!isScanner && (
                             <div className="flex flex-wrap justify-center gap-2">
                                 <Button as={Link} to="/admin/upcoming-events?new=1" variant="secondary" className="h-11"><Calendar size={14} /> New event</Button>
-                                <Button variant="accent" className="h-11" onClick={onNewGuestlist}><Plus size={14} /> New guestlist</Button>
+                                {kind === 'guestlist'
+                                    ? <Button variant="accent" className="h-11" onClick={onNewGuestlist}><Plus size={14} /> New guestlist</Button>
+                                    : <Button variant="accent" className="h-11" onClick={onNewSale}><Plus size={14} /> New ticket sale</Button>}
                             </div>
                         )}
                     />
@@ -295,6 +301,7 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
     const selectedEventId = params.get('eventId');
     const rawTab = params.get('tab');
     const [editor, setEditor] = useState(null); // { guestlist } | { guestlist: null } for new
+    const [saleEditor, setSaleEditor] = useState(null); // { event } | { event: null } for a new ticket sale
 
     const events = useOperationalEvents();
     // A standalone list posted to the home page merges into that event; old links still land.
@@ -351,6 +358,15 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
         ? { title: 'Guestlists', icon: ListChecks, description: 'Requests, tasks, capacity and check-in for community guestlists' }
         : { title: 'Ticket sales', icon: Ticket, description: 'Orders, payments, check-in and coupons for ticketed events' };
 
+    const saleSheet = (
+        <TicketSaleEditor
+            open={Boolean(saleEditor)}
+            event={saleEditor?.event || null}
+            onClose={() => setSaleEditor(null)}
+            onSaved={(id, { created } = {}) => { if (created && id) openEvent(id, 'settings'); }}
+        />
+    );
+
     const editorSheet = (
         <GuestlistEditor
             open={Boolean(editor)}
@@ -375,6 +391,7 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
                     <div className="flex w-full gap-2 sm:w-auto">
                         <Button as={Link} to="/admin/scanner" variant="secondary" className="h-11 flex-1 sm:flex-none"><ScanLine size={15} /> Gate scanner</Button>
                         {guestlists && !isScanner && <Button variant="accent" className="h-11 flex-1 sm:flex-none" onClick={() => setEditor({ guestlist: null })}><Plus size={15} /> New guestlist</Button>}
+                        {!guestlists && !isScanner && <Button variant="accent" className="h-11 flex-1 sm:flex-none" onClick={() => setSaleEditor({ event: null })}><Plus size={15} /> New ticket sale</Button>}
                     </div>
                 )}
             >
@@ -385,9 +402,11 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
                     canSeeMoney={canSeeMoney}
                     isScanner={isScanner}
                     onNewGuestlist={() => setEditor({ guestlist: null })}
+                    onNewSale={() => setSaleEditor({ event: null })}
                     fixedKind={guestlists ? 'guestlist' : 'tickets'}
                 />
                 {editorSheet}
+                {saleSheet}
             </AdminCommunityHubLayout>
         );
     }
@@ -416,6 +435,10 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
                 <div className="flex flex-wrap items-center gap-2">
                     <Button variant="ghost" onClick={closeEvent} className="-ml-2 h-10"><ArrowLeft size={15} /> All events</Button>
                     <div className="ml-auto flex items-center gap-2">
+                        {/* Sales made here are edited here; events made in Events are edited there. */}
+                        {!isScanner && event.createdIn === 'ticketing' && (
+                            <Button variant="secondary" className="h-11" onClick={() => setSaleEditor({ event })}><Pencil size={14} /> Edit sale</Button>
+                        )}
                         {!isScanner && (
                             <ExportMenu
                                 label="Export"
@@ -446,6 +469,7 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
             {activeTab === 'coupons' && <CouponsPanel eventId={event.id} coupons={coupons || []} orders={orders} canSeeMoney={canSeeMoney} />}
             {activeTab === 'settings' && <SettingsPanel event={event} onEditGuestlist={(gl) => setEditor({ guestlist: gl })} onDeleted={closeEvent} />}
             {editorSheet}
+            {saleSheet}
         </AdminCommunityHubLayout>
     );
 };

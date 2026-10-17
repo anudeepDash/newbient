@@ -60,6 +60,8 @@ const normalise = (type, item, to, extra = {}) => {
         city: item.city || item.targetCity || null,
         label: isPresent(item.activeLabel) ? item.activeLabel : null,
         pinned: Boolean(item.isPinned),
+        // Admin's "Where it shows → App home" (guestlists opt in).
+        showInApp: item.showInApp === true,
         to,
         ...extra,
     };
