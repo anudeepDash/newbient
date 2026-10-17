@@ -23,7 +23,7 @@ const ProfileDetailsForm = ({ fields = [], onSaved, submitLabel = 'Continue', ed
     const updateProfile = useAppStore(s => s.updateProfile);
     const savePhoneVerified = useAppStore(s => s.savePhoneVerified);
 
-    const [values, setValues] = useState(() => ({ name: profile?.name || '', city: profile?.city || '', college: profile?.college || '' }));
+    const [values, setValues] = useState(() => ({ name: profile?.name || '', city: profile?.city || '', college: profile?.college || '', email: profile?.email || '' }));
     const [phoneDone, setPhoneDone] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
@@ -36,11 +36,14 @@ const ProfileDetailsForm = ({ fields = [], onSaved, submitLabel = 'Continue', ed
         // When editing, only the name can't be cleared.
         const blank = textFields.find(f => (!editAll || f === 'name') && !String(values[f] || '').trim());
         if (blank) return setError(`Add your ${fieldLabel(blank).toLowerCase()}.`);
+        const email = String(values.email || '').trim();
+        if (needsEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return setError('Add a valid email address.');
         if (needsPhone && !phoneDone) return setError('Verify your phone number to continue.');
         setSaving(true);
         setError('');
         try {
             const patch = Object.fromEntries(textFields.map(f => [f, String(values[f] || '').trim()]));
+            if (needsEmail) patch.email = email.toLowerCase();
             if (Object.keys(patch).length) await updateProfile(patch);
             onSaved?.();
         } catch (err) {
@@ -67,9 +70,19 @@ const ProfileDetailsForm = ({ fields = [], onSaved, submitLabel = 'Continue', ed
             ))}
 
             {needsEmail && (
-                <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-[14px] text-amber-800 dark:text-amber-300">
-                    Your account has no email yet. Sign in with Google from your profile to add one.
-                </p>
+                // Phone sign-ins have no email; this is where updates and tickets go.
+                <TextInput
+                    label="Email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    placeholder="you@example.com"
+                    hint="For campaign updates and tickets."
+                    value={values.email}
+                    onChange={(e) => setValues(v => ({ ...v, email: e.target.value }))}
+                    autoFocus={!textFields.length}
+                />
             )}
 
             {needsPhone && (

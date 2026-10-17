@@ -118,6 +118,8 @@ export const createProfileSlice = (set, get) => ({
         const uid = get().authUser?.uid || auth?.currentUser?.uid;
         if (!uid) throw new Error('Sign in to update your profile.');
         const clean = Object.fromEntries(Object.entries(patch).filter(([key]) => SELF_EDITABLE.has(key)));
+        // An email can be added by accounts that sign in without one (phone); a sign-in email isn't changed here.
+        if (typeof patch.email === 'string' && patch.email.trim() && !auth?.currentUser?.email) clean.email = patch.email.trim().toLowerCase();
         if (!Object.keys(clean).length) return;
         if (typeof clean.name === 'string') {
             clean.name = clean.name.trim();
@@ -135,7 +137,7 @@ export const createProfileSlice = (set, get) => ({
             const { updateProfile } = await import('firebase/auth');
             if (auth?.currentUser?.uid === uid) await updateProfile(auth.currentUser, { displayName: clean.displayName }).catch(() => {});
         }
-        if ('name' in clean || 'city' in clean) get()._syncCreatorProfile();
+        if ('name' in clean || 'city' in clean || 'email' in clean) get()._syncCreatorProfile();
     },
 
     /* A creator's name, city and phone also live on their creator doc: let the server copy them over. */

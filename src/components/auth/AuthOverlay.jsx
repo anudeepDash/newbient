@@ -326,7 +326,7 @@ const AuthOverlay = () => {
         try {
             const result = await confirmationResult.confirm(code);
             const user = result.user;
-            if (!user.displayName || !user.email) {
+            if (!user.displayName) {
                 setMode('complete_profile');
             } else {
                 onClose();
@@ -352,7 +352,7 @@ const AuthOverlay = () => {
             const user = result.user;
             
             // Check if profile is incomplete (common for first-time phone signups)
-            if (!user.displayName || !user.email) {
+            if (!user.displayName) {
                 setMode('complete_profile');
             } else {
                 onClose();
@@ -367,14 +367,15 @@ const AuthOverlay = () => {
 
     const handleCompleteProfile = async (e) => {
         e.preventDefault();
-        if (!formData.name || !formData.email) return setError("Please fill all details.");
+        // Phone sign-ins only need a name; an email is optional.
+        if (!formData.name) return setError("Add your name.");
         
         setLoading(true);
         try {
             const { updateUserProfile } = useStore.getState();
             await updateUserProfile(auth.currentUser.uid, {
                 displayName: formData.name,
-                email: formData.email,
+                ...(formData.email ? { email: formData.email.trim().toLowerCase() } : {}),
                 phoneNumber: auth.currentUser.phoneNumber
             });
             onClose();
@@ -579,7 +580,7 @@ const AuthOverlay = () => {
                                         </div>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Email Address</label>
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Email Address (optional)</label>
                                         <div className="relative group">
                                             <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={16} />
                                             <Input
@@ -588,7 +589,6 @@ const AuthOverlay = () => {
                                                 className="pl-10 h-12 bg-gray-50 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 text-sm"
                                                 value={formData.email}
                                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                required
                                             />
                                         </div>
                                     </div>
