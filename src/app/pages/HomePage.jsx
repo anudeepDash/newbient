@@ -127,7 +127,7 @@ const HomePage = () => {
             {/* The greeting: today's date, hello and your name, and one line for right now. */}
             <HeroPanel
                 eyebrow={format(new Date(), 'EEEE, d MMMM')}
-                title={greet.name ? <>{greet.hello}, <Sticker subtle>{greet.name}.</Sticker></> : <>{greet.hello}<span className="text-emerald-600 dark:text-neon-green">.</span></>}
+                title={greet.name ? <>{greet.hello}, <Sticker subtle>{`${greet.name}.`}</Sticker></> : <>{greet.hello}<span className="text-emerald-600 dark:text-neon-green">.</span></>}
             >
                 <p className="text-[16px] text-gray-700 dark:text-zinc-300 lg:text-[18px]">{greet.line}</p>
                 {!authUser && (
