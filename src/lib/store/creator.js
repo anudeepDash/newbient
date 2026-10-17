@@ -14,10 +14,10 @@ import { callCreatorApi } from '../../app/creator/api';
 
 const CAMPAIGNS_TTL_MS = 5 * 60 * 1000;
 
-/* Campaigns still taking applications: status Open (or unset) and not out of spots. */
+/* Campaigns still taking applications: status Open (or unset) and not out of spots. 'Live' means the event is on and applications are closed. */
 export const isCampaignOpen = (c = {}) => {
     const status = String(c.status || 'open').trim().toLowerCase();
-    if (!['open', 'active', 'live', 'published'].includes(status)) return false;
+    if (!['open', 'active', 'published'].includes(status)) return false;
     const left = c.spotsLeft;
     return !(left !== null && left !== undefined && left !== '' && Number(left) <= 0);
 };
