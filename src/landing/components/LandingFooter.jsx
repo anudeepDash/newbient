@@ -19,7 +19,7 @@ export default function LandingFooter() {
                 <div className="space-y-4">
                     <Logo height={34} />
                     <p className="text-sm text-gray-600 dark:text-zinc-400 max-w-xs leading-relaxed">
-                        Event marketing, brand activations, influencer campaigns and live production across India.
+                        Events end to end, artists, ticketing, campus and brand activations, influencer campaigns and PR across India.
                     </p>
                     <div className="flex items-center gap-1 -ml-3">
                         {contact.instagram && (

@@ -1,4 +1,4 @@
-const WORDS = ['Event marketing', 'Brand activations', 'Influencer campaigns', 'Live production', 'Artist booking', 'Experiential zones', 'Digital & social', 'Volunteer crews'];
+const WORDS = ['Complete event support', 'On-ground management', 'Artist management', 'Ticketing & entry', 'Campus activations', 'Brand activations', 'Influencer campaigns', 'PR & media', 'Digital & social'];
 
 // One line of what Newbi runs, outlined and filled in turn, drifting across the page.
 export default function Marquee() {
