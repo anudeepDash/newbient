@@ -1,6 +1,10 @@
-import { firstName, formatDate } from '../layout.js';
+import { excerpt, firstName, formatDate } from '../layout.js';
 
-/** A new campaign that fits the creator. data: { name, campaignTitle, brand, reward, city, deadline, description, campaignUrl, image } */
+/**
+ * A new campaign that fits the creator. `description` is the brief from the
+ * admin editor (HTML); the email shows a plain-text teaser of it.
+ * data: { name, campaignTitle, brand, reward, city, deadline, description, campaignUrl, image }
+ */
 export default (data = {}) => ({
     sender: 'creators',
     kind: 'marketing',
@@ -12,7 +16,7 @@ export default (data = {}) => ({
         data.image ? { image: { url: data.image, alt: data.campaignTitle || '' } } : null,
         { p: `Hi ${data.name ? firstName(data.name) : 'there'}, a new campaign that fits your profile just opened.` },
         { details: [['Brand', data.brand], ['Reward', data.reward], ['City', data.city], ['Apply by', formatDate(data.deadline)]] },
-        { p: data.description ? String(data.description).slice(0, 400) : '' },
+        { p: excerpt(data.description, 360) },
     ],
     cta: { label: 'View campaign', url: data.campaignUrl || '/campaigns' },
     reason: "You're getting this because you're a Newbi creator. You can stop campaign emails any time.",
