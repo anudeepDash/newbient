@@ -187,7 +187,8 @@ details[open] > summary .nb-plus { transform: rotate(45deg); }
     }
 
     /* Horizontal track: the section pins and the slides move sideways with the scroll. */
-    .nb-story { height: 600svh; view-timeline-name: --nb-story; view-timeline-axis: block; }
+    /* About 90svh of scroll per slide; Story.jsx sets --nb-slides. */
+    .nb-story { height: calc(var(--nb-slides, 6) * 90svh); view-timeline-name: --nb-story; view-timeline-axis: block; }
     .nb-story-pin { position: sticky; top: 0; height: 100svh; overflow: hidden; }
     .nb-story-track { display: flex; flex-direction: row; gap: 0; padding: 0; height: 100%; width: max-content; animation: nb-pan linear both; animation-timeline: --nb-story; animation-range: contain 0% contain 100%; }
     .nb-story-panel { width: 100vw; height: 100%; flex: none; padding: 4.5rem 1.25rem 2rem; }
@@ -209,7 +210,7 @@ details[open] > summary .nb-plus { transform: rotate(45deg); }
       .nb-story-panel { padding-left: 2rem; padding-right: 2rem; }
     }
     @media (min-width: 1024px) {
-      .nb-story { height: 520vh; }
+      .nb-story { height: calc(var(--nb-slides, 6) * 87vh); }
       .nb-story-pin { height: 100vh; }
       /* Each slide is as wide as its content (title + text), so the gap between them is always the same. */
       .nb-story-panel { width: max-content; min-width: 56vw; padding: 0 7vw; }

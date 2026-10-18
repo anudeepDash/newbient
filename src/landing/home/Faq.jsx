@@ -6,6 +6,7 @@ const FAQS = [
     { q: 'How early should we get in touch?', a: 'For events and activations, a few weeks ahead gives you the most options. An influencer or digital campaign can go live sooner.' },
     { q: 'What does a project cost?', a: 'It depends on the format, the city and the scale. Share a rough budget in the form and we plan to it.' },
     { q: 'Do you handle permits, production and staffing?', a: 'Yes. Venue and campus permits, technical production, fabrication, volunteer crews and running the day are part of the job.' },
+    { q: 'Can we use your ticketing for our own event?', a: 'Yes. Ticket sales, guestlists and QR entry at the gate run on our own platform, and your guests keep their passes in the Newbi app.' },
     { q: 'Can we run a campaign without an event?', a: 'Yes. Influencer, digital and social campaigns run on their own or alongside an event or activation.' },
     { q: 'How do we see results?', a: 'Photos, content links and a short report with the numbers that matter for your goal.' },
 ];

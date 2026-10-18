@@ -7,46 +7,63 @@ import ScrollCue from '../components/ScrollCue';
 // panels slide sideways with the scroll; on phones they stack.
 const PANELS = [
     {
-        n: '01',
-        title: ['Event marketing', '& production'],
-        text: 'Concerts, launches, fests, club nights and corporate events, produced end to end: artist booking, stage, sound and lights, venue and permits, ticketing and QR entry.',
-        chips: ['Artist booking', 'Technical production', 'Venue & permits', 'Ticketing & QR entry'],
+        title: ['Complete', 'event support'],
+        text: 'Concerts, fests, launches, club nights and corporate events, from the first idea to the last guest out: concept and budget, venue and permits, stage, sound and lights, marketing, and the report after.',
+        chips: ['Concept & budget', 'Venue & permits', 'Technical production', 'Event marketing'],
     },
     {
-        n: '02',
+        title: ['On-ground', 'management'],
+        text: 'The day itself, run by us: run of show, entry and crowd flow, backstage, vendors and hospitality, with trained crews we recruit, brief and manage.',
+        chips: ['Run of show', 'Entry & crowd flow', 'Crews & staffing', 'Vendors & backstage'],
+    },
+    {
+        title: ['Artist', 'management'],
+        text: 'Booking the right act and looking after them: offers and contracts, travel and stay, hospitality and technical riders, soundcheck and the set itself.',
+        chips: ['Artist booking', 'Contracts & riders', 'Travel & hospitality', 'Show-day handling'],
+    },
+    {
+        title: ['Ticketing', '& entry'],
+        text: 'Sell tickets and run guestlists on our own platform: tiers and capacity, passes that live in the Newbi app, and QR scanning at the gate.',
+        chips: ['Ticket sales', 'Guestlists', 'Passes in the app', 'QR gate entry'],
+    },
+    {
+        title: ['Campus', 'activations'],
+        text: 'Fests, sponsorships and brand days on campus, run with student networks and campus ambassadors who know how their college works.',
+        chips: ['College fests', 'Fest sponsorships', 'Campus ambassadors', 'Ground operations'],
+    },
+    {
         title: ['Brand', 'activations'],
-        text: 'Experiential zones, sampling, pop-ups and in-store experiences that move people from seeing a brand to trying it, in the city or on campus.',
+        text: 'Experiential zones, sampling, pop-ups and in-store experiences that move people from seeing a brand to trying it.',
         chips: ['Experiential zones', 'Fabrication & AV', 'Sampling & pop-ups', 'Footfall & conversion report'],
     },
     {
-        n: '03',
         title: ['Influencer', 'campaigns'],
-        text: 'Creators and ambassadors from our own network, matched by city, niche and audience, plus hyper-local seeding through city pages, community pages and WhatsApp groups.',
-        chips: ['Creator shortlists', 'Campus ambassadors', 'Local page seeding', 'Approvals & proof'],
+        text: 'Creators from our own network, matched by city, niche and audience, plus hyper-local seeding through city pages, community pages and WhatsApp groups.',
+        chips: ['Creator shortlists', 'Local page seeding', 'Community seeding', 'Approvals & proof'],
     },
     {
-        n: '04',
+        title: ['PR', '& media'],
+        text: 'Press and media for launches, tours and events: press releases, media invites and interviews, and the community buzz that gets people talking before the day.',
+        chips: ['Press releases', 'Media invites', 'Interviews & features', 'Coverage report'],
+    },
+    {
         title: ['Digital', '& social'],
         text: 'Launch campaigns, social media management and content from every night we run, with an analytics and growth report at the end.',
         chips: ['Launch campaigns', 'Social media management', 'Event content', 'Analytics report'],
     },
-    {
-        n: '05',
-        title: ['Crews', '& staffing'],
-        text: 'Trained volunteer crews for registrations, crowd, backstage, hospitality and guest support, recruited, briefed and managed by us.',
-        chips: ['Recruitment & training', 'On-site coordination', 'Hospitality & backstage', 'Performance report'],
-    },
-];
+].map((p, i) => ({ ...p, n: String(i + 1).padStart(2, '0') }));
+
+const COUNT = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'][PANELS.length] || PANELS.length;
 
 /*
  * About Newbi and what we run, in one section. The intro slide says who we
- * are; the next five are what we run. Where the browser supports scroll-driven
+ * are; the rest are what we run. Where the browser supports scroll-driven
  * animations, the section pins and the slides move sideways with the scroll
  * (phones included); elsewhere they stack.
  */
 export default function Story() {
     return (
-        <section id="services" aria-labelledby="story-title" className="nb-story scroll-mt-20 relative">
+        <section id="services" aria-labelledby="story-title" className="nb-story scroll-mt-20 relative" style={{ '--nb-slides': PANELS.length + 1 }}>
             <span id="about" className="absolute top-0" aria-hidden="true" />
             <div className="nb-story-pin">
                 <div className="nb-story-track grid gap-14 py-20">
@@ -58,9 +75,9 @@ export default function Story() {
                                 Plans are easy.<br />We're the crew<br /><Sticker subtle>that runs them.</Sticker>
                             </h2>
                             <p className="mt-6 max-w-lg text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400">
-                                Newbi is an event marketing and live entertainment company. You bring a goal, a date and a budget; we bring the artists, the venue, the build, the creators and the crew, run it, and report on it. One team, so nothing falls between vendors.
+                                Newbi is an event marketing and live entertainment company. You bring a goal, a date and a budget; we bring the artists, the venue, the build, the tickets, the creators, the press and the crew, run it, and report on it. One team, so nothing falls between vendors.
                             </p>
-                            <p className="nb-story-hint mt-8 hidden items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">Scroll for the five things we run <ArrowDown size={14} aria-hidden="true" /></p>
+                            <p className="nb-story-hint mt-8 hidden items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">Scroll for the {COUNT} things we run <ArrowDown size={14} aria-hidden="true" /></p>
                         </div>
                     </div>
 
