@@ -22,11 +22,6 @@ const PANELS = [
         chips: ['Artist booking', 'Contracts & riders', 'Travel & hospitality', 'Show-day handling'],
     },
     {
-        title: ['Ticketing', '& entry'],
-        text: 'Sell tickets and run guestlists on our own platform: tiers and capacity, passes that live in the Newbi app, and QR scanning at the gate.',
-        chips: ['Ticket sales', 'Guestlists', 'Passes in the app', 'QR gate entry'],
-    },
-    {
         title: ['Campus', 'activations'],
         text: 'Fests, sponsorships and brand days on campus, run with student networks and campus ambassadors who know how their college works.',
         chips: ['College fests', 'Fest sponsorships', 'Campus ambassadors', 'Ground operations'],
@@ -75,7 +70,7 @@ export default function Story() {
                                 Plans are easy.<br />We're the crew<br /><Sticker subtle>that runs them.</Sticker>
                             </h2>
                             <p className="mt-6 max-w-lg text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400">
-                                Newbi is an event marketing and live entertainment company. You bring a goal, a date and a budget; we bring the artists, the venue, the build, the tickets, the creators, the press and the crew, run it, and report on it. One team, so nothing falls between vendors.
+                                Newbi is an event marketing and live entertainment company. You bring a goal, a date and a budget; we bring the artists, the venue, the build, the creators, the press and the crew, run it, and report on it. One team, so nothing falls between vendors.
                             </p>
                             <p className="nb-story-hint mt-8 hidden items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">Scroll for the {COUNT} things we run <ArrowDown size={14} aria-hidden="true" /></p>
                         </div>
