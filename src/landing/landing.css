@@ -203,6 +203,8 @@ details[open] > summary .nb-plus { transform: rotate(45deg); }
     .nb-film .nb-scroll-cue { animation-timeline: --nb-film; bottom: 2.25rem; }
     @keyframes nb-cue-fade { 0% { opacity: 0; } 4%, 82% { opacity: 1; } 96%, 100% { opacity: 0; } }
     .nb-cue-bob { animation: nb-cue-bob 1.4s ease-in-out infinite; }
+    .nb-cue-nudge { animation: nb-cue-nudge 1.4s ease-in-out infinite; }
+    @keyframes nb-cue-nudge { 0%, 100% { transform: translate3d(-2px, 0, 0); } 50% { transform: translate3d(4px, 0, 0); } }
     @keyframes nb-cue-bob { 0%, 100% { transform: translate3d(0, -2px, 0); } 50% { transform: translate3d(0, 4px, 0); } }
     @keyframes nb-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
     .nb-story-bar { transform-origin: left; animation: nb-grow-x linear both; animation-timeline: --nb-story; animation-range: contain 0% contain 100%; }

@@ -1,4 +1,6 @@
+import { useRef } from 'react';
 import Sticker from '../components/Sticker';
+import useSidewaysScroll from '../components/useSidewaysScroll';
 import SectionLabel from '../components/SectionLabel';
 import { ArrowDown } from 'lucide-react';
 import ScrollCue from '../components/ScrollCue';
@@ -57,8 +59,10 @@ const COUNT = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight
  * (phones included); elsewhere they stack.
  */
 export default function Story() {
+    const ref = useRef(null);
+    useSidewaysScroll(ref, '.nb-story-track');
     return (
-        <section id="services" aria-labelledby="story-title" className="nb-story scroll-mt-20 relative" style={{ '--nb-slides': PANELS.length + 1 }}>
+        <section ref={ref} id="services" aria-labelledby="story-title" className="nb-story scroll-mt-20 relative" style={{ '--nb-slides': PANELS.length + 1 }}>
             <span id="about" className="absolute top-0" aria-hidden="true" />
             <div className="nb-story-pin">
                 <div className="nb-story-track grid gap-14 py-20">
