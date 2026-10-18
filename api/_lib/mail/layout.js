@@ -21,34 +21,39 @@ export const BRAND_GREEN = '#39FF14';
  *                 contracts and receipts
  *   'concertzone' ConcertZone is its own brand: the Weekly logo, cyan accent
  * Logos are served from the site (public/brand, public/weekly_logo_dark.png).
+ * `ink` is the accent dark enough to read on white (neon green isn't).
  */
 const COMPANY_ACCENT = { entertainment: '#39FF14', media: '#00D1FF', marketing: '#FF0055' };
+const COMPANY_INK = { entertainment: '#15803d', media: '#0369a1', marketing: '#e11d48' };
 
 export const brandFor = (model = {}, origin = DEFAULT_ORIGIN) => {
     if (model.brand === 'concertzone') {
         return {
-            accent: '#00F2FF', onAccent: '#000000', headerBg: '#000000', headerClass: 'hdr-dark',
-            logo: `${origin}/weekly_logo_dark.png`, logoAlt: 'Weekly by Concert Zone', logoWidth: 220, logoHeight: 65, align: 'center',
-            footer: `Weekly by Concert Zone · a Newbi Entertainment &amp; Marketing LLP publication · <a href="${esc(origin)}/concertzone" style="color:#71717a">newbi.live/concertzone</a>`,
-            footerText: 'Weekly by Concert Zone · a Newbi Entertainment & Marketing LLP publication · newbi.live/concertzone',
+            accent: '#00F2FF', onAccent: '#000000', ink: '#0e7490', headerBg: '#000000', headerClass: 'hdr-dark',
+            logo: `${origin}/weekly_logo_dark.png`, logoAlt: 'Weekly by Concert Zone', logoWidth: 160, logoHeight: 47, align: 'center',
+            note: 'Weekly by Concert Zone is a Newbi Entertainment & Marketing LLP publication.',
         };
     }
     if (model.brand === 'company') {
         const company = COMPANY_ACCENT[model.company] ? model.company : 'entertainment';
         return {
-            accent: COMPANY_ACCENT[company], onAccent: company === 'marketing' ? '#FFFFFF' : '#000000', headerBg: '#FFFFFF', headerClass: 'hdr-light',
-            logo: `${origin}/brand/newbi-logo-${company}-email.png`, logoAlt: `Newbi ${company.charAt(0).toUpperCase()}${company.slice(1)}`, logoWidth: 190, logoHeight: 107, align: 'left',
-            footer: `Newbi Entertainment &amp; Marketing LLP · <a href="${esc(origin)}" style="color:#71717a">newbi.live</a>`,
-            footerText: 'Newbi Entertainment & Marketing LLP · newbi.live',
+            accent: COMPANY_ACCENT[company], onAccent: company === 'marketing' ? '#FFFFFF' : '#000000', ink: COMPANY_INK[company], headerBg: '#FFFFFF', headerClass: 'hdr-light',
+            logo: `${origin}/brand/newbi-logo-${company}-email.png`, logoAlt: `Newbi ${company.charAt(0).toUpperCase()}${company.slice(1)}`, logoWidth: 132, logoHeight: 75, align: 'left',
+            note: '',
         };
     }
     return {
-        accent: BRAND_GREEN, onAccent: '#000000', headerBg: '#0A0A0A', headerClass: 'hdr-dark',
-        logo: `${origin}/brand/newbi-logo-email.png`, logoAlt: 'newbi.live', logoWidth: 120, logoHeight: 58, align: 'left',
-        footer: `Newbi Entertainment &amp; Marketing LLP · <a href="${esc(origin)}" style="color:#71717a">newbi.live</a>`,
-        footerText: 'Newbi Entertainment & Marketing LLP · newbi.live',
+        accent: BRAND_GREEN, onAccent: '#000000', ink: '#15803d', headerBg: '#0A0A0A', headerClass: 'hdr-dark',
+        logo: `${origin}/brand/newbi-logo-email.png`, logoAlt: 'newbi.live', logoWidth: 84, logoHeight: 41, align: 'left',
+        note: '',
     };
 };
+const COMPANY_NAME = 'Newbi Entertainment & Marketing LLP';
+const SOCIALS = [
+    { name: 'Instagram', icon: 'instagram', url: () => 'https://www.instagram.com/newbi.live' },
+    { name: 'Website', icon: 'website', url: (origin) => origin },
+    { name: 'LinkedIn', icon: 'linkedin', url: () => 'https://www.linkedin.com/company/newbi-ent' },
+];
 const DEFAULT_ORIGIN = 'https://www.newbi.live';
 
 export const esc = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
@@ -72,11 +77,22 @@ export const safeUrl = (url, origin = DEFAULT_ORIGIN) => {
     return `https://${u}`;
 };
 
-/** Staff-written editor HTML: drop scripts, frames, event handlers and javascript: links; keep images inside the column. */
+// Pasted text carries its source's colours and sizes (black on black in dark mode).
+const PASTED_STYLE_PROPS = /^(color|background|background-color|caret-color|font-size|font-family|line-height)$/i;
+
+/**
+ * Staff-written editor HTML: drop scripts, frames, event handlers, javascript:
+ * links and pasted colours/sizes; keep images inside the column.
+ */
 export const sanitizeHtml = (html) => String(html || '')
     .replace(/<(script|style|iframe|object|embed|form|textarea)\b[\s\S]*?<\/\1\s*>/gi, '')
     .replace(/<\/?(script|style|iframe|object|embed|form|textarea|meta|link|base)\b[^>]*>/gi, '')
     .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/\sstyle\s*=\s*("([^"]*)"|'([^']*)')/gi, (match, _q, dq, sq) => {
+        const kept = String(dq ?? sq ?? '').split(';').map(d => d.trim()).filter(d => d && !PASTED_STYLE_PROPS.test(d.split(':')[0].trim()));
+        return kept.length ? ` style="${kept.join('; ').replace(/"/g, '&quot;')}"` : '';
+    })
+    .replace(/<font\b[^>]*>/gi, tag => tag.replace(/\s(color|face|size)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, ''))
     .replace(/(href|src)\s*=\s*(["'])\s*(javascript|vbscript|data:text)[^"']*\2/gi, '$1="#"')
     .replace(/(href|src)\s*=\s*(javascript|vbscript):[^\s>]*/gi, '$1="#"')
     .replace(/<img\b([^>]*)>/gi, (m, attrs) => {
@@ -86,8 +102,19 @@ export const sanitizeHtml = (html) => String(html || '')
 
 const textOf = (html) => String(html || '')
     .replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|h[1-6]|li|tr)>/gi, '\n')
-    .replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ')
+    .replace(/&(rsquo|lsquo|rdquo|ldquo|hellip|mdash|ndash);/g, (m, n) => ({ rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“', hellip: '…', mdash: '—', ndash: '–' }[n]))
+    .replace(/&#(\d+);/g, (m, n) => (Number(n) <= 0x10FFFF ? String.fromCodePoint(Number(n)) : m)).replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
     .replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+
+/** Editor HTML or plain text → a plain-text teaser of at most `max` chars, cut at a word. */
+export const excerpt = (value, max = 360) => {
+    const text = textOf(sanitizeHtml(value).replace(/<\/p>/gi, '</p>\n')).replace(/[ \t]*\n[ \t]*/g, '\n');
+    if (text.length <= max) return text;
+    const cut = text.slice(0, max);
+    const space = cut.search(/\s\S*$/);
+    return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s.,;:!?-]+$/, '')}…`;
+};
 
 const para = (text) => esc(text).replace(/\r?\n/g, '<br>');
 
@@ -95,54 +122,62 @@ const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFract
 
 /* ---------- Blocks ---------- */
 
+const CARD = 'border-collapse:separate;background:#fafafa;border:1px solid #ececef;border-radius:16px';
+
+/** A table-based button, so Outlook keeps the padding and the colour. */
+const button = (href, label, { bg, fg, border, cls, size = 15, pad = '15px 28px' }) => `<table role="presentation" cellpadding="0" cellspacing="0" class="${cls}-t" style="margin:0 0 24px;border-collapse:separate"><tr><td align="center" class="${cls}-td" style="border-radius:14px;background:${bg};${border ? `border:1px solid ${border};` : ''}"><a href="${esc(href)}" target="_blank" class="${cls}" style="display:inline-block;padding:${pad};border-radius:14px;color:${fg};font-size:${size}px;font-weight:800;line-height:1.2;text-decoration:none">${esc(label)}&nbsp;&rarr;</a></td></tr></table>`;
+
 const renderBlock = (block, ctx) => {
     if (!block) return '';
-    if (block.p !== undefined) return isPresent(block.p) ? `<p class="txt" style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#3f3f46">${para(block.p)}</p>` : '';
-    if (block.lead !== undefined) return isPresent(block.lead) ? `<p class="txt" style="margin:0 0 20px;font-size:17px;line-height:1.55;color:#18181b">${para(block.lead)}</p>` : '';
-    if (block.note !== undefined) return isPresent(block.note) ? `<p class="muted" style="margin:0 0 14px;font-size:13px;line-height:1.55;color:#71717a">${para(block.note)}</p>` : '';
-    if (block.quote !== undefined) return isPresent(block.quote) ? `<div class="card" style="margin:0 0 20px;padding:14px 16px;border-left:3px solid ${ctx.accent || BRAND_GREEN};background:#f6f6f7;border-radius:10px;font-size:14px;line-height:1.6;color:#3f3f46">${para(block.quote)}</div>` : '';
-    if (block.html !== undefined) return isPresent(block.html) ? `<div class="txt" style="margin:0 0 18px;font-size:15px;line-height:1.65;color:#3f3f46">${sanitizeHtml(block.html)}</div>` : '';
+    if (block.p !== undefined) return isPresent(block.p) ? `<p class="txt" style="margin:0 0 18px;font-size:15px;line-height:1.65;color:#3f3f46">${para(block.p)}</p>` : '';
+    if (block.lead !== undefined) return isPresent(block.lead) ? `<p class="strong" style="margin:0 0 20px;font-size:17px;line-height:1.55;color:#18181b">${para(block.lead)}</p>` : '';
+    if (block.note !== undefined) return isPresent(block.note) ? `<p class="muted" style="margin:0 0 16px;font-size:13px;line-height:1.6;color:#71717a">${para(block.note)}</p>` : '';
+    if (block.quote !== undefined) return isPresent(block.quote) ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px"><tr><td class="card txt" style="padding:16px 18px;border-left:3px solid ${ctx.accent};background:#fafafa;border-radius:4px 14px 14px 4px;font-size:15px;line-height:1.6;color:#3f3f46">${para(block.quote)}</td></tr></table>` : '';
+    if (block.html !== undefined) return isPresent(block.html) ? `<div class="txt" style="margin:0 0 20px;font-size:15px;line-height:1.65;color:#3f3f46">${sanitizeHtml(block.html)}</div>` : '';
     if (block.list) {
         const items = block.list.filter(isPresent);
-        return items.length ? `<ul class="txt" style="margin:0 0 18px;padding-left:20px;font-size:15px;line-height:1.6;color:#3f3f46">${items.map(i => `<li style="margin-bottom:6px">${para(i)}</li>`).join('')}</ul>` : '';
+        return items.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px">${items.map((item, i) => `<tr><td valign="top" style="width:28px;padding:0 0 12px"><span class="num" style="display:inline-block;width:22px;height:22px;border-radius:11px;background:#18181b;color:#ffffff;font-size:12px;font-weight:800;line-height:22px;text-align:center">${i + 1}</span></td><td class="txt" style="padding:1px 0 12px 6px;font-size:15px;line-height:1.55;color:#3f3f46">${para(item)}</td></tr>`).join('')}</table>` : '';
     }
     if (block.details) {
         const rows = block.details.filter(r => Array.isArray(r) && isPresent(r[1]));
         if (!rows.length) return '';
-        return `<table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;border-collapse:separate;background:#f6f6f7;border-radius:14px">
-${block.title ? `<tr><td colspan="2" style="padding:14px 16px 4px;font-size:12px;font-weight:700;color:#71717a">${esc(block.title)}</td></tr>` : ''}
-${rows.map(([label, value], i) => `<tr><td class="muted" style="padding:${i === 0 && !block.title ? '14px' : '8px'} 16px ${i === rows.length - 1 ? '14px' : '8px'};font-size:13px;color:#71717a;white-space:nowrap;vertical-align:top">${esc(label)}</td><td class="strong" style="padding:${i === 0 && !block.title ? '14px' : '8px'} 16px ${i === rows.length - 1 ? '14px' : '8px'};font-size:14px;font-weight:600;color:#18181b;text-align:right;word-break:break-word">${para(value)}</td></tr>`).join('')}
+        return `<table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;${CARD}">
+${block.title ? `<tr><td colspan="2" class="muted" style="padding:16px 18px 2px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#71717a">${esc(block.title)}</td></tr>` : ''}
+${rows.map(([label, value], i) => {
+        const rule = i > 0 ? 'border-top:1px solid #ececef;' : '';
+        return `<tr><td class="muted rule" style="${rule}padding:14px 18px;font-size:13px;color:#71717a;white-space:nowrap;vertical-align:top">${esc(label)}</td><td class="strong rule" style="${rule}padding:14px 18px;font-size:14px;font-weight:700;color:#18181b;text-align:right;word-break:break-word">${para(value)}</td></tr>`;
+    }).join('')}
 </table>`;
     }
     if (block.items) {
         const items = block.items.filter(i => i && isPresent(i.name));
         if (!items.length) return '';
         const showPrice = items.some(i => Number(i.price) > 0);
-        return `<table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;border-collapse:separate;background:#f6f6f7;border-radius:14px">
-${items.map(i => `<tr><td class="strong" style="padding:10px 16px;font-size:14px;font-weight:600;color:#18181b">${esc(i.name)}${Number(i.count) > 1 ? ` <span class="muted" style="color:#71717a;font-weight:500">× ${esc(i.count)}</span>` : ''}</td>${showPrice ? `<td class="strong" style="padding:10px 16px;font-size:14px;color:#18181b;text-align:right">${money(Number(i.price || 0) * Number(i.count || 1))}</td>` : ''}</tr>`).join('')}
-${isPresent(block.total) && showPrice ? `<tr><td class="strong" style="padding:12px 16px;border-top:1px solid #e4e4e7;font-size:14px;font-weight:800;color:#18181b">${esc(block.totalLabel || 'Total')}</td><td class="strong" style="padding:12px 16px;border-top:1px solid #e4e4e7;font-size:14px;font-weight:800;color:#18181b;text-align:right">${money(block.total)}</td></tr>` : ''}
+        return `<table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;${CARD}">
+${items.map((i, n) => `<tr><td class="strong rule" style="${n > 0 ? 'border-top:1px solid #ececef;' : ''}padding:13px 18px;font-size:14px;font-weight:600;color:#18181b">${esc(i.name)}${Number(i.count) > 1 ? ` <span class="muted" style="color:#71717a;font-weight:500">× ${esc(i.count)}</span>` : ''}</td>${showPrice ? `<td class="strong rule" style="${n > 0 ? 'border-top:1px solid #ececef;' : ''}padding:13px 18px;font-size:14px;color:#18181b;text-align:right">${money(Number(i.price || 0) * Number(i.count || 1))}</td>` : ''}</tr>`).join('')}
+${isPresent(block.total) && showPrice ? `<tr><td class="strong rule" style="padding:14px 18px;border-top:1px solid #d4d4d8;font-size:15px;font-weight:800;color:#18181b">${esc(block.totalLabel || 'Total')}</td><td class="strong rule" style="padding:14px 18px;border-top:1px solid #d4d4d8;font-size:15px;font-weight:800;color:#18181b;text-align:right">${money(block.total)}</td></tr>` : ''}
 </table>`;
     }
     if (block.code) {
         if (!isPresent(block.code)) return '';
-        return `<p class="muted" style="margin:0 0 6px;font-size:12px;font-weight:700;color:#71717a">${esc(block.label || 'Reference')}</p>
-<p style="margin:0 0 20px"><span class="code" style="display:inline-block;padding:8px 12px;border-radius:10px;background:#f4f4f5;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:16px;font-weight:700;letter-spacing:1px;color:#18181b">${esc(block.code)}</span></p>`;
+        return `<p class="muted" style="margin:0 0 8px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#71717a">${esc(block.label || 'Reference')}</p>
+<p style="margin:0 0 24px"><span class="code" style="display:inline-block;padding:10px 16px;border:1px dashed #d4d4d8;border-radius:12px;background:#fafafa;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:18px;font-weight:700;letter-spacing:2px;color:#18181b">${esc(block.code)}</span></p>`;
     }
     if (block.qr) {
         if (!isPresent(block.qr.value)) return '';
         const src = `${ctx.origin}/api/qr?text=${encodeURIComponent(block.qr.value)}&size=360&margin=1`;
-        return `<div style="margin:4px 0 22px;text-align:center"><img src="${esc(src)}" width="180" height="180" alt="${esc(block.qr.alt || 'Entry QR code')}" style="width:180px;height:180px;padding:10px;border-radius:14px;background:#ffffff;border:1px solid #e4e4e7" />${isPresent(block.qr.caption) ? `<p class="muted" style="margin:8px 0 0;font-size:12px;color:#71717a">${esc(block.qr.caption)}</p>` : ''}</div>`;
+        return `<div style="margin:4px 0 24px;text-align:center"><img src="${esc(src)}" width="184" height="184" alt="${esc(block.qr.alt || 'Entry QR code')}" style="width:184px;height:184px;padding:12px;border-radius:18px;background:#ffffff;border:1px solid #e4e4e7" />${isPresent(block.qr.caption) ? `<p class="muted" style="margin:10px 0 0;font-size:12px;color:#71717a">${esc(block.qr.caption)}</p>` : ''}</div>`;
     }
     if (block.image) {
         const src = safeUrl(block.image.url, ctx.origin);
-        return src ? `<img src="${esc(src)}" alt="${esc(block.image.alt || '')}" width="520" style="width:100%;max-width:100%;height:auto;display:block;margin:0 0 20px;border-radius:14px" />` : '';
+        return src ? `<img src="${esc(src)}" alt="${esc(block.image.alt || '')}" width="536" style="width:100%;max-width:100%;height:auto;display:block;margin:0 0 26px;border-radius:16px;border:0" />` : '';
     }
     if (block.button) {
         const href = safeUrl(block.button.url, ctx.origin);
         if (!href || !isPresent(block.button.label)) return '';
-        return `<p style="margin:0 0 20px"><a href="${esc(href)}" class="btn2" style="display:inline-block;padding:12px 20px;border-radius:12px;border:1px solid #d4d4d8;color:#18181b;font-size:14px;font-weight:700;text-decoration:none">${esc(block.button.label)}</a></p>`;
+        return button(href, block.button.label, { bg: '#ffffff', fg: '#18181b', border: '#d4d4d8', cls: 'btn2', size: 14, pad: '12px 20px' });
     }
-    if (block.divider) return '<hr style="border:0;border-top:1px solid #e4e4e7;margin:8px 0 20px" />';
+    if (block.divider) return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 24px"><tr><td class="rule" style="border-top:1px solid #ececef;font-size:0;line-height:0">&nbsp;</td></tr></table>';
     return '';
 };
 
@@ -184,6 +219,15 @@ export const renderEmail = (model, opts = {}) => {
     const preheader = isPresent(model.preheader) ? String(model.preheader) : textOf(blocks.map(b => blockText(b, ctx)).join(' ')).slice(0, 140);
     const unsubscribeUrl = kind === 'marketing' ? (opts.unsubscribeUrl || `${origin}/unsubscribe`) : '';
     const preferencesUrl = kind === 'marketing' && opts.preferencesUrl ? opts.preferencesUrl : '';
+    const year = new Date().getFullYear();
+    const socials = SOCIALS.map(s => ({ ...s, href: s.url(origin) }));
+    const footLinks = [
+        kind === 'marketing' ? ['Unsubscribe', unsubscribeUrl] : null,
+        preferencesUrl ? ['Email preferences', preferencesUrl] : null,
+        ['Privacy', `${origin}/privacy`],
+        ['Terms', `${origin}/terms`],
+    ].filter(Boolean);
+    const footLink = ([label, href]) => `<a href="${esc(href)}" target="_blank" style="color:#d4d4d8;text-decoration:underline">${label}</a>`;
 
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -195,19 +239,24 @@ export const renderEmail = (model, opts = {}) => {
 <title>${esc(model.subject || 'Newbi')}</title>
 <style>
 body{margin:0;padding:0;background:#f4f4f5;-webkit-text-size-adjust:100%}
-a{color:#15803d}
-@media (max-width:600px){.wrap{padding:0!important}.box{border-radius:0!important;border-left:0!important;border-right:0!important}.pad{padding:28px 20px!important}.title{font-size:24px!important}}
+a{color:${brand.ink}}
+@media (max-width:600px){.wrap{padding:0!important}.box{border-radius:0!important;border-left:0!important;border-right:0!important}.hdr{padding:18px 22px!important}.pad{padding:32px 22px 8px!important}.foot{padding:28px 22px!important}.title{font-size:25px!important}.cta-t{width:100%!important}.cta{display:block!important}}
 @media (prefers-color-scheme:dark){
 body,.bg{background:#09090b!important}
 .box{background:#121214!important;border-color:#27272a!important}
 .title,.strong{color:#fafafa!important}
 .txt{color:#d4d4d8!important}
 .muted{color:#a1a1aa!important}
-.card,.code{background:#1c1c1f!important;color:#fafafa!important}
-.btn2{color:#fafafa!important;border-color:#3f3f46!important}
-.foot{background:#0d0d0f!important;border-color:#27272a!important}
+.eyebrow{color:${brand.accent}!important}
+.card,.code{background:#1a1a1d!important;border-color:#2c2c30!important;color:#fafafa!important}
+.rule{border-color:#2c2c30!important}
+.num{background:#fafafa!important;color:#09090b!important}
+.btn2-td{background:#121214!important;border-color:#3f3f46!important}
+.btn2{color:#fafafa!important}
 a{color:${brand.accent}!important}
 .cta{color:${brand.onAccent}!important}
+.foot{border-top:1px solid #27272a!important}
+.foot a{color:#d4d4d8!important}
 .hdr-light{background:#FFFFFF!important}
 .hdr-dark{background:${brand.headerBg}!important}
 }
@@ -217,18 +266,22 @@ a{color:${brand.accent}!important}
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${esc(preheader)}&#8203;&nbsp;&#8203;&nbsp;&#8203;&nbsp;</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="bg" style="background:#f4f4f5">
 <tr><td align="center" class="wrap" style="padding:32px 12px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="box" style="max-width:600px;background:#ffffff;border:1px solid #e4e4e7;border-radius:20px;overflow:hidden">
-<tr><td class="${brand.headerClass}" align="${brand.align}" style="padding:22px 32px;background:${brand.headerBg};${brand.headerClass === 'hdr-light' ? 'border-bottom:1px solid #E4E4E7;' : ''}text-align:${brand.align}"><img src="${esc(brand.logo)}" alt="${esc(brand.logoAlt)}" width="${brand.logoWidth}" height="${brand.logoHeight}" style="display:${brand.align === 'center' ? 'inline-block' : 'block'};width:${brand.logoWidth}px;height:auto;max-width:100%;border:0" /></td></tr>
-<tr><td class="pad" style="padding:36px 32px 12px">
-${isPresent(model.eyebrow) ? `<p style="margin:0 0 14px"><span style="display:inline-block;padding:5px 10px;border-radius:8px;background:${brand.accent};color:${brand.onAccent};font-size:11px;font-weight:800">${esc(model.eyebrow)}</span></p>` : ''}
-${isPresent(model.title) ? `<h1 class="title" style="margin:0 0 18px;font-size:26px;line-height:1.25;font-weight:800;color:#09090b">${esc(model.title)}</h1>` : ''}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="box" style="max-width:600px;background:#ffffff;border:1px solid #e4e4e7;border-radius:24px;overflow:hidden">
+<tr><td class="hdr ${brand.headerClass}" align="${brand.align}" style="padding:20px 32px;background:${brand.headerBg};border-bottom:3px solid ${brand.accent};text-align:${brand.align}"><a href="${esc(origin)}" target="_blank" style="display:inline-block;text-decoration:none"><img src="${esc(brand.logo)}" alt="${esc(brand.logoAlt)}" width="${brand.logoWidth}" height="${brand.logoHeight}" style="display:block;width:${brand.logoWidth}px;height:${brand.logoHeight}px;max-width:100%;border:0" /></a></td></tr>
+<tr><td class="pad" style="padding:40px 32px 12px">
+${isPresent(model.eyebrow) ? `<p class="eyebrow" style="margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:${brand.ink}">${esc(model.eyebrow)}</p>` : ''}
+${isPresent(model.title) ? `<h1 class="title" style="margin:0 0 20px;font-size:28px;line-height:1.2;font-weight:800;letter-spacing:-0.5px;color:#09090b">${esc(model.title)}</h1>` : ''}
 ${blocks.map(b => renderBlock(b, ctx)).join('\n')}
-${hasCta ? `<p style="margin:8px 0 28px"><a href="${esc(ctaHref)}" class="cta" style="display:inline-block;padding:15px 26px;border-radius:12px;background:${brand.accent};color:${brand.onAccent};font-size:15px;font-weight:800;text-decoration:none">${esc(model.cta.label)}</a></p>` : ''}
+${hasCta ? button(ctaHref, model.cta.label, { bg: brand.accent, fg: brand.onAccent, cls: 'cta' }) : ''}
 </td></tr>
-<tr><td class="foot" style="padding:22px 32px;background:#fafafa;border-top:1px solid #e4e4e7">
-${isPresent(model.reason) ? `<p class="muted" style="margin:0 0 8px;font-size:12px;line-height:1.5;color:#71717a">${esc(model.reason)}</p>` : ''}
-<p class="muted" style="margin:0;font-size:12px;line-height:1.5;color:#71717a">${brand.footer}</p>
-${kind === 'marketing' ? `<p class="muted" style="margin:8px 0 0;font-size:12px;line-height:1.5;color:#71717a"><a href="${esc(unsubscribeUrl)}" style="color:#71717a">Unsubscribe</a>${preferencesUrl ? ` · <a href="${esc(preferencesUrl)}" style="color:#71717a">Email preferences</a>` : ''}</p>` : ''}
+<tr><td class="foot" align="center" style="padding:32px 32px 30px;background:#0A0A0A;text-align:center">
+<table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:0 auto 22px"><tr>
+${socials.map(s => `<td style="padding:0 6px"><a href="${esc(s.href)}" target="_blank" style="display:inline-block;text-decoration:none"><img src="${esc(`${origin}/brand/email/${s.icon}.png`)}" width="36" height="36" alt="${esc(s.name)}" title="${esc(s.name)}" style="display:block;width:36px;height:36px;border:0" /></a></td>`).join('\n')}
+</tr></table>
+${isPresent(model.reason) ? `<p style="margin:0 auto 14px;max-width:440px;font-size:12px;line-height:1.6;color:#a1a1aa">${esc(model.reason)}</p>` : ''}
+${brand.note ? `<p style="margin:0 auto 14px;max-width:440px;font-size:12px;line-height:1.6;color:#a1a1aa">${esc(brand.note)}</p>` : ''}
+<p style="margin:0 0 16px;font-size:12px;line-height:1.6;color:#a1a1aa">${footLinks.map(footLink).join('&nbsp;&nbsp;·&nbsp;&nbsp;')}</p>
+<p style="margin:0;font-size:11px;line-height:1.6;color:#71717a">© ${year} ${esc(COMPANY_NAME)}. All rights reserved.<br><a href="${esc(origin)}" target="_blank" style="color:#71717a;text-decoration:none">newbi.live</a></p>
 </td></tr>
 </table>
 </td></tr>
@@ -242,8 +295,10 @@ ${kind === 'marketing' ? `<p class="muted" style="margin:8px 0 0;font-size:12px;
         hasCta ? `${model.cta.label}: ${ctaHref}` : '',
         '—',
         model.reason || '',
-        brand.footerText,
+        brand.note,
+        socials.map(s => `${s.name}: ${s.href}`).join('\n'),
         kind === 'marketing' ? `Unsubscribe: ${unsubscribeUrl}` : '',
+        `© ${year} ${COMPANY_NAME}. All rights reserved.`,
     ].filter(isPresent);
 
     return { subject: String(model.subject || 'Newbi').replace(/[\r\n]+/g, ' ').trim(), html, text: textParts.join('\n\n') };
