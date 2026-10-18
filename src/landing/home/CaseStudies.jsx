@@ -1,4 +1,6 @@
+import { useRef } from 'react';
 import ScrollCue from '../components/ScrollCue';
+import useSidewaysScroll from '../components/useSidewaysScroll';
 import Sticker from '../components/Sticker';
 import SectionLabel from '../components/SectionLabel';
 import { Link } from 'react-router-dom';
@@ -13,9 +15,14 @@ import WorkPoster from '../components/WorkPoster';
  * row instead.
  */
 export default function CaseStudies({ items = [] }) {
-    if (!items.length) return null;
+    return items.length ? <FilmStrip items={items} /> : null;
+}
+
+function FilmStrip({ items }) {
+    const ref = useRef(null);
+    useSidewaysScroll(ref, '.nb-film-track');
     return (
-        <section id="work" aria-labelledby="work-title" className="nb-film scroll-mt-20 relative bg-black text-white [--nb-ghost:rgba(255,255,255,0.4)]" style={{ '--n': items.length + 1 }}>
+        <section ref={ref} id="work" aria-labelledby="work-title" className="nb-film scroll-mt-20 relative bg-black text-white [--nb-ghost:rgba(255,255,255,0.4)]" style={{ '--n': items.length + 1 }}>
             <div className="nb-film-pin relative overflow-hidden">
                 <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(60% 50% at 50% 110%, rgba(57,255,20,0.14), transparent 70%)' }} />
 
