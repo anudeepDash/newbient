@@ -15,7 +15,7 @@ export default (data = {}) => ({
     hero: data.image ? { url: data.image, alt: data.campaignTitle || '' } : null,
     blocks: [
         { p: `Hi ${data.name ? firstName(data.name) : 'there'}, a new campaign that fits your profile just opened${data.brand ? ` with ${data.brand}` : ''}.` },
-        { stats: [['Reward', data.reward], ['City', data.city], ['Apply by', formatDate(data.deadline).replace(/^\w+,\s*/, '')]] },
+        { stats: [['Reward', data.reward, 'accent'], ['City', data.city], ['Apply by', formatDate(data.deadline).replace(/^\w+,\s*/, '')]] },
         { p: excerpt(data.description, 360) },
     ],
     cta: { label: 'View campaign & apply', url: data.campaignUrl || '/campaigns' },
