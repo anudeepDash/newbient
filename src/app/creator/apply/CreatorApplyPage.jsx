@@ -113,8 +113,12 @@ const ConnectInstagram = ({ app, belowMin, oauthError, onConnect }) => {
                     <button type="button" onClick={() => onConnect({ switchAccount: true })} disabled={app.connecting} className="min-h-[44px] shrink-0 px-2 text-[13px] font-bold text-gray-600 underline underline-offset-2 dark:text-zinc-400">Switch</button>
                 </div>
             ) : checking ? (
-                <div className={cn('flex h-16 items-center gap-3 rounded-[1.25rem] px-4 text-[15px] font-semibold text-gray-600 dark:text-zinc-400', GLASS)}>
-                    <Loader2 size={18} className="animate-spin" /> Checking your Instagram…
+                <div className={cn('flex min-h-16 items-center gap-3 rounded-[1.25rem] px-4 py-3 text-[15px] font-semibold text-gray-600 dark:text-zinc-400', GLASS)}>
+                    <Loader2 size={18} className="shrink-0 animate-spin" />
+                    <span>
+                        Checking your Instagram…
+                        <span className="block text-[13px] font-normal text-gray-500 dark:text-zinc-500">Reading your public profile. This can take up to a minute.</span>
+                    </span>
                 </div>
             ) : (
                 <div className="space-y-2">

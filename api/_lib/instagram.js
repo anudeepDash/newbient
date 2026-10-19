@@ -6,9 +6,10 @@
  *      (site_settings/general.instagramMetaVerification). Exact count for
  *      Professional accounts; a personal account gets the "switch" message.
  *   2. Otherwise, or if Meta is down: the public profile page (follower count,
- *      name and picture from its preview tags), then RapidAPI if RAPIDAPI_KEY is
- *      set. These counts are estimates (source 'public' / 'rapidapi'), but they're
- *      read automatically, so the application is approved when it's over the minimum.
+ *      name and picture from its preview tags), then RapidAPI (RAPIDAPI_KEY), then
+ *      Apify (APIFY_API_TOKEN). Read automatically (source 'public' / 'rapidapi' /
+ *      'apify'), so the profile counts as verified and the application is approved
+ *      when it's over the minimum; only a count the creator types is "manual entry".
  *
  *   Step A  lookupInstagram(handle)
  *           Business Discovery through Newbi's own Instagram Business account
@@ -148,12 +149,23 @@ const writeCache = async (db, profile) => {
 
 /* ── Public-profile fallback ─────────────────────────────────────────────── */
 
+// Instagram serves the profile's preview tags (followers, name, picture) to link-preview
+// bots, but often turns away requests from cloud servers. More bots and a few rounds
+// (as the pre-redesign site did) get through far more often from Vercel.
 const CRAWLERS = [
     'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
     'Twitterbot/1.0',
+    'LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)',
+    'TelegramBot (like TwitterBot)',
     'WhatsApp/2.23.20.0 A',
+    'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)',
+    'Googlebot/2.1 (+http://www.google.com/bot.html)',
 ];
-const PUBLIC_TIMEOUT_MS = 4500;
+const PUBLIC_TIMEOUT_MS = 6000;
+const PUBLIC_ROUNDS = 3;
+const ROUND_PAUSE_MS = 800;
+// The whole lookup stays inside the function's 60 s (api/creator-join.js maxDuration).
+const LOOKUP_BUDGET_MS = 50000;
 
 const decodeEntities = (str = '') => str
     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
@@ -204,29 +216,41 @@ const fetchText = async (url, headers, ms) => {
 };
 
 /*
- * The public profile page, read the way link previews read it: a few preview
- * crawlers in parallel, first answer wins, one attempt each. Then RapidAPI if
- * a key is configured. { ok, source, profile } or { ok: false, reason }.
+ * The public profile, read automatically. In order, within LOOKUP_BUDGET_MS:
+ *   1. the profile page as link-preview bots see it: every bot in parallel, first answer
+ *      wins, up to PUBLIC_ROUNDS rounds;
+ *   2. RapidAPI, if RAPIDAPI_KEY is set;
+ *   3. Apify's Instagram profile scraper, if APIFY_API_TOKEN is set (it fetches from its
+ *      own servers, so it works when Instagram turns ours away).
+ * { ok, source, profile } or { ok: false, reason: 'not_found' | 'unavailable' }.
  */
-export const fetchPublicInstagram = async (handle) => {
+export const fetchPublicInstagram = async (handle, { deadline = Date.now() + LOOKUP_BUDGET_MS } = {}) => {
     const url = `https://www.instagram.com/${encodeURIComponent(handle)}/`;
     let notFound = 0;
-    try {
-        const profile = await Promise.any(CRAWLERS.map(async (ua) => {
-            const r = await fetchText(url, { 'User-Agent': ua, Accept: 'text/html', 'Accept-Language': 'en-US,en;q=0.9' }, PUBLIC_TIMEOUT_MS);
-            // A missing account is a 404, or a 200 "error page" with no profile tags.
-            if (r.status === 404 || (r.ok && /"pageID":"httpErrorPage"/.test(r.text) && !/og:description/.test(r.text))) {
-                notFound += 1;
-                throw new Error('not found');
-            }
-            const parsed = r.ok ? fromPublicHtml(r.text, handle) : null;
-            if (!parsed) throw new Error(`no profile data (${r.status})`);
-            return parsed;
-        }));
-        return { ok: true, source: 'public', profile };
-    } catch (e) { /* every crawler failed: try RapidAPI */ }
+    for (let round = 1; round <= PUBLIC_ROUNDS; round += 1) {
+        if (round > 1 && Date.now() + ROUND_PAUSE_MS + PUBLIC_TIMEOUT_MS > deadline) break;
+        if (round > 1) await new Promise(r => setTimeout(r, ROUND_PAUSE_MS));
+        notFound = 0;
+        try {
+            const profile = await Promise.any(CRAWLERS.map(async (ua) => {
+                const r = await fetchText(url, { 'User-Agent': ua, Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Accept-Language': 'en-US,en;q=0.9' }, PUBLIC_TIMEOUT_MS);
+                // A missing account is a 404, or a 200 "error page" with no profile tags.
+                if (r.status === 404 || (r.ok && /"pageID":"httpErrorPage"/.test(r.text) && !/og:description/.test(r.text))) {
+                    notFound += 1;
+                    throw new Error('not found');
+                }
+                const parsed = r.ok ? fromPublicHtml(r.text, handle) : null;
+                if (!parsed) throw new Error(`no profile data (${r.status})`);
+                return parsed;
+            }));
+            return { ok: true, source: 'public', profile };
+        } catch (e) {
+            // Every bot agreed the account doesn't exist: no point asking again.
+            if (notFound === CRAWLERS.length) return { ok: false, reason: 'not_found' };
+        }
+    }
 
-    if (process.env.RAPIDAPI_KEY) {
+    if (process.env.RAPIDAPI_KEY && Date.now() < deadline - 2000) {
         try {
             const host = process.env.RAPIDAPI_HOST || 'instagram-looter2.p.rapidapi.com';
             const endpoint = process.env.RAPIDAPI_ENDPOINT || `https://${host}/profile?username=${encodeURIComponent(handle)}`;
@@ -249,7 +273,43 @@ export const fetchPublicInstagram = async (handle) => {
             }
         } catch (e) { /* fall through */ }
     }
-    return { ok: false, reason: notFound === CRAWLERS.length ? 'not_found' : 'unavailable' };
+
+    const apifyToken = process.env.APIFY_API_TOKEN || process.env.APIFY_TOKEN;
+    const left = deadline - Date.now();
+    if (apifyToken && left > 8000) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), left - 1000);
+        try {
+            const res = await fetch(`https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?token=${encodeURIComponent(apifyToken)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usernames: [handle] }),
+                signal: ctrl.signal,
+            });
+            const items = res.ok ? await res.json() : null;
+            const p = Array.isArray(items) ? items[0] : null;
+            if (p && p.followersCount !== undefined && p.followersCount !== null) {
+                return {
+                    ok: true,
+                    source: 'apify',
+                    profile: {
+                        igUserId: p.id ? String(p.id) : null,
+                        username: String(p.username || handle).toLowerCase(),
+                        name: p.fullName || '',
+                        followers: Number(p.followersCount) || 0,
+                        mediaCount: Number(p.postsCount) || 0,
+                        profilePic: p.profilePicUrlHD || p.profilePicUrl || '',
+                    },
+                };
+            }
+            if (Array.isArray(items) && items.length === 0) return { ok: false, reason: 'not_found' };
+        } catch (e) {
+            console.warn('[instagram] Apify lookup:', e.name === 'AbortError' ? 'timed out' : e.message);
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+    return { ok: false, reason: 'unavailable' };
 };
 
 /**

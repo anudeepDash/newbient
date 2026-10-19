@@ -113,7 +113,9 @@ export function useCreatorApplication({ referredBy = '', initialCity = '', uid =
         }
         const mine = ++seq.current;
         setLookup(prev => ({ ...prev, state: 'checking', handle: h }));
-        const res = await callCreatorApi('ig-lookup', { handle: h }, { timeoutMs: 8000 });
+        // Reading a public profile can take a while when Instagram is slow to answer our server (retries,
+        // then the Apify fallback), so wait for it rather than dropping to manual entry early.
+        const res = await callCreatorApi('ig-lookup', { handle: h }, { timeoutMs: 55000 });
         if (mine !== seq.current) return;
         if (!res.ok) return setLookup({ state: 'unavailable', handle: h });
         const d = res.data;
@@ -195,7 +197,7 @@ export function useCreatorApplication({ referredBy = '', initialCity = '', uid =
             whatsappOptIn,
             referredBy,
             ...(manualCount ? { manualFollowers: manualCount } : {}),
-        });
+        }, { timeoutMs: 60000 });
         setSubmitting(false);
         if (res.ok) {
             clearDraft();
