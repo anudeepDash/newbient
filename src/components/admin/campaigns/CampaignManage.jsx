@@ -60,7 +60,7 @@ import { canGetTicket, passFor, passesByCreator, useCampaignPasses } from './tic
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import { BrandMark, CampaignStatusPill, CampaignThumb, CheckBox, ConfirmSheet, Spinner, StageBadge } from './parts';
 import {
-    STAGES, applicantsFor, campaignStatus, creatorHandle, creatorPhotoOf, creatorKeys, creatorRef, formatCount, formatDay,
+    STAGES, applicantsFor, orphanSubmitters, isSelected, campaignStatus, creatorHandle, creatorPhotoOf, creatorKeys, creatorRef, formatCount, formatDay,
     inr, stageMeta, taskTypeOf, platformOf, daysUntil, waNumber, isUniversalCity,
 } from './campaignModel';
 import { isRequiredTask } from '../../../lib/creator/tasks';
@@ -68,7 +68,6 @@ import OutreachTab from './outreach/OutreachTab';
 import { stripPastedStyles } from '../../../lib/taskLinks';
 import { canSeeOutreach } from './outreach/outreachApi';
 
-const SELECTED_STAGES = ['selected', 'review', 'approved', 'paid'];
 const SORTS = [
     { value: 'recommended', label: 'Best match first' },
     { value: 'followers', label: 'Most followers' },
@@ -119,6 +118,10 @@ const CampaignManage = ({
     const passMap = useMemo(() => passesByCreator(passes), [passes]);
 
     const applicants = useMemo(() => (campaign ? applicantsFor(campaign, creators) : []), [campaign, creators]);
+    // Work sent in under a login with no creator profile linked: reviewable in Deliverables only.
+    const orphans = useMemo(() => (campaign ? orphanSubmitters(campaign, creators) : []), [campaign, creators]);
+    const deliverableEntries = useMemo(() => [...applicants, ...orphans], [applicants, orphans]);
+    const hasSubmissions = deliverableEntries.some(a => a.progress.items.some(i => i.sub));
     const byKey = useMemo(() => new Map(applicants.map(a => [a.key, a])), [applicants]);
 
     const counts = useMemo(() => {
@@ -126,9 +129,11 @@ const CampaignManage = ({
         applicants.forEach(a => { c[a.stage] += 1; });
         return c;
     }, [applicants]);
-    const totalToReview = applicants.reduce((n, a) => n + a.progress.toReview, 0);
+    const totalToReview = deliverableEntries.reduce((n, a) => n + a.progress.toReview, 0);
     const paidOut = applicants.reduce((n, a) => n + (a.payout?.status === 'paid' ? Number(a.payout.amount) || 0 : 0), 0);
-    const selectedCount = applicants.filter(a => SELECTED_STAGES.includes(a.stage)).length;
+    // Actually shortlisted (or paid): someone not shortlisted can have work "to review" too.
+    const chosen = (a) => !a.orphan && (isSelected(campaign, a.creator) || a.stage === 'paid');
+    const selectedCount = applicants.filter(chosen).length;
     const qualifyingUndecided = applicants.filter(a => (a.stage === 'applied' || a.stage === 'shortlisted') && a.criteria.eligible);
 
     useEffect(() => { setChecked(new Set()); }, [stageFilter, tab, campaignId]);
@@ -435,13 +440,13 @@ const CampaignManage = ({
                 <Card className="rounded-2xl">
                     <EmptyState icon={Layers} title="No deliverables yet" description="Add the stories, reels or posts selected creators should make." action={<Button variant="accent" onClick={() => onEdit(campaign)}>Add deliverables</Button>} />
                 </Card>
-            ) : selectedCount === 0 ? (
+            ) : selectedCount === 0 && !hasSubmissions ? (
                 <Card className="rounded-2xl">
                     <EmptyState icon={UserCheck} title="Nobody selected yet" description="Select creators from the applicants, and their submissions show up here." action={<Button variant="accent" onClick={() => setParam('tab', 'applicants')}>Go to applicants</Button>} />
                 </Card>
             ) : tasks.map((task, idx) => {
-                const rows = applicants
-                    .filter(a => SELECTED_STAGES.includes(a.stage) || a.progress.items.find(i => i.task.id === task.id)?.sub)
+                const rows = deliverableEntries
+                    .filter(a => (!a.orphan && isSelected(campaign, a.creator)) || a.progress.items.find(i => i.task.id === task.id)?.sub)
                     .map(a => ({ a, item: a.progress.items.find(i => i.task.id === task.id) }));
                 const pending = rows.filter(r => r.item?.status === 'submitted');
                 const approved = rows.filter(r => r.item?.status === 'approved').length;
@@ -477,15 +482,19 @@ const CampaignManage = ({
                                 const wa = waNumber(a.creator.phone);
                                 return (
                                     <li key={a.key} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center">
-                                        <button type="button" onClick={() => setParam('creator', a.key)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                                            <Avatar src={creatorPhotoOf(a.creator)} name={a.creator.name} size={36} />
+                                        <button type="button" onClick={() => !a.orphan && setParam('creator', a.key)} disabled={a.orphan} className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-default">
+                                            <Avatar src={creatorPhotoOf(a.creator)} name={a.creator.name || '?'} size={36} />
                                             <span className="min-w-0">
-                                                <span className="block truncate text-[14px] font-semibold">{a.creator.name || 'Creator'}</span>
+                                                <span className="block truncate text-[14px] font-semibold">
+                                                    {a.orphan ? 'No creator profile linked' : a.creator.name || 'Creator'}
+                                                </span>
+                                                {a.orphan && <span className="block truncate font-mono text-[11px] text-gray-400" title="Their login ID. Run scripts/migrate-creators-to-uid.mjs to link their old profile.">Login {a.key.slice(0, 10)}…</span>}
                                                 <span className="flex flex-wrap items-center gap-x-2 text-[12px] text-gray-500">
                                                     <Badge tone={st === 'approved' ? 'green' : st === 'submitted' ? 'amber' : st === 'rejected' ? 'rose' : 'gray'}>
                                                         {st === 'approved' ? 'Approved' : st === 'submitted' ? 'To review' : st === 'rejected' ? 'Changes asked' : 'Not started'}
                                                     </Badge>
                                                     {sub?.submittedAt && <span>{formatDay(sub.submittedAt)}</span>}
+                                                    {!a.orphan && !isSelected(campaign, a.creator) && a.stage !== 'paid' && <Badge tone="gray">Not shortlisted</Badge>}
                                                 </span>
                                             </span>
                                         </button>
@@ -515,7 +524,7 @@ const CampaignManage = ({
                     </Card>
                 );
             })}
-            {taskFilter === 'review' && totalToReview === 0 && tasks.length > 0 && selectedCount > 0 && (
+            {taskFilter === 'review' && totalToReview === 0 && tasks.length > 0 && (selectedCount > 0 || hasSubmissions) && (
                 <Card className="rounded-2xl">
                     <EmptyState icon={CheckCheck} tone="green" title="All caught up" description="Nothing is waiting for review. New submissions appear here." action={<Button onClick={() => setTaskFilter('all')}>See everyone</Button>} />
                 </Card>
@@ -688,7 +697,7 @@ const CampaignManage = ({
                                             <StageBadge stage={a.stage} />
                                             {a.criteria.eligible ? <Badge tone="green"><Check size={10} strokeWidth={3} /> Meets rules</Badge> : <Badge tone="amber">Below rules</Badge>}
                                             {a.criteria.nicheMatch && <Badge tone="violet"><Sparkles size={10} /> Niche</Badge>}
-                                            {SELECTED_STAGES.includes(a.stage) && a.progress.total > 0 && (
+                                            {chosen(a) && a.progress.total > 0 && (
                                                 <span className="text-[11px] font-semibold text-gray-500">{a.progress.approved}/{a.progress.total} done</span>
                                             )}
                                         </div>
@@ -710,11 +719,11 @@ const CampaignManage = ({
                     <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2 rounded-2xl border border-black/10 bg-white/95 p-2 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/95">
                         <span className="px-2 text-[13px] font-bold">{checkedEntries.length} ticked</span>
                         <div className="ml-auto flex flex-wrap items-center gap-1.5">
-                            {checkedEntries.some(a => !SELECTED_STAGES.includes(a.stage)) && (
-                                <Button size="sm" variant="accent" onClick={() => askSelect(checkedEntries.filter(a => !SELECTED_STAGES.includes(a.stage)))} disabled={busy} className="h-10"><UserCheck size={13} /> Shortlist</Button>
+                            {checkedEntries.some(a => !chosen(a)) && (
+                                <Button size="sm" variant="accent" onClick={() => askSelect(checkedEntries.filter(a => !chosen(a)))} disabled={busy} className="h-10"><UserCheck size={13} /> Shortlist</Button>
                             )}
                             {checkedEntries.some(a => a.stage === 'approved' || a.stage === 'selected' || a.stage === 'review') && (
-                                <Button size="sm" variant="success" onClick={() => setPayTo(checkedEntries.filter(a => SELECTED_STAGES.includes(a.stage) && a.stage !== 'paid'))} disabled={busy} className="hidden h-10 sm:inline-flex"><Wallet size={13} /> Mark paid</Button>
+                                <Button size="sm" variant="success" onClick={() => setPayTo(checkedEntries.filter(a => chosen(a) && a.stage !== 'paid'))} disabled={busy} className="hidden h-10 sm:inline-flex"><Wallet size={13} /> Mark paid</Button>
                             )}
                             <Button size="sm" variant="secondary" onClick={() => setMessageTo(checkedEntries)} className="h-10"><Send size={13} /> Message</Button>
                             {checkedEntries.some(canGetTicket) && (
@@ -732,16 +741,16 @@ const CampaignManage = ({
                                 {checkedEntries.some(a => a.stage === 'shortlisted' || a.stage === 'declined') && (
                                     <MenuItem icon={Undo2} onClick={() => setStage(checkedEntries.filter(a => a.stage === 'shortlisted' || a.stage === 'declined'), null)}>Move back to applied</MenuItem>
                                 )}
-                                {checkedEntries.some(a => SELECTED_STAGES.includes(a.stage)) && (
-                                    <MenuItem icon={MailCheck} onClick={() => resendWelcome(checkedEntries.filter(a => SELECTED_STAGES.includes(a.stage)))} hint="Email, WhatsApp and the app, with the group link">Send the welcome again</MenuItem>
+                                {checkedEntries.some(a => chosen(a)) && (
+                                    <MenuItem icon={MailCheck} onClick={() => resendWelcome(checkedEntries.filter(a => chosen(a)))} hint="Email, WhatsApp and the app, with the group link">Send the welcome again</MenuItem>
                                 )}
-                                {checkedEntries.some(a => SELECTED_STAGES.includes(a.stage) && a.stage !== 'paid') && (
-                                    <MenuItem icon={Wallet} onClick={() => setPayTo(checkedEntries.filter(a => SELECTED_STAGES.includes(a.stage) && a.stage !== 'paid'))}>Mark paid</MenuItem>
+                                {checkedEntries.some(a => chosen(a) && a.stage !== 'paid') && (
+                                    <MenuItem icon={Wallet} onClick={() => setPayTo(checkedEntries.filter(a => chosen(a) && a.stage !== 'paid'))}>Mark paid</MenuItem>
                                 )}
                                 <MenuItem icon={Instagram} onClick={() => copyList(checkedEntries, 'handles')}>Copy Instagram handles</MenuItem>
                                 <MenuItem icon={Phone} onClick={() => copyList(checkedEntries, 'phones')} hint="For a WhatsApp broadcast list">Copy phone numbers</MenuItem>
-                                {checkedEntries.some(a => SELECTED_STAGES.includes(a.stage)) && (
-                                    <MenuItem icon={UserX} danger onClick={() => askUnselect(checkedEntries.filter(a => SELECTED_STAGES.includes(a.stage)))}>Remove from campaign</MenuItem>
+                                {checkedEntries.some(a => chosen(a)) && (
+                                    <MenuItem icon={UserX} danger onClick={() => askUnselect(checkedEntries.filter(a => chosen(a)))}>Remove from campaign</MenuItem>
                                 )}
                             </Menu>
                             <Button size="sm" variant="ghost" onClick={() => setChecked(new Set())} aria-label="Clear ticks" className="h-10 w-10 px-0"><X size={15} /></Button>

@@ -241,7 +241,7 @@ export const buildAttention = (state, visible, { isFinance = false, isFullAccess
         }
         const campaigns = state.campaigns || [];
         if (campaigns.length) {
-            const index = indexApplicants(creators);
+            const index = indexApplicants(creators, campaigns);
             let review = 0; let decide = 0; const reviewNames = []; const decideNames = [];
             campaigns.forEach(c => {
                 const stats = summarize(c, index.get(c.id) || []);

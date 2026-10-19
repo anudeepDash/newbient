@@ -69,7 +69,7 @@ const CampaignList = ({
         setSearchParams(next, { replace: true });
     };
 
-    const byCampaign = useMemo(() => indexApplicants(creators), [creators]);
+    const byCampaign = useMemo(() => indexApplicants(creators, campaigns), [creators, campaigns]);
 
     const rows = useMemo(() => (campaigns || []).map(c => ({
         campaign: c,

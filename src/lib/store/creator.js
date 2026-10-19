@@ -73,16 +73,35 @@ export const createCreatorSlice = (set, get) => ({
 
     /* Your own submissions record for a campaign: campaigns/{id}/submissions/{uid}. */
     mySubmissions: {},
+    // What the server just saved, shown straight away (the live read may come through the server, a minute apart).
+    noteMySubmission: (campaignId, taskId, submission) => {
+        if (!campaignId || !taskId || !submission) return;
+        set(state => {
+            const prev = state.mySubmissions[campaignId] || {};
+            return { mySubmissions: { ...state.mySubmissions, [campaignId]: { ...prev, tasks: { ...(prev.tasks || {}), [taskId]: submission } } } };
+        });
+    },
     subscribeMySubmission: (campaignId) => {
         const uid = get().authUser?.uid;
         if (!uid || !campaignId || !db) return () => {};
-        return onSnapshot(doc(db, 'campaigns', campaignId, 'submissions', uid), (snap) => {
+        let timer = null;
+        const unsub = onSnapshot(doc(db, 'campaigns', campaignId, 'submissions', uid), (snap) => {
             set(state => ({ mySubmissions: { ...state.mySubmissions, [campaignId]: snap.exists() ? snap.data() : null } }));
         }, (error) => {
-            // Until the rules for the new location ship, this read may be denied.
-            if (error?.code !== 'permission-denied') console.warn('[app/creator] submission:', error?.code || error);
-            set(state => ({ mySubmissions: { ...state.mySubmissions, [campaignId]: null } }));
+            if (error?.code !== 'permission-denied') {
+                console.warn('[app/creator] submission:', error?.code || error);
+                set(state => ({ mySubmissions: { ...state.mySubmissions, [campaignId]: null } }));
+                return;
+            }
+            // The Firestore rules don't let the browser read it: ask the server (and again every minute).
+            const load = async () => {
+                const res = await callCreatorApi('my-submission', {}, { method: 'GET', query: { campaignId } });
+                if (res.ok) set(state => ({ mySubmissions: { ...state.mySubmissions, [campaignId]: res.data.submission || null } }));
+            };
+            load();
+            timer = setInterval(() => { if (document.visibilityState !== 'hidden') load(); }, 60000);
         });
+        return () => { unsub(); if (timer) clearInterval(timer); };
     },
 
     /* Your referrals and the top-10 leaderboard, from the server (never the whole creators list). */

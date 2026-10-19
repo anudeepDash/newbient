@@ -11,6 +11,7 @@ import { isProposalClosed, isProposalExpired, nextProposalNumber, proposalValue,
 import { extractSocialUsername, hasDisallowedLink } from './socialUtils';
 import { safeLocalStorage } from './storage';
 import { adminKey } from '../constants/roles';
+import { callCreatorApi } from '../app/creator/api';
 import { clearSessionHint } from './sessionHint';
 import { DEFAULT_CREATOR_GROUPS, isCampaignCityMatch } from './constants';
 import { TOAST_TYPES, toFriendlyMessage, getSupportHint, getToastDuration } from './toastCopy';
@@ -326,6 +327,8 @@ const sortCampaigns = (data) => {
 let rawCampaigns = null;
 let appSubmissionIndex = {};
 let appSubmissionsUnsub = null;
+// Set when app submissions come through the server (no Firestore read access): refetch after a review.
+let reloadAppSubmissions = null;
 
 // ── Giveaway helpers ─────────────────────────────────────────────────────
 // The end moment of a giveaway in local time: endDate (YYYY-MM-DD) plus
@@ -1018,8 +1021,23 @@ export const useStore = create((set, get) => ({
                 set({ appSubmissions: appSubmissionIndex });
                 if (rawCampaigns) set({ campaigns: mergeAppSubmissions(rawCampaigns, appSubmissionIndex) });
             }, (error) => {
-                console.warn('[Store] app submissions listener:', error?.code || error);
-                appSubmissionsUnsub = null;
+                if (error?.code !== 'permission-denied') {
+                    console.warn('[Store] app submissions listener:', error?.code || error);
+                    appSubmissionsUnsub = null;
+                    return;
+                }
+                // The Firestore rules don't let the browser read them: same list through the server.
+                const load = async () => {
+                    const res = await callCreatorApi('submissions-list', {});
+                    if (!res.ok) return;
+                    appSubmissionIndex = indexAppSubmissions(res.data.submissions || []);
+                    set({ appSubmissions: appSubmissionIndex });
+                    if (rawCampaigns) set({ campaigns: mergeAppSubmissions(rawCampaigns, appSubmissionIndex) });
+                };
+                reloadAppSubmissions = load;
+                load();
+                const timer = setInterval(() => { if (document.visibilityState !== 'hidden') load(); }, 30000);
+                appSubmissionsUnsub = () => { clearInterval(timer); reloadAppSubmissions = null; };
             });
         }
         return get().subscribeToKey('campaigns', 'campaigns', (data) => {
@@ -4124,7 +4142,18 @@ export const useStore = create((set, get) => ({
                     field('reviewedBy'), get().user?.email || null,
                     'updatedAt', reviewedAt);
             });
-            await batch.commit();
+            try {
+                await batch.commit();
+            } catch (error) {
+                if (error?.code !== 'permission-denied') throw error;
+                // The Firestore rules don't allow it from the browser: review through the server.
+                const res = await callCreatorApi('submissions-review', {
+                    campaignId,
+                    reviews: appReviews.map(r => ({ uid: r.appKey, taskId: String(r.taskId), status: r.status, rejectionReason: r.rejectionReason || '' })),
+                });
+                if (!res.ok) throw new Error(res.error);
+            }
+            await reloadAppSubmissions?.();
         }
         if (!reviews.length) return appReviews.length;
 

@@ -41,7 +41,7 @@ const CampaignManager = () => {
 
     const editing = editingId ? findCampaignById(campaigns, editingId) : null;
     const source = duplicateFrom ? findCampaignById(campaigns, duplicateFrom) : null;
-    const byCampaign = useMemo(() => indexApplicants(creators), [creators]);
+    const byCampaign = useMemo(() => indexApplicants(creators, campaigns), [creators, campaigns]);
 
     const goList = () => navigate('/admin/campaigns');
     const goManage = (id) => navigate(`/admin/campaigns/manage/${encodeURIComponent(id)}`);
