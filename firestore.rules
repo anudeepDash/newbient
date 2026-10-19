@@ -72,7 +72,6 @@ service cloud.firestore {
     match /campaigns/{id} { allow read: if true; allow write: if isStaff(); }
     match /giveaways/{id} { allow read: if true; allow write: if isStaff(); }
     match /forms/{id} { allow read: if true; allow write: if isStaff(); }
-    match /coupons/{id} { allow read: if true; allow write: if isStaff(); }
 
     // Shared by link: anyone with the id opens one; only staff list them. Visitors'
     // view logs, payment claims and signatures go through the server
@@ -89,24 +88,22 @@ service cloud.firestore {
     // ---------- 3. sent in by the public: anyone creates, staff read and manage ----------
 
     match /messages/{id} { allow create: if true; allow read, update, delete: if isStaff(); }
-    match /ticket_orders/{id} { allow create: if true; allow read, update, delete: if isStaff(); }
     match /giveaway_entries/{id} { allow create: if true; allow read, update, delete: if isStaff(); }
     match /subscribers/{id} { allow create: if true; allow read, update, delete: if isStaff(); }
     match /client_requests/{id} { allow create: if true; allow read, update, delete: if isStaff(); }
 
+    // ---------- 3b. tickets and guestlists: the server saves sign-ups and orders ----------
+    // api/_lib/passes.js (register-guestlist) and api/_lib/tickets.js (ticket-order) check
+    // capacity, coupons and tasks and decide the status; the browser never writes these.
+
     match /guestlists/{listId} {
       allow read: if signedIn();
-      allow create, delete: if isStaff();
-      // Staff edit lists; a registration only raises the spot count, by at most 10.
-      allow update: if isStaff() || (signedIn() && changed().hasOnly(['currentSpots'])
-        && request.resource.data.currentSpots is int
-        && request.resource.data.currentSpots > resource.data.get('currentSpots', 0)
-        && request.resource.data.currentSpots <= resource.data.get('currentSpots', 0) + 10);
-      match /entries/{entryId} {
-        allow create: if true;
-        allow read, update, delete: if isStaff();
-      }
+      allow write: if isStaff();
+      match /entries/{entryId} { allow read, write: if isStaff(); }
     }
+    match /ticket_orders/{id} { allow read, write: if isStaff(); }
+    // Codes are checked by the ticket API (ticket-coupon); usedCount moves with orders.
+    match /coupons/{id} { allow read, write: if isStaff(); }
     // Gate scanner: collectionGroup('entries') where bookingRef == …
     match /{path=**}/entries/{entryId} { allow read: if isStaff(); }
 

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { notifyEvent } from '../../lib/mailApi';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -11,15 +10,15 @@ import { cn } from '../../lib/utils';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useStore } from '../../lib/store';
-import { db, auth } from '../../lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { auth } from '../../lib/firebase';
 import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import html2canvas from 'html2canvas';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import GuestlistTaskSubmissionStep from '../community/GuestlistTaskSubmissionStep';
 import { callTicketApi } from '../../lib/ticketApi';
 import { saveProfilePhone } from '../../lib/profilePhone';
-import { purchasableCount, priceCart, applyCoupon, MAX_TICKETS_PER_TIER, BASE_TIER_ID, normalizeCouponCode, makeBookingRef } from '../../lib/ticketing';
+import { passesPost } from '../../lib/passesApi';
+import { purchasableCount, priceCart, applyCoupon, MAX_TICKETS_PER_TIER, BASE_TIER_ID, normalizeCouponCode } from '../../lib/ticketing';
 
 const OTPVerificationSuccess = () => {
     return (
@@ -363,7 +362,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
             const res = await callTicketApi('ticket-coupon', { eventId: event.id, code: normalizeCouponCode(couponInput) });
             let coupon;
             if (res.ok) coupon = res.data.coupon;
-            else if (res.unavailable) coupon = await useStore.getState().validateCoupon(couponInput.trim(), event.id);
+            else if (res.unavailable) throw new Error("Coupons can't be checked right now. Please try again in a moment.");
             else throw new Error(res.error);
             setAppliedCoupon(coupon);
             useStore.getState().addToast("Coupon applied.", 'success');
@@ -622,45 +621,26 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [step, formData, otpSent, otpValues, isPhoneVerified, countryCode]);
 
+    // The server checks the list (open, spots, per-person limit, task), decides
+    // pending or confirmed, saves the entry and sends the pass when it's confirmed.
     const submitGuestlist = async (taskSubmission = null) => {
         setLoading(true);
         try {
-            const hasTask = !!(event?.hasGuestlistTask && event?.guestlistTask);
-            const reviewRequired = hasTask && (event.guestlistTask.reviewRequired !== false);
-            const initialStatus = reviewRequired ? 'pending' : 'confirmed';
-
-            const ref = `NB-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
-            const normalizedEmail = (formData.email || '').trim().toLowerCase();
-            const entryData = {
-                userId: user?.uid || null,
-                name: formData.name,
-                customerName: formData.name,
-                email: normalizedEmail,
-                customerEmail: normalizedEmail,
-                phone: `${countryCode}${formData.phone}`,
-                customerPhone: `${countryCode}${formData.phone}`,
-                guestsCount: guestCount,
-                bookingRef: ref,
-                status: initialStatus,
-                title: event?.title || 'Guestlist',
-                attended: false,
-                guestlistMode: event?.guestlistMode || 'qr',
-                eventId: event?.id || null,
-                guestlistId: event?.id || null,
-                hasTask: hasTask,
-                taskSubmission: taskSubmission || null,
-                appliedAt: new Date().toISOString()
-            };
-            
-            const entryId = await useStore.getState().addGuestlistEntry(event.id, entryData);
-
-            // Confirmed straight away: the server sends the pass (email, WhatsApp, push).
-            if (!reviewRequired && entryId) {
-                await notifyEvent('pass-confirmed', { guestlistId: event.id, entryId });
+            // The pass carries the profile name; fill it from the form if the profile has none.
+            if (user?.uid && !user.displayName && formData.name?.trim()) {
+                await useStore.getState().updateUserProfile(user.uid, { displayName: formData.name.trim() }).catch(() => {});
             }
-
-            setBookingRef(ref);
-            setIsPendingTaskReview(reviewRequired);
+            const res = await passesPost('register-guestlist', {
+                guestlistId: event.id,
+                guests: guestCount,
+                taskSubmission: taskSubmission || null,
+            });
+            if (!res.ok) {
+                useStore.getState().addToast(res.error || "We couldn't complete your guestlist request. Please try again later.", 'error', 'TKT-GST-01');
+                return;
+            }
+            setBookingRef(res.data.ref);
+            setIsPendingTaskReview(res.data.status === 'pending');
             setStep('success');
         } catch (error) {
             console.error("Guestlist error:", error);
@@ -702,8 +682,6 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
         setLoading(true);
         try {
             const customerPhone = `${countryCode}${formData.phone}`;
-            const pricedItems = priceCart(event, hasCategories ? cart : { [BASE_TIER_ID]: ticketCount }).lines
-                .map(l => ({ id: l.id, name: l.name, count: l.count, price: l.price }));
             let ref;
 
             // Preferred path: the ticket API checks seats and the coupon and saves
@@ -724,43 +702,9 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
                 if (apiRes.code === 'COUPON_INVALID') setAppliedCoupon(null);
                 return;
             } else {
-                // Fallback if the API is unreachable: the original in-browser flow.
-                if (totalAmount > 0) {
-                    const { query, where, getDocs } = await import('firebase/firestore');
-                    const snap = await getDocs(query(collection(db, 'ticket_orders'), where('paymentRef', '==', paymentRef.trim())));
-                    if (!snap.empty) {
-                        return useStore.getState().addToast("This payment reference has already been used. Please check your UTR number.", 'error', 'TKT-PAY-02');
-                    }
-                }
-                ref = makeBookingRef();
-                await addDoc(collection(db, 'ticket_orders'), {
-                    eventId: event?.id,
-                    userId: user?.uid || null,
-                    customerName: formData.name,
-                    customerEmail: formData.email,
-                    customerPhone,
-                    items: pricedItems,
-                    totalAmount: lockedAmount || totalAmount,
-                    paymentRef: totalAmount > 0 ? paymentRef.trim() : 'FREE',
-                    bookingRef: ref,
-                    appliedCoupon: appliedCoupon ? {
-                        id: appliedCoupon.id,
-                        code: appliedCoupon.code,
-                        discountValue: appliedCoupon.discountValue,
-                        discountType: appliedCoupon.discountType
-                    } : null,
-                    source: 'checkout-fallback',
-                    createdAt: new Date().toISOString(),
-                    status: totalAmount > 0 ? 'pending' : 'confirmed'
-                });
-                if (appliedCoupon?.id) {
-                    try {
-                        const { increment, updateDoc, doc } = await import('firebase/firestore');
-                        await updateDoc(doc(db, 'coupons', appliedCoupon.id), { usedCount: increment(1) });
-                    } catch (couponErr) {
-                        console.warn('Coupon usage count not updated:', couponErr);
-                    }
-                }
+                // Orders are only saved by the server (it checks seats and the coupon); never from the browser.
+                useStore.getState().addToast("We couldn't reach our booking server. Please try again in a moment; your details are still here.", 'error', 'TKT-PAY-04');
+                return;
             }
 
             // The ticket API emails the buyer itself (pass for free tickets,
