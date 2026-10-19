@@ -78,15 +78,16 @@ export const appUrl = (path = '/') => {
 };
 
 /*
- * A link from the app to a page that still lives on the landing site (the
- * current creator dashboard, community page and so on, until their phase moves
- * them into the app).
+ * A link to the landing site (newbi.live) from anywhere: the app, the admin or
+ * the landing site itself. Same origin when the landing site is served here
+ * (newbi.live, localhost, previews); from app.* and admin.* hosts it is the
+ * same host without that prefix.
  */
 export const landingUrl = (path = '/') => {
     const clean = path.startsWith('/') ? path : `/${path}`;
-    if (!isAppHost()) return clean;
+    if (!isAppHost() && !isAdminHost()) return clean;
     // On app.localhost the landing site is plain localhost on the same port.
     const { protocol, host } = window.location;
-    const landingHost = host.replace(/^app\./i, '');
+    const landingHost = host.replace(/^(app|admin)\./i, '');
     return isPreviewHost(landingHost.split(':')[0]) ? `${protocol}//${landingHost}${clean}` : `${LANDING_ORIGIN}${clean}`;
 };

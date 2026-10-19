@@ -12,7 +12,7 @@ import { useSafariChrome } from '../hooks/useSafariChrome';
 import { useAppStore, useAppSession, hasCapability } from '../lib/store/appStore';
 import { visibleTabs, moduleForPath } from './modules';
 import { visibleUnreadCount } from '../lib/store/notifications';
-import { appPath, stripAppBase } from './host';
+import { appPath, stripAppBase, landingUrl } from './host';
 import { AuthResumer } from './auth/AuthGate';
 import NotificationsSheet from './NotificationsSheet';
 import SignInSheet from './auth/SignInSheet';
@@ -109,7 +109,7 @@ const AppLayout = () => {
             {/* ── Top bar ── */}
             <header className="fixed inset-x-0 top-0 z-40 border-b border-black/[0.05] bg-[#f4f4f1]/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl dark:border-white/[0.05] dark:bg-[#050608]/80">
                 <div className="mx-auto flex h-14 max-w-6xl items-center justify-between pl-4 pr-1.5 sm:px-4 lg:h-[4.5rem] lg:px-8">
-                    <Link to={appPath('/')} aria-label="Newbi home" className="flex h-11 items-center lg:w-48"><Logo className="h-7 lg:h-8" /></Link>
+                    <a href={landingUrl('/')} aria-label="Go to newbi.live" className="flex h-11 items-center lg:w-48"><Logo className="h-7 lg:h-8" /></a>
                     {/* Desktop: the tabs live in the top bar. */}
                     <nav aria-label="App sections" className="hidden items-center gap-1 rounded-full bg-black/[0.04] p-1 ring-1 ring-inset ring-black/[0.04] dark:bg-white/[0.05] dark:ring-white/[0.06] lg:flex">
                         {tabs.map(({ module, label }) => {
