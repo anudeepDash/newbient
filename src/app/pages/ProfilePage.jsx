@@ -17,11 +17,12 @@ import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
 import Heart from 'lucide-react/dist/esm/icons/heart';
 import UserRound from 'lucide-react/dist/esm/icons/user-round';
 import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
+import Globe from 'lucide-react/dist/esm/icons/globe';
 import { Link } from 'react-router-dom';
 import { useAppStore, hasCapability } from '../../lib/store/appStore';
 import { useTheme } from '../../hooks/useTheme';
 import { Field, Button, AmbientBackdrop } from '../../components/app';
-import { appPath } from '../host';
+import { appPath, landingUrl } from '../host';
 import { creatorPassId } from '../creator/format';
 import { Panel, ROW } from './DetailLayout';
 import AuthGate from '../auth/AuthGate';
@@ -60,6 +61,8 @@ const ProfileDetails = () => {
             : { to: appPath('/creator/apply'), icon: Zap, label: 'Become a Newbi creator', hint: 'Get your creator ID in 30 seconds' },
         { to: appPath('/community'), icon: Users, label: 'My guestlists', hint: 'Passes for guestlists you joined' },
         { to: appPath('/tickets'), icon: Ticket, label: 'Tickets', hint: 'Shows on sale' },
+        // The landing site is another page load (and another host in production), so a plain link.
+        { href: landingUrl('/'), icon: Globe, label: 'newbi.live', hint: 'What we do, our work and contact' },
     ];
 
     return (
@@ -123,18 +126,21 @@ const ProfileDetails = () => {
 
                 <Panel label="Shortcuts">
                     <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                        {shortcuts.map(({ to, icon: Icon, label, hint }) => (
+                        {shortcuts.map(({ to, href, icon: Icon, label, hint }) => {
+                            const Row = href ? 'a' : Link;
+                            return (
                             <li key={label}>
-                                <Link to={to} className={`flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-white dark:hover:bg-white/[0.08] ${ROW}`}>
+                                <Row {...(href ? { href } : { to })} className={`flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-white dark:hover:bg-white/[0.08] ${ROW}`}>
                                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black/[0.05] text-gray-700 dark:bg-white/[0.08] dark:text-zinc-300"><Icon size={18} /></span>
                                     <span className="min-w-0 flex-1">
                                         <span className="block text-[15px] font-bold">{label}</span>
                                         <span className="block truncate text-[13px] text-gray-500 dark:text-zinc-400">{hint}</span>
                                     </span>
                                     <ChevronRight size={17} className="shrink-0 text-gray-400" />
-                                </Link>
+                                </Row>
                             </li>
-                        ))}
+                            );
+                        })}
                     </ul>
                 </Panel>
             </div>

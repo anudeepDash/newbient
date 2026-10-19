@@ -25,6 +25,7 @@ import CommandPalette from './CommandPalette';
 import { AccentContext, accent } from '../theme';
 import NewbiLogo from '../../brand/NewbiLogo';
 import newbiIcon from '../../../assets/logo/newbi-icon.svg';
+import { landingUrl } from '../../../app/host';
 
 const COLLAPSE_KEY = 'nb_admin_sidebar_collapsed';
 
@@ -166,14 +167,14 @@ const AdminShell = () => {
             >
                 <div className={cn('flex shrink-0 items-center', collapsed ? 'flex-col justify-center gap-1 px-2 py-3' : 'h-16 justify-between px-5')}>
                     {collapsed ? (
-                        <Link to="/admin" aria-label="Newbi admin home" className="flex h-9 w-9 items-center justify-center">
+                        <a href={landingUrl('/')} aria-label="Go to newbi.live" title="Go to newbi.live" className="flex h-9 w-9 items-center justify-center">
                             <img src={newbiIcon} alt="" className="h-6 w-auto" />
-                        </Link>
+                        </a>
                     ) : (
-                        <Link to="/admin" className="flex items-center gap-2.5">
-                            <Logo className="h-8" />
-                            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-neon-green/10 dark:text-neon-green">Admin</span>
-                        </Link>
+                        <span className="flex items-center gap-2.5">
+                            <a href={landingUrl('/')} aria-label="Go to newbi.live" title="Go to newbi.live"><Logo className="h-8" /></a>
+                            <Link to="/admin" className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-neon-green/10 dark:text-neon-green">Admin</Link>
+                        </span>
                     )}
                     <button
                         type="button"
@@ -230,10 +231,10 @@ const AdminShell = () => {
                     <div className={cn('flex gap-2', collapsed && 'flex-col items-center')}>
                         <ThemeButton compact={collapsed} />
                         <a
-                            href="/"
+                            href={landingUrl('/')}
                             target="_blank"
                             rel="noopener noreferrer"
-                            title="Open the website"
+                            title="Open newbi.live"
                             className={cn(
                                 'flex h-10 items-center justify-center gap-2 rounded-xl border border-black/[0.08] text-[12px] font-semibold text-gray-600 transition-colors hover:text-gray-900 dark:border-white/[0.08] dark:text-zinc-400 dark:hover:text-white',
                                 collapsed ? 'w-10' : 'flex-1'
@@ -380,7 +381,7 @@ const AdminShell = () => {
                                 onPointerDown={(e) => sheetDrag.start(e)}
                             >
                                 <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-black/15 dark:bg-white/15" />
-                                <Logo className="mt-3 h-8" />
+                                <a href={landingUrl('/')} aria-label="Go to newbi.live" className="mt-3"><Logo className="h-8" /></a>
                                 <button
                                     type="button"
                                     onClick={() => setSheetOpen(false)}
@@ -453,9 +454,9 @@ const AdminShell = () => {
                                     </div>
                                     <ThemeButton compact />
                                     <a
-                                        href="/"
+                                        href={landingUrl('/')}
                                         className="flex h-10 w-10 items-center justify-center rounded-xl border border-black/[0.08] text-gray-600 dark:border-white/[0.08] dark:text-zinc-400"
-                                        aria-label="Go to the website"
+                                        aria-label="Go to newbi.live"
                                     >
                                         <ExternalLink size={15} />
                                     </a>
