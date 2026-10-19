@@ -1769,8 +1769,10 @@ const CreatorProfileManager = ({
 
             await updateCreator(creatorProfile.uid, payload);
             if (addToast) addToast("Creator profile updated.", "success");
-            if (addNotification) {
+            // Sent to the creator only, not the global feed.
+            if (addNotification && user?.uid) {
                 addNotification({
+                    userId: user.uid,
                     title: "Creator profile updated",
                     content: "Your creator details and settings have been saved.",
                     type: 'message'

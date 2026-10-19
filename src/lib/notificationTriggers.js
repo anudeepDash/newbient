@@ -1,16 +1,20 @@
 import { useStore } from './store';
-import { db } from './firebase';
-import { collection, getDocs, query } from 'firebase/firestore';
 
 /**
  * Triggers an in-app and potentially a push notification.
+ * userId: the person's uid, or null (explicitly) for everyone. Global
+ * notifications are staff-only; a missing userId sends nothing.
  */
 export const triggerNotification = async ({ userId, type, title, content, link, image, audience }) => {
     try {
         const { addNotification } = useStore.getState();
+        if (userId === undefined || userId === '') {
+            console.error('[Notification] No recipient; not sent:', title);
+            return;
+        }
         
         const notificationData = {
-            userId: userId || null, // null means global
+            userId, // null means global
             type: type || 'announcement',
             title,
             content,
@@ -76,37 +80,10 @@ export const notifyAllUsers = async (title, content, link = '', image = '', open
 };
 
 /**
- * Notify all admins
- */
-export const notifyAdmins = async (title, content, link = '', type = 'message') => {
-    try {
-        const adminsQ = query(collection(db, 'admins'));
-        const snapshot = await getDocs(adminsQ);
-        
-        const notificationPromises = snapshot.docs.map(doc => {
-            const adminData = doc.data();
-            if (adminData.uid) {
-                return triggerNotification({
-                    userId: adminData.uid,
-                    type,
-                    title,
-                    content,
-                    link
-                });
-            }
-            return Promise.resolve();
-        });
-        
-        await Promise.all(notificationPromises);
-    } catch (error) {
-        console.error("Error notifying admins:", error);
-    }
-};
-
-/**
  * Notify a specific user (e.g., creator)
  */
 export const notifySpecificUser = async (userId, title, content, link = '', type = 'announcement') => {
+    if (!userId) return;
     await triggerNotification({
         userId,
         type,
