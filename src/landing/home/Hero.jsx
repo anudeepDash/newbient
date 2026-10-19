@@ -88,14 +88,14 @@ const TAGS = [
     { label: 'Guestlists & passes', icon: Ticket, pos: 'right-[4%] bottom-[8%]', tilt: '-rotate-[4deg]', delay: '-1s' },
 ];
 
-function BrandArt() {
+export function BrandArt({ tags = TAGS }) {
     return (
         // Phones: a small mark at the top of the hero. Desktop: the big visual on the right.
         <div aria-hidden="true" className="relative mx-auto aspect-square w-full max-w-[280px] sm:max-w-[360px] lg:max-w-[460px]">
             <div className="absolute inset-[12%] rounded-full bg-neon-green/25 blur-3xl dark:bg-neon-green/15" />
             <div className="absolute inset-[14%] rounded-[3rem] border border-gray-950/10 dark:border-white/10" style={{ backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)', backgroundSize: '18px 18px', color: 'rgba(0,0,0,0.12)' }} />
             <img src={newbiIcon} alt="" width="579" height="476" className="absolute left-1/2 top-1/2 w-[62%] -translate-x-1/2 -translate-y-1/2 rotate-[-8deg] drop-shadow-[0_24px_40px_rgba(0,0,0,0.25)]" />
-            {TAGS.map((t) => (
+            {tags.map((t) => (
                 <span key={t.label} className={`nb-float absolute ${t.pos}`} style={{ animationDelay: t.delay }}>
                     <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border-2 px-2.5 py-1.5 font-heading text-[11px] font-extrabold shadow-[0_12px_30px_-12px_rgba(0,0,0,0.45)] sm:gap-2 sm:border-[3px] sm:px-4 sm:py-2.5 sm:text-[15px] ${t.tilt} ${t.accent
                         ? 'border-black bg-neon-green text-black'
