@@ -1379,12 +1379,18 @@ export const useStore = create((set, get) => ({
     // --- Actions (Write to DB) ---
     
     // Notifications
+    // userId is required: a person's uid, or null for a global notification
+    // (staff only; Firestore rules refuse anyone else). Leaving it out never broadcasts.
     addNotification: async (notificationData) => {
+        if (notificationData?.userId === undefined) {
+            console.error("addNotification: userId is required (null for everyone).", notificationData?.title);
+            return;
+        }
         try {
             await addDoc(collection(db, 'notifications'), {
                 ...notificationData,
                 // Always store the field: null marks a global notification, so it can be queried.
-                userId: notificationData?.userId ?? null,
+                userId: notificationData.userId,
                 isRead: false,
                 createdAt: new Date().toISOString()
             });
@@ -5501,6 +5507,16 @@ export const useStore = create((set, get) => ({
     // --- NOTIFICATION ACTIONS ---
     deleteNotification: async (id) => {
         try {
+            // Global notifications are shared: only the staff remove them. Here they're hidden for this person.
+            const target = (get().notifications || []).find(n => n.id === id);
+            if (target && !target.userId) {
+                markGlobalNotificationsRead(get().user?.uid, [id]);
+                set(state => {
+                    const next = (state.notifications || []).filter(n => n.id !== id);
+                    return { notifications: next, unreadNotificationsCount: next.filter(n => !n.isRead).length };
+                });
+                return;
+            }
             await deleteDoc(doc(db, 'notifications', id));
         } catch (error) {
             console.error("Failed to delete notification:", error);

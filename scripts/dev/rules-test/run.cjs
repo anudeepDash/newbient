@@ -130,6 +130,23 @@ t('creator changes phone directly (goes through the API)', 'DENY', { who: 'rando
 t('creator saves settings with phone unchanged', 'ALLOW', { who: 'rando', method: 'update', path: 'creators/u_rando', existing: { uid: 'u_rando', phone: '+919800000000', isPhoneVerified: true, bio: 'a' }, data: { uid: 'u_rando', phone: '+919800000000', isPhoneVerified: true, bio: 'b' } });
 t('signed-out visitor verifies a creator by link', 'DENY', { who: null, method: 'update', path: 'creators/c1', existing: { uid: 'u_x', verificationToken: 'abc' }, data: { uid: 'u_x', verificationToken: null, isPhoneVerified: true, isEmailVerified: true } });
 
+// --- notifications ---
+t('user broadcasts to everyone', 'DENY', { who: 'rando', method: 'create', path: 'notifications/n1', data: { userId: null, title: 'Free tickets' } });
+t('user sends a notification to someone else', 'DENY', { who: 'rando', method: 'create', path: 'notifications/n1', data: { userId: 'u_other', title: 'Hi' } });
+t('user creates a notification without a recipient', 'DENY', { who: 'rando', method: 'create', path: 'notifications/n1', data: { title: 'Hi' } });
+t('user notes something for themselves', 'ALLOW', { who: 'rando', method: 'create', path: 'notifications/n1', data: { userId: 'u_rando', title: 'Saved' } });
+t('staff broadcast to everyone', 'ALLOW', { who: 'editor', method: 'create', path: 'notifications/n1', data: { userId: null, title: 'New event' } });
+t('signed-out visitor writes a notification', 'DENY', { who: null, method: 'create', path: 'notifications/n1', data: { userId: 'u_rando', title: 'Hi' } });
+t('user reads own notifications', 'ALLOW', { who: 'rando', method: 'get', path: 'notifications/n1', existing: { userId: 'u_rando', title: 'x' } });
+t('user reads the global feed', 'ALLOW', { who: 'rando', method: 'get', path: 'notifications/n2', existing: { userId: null, title: 'x' } });
+t('user reads someone else\'s notification', 'DENY', { who: 'rando', method: 'get', path: 'notifications/n3', existing: { userId: 'u_other', title: 'x' } });
+t('signed-out visitor reads the global feed', 'DENY', { who: null, method: 'get', path: 'notifications/n2', existing: { userId: null, title: 'x' } });
+t('user marks own notification read', 'ALLOW', { who: 'rando', method: 'update', path: 'notifications/n1', existing: { userId: 'u_rando', isRead: false, title: 'x' }, data: { userId: 'u_rando', isRead: true, title: 'x' } });
+t('user rewrites own notification', 'DENY', { who: 'rando', method: 'update', path: 'notifications/n1', existing: { userId: 'u_rando', isRead: false, title: 'x' }, data: { userId: 'u_rando', isRead: true, title: 'y' } });
+t('user marks a global notification read for everyone', 'DENY', { who: 'rando', method: 'update', path: 'notifications/n2', existing: { userId: null, isRead: false }, data: { userId: null, isRead: true } });
+t('user deletes a global notification', 'DENY', { who: 'rando', method: 'delete', path: 'notifications/n2', existing: { userId: null, title: 'x' } });
+t('user deletes own notification', 'ALLOW', { who: 'rando', method: 'delete', path: 'notifications/n1', existing: { userId: 'u_rando', title: 'x' } });
+
 // --- passes ---
 t('holder reads own pass', 'ALLOW', { who: 'rando', method: 'get', path: 'passes/ABC', existing: { holderUid: 'u_rando' } });
 t('someone else reads a pass', 'DENY', { who: 'rando', method: 'get', path: 'passes/ABC', existing: { holderUid: 'u_other' } });

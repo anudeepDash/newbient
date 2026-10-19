@@ -160,6 +160,18 @@ service cloud.firestore {
       allow delete: if isStaff() || (signedIn() && request.auth.uid == uid);
     }
 
+    // In-app notifications. People read their own and the global feed (userId null),
+    // mark their own read and remove their own. Only staff (or the server) address
+    // someone else or post to everyone; anyone signed in may note something for themselves.
+    function notificationFor() { return resource.data.get('userId', ''); }
+    match /notifications/{id} {
+      // Direct field reads, so the where('userId', '==', uid | null) queries can be checked against them.
+      allow read: if isStaff() || (signedIn() && (resource.data.userId == request.auth.uid || resource.data.userId == null));
+      allow create: if isStaff() || (signedIn() && request.resource.data.get('userId', '') == request.auth.uid);
+      allow update: if isStaff() || (signedIn() && notificationFor() == request.auth.uid && changed().hasOnly(['isRead']));
+      allow delete: if isStaff() || (signedIn() && notificationFor() == request.auth.uid);
+    }
+
     // ---------- 6. passes (written only by the server) ----------
 
     match /passes/{ref} {
