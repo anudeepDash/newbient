@@ -112,3 +112,15 @@ Mapped on 2026-10-19 from `src/` only. `api/` uses firebase-admin, which bypasse
 6. **Client-side checks.** `documents.isPublic` and the creator `verificationToken` are checked only in the browser.
 
 Some of these can't be closed with rules alone without breaking the app. Those code paths need to move to the API first, and the rules come after.
+
+## Status (2026-10-19, after the browser-write fixes on redesign/integration)
+
+Closed in code and in `firestore.rules` (not yet published; `node scripts/dev/rules-test/run.cjs` → 87/87):
+
+- **Risk 2, phone.** The server writes the phone fields (`api/_lib/creatorApp.js` `profile-phone`), and marks a number verified only when it's the one on the Firebase Auth account. Rules refuse `phone`, `phoneNumber`, `phoneVerified`, `isPhoneVerified` and `phoneVerifiedAt` on `users`, and the phone and every verification field on `creators`. The VerifyCreator browser fallback is gone.
+- **Risk 3, public documents.** The invoice, proposal and contract pages read one doc by id (`useSharedDoc`). View logs, payment claims, accept/decline and signing go through `/api/forms?type=shared-doc` (`api/_lib/sharedDocs.js`). Rules: `get` for anyone; `list` and writes for staff only.
+- **Risk 4, broadcasts.** `addNotification`/`triggerNotification` need an explicit `userId` (null = everyone, staff only). Rules: read own + global, create for yourself (staff: anyone), update own `isRead`, delete own.
+- **Risk 5, entries and orders.** Guestlist sign-ups use passes `register-guestlist`; orders and coupons use the ticket API only (browser fallbacks removed). Rules: guestlists, entries, `ticket_orders` and `coupons` are staff-only in the browser.
+
+Still open: risk 6 (`documents.isPublic` is checked in the browser; `documents`/`gen_documents` are readable by anyone), and `creators` direct writes by the owner (allowed for non-trust fields; the store tries them before the API).
+
