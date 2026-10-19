@@ -128,7 +128,11 @@ export const buildAttention = (state, visible, { isFinance = false, isFullAccess
 
     // ── Ticketing ──────────────────────────────────────────────────────────
     if (visible.has('ticketing')) {
-        const pending = (state.ticketOrders || []).filter(o => o.status === 'pending');
+        // Only orders for events that still exist: an order left pending for a deleted
+        // event (old test orders) can't be verified and shouldn't read as urgent.
+        const eventsLoaded = Boolean(state.subscriptionsLoaded?.upcomingEvents) || (state.upcomingEvents || []).length > 0;
+        const liveEvents = new Set((state.upcomingEvents || []).map(e => e.id));
+        const pending = (state.ticketOrders || []).filter(o => o.status === 'pending' && (!eventsLoaded || liveEvents.has(o.eventId)));
         if (pending.length) {
             const byEvent = {};
             pending.forEach(o => { byEvent[o.eventId] = (byEvent[o.eventId] || 0) + 1; });
