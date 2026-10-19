@@ -117,7 +117,6 @@ const CampaignTickets = ({ campaign, applicants, passes, loaded, error, onSend }
                         {[
                             campaign.passKind === 'confirmation' ? 'Confirmation, no QR' : 'QR pass',
                             `${campaign.ticketsPerCreator || 1} per creator`,
-                            campaign.ticketAutoIssue === 'selected' ? 'sent when you select someone' : campaign.ticketAutoIssue === 'completed' ? 'sent when their required tasks are approved' : 'sent by hand',
                         ].join(' · ')}.
                     </p>
                 </div>

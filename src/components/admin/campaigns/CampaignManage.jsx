@@ -57,7 +57,6 @@ import ShortlistUploadSheet from './ShortlistUploadSheet';
 import { clientSheetSpec, newbiIdOf } from './shortlistModel';
 import CampaignTickets from './CampaignTickets';
 import { canGetTicket, passFor, passesByCreator, useCampaignPasses } from './ticketModel';
-import { passesPost } from '../../../lib/passesApi';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import { BrandMark, CampaignStatusPill, CampaignThumb, CheckBox, ConfirmSheet, Spinner, StageBadge } from './parts';
 import {
@@ -187,19 +186,6 @@ const CampaignManage = ({
         else addToast(okText, 'success');
     };
 
-    // The campaign's auto-send rule (editor → Event passes): its pass (QR or a confirmation without one)
-    // goes out on selection or when the work is done, with or without a linked event.
-    const autoIssue = async (entries, rule) => {
-        if (campaign.ticketAutoIssue !== rule) return;
-        const kind = campaign.passKind === 'confirmation' ? 'confirmation' : 'qr';
-        const ids = entries.filter(e => { const p = passFor(passMap, e.creator); return !p || (kind === 'qr' && p.qr === false); }).map(e => e.creator.id);
-        if (!ids.length) return;
-        const res = await passesPost('issue-campaign', { campaignId: campaign.id, creatorIds: ids.slice(0, 25), kind }, { timeoutMs: 60000 });
-        if (!res.ok) { addToast(`Passes weren't sent: ${res.error}`, 'warning'); return; }
-        const sent = res.data.results.filter(r => ['issued', 'updated'].includes(r.outcome)).length;
-        const word = kind === 'confirmation' ? (sent === 1 ? 'Confirmation' : 'confirmations') : (sent === 1 ? 'Pass' : 'passes');
-        if (sent) addToast(`${sent === 1 ? word : `${sent} ${word}`} sent automatically.`, 'success');
-    };
 
     /*
      * The welcome for shortlisted creators: the server sends email, WhatsApp (template
@@ -229,7 +215,6 @@ const CampaignManage = ({
             setChecked(new Set());
             const done = entries.filter(e => result.done.includes(e.key));
             if (notify) await sendWelcome(done);
-            await autoIssue(done, 'selected');
         } catch {
             addToast("Couldn't shortlist those creators. Please try again.", 'error');
         }
@@ -313,19 +298,6 @@ const CampaignManage = ({
                 )));
             }
             addToast(statusValue === 'approved' ? (items.length === 1 ? 'Approved.' : `${items.length} submissions approved.`) : 'Feedback sent.', 'success');
-            if (statusValue === 'approved') {
-                // Creators whose required tasks are now all approved (counting the ones just approved).
-                const justApproved = new Map();
-                items.forEach(({ entry, task }) => {
-                    if (!justApproved.has(entry.key)) justApproved.set(entry.key, { entry, tasks: new Set() });
-                    justApproved.get(entry.key).tasks.add(task.id);
-                });
-                const done = [...justApproved.values()].filter(({ entry, tasks }) => {
-                    const required = entry.progress.items.filter(i => i.task.priority !== 'optional');
-                    return required.length > 0 && required.every(i => i.status === 'approved' || tasks.has(i.task.id));
-                }).map(x => x.entry);
-                await autoIssue(done, 'completed');
-            }
         } catch {
             addToast("Couldn't save your review. Please try again.", 'error');
             throw new Error('review failed');
@@ -851,7 +823,7 @@ const CampaignManage = ({
                     items={[
                         { value: 'applicants', label: 'Applicants', count: applicants.length },
                         { value: 'deliverables', label: 'Deliverables', count: totalToReview || undefined, highlight: totalToReview > 0 },
-                        ...(campaign.eventId || campaign.ticketAutoIssue || campaign.eventName || campaign.eventDate || passes.length ? [{ value: 'tickets', label: 'Tickets', count: passes.filter(p => p.status !== 'revoked').length || undefined }] : []),
+                        ...(campaign.eventId || campaign.eventName || campaign.eventDate || passes.length ? [{ value: 'tickets', label: 'Tickets', count: passes.filter(p => p.status !== 'revoked').length || undefined }] : []),
                         ...(showOutreach ? [{ value: 'outreach', label: 'Outreach' }] : []),
                         { value: 'brief', label: 'Brief and settings' },
                     ]}

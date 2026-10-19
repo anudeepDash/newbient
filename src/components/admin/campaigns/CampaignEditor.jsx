@@ -51,7 +51,7 @@ const blankForm = (uid) => ({
     reward: '', payoutPerCreator: '', totalSpots: '', spotsLeft: '',
     thumbnail: '', websiteApplyEnabled: true, autoShortlistEligible: false, isPinned: false,
     applyMethod: 'newbi', applyFormUrl: '', applyFormNeedsSignIn: false,
-    eventId: '', ticketsPerCreator: '', ticketAutoIssue: '', passKind: 'qr',
+    eventId: '', ticketsPerCreator: '', passKind: 'qr',
     eventName: '', eventDate: '', eventTime: '', venue: '',
     status: 'Open', tasks: [], createdBy: uid || '',
     ...OPEN_FORM_FIELDS,
@@ -76,7 +76,6 @@ const toForm = (c, { copy = false } = {}) => ({
     thumbnail: c.thumbnail || '',
     eventId: c.eventId || '',
     ticketsPerCreator: toStr(c.ticketsPerCreator),
-    ticketAutoIssue: ['selected', 'completed'].includes(c.ticketAutoIssue) ? c.ticketAutoIssue : '',
     passKind: c.passKind === 'confirmation' ? 'confirmation' : 'qr',
     eventName: c.eventName || '',
     eventDate: toDayInput(c.eventDate) || '',
@@ -124,10 +123,11 @@ const toPayload = (f) => ({
     spotsLeft: num(f.spotsLeft),
     thumbnail: f.thumbnail.trim(),
     // Event passes for selected creators: a linked event (optional; without one the pass uses the
-    // name, date and venue below), QR pass or confirmation without a QR, how many each, and when they go out.
+    // name, date and venue below), QR pass or confirmation without a QR, and how many each.
     eventId: f.eventId || null,
     ticketsPerCreator: num(f.ticketsPerCreator) || 1,
-    ticketAutoIssue: f.ticketAutoIssue || null,
+    // Passes go out only when an admin sends them (Send tickets); this clears the old auto-send setting.
+    ticketAutoIssue: null,
     passKind: f.passKind === 'confirmation' ? 'confirmation' : 'qr',
     eventName: f.eventId ? '' : f.eventName.trim(),
     eventDate: f.eventId ? '' : f.eventDate || '',
@@ -572,7 +572,7 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                         </div>
                     </BuilderCard>
 
-                    <BuilderCard id="cm-tickets" title="Event passes" hint="Optional: passes for selected creators, sent in the app, by email and on WhatsApp">
+                    <BuilderCard id="cm-tickets" title="Event passes" hint="Optional: passes for selected creators. You send them from the campaign (Send tickets); they go out in the app, by email and on WhatsApp.">
                         <div className="space-y-4">
                             <Field label="Pass" hint="A QR pass is scanned at the gate. A confirmation tells them they're in, with no QR code.">
                                 <Choice
@@ -611,17 +611,6 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                             )}
                             <Field label="Tickets per creator">
                                 <input className={fieldCls} type="number" min="1" max="20" inputMode="numeric" value={form.ticketsPerCreator} onChange={(e) => set({ ticketsPerCreator: e.target.value })} placeholder="1" />
-                            </Field>
-                            <Field label="Send passes automatically" hint="Official partner tickets (PDFs or links) are always sent by hand with a CSV.">
-                                <Choice
-                                    value={form.ticketAutoIssue}
-                                    onChange={(v) => set({ ticketAutoIssue: v })}
-                                    options={[
-                                        { value: '', label: 'Off', hint: 'Send by hand' },
-                                        { value: 'selected', label: 'On selection', hint: 'When you select a creator' },
-                                        { value: 'completed', label: 'When done', hint: 'All required tasks approved' },
-                                    ]}
-                                />
                             </Field>
                         </div>
                     </BuilderCard>
