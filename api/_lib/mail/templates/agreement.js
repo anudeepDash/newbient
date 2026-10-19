@@ -11,7 +11,7 @@ export default (data = {}) => ({
     title: data.headerText || 'Your agreement is ready',
     blocks: [
         { html: data.messageBody },
-        { details: [['Agreement', data.agreementNumber], ['Party', data.secondPartyName], ['Project', data.projectName], ['Effective', data.effectiveDate]] },
+        { document: { kind: 'AGREEMENT', name: `${data.projectName || 'Agreement'}${data.agreementNumber ? ` · ${data.agreementNumber}` : ''}.pdf`, meta: [data.secondPartyName ? `With ${data.secondPartyName}` : '', data.effectiveDate ? `Effective ${data.effectiveDate}` : ''], url: data.agreementUrl, label: 'Open agreement' } },
     ],
     cta: data.agreementUrl ? { label: 'Review and sign', url: data.agreementUrl } : null,
     reason: 'Sent by Newbi Entertainment & Marketing LLP.',

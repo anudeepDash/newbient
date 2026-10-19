@@ -17,6 +17,7 @@ export default (data = {}) => {
         preheader: rsvp ? `Your RSVP for ${event} is confirmed.` : `Your pass for ${event} is ready. Show the QR code at the gate.`,
         eyebrow: rsvp ? 'RSVP' : data.source === 'order' ? 'Tickets' : 'Guestlist',
         title: rsvp ? 'Your RSVP is confirmed' : "You're on the list",
+        hero: data.image ? { url: data.image, alt: data.eventName || '' } : null,
         blocks: [
             { p: `Hi ${firstName(data.name)}, ${rsvp ? `your RSVP for ${event} is confirmed.` : paid ? `your payment for ${event} is verified and your tickets are ready.` : `your place at ${event} is confirmed.`}` },
             { details: [['Event', data.eventName], ['Date', formatDate(data.date, { withTime: /T\d\d:/.test(String(data.date || '')) })], ['Venue', data.venue], ['Tier', data.tier], ['Guests', Number(data.qty) > 1 ? data.qty : ''], ['Payment ref', paid ? data.paymentRef : '']] },

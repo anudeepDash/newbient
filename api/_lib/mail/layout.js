@@ -133,8 +133,11 @@ const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFract
 
 const CARD = 'border-collapse:separate;background:#fafafa;border:1px solid #ececef;border-radius:16px';
 
-/** A table-based button, so Outlook keeps the padding and the colour. */
-const button = (href, label, { bg, fg, border, cls, size = 15, pad = '15px 28px' }) => `<table role="presentation" cellpadding="0" cellspacing="0" class="${cls}-t" style="margin:0 0 24px;border-collapse:separate"><tr><td align="center" class="${cls}-td" style="border-radius:14px;background:${bg};${border ? `border:1px solid ${border};` : ''}"><a href="${esc(href)}" target="_blank" class="${cls}" style="display:inline-block;padding:${pad};border-radius:14px;color:${fg};font-size:${size}px;font-weight:800;line-height:1.2;text-decoration:none">${esc(label)}&nbsp;&rarr;</a></td></tr></table>`;
+/** A table-based pill button, so Outlook keeps the padding and the colour. */
+const button = (href, label, { bg, fg, border, cls, size = 16, pad = '17px 34px', arrow = true, block = false }) => `<table role="presentation" cellpadding="0" cellspacing="0" class="${cls}-t" ${block ? 'width="100%"' : ''} style="margin:0 0 26px;border-collapse:separate"><tr><td align="center" class="${cls}-td" style="border-radius:999px;background:${bg};${border ? `border:2px solid ${border};` : ''}"><a href="${esc(href)}" target="_blank" class="${cls}" style="display:block;padding:${pad};border-radius:999px;color:${fg};font-size:${size}px;font-weight:800;letter-spacing:.2px;line-height:1.2;text-align:center;text-decoration:none">${esc(label)}${arrow ? '&nbsp;&nbsp;&rarr;' : ''}</a></td></tr></table>`;
+
+/** File-type tile colours for the document card. */
+const DOC_TILE = { PDF: '#e11d48', INVOICE: '#18181b', PROPOSAL: '#18181b', AGREEMENT: '#18181b', RECEIPT: '#18181b' };
 
 const renderBlock = (block, ctx) => {
     if (!block) return '';
@@ -179,12 +182,32 @@ ${isPresent(block.total) && showPrice ? `<tr><td class="strong rule" style="padd
     }
     if (block.image) {
         const src = safeUrl(block.image.url, ctx.origin);
-        return src ? `<img src="${esc(src)}" alt="${esc(block.image.alt || '')}" width="536" style="width:100%;max-width:100%;height:auto;display:block;margin:0 0 26px;border-radius:16px;border:0" />` : '';
+        return src ? `<img src="${esc(src)}" alt="${esc(block.image.alt || '')}" width="536" style="width:100%;max-width:100%;height:auto;display:block;margin:0 0 26px;border-radius:20px;border:0" />` : '';
     }
     if (block.button) {
         const href = safeUrl(block.button.url, ctx.origin);
         if (!href || !isPresent(block.button.label)) return '';
-        return button(href, block.button.label, { bg: '#ffffff', fg: '#18181b', border: '#d4d4d8', cls: 'btn2', size: 14, pad: '12px 20px' });
+        return button(href, block.button.label, { bg: '#ffffff', fg: '#18181b', border: '#18181b', cls: 'btn2', size: 14, pad: '13px 24px' });
+    }
+    if (block.stats) {
+        const tiles = block.stats.filter(r => Array.isArray(r) && isPresent(r[1])).slice(0, 3);
+        if (!tiles.length) return '';
+        const w = Math.floor(100 / tiles.length);
+        return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border-collapse:separate;border-spacing:0"><tr>${tiles.map(([label, value], i) => `<td width="${w}%" valign="top" style="padding:${i === 0 ? '0 5px 0 0' : i === tiles.length - 1 ? '0 0 0 5px' : '0 5px'}"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="card" style="${CARD};border-radius:16px"><tr><td style="padding:14px 14px 15px"><p class="muted" style="margin:0 0 5px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#71717a">${esc(label)}</p><p class="strong" style="margin:0;font-size:15px;line-height:1.3;font-weight:800;color:#18181b">${esc(value)}</p></td></tr></table></td>`).join('')}</tr></table>`;
+    }
+    if (block.document) {
+        const d = block.document;
+        const kind = String(d.kind || 'PDF').toUpperCase();
+        const href = safeUrl(d.url, ctx.origin);
+        const meta = (d.meta || []).filter(isPresent).map(esc).join('&nbsp;&nbsp;·&nbsp;&nbsp;');
+        const tile = DOC_TILE[kind] || '#18181b';
+        return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="card" style="margin:0 0 26px;${CARD};border-radius:18px;overflow:hidden">
+<tr><td style="padding:18px 18px 16px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+<td width="56" valign="top" style="width:56px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" valign="middle" class="doctile" style="width:48px;height:60px;border-radius:8px 14px 8px 8px;background:${tile};border-bottom:4px solid ${ctx.accent}"><span style="font-size:11px;font-weight:900;letter-spacing:1px;color:#ffffff">PDF</span></td></tr></table></td>
+<td valign="middle" style="padding-left:6px"><p class="strong" style="margin:0 0 4px;font-size:16px;line-height:1.3;font-weight:800;color:#18181b;word-break:break-word">${esc(d.name || 'Document')}</p>${meta ? `<p class="muted" style="margin:0;font-size:12px;line-height:1.5;color:#71717a">${meta}</p>` : ''}</td>
+</tr></table></td></tr>
+${href ? `<tr><td class="rule" align="center" style="border-top:1px solid #ececef;padding:0"><a href="${esc(href)}" target="_blank" class="docbar" style="display:block;padding:14px 18px;font-size:14px;font-weight:800;color:#18181b;text-decoration:none">${esc(d.label || 'Open document')}&nbsp;&nbsp;&rarr;</a></td></tr>` : ''}
+</table>`;
     }
     if (block.divider) return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 24px"><tr><td class="rule" style="border-top:1px solid #ececef;font-size:0;line-height:0">&nbsp;</td></tr></table>';
     return '';
@@ -206,6 +229,8 @@ const blockText = (block, ctx) => {
     }
     if (block.code) return isPresent(block.code) ? `${block.label || 'Reference'}: ${block.code}` : '';
     if (block.button) { const href = safeUrl(block.button.url, ctx.origin); return href ? `${block.button.label}: ${href}` : ''; }
+    if (block.stats) return block.stats.filter(r => Array.isArray(r) && isPresent(r[1])).map(([l, v]) => `${l}: ${v}`).join('\n');
+    if (block.document) { const href = safeUrl(block.document.url, ctx.origin); return [block.document.name, (block.document.meta || []).filter(isPresent).join(' · '), href ? `${block.document.label || 'Open document'}: ${href}` : ''].filter(Boolean).join('\n'); }
     if (block.image) return '';
     return '';
 };
@@ -223,6 +248,7 @@ export const renderEmail = (model, opts = {}) => {
     const ctx = { origin, accent: brand.accent };
     const kind = model.kind === 'marketing' ? 'marketing' : 'transactional';
     const blocks = (model.blocks || []).filter(Boolean);
+    const heroSrc = model.hero ? safeUrl(model.hero.url, origin) : '';
     const ctaHref = model.cta ? safeUrl(model.cta.url, origin) : '';
     const hasCta = Boolean(ctaHref && isPresent(model.cta?.label));
     const preheader = isPresent(model.preheader) ? String(model.preheader) : textOf(blocks.map(b => blockText(b, ctx)).join(' ')).slice(0, 140);
@@ -249,7 +275,7 @@ export const renderEmail = (model, opts = {}) => {
 <style>
 body{margin:0;padding:0;background:#f4f4f5;-webkit-text-size-adjust:100%}
 a{color:${brand.ink}}
-@media (max-width:600px){.wrap{padding:0!important}.box{border-radius:0!important;border-left:0!important;border-right:0!important}.hdr{padding:18px 22px!important}.pad{padding:32px 22px 8px!important}.foot{padding:28px 22px!important}.title{font-size:25px!important}.cta-t{width:100%!important}.cta{display:block!important}}
+@media (max-width:600px){.wrap{padding:0!important}.box{border-radius:0!important;border-left:0!important;border-right:0!important}.hdr{padding:18px 22px!important}.pad{padding:32px 22px 8px!important}.foot{padding:28px 22px!important}.title{font-size:26px!important}.cta-t{width:100%!important}.cta{display:block!important}}
 @media (prefers-color-scheme:dark){
 body,.bg{background:#09090b!important}
 .box{background:#121214!important;border-color:#27272a!important}
@@ -260,7 +286,10 @@ body,.bg{background:#09090b!important}
 .card,.code{background:#1a1a1d!important;border-color:#2c2c30!important;color:#fafafa!important}
 .rule{border-color:#2c2c30!important}
 .num{background:#fafafa!important;color:#09090b!important}
-.btn2-td{background:#121214!important;border-color:#3f3f46!important}
+.btn2-td{background:#121214!important;border-color:#fafafa!important}
+.docbar{color:#fafafa!important}
+.doctile{background:#fafafa!important}
+.doctile span{color:#09090b!important}
 .btn2{color:#fafafa!important}
 a{color:${brand.accent}!important}
 .cta{color:${brand.onAccent}!important}
@@ -275,11 +304,12 @@ a{color:${brand.accent}!important}
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${esc(preheader)}&#8203;&nbsp;&#8203;&nbsp;&#8203;&nbsp;</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="bg" style="background:#f4f4f5">
 <tr><td align="center" class="wrap" style="padding:32px 12px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="box" style="max-width:600px;background:#ffffff;border:1px solid #e4e4e7;border-radius:24px;overflow:hidden">
-<tr><td class="hdr ${brand.headerClass}" align="${brand.align}" style="padding:20px 32px;background:${brand.headerBg};border-bottom:3px solid ${brand.accent};text-align:${brand.align}"><a href="${esc(origin)}" target="_blank" style="display:inline-block;text-decoration:none"><img src="${esc(brand.logo)}" alt="${esc(brand.logoAlt)}" width="${brand.logoWidth}" height="${brand.logoHeight}" style="display:block;width:${brand.logoWidth}px;height:${brand.logoHeight}px;max-width:100%;border:0" /></a></td></tr>
-<tr><td class="pad" style="padding:40px 32px 12px">
-${isPresent(model.eyebrow) ? `<p class="eyebrow" style="margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:${brand.ink}">${esc(model.eyebrow)}</p>` : ''}
-${isPresent(model.title) ? `<h1 class="title" style="margin:0 0 20px;font-size:28px;line-height:1.2;font-weight:800;letter-spacing:-0.5px;color:#09090b">${esc(model.title)}</h1>` : ''}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="box" style="max-width:600px;background:#ffffff;border:1px solid #e4e4e7;border-radius:28px;overflow:hidden">
+<tr><td class="hdr ${brand.headerClass}" align="${brand.align}" style="padding:20px 32px;background:${brand.headerBg};border-bottom:4px solid ${brand.accent};text-align:${brand.align}"><a href="${esc(origin)}" target="_blank" style="display:inline-block;text-decoration:none"><img src="${esc(brand.logo)}" alt="${esc(brand.logoAlt)}" width="${brand.logoWidth}" height="${brand.logoHeight}" style="display:block;width:${brand.logoWidth}px;height:${brand.logoHeight}px;max-width:100%;border:0" /></a></td></tr>
+${heroSrc ? `<tr><td style="padding:0;font-size:0;line-height:0;background:#0A0A0A"><img src="${esc(heroSrc)}" alt="${esc(model.hero.alt || model.title || '')}" width="600" style="display:block;width:100%;max-width:600px;height:auto;border:0" /></td></tr>` : ''}
+<tr><td class="pad" style="padding:${heroSrc ? '30px' : '38px'} 32px 12px">
+${isPresent(model.eyebrow) ? `<p style="margin:0 0 16px"><span class="chip" style="display:inline-block;padding:6px 13px;border-radius:999px;background:${brand.accent};color:${brand.onAccent};font-size:11px;font-weight:900;letter-spacing:1.1px;text-transform:uppercase">${esc(model.eyebrow)}</span></p>` : ''}
+${isPresent(model.title) ? `<h1 class="title" style="margin:0 0 22px;font-size:32px;line-height:1.15;font-weight:900;letter-spacing:-0.8px;color:#09090b">${esc(model.title)}</h1>` : ''}
 ${blocks.map(b => renderBlock(b, ctx)).join('\n')}
 ${hasCta ? button(ctaHref, model.cta.label, { bg: brand.accent, fg: brand.onAccent, cls: 'cta' }) : ''}
 </td></tr>

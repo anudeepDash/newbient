@@ -11,7 +11,7 @@ export default (data = {}) => ({
     title: data.headerText || 'Your proposal is ready',
     blocks: [
         { html: data.messageBody },
-        { details: [['Proposal', data.proposalNumber], ['Prepared for', data.clientName], ['Project', data.projectName]] },
+        { document: { kind: 'PROPOSAL', name: `${data.projectName || 'Proposal'}${data.proposalNumber ? ` · ${data.proposalNumber}` : ''}.pdf`, meta: [data.clientName ? `For ${data.clientName}` : '', 'Proposal'], url: data.proposalUrl, label: 'Open proposal' } },
     ],
     cta: data.proposalUrl ? { label: 'Review proposal', url: data.proposalUrl } : null,
     reason: 'Sent by Newbi Entertainment & Marketing LLP.',
