@@ -1,0 +1,174 @@
+rules_version = '2';
+
+// Newbi Firestore rules (newbi-ent-v2).
+//
+// The server (api/*, Admin SDK) bypasses these; they only govern what the
+// browser can read and write directly. docs/firestore-access-map.md lists every
+// browser read/write these rules were written against.
+//
+// Staff = a team record at admins/{email, lowercased} with a staff role, for a
+// signed-in person whose email is verified (or who signed in with Google).
+// Before publishing: run scripts/migrate-admins-to-email-ids.mjs so every team
+// record is stored under its email, or staff lose access.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- who is this? ----------
+
+    function signedIn() { return request.auth != null; }
+    function myEmail() { return signedIn() ? request.auth.token.get('email', '') : ''; }
+    function myKey() { return myEmail().lower(); }
+    // The email is theirs: verified, or vouched for by Google.
+    function trustedEmail() {
+      return signedIn() && myEmail() != ''
+        && (request.auth.token.get('email_verified', false) == true
+            || request.auth.token.firebase.sign_in_provider == 'google.com');
+    }
+    function teamRecord() { return /databases/$(database)/documents/admins/$(myKey()); }
+    function teamRole() { return get(teamRecord()).data.get('role', ''); }
+    function hasRole(roles) { return trustedEmail() && exists(teamRecord()) && teamRole() in roles; }
+
+    // src/constants/roles.js
+    function isStaff() {
+      return hasRole(['founder', 'super_admin', 'developer', 'admin', 'editor', 'content_admin', 'scanner', 'gate_manager', 'blog_writer']);
+    }
+    function isTeamManager() { return hasRole(['founder', 'developer']); }   // AdminManager: add, approve, change, remove
+    function isFinance() { return hasRole(['founder', 'developer']); }       // FINANCE_ROLES
+
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // ---------- 1. team (admins) ----------
+
+    match /admins/{key} {
+      // Staff see the team; anyone signed in can see their own record (checkUserRole).
+      allow read: if isStaff()
+        || (signedIn() && key == myKey())
+        || (signedIn() && resource.data.get('email', '') == myEmail());
+      // A request for access: your own email, role pending (AdminGuard → requestAdminAccess).
+      allow create: if isTeamManager()
+        || (signedIn() && key == myKey()
+            && request.resource.data.get('role', '') == 'pending'
+            && request.resource.data.get('email', '').lower() == myKey());
+      // Roles are changed only by founders/developers; people can rename their own record.
+      allow update: if isTeamManager()
+        || (trustedEmail() && key == myKey() && changed().hasOnly(['displayName', 'photoURL', 'updatedAt']));
+      // Founders/developers remove people; anyone can withdraw their own pending request.
+      allow delete: if isTeamManager()
+        || (signedIn() && key == myKey() && resource.data.get('role', '') == 'pending');
+    }
+
+    // ---------- 2. public content: everyone reads, staff write ----------
+
+    match /upcoming_events/{id} { allow read: if true; allow write: if isStaff(); }
+    match /portfolio/{id} { allow read: if true; allow write: if isStaff(); }
+    match /portfolio_categories/{id} { allow read: if true; allow write: if isStaff(); }
+    match /announcements/{id} { allow read: if true; allow write: if isStaff(); }
+    match /concerts/{id} { allow read: if true; allow write: if isStaff(); }
+    match /gallery/{id} { allow read: if true; allow write: if isStaff(); }
+    match /site_settings/{id} { allow read: if true; allow write: if isStaff(); }
+    match /app_state/{id} { allow read: if true; allow write: if isStaff(); }
+    match /volunteer_gigs/{id} { allow read: if true; allow write: if isStaff(); }
+    match /campaigns/{id} { allow read: if true; allow write: if isStaff(); }
+    match /giveaways/{id} { allow read: if true; allow write: if isStaff(); }
+    match /forms/{id} { allow read: if true; allow write: if isStaff(); }
+    match /coupons/{id} { allow read: if true; allow write: if isStaff(); }
+
+    // Shared by link (invoices, proposals, contracts, documents). Still readable by
+    // anyone, as today; tightening reads needs the public pages to stop listing
+    // whole collections first (docs/firestore-access-map.md, risk 3).
+    match /invoices/{id} { allow read: if true; allow write: if isStaff(); }
+    match /proposals/{id} { allow read: if true; allow write: if isStaff(); }
+    match /agreements/{id} { allow read: if true; allow write: if isStaff(); }
+    match /documents/{id} { allow read: if true; allow write: if isStaff(); }
+    match /gen_documents/{id} { allow read: if true; allow write: if isStaff(); }
+
+    match /email_templates/{id} { allow read, write: if isStaff(); }
+
+    // ---------- 3. sent in by the public: anyone creates, staff read and manage ----------
+
+    match /messages/{id} { allow create: if true; allow read, update, delete: if isStaff(); }
+    match /ticket_orders/{id} { allow create: if true; allow read, update, delete: if isStaff(); }
+    match /giveaway_entries/{id} { allow create: if true; allow read, update, delete: if isStaff(); }
+    match /subscribers/{id} { allow create: if true; allow read, update, delete: if isStaff(); }
+    match /client_requests/{id} { allow create: if true; allow read, update, delete: if isStaff(); }
+
+    match /guestlists/{listId} {
+      allow read: if signedIn();
+      allow create, delete: if isStaff();
+      // Staff edit lists; a registration only raises the spot count, by at most 10.
+      allow update: if isStaff() || (signedIn() && changed().hasOnly(['currentSpots'])
+        && request.resource.data.currentSpots is int
+        && request.resource.data.currentSpots > resource.data.get('currentSpots', 0)
+        && request.resource.data.currentSpots <= resource.data.get('currentSpots', 0) + 10);
+      match /entries/{entryId} {
+        allow create: if true;
+        allow read, update, delete: if isStaff();
+      }
+    }
+    // Gate scanner: collectionGroup('entries') where bookingRef == …
+    match /{path=**}/entries/{entryId} { allow read: if isStaff(); }
+
+    // ---------- 4. money: founders and developers only ----------
+
+    match /spends/{id} { allow read, write: if isFinance(); }
+    match /other_incomes/{id} { allow read, write: if isFinance(); }
+    match /finance_payees/{id} { allow read, write: if isFinance(); }
+
+    // ---------- 5. people ----------
+
+    // Own profile. People can't give themselves a role, unblock themselves, or
+    // add capabilities beyond joining the community (creator/campus come from the server).
+    function userSelfWriteOk(before) {
+      let caps = request.resource.data.get('capabilities', {});
+      let capsBefore = before.get('capabilities', {});
+      return !request.resource.data.diff(before).affectedKeys().hasAny(['role', 'isBlocked', 'forceLogoutBefore', 'isAdmin'])
+        && caps.diff(capsBefore).affectedKeys().hasOnly(['member']);
+    }
+    match /users/{uid} {
+      allow read: if (signedIn() && request.auth.uid == uid) || isStaff();
+      allow create: if signedIn() && request.auth.uid == uid && userSelfWriteOk({});
+      allow update: if isStaff() || (signedIn() && request.auth.uid == uid && userSelfWriteOk(resource.data));
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Creator profiles: the creator and staff. Approval, verification and campaign
+    // selection are set by staff or the server, never by the creator.
+    function ownCreator(data) {
+      return signedIn() && (data.get('uid', '') == request.auth.uid || (trustedEmail() && data.get('email', '') == myEmail()));
+    }
+    match /creators/{id} {
+      allow read: if isStaff() || (signedIn() && id == request.auth.uid) || ownCreator(resource.data);
+      allow create: if isStaff();
+      allow update: if isStaff()
+        || (((signedIn() && id == request.auth.uid) || ownCreator(resource.data))
+            && !changed().hasAny(['profileStatus', 'status', 'isVerified', 'instagramVerified', 'shortlistedCampaigns', 'campaignStages', 'uid', 'role', 'points']));
+      allow delete: if isStaff();
+    }
+
+    match /artists/{uid} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == uid && request.resource.data.get('profileStatus', 'pending') == 'pending';
+      allow update: if isStaff() || (signedIn() && request.auth.uid == uid && !changed().hasAny(['profileStatus']));
+      allow delete: if isStaff() || (signedIn() && request.auth.uid == uid);
+    }
+
+    // ---------- 6. passes (written only by the server) ----------
+
+    match /passes/{ref} {
+      allow read: if isStaff() || (signedIn() && resource.data.get('holderUid', '') == request.auth.uid);
+      allow write: if false;
+    }
+    match /ticket_uploads/{id} { allow read: if isStaff(); allow write: if false; }
+    match /pass_keys/{id} { allow read, write: if false; }
+
+    // Campaign task submissions: the creator reads their own; staff review (submissions go through the API).
+    match /campaigns/{campaignId}/submissions/{uid} {
+      allow read: if isStaff() || (signedIn() && request.auth.uid == uid);
+      allow write: if isStaff();
+    }
+    match /{path=**}/submissions/{uid} { allow read: if isStaff(); }
+
+    // Anything not listed is denied, as before.
+  }
+}

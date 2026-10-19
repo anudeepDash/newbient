@@ -10,6 +10,7 @@ import { CONTRACT_STATUS, CONTRACT_NON_COPYABLE_FIELDS } from './contracts';
 import { isProposalClosed, isProposalExpired, nextProposalNumber, proposalValue, PROPOSAL_NON_COPYABLE_FIELDS, PROPOSAL_STATUS } from './proposals';
 import { extractSocialUsername, hasDisallowedLink } from './socialUtils';
 import { safeLocalStorage } from './storage';
+import { adminKey } from '../constants/roles';
 import { clearSessionHint } from './sessionHint';
 import { DEFAULT_CREATOR_GROUPS, isCampaignCityMatch } from './constants';
 import { TOAST_TYPES, toFriendlyMessage, getSupportHint, getToastDuration } from './toastCopy';
@@ -4836,8 +4837,14 @@ export const useStore = create((set, get) => ({
 
         try {
             // Parallelize Firestore lookups to reduce auto-login delay
+            // The team record is stored under the email (admins/{email}); older records by search.
+            const findAdmin = async () => {
+                const own = await getDoc(doc(db, 'admins', adminKey(firebaseUser.email))).catch(() => null);
+                if (own?.exists()) return { empty: false, docs: [own] };
+                return getDocs(query(collection(db, 'admins'), where('email', '==', firebaseUser.email)));
+            };
             const [adminSnap, uDoc] = await Promise.all([
-                getDocs(query(collection(db, 'admins'), where('email', '==', firebaseUser.email))),
+                firebaseUser.email ? findAdmin() : Promise.resolve(null),
                 getDoc(doc(db, 'users', firebaseUser.uid))
             ]);
             adminSnapshot = adminSnap;
@@ -5037,15 +5044,16 @@ export const useStore = create((set, get) => ({
         const { user } = get();
         if (!user) throw new Error("Authentication required");
 
-        // Check if a request already exists
+        // Check if a request already exists (stored under the email; older records by search)
+        const own = await getDoc(doc(db, 'admins', adminKey(user.email))).catch(() => null);
         const adminQ = query(collection(db, 'admins'), where('email', '==', user.email));
-        const adminSnapshot = await getDocs(adminQ);
+        const adminSnapshot = own?.exists() ? null : await getDocs(adminQ).catch(() => null);
 
-        if (!adminSnapshot.empty) {
+        if (own?.exists() || (adminSnapshot && !adminSnapshot.empty)) {
             throw new Error("A request for this account already exists or is being processed.");
         }
 
-        await addDoc(collection(db, 'admins'), {
+        await setDoc(doc(db, 'admins', adminKey(user.email)), {
             email: user.email,
             uid: user.uid,
             role: 'pending',

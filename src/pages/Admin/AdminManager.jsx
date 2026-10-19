@@ -21,7 +21,8 @@ import X from 'lucide-react/dist/esm/icons/x';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
-import { collection, addDoc, deleteDoc, doc, updateDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, deleteDoc, doc, updateDoc, query, where, getDocs, setDoc } from 'firebase/firestore';
+import { adminKey } from '../../constants/roles';
 import { db } from '../../lib/firebase';
 import { useStore } from '../../lib/store';
 import { useConsolidatedMembers } from '../../hooks/useConsolidatedMembers';
@@ -301,8 +302,9 @@ const AdminManager = ({ view = 'team' }) => {
             if (data.role !== 'pending') throw friendly(`${email} is already on the team as ${roleInfo(data.role).label}.`);
             await updateDoc(doc(db, 'admins', existing.id), { role: newRole, approvedBy: user.email, approvedAt: new Date().toISOString() });
         } else {
-            await addDoc(collection(db, 'admins'), {
-                email,
+            // Stored under the email, so the Firestore rules can check the role.
+            await setDoc(doc(db, 'admins', adminKey(email)), {
+                email: adminKey(email),
                 role: newRole,
                 addedBy: user.email,
                 createdAt: new Date().toISOString(),
