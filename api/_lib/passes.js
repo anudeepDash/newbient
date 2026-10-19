@@ -24,6 +24,10 @@
  *   POST issue-campaign           {campaignId, creatorIds, kind?, qty?, tier?, note?}   staff
  *                                 kind 'qr' (default: the campaign's passKind) or 'confirmation' (no QR)
  *   POST issue-campaign-external  {campaignId, uploadId, rows: [...]}                   staff
+ *   GET  mine                     {}                     the caller's own passes             user
+ *   POST staff-list               {campaignId} | {ids}   a campaign's or event's passes      staff
+ *                                 (+ the campaign's send log). The browser reads these through
+ *                                 here when Firestore rules don't let it read passes directly.
  *   POST retier                   {ref, tier, qty?}  change a campaign pass's category  staff
  *                                 (an upgrade); the creator is told on every channel
  *   POST upload-start / upload-finish / upload-pdf                                       staff
@@ -1114,6 +1118,42 @@ const checkinAction = async (db, body, caller) => {
     });
 };
 
+/* ---------- listing (when the browser can't read passes from Firestore) ---------- */
+
+const byIssued = (a, b) => String(b.issuedAt || '').localeCompare(String(a.issuedAt || ''));
+
+/** The signed-in person's own passes: Community → My guestlists and "Your ticket" in a campaign. */
+const mineAction = async (db, body, caller) => {
+    requireUser(caller);
+    const snap = await db.collection('passes').where('holderUid', '==', caller.uid).get();
+    return { success: true, passes: snap.docs.map(d => ({ ...d.data(), ref: d.id })).sort(byIssued) };
+};
+
+/** Staff: one campaign's passes and send log, or the passes for a set of events/guestlists (gate scanner). */
+const staffListAction = async (db, body, caller) => {
+    requireStaff(caller);
+    if (idOk(body.campaignId)) {
+        const [passes, uploads] = await Promise.all([
+            db.collection('passes').where('sourceId', '==', body.campaignId).get(),
+            db.collection('ticket_uploads').where('campaignId', '==', body.campaignId).get(),
+        ]);
+        return {
+            success: true,
+            passes: passes.docs.map(d => ({ ...d.data(), ref: d.id })).filter(p => p.source === 'campaign').sort(byIssued),
+            uploads: uploads.docs.map(d => ({ ...d.data(), id: d.id })).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).slice(0, 50),
+        };
+    }
+    const ids = [...new Set((Array.isArray(body.ids) ? body.ids : []).map(v => str(v, 128)).filter(idOk))].slice(0, 30);
+    if (!ids.length) throw new PassError('VALIDATION', 'Missing campaign or event.');
+    const [byEvent, bySource] = await Promise.all([
+        db.collection('passes').where('eventId', 'in', ids).get(),
+        db.collection('passes').where('sourceId', 'in', ids).get(),
+    ]);
+    const seen = new Map();
+    [...byEvent.docs, ...bySource.docs].forEach(d => seen.set(d.id, { ...d.data(), ref: d.id }));
+    return { success: true, passes: [...seen.values()].sort(byIssued) };
+};
+
 /* ---------- routing ---------- */
 
 const ACTIONS = {
@@ -1125,6 +1165,8 @@ const ACTIONS = {
     'issue-campaign': issueCampaignAction,
     'issue-campaign-external': issueExternalAction,
     retier: retierAction,
+    mine: mineAction,
+    'staff-list': staffListAction,
     'upload-start': uploadStartAction,
     'upload-finish': uploadFinishAction,
     'upload-pdf': uploadPdfAction,
@@ -1132,7 +1174,7 @@ const ACTIONS = {
     revoke: revokeAction,
     checkin: checkinAction,
 };
-const POST_ONLY = new Set(['register-guestlist', 'file', 'issue-campaign', 'issue-campaign-external', 'upload-start', 'upload-finish', 'upload-pdf', 'resend', 'retier', 'revoke', 'checkin']);
+const POST_ONLY = new Set(['register-guestlist', 'file', 'issue-campaign', 'issue-campaign-external', 'upload-start', 'upload-finish', 'upload-pdf', 'resend', 'retier', 'revoke', 'checkin', 'staff-list']);
 
 export const handlePasses = async (req, res) => {
     const action = str(req.query?.action, 40);
