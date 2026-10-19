@@ -161,6 +161,8 @@ export const handleCreatorSubmit = async (req, res, { db, rateLimit, now = nowIs
     if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
     const ctx = await fromToken(db, req.body?.token);
     if (!ctx) return send(res, 404, { success: false, error: 'This link isn’t active. Ask the Newbi team for a new one.' });
+    // Only shortlisted creators send their posts; applying isn't enough.
+    if (!isOnShortlist(ctx.app.status)) return send(res, 409, { success: false, code: 'not_shortlisted', error: 'You can send your posts once you’re shortlisted.' });
     const taskId = str(req.body?.taskId, 120);
     const task = TASK_ID.test(taskId) ? deliverablesFor(ctx.campaign).find(t => t.id === taskId) : null;
     if (!task) return send(res, 404, { success: false, error: 'This deliverable no longer exists.' });

@@ -8,6 +8,7 @@ import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import Users from 'lucide-react/dist/esm/icons/users';
 import { Button, TextInput } from '../../../../components/app';
 import { cn } from '../../../../lib/utils';
+import { isOnShortlist } from '../../../../lib/outreach/status';
 import { isPresent } from '../../../../lib/present';
 import useDynamicMeta from '../../../../hooks/useDynamicMeta';
 import { PageBody } from '../../../pages/PageHeader';
@@ -242,7 +243,8 @@ const DeliverablesPage = () => {
                 {done && <Notice tone="success" title="All your required posts are approved.">{d.payout ? `We’ve paid ₹${Number(d.payout.amount).toLocaleString('en-IN')}.` : 'We’ll process your payout next.'}</Notice>}
                 {d.tasks.length === 0 && d.status !== 'applied' && <Notice tone="info" title="Nothing to send yet.">The Newbi team will share what to post in the group.</Notice>}
                 {d.status === 'applied' && <Notice tone="info" title="You’ve applied.">If you’re shortlisted, you’ll get a notification in the Newbi app and this page will show the campaign group.</Notice>}
-                {d.tasks.map(t => <TaskCard key={t.id} token={token} task={t} onDone={load} />)}
+                {/* Posts are sent only once they're shortlisted. */}
+                {isOnShortlist(d.status) && d.tasks.map(t => <TaskCard key={t.id} token={token} task={t} onDone={load} />)}
                 <UpiCard token={token} saved={d.upi} onSaved={load} />
             </div>
         </PageBody>
