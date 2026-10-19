@@ -86,6 +86,8 @@ export const staffPassList = (body) => {
 };
 export const communityGet = (action, query, opts) => call('community', action, { method: 'GET', query, ...opts });
 export const communityPost = (action, body, opts) => call('community', action, { method: 'POST', body, ...opts });
+/* Shared invoice, proposal and contract links (api/_lib/sharedDocs.js): view logs, payment claims, accept/sign. */
+export const sharedDocPost = (action, body, opts) => call('shared-doc', action, { method: 'POST', body, ...opts });
 
 /* File → base64 (no data: prefix), for the staff PDF upload. */
 export const fileToBase64 = (file) => new Promise((resolve, reject) => {

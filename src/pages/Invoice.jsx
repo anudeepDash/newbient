@@ -25,7 +25,8 @@ import DocumentSeal from '../components/ui/DocumentSeal';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
-import { useStoreSubscription } from '../hooks/useStoreSubscription';
+import useSharedDoc from '../hooks/useSharedDoc';
+import { sharedDocPost } from '../lib/passesApi';
 import { safeLocalStorage } from '../lib/storage';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -34,45 +35,20 @@ import NotificationBell from '../components/NotificationBell';
 import MarkAsPaidModal from '../components/invoice/MarkAsPaidModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
-import { notifyAdmins } from '../lib/notificationTriggers';
 import { invoiceReceived, invoiceAmounts, invoiceLineAmount, daysOverdue } from '../lib/invoicing';
 import { invoiceTaxLines, placeOfSupply, panOfGstin, amountInWords } from '../components/admin/invoices/builder/gst';
 
 
 const Invoice = () => {
-    useStoreSubscription(['invoices']);
     const { id } = useParams();
-    const { invoices, updateInvoiceStatus, loading: storeLoading, user, logDocumentAccess } = useStore();
+    const { updateInvoiceStatus, user } = useStore();
+    // Read by id only: rules don't let visitors list invoices.
+    const { data: liveInvoice, loading: docLoading } = useSharedDoc('invoices', id);
     const [localInvoice, setLocalInvoice] = React.useState(null);
-    const [localLoading, setLocalLoading] = React.useState(true);
+    React.useEffect(() => { setLocalInvoice(liveInvoice); }, [liveInvoice]);
 
-    const invoice = localInvoice || invoices.find(inv => inv.id === id);
-
-    React.useEffect(() => {
-        const found = invoices.find(inv => inv.id === id);
-        if (found) {
-            setLocalInvoice(found);
-            setLocalLoading(false);
-        } else if (!storeLoading) {
-            const fetchInvoice = async () => {
-                try {
-                    const { doc, getDoc } = await import('firebase/firestore');
-                    const { db } = await import('../lib/firebase');
-                    const docSnap = await getDoc(doc(db, 'invoices', id));
-                    if (docSnap.exists()) {
-                        setLocalInvoice({ ...docSnap.data(), id: docSnap.id });
-                    }
-                } catch (err) {
-                    console.error("Error fetching invoice directly:", err);
-                } finally {
-                    setLocalLoading(false);
-                }
-            };
-            fetchInvoice();
-        }
-    }, [id, invoices, storeLoading]);
-
-    const loading = localLoading;
+    const invoice = localInvoice || liveInvoice;
+    const loading = docLoading;
     const isAdmin = ['super_admin', 'developer', 'founder'].includes(user?.role);
     const location = useLocation();
     const invoiceRef = useRef(null);
@@ -131,16 +107,7 @@ const Invoice = () => {
         if (loggedVisitRef.current === visitKey) return;
         loggedVisitRef.current = visitKey;
 
-        const fetchIpAndLog = async () => {
-            let detectedIp = 'Hidden/Protected';
-            try {
-                const res = await fetch('https://api.ipify.org?format=json');
-                const data = await res.json();
-                detectedIp = data.ip;
-            } catch (e) {
-                console.error("IP detection failed", e);
-            }
-
+        const logVisit = async () => {
             const searchParams = new URLSearchParams(location.search);
             const via = searchParams.get('via');
             const email = searchParams.get('email');
@@ -151,36 +118,14 @@ const Invoice = () => {
             const tenMins = 10 * 60 * 1000;
 
             if (!lastViewed || (new Date() - new Date(lastViewed) > tenMins) || via === 'email') {
-                try {
-                    await logDocumentAccess('invoice', id, {
-                        ip: detectedIp,
-                        userAgent: navigator.userAgent,
-                        platform: navigator.platform,
-                        screen: `${window.screen.width}x${window.screen.height}`,
-                        language: navigator.language,
-                        userEmail: user?.email || 'Guest',
-                        userName: user?.displayName || '',
-                        via: via || null,
-                        shareEmail: email || null,
-                        shareName: name || null
-                    });
-                    safeLocalStorage.setItem(cacheKey, new Date().toISOString());
-                } catch (err) {
-                    console.error("Log access failed:", err);
-                }
-            }
-
-            try {
-                await useStore.getState().updateInvoice(id, { 
-                    lastOpened: new Date().toISOString() 
-                });
-            } catch (err) {
-                console.error("Analytics error:", err);
+                // The server records the visit (IP, time) and lastOpened.
+                const res = await useStore.getState().logDocumentAccess('invoice', id, { via, shareEmail: email, shareName: name });
+                if (res?.ok) safeLocalStorage.setItem(cacheKey, new Date().toISOString());
             }
         };
 
-        fetchIpAndLog();
-    }, [id, isAdmin, invoice, user, location.search, logDocumentAccess]);
+        logVisit();
+    }, [id, isAdmin, invoice, location.search]);
 
     React.useEffect(() => {
         // Automatic Payment Verification Logic
@@ -192,18 +137,8 @@ const Invoice = () => {
         // so record it as a claim for an admin to verify instead of marking it paid.
         const alreadyClaimed = invoice?.paymentClaim?.status === 'pending' || invoice?.status === 'Verification Pending';
         if (paymentStatus === 'success' && invoice && invoice.status !== 'Paid' && !alreadyClaimed && !isAdmin) {
-            useStore.getState().updateInvoice(id, {
-                status: 'Verification Pending',
-                paymentClaim: {
-                    name: 'Online payment (redirect)',
-                    email: '',
-                    method: 'gateway',
-                    transactionId: txid || null,
-                    userAgent: navigator.userAgent,
-                    claimedAt: new Date().toISOString(),
-                    status: 'pending'
-                }
-            }).catch(err => console.error("Payment claim update failed:", err));
+            sharedDocPost('gateway-claim', { id, txid: txid || null })
+                .then(res => { if (!res.ok) console.error("Payment claim failed:", res.error); });
         }
     }, [id, invoice, location.search, isAdmin]);
 
@@ -426,27 +361,21 @@ const Invoice = () => {
         }
     };
 
+    // The server records the claim (status 'Verification Pending') and tells finance.
     const handlePaymentClaim = async (claimData) => {
-        try {
-            // Update invoice with payment claim and set status
-            await useStore.getState().updateInvoice(id, {
-                status: 'Verification Pending',
-                paymentClaim: {
-                    ...claimData,
-                    status: 'pending'
-                }
-            });
-            // Notify admins
-            await notifyAdmins(
-                'Payment to verify',
-                `${claimData.name} (${claimData.email}) says they've paid ₹${(displayInvoice.total || displayInvoice.amount || 0).toLocaleString()} for invoice #${displayInvoice.invoiceNumber || id}.`,
-                `/admin/invoices`,
-                'message'
-            );
-        } catch (err) {
-            console.error('Payment claim failed:', err);
-            throw err;
+        const res = await sharedDocPost('claim', {
+            id,
+            name: claimData.name,
+            email: claimData.email,
+            method: claimData.method,
+            transactionId: claimData.transactionId,
+            amount: claimData.amount,
+        });
+        if (!res.ok) {
+            console.error('Payment claim failed:', res.error);
+            throw new Error(res.error);
         }
+        setLocalInvoice(prev => (prev ? { ...prev, status: 'Verification Pending', paymentClaim: { ...claimData, status: 'pending' } } : prev));
     };
 
     const handleShareWhatsApp = () => {

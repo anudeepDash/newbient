@@ -6,6 +6,7 @@ import { handlePublicFeed, handlePublicArchive } from './_lib/publicFeed.js';
 import { handleEnquiry } from './_lib/enquiry.js';
 import { handlePasses } from './_lib/passes.js';
 import { handleCommunity } from './_lib/community.js';
+import { handleSharedDoc } from './_lib/sharedDocs.js';
 
 // Ticket sends (several creators per call) need more than the default time.
 export const maxDuration = 60;
@@ -93,6 +94,8 @@ export default async function handler(req, res) {
     if (req.query?.type === 'enquiry') return handleEnquiry(adminDb, req, res);
     if (req.query?.type === 'passes') return handlePasses(req, res);
     if (req.query?.type === 'community') return handleCommunity(req, res);
+    // Shared invoice, proposal and contract links: view logs, payment claims, accept/sign.
+    if (req.query?.type === 'shared-doc') return handleSharedDoc(req, res);
 
     // Native (built-in) form responses: submit, and the admin's read/update/delete.
     const action = String(req.query?.action || '');
