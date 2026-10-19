@@ -32,7 +32,10 @@ export const createAuthSlice = (set, get) => ({
         // A different account: drop the old profile in the same update, so nothing
         // reads the signed-out (empty) profile as this account's before it loads.
         if (authUser?.uid !== get().authUser?.uid) Object.assign(next, { profile: null, profileDoc: null, profileLoaded: !authUser });
+        const roleChanged = (authUser?.role || null) !== (get().authUser?.role || null);
         set(next);
+        // Developers see every campaign: reload the list when the role arrives or goes.
+        if (roleChanged && get().campaignsLoaded) get().loadOpenCampaigns?.({ force: true });
     },
 
     /*

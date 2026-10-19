@@ -45,29 +45,31 @@ export const isSuppressedRecord = (data) => {
 
 // Staff = anyone with a real role in `admins`. Cached briefly per uid.
 const staffCache = new Map();
-export const isStaffCaller = async (decodedToken, db) => {
-    if (!decodedToken) return false;
+/** The caller's team role ('developer', 'founder', …), or '' when they aren't on the team. */
+export const staffRoleOf = async (decodedToken, db) => {
+    if (!decodedToken) return '';
     const key = decodedToken.uid || decodedToken.email;
     const hit = staffCache.get(key);
-    if (hit && hit.expires > Date.now()) return hit.staff;
-    let staff = false;
+    if (hit && hit.expires > Date.now()) return hit.role;
+    let role = '';
     try {
         const database = getAdminDb(db);
         const email = normalizeEmail(decodedToken.email);
         if (database && email) {
-            const snap = await database.collection('admins').where('email', '==', email).limit(1).get();
-            if (!snap.empty) {
-                const role = String(snap.docs[0].data()?.role || '').toLowerCase();
-                staff = !!role && !['pending', 'unauthorized', 'blocked'].includes(role);
-            }
+            // Team records live at admins/{email}; older ones are found by search.
+            const own = await database.collection('admins').doc(email).get();
+            const data = own.exists ? own.data() : (await database.collection('admins').where('email', '==', email).limit(1).get()).docs[0]?.data();
+            const r = String(data?.role || '').toLowerCase();
+            role = r && !['pending', 'unauthorized', 'blocked'].includes(r) ? r : '';
         }
     } catch (e) {
         console.warn('[MAILING] Staff check failed:', e.message);
     }
     if (staffCache.size > 2000) staffCache.clear();
-    staffCache.set(key, { staff, expires: Date.now() + 10 * 60 * 1000 });
-    return staff;
+    staffCache.set(key, { role, expires: Date.now() + 10 * 60 * 1000 });
+    return role;
 };
+export const isStaffCaller = async (decodedToken, db) => Boolean(await staffRoleOf(decodedToken, db));
 
 /** Returns the subset of `emails` that have unsubscribed. Never throws. */
 export const findSuppressed = async (emails, db) => {

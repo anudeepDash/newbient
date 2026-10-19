@@ -34,7 +34,8 @@ import {
 import { NICHE_IDS, COLLAB_IDS, BIO_MAX, isCollegeNiche } from '../../src/lib/creator/options.js';
 import { isCampaignCityMatch } from '../../src/lib/constants.js';
 import { findMatches, readProof, checkMergeable, describeAccount, mergeAccounts, MergeError } from './accountMerge.js';
-import { isStaffCaller } from './mailing.js';
+import { isStaffCaller, staffRoleOf } from './mailing.js';
+import { isTesterRole } from '../../src/constants/roles.js';
 import { FieldPath } from 'firebase-admin/firestore';
 
 /* The app's own origin (links in emails, the OAuth fallback). PUBLIC_APP_URL overrides it on previews. */
@@ -700,33 +701,37 @@ export const handleCampaignApply = async (req, res, { db, token }) => {
     const city = str(user.city, 80) || creator.city;
     const colleges = [creator.collegeName, user.college, user.collegeName].map(v => String(v || '').toLowerCase()).filter(Boolean);
 
-    if (['rejected', 'suspended'].includes(creator.profileStatus)) return send(res, 403, { success: false, error: "Your creator profile can't apply to campaigns right now." });
     if ((creator.joinedCampaigns || []).includes(campaignId)) return send(res, 200, { success: true, already: true, shortlisted: (creator.shortlistedCampaigns || []).includes(campaignId) });
-    if (!OPEN_STATUSES.has(String(c.status || 'open').toLowerCase()) || c.websiteApplyEnabled === false) {
-        return send(res, 409, { success: false, error: 'This campaign is not taking applications.' });
-    }
-    const method = ['form', 'both'].includes(c.applyMethod) && c.applyFormUrl ? c.applyMethod : 'newbi';
-    if (method === 'form' && via !== 'google_form') return send(res, 409, { success: false, code: 'form_only', error: 'Apply with the Google Form for this campaign.' });
-    if (method === 'newbi' && via === 'google_form') return send(res, 400, { success: false, error: 'This campaign has no Google Form.' });
+    // Developers test the flow on any campaign: the criteria checks below don't apply to them.
+    const tester = isTesterRole(await staffRoleOf(token, db));
+    if (!tester) {
+        if (['rejected', 'suspended'].includes(creator.profileStatus)) return send(res, 403, { success: false, error: "Your creator profile can't apply to campaigns right now." });
+        if (!OPEN_STATUSES.has(String(c.status || 'open').toLowerCase()) || c.websiteApplyEnabled === false) {
+            return send(res, 409, { success: false, error: 'This campaign is not taking applications.' });
+        }
+        const method = ['form', 'both'].includes(c.applyMethod) && c.applyFormUrl ? c.applyMethod : 'newbi';
+        if (method === 'form' && via !== 'google_form') return send(res, 409, { success: false, code: 'form_only', error: 'Apply with the Google Form for this campaign.' });
+        if (method === 'newbi' && via === 'google_form') return send(res, 400, { success: false, error: 'This campaign has no Google Form.' });
 
-    const followers = Number(creator.instagramFollowers) || 0;
-    const min = Number(c.minInstagramFollowers) || 0;
-    if (min > 0 && followers < min) return send(res, 409, { success: false, code: 'followers', error: `This campaign needs ${min.toLocaleString('en-IN')}+ Instagram followers.` });
-    if (!isCampaignCityMatch(c.targetCity, city)) return send(res, 409, { success: false, code: 'city', error: `This campaign is for creators in ${c.targetCity}.` });
-    const college = String(c.targetCollege || '').trim();
-    if (college && college.toLowerCase() !== 'any' && !colleges.some(mine => mine.includes(college.toLowerCase()))) {
-        return send(res, 409, { success: false, code: 'college', error: `This campaign is for ${college} students.` });
-    }
+        const followers = Number(creator.instagramFollowers) || 0;
+        const min = Number(c.minInstagramFollowers) || 0;
+        if (min > 0 && followers < min) return send(res, 409, { success: false, code: 'followers', error: `This campaign needs ${min.toLocaleString('en-IN')}+ Instagram followers.` });
+        if (!isCampaignCityMatch(c.targetCity, city)) return send(res, 409, { success: false, code: 'city', error: `This campaign is for creators in ${c.targetCity}.` });
+        const college = String(c.targetCollege || '').trim();
+        if (college && college.toLowerCase() !== 'any' && !colleges.some(mine => mine.includes(college.toLowerCase()))) {
+            return send(res, 409, { success: false, code: 'college', error: `This campaign is for ${college} students.` });
+        }
 
-    // Spots: totalSpots counts applicants; spotsLeft (set by admins) wins when present.
-    const spotsLeft = c.spotsLeft;
-    if (spotsLeft !== null && spotsLeft !== undefined && spotsLeft !== '' && Number(spotsLeft) <= 0) {
-        return send(res, 409, { success: false, code: 'full', error: 'All spots are taken.' });
-    }
-    const total = Number(c.totalSpots) || 0;
-    if (total > 0) {
-        const applied = await db.collection('creators').where('joinedCampaigns', 'array-contains', campaignId).count().get().then(s => s.data().count).catch(() => 0);
-        if (applied >= total) return send(res, 409, { success: false, code: 'full', error: 'All spots are taken.' });
+        // Spots: totalSpots counts applicants; spotsLeft (set by admins) wins when present.
+        const spotsLeft = c.spotsLeft;
+        if (spotsLeft !== null && spotsLeft !== undefined && spotsLeft !== '' && Number(spotsLeft) <= 0) {
+            return send(res, 409, { success: false, code: 'full', error: 'All spots are taken.' });
+        }
+        const total = Number(c.totalSpots) || 0;
+        if (total > 0) {
+            const applied = await db.collection('creators').where('joinedCampaigns', 'array-contains', campaignId).count().get().then(s => s.data().count).catch(() => 0);
+            if (applied >= total) return send(res, 409, { success: false, code: 'full', error: 'All spots are taken.' });
+        }
     }
 
     // Applying never shortlists: the team (or the client's sheet) decides, from the admin.
@@ -737,8 +742,8 @@ export const handleCampaignApply = async (req, res, { db, token }) => {
         updatedAt: nowIso(),
     });
     // How they applied, per campaign (a nested map, so set+merge rather than a dotted path).
-    await creatorSnap.ref.set({ campaignApplyVia: { [campaignId]: { via, at: nowIso() } } }, { merge: true }).catch(() => {});
-    return send(res, 200, { success: true, shortlisted: false, via });
+    await creatorSnap.ref.set({ campaignApplyVia: { [campaignId]: { via, at: nowIso(), ...(tester ? { test: true } : {}) } } }, { merge: true }).catch(() => {});
+    return send(res, 200, { success: true, shortlisted: false, via, ...(tester ? { test: true } : {}) });
 };
 
 /* ── campaign-submit ──────────────────────────────────────────────────── */
@@ -758,26 +763,32 @@ const handleCampaignSubmit = async (req, res, { db, token }) => {
     if (contentLink && !isHttpUrl(contentLink)) return send(res, 400, { success: false, field: 'contentLink', error: 'Paste the full link, starting with https://' });
     if (proofUrl && !/^https:\/\//.test(proofUrl)) return send(res, 400, { success: false, error: 'The screenshot did not upload. Try again.' });
 
-    const [creatorSnap, campSnap] = await Promise.all([findOwnCreator(db, token.uid), db.collection('campaigns').doc(campaignId).get()]);
-    if (!creatorSnap || !campSnap.exists) return send(res, 404, { success: false, error: 'Campaign not found.' });
-    const creator = creatorSnap.data();
+    const [creatorSnap, campSnap, role] = await Promise.all([findOwnCreator(db, token.uid), db.collection('campaigns').doc(campaignId).get(), staffRoleOf(token, db)]);
+    // Developers can test-submit on any campaign, with or without a creator profile.
+    const tester = isTesterRole(role);
+    if ((!creatorSnap && !tester) || !campSnap.exists) return send(res, 404, { success: false, error: 'Campaign not found.' });
+    const creator = creatorSnap?.data() || {};
     const task = (campSnap.data().tasks || []).find(t => String(t.id) === taskId);
     if (!task) return send(res, 404, { success: false, error: 'This deliverable no longer exists.' });
     // Only shortlisted creators work on (and submit) deliverables; applying isn't enough.
-    if (!(creator.shortlistedCampaigns || []).includes(campaignId)) {
+    if (!tester && !(creator.shortlistedCampaigns || []).includes(campaignId)) {
         return send(res, 403, { success: false, code: 'not_shortlisted', error: 'Only shortlisted creators can submit for this campaign.' });
     }
     if (via === 'google_form' && !isHttpUrl(task.googleFormLink)) return send(res, 400, { success: false, error: 'This deliverable has no Google Form. Add a link or a screenshot.' });
 
     const ref = db.collection('campaigns').doc(campaignId).collection('submissions').doc(token.uid);
-    const submission = { status: 'submitted', via, contentLink, proofUrl, note, submittedAt: nowIso(), reviewedAt: null, rejectionReason: '' };
+    const submission = {
+        status: 'submitted', via, contentLink, proofUrl, note, submittedAt: nowIso(), reviewedAt: null, rejectionReason: '',
+        // Marked so the team never mistakes it for a creator's real work.
+        ...(tester ? { test: true, tester: token.email || null } : {}),
+    };
     const result = await db.runTransaction(async (tx) => {
         const snap = await tx.get(ref);
         const current = snap.exists ? snap.data()?.tasks?.[taskId] : null;
         if (current?.status === 'approved') return { conflict: true };
         tx.set(ref, {
             uid: token.uid,
-            creatorDocId: creatorSnap.id,
+            creatorDocId: creatorSnap?.id || null,
             creatorId: creator.creatorId || null,
             campaignId,
             tasks: { [taskId]: submission },

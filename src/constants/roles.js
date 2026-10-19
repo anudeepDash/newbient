@@ -23,6 +23,14 @@ export const ADMIN_ROLES = [
  */
 export const adminKey = (email) => String(email || '').trim().toLowerCase();
 
+/*
+ * Testers: see every campaign in the app (any status) and can apply and submit
+ * without meeting the criteria or being shortlisted. Their submissions are
+ * saved with test: true and marked "Test" in the admin.
+ */
+export const TESTER_ROLES = ['developer'];
+export const isTesterRole = (role) => TESTER_ROLES.includes(String(role || '').toLowerCase());
+
 // Roles with full admin access (all features)
 export const FULL_ACCESS_ROLES = ['developer', 'super_admin', 'founder'];
 

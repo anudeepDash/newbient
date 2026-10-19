@@ -25,6 +25,7 @@ import { appPath, appUrl, APP_ORIGIN } from '../../host';
 import { callCreatorApi } from '../api';
 import { compactCount, dueLabel } from '../format';
 import { creatorWho, isShortlisted, matchesCollege, creatorCity } from '../useCreatorData';
+import { isTesterRole } from '../../../constants/roles';
 import { Notice } from '../ui';
 import TaskCard, { hasSubmitForm } from './TaskCard';
 import SubmitTaskSheet from './SubmitTaskSheet';
@@ -122,15 +123,18 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
     const joined = Boolean(justApplied) || (creator?.joinedCampaigns || []).includes(id);
     const shortlisted = Boolean(justApplied?.shortlisted) || isShortlisted(creator, id);
     const inCampaign = joined || shortlisted;
+    // Developers test any campaign: deliverables open without being shortlisted (their work is marked Test).
+    const tester = isTesterRole(authUser?.role);
+    const canWork = shortlisted || tester;
     const record = records[id];
     const who = creatorWho(creator, authUser, record);
     const tasks = campaign.tasks || [];
     const progress = useMemo(() => taskProgress(campaign, who), [campaign, who]);
 
     useEffect(() => {
-        if (!authUser || !inCampaign) return undefined;
+        if (!authUser || !(inCampaign || tester)) return undefined;
         return subscribeMySubmission(id);
-    }, [authUser, inCampaign, id, subscribeMySubmission]);
+    }, [authUser, inCampaign, tester, id, subscribeMySubmission]);
 
     // ?taskId= scrolls to that deliverable.
     useEffect(() => {
@@ -197,13 +201,13 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
     const city = isCampaignCityMatch(campaign.targetCity, '') ? null : campaign.targetCity;
     const min = Number(campaign.minInstagramFollowers) || 0;
     const brief = isPresent(String(campaign.description || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ')) ? linkifyContent(campaign.description) : null;
-    const blocker = creator && !inCampaign ? blockerFor(campaign, creator, profile) : null;
-    const nextTask = shortlisted ? tasks.find(t => ['not_started', 'rejected'].includes(submissionFor(t, who)?.status || 'not_started')) : null;
+    const blocker = creator && !inCampaign && !tester ? blockerFor(campaign, creator, profile) : null;
+    const nextTask = canWork ? tasks.find(t => ['not_started', 'rejected'].includes(submissionFor(t, who)?.status || 'not_started')) : null;
 
     /* ── Once you're in the campaign: your status (or the next thing to do) ── */
     let status = null;
     if (inCampaign) {
-        if (!shortlisted) {
+        if (!canWork) {
             status = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-semibold text-gray-700 dark:text-zinc-300"><Hourglass size={17} className="shrink-0 text-amber-600 dark:text-amber-300" /> Applied. We’ll let you know if you’re picked.</p>;
         } else if (progress.requiredDone) {
             status = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-bold text-emerald-700 dark:text-neon-green"><CircleCheck size={18} className="shrink-0" /> All required deliverables approved</p>;
@@ -302,6 +306,11 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
                             : 'The brand is picking creators. If you’re shortlisted, we’ll send the WhatsApp group and your deliverables by email and WhatsApp.'}
                 </Notice>
             )}
+            {tester && !shortlisted && (
+                <Notice tone="info" title="Developer test mode">
+                    {`You can see every campaign and submit to any deliverable without being shortlisted${isOpen(campaign) ? '' : ' (this one isn’t open to creators)'}. What you send is marked Test in the admin.`}
+                </Notice>
+            )}
             {applyError && <Notice tone="error">{applyError}</Notice>}
 
             {shortlisted && isPresent(campaign.whatsappLink) && (
@@ -321,13 +330,13 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
                 <section className="space-y-3">
                     <div className="flex items-end justify-between gap-3">
                         <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-400">Deliverables</h2>
-                        {shortlisted && progress.total > 0 && progress.approved > 0 && (
+                        {canWork && progress.total > 0 && progress.approved > 0 && (
                             <span className="text-[13px] font-bold text-gray-700 dark:text-zinc-300">{progress.approved}/{progress.total} approved</span>
                         )}
                     </div>
                     <ol className="space-y-3">
                         {tasks.map((task, i) => {
-                            const sub = shortlisted ? submissionFor(task, who) : null;
+                            const sub = canWork ? submissionFor(task, who) : null;
                             return (
                                 <TaskCard
                                     key={task.id || i}
@@ -335,7 +344,7 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
                                     index={i}
                                     status={sub?.status || 'not_started'}
                                     submission={sub}
-                                    canSubmit={shortlisted}
+                                    canSubmit={canWork}
                                     onSubmit={setSubmitting}
                                     onMarkSubmitted={markSubmitted}
                                     marking={marking === String(task.id)}
