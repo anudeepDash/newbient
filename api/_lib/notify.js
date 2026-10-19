@@ -51,10 +51,14 @@ export const EVENTS = {
                 buttons: d.ticketToken ? [{ index: 0, param: d.ticketToken }] : [],
             }),
         },
-        push: (d) => (d.confirmation
+        push: (d) => (d.upgradedTo
+            ? { title: `You're now ${d.upgradedTo}`, body: `${d.eventName || d.campaignTitle || 'Your campaign'}: your pass was upgraded.`, link: d.campaignUrl || d.ticketUrl }
+            : d.confirmation
             ? { title: "You're confirmed", body: `${d.eventName || d.campaignTitle || 'Your campaign'}: see it in the app.`, link: d.campaignUrl || d.ticketUrl }
             : { title: 'Your ticket is ready', body: `${d.eventName || d.campaignTitle || 'Your campaign'}: open it in the app.`, link: d.campaignUrl || d.ticketUrl }),
-        inApp: (d) => (d.confirmation
+        inApp: (d) => (d.upgradedTo
+            ? { title: `Upgraded to ${d.upgradedTo}: ${d.eventName || d.campaignTitle || 'campaign'}`, message: 'Same pass, new category. It is inside the campaign.', type: 'ticket', link: d.campaignUrl || d.ticketUrl || '' }
+            : d.confirmation
             ? { title: `Confirmed: ${d.eventName || d.campaignTitle || 'campaign'}`, message: 'Your confirmation is inside the campaign.', type: 'ticket', link: d.campaignUrl || d.ticketUrl || '' }
             : { title: `Ticket ready: ${d.eventName || d.campaignTitle || 'campaign'}`, message: 'Your ticket is inside the campaign.', type: 'ticket', link: d.campaignUrl || d.ticketUrl || '' }),
     },

@@ -24,6 +24,8 @@
  *   POST issue-campaign           {campaignId, creatorIds, kind?, qty?, tier?, note?}   staff
  *                                 kind 'qr' (default: the campaign's passKind) or 'confirmation' (no QR)
  *   POST issue-campaign-external  {campaignId, uploadId, rows: [...]}                   staff
+ *   POST retier                   {ref, tier, qty?}  change a campaign pass's category  staff
+ *                                 (an upgrade); the creator is told on every channel
  *   POST upload-start / upload-finish / upload-pdf                                       staff
  *   POST resend                   {ref} | {campaignId, failedOnly}                       staff
  *   POST revoke                   {ref, reason?}                                         staff
@@ -729,7 +731,7 @@ const upsertCampaignPass = async (db, { campaign, event, creator, holder: holder
 };
 
 /** Sends a campaign ticket on every channel: in the campaign, email (PDF attached), WhatsApp. */
-const deliverCampaignPass = async (db, ref, { skip = [] } = {}) => {
+const deliverCampaignPass = async (db, ref, { skip = [], extra = {} } = {}) => {
     const pass = await loadPass(db, ref);
     if (!pass) throw new PassError('NOT_FOUND', 'Pass not found.', 404);
     const ext = pass.externalTicket || null;
@@ -751,6 +753,7 @@ const deliverCampaignPass = async (db, ref, { skip = [] } = {}) => {
         ticketToken,
         hasPdf: false,
         image: pass.event?.image || '',
+        ...extra,
     };
     const attachments = [];
     if (ext?.kind === 'pdf' && ext.storagePath) {
@@ -983,6 +986,43 @@ const resendAction = async (db, body, caller) => {
     return { success: true, results };
 };
 
+/*
+ * Moves a campaign pass to another category (tier), usually an upgrade: VIP for
+ * someone with a Gold pass. Optionally changes the ticket count too. The pass
+ * keeps its code; the creator gets the update on every channel. Partner tickets
+ * aren't changed here: upload the partner's new ticket with a CSV instead.
+ */
+const retierAction = async (db, body, caller) => {
+    requireStaff(caller);
+    const ref = refFromCode(body.ref);
+    if (!isPassRef(ref)) throw new PassError('VALIDATION', 'Missing pass.');
+    const tier = str(body.tier, 80);
+    if (!tier) throw new PassError('VALIDATION', 'Choose a category.');
+    const qty = body.qty === undefined || body.qty === null || body.qty === '' ? null : intIn(body.qty, 1, 20, null);
+    const passRef = db.collection('passes').doc(ref);
+    const before = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(passRef);
+        if (!snap.exists) throw new PassError('NOT_FOUND', 'Pass not found.', 404);
+        const pass = snap.data();
+        if (pass.source !== 'campaign') throw new PassError('VALIDATION', 'Only creator campaign passes have categories.');
+        if (pass.status === 'revoked') throw new PassError('VALIDATION', 'This pass was revoked.');
+        if (pass.externalTicket) throw new PassError('VALIDATION', 'This is a partner ticket. Upload their new ticket with a CSV instead.');
+        if ((pass.tier || '') === tier && (!qty || Number(pass.qty) === qty)) return null;
+        tx.update(passRef, compact({
+            tier,
+            qty: qty || undefined,
+            previousTier: pass.tier || '',
+            tierChangedAt: nowIso(),
+            tierChangedBy: caller.email || caller.uid || 'staff',
+            updatedAt: nowIso(),
+        }));
+        return pass;
+    });
+    if (!before) return { success: true, ref, outcome: 'unchanged' };
+    const delivery = await deliverCampaignPass(db, ref, { extra: { upgradedTo: tier, previousTier: before.tier || '' } });
+    return { success: true, ref, outcome: 'updated', channels: channelSummary(delivery) };
+};
+
 const revokeAction = async (db, body, caller) => {
     requireStaff(caller);
     const ref = refFromCode(body.ref);
@@ -1068,6 +1108,7 @@ const ACTIONS = {
     'open-token': openTokenAction,
     'issue-campaign': issueCampaignAction,
     'issue-campaign-external': issueExternalAction,
+    retier: retierAction,
     'upload-start': uploadStartAction,
     'upload-finish': uploadFinishAction,
     'upload-pdf': uploadPdfAction,
@@ -1075,7 +1116,7 @@ const ACTIONS = {
     revoke: revokeAction,
     checkin: checkinAction,
 };
-const POST_ONLY = new Set(['register-guestlist', 'file', 'issue-campaign', 'issue-campaign-external', 'upload-start', 'upload-finish', 'upload-pdf', 'resend', 'revoke', 'checkin']);
+const POST_ONLY = new Set(['register-guestlist', 'file', 'issue-campaign', 'issue-campaign-external', 'upload-start', 'upload-finish', 'upload-pdf', 'resend', 'retier', 'revoke', 'checkin']);
 
 export const handlePasses = async (req, res) => {
     const action = str(req.query?.action, 40);
