@@ -123,33 +123,33 @@ const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFract
 
 /* ---------- Blocks ---------- */
 
-const CARD = 'border-collapse:separate;background:#fafafa;border:1px solid #ececef;border-radius:16px';
+const CARD = 'border-collapse:separate;background:#11161f;border:1px solid #232a36;border-radius:18px';
 
 /** A table-based pill button, so Outlook keeps the padding and the colour. */
 const button = (href, label, { bg, fg, border, cls, size = 16, pad = '17px 34px', arrow = true, block = false }) => `<table role="presentation" cellpadding="0" cellspacing="0" class="${cls}-t" ${block ? 'width="100%"' : ''} style="margin:0 0 26px;border-collapse:separate"><tr><td align="center" class="${cls}-td" style="border-radius:999px;background:${bg};${border ? `border:2px solid ${border};` : ''}"><a href="${esc(href)}" target="_blank" class="${cls}" style="display:block;padding:${pad};border-radius:999px;color:${fg};font-size:${size}px;font-weight:800;letter-spacing:.2px;line-height:1.2;text-align:center;text-decoration:none">${esc(label)}${arrow ? '&nbsp;&nbsp;&rarr;' : ''}</a></td></tr></table>`;
 
 /** File-type tile colours for the document card. */
-const DOC_TILE = { PDF: '#e11d48', INVOICE: '#18181b', PROPOSAL: '#18181b', AGREEMENT: '#18181b', RECEIPT: '#18181b' };
+const DOC_TILE = { PDF: '#e11d48', INVOICE: '#ffffff', PROPOSAL: '#ffffff', AGREEMENT: '#ffffff', RECEIPT: '#ffffff' };
 
 const renderBlock = (block, ctx) => {
     if (!block) return '';
-    if (block.p !== undefined) return isPresent(block.p) ? `<p class="txt" style="margin:0 0 20px;font-size:16px;line-height:1.7;color:#3f3f46">${para(block.p)}</p>` : '';
-    if (block.lead !== undefined) return isPresent(block.lead) ? `<p class="strong" style="margin:0 0 20px;font-size:17px;line-height:1.55;color:#18181b">${para(block.lead)}</p>` : '';
-    if (block.note !== undefined) return isPresent(block.note) ? `<p class="muted" style="margin:0 0 16px;font-size:13px;line-height:1.6;color:#71717a">${para(block.note)}</p>` : '';
-    if (block.quote !== undefined) return isPresent(block.quote) ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px"><tr><td class="card txt" style="padding:16px 18px;border-left:3px solid ${ctx.accent};background:#fafafa;border-radius:4px 14px 14px 4px;font-size:15px;line-height:1.6;color:#3f3f46">${para(block.quote)}</td></tr></table>` : '';
-    if (block.html !== undefined) return isPresent(block.html) ? `<div class="txt" style="margin:0 0 20px;font-size:15px;line-height:1.65;color:#3f3f46">${sanitizeHtml(block.html)}</div>` : '';
+    if (block.p !== undefined) return isPresent(block.p) ? `<p class="txt" style="margin:0 0 20px;font-size:16px;line-height:1.7;color:#d4d4d8">${para(block.p)}</p>` : '';
+    if (block.lead !== undefined) return isPresent(block.lead) ? `<p class="strong" style="margin:0 0 20px;font-size:17px;line-height:1.55;color:#ffffff">${para(block.lead)}</p>` : '';
+    if (block.note !== undefined) return isPresent(block.note) ? `<p class="muted" style="margin:0 0 16px;font-size:13px;line-height:1.6;color:#9ca3af">${para(block.note)}</p>` : '';
+    if (block.quote !== undefined) return isPresent(block.quote) ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px"><tr><td class="card txt" style="padding:16px 18px;border-left:3px solid ${ctx.accent};background:#11161f;border-radius:4px 14px 14px 4px;font-size:15px;line-height:1.6;color:#d4d4d8">${para(block.quote)}</td></tr></table>` : '';
+    if (block.html !== undefined) return isPresent(block.html) ? `<div class="txt" style="margin:0 0 20px;font-size:15px;line-height:1.65;color:#d4d4d8">${sanitizeHtml(block.html)}</div>` : '';
     if (block.list) {
         const items = block.list.filter(isPresent);
-        return items.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px">${items.map((item, i) => `<tr><td valign="top" style="width:28px;padding:0 0 12px"><span class="num" style="display:inline-block;width:22px;height:22px;border-radius:11px;background:#18181b;color:#ffffff;font-size:12px;font-weight:800;line-height:22px;text-align:center">${i + 1}</span></td><td class="txt" style="padding:1px 0 12px 6px;font-size:15px;line-height:1.55;color:#3f3f46">${para(item)}</td></tr>`).join('')}</table>` : '';
+        return items.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px">${items.map((item, i) => `<tr><td valign="top" style="width:28px;padding:0 0 12px"><span class="num" style="display:inline-block;width:22px;height:22px;border-radius:11px;background:${ctx.accent};color:${ctx.onAccent};font-size:12px;font-weight:800;line-height:22px;text-align:center">${i + 1}</span></td><td class="txt" style="padding:1px 0 12px 6px;font-size:15px;line-height:1.55;color:#d4d4d8">${para(item)}</td></tr>`).join('')}</table>` : '';
     }
     if (block.details) {
         const rows = block.details.filter(r => Array.isArray(r) && isPresent(r[1]));
         if (!rows.length) return '';
         return `<table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;${CARD}">
-${block.title ? `<tr><td colspan="2" class="muted" style="padding:16px 18px 2px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#71717a">${esc(block.title)}</td></tr>` : ''}
+${block.title ? `<tr><td colspan="2" class="muted" style="padding:16px 18px 2px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#9ca3af">${esc(block.title)}</td></tr>` : ''}
 ${rows.map(([label, value], i) => {
-        const rule = i > 0 ? 'border-top:1px solid #ececef;' : '';
-        return `<tr><td class="muted rule" style="${rule}padding:14px 18px;font-size:13px;color:#71717a;white-space:nowrap;vertical-align:top">${esc(label)}</td><td class="strong rule" style="${rule}padding:14px 18px;font-size:14px;font-weight:700;color:#18181b;text-align:right;word-break:break-word">${para(value)}</td></tr>`;
+        const rule = i > 0 ? 'border-top:1px solid #232a36;' : '';
+        return `<tr><td class="muted rule" style="${rule}padding:14px 18px;font-size:13px;color:#9ca3af;white-space:nowrap;vertical-align:top">${esc(label)}</td><td class="strong rule" style="${rule}padding:14px 18px;font-size:14px;font-weight:700;color:#ffffff;text-align:right;word-break:break-word">${para(value)}</td></tr>`;
     }).join('')}
 </table>`;
     }
@@ -158,19 +158,19 @@ ${rows.map(([label, value], i) => {
         if (!items.length) return '';
         const showPrice = items.some(i => Number(i.price) > 0);
         return `<table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;${CARD}">
-${items.map((i, n) => `<tr><td class="strong rule" style="${n > 0 ? 'border-top:1px solid #ececef;' : ''}padding:13px 18px;font-size:14px;font-weight:600;color:#18181b">${esc(i.name)}${Number(i.count) > 1 ? ` <span class="muted" style="color:#71717a;font-weight:500">× ${esc(i.count)}</span>` : ''}</td>${showPrice ? `<td class="strong rule" style="${n > 0 ? 'border-top:1px solid #ececef;' : ''}padding:13px 18px;font-size:14px;color:#18181b;text-align:right">${money(Number(i.price || 0) * Number(i.count || 1))}</td>` : ''}</tr>`).join('')}
-${isPresent(block.total) && showPrice ? `<tr><td class="strong rule" style="padding:14px 18px;border-top:1px solid #d4d4d8;font-size:15px;font-weight:800;color:#18181b">${esc(block.totalLabel || 'Total')}</td><td class="strong rule" style="padding:14px 18px;border-top:1px solid #d4d4d8;font-size:15px;font-weight:800;color:#18181b;text-align:right">${money(block.total)}</td></tr>` : ''}
+${items.map((i, n) => `<tr><td class="strong rule" style="${n > 0 ? 'border-top:1px solid #232a36;' : ''}padding:13px 18px;font-size:14px;font-weight:600;color:#ffffff">${esc(i.name)}${Number(i.count) > 1 ? ` <span class="muted" style="color:#9ca3af;font-weight:500">× ${esc(i.count)}</span>` : ''}</td>${showPrice ? `<td class="strong rule" style="${n > 0 ? 'border-top:1px solid #232a36;' : ''}padding:13px 18px;font-size:14px;color:#ffffff;text-align:right">${money(Number(i.price || 0) * Number(i.count || 1))}</td>` : ''}</tr>`).join('')}
+${isPresent(block.total) && showPrice ? `<tr><td class="strong rule" style="padding:14px 18px;border-top:1px solid #2e3643;font-size:15px;font-weight:800;color:#ffffff">${esc(block.totalLabel || 'Total')}</td><td class="strong rule" style="padding:14px 18px;border-top:1px solid #2e3643;font-size:15px;font-weight:800;color:#ffffff;text-align:right">${money(block.total)}</td></tr>` : ''}
 </table>`;
     }
     if (block.code) {
         if (!isPresent(block.code)) return '';
-        return `<p class="muted" style="margin:0 0 8px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#71717a">${esc(block.label || 'Reference')}</p>
-<p style="margin:0 0 24px"><span class="code" style="display:inline-block;padding:10px 16px;border:1px dashed #d4d4d8;border-radius:12px;background:#fafafa;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:18px;font-weight:700;letter-spacing:2px;color:#18181b">${esc(block.code)}</span></p>`;
+        return `<p class="muted" style="margin:0 0 8px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#9ca3af">${esc(block.label || 'Reference')}</p>
+<p style="margin:0 0 24px"><span class="code" style="display:inline-block;padding:10px 16px;border:1px dashed #2e3643;border-radius:12px;background:#11161f;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:18px;font-weight:700;letter-spacing:2px;color:#ffffff">${esc(block.code)}</span></p>`;
     }
     if (block.qr) {
         if (!isPresent(block.qr.value)) return '';
         const src = `${ctx.origin}/api/qr?text=${encodeURIComponent(block.qr.value)}&size=360&margin=1`;
-        return `<div style="margin:4px 0 24px;text-align:center"><img src="${esc(src)}" width="184" height="184" alt="${esc(block.qr.alt || 'Entry QR code')}" style="width:184px;height:184px;padding:12px;border-radius:18px;background:#ffffff;border:1px solid #e4e4e7" />${isPresent(block.qr.caption) ? `<p class="muted" style="margin:10px 0 0;font-size:12px;color:#71717a">${esc(block.qr.caption)}</p>` : ''}</div>`;
+        return `<div style="margin:4px 0 24px;text-align:center"><img src="${esc(src)}" width="184" height="184" alt="${esc(block.qr.alt || 'Entry QR code')}" style="width:184px;height:184px;padding:12px;border-radius:18px;background:#ffffff;border:1px solid #e4e4e7" />${isPresent(block.qr.caption) ? `<p class="muted" style="margin:10px 0 0;font-size:12px;color:#9ca3af">${esc(block.qr.caption)}</p>` : ''}</div>`;
     }
     if (block.image) {
         const src = safeUrl(block.image.url, ctx.origin);
@@ -179,29 +179,28 @@ ${isPresent(block.total) && showPrice ? `<tr><td class="strong rule" style="padd
     if (block.button) {
         const href = safeUrl(block.button.url, ctx.origin);
         if (!href || !isPresent(block.button.label)) return '';
-        return button(href, block.button.label, { bg: '#ffffff', fg: '#18181b', border: '#18181b', cls: 'btn2', size: 14, pad: '13px 24px' });
+        return button(href, block.button.label, { bg: 'transparent', fg: '#ffffff', border: '#3a4352', cls: 'btn2', size: 14, pad: '13px 24px' });
     }
     if (block.stats) {
         const tiles = block.stats.filter(r => Array.isArray(r) && isPresent(r[1])).slice(0, 3);
         if (!tiles.length) return '';
         const w = Math.floor(100 / tiles.length);
-        return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border-collapse:separate;border-spacing:0"><tr>${tiles.map(([label, value], i) => `<td width="${w}%" valign="top" style="padding:${i === 0 ? '0 5px 0 0' : i === tiles.length - 1 ? '0 0 0 5px' : '0 5px'}"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="card" style="${CARD};border-radius:16px"><tr><td style="padding:14px 14px 15px"><p class="muted" style="margin:0 0 5px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#71717a">${esc(label)}</p><p class="strong" style="margin:0;font-size:15px;line-height:1.3;font-weight:800;color:#18181b">${esc(value)}</p></td></tr></table></td>`).join('')}</tr></table>`;
+        return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border-collapse:separate;border-spacing:0"><tr>${tiles.map(([label, value, tone], i) => `<td width="${w}%" valign="top" style="padding:${i === 0 ? '0 4px 0 0' : i === tiles.length - 1 ? '0 0 0 4px' : '0 4px'}"><table role="presentation" width="100%" height="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;background:#11161f;border:1px solid ${tone === 'accent' ? 'rgba(57,255,20,.35)' : '#232a36'};border-radius:14px"><tr><td style="padding:12px 12px 13px"><p style="margin:0 0 5px;font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#8b94a3">${esc(label)}</p><p style="margin:0;font-size:14px;line-height:1.3;font-weight:800;color:${tone === 'accent' ? ctx.accent : '#ffffff'}">${esc(value)}</p></td></tr></table></td>`).join('')}</tr></table>`;
     }
     if (block.document) {
         const d = block.document;
-        const kind = String(d.kind || 'PDF').toUpperCase();
         const href = safeUrl(d.url, ctx.origin);
         const meta = (d.meta || []).filter(isPresent).map(esc).join('&nbsp;&nbsp;·&nbsp;&nbsp;');
-        const tile = DOC_TILE[kind] || '#18181b';
-        return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="card" style="margin:0 0 26px;${CARD};border-radius:18px;overflow:hidden">
+        const kindLabel = esc(String(d.kind || 'PDF').toUpperCase());
+        return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 26px;border-collapse:separate;background:#ffffff;border-radius:20px;overflow:hidden">
 <tr><td style="padding:18px 18px 16px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-<td width="56" valign="top" style="width:56px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" valign="middle" class="doctile" style="width:48px;height:60px;border-radius:8px 14px 8px 8px;background:${tile};border-bottom:4px solid ${ctx.accent}"><span style="font-size:11px;font-weight:900;letter-spacing:1px;color:#ffffff">PDF</span></td></tr></table></td>
-<td valign="middle" style="padding-left:6px"><p class="strong" style="margin:0 0 4px;font-size:16px;line-height:1.3;font-weight:800;color:#18181b;word-break:break-word">${esc(d.name || 'Document')}</p>${meta ? `<p class="muted" style="margin:0;font-size:12px;line-height:1.5;color:#71717a">${meta}</p>` : ''}</td>
+<td width="58" valign="top" style="width:58px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" valign="middle" style="width:50px;height:62px;border-radius:9px 16px 9px 9px;background:#0b0f17;border-bottom:4px solid ${ctx.accent}"><span style="font-size:12px;font-weight:900;letter-spacing:1px;color:#ffffff">PDF</span></td></tr></table></td>
+<td valign="middle" style="padding-left:6px"><p style="margin:0 0 3px;font-size:10px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:#6b7280">${kindLabel} · Document</p><p style="margin:0 0 4px;font-size:16px;line-height:1.3;font-weight:800;color:#0b0f17;word-break:break-word">${esc(d.name || 'Document')}</p>${meta ? `<p style="margin:0;font-size:12px;line-height:1.5;color:#6b7280">${meta}</p>` : ''}</td>
 </tr></table></td></tr>
-${href ? `<tr><td class="rule" align="center" style="border-top:1px solid #ececef;padding:0"><a href="${esc(href)}" target="_blank" class="docbar" style="display:block;padding:14px 18px;font-size:14px;font-weight:800;color:#18181b;text-decoration:none">${esc(d.label || 'Open document')}&nbsp;&nbsp;&rarr;</a></td></tr>` : ''}
+${href ? `<tr><td align="center" style="border-top:1px solid #e5e7eb;padding:0"><a href="${esc(href)}" target="_blank" style="display:block;padding:15px 18px;font-size:14px;font-weight:800;color:#0b0f17;text-decoration:none">${esc(d.label || 'Open document')}&nbsp;&nbsp;&rarr;</a></td></tr>` : ''}
 </table>`;
     }
-    if (block.divider) return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 24px"><tr><td class="rule" style="border-top:1px solid #ececef;font-size:0;line-height:0">&nbsp;</td></tr></table>';
+    if (block.divider) return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 24px"><tr><td class="rule" style="border-top:1px solid #232a36;font-size:0;line-height:0">&nbsp;</td></tr></table>';
     return '';
 };
 
@@ -237,7 +236,7 @@ const blockText = (block, ctx) => {
 export const renderEmail = (model, opts = {}) => {
     const origin = String(opts.origin || DEFAULT_ORIGIN).replace(/\/+$/, '');
     const brand = brandFor(model, origin);
-    const ctx = { origin, accent: brand.accent };
+    const ctx = { origin, accent: brand.accent, onAccent: brand.onAccent };
     const kind = model.kind === 'marketing' ? 'marketing' : 'transactional';
     const blocks = (model.blocks || []).filter(Boolean);
     const heroSrc = model.hero ? safeUrl(model.hero.url, origin) : '';
@@ -261,59 +260,40 @@ export const renderEmail = (model, opts = {}) => {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
-<meta name="supported-color-schemes" content="light dark">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
 <title>${esc(model.subject || 'Newbi')}</title>
 <style>
-body{margin:0;padding:0;background:#f4f4f5;-webkit-text-size-adjust:100%}
-a{color:${brand.ink}}
-@media (max-width:600px){.wrap{padding:0!important}.box{border-radius:0!important;border-left:0!important;border-right:0!important}.hdr{padding:18px 22px!important}.pad{padding:32px 22px 8px!important}.foot{padding:28px 22px!important}.title{font-size:26px!important}.cta-t{width:100%!important}.cta{display:block!important}}
-@media (prefers-color-scheme:dark){
-body,.bg{background:#09090b!important}
-.box{background:#121214!important;border-color:#27272a!important}
-.title,.strong{color:#fafafa!important}
-.txt{color:#d4d4d8!important}
-.muted{color:#a1a1aa!important}
-.eyebrow{color:${brand.accent}!important}
-.card,.code{background:#1a1a1d!important;border-color:#2c2c30!important;color:#fafafa!important}
-.rule{border-color:#2c2c30!important}
-.num{background:#fafafa!important;color:#09090b!important}
-.btn2-td{background:#121214!important;border-color:#fafafa!important}
-.docbar{color:#fafafa!important}
-.doctile{background:#fafafa!important}
-.doctile span{color:#09090b!important}
-.btn2{color:#fafafa!important}
-a{color:${brand.accent}!important}
-.cta{color:${brand.onAccent}!important}
-.foot{border-top:1px solid #27272a!important}
-.foot a{color:#d4d4d8!important}
-.hdr-light{background:#FFFFFF!important}
-.hdr-dark{background:${brand.headerBg}!important}
-}
+body{margin:0;padding:0;background:#05070a;-webkit-text-size-adjust:100%}
+a{color:${brand.accent}}
+@media (max-width:600px){.wrap{padding:0!important}.box{border-radius:0!important;border-left:0!important;border-right:0!important}.hdr{padding:18px 22px!important}.pad{padding:28px 22px 8px!important}.foot{padding:28px 22px!important}.title{font-size:27px!important}.cta-t{width:100%!important}}
 </style>
 </head>
-<body class="bg" style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+<body class="bg" style="margin:0;padding:0;background:#05070a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${esc(preheader)}&#8203;&nbsp;&#8203;&nbsp;&#8203;&nbsp;</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="bg" style="background:#f4f4f5">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="bg" bgcolor="#05070a" style="background:#05070a">
 <tr><td align="center" class="wrap" style="padding:32px 12px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="box" style="max-width:600px;background:#ffffff;border:1px solid #e4e4e7;border-radius:28px;overflow:hidden">
-<tr><td class="hdr ${brand.headerClass}" align="${brand.align}" style="padding:20px 32px;background:${brand.headerBg};border-bottom:4px solid ${brand.accent};text-align:${brand.align}"><a href="${esc(origin)}" target="_blank" style="display:inline-block;text-decoration:none"><img src="${esc(brand.logo)}" alt="${esc(brand.logoAlt)}" width="${brand.logoWidth}" height="${brand.logoHeight}" style="display:block;width:${brand.logoWidth}px;height:${brand.logoHeight}px;max-width:100%;border:0" /></a></td></tr>
-${heroSrc ? `<tr><td style="padding:0;font-size:0;line-height:0;background:#0A0A0A"><img src="${esc(heroSrc)}" alt="${esc(model.hero.alt || model.title || '')}" width="600" style="display:block;width:100%;max-width:600px;height:auto;border:0" /></td></tr>` : ''}
-<tr><td class="pad" style="padding:${heroSrc ? '30px' : '38px'} 32px 12px">
-${isPresent(model.eyebrow) ? `<p style="margin:0 0 16px"><span class="chip" style="display:inline-block;padding:6px 13px;border-radius:999px;background:${brand.accent};color:${brand.onAccent};font-size:11px;font-weight:900;letter-spacing:1.1px;text-transform:uppercase">${esc(model.eyebrow)}</span></p>` : ''}
-${isPresent(model.title) ? `<h1 class="title" style="margin:0 0 22px;font-size:32px;line-height:1.15;font-weight:900;letter-spacing:-0.8px;color:#09090b">${esc(model.title)}</h1>` : ''}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="box" bgcolor="#0b0f17" style="max-width:600px;background:#0b0f17;border:1px solid #1f2630;border-radius:28px;overflow:hidden">
+<tr><td class="hdr" align="left" bgcolor="#0b0f17" style="padding:20px 32px;background:#0b0f17;text-align:left"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="left" valign="middle"><a href="${esc(origin)}" target="_blank" style="display:inline-block;text-decoration:none"><img src="${esc(brand.logo)}" alt="${esc(brand.logoAlt)}" width="${brand.logoWidth}" height="${brand.logoHeight}" style="display:block;width:${brand.logoWidth}px;height:${brand.logoHeight}px;max-width:100%;border:0" /></a></td>${!heroSrc && isPresent(model.eyebrow) ? `<td align="right" valign="middle"><span style="display:inline-block;padding:6px 12px;border-radius:12px;background:#000000;border:1px solid #2a3340;color:${brand.accent};font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;font-weight:900;letter-spacing:1.4px;text-transform:uppercase">${esc(model.eyebrow)}</span></td>` : ''}</tr></table></td></tr>
+${heroSrc ? `<tr><td style="padding:0;font-size:0;line-height:0;background:#0b0f17">
+<!--[if mso]><img src="${esc(heroSrc)}" alt="${esc(model.hero.alt || model.title || '')}" width="600" style="display:block;width:600px;height:auto;border:0" /><![endif]-->
+<!--[if !mso]><!--><table role="presentation" width="100%" cellpadding="0" cellspacing="0" background="${esc(heroSrc)}" style="width:100%;height:340px;background:#0b0f17 url('${esc(heroSrc)}') center center/cover no-repeat"><tr><td valign="top" height="190" style="height:190px;padding:16px 18px;font-size:0;line-height:0">${isPresent(model.eyebrow) ? `<span style="display:inline-block;padding:6px 12px;border-radius:12px;background:rgba(0,0,0,.62);border:1px solid rgba(255,255,255,.22);color:${brand.accent};font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;font-weight:900;line-height:1.3;letter-spacing:1.4px;text-transform:uppercase">${esc(model.eyebrow)}</span>` : '&nbsp;'}</td></tr><tr><td valign="bottom" height="150" style="height:150px;font-size:0;line-height:0"><img src="${esc(`${origin}/brand/email/hero-fade.png`)}" alt="" width="600" style="display:block;width:100%;height:150px;border:0" /></td></tr></table><!--<![endif]-->
+</td></tr>` : ''}
+<tr><td class="pad" background="${esc(`${origin}/brand/email/card-bg.png`)}" bgcolor="#0b0f17" valign="top" style="padding:${heroSrc ? '2px' : '10px'} 32px 12px;background:#0b0f17 url('${esc(`${origin}/brand/email/card-bg.png`)}') right bottom no-repeat">
+${isPresent(model.title) ? `<h1 class="title" style="margin:0 0 22px;font-size:30px;line-height:1.15;font-weight:900;letter-spacing:-0.8px;color:#ffffff">${esc(model.title)}</h1>` : ''}
 ${blocks.map(b => renderBlock(b, ctx)).join('\n')}
 ${hasCta ? button(ctaHref, model.cta.label, { bg: brand.accent, fg: brand.onAccent, cls: 'cta', block: true }) : ''}
-${model.signoff === false ? '' : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 20px"><tr><td class="rule" style="border-top:1px solid #ececef;padding:20px 0 0"><p class="strong" style="margin:0 0 2px;font-size:14px;font-weight:800;color:#18181b">${esc(model.signoffName || 'The newbi.live team')}</p><p style="margin:0;font-size:12px"><a href="${esc(origin)}" target="_blank" style="color:#71717a;text-decoration:none">newbi.live</a></p></td></tr></table>`}
+${model.signoff === false ? '' : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 22px"><tr><td style="border-top:1px solid #232a36;padding:20px 0 0"><p style="margin:0 0 2px;font-size:14px;font-weight:800;color:#ffffff">${esc(model.signoffName || 'The newbi.live team')}</p><p style="margin:0;font-size:12px"><a href="${esc(origin)}" target="_blank" style="color:#8b94a3;text-decoration:none">newbi.live</a></p></td></tr></table>`}
 </td></tr>
-<tr><td class="foot" align="center" style="padding:32px 32px 30px;background:#0A0A0A;text-align:center">
+<tr><td class="foot" align="center" bgcolor="#05070a" style="padding:30px 32px 30px;background:#05070a;border-top:1px solid #1f2630;text-align:center">
+<img src="${esc(`${origin}/brand/email/n-mark.png`)}" alt="N." width="52" style="display:block;margin:0 auto 18px;width:52px;height:auto;border:0" />
 <table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:0 auto 22px"><tr>
 ${socials.map(s => `<td style="padding:0 6px"><a href="${esc(s.href)}" target="_blank" style="display:inline-block;text-decoration:none"><img src="${esc(`${origin}/brand/email/${s.icon}.png`)}" width="36" height="36" alt="${esc(s.name)}" title="${esc(s.name)}" style="display:block;width:36px;height:36px;border:0" /></a></td>`).join('\n')}
 </tr></table>
-${isPresent(model.reason) ? `<p style="margin:0 auto 14px;max-width:440px;font-size:12px;line-height:1.6;color:#a1a1aa">${esc(model.reason)}</p>` : ''}
-${brand.note ? `<p style="margin:0 auto 14px;max-width:440px;font-size:12px;line-height:1.6;color:#a1a1aa">${esc(brand.note)}</p>` : ''}
-<p style="margin:0 0 16px;font-size:12px;line-height:1.6;color:#a1a1aa">${footLinks.map(footLink).join('&nbsp;&nbsp;·&nbsp;&nbsp;')}</p>
-<p style="margin:0;font-size:11px;line-height:1.6;color:#71717a">© ${year} <a href="${esc(origin)}" target="_blank" style="color:#a1a1aa;font-weight:700;text-decoration:none">${esc(COMPANY_NAME)}</a>. All rights reserved.</p>
+${isPresent(model.reason) ? `<p style="margin:0 auto 14px;max-width:440px;font-size:12px;line-height:1.6;color:#8b94a3">${esc(model.reason)}</p>` : ''}
+${brand.note ? `<p style="margin:0 auto 14px;max-width:440px;font-size:12px;line-height:1.6;color:#8b94a3">${esc(brand.note)}</p>` : ''}
+<p style="margin:0 0 16px;font-size:12px;line-height:1.6;color:#8b94a3">${footLinks.map(footLink).join('&nbsp;&nbsp;·&nbsp;&nbsp;')}</p>
+<p style="margin:0;font-size:11px;line-height:1.6;color:#5b6472">© ${year} <a href="${esc(origin)}" target="_blank" style="color:#8b94a3;font-weight:700;text-decoration:none">${esc(COMPANY_NAME)}</a>. All rights reserved.</p>
 </td></tr>
 </table>
 </td></tr>

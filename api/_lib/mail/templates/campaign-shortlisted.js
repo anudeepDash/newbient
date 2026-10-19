@@ -15,7 +15,7 @@ export default (data = {}) => ({
     blocks: [
         { p: `Hi ${firstName(data.name)}, you've been shortlisted for ${data.campaignTitle ? `the ${data.campaignTitle} campaign` : 'a Newbi campaign'}.` },
         { quote: data.message },
-        { stats: [['Brand', data.brand], ['Reward', data.reward], ['Deadline', formatDate(data.deadline).replace(/^\w+,\s*/, '')]] },
+        { stats: [['Brand', data.brand], ['Reward', data.reward, 'accent'], ['Deadline', formatDate(data.deadline).replace(/^\w+,\s*/, '')]] },
         {
             list: [
                 data.groupLink ? 'Join the campaign WhatsApp group. Briefs and updates are shared there.' : null,
