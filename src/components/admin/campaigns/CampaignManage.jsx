@@ -374,6 +374,28 @@ const CampaignManage = ({
             tone: 'success',
         });
     };
+    // A submission sent by mistake (or at random): remove it, so the deliverable is "not started" again.
+    const askRemoveSubmission = (entry, task) => {
+        const who = entry.orphan ? 'this person' : (entry.creator.name || 'this creator');
+        setConfirm({
+            kind: 'removeSubmission',
+            entry,
+            task,
+            title: 'Delete this submission?',
+            message: `${who}’s submission for “${task.title}” is removed, with its link and screenshot. They can submit again. This can’t be undone.`,
+            confirmLabel: 'Delete submission',
+            tone: 'danger',
+        });
+    };
+    const removeSubmission = (entry, task) => guard(async () => {
+        try {
+            await useStore.getState().deleteTaskSubmissions(campaign.id, [{ taskId: task.id, keys: [...creatorKeys(entry.creator), entry.key] }]);
+            addToast('Submission deleted.', 'success');
+        } catch {
+            addToast("Couldn't delete it. Please try again.", 'error');
+        }
+    });
+
     const runConfirm = async () => {
         const c = confirm;
         if (!c) return;
@@ -381,6 +403,7 @@ const CampaignManage = ({
         if (c.kind === 'decline') await setStage(c.entries, 'declined', confirmToggle);
         if (c.kind === 'unselect') await unselectEntries(c.entries);
         if (c.kind === 'approveAll') await guard(() => review(c.items, 'approved').catch(() => {}));
+        if (c.kind === 'removeSubmission') await removeSubmission(c.entry, c.task);
         setConfirm(null);
     };
 
@@ -508,6 +531,9 @@ const CampaignManage = ({
                                                     <Button size="sm" variant="success" onClick={() => approve(a, task)} disabled={busy} className="h-10 flex-1 sm:flex-none"><Check size={14} /> Approve</Button>
                                                     <Button size="sm" variant="secondary" onClick={() => setChanges({ entry: a, task })} disabled={busy} className="h-10 flex-1 sm:flex-none"><X size={14} /> Changes</Button>
                                                 </>
+                                            )}
+                                            {sub && (
+                                                <Button size="sm" variant="ghost" onClick={() => askRemoveSubmission(a, task)} disabled={busy} aria-label="Delete submission" title="Delete submission" className="h-10 w-10 px-0 text-gray-400 hover:text-rose-600 dark:hover:text-rose-300"><Trash2 size={15} /></Button>
                                             )}
                                             {st === 'not_started' && wa && (
                                                 <Button
