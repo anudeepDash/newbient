@@ -2635,15 +2635,22 @@ export const useStore = create((set, get) => ({
         if (![PROPOSAL_STATUS.ACCEPTED, PROPOSAL_STATUS.REJECTED].includes(response)) throw new Error('Invalid response');
         // Signatures arrive as images; store them as files, not inside the document.
         const processed = await processAndUploadBase64Fields(JSON.parse(JSON.stringify(details)), `signatures/proposals/${id}`);
-        const ref = doc(db, 'proposals', id);
-        await runTransaction(db, async (tx) => {
-            const snap = await tx.get(ref);
-            if (!snap.exists()) throw Object.assign(new Error('This proposal no longer exists.'), { code: 'NOT_FOUND' });
-            const current = snap.data();
-            if (isProposalClosed(current)) throw Object.assign(new Error(`This proposal was already ${current.status === PROPOSAL_STATUS.ACCEPTED ? 'accepted' : 'declined'}.`), { code: 'CLOSED' });
-            if (isProposalExpired(current)) throw Object.assign(new Error('This proposal has expired. Please ask us for an updated one.'), { code: 'EXPIRED' });
-            tx.update(ref, { ...processed, status: response, respondedAt: new Date().toISOString() });
+        const meta = processed.approvalMetadata || {};
+        // The server re-checks the proposal is still open and records the answer
+        // (with its own time and IP); rules keep these fields off the browser.
+        const { sharedDocPost } = await import('./passesApi');
+        const res = await sharedDocPost('respond', {
+            id,
+            response,
+            signedBy: meta.signedBy,
+            email: meta.email,
+            clientSignature: processed.clientSignature || meta.clientSignature || null,
+            device: meta.device ? { platform: meta.device.platform, screen: meta.device.screen, language: meta.device.language } : null,
+            footprint: meta.footprint || null,
+            reason: processed.rejectionMetadata?.reason,
         });
+        if (!res.ok) throw Object.assign(new Error(res.error), { code: res.code || 'ERROR' });
+        return res.data;
     },
 
     // Start an invoice from an accepted (or any) proposal, then link the two.
@@ -2818,21 +2825,12 @@ export const useStore = create((set, get) => ({
     signAgreement: async (id, approvalMetadata) => {
         if (!String(approvalMetadata?.signedBy || '').trim()) throw Object.assign(new Error('Enter your full name to sign.'), { code: 'INVALID' });
         const processed = await processAndUploadBase64Fields(JSON.parse(JSON.stringify({ approvalMetadata })), `signatures/agreements/${id}`);
-        const ref = doc(db, 'agreements', id);
-        await runTransaction(db, async (tx) => {
-            const snap = await tx.get(ref);
-            if (!snap.exists()) throw Object.assign(new Error('This contract no longer exists.'), { code: 'NOT_FOUND' });
-            if (snap.data().status === CONTRACT_STATUS.EXECUTED) throw Object.assign(new Error('This contract has already been signed.'), { code: 'CLOSED' });
-            // The signing time is taken when the signature is recorded, not when the page opened.
-            processed.approvalMetadata = { ...processed.approvalMetadata, signedAt: new Date().toISOString() };
-            tx.update(ref, {
-                status: CONTRACT_STATUS.EXECUTED,
-                approvalMetadata: processed.approvalMetadata,
-                clientSignature: processed.approvalMetadata?.clientSignature || null,
-                executedAt: new Date().toISOString(),
-            });
-        });
-        return processed.approvalMetadata;
+        const meta = processed.approvalMetadata || {};
+        // The server signs it once (refusing a contract already signed) with its own time and IP.
+        const { sharedDocPost } = await import('./passesApi');
+        const res = await sharedDocPost('sign', { id, signedBy: meta.signedBy, email: meta.email, clientSignature: meta.clientSignature || null });
+        if (!res.ok) throw Object.assign(new Error(res.error), { code: res.code || 'ERROR' });
+        return res.data.approvalMetadata;
     },
 
     markAgreementShared: async (id, via) => {
@@ -5517,23 +5515,22 @@ export const useStore = create((set, get) => ({
         }
         set({ fcmToken: token });
     },
-    logDocumentAccess: async (type, docId, metadata) => {
-        const col = type === 'proposal' ? 'proposals' : type === 'invoice' ? 'invoices' : 'agreements';
-        const docRef = doc(db, col, docId);
-        const logEntry = {
-            ...metadata,
-            timestamp: new Date().toISOString()
-        };
-        
-        try {
-            // Use arrayUnion for efficiency
-            await updateDoc(docRef, {
-                lastOpened: new Date().toISOString(),
-                accessLogs: arrayUnion(logEntry)
-            });
-        } catch (err) {
-            console.error("Log access failed:", err);
-        }
+    // A visit to a shared invoice/proposal/contract link. The server adds the log
+    // entry (its own IP and time) and lastOpened; rules keep these off the browser.
+    logDocumentAccess: async (type, docId, metadata = {}) => {
+        const { sharedDocPost } = await import('./passesApi');
+        const res = await sharedDocPost('view', {
+            kind: type,
+            id: docId,
+            via: metadata.via || null,
+            email: metadata.shareEmail || null,
+            name: metadata.shareName || null,
+            platform: typeof navigator !== 'undefined' ? navigator.platform : '',
+            screen: typeof window !== 'undefined' ? `${window.screen.width}x${window.screen.height}` : '',
+            language: typeof navigator !== 'undefined' ? navigator.language : '',
+        });
+        if (!res.ok) console.error("Log access failed:", res.error);
+        return res;
     },
     clearAllAccessLogs: async () => {
         const { proposals, agreements, invoices } = get();

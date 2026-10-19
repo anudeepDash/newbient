@@ -15,7 +15,7 @@ import X from 'lucide-react/dist/esm/icons/x';
 import PenTool from 'lucide-react/dist/esm/icons/pen-tool';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../lib/store';
-import { useStoreSubscription } from '../hooks/useStoreSubscription';
+import useSharedDoc from '../hooks/useSharedDoc';
 import { safeLocalStorage } from '../lib/storage';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
@@ -117,11 +117,11 @@ const renderContent = (content, baseClass = 'text-[12px] font-medium text-black 
 };
 
 const Agreement = () => {
-    useStoreSubscription(['agreements']);
     const { id } = useParams();
-    const { agreements, updateAgreement, logDocumentAccess, user, loading: storeLoading } = useStore();
+    const { user } = useStore();
+    // Read by id only: rules don't let visitors list contracts.
+    const { data: liveAgreement, notFound } = useSharedDoc('agreements', id);
     const [displayAgreement, setDisplayAgreement] = useState(null);
-    const [notFound, setNotFound] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [signatureName, setSignatureName] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -138,29 +138,18 @@ const Agreement = () => {
     const fitToStage = React.useCallback((w) => setScale(Math.min(1, w / 794)), []);
 
     useEffect(() => {
-        const agreement = agreements.find(a => a.id === id);
-        if (agreement) {
-            setDisplayAgreement(agreement);
-            if (user && !verificationEmail) setVerificationEmail(user.email);
-        } else if (!storeLoading) {
-            const fetchAgreement = async () => {
-                try {
-                    const { doc, getDoc } = await import('firebase/firestore');
-                    const { db } = await import('../lib/firebase');
-                    const docSnap = await getDoc(doc(db, 'agreements', id));
-                    if (docSnap.exists()) {
-                        setDisplayAgreement({ ...docSnap.data(), id: docSnap.id });
-                    } else {
-                        setNotFound(true);
-                    }
-                } catch (err) {
-                    console.error("Error fetching agreement directly:", err);
-                    setNotFound(true);
-                }
-            };
-            fetchAgreement();
-        }
-    }, [id, agreements, user, storeLoading]);
+        if (liveAgreement) setDisplayAgreement(liveAgreement);
+    }, [liveAgreement]);
+    // Shown on the signing form only; the server records the IP it sees.
+    useEffect(() => {
+        fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => setIpAddress(data.ip))
+            .catch(() => setIpAddress('Hidden/Protected'));
+    }, []);
+    useEffect(() => {
+        if (user?.email && !verificationEmail) setVerificationEmail(user.email);
+    }, [user, verificationEmail]);
 
     const location = useLocation();
     const isAdmin = ['super_admin', 'developer', 'founder'].includes(user?.role);
@@ -172,15 +161,7 @@ const Agreement = () => {
         if (loggedVisitRef.current === visitKey) return;
         loggedVisitRef.current = visitKey;
 
-        const fetchIpAndLog = async () => {
-            let detectedIp = 'Hidden/Protected';
-            try {
-                const res = await fetch('https://api.ipify.org?format=json');
-                const data = await res.json();
-                detectedIp = data.ip;
-                setIpAddress(data.ip);
-            } catch (e) { console.error("IP detection failed", e); }
-
+        const logVisit = async () => {
             const searchParams = new URLSearchParams(location.search);
             const via = searchParams.get('via');
             const email = searchParams.get('email');
@@ -191,25 +172,13 @@ const Agreement = () => {
             const tenMins = 10 * 60 * 1000;
 
             if (!lastViewed || (new Date() - new Date(lastViewed) > tenMins) || via === 'email') {
-                try {
-                    await logDocumentAccess('agreement', id, {
-                        ip: detectedIp,
-                        userAgent: navigator.userAgent,
-                        platform: navigator.platform,
-                        screen: `${window.screen.width}x${window.screen.height}`,
-                        language: navigator.language,
-                        userEmail: user?.email || 'Guest',
-                        userName: user?.displayName || '',
-                        via: via || null,
-                        shareEmail: email || null,
-                        shareName: name || null
-                    });
-                    safeLocalStorage.setItem(cacheKey, new Date().toISOString());
-                } catch (err) { console.error("Log access failed:", err); }
+                // The server records the visit (IP, time) and lastOpened.
+                const res = await useStore.getState().logDocumentAccess('agreement', id, { via, shareEmail: email, shareName: name });
+                if (res?.ok) safeLocalStorage.setItem(cacheKey, new Date().toISOString());
             }
         };
-        fetchIpAndLog();
-    }, [id, isAdmin, displayAgreement, user, location.search]);
+        logVisit();
+    }, [id, isAdmin, displayAgreement, location.search]);
 
     const agreementShareMeta = getDocumentShareMeta(displayAgreement, 'agreement');
     useDynamicMeta({

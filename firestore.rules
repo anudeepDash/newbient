@@ -74,12 +74,13 @@ service cloud.firestore {
     match /forms/{id} { allow read: if true; allow write: if isStaff(); }
     match /coupons/{id} { allow read: if true; allow write: if isStaff(); }
 
-    // Shared by link (invoices, proposals, contracts, documents). Still readable by
-    // anyone, as today; tightening reads needs the public pages to stop listing
-    // whole collections first (docs/firestore-access-map.md, risk 3).
-    match /invoices/{id} { allow read: if true; allow write: if isStaff(); }
-    match /proposals/{id} { allow read: if true; allow write: if isStaff(); }
-    match /agreements/{id} { allow read: if true; allow write: if isStaff(); }
+    // Shared by link: anyone with the id opens one; only staff list them. Visitors'
+    // view logs, payment claims and signatures go through the server
+    // (api/_lib/sharedDocs.js), so the browser never writes these.
+    match /invoices/{id} { allow get: if true; allow list, write: if isStaff(); }
+    match /proposals/{id} { allow get: if true; allow list, write: if isStaff(); }
+    match /agreements/{id} { allow get: if true; allow list, write: if isStaff(); }
+    // Not yet moved off whole-collection reads (docs/firestore-access-map.md, risk 6).
     match /documents/{id} { allow read: if true; allow write: if isStaff(); }
     match /gen_documents/{id} { allow read: if true; allow write: if isStaff(); }
 

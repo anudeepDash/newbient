@@ -81,6 +81,19 @@ t('random user edits site settings', 'DENY', { who: 'rando', method: 'update', p
 t('random user marks an invoice paid', 'DENY', { who: 'rando', method: 'update', path: 'invoices/i1', existing: { status: 'Due' }, data: { status: 'Paid' } });
 t('visitor opens an invoice link (unchanged)', 'ALLOW', { who: null, method: 'get', path: 'invoices/i1', existing: { status: 'Due' } });
 
+// --- shared invoice / proposal / contract links ---
+t('signed-out visitor lists invoices', 'DENY', { who: null, method: 'list', path: 'invoices/i1' });
+t('signed-in user lists proposals', 'DENY', { who: 'rando', method: 'list', path: 'proposals/p1' });
+t('signed-out visitor lists contracts', 'DENY', { who: null, method: 'list', path: 'agreements/a1' });
+t('visitor opens a proposal link', 'ALLOW', { who: null, method: 'get', path: 'proposals/p1', existing: { status: 'Sent' } });
+t('visitor opens a contract link', 'ALLOW', { who: null, method: 'get', path: 'agreements/a1', existing: { status: 'Final' } });
+t('visitor writes a view log on an invoice', 'DENY', { who: null, method: 'update', path: 'invoices/i1', existing: { status: 'Due' }, data: { status: 'Due', lastOpened: 'now', accessLogs: [{ ip: 'x' }] } });
+t('visitor claims an invoice payment directly', 'DENY', { who: null, method: 'update', path: 'invoices/i1', existing: { status: 'Due' }, data: { status: 'Verification Pending', paymentClaim: { status: 'pending' } } });
+t('visitor accepts a proposal directly', 'DENY', { who: null, method: 'update', path: 'proposals/p1', existing: { status: 'Sent' }, data: { status: 'Accepted', clientSignature: 'x' } });
+t('signed-in user signs a contract directly', 'DENY', { who: 'rando', method: 'update', path: 'agreements/a1', existing: { status: 'Final' }, data: { status: 'Executed' } });
+t('staff list invoices', 'ALLOW', { who: 'editor', method: 'list', path: 'invoices/i1' });
+t('staff list proposals', 'ALLOW', { who: 'editor', method: 'list', path: 'proposals/p1' });
+
 // --- money ---
 t('random user reads spends', 'DENY', { who: 'rando', method: 'list', path: 'spends/s1' });
 t('super_admin reads spends', 'DENY', { who: 'superAdmin', method: 'list', path: 'spends/s1' });

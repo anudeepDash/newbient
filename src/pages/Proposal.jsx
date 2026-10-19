@@ -41,7 +41,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
 import { isProposalExpired, proposalExpiry } from '../lib/proposals';
-import { useStoreSubscription } from '../hooks/useStoreSubscription';
+import useSharedDoc from '../hooks/useSharedDoc';
 import { safeLocalStorage } from '../lib/storage';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -315,39 +315,16 @@ const defaultColumns = [
 ];
 
 const Proposal = () => {
-    useStoreSubscription(['proposals']);
     const { id } = useParams();
-    const { proposals, updateProposalStatus, loading: storeLoading, user } = useStore();
+    const { updateProposalStatus, user } = useStore();
+    // Read by id only: rules don't let visitors list proposals.
+    const { data: liveProposal, loading: docLoading } = useSharedDoc('proposals', id);
     const [localProposal, setLocalProposal] = useState(null);
-    const [localLoading, setLocalLoading] = useState(true);
+    useEffect(() => { setLocalProposal(liveProposal); }, [liveProposal]);
 
-    const proposal = localProposal || proposals.find(p => p.id === id);
+    const proposal = localProposal || liveProposal;
 
-    useEffect(() => {
-        const found = proposals.find(p => p.id === id);
-        if (found) {
-            setLocalProposal(found);
-            setLocalLoading(false);
-        } else if (!storeLoading) {
-            const fetchProposal = async () => {
-                try {
-                    const { doc, getDoc } = await import('firebase/firestore');
-                    const { db } = await import('../lib/firebase');
-                    const docSnap = await getDoc(doc(db, 'proposals', id));
-                    if (docSnap.exists()) {
-                        setLocalProposal({ ...docSnap.data(), id: docSnap.id });
-                    }
-                } catch (err) {
-                    console.error("Error fetching proposal directly:", err);
-                } finally {
-                    setLocalLoading(false);
-                }
-            };
-            fetchProposal();
-        }
-    }, [id, proposals, storeLoading]);
-
-    const loading = localLoading;
+    const loading = docLoading;
     const proposalRef = useRef(null);
     const loggedVisitRef = useRef(null);
     const [scale, setScale] = useState(1);
@@ -436,17 +413,7 @@ const Proposal = () => {
         if (loggedVisitRef.current === visitKey) return;
         loggedVisitRef.current = visitKey;
 
-        const fetchIpAndLog = async () => {
-            let detectedIp = 'Hidden/Protected';
-            try {
-                const res = await fetch('https://api.ipify.org?format=json');
-                const data = await res.json();
-                detectedIp = data.ip;
-                setIpAddress(data.ip);
-            } catch (e) {
-                console.error("IP detection failed", e);
-            }
-
+        const logVisit = async () => {
             const searchParams = new URLSearchParams(location.search);
             const via = searchParams.get('via');
             const email = searchParams.get('email');
@@ -457,27 +424,13 @@ const Proposal = () => {
             const tenMins = 10 * 60 * 1000;
 
             if (!lastViewed || (new Date() - new Date(lastViewed) > tenMins) || via === 'email') {
-                try {
-                    await useStore.getState().logDocumentAccess('proposal', id, {
-                        ip: detectedIp,
-                        userAgent: navigator.userAgent,
-                        platform: navigator.platform,
-                        screen: `${window.screen.width}x${window.screen.height}`,
-                        language: navigator.language,
-                        userEmail: user?.email || 'Guest',
-                        userName: user?.displayName || '',
-                        via: via || null,
-                        shareEmail: email || null,
-                        shareName: name || null
-                    });
-                    safeLocalStorage.setItem(cacheKey, new Date().toISOString());
-                } catch (err) {
-                    console.error("Analytics error:", err);
-                }
+                // The server records the visit (IP, time) and lastOpened.
+                const res = await useStore.getState().logDocumentAccess('proposal', id, { via, shareEmail: email, shareName: name });
+                if (res?.ok) safeLocalStorage.setItem(cacheKey, new Date().toISOString());
             }
         };
-        fetchIpAndLog();
-    }, [id, isAdmin, proposal, user, location.search]);
+        logVisit();
+    }, [id, isAdmin, proposal, location.search]);
 
     const proposalShareMeta = getDocumentShareMeta(displayProposal, 'proposal');
     useDynamicMeta({
