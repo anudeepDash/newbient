@@ -24,9 +24,10 @@ export const ADMIN_ROLES = [
 export const adminKey = (email) => String(email || '').trim().toLowerCase();
 
 /*
- * Testers: see every campaign in the app (any status) and can apply and submit
- * without meeting the criteria or being shortlisted. Their submissions are
- * saved with test: true and marked "Test" in the admin.
+ * Testers: see every campaign in the app (any status) and can apply without
+ * meeting the criteria. Submitting still needs the shortlist, as for everyone
+ * (shortlist yourself in the admin to test it); their submissions are saved
+ * with test: true and marked "Test" in the admin.
  */
 export const TESTER_ROLES = ['developer'];
 export const isTesterRole = (role) => TESTER_ROLES.includes(String(role || '').toLowerCase());

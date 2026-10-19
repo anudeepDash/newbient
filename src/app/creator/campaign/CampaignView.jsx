@@ -123,18 +123,18 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
     const joined = Boolean(justApplied) || (creator?.joinedCampaigns || []).includes(id);
     const shortlisted = Boolean(justApplied?.shortlisted) || isShortlisted(creator, id);
     const inCampaign = joined || shortlisted;
-    // Developers test any campaign: deliverables open without being shortlisted (their work is marked Test).
+    // Developers see and can apply to any campaign; submitting needs the shortlist, as for everyone.
     const tester = isTesterRole(authUser?.role);
-    const canWork = shortlisted || tester;
+    const canWork = shortlisted;
     const record = records[id];
     const who = creatorWho(creator, authUser, record);
     const tasks = campaign.tasks || [];
     const progress = useMemo(() => taskProgress(campaign, who), [campaign, who]);
 
     useEffect(() => {
-        if (!authUser || !(inCampaign || tester)) return undefined;
+        if (!authUser || !inCampaign) return undefined;
         return subscribeMySubmission(id);
-    }, [authUser, inCampaign, tester, id, subscribeMySubmission]);
+    }, [authUser, inCampaign, id, subscribeMySubmission]);
 
     // ?taskId= scrolls to that deliverable.
     useEffect(() => {
@@ -308,7 +308,7 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
             )}
             {tester && !shortlisted && (
                 <Notice tone="info" title="Developer test mode">
-                    {`You can see every campaign and submit to any deliverable without being shortlisted${isOpen(campaign) ? '' : ' (this one isn’t open to creators)'}. What you send is marked Test in the admin.`}
+                    {`You can see every campaign and apply without meeting its criteria${isOpen(campaign) ? '' : ' (this one isn’t open to creators)'}. To test submitting, shortlist yourself in the admin; what you send is marked Test.`}
                 </Notice>
             )}
             {applyError && <Notice tone="error">{applyError}</Notice>}

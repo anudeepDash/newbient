@@ -764,14 +764,14 @@ const handleCampaignSubmit = async (req, res, { db, token }) => {
     if (proofUrl && !/^https:\/\//.test(proofUrl)) return send(res, 400, { success: false, error: 'The screenshot did not upload. Try again.' });
 
     const [creatorSnap, campSnap, role] = await Promise.all([findOwnCreator(db, token.uid), db.collection('campaigns').doc(campaignId).get(), staffRoleOf(token, db)]);
-    // Developers can test-submit on any campaign, with or without a creator profile.
+    // Developers' submissions are marked as tests; they still need a profile and the shortlist like everyone.
     const tester = isTesterRole(role);
-    if ((!creatorSnap && !tester) || !campSnap.exists) return send(res, 404, { success: false, error: 'Campaign not found.' });
-    const creator = creatorSnap?.data() || {};
+    if (!creatorSnap || !campSnap.exists) return send(res, 404, { success: false, error: 'Campaign not found.' });
+    const creator = creatorSnap.data();
     const task = (campSnap.data().tasks || []).find(t => String(t.id) === taskId);
     if (!task) return send(res, 404, { success: false, error: 'This deliverable no longer exists.' });
     // Only shortlisted creators work on (and submit) deliverables; applying isn't enough.
-    if (!tester && !(creator.shortlistedCampaigns || []).includes(campaignId)) {
+    if (!(creator.shortlistedCampaigns || []).includes(campaignId)) {
         return send(res, 403, { success: false, code: 'not_shortlisted', error: 'Only shortlisted creators can submit for this campaign.' });
     }
     if (via === 'google_form' && !isHttpUrl(task.googleFormLink)) return send(res, 400, { success: false, error: 'This deliverable has no Google Form. Add a link or a screenshot.' });
@@ -788,7 +788,7 @@ const handleCampaignSubmit = async (req, res, { db, token }) => {
         if (current?.status === 'approved') return { conflict: true };
         tx.set(ref, {
             uid: token.uid,
-            creatorDocId: creatorSnap?.id || null,
+            creatorDocId: creatorSnap.id,
             creatorId: creator.creatorId || null,
             campaignId,
             tasks: { [taskId]: submission },
