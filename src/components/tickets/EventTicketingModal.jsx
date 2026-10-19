@@ -18,6 +18,7 @@ import html2canvas from 'html2canvas';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import GuestlistTaskSubmissionStep from '../community/GuestlistTaskSubmissionStep';
 import { callTicketApi } from '../../lib/ticketApi';
+import { saveProfilePhone } from '../../lib/profilePhone';
 import { purchasableCount, priceCart, applyCoupon, MAX_TICKETS_PER_TIER, BASE_TIER_ID, normalizeCouponCode, makeBookingRef } from '../../lib/ticketing';
 
 const OTPVerificationSuccess = () => {
@@ -113,6 +114,16 @@ const OTPVerificationSuccess = () => {
 
 // chrome={false}: used inside the app's own Sheet (app/tickets), which already has the
 // title and close button, so this drops its header and the large backdrop blur.
+// The server writes the profile phone (rules keep it off the browser). A failure doesn't stop the booking.
+const savePhoneToProfile = async (phone) => {
+    try {
+        const saved = await saveProfilePhone(phone);
+        useStore.setState(s => (s.user ? { user: { ...s.user, phoneNumber: saved.phone } } : {}));
+    } catch (err) {
+        console.warn('[tickets] phone save:', err.message);
+    }
+};
+
 const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrome = true }) => {
     const user = useStore(state => state.user);
     const setAuthModal = useStore(state => state.setAuthModal);
@@ -461,11 +472,8 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
             setIsPhoneVerified(true);
             useStore.getState().addToast("Phone number verified.", 'success');
             
-            // Save phone to profile if user exists
-            if (user?.uid) {
-                const verifiedPhone = `${countryCode}${formData.phone}`;
-                await useStore.getState().updateUserProfile(user.uid, { phoneNumber: verifiedPhone });
-            }
+            // Save the phone to the profile (the server marks it verified when it's on this account).
+            if (user?.uid) await savePhoneToProfile(`${countryCode}${formData.phone}`);
 
             // Auto-advance after showing success screen briefly
             setTimeout(() => {
@@ -490,10 +498,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
                 setIsPhoneVerified(true);
                 useStore.getState().addToast("Phone number verified. It's also linked to another account.", 'success');
                 
-                if (user?.uid) {
-                    const verifiedPhone = `${countryCode}${formData.phone}`;
-                    await useStore.getState().updateUserProfile(user.uid, { phoneNumber: verifiedPhone });
-                }
+                if (user?.uid) await savePhoneToProfile(`${countryCode}${formData.phone}`);
 
                 setTimeout(() => {
                     if (activeTab === 'tickets') {

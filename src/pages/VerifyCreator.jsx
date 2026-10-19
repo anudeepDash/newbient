@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 import { motion } from 'framer-motion';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
@@ -36,76 +34,30 @@ const VerifyCreator = () => {
                 return;
             }
 
+            // Only the server can check the link's token and mark the profile verified.
             try {
-                // Tier 1: Verify via serverless API (immune to client-side Firestore security rules)
-                try {
-                    const res = await fetch(`/api/creator-join?action=verify`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id, token })
-                    });
-                    const json = await res.json();
-                    if (res.ok && json.success) {
-                        setCreatorData(json.creator);
-                        if (json.alreadyVerified) {
-                            setStatus('already_verified');
-                            return;
-                        }
-                        setStatus('success');
-                        try { confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } }); } catch (e) {}
-                        return;
-                    } else if (res.status === 400 || (json.error && json.error.includes('expired'))) {
-                        setStatus('error');
-                        setErrorMessage(json.error || 'This verification link is expired or invalid.');
+                const res = await fetch(`/api/creator-join?action=verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, token })
+                });
+                const json = await res.json().catch(() => ({}));
+                if (res.ok && json.success) {
+                    setCreatorData(json.creator);
+                    if (json.alreadyVerified) {
+                        setStatus('already_verified');
                         return;
                     }
-                } catch (apiErr) {
-                    console.warn('[VerifyCreator] API verify notice, falling back to direct Firestore:', apiErr.message);
-                }
-
-                // Tier 2: Fallback to direct client Firestore
-                const creatorRef = doc(db, 'creators', id);
-                const snap = await getDoc(creatorRef);
-
-                if (!snap.exists()) {
-                    setStatus('error');
-                    setErrorMessage('Creator profile not found. It may have been updated or removed.');
+                    setStatus('success');
+                    try { confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } }); } catch (e) {}
                     return;
                 }
-
-                const data = snap.data();
-                setCreatorData(data);
-
-                // Check if already verified
-                if (data.isPhoneVerified && !data.verificationToken) {
-                    setStatus('already_verified');
-                    return;
-                }
-
-                // Verify token match. A profile with no stored token can't be verified by link.
-                if (!data.verificationToken || data.verificationToken !== token) {
-                    setStatus('error');
-                    setErrorMessage('This verification link is expired or invalid. Please request a new verification link.');
-                    return;
-                }
-
-                // Perform automated verification update
-                await updateDoc(creatorRef, {
-                    isPhoneVerified: true,
-                    phoneVerifiedAt: new Date().toISOString(),
-                    isEmailVerified: true,
-                    emailVerifiedAt: new Date().toISOString(),
-                    verificationToken: null // Clear used token. Review status stays as it is.
-                });
-
-                setStatus('success');
-                try {
-                    confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
-                } catch (e) {}
+                setStatus('error');
+                setErrorMessage(json.error || 'This verification link is expired or invalid. Please request a new verification link.');
             } catch (err) {
                 console.error("Verification error:", err);
                 setStatus('error');
-                setErrorMessage(err.message || 'Verification could not be completed. Please try again or reach out to our team.');
+                setErrorMessage('Verification could not be completed. Check your connection and try again, or reach out to our team.');
             }
         };
 

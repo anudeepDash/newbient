@@ -149,18 +149,14 @@ export const createProfileSlice = (set, get) => ({
             .catch(() => {});
     },
 
-    /* Records a phone number that was just verified by OTP (usePhoneVerification). */
+    /* Records a phone number that was just verified by OTP (usePhoneVerification).
+       The server writes it, and only as verified when it's the number on the sign-in account. */
     savePhoneVerified: async (e164) => {
-        const uid = get().authUser?.uid;
+        const { auth } = await import('../firebase');
+        const uid = get().authUser?.uid || auth?.currentUser?.uid;
         if (!uid || !e164) return;
-        await setDoc(doc(db, 'users', uid), {
-            phone: e164,
-            phoneVerified: true,
-            // Legacy readers (ProfilePanel, CreatorJoin) look at these.
-            phoneNumber: e164,
-            isPhoneVerified: true,
-            phoneVerifiedAt: new Date().toISOString(),
-        }, { merge: true });
+        const { saveProfilePhone } = await import('../profilePhone');
+        await saveProfilePhone(e164);
         get()._syncCreatorProfile();
     },
 

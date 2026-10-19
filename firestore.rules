@@ -117,12 +117,15 @@ service cloud.firestore {
 
     // ---------- 5. people ----------
 
-    // Own profile. People can't give themselves a role, unblock themselves, or
-    // add capabilities beyond joining the community (creator/campus come from the server).
+    // Own profile. People can't give themselves a role, unblock themselves,
+    // add capabilities beyond joining the community (creator/campus come from the server),
+    // or set their phone: the server writes it, verified only when it's the number on
+    // their sign-in account (api/_lib/creatorApp.js, profile-phone).
     function userSelfWriteOk(before) {
       let caps = request.resource.data.get('capabilities', {});
       let capsBefore = before.get('capabilities', {});
-      return !request.resource.data.diff(before).affectedKeys().hasAny(['role', 'isBlocked', 'forceLogoutBefore', 'isAdmin'])
+      return !request.resource.data.diff(before).affectedKeys().hasAny(['role', 'isBlocked', 'forceLogoutBefore', 'isAdmin',
+          'phone', 'phoneNumber', 'phoneVerified', 'isPhoneVerified', 'phoneVerifiedAt'])
         && caps.diff(capsBefore).affectedKeys().hasOnly(['member']);
     }
     match /users/{uid} {
@@ -132,8 +135,9 @@ service cloud.firestore {
       allow delete: if signedIn() && request.auth.uid == uid;
     }
 
-    // Creator profiles: the creator and staff. Approval, verification and campaign
-    // selection are set by staff or the server, never by the creator.
+    // Creator profiles: the creator and staff. Approval, verification, the phone (its
+    // verification depends on it) and campaign selection are set by staff or the server
+    // (api/creator-join.js creator-update checks the phone against the ID token).
     function ownCreator(data) {
       return signedIn() && (data.get('uid', '') == request.auth.uid || (trustedEmail() && data.get('email', '') == myEmail()));
     }
@@ -142,7 +146,9 @@ service cloud.firestore {
       allow create: if isStaff();
       allow update: if isStaff()
         || (((signedIn() && id == request.auth.uid) || ownCreator(resource.data))
-            && !changed().hasAny(['profileStatus', 'status', 'isVerified', 'instagramVerified', 'shortlistedCampaigns', 'campaignStages', 'uid', 'role', 'points']));
+            && !changed().hasAny(['profileStatus', 'status', 'isVerified', 'instagramVerified', 'shortlistedCampaigns', 'campaignStages', 'uid', 'role', 'points',
+                'phone', 'isPhoneVerified', 'phoneVerifiedAt', 'phoneVerificationPending', 'needsPhoneVerificationNotice',
+                'isEmailVerified', 'emailVerifiedAt', 'verificationToken']));
       allow delete: if isStaff();
     }
 

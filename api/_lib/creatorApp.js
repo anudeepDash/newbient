@@ -13,6 +13,7 @@
  *   ?action=campaign-submit  POST { campaignId, taskId, contentLink, proofUrl, note }
  *   ?action=creator-self-delete POST {}       the signed-in creator deletes their own creator profile
  *   ?action=creator-sync-profile POST {}      copies name, city and phone from users/{uid} onto the creator profile
+ *   ?action=profile-phone    POST { phone }   saves the account's phone; verified only if it's the number on the sign-in account
  *   ?action=account-matches  POST { email? }  other accounts with your phone or email (api/_lib/accountMerge.js)
  *   ?action=account-merge    POST { proofToken, confirm? } merges one of them into this account
  *
@@ -39,7 +40,7 @@ const APP_URL = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace
 
 export const CREATOR_APP_ACTIONS = new Set([
     'ig-lookup', 'ig-connect', 'ig-callback', 'instagram-cron', 'creator-apply', 'campaign-apply', 'campaign-submit',
-    'creator-self-delete', 'creator-sync-profile', 'account-matches', 'account-merge',
+    'creator-self-delete', 'creator-sync-profile', 'account-matches', 'account-merge', 'profile-phone',
 ]);
 /* Actions that don't take a Firebase ID token (they carry their own proof). */
 export const CREATOR_APP_PUBLIC = new Set(['ig-callback', 'instagram-cron']);
@@ -946,6 +947,50 @@ export const handleSyncProfile = async (req, res, { db, token }) => {
     return send(res, 200, { success: true, updated });
 };
 
+/* ── profile-phone ──────────────────────────────────────────────────── */
+
+/*
+ * The account's phone on users/{uid}. Firestore rules don't let the browser
+ * write the phone fields, so verification can't be claimed from the client:
+ * a number counts as verified only when it is the one on the Firebase Auth
+ * account (added by an OTP link, a phone sign-in, or an account merge), or
+ * the server already recorded it as verified. Any other number is saved as
+ * an unverified contact number, which drops a verification that belonged to
+ * the old one.
+ */
+const PHONE_FIELDS = ['phone', 'phoneNumber', 'phoneVerified', 'isPhoneVerified', 'phoneVerifiedAt'];
+export const handleProfilePhone = async (req, res, { db, token, adminAuth = defaultAdminAuth }) => {
+    if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
+    const wanted = toE164(req.body?.phone || '');
+    const digits = wanted.replace(/\D/g, '');
+    if (req.body?.phone && (digits.length < 10 || digits.length > 15)) {
+        return send(res, 400, { success: false, field: 'phone', error: 'Enter a valid mobile number.' });
+    }
+    const authUser = await adminAuth.getUser(token.uid).catch(() => null);
+    const authPhone = toE164(authUser?.phoneNumber || '');
+    const ref = db.collection('users').doc(token.uid);
+    const snap = await ref.get();
+    const u = snap.exists ? snap.data() : {};
+    const current = toE164(u.phone || u.phoneNumber || '');
+    const now = nowIso();
+
+    let patch;
+    if (authPhone && (!wanted || wanted === authPhone)) {
+        patch = { phone: authPhone, phoneNumber: authPhone, phoneVerified: true, isPhoneVerified: true,
+            phoneVerifiedAt: (current === authPhone && u.phoneVerifiedAt) || now };
+    } else if (!wanted) {
+        return send(res, 409, { success: false, code: 'not_verified', error: 'Verify your phone number first.' });
+    } else if (wanted === current && (u.phoneVerified || u.isPhoneVerified)) {
+        // Already verified here (e.g. moved over by an account merge).
+        return send(res, 200, { success: true, phone: current, verified: true, updated: [] });
+    } else {
+        patch = { phone: wanted, phoneNumber: wanted, phoneVerified: false, isPhoneVerified: false, phoneVerifiedAt: null };
+    }
+    const updated = PHONE_FIELDS.filter(k => u[k] !== patch[k]);
+    if (updated.length) await ref.set({ ...patch, updatedAt: now }, { merge: true });
+    return send(res, 200, { success: true, phone: patch.phone, verified: patch.phoneVerified, updated });
+};
+
 /* ── creator-self-delete ──────────────────────────────────────────────── */
 
 /*
@@ -1018,6 +1063,7 @@ export const handleCreatorAppAction = async (action, req, res, { decodedToken })
         if (action === 'creator-sync-profile') return await handleSyncProfile(req, res, ctx);
         if (action === 'account-matches') return await handleAccountMatches(req, res, ctx);
         if (action === 'account-merge') return await handleAccountMerge(req, res, ctx);
+        if (action === 'profile-phone') return await handleProfilePhone(req, res, ctx);
         return send(res, 400, { success: false, error: 'Unknown action.' });
     } catch (err) {
         console.error(`[creatorApp] ${action}:`, err);

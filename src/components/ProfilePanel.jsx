@@ -401,7 +401,10 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         if (!newPhone.trim()) return;
         setIsUpdating(true);
         try {
-            await useStore.getState().updateUserProfile(user.uid, { phoneNumber: newPhone });
+            // Saved by the server (rules keep the phone fields off the browser).
+            const { saveProfilePhone } = await import('../lib/profilePhone');
+            const saved = await saveProfilePhone(newPhone);
+            useStore.setState(s => (s.user?.uid === user.uid ? { user: { ...s.user, phoneNumber: saved.phone } } : {}));
             setIsEditingPhone(false);
             notifySelf({
                 title: "Phone number updated",
