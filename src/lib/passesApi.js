@@ -41,8 +41,49 @@ const call = async (type, action, { method = 'POST', body, query, timeoutMs = 20
     }
 };
 
+/* Fired after anything that changes passes, so lists read through the API refresh at once. */
+export const PASSES_CHANGED = 'nb:passes-changed';
+const CHANGES_PASSES = new Set(['register-guestlist', 'issue-campaign', 'issue-campaign-external', 'resend', 'retier', 'revoke', 'checkin', 'upload-finish']);
+
 export const passesGet = (action, query, opts) => call('passes', action, { method: 'GET', query, ...opts });
-export const passesPost = (action, body, opts) => call('passes', action, { method: 'POST', body, ...opts });
+export const passesPost = async (action, body, opts) => {
+    const res = await call('passes', action, { method: 'POST', body, ...opts });
+    if (res.ok && CHANGES_PASSES.has(action) && typeof window !== 'undefined') window.dispatchEvent(new Event(PASSES_CHANGED));
+    return res;
+};
+
+/*
+ * Passes read through the API instead of Firestore (when the rules don't let
+ * the browser read them): runs `load` now, every `ms` while the page is
+ * visible, when it comes back into view, and right after any pass change.
+ * Returns stop().
+ */
+export const pollPasses = (load, ms = 15000) => {
+    let stopped = false;
+    const run = () => { if (!stopped && document.visibilityState !== 'hidden') load(); };
+    const onVisible = () => { if (document.visibilityState === 'visible') run(); };
+    run();
+    const timer = setInterval(run, ms);
+    window.addEventListener(PASSES_CHANGED, run);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+        stopped = true;
+        clearInterval(timer);
+        window.removeEventListener(PASSES_CHANGED, run);
+        document.removeEventListener('visibilitychange', onVisible);
+    };
+};
+
+/* One request for a campaign's passes and send log, shared by the Tickets tab's two lists. */
+const inflight = new Map();
+export const staffPassList = (body) => {
+    const key = JSON.stringify(body);
+    const hit = inflight.get(key);
+    if (hit && Date.now() - hit.at < 1500) return hit.promise;
+    const promise = passesPost('staff-list', body, { timeoutMs: 20000 });
+    inflight.set(key, { at: Date.now(), promise });
+    return promise;
+};
 export const communityGet = (action, query, opts) => call('community', action, { method: 'GET', query, ...opts });
 export const communityPost = (action, body, opts) => call('community', action, { method: 'POST', body, ...opts });
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
+import { pollPasses, staffPassList } from '../../../lib/passesApi';
 import { parseCSV } from '../creators/creatorData';
 import { creatorHandle, creatorRef } from './campaignModel';
 
@@ -16,21 +17,39 @@ import { creatorHandle, creatorRef } from './campaignModel';
 export const TICKET_STAGES = ['shortlisted', 'selected', 'review', 'approved', 'paid'];
 export const canGetTicket = (entry) => TICKET_STAGES.includes(entry?.stage);
 
-/** Live passes for one campaign (staff can read every pass). */
+/**
+ * Live passes for one campaign. Straight from Firestore when the rules let
+ * staff read passes; otherwise through the API (staff-list), refreshed every
+ * 15 s and right after any send, upgrade or revoke.
+ */
 export const useCampaignPasses = (campaignId) => {
     const [state, setState] = useState({ passes: [], loaded: false, error: null });
     useEffect(() => {
         if (!campaignId || !db) return undefined;
         setState(s => ({ ...s, loaded: false }));
-        return onSnapshot(
+        let stopPoll = null;
+        let alive = true;
+        const viaApi = () => {
+            stopPoll = pollPasses(async () => {
+                const res = await staffPassList({ campaignId });
+                if (!alive) return;
+                if (res.ok) setState({ passes: res.data.passes || [], loaded: true, error: null });
+                else setState(s => ({ ...s, loaded: true, error: s.passes.length ? null : res.code || 'error' }));
+            });
+        };
+        const unsub = onSnapshot(
             query(collection(db, 'passes'), where('sourceId', '==', campaignId)),
             (snap) => setState({
                 passes: snap.docs.map(d => ({ ...d.data(), ref: d.id })).filter(p => p.source === 'campaign'),
                 loaded: true,
                 error: null,
             }),
-            (error) => setState({ passes: [], loaded: true, error: error?.code || 'error' })
+            (error) => {
+                if (error?.code === 'permission-denied') viaApi();
+                else setState({ passes: [], loaded: true, error: error?.code || 'error' });
+            }
         );
+        return () => { alive = false; unsub(); stopPoll?.(); };
     }, [campaignId]);
     return state;
 };

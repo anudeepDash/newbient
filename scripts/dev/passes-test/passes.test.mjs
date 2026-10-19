@@ -288,6 +288,16 @@ assert.ok(extPass, 'a partner ticket exists from the CSV checks');
 await expectErr(A.retier(db, { ref: extPass.ref, tier: 'VIP' }, staff), 'VALIDATION');
 ok('upgrade: same code, new category; the upgrade mail has every detail, refreshed (box office); partner tickets refused');
 
+await expectErr(A.mine(db, {}, { uid: null }), 'AUTH');
+const mine = await A.mine(db, {}, user('cu4'));
+assert.ok(mine.passes.length >= 1 && mine.passes.every(p => p.holderUid === 'cu4'));
+await expectErr(A['staff-list'](db, { campaignId: 'camp2' }, user('cu4')), 'FORBIDDEN');
+const sl = await A['staff-list'](db, { campaignId: 'camp1' }, staff);
+assert.ok(sl.passes.length >= 2 && sl.passes.every(p => p.sourceId === 'camp1')); assert.ok(sl.uploads.length >= 1);
+const sl2 = await A['staff-list'](db, { ids: ['ev1'] }, staff);
+assert.ok(sl2.passes.some(p => p.eventId === 'ev1'));
+ok('without Firestore rules: holders list their own passes, staff list a campaign (with its send log) or an event, through the API');
+
 console.log('Orders');
 await db.doc('ticket_orders/o1').set({ eventId: 'ev1', bookingRef: 'NB-ABC12', status: 'approved', customerName: 'Paid Person', customerEmail: 'paid@ex.com', items: [{ name: 'GA', count: 2, price: 500 }], totalAmount: 1000, userId: 'u9' });
 await events.sendOrderEmail('o1');

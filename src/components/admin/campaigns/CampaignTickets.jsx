@@ -16,7 +16,7 @@ import ArrowUpCircle from 'lucide-react/dist/esm/icons/circle-arrow-up';
 import { db } from '../../../lib/firebase';
 import { cn } from '../../../lib/utils';
 import { useStore } from '../../../lib/store';
-import { passesPost } from '../../../lib/passesApi';
+import { passesPost, pollPasses, staffPassList } from '../../../lib/passesApi';
 import { Avatar, Badge, Button, Card, EmptyState, Menu, MenuItem } from '../ui';
 import { ConfirmSheet } from './parts';
 import { creatorPhotoOf, formatDay } from './campaignModel';
@@ -63,15 +63,25 @@ export const DeliveryDots = ({ delivery, showSeen = false }) => {
     );
 };
 
+// The send log: from Firestore when the rules allow, otherwise with the passes through the API.
 const useUploads = (campaignId) => {
     const [uploads, setUploads] = useState([]);
     useEffect(() => {
         if (!campaignId || !db) return undefined;
-        return onSnapshot(
+        let stopPoll = null;
+        let alive = true;
+        const unsub = onSnapshot(
             query(collection(db, 'ticket_uploads'), where('campaignId', '==', campaignId)),
             snap => setUploads(snap.docs.map(d => ({ ...d.data(), id: d.id })).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))),
-            () => setUploads([])
+            (error) => {
+                if (error?.code !== 'permission-denied') { setUploads([]); return; }
+                stopPoll = pollPasses(async () => {
+                    const res = await staffPassList({ campaignId });
+                    if (alive && res.ok) setUploads(res.data.uploads || []);
+                });
+            }
         );
+        return () => { alive = false; unsub(); stopPoll?.(); };
     }, [campaignId]);
     return uploads;
 };
@@ -142,8 +152,8 @@ const CampaignTickets = ({ campaign, applicants, passes, loaded, error, onSend }
                 </div>
             </Card>
 
-            {error === 'permission-denied' && (
-                <p className="rounded-xl bg-amber-500/10 px-3.5 py-3 text-[13px] text-amber-800 dark:text-amber-300">Tickets can’t be listed until the passes Firestore rules are deployed.</p>
+            {error && (
+                <p className="rounded-xl bg-amber-500/10 px-3.5 py-3 text-[13px] text-amber-800 dark:text-amber-300">Tickets couldn’t be loaded just now. They refresh on their own; check your connection if this stays.</p>
             )}
 
             {!loaded ? (

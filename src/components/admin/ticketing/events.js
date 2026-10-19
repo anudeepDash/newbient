@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
+import { pollPasses, staffPassList } from '../../../lib/passesApi';
 import { useStore } from '../../../lib/store';
 import { toDate } from './format';
 
@@ -137,18 +138,28 @@ export const useEventPasses = (eventId, guestlistIds = [], enabled = true) => {
             Object.values(byQuery).flat().forEach(p => seen.set(p.ref, p));
             setPasses([...seen.values()]);
         };
+        // Without Firestore read access to passes, the same list comes through the API.
+        let stopPoll = null;
+        let alive = true;
+        const viaApi = () => {
+            if (stopPoll) return;
+            stopPoll = pollPasses(async () => {
+                const res = await staffPassList({ ids });
+                if (alive && res.ok) { byQuery.api = res.data.passes || []; publish(); }
+            }, 20000);
+        };
         const listen = (name, q) => onSnapshot(q, snap => {
             byQuery[name] = snap.docs.map(d => ({ ...d.data(), ref: d.id }));
             publish();
         }, err => {
-            // Until the passes rules are deployed this is denied; the scanner still checks online.
-            if (err?.code !== 'permission-denied') console.warn('Passes failed to load:', err);
+            if (err?.code === 'permission-denied') viaApi();
+            else console.warn('Passes failed to load:', err);
         });
         const unsubs = [
             listen('event', query(collection(db, 'passes'), where('eventId', 'in', ids))),
             listen('source', query(collection(db, 'passes'), where('sourceId', 'in', ids))),
         ];
-        return () => unsubs.forEach(u => u());
+        return () => { alive = false; unsubs.forEach(u => u()); stopPoll?.(); };
     }, [key, enabled]);
     return passes;
 };

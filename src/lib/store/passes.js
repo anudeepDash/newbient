@@ -1,5 +1,6 @@
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
+import { passesGet, pollPasses } from '../passesApi';
 
 /*
  * Passes slice, shared by both ticket flows (Phase 5):
@@ -7,7 +8,9 @@ import { db } from '../firebase';
  *   source 'campaign'  → shown inside that creator's campaign
  *
  * passes/{ref} is written only by api/passes.js. Holders read their own
- * (holderUid == uid); this never lists other people's passes.
+ * (holderUid == uid); this never lists other people's passes. If the
+ * Firestore rules don't allow that read, the same list comes from the API
+ * (GET mine), refreshed every minute, on return to the tab and after changes.
  */
 
 const sortByIssued = (a, b) => new Date(b.issuedAt || 0) - new Date(a.issuedAt || 0);
@@ -24,15 +27,26 @@ export const createPassesSlice = (set, get) => ({
             return () => {};
         }
         set({ passesLoaded: false });
-        const unsub = onSnapshot(
+        let stopPoll = null;
+        let alive = true;
+        const listener = onSnapshot(
             query(collection(db, 'passes'), where('holderUid', '==', uid)),
             (snap) => set({ passes: snap.docs.map(d => ({ ...d.data(), ref: d.id })).sort(sortByIssued), passesLoaded: true }),
             (error) => {
-                // Until the passes collection and its rules ship, this is expected to be denied.
-                if (error?.code !== 'permission-denied') console.warn('[app/passes] passes listener:', error?.code || error);
-                set({ passes: [], passesLoaded: true });
+                if (error?.code !== 'permission-denied') {
+                    console.warn('[app/passes] passes listener:', error?.code || error);
+                    set({ passes: [], passesLoaded: true });
+                    return;
+                }
+                stopPoll = pollPasses(async () => {
+                    const res = await passesGet('mine');
+                    if (!alive) return;
+                    if (res.ok) set({ passes: (res.data.passes || []).sort(sortByIssued), passesLoaded: true });
+                    else set({ passesLoaded: true });
+                }, 60000);
             }
         );
+        const unsub = () => { alive = false; listener(); stopPoll?.(); };
         set({ _passesUnsub: unsub });
         return () => {
             unsub();
