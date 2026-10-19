@@ -8,10 +8,12 @@ import { safeSiteOrigin } from './_lib/linkSign.js';
 import { cleanHandle as cleanInstagramHandle, lookupInstagram, readCreatorSettings } from './_lib/instagram.js';
 import { CREATOR_APP_ACTIONS, handleCreatorAppAction } from './_lib/creatorApp.js';
 import { verifyIdTokenSafe } from './_lib/auth.js';
+import { buildCreatorReferrals } from './_lib/referrals.js';
 import { OUTREACH_ACTIONS, handleOutreachAction } from './_lib/outreach.js';
 import { HANDOFF_ACTIONS, handleHandoffAction } from './_lib/adminHandoff.js';
 
 export const maxDuration = 60;
+
 let adminDb = null;
 let adminAuth = null;
 
@@ -1060,55 +1062,7 @@ export default async function handler(req, res) {
         try {
             const creatorsSnap = await adminDb.collection('creators').get();
             const all = creatorsSnap.docs.map(d => ({ ...d.data(), id: d.id, uid: d.data().uid || d.id }));
-            const me = all.find(c => c.id === decodedToken.uid || c.uid === decodedToken.uid);
-            if (!me) {
-                return res.status(200).json({ success: true, referrals: [], leaderboard: [], myRank: 0 });
-            }
-
-            const uidMap = new Map();
-            const creatorIdMap = new Map();
-            const instagramMap = new Map();
-            const linkedinMap = new Map();
-            all.forEach(c => {
-                uidMap.set(c.uid, c);
-                if (c.creatorId) creatorIdMap.set(String(c.creatorId).toUpperCase(), c);
-                if (c.instagram) instagramMap.set(String(c.instagram).toLowerCase(), c);
-                if (c.linkedin) linkedinMap.set(String(c.linkedin).toLowerCase(), c);
-            });
-            const referrerOf = (c) => {
-                if (!c.referredBy) return null;
-                const refStr = String(c.referredBy);
-                return uidMap.get(refStr) || creatorIdMap.get(refStr.toUpperCase())
-                    || instagramMap.get(refStr.toLowerCase()) || linkedinMap.get(refStr.toLowerCase()) || null;
-            };
-
-            const counts = {};
-            const referrals = [];
-            all.forEach(c => {
-                const referrer = referrerOf(c);
-                if (!referrer) return;
-                counts[referrer.uid] = (counts[referrer.uid] || 0) + 1;
-                if (referrer.uid === me.uid) referrals.push(c);
-            });
-
-            const publicCard = (c) => ({
-                uid: c.uid,
-                name: c.name || c.displayName || '',
-                instagram: c.instagram || '',
-                profilePicture: c.profilePicture || c.instagramProfilePic || c.profilePic || c.photoURL || '',
-                profileStatus: c.profileStatus || ''
-            });
-            const ranked = all
-                .filter(c => counts[c.uid] > 0)
-                .map(c => ({ ...publicCard(c), referralCount: counts[c.uid] }))
-                .sort((a, b) => b.referralCount - a.referralCount);
-
-            return res.status(200).json({
-                success: true,
-                referrals: referrals.map(publicCard),
-                leaderboard: ranked.slice(0, 10),
-                myRank: ranked.findIndex(c => c.uid === me.uid) + 1
-            });
+            return res.status(200).json({ success: true, ...buildCreatorReferrals(all, decodedToken.uid) });
         } catch (err) {
             console.error('[API/CREATOR-JOIN] Creator referrals error:', err);
             return res.status(500).json({ success: false, error: err.message });

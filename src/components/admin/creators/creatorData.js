@@ -4,6 +4,7 @@ import { PREDEFINED_CITIES, CREATOR_NICHES, nicheKey, isCollegeNiche } from '../
 import { extractSocialUsername } from '../../../lib/socialUtils';
 import { normalizePhoneNumber } from '../../../lib/utils';
 import { creatorKey, creatorReach, isBangaloreVariant, toMillis } from '../creatorPortal/creatorUtils';
+import { referralCounts, tierFor } from '../../../lib/creator/referralTiers';
 
 /* ── Search ──────────────────────────────────────────────────────────────── */
 
@@ -346,24 +347,28 @@ export const buildReferralLeaderboard = (creators, { since = 0, city = 'all' } =
     const rows = [...referred.values()]
         .filter(({ referrer }) => city === 'all' || referrer.city === city || (city === 'Bengaluru' && isBangaloreVariant(referrer.city)))
         .map(({ referrer, list }) => {
-            const verified = list.filter(r => r.profileStatus === 'approved').length;
+            // Approved and not voided: what counts towards the creator's tier (same as the app).
+            const verified = list.filter(referralCounts).length;
             const latest = Math.max(0, ...list.map(creatorJoinedAt));
             return {
                 creator: referrer,
                 referrals: list.sort((a, b) => creatorJoinedAt(b) - creatorJoinedAt(a)),
                 count: list.length,
                 verified,
-                pending: list.filter(r => !r.profileStatus || r.profileStatus === 'pending' || r.profileStatus === 'pending_verification').length,
+                pending: list.filter(r => !r.referralVoid && (!r.profileStatus || r.profileStatus === 'pending' || r.profileStatus === 'pending_verification')).length,
+                voided: list.filter(r => r.referralVoid).length,
+                tier: tierFor(verified),
                 reach: list.reduce((sum, r) => sum + creatorReach(r), 0),
                 latest,
             };
         })
-        .sort((a, b) => b.count - a.count || b.verified - a.verified || a.latest - b.latest);
+        // Approved referrals first, like the creators' own leaderboard; then all sign-ups.
+        .sort((a, b) => b.verified - a.verified || b.count - a.count || a.latest - b.latest);
 
     // Equal scores share a rank (1, 2, 2, 4…).
     let prev = null;
     rows.forEach((r, i) => {
-        r.rank = prev && prev.count === r.count && prev.verified === r.verified ? prev.rank : i + 1;
+        r.rank = prev && prev.verified === r.verified && prev.count === r.count ? prev.rank : i + 1;
         prev = r;
     });
 
@@ -372,4 +377,11 @@ export const buildReferralLeaderboard = (creators, { since = 0, city = 'all' } =
         total,
         unmatched: [...unmatched.entries()].map(([code, count]) => ({ code, count })).sort((a, b) => b.count - a.count),
     };
+};
+
+/* Each referrer's tier (Scout, Connector…) by creatorKey, for badges on applicant lists. */
+export const referralTierMap = (creators) => {
+    const map = new Map();
+    buildReferralLeaderboard(creators).rows.forEach(r => { if (r.tier) map.set(creatorKey(r.creator), { tier: r.tier, approved: r.verified }); });
+    return map;
 };

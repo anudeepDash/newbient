@@ -58,7 +58,9 @@ import { clientSheetSpec, newbiIdOf } from './shortlistModel';
 import CampaignTickets from './CampaignTickets';
 import { canGetTicket, passFor, passesByCreator, useCampaignPasses } from './ticketModel';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
-import { BrandMark, CampaignStatusPill, CampaignThumb, CheckBox, ConfirmSheet, Spinner, StageBadge } from './parts';
+import { BrandMark, CampaignStatusPill, CampaignThumb, CheckBox, ConfirmSheet, ReferralTierBadge, Spinner, StageBadge } from './parts';
+import { referralTierMap } from '../creators/creatorData';
+import { creatorKey } from '../creatorPortal/creatorUtils';
 import {
     STAGES, applicantsFor, orphanSubmitters, isSelected, campaignStatus, creatorHandle, creatorPhotoOf, creatorKeys, creatorRef, formatCount, formatDay,
     inr, stageMeta, taskTypeOf, platformOf, daysUntil, waNumber, isUniversalCity,
@@ -118,6 +120,8 @@ const CampaignManage = ({
     const passMap = useMemo(() => passesByCreator(passes), [passes]);
 
     const applicants = useMemo(() => (campaign ? applicantsFor(campaign, creators) : []), [campaign, creators]);
+    // Referral tiers (Connector and up get priority in shortlisting; see lib/creator/referralTiers.js).
+    const referralTiers = useMemo(() => referralTierMap(creators), [creators]);
     // Work sent in under a login with no creator profile linked: reviewable in Deliverables only.
     const orphans = useMemo(() => (campaign ? orphanSubmitters(campaign, creators) : []), [campaign, creators]);
     const deliverableEntries = useMemo(() => [...applicants, ...orphans], [applicants, orphans]);
@@ -724,6 +728,7 @@ const CampaignManage = ({
                                             <StageBadge stage={a.stage} />
                                             {a.criteria.eligible ? <Badge tone="green"><Check size={10} strokeWidth={3} /> Meets rules</Badge> : <Badge tone="amber">Below rules</Badge>}
                                             {a.criteria.nicheMatch && <Badge tone="violet"><Sparkles size={10} /> Niche</Badge>}
+                                            {referralTiers.get(creatorKey(c)) && <ReferralTierBadge standing={referralTiers.get(creatorKey(c))} />}
                                             {chosen(a) && a.progress.total > 0 && (
                                                 <span className="text-[11px] font-semibold text-gray-500">{a.progress.approved}/{a.progress.total} done</span>
                                             )}
@@ -875,6 +880,7 @@ const CampaignManage = ({
                 onClose={() => setParam('creator', null)}
                 campaign={campaign}
                 entry={openEntry}
+                referralStanding={openEntry ? referralTiers.get(creatorKey(openEntry.creator)) : null}
                 busy={busy}
                 onSelect={(e) => askSelect([e])}
                 onUnselect={(e) => askUnselect([e])}

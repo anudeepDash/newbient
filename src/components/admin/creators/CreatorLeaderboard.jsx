@@ -7,6 +7,10 @@ import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import Info from 'lucide-react/dist/esm/icons/info';
+import Ban from 'lucide-react/dist/esm/icons/ban';
+import Undo2 from 'lucide-react/dist/esm/icons/undo-2';
+import { useStore } from '../../../lib/store';
+import { REFERRAL_TIERS } from '../../../lib/creator/referralTiers';
 import { cn } from '../../../lib/utils';
 import { PREDEFINED_CITIES } from '../../../lib/constants';
 import { exportSubtitle, fileDate } from '../../../lib/xlsx';
@@ -18,7 +22,10 @@ import { buildReferralLeaderboard, matchesCreatorSearch, creatorJoinedAt } from 
 
 /*
  * Referral leaderboard: who brought in the most creators with their invite
- * link (/creator/join?ref=…). Scores come from each creator's `referredBy`.
+ * link (/creator/apply?ref=…). Scores come from each creator's `referredBy`.
+ * Ranked by approved referrals that aren't voided (the same count the app
+ * uses for tiers, src/lib/creator/referralTiers.js). Voiding a referral here
+ * takes it off the referrer's tier and rank.
  */
 
 const PERIODS = [
@@ -64,14 +71,16 @@ const PodiumCard = ({ row, leader, onOpen, tall }) => {
             </div>
             <p className="mt-3 w-full truncate text-[16px] font-extrabold">{c.name || 'Unnamed creator'}</p>
             <p className="w-full truncate text-[12px] text-gray-500">{[c.city, c.creatorId && `ID ${c.creatorId}`].filter(Boolean).join(' · ') || '—'}</p>
-            <p className={cn('mt-3 font-heading text-[34px] font-extrabold leading-none tabular-nums', medal.card.text)}>{row.count}</p>
-            <p className="text-[12px] font-semibold text-gray-500">referral{row.count === 1 ? '' : 's'}</p>
+            <p className={cn('mt-3 font-heading text-[34px] font-extrabold leading-none tabular-nums', medal.card.text)}>{row.verified}</p>
+            <p className="text-[12px] font-semibold text-gray-500">approved referral{row.verified === 1 ? '' : 's'}</p>
             <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-black/[0.06] dark:bg-white/[0.08]">
-                <div className={cn('h-full rounded-full', medal.bar)} style={{ width: `${Math.max(6, (row.count / leader) * 100)}%` }} />
+                <div className={cn('h-full rounded-full', medal.bar)} style={{ width: `${Math.max(6, (row.verified / leader) * 100)}%` }} />
             </div>
             <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-                <Badge tone="green">{row.verified} verified</Badge>
+                {row.tier && <Badge tone={row.tier.tone}>{row.tier.label}</Badge>}
+                <Badge tone="gray">{row.count} signed up</Badge>
                 {row.pending > 0 && <Badge tone="amber">{row.pending} pending</Badge>}
+                {row.voided > 0 && <Badge tone="rose">{row.voided} voided</Badge>}
             </div>
         </button>
     );
@@ -90,7 +99,7 @@ const CreatorLeaderboard = ({ creators, onSelectCreator }) => {
 
     const board = useMemo(() => buildReferralLeaderboard(creators, { since, city }), [creators, since, city]);
     const rows = useMemo(() => board.rows.filter(r => matchesCreatorSearch(r.creator, search, 'all')), [board, search]);
-    const leader = board.rows[0]?.count || 1;
+    const leader = board.rows[0]?.verified || 1;
 
     const cityOptions = useMemo(() => {
         const set = new Set(PREDEFINED_CITIES.filter(c => c !== 'Others'));
@@ -126,6 +135,8 @@ const CreatorLeaderboard = ({ creators, onSelectCreator }) => {
             { header: 'Referrals', key: 'count', type: 'number', value: r => r.count },
             { header: 'Verified referrals', key: 'verified', type: 'number', value: r => r.verified },
             { header: 'Pending referrals', type: 'number', value: r => r.pending },
+            { header: 'Voided referrals', type: 'number', value: r => r.voided },
+            { header: 'Tier', value: r => r.tier?.label || '' },
             { header: 'Referred reach', type: 'number', value: r => r.reach },
             { header: 'Latest referral', type: 'date', value: r => (r.latest ? new Date(r.latest) : null) },
         ],
@@ -137,7 +148,7 @@ const CreatorLeaderboard = ({ creators, onSelectCreator }) => {
                 <StatTile label="Referred sign-ups" value={totals.signups.toLocaleString()} hint={periodLabel} icon={UserPlus} tone="pink" />
                 <StatTile label="Active referrers" value={board.rows.length.toLocaleString()} hint="Brought in at least one" icon={Users} tone="violet" />
                 <StatTile label="Verified referrals" value={totals.verified.toLocaleString()} hint={`${totals.rate}% of referred sign-ups`} icon={ShieldCheck} tone="green" />
-                <StatTile label="Top referrer" value={top ? top.count : 0} hint={top ? top.creator.name : 'No referrals yet'} icon={Trophy} tone="amber" onClick={top ? () => onSelectCreator(top.creator) : undefined} />
+                <StatTile label="Top referrer" value={top ? top.verified : 0} hint={top ? top.creator.name : 'No referrals yet'} icon={Trophy} tone="amber" onClick={top ? () => onSelectCreator(top.creator) : undefined} />
             </div>
 
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
@@ -185,20 +196,24 @@ const CreatorLeaderboard = ({ creators, onSelectCreator }) => {
                                                 <button type="button" onClick={() => onSelectCreator(r.creator)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
                                                     <Avatar src={creatorPhoto(r.creator)} name={r.creator.name} size={40} />
                                                     <span className="min-w-0 flex-1">
-                                                        <span className="block truncate text-[15px] font-bold hover:underline">{r.creator.name || 'Unnamed creator'}</span>
+                                                        <span className="flex items-center gap-1.5">
+                                                            <span className="truncate text-[15px] font-bold hover:underline">{r.creator.name || 'Unnamed creator'}</span>
+                                                            {r.tier && <Badge tone={r.tier.tone} className="shrink-0">{r.tier.label}</Badge>}
+                                                        </span>
                                                         <span className="block truncate text-[12px] text-gray-500">{[r.creator.city, r.creator.creatorId && `ID ${r.creator.creatorId}`].filter(Boolean).join(' · ') || '—'}</span>
                                                         <span className="mt-1.5 block h-1.5 w-full max-w-[260px] overflow-hidden rounded-full bg-black/[0.06] dark:bg-white/[0.08]">
-                                                            <span className={cn('block h-full rounded-full', tone.dot)} style={{ width: `${Math.max(4, (r.count / leader) * 100)}%` }} />
+                                                            <span className={cn('block h-full rounded-full', tone.dot)} style={{ width: `${Math.max(4, (r.verified / leader) * 100)}%` }} />
                                                         </span>
                                                     </span>
                                                 </button>
                                                 <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
-                                                    <Badge tone="green">{r.verified} verified</Badge>
+                                                    <Badge tone="gray">{r.count} signed up</Badge>
                                                     {r.pending > 0 && <Badge tone="amber">{r.pending} pending</Badge>}
+                                                    {r.voided > 0 && <Badge tone="rose">{r.voided} voided</Badge>}
                                                 </div>
                                                 <div className="w-14 shrink-0 text-right">
-                                                    <p className={cn('text-[20px] font-extrabold leading-none tabular-nums', tone.text)}>{r.count}</p>
-                                                    <p className="text-[11px] text-gray-500">referral{r.count === 1 ? '' : 's'}</p>
+                                                    <p className={cn('text-[20px] font-extrabold leading-none tabular-nums', tone.text)}>{r.verified}</p>
+                                                    <p className="text-[11px] text-gray-500">approved</p>
                                                 </div>
                                                 <button
                                                     type="button"
@@ -246,24 +261,47 @@ const CreatorLeaderboard = ({ creators, onSelectCreator }) => {
 
             <p className="flex items-start gap-1.5 text-[12px] text-gray-500">
                 <Info size={13} className="mt-0.5 shrink-0" />
-                Ranked by sign-ups that used each creator's referral code (their ID, Instagram or LinkedIn handle). Ties go to more verified sign-ups.
+                Ranked by approved sign-ups that used each creator's referral code (their ID, Instagram or LinkedIn handle), not counting voided ones; ties go to more sign-ups. Tiers: {REFERRAL_TIERS.map(t => `${t.label} ${t.min}`).join(', ')} approved.
             </p>
         </div>
     );
 };
 
+/* Voiding is for referrals that break the rules (a second account, a friend's fake page). It can be undone. */
+const toggleVoid = async (rc) => {
+    const { updateCreator, addToast } = useStore.getState();
+    const voiding = !rc.referralVoid;
+    try {
+        await updateCreator(creatorKey(rc), { referralVoid: voiding, referralVoidAt: voiding ? new Date().toISOString() : null });
+        addToast?.(voiding ? `${rc.name || 'Referral'} no longer counts for the referrer.` : `${rc.name || 'Referral'} counts again.`, 'success');
+    } catch (error) {
+        addToast?.(error?.message || "Couldn't update the referral. Please try again.", 'error');
+    }
+};
+
 const ReferralList = ({ referrals, onOpen, compact }) => (
     <ul className={cn('space-y-0.5 px-2 pb-3', compact ? 'pt-1' : 'mx-4 mb-3 rounded-xl bg-black/[0.025] pt-2 dark:bg-white/[0.03] sm:mx-5')}>
         {referrals.slice(0, compact ? 5 : 50).map(rc => (
-            <li key={creatorKey(rc)}>
-                <button type="button" onClick={() => onOpen(rc)} className="flex min-h-[44px] w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-black/[0.04] dark:hover:bg-white/5">
+            <li key={creatorKey(rc)} className="flex items-center gap-1">
+                <button type="button" onClick={() => onOpen(rc)} className={cn('flex min-h-[44px] min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-black/[0.04] dark:hover:bg-white/5', rc.referralVoid && 'opacity-60')}>
                     <Avatar src={creatorPhoto(rc)} name={rc.name} size={30} />
                     <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13px] font-semibold">{rc.name || 'Unnamed creator'}</span>
+                        <span className={cn('block truncate text-[13px] font-semibold', rc.referralVoid && 'line-through')}>{rc.name || 'Unnamed creator'}</span>
                         <span className="block truncate text-[11px] text-gray-500">{[rc.city, `${formatCount(creatorReach(rc))} followers`, creatorJoinedAt(rc) ? `joined ${formatDate(creatorJoinedAt(rc))}` : null].filter(Boolean).join(' · ')}</span>
                     </span>
-                    <CreatorStatusBadge status={rc.profileStatus} />
+                    {rc.referralVoid ? <Badge tone="rose">Voided</Badge> : <CreatorStatusBadge status={rc.profileStatus} />}
                 </button>
+                {!compact && (
+                    <button
+                        type="button"
+                        onClick={() => toggleVoid(rc)}
+                        title={rc.referralVoid ? 'Count this referral again' : 'Void: stop this referral counting for the referrer'}
+                        aria-label={rc.referralVoid ? `Count ${rc.name || 'this referral'} again` : `Void ${rc.name || 'this referral'}`}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-black/5 hover:text-rose-600 dark:hover:bg-white/5 dark:hover:text-rose-400"
+                    >
+                        {rc.referralVoid ? <Undo2 size={15} /> : <Ban size={15} />}
+                    </button>
+                )}
             </li>
         ))}
         {referrals.length > (compact ? 5 : 50) && <li className="px-2 py-1 text-[12px] text-gray-500">and {referrals.length - (compact ? 5 : 50)} more</li>}

@@ -105,14 +105,25 @@ export const createCreatorSlice = (set, get) => ({
         return () => { unsub(); if (timer) clearInterval(timer); };
     },
 
-    /* Your referrals and the top-10 leaderboard, from the server (never the whole creators list). */
+    /* Your referrals, your tier and the top-10 boards (all time and this month), from the server (never the whole creators list). */
     referrals: null,
     _referralsAt: 0,
     loadReferrals: async ({ force = false } = {}) => {
         if (!force && get().referrals && Date.now() - get()._referralsAt < REFERRALS_TTL_MS) return;
         set({ _referralsAt: Date.now() });
         const res = await callCreatorApi('creator-referrals', {}, { method: 'GET' });
-        set({ referrals: res.ok ? { list: res.data.referrals || [], leaderboard: res.data.leaderboard || [], myRank: res.data.myRank || 0 } : { list: [], leaderboard: [], myRank: 0, failed: true } });
+        const d = res.ok ? res.data : {};
+        set({
+            referrals: {
+                list: d.referrals || [],
+                leaderboard: d.leaderboard || [],
+                monthLeaderboard: d.monthLeaderboard || [],
+                me: d.me || { approved: 0, pending: 0, month: 0, rank: 0, monthRank: 0 },
+                myRank: d.myRank || 0,
+                referrers: d.referrers || 0,
+                ...(res.ok ? {} : { failed: true }),
+            },
+        });
     },
 
     openCampaigns: [],

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Target from 'lucide-react/dist/esm/icons/target';
 import Check from 'lucide-react/dist/esm/icons/check';
 import Minus from 'lucide-react/dist/esm/icons/minus';
+import Medal from 'lucide-react/dist/esm/icons/medal';
 import { cn } from '../../../lib/utils';
 import { Badge, Button } from '../ui';
 import Sheet from '../Sheet';
@@ -21,6 +22,17 @@ export const StageBadge = ({ stage, className }) => {
 };
 
 /** Campaign artwork, or a coloured placeholder. */
+/* A creator's referral tier, e.g. "Connector". Connector and up are shortlisted first. */
+export const ReferralTierBadge = ({ standing, className }) => {
+    if (!standing?.tier) return null;
+    const { tier, approved } = standing;
+    return (
+        <Badge tone={tier.tone} className={className} title={`Brought in ${approved} approved creator${approved === 1 ? '' : 's'}`}>
+            <Medal size={10} /> {tier.label}
+        </Badge>
+    );
+};
+
 export const CampaignThumb = ({ campaign, className, iconSize = 22 }) => {
     const [failed, setFailed] = useState(false);
     const src = campaign?.thumbnail && !failed ? campaign.thumbnail : '';

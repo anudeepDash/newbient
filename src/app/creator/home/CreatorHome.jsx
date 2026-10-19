@@ -19,6 +19,7 @@ import { useMyCampaigns, useReferrals } from '../useCreatorData';
 import OpeningsTab from './OpeningsTab';
 import DeliverablesTab from './DeliverablesTab';
 import ReferralsTab from './ReferralsTab';
+import ReferBanner from './ReferBanner';
 import ProfileTab from './ProfileTab';
 import MyOutreachCampaigns from './MyOutreachCampaigns';
 
@@ -194,6 +195,7 @@ const CreatorHome = () => {
                     <CreatorHeader creator={creator} profile={profile} stats={stats} />
                     <StatusNotice creator={creator} settings={settings} />
                     <SubTabs tabs={tabs} />
+                    {section === '' && <ReferBanner creator={creator} referrals={referrals} />}
                     {section === '' && <OpeningsTab creator={creator} />}
                     {section === 'deliverables' && <DeliverablesTab mine={mine} />}
                     {section === 'referrals' && <ReferralsTab creator={creator} referrals={referrals} />}
