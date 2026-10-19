@@ -331,7 +331,7 @@ export const handleCallback = async (req, res, { db }) => {
 /* Statuses that an automatic check can move to approved. Rejected and suspended stay as they are. */
 const AWAITING_VERIFICATION = new Set(['pending', 'pending_verification']);
 /* Where an automatically read follower count came from (anything but the creator's own typing). */
-const AUTO_SOURCES = new Set(['business_discovery', 'public', 'rapidapi']);
+const AUTO_SOURCES = new Set(['business_discovery', 'public', 'rapidapi', 'apify']);
 
 const decideStatus = ({ ownershipVerified, autoChecked = false, followers, settings }) => {
     if (!ownershipVerified && !autoChecked) return 'pending';
