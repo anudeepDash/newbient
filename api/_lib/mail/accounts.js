@@ -51,7 +51,7 @@ export const getEmailConfig = (serviceKey, defaultName, defaultEmail) => {
  * the owner sets SMTP_FROM_TICKETS to a tickets@ alias.
  */
 export const SENDERS = {
-    official: { key: 'OFFICIAL', name: 'Newbi Entertainment', email: 'partnership@newbi.live' },
+    official: { key: 'OFFICIAL', name: 'newbi.live', email: 'partnership@newbi.live' },
     tickets: { key: 'TICKETS', name: 'Newbi Tickets', email: 'booking@newbi.live' },
     creators: { key: 'CREATORS', name: 'Newbi Creators', email: 'creators@newbi.live' },
     security: { key: 'SECURITY', name: 'Newbi Security', email: 'noreply@newbi.live' },

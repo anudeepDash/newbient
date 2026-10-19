@@ -36,11 +36,11 @@ export const brandFor = (model = {}, origin = DEFAULT_ORIGIN) => {
     }
     return {
         accent: BRAND_GREEN, onAccent: '#000000', ink: '#15803d', headerBg: '#0A0A0A', headerClass: 'hdr-dark',
-        logo: `${origin}/brand/newbi-logo-email.png`, logoAlt: 'newbi.live', logoWidth: 84, logoHeight: 41, align: 'left',
+        logo: `${origin}/brand/newbi-logo-email.png`, logoAlt: 'newbi.live', logoWidth: 96, logoHeight: 47, align: 'left',
         note: '',
     };
 };
-const COMPANY_NAME = 'Newbi Entertainment & Marketing LLP';
+const COMPANY_NAME = 'newbi.live';
 const SOCIALS = [
     { name: 'Instagram', icon: 'instagram', url: () => 'https://www.instagram.com/newbi.live' },
     { name: 'Website', icon: 'website', url: (origin) => origin },
@@ -133,7 +133,7 @@ const DOC_TILE = { PDF: '#e11d48', INVOICE: '#18181b', PROPOSAL: '#18181b', AGRE
 
 const renderBlock = (block, ctx) => {
     if (!block) return '';
-    if (block.p !== undefined) return isPresent(block.p) ? `<p class="txt" style="margin:0 0 18px;font-size:15px;line-height:1.65;color:#3f3f46">${para(block.p)}</p>` : '';
+    if (block.p !== undefined) return isPresent(block.p) ? `<p class="txt" style="margin:0 0 20px;font-size:16px;line-height:1.7;color:#3f3f46">${para(block.p)}</p>` : '';
     if (block.lead !== undefined) return isPresent(block.lead) ? `<p class="strong" style="margin:0 0 20px;font-size:17px;line-height:1.55;color:#18181b">${para(block.lead)}</p>` : '';
     if (block.note !== undefined) return isPresent(block.note) ? `<p class="muted" style="margin:0 0 16px;font-size:13px;line-height:1.6;color:#71717a">${para(block.note)}</p>` : '';
     if (block.quote !== undefined) return isPresent(block.quote) ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px"><tr><td class="card txt" style="padding:16px 18px;border-left:3px solid ${ctx.accent};background:#fafafa;border-radius:4px 14px 14px 4px;font-size:15px;line-height:1.6;color:#3f3f46">${para(block.quote)}</td></tr></table>` : '';
@@ -303,7 +303,8 @@ ${heroSrc ? `<tr><td style="padding:0;font-size:0;line-height:0;background:#0A0A
 ${isPresent(model.eyebrow) ? `<p style="margin:0 0 16px"><span class="chip" style="display:inline-block;padding:6px 13px;border-radius:999px;background:${brand.accent};color:${brand.onAccent};font-size:11px;font-weight:900;letter-spacing:1.1px;text-transform:uppercase">${esc(model.eyebrow)}</span></p>` : ''}
 ${isPresent(model.title) ? `<h1 class="title" style="margin:0 0 22px;font-size:32px;line-height:1.15;font-weight:900;letter-spacing:-0.8px;color:#09090b">${esc(model.title)}</h1>` : ''}
 ${blocks.map(b => renderBlock(b, ctx)).join('\n')}
-${hasCta ? button(ctaHref, model.cta.label, { bg: brand.accent, fg: brand.onAccent, cls: 'cta' }) : ''}
+${hasCta ? button(ctaHref, model.cta.label, { bg: brand.accent, fg: brand.onAccent, cls: 'cta', block: true }) : ''}
+${model.signoff === false ? '' : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 20px"><tr><td class="rule" style="border-top:1px solid #ececef;padding:20px 0 0"><p class="strong" style="margin:0 0 2px;font-size:14px;font-weight:800;color:#18181b">${esc(model.signoffName || 'The newbi.live team')}</p><p style="margin:0;font-size:12px"><a href="${esc(origin)}" target="_blank" style="color:#71717a;text-decoration:none">newbi.live</a></p></td></tr></table>`}
 </td></tr>
 <tr><td class="foot" align="center" style="padding:32px 32px 30px;background:#0A0A0A;text-align:center">
 <table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:0 auto 22px"><tr>
@@ -312,7 +313,7 @@ ${socials.map(s => `<td style="padding:0 6px"><a href="${esc(s.href)}" target="_
 ${isPresent(model.reason) ? `<p style="margin:0 auto 14px;max-width:440px;font-size:12px;line-height:1.6;color:#a1a1aa">${esc(model.reason)}</p>` : ''}
 ${brand.note ? `<p style="margin:0 auto 14px;max-width:440px;font-size:12px;line-height:1.6;color:#a1a1aa">${esc(brand.note)}</p>` : ''}
 <p style="margin:0 0 16px;font-size:12px;line-height:1.6;color:#a1a1aa">${footLinks.map(footLink).join('&nbsp;&nbsp;·&nbsp;&nbsp;')}</p>
-<p style="margin:0;font-size:11px;line-height:1.6;color:#71717a">© ${year} ${esc(COMPANY_NAME)}. All rights reserved.<br><a href="${esc(origin)}" target="_blank" style="color:#71717a;text-decoration:none">newbi.live</a></p>
+<p style="margin:0;font-size:11px;line-height:1.6;color:#71717a">© ${year} <a href="${esc(origin)}" target="_blank" style="color:#a1a1aa;font-weight:700;text-decoration:none">${esc(COMPANY_NAME)}</a>. All rights reserved.</p>
 </td></tr>
 </table>
 </td></tr>

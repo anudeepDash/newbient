@@ -2,9 +2,6 @@
 export default (data = {}) => ({
     sender: 'legal',
     kind: 'transactional',
-    // The logo with the company name the document is issued under.
-    brand: 'company',
-    company: data.company,
     subject: data.subject || `Agreement${data.agreementNumber ? ` ${data.agreementNumber}` : ''} ready for review`,
     preheader: [data.agreementNumber, data.projectName].filter(Boolean).join(' · ') || 'Your agreement is ready to review and sign.',
     eyebrow: 'Agreement',
@@ -14,5 +11,5 @@ export default (data = {}) => ({
         { document: { kind: 'AGREEMENT', name: `${data.projectName || 'Agreement'}${data.agreementNumber ? ` · ${data.agreementNumber}` : ''}.pdf`, meta: [data.secondPartyName ? `With ${data.secondPartyName}` : '', data.effectiveDate ? `Effective ${data.effectiveDate}` : ''], url: data.agreementUrl, label: 'Open agreement' } },
     ],
     cta: data.agreementUrl ? { label: 'Review and sign', url: data.agreementUrl } : null,
-    reason: 'Sent by Newbi Entertainment & Marketing LLP.',
+    reason: 'Sent by newbi.live.',
 });

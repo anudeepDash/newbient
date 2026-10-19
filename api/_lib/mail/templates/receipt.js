@@ -2,9 +2,6 @@
 export default (data = {}) => ({
     sender: 'finance',
     kind: 'transactional',
-    // The logo with the company name the document is issued under.
-    brand: 'company',
-    company: data.company,
     subject: data.subject || `Payment receipt${data.reference ? ` ${data.reference}` : ''}`,
     preheader: [data.amount && `₹${data.amount}`, data.paymentMode, data.date].filter(Boolean).join(' · ') || 'Your payment receipt.',
     eyebrow: 'Receipt',
@@ -15,5 +12,5 @@ export default (data = {}) => ({
         { stats: [['Paid to', data.receiverName], ['Amount', data.amount ? `₹${data.amount}` : ''], ['Method', data.paymentMode]] },
     ],
     cta: data.verifyUrl ? { label: 'Verify this payment', url: data.verifyUrl } : null,
-    reason: 'Finance email from Newbi Entertainment & Marketing LLP.',
+    reason: 'Finance email from newbi.live.',
 });
