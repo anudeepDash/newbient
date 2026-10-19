@@ -6,6 +6,8 @@ import Timeline from '../components/Timeline';
 import ClosingCta from '../components/ClosingCta';
 import Upcoming from '../home/Upcoming';
 import Wordmark from '../home/Wordmark';
+import { BrandArt } from '../home/Hero';
+import Sticker from '../components/Sticker';
 import { usePublicFeed, isOff } from '../feed';
 import { APP_LINKS } from '../links';
 
@@ -14,6 +16,14 @@ const THINGS = [
     { icon: HandHeart, t: 'Volunteer gigs', d: 'Work a show from the inside: registrations, crowd, backstage, hospitality. Trained and briefed by us.' },
     { icon: Gift, t: 'Giveaways', d: 'Passes, merch and drops from the brands and artists we work with. Enter with one tap.' },
     { icon: QrCode, t: 'Your passes', d: 'Every pass lives in your account with a QR code. Show it at the gate and you are in.' },
+];
+
+// What the community gets, floating around the N. mark in the hero.
+const COMMUNITY_TAGS = [
+    { label: 'Guestlists', icon: ListChecks, pos: 'left-[4%] top-[10%]', tilt: '-rotate-[6deg]', delay: '0s' },
+    { label: 'QR passes', icon: QrCode, pos: 'right-[2%] top-[24%]', tilt: 'rotate-[5deg]', delay: '-2s', accent: true },
+    { label: 'Volunteer gigs', icon: HandHeart, pos: 'left-[0%] bottom-[26%]', tilt: 'rotate-[4deg]', delay: '-4s' },
+    { label: 'Giveaways', icon: Gift, pos: 'right-[6%] bottom-[8%]', tilt: '-rotate-[4deg]', delay: '-1s' },
 ];
 
 const STEPS = [
@@ -54,35 +64,46 @@ export default function CommunityPage() {
 
     return (
         <div>
-            <section className="relative min-h-[88svh] flex flex-col overflow-hidden">
+            {/* Hero: the home hero's look (colour wash, sticker headline, the N. mark with tags). */}
+            <section className="relative overflow-hidden">
                 <div aria-hidden="true" className="absolute inset-0">
-                    <div className="absolute inset-0" style={{ background: 'radial-gradient(70% 55% at 85% 0%, rgba(57,255,20,0.16), transparent 70%)' }} />
-                    <div className="absolute inset-0 opacity-[0.07] dark:opacity-[0.06] text-black dark:text-white" style={{ backgroundImage: 'linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)', backgroundSize: '72px 72px', maskImage: 'linear-gradient(to bottom, #000 40%, transparent)', WebkitMaskImage: 'linear-gradient(to bottom, #000 40%, transparent)' }} />
+                    <div className="absolute inset-0 dark:hidden" style={{ background: 'radial-gradient(55% 55% at 88% 8%, rgba(57,255,20,0.32), transparent 70%), radial-gradient(45% 50% at 0% 85%, rgba(56,189,248,0.16), transparent 70%), radial-gradient(40% 40% at 45% 40%, rgba(255,255,255,0.7), transparent 70%)' }} />
+                    <div className="absolute inset-0 hidden dark:block" style={{ background: 'radial-gradient(55% 55% at 88% 8%, rgba(57,255,20,0.20), transparent 70%), radial-gradient(45% 50% at 0% 85%, rgba(56,189,248,0.10), transparent 70%)' }} />
+                    <div className="absolute inset-0 opacity-[0.035] text-black dark:text-white" style={{ backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)', backgroundSize: '22px 22px', maskImage: 'linear-gradient(to bottom, #000 30%, transparent 80%)', WebkitMaskImage: 'linear-gradient(to bottom, #000 30%, transparent 80%)' }} />
                 </div>
-                <div className="relative flex-1 flex flex-col justify-center max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-14 md:py-20">
-                    <h1 className="mt-6 font-heading font-extrabold tracking-[-0.045em] leading-[0.9] text-gray-950 dark:text-white text-[14vw] sm:text-[11vw] lg:text-[8.5vw] xl:text-[7.5vw]">
-                        <span className="nb-exit-l block">Be on the list</span>{' '}
-                        <span className="nb-exit-r block"><span className="nb-ghost">for every show</span> <span className="text-emerald-600 dark:text-neon-green">near you.</span></span>
-                    </h1>
-                    <div className="nb-exit-fade mt-8 md:mt-10 max-w-xl">
-                        <p className="text-lg md:text-2xl leading-snug text-gray-700 dark:text-zinc-300">
-                            Guestlists, volunteer gigs, giveaways and passes, all in one account. Sign in once; your QR code does the rest at the gate.
-                        </p>
-                        <div className="mt-7 flex flex-col sm:flex-row gap-3">
-                            <a href={APP_LINKS.community} className="group h-14 px-8 inline-flex items-center justify-center gap-2 rounded-full bg-neon-green text-black font-heading font-bold text-base hover:scale-[1.03] active:scale-[0.98] transition">
-                                Join the community <ArrowUpRight size={18} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" aria-hidden="true" />
-                            </a>
-                            <a href="#upcoming" className="h-14 px-8 inline-flex items-center justify-center rounded-full border border-gray-950/25 dark:border-white/25 text-gray-950 dark:text-white font-heading font-bold text-base hover:bg-gray-950 hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors">
-                                What's coming up
-                            </a>
+                <div className="relative mx-auto w-full max-w-[1600px] px-4 pb-14 pt-4 sm:px-6 sm:pt-10 md:pt-16 lg:px-10 lg:pb-20">
+                    <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-x-10">
+                        <div className="order-2 lg:order-1">
+                            <h1 className="font-heading font-extrabold leading-[0.92] tracking-[-0.045em] text-gray-950 dark:text-white text-[14vw] sm:text-[10.5vw] lg:text-[6.2vw] 2xl:text-[7.2rem]">
+                                <span className="nb-exit-l block">Be on the list</span>{' '}
+                                <span className="nb-exit-r block">for every show</span>{' '}
+                                <span className="nb-exit-l block"><Sticker tilt="-rotate-[2deg]">near you.</Sticker></span>
+                            </h1>
+                            <p className="nb-exit-fade mt-6 max-w-lg text-lg leading-snug text-gray-700 dark:text-zinc-300 md:text-xl">
+                                Guestlists, volunteer gigs, giveaways and passes, all in one account. Sign in once; your QR code does the rest at the gate.
+                            </p>
+                            <div className="nb-exit-fade mt-8 flex flex-col gap-3 sm:flex-row">
+                                <a href={APP_LINKS.community} className="group inline-flex h-14 items-center justify-center gap-2 rounded-full border-[3px] border-black bg-neon-green px-8 font-heading text-base font-extrabold text-black shadow-[4px_4px_0_#000] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000] active:translate-y-0 active:shadow-[2px_2px_0_#000]">
+                                    Join the community <ArrowUpRight size={18} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+                                </a>
+                                <a href="#upcoming" className="inline-flex h-14 items-center justify-center rounded-full bg-white/60 px-8 font-heading text-base font-bold text-gray-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_8px_24px_-12px_rgba(0,0,0,0.3)] ring-1 ring-inset ring-black/[0.08] backdrop-blur-xl transition hover:bg-white/80 dark:bg-white/[0.08] dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] dark:ring-white/15 dark:hover:bg-white/[0.14]">
+                                    What's coming up
+                                </a>
+                            </div>
+                        </div>
+                        <div className="order-1 -mb-2 lg:order-2 lg:mb-0">
+                            <BrandArt tags={COMMUNITY_TAGS} />
                         </div>
                     </div>
                 </div>
             </section>
 
+            {/* What's coming up, right under the hero when there is something to show. */}
+            {events.length > 0 && <Upcoming events={events} index="01" />}
+
             <section aria-labelledby="things-title" className="py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
                 <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
-                    <SectionHeading id="things-title" index="01" eyebrow="What you can do" title="One account." highlight="Every night." text="Everything Newbi runs for the crowd lives in one place, under your name." />
+                    <SectionHeading id="things-title" index={events.length ? '02' : '01'} eyebrow="What you can do" title="One account." highlight="Every night." text="Everything Newbi runs for the crowd lives in one place, under your name." />
                     <ul className="mt-12 md:mt-16 grid gap-4 md:grid-cols-2">
                         {THINGS.map((p) => (
                             <li key={p.t} className="nb-reveal group p-7 md:p-10 rounded-[1.75rem] border border-gray-950/10 dark:border-white/10 bg-white/60 dark:bg-white/[0.03] hover:border-gray-950/30 dark:hover:border-neon-green/40 transition-colors">
@@ -97,14 +118,12 @@ export default function CommunityPage() {
 
             <section aria-labelledby="chow-title" className="py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
                 <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 grid gap-14 lg:grid-cols-[0.9fr_1.1fr]">
-                    <SectionHeading id="chow-title" index="02" eyebrow="How it works" title="Sign in once." highlight="Scan at the door." text="No printouts, no screenshots, no re-entering your details for every show." className="lg:sticky lg:top-28 self-start" />
+                    <SectionHeading id="chow-title" index={events.length ? '03' : '02'} eyebrow="How it works" title="Sign in once." highlight="Scan at the door." text="No printouts, no screenshots, no re-entering your details for every show." className="lg:sticky lg:top-28 self-start" />
                     <Timeline steps={STEPS} />
                 </div>
             </section>
 
-            {events.length > 0 ? (
-                <Upcoming events={events} index="03" />
-            ) : (
+            {events.length === 0 && (
                 <section id="upcoming" aria-labelledby="noup-title" className="scroll-mt-20 py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
                     <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
                         <SectionHeading id="noup-title" index="03" eyebrow="Coming up" title="Next shows land" highlight="here first." text="Nothing public is announced right now. Members hear about new lists first, in their account and by email." />
