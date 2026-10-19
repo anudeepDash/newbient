@@ -4,6 +4,8 @@ import QrCode from 'lucide-react/dist/esm/icons/qr-code';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import DoorOpen from 'lucide-react/dist/esm/icons/door-open';
 import { Button, Field, GlassChip, Stat, StatRow } from '../../components/app';
 import { useAppStore } from '../../lib/store/appStore';
 import { campaignPasses } from '../../lib/store/passes';
@@ -11,7 +13,7 @@ import { passesGet } from '../../lib/passesApi';
 import { isPresent } from '../../lib/present';
 import { cn } from '../../lib/utils';
 import { appPath } from '../host';
-import { ExternalTicketButton, passWhen } from '../passes/passParts';
+import { ExternalTicketButton, entryLine, passWhen } from '../passes/passParts';
 
 /*
  * "Your ticket" inside a campaign (/c/:id). Standalone, so the campaign page
@@ -74,10 +76,12 @@ const YourTicket = ({ campaignId, className }) => {
                     </div>
                 </div>
 
-                {(isPresent(passWhen(event)) || isPresent(event.venue)) && (
+                {(isPresent(passWhen(event)) || isPresent(event.venue) || isPresent(event.boxOffice) || isPresent(event.entry)) && (
                     <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
                         <Field icon={CalendarDays} label="When" value={passWhen(event)} />
+                        <Field icon={Clock} label="Box office" value={event.boxOffice} />
                         <Field icon={MapPin} label="Venue" value={event.venue} />
+                        <Field icon={DoorOpen} label="Entry" value={entryLine(event, hasQr)} />
                     </div>
                 )}
 

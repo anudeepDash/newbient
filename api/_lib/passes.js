@@ -617,6 +617,9 @@ const openTokenAction = async (db, body) => {
 
 /* ---------- campaign tickets ---------- */
 
+// Where creators go at the venue: the guestlist counter, or the regular ticket holders' entry.
+const ENTRY_VIA = ['guestlist', 'tickets'];
+
 const loadCampaignContext = async (db, campaignId) => {
     if (!idOk(campaignId)) throw new PassError('VALIDATION', 'Missing campaign.');
     const snap = await db.collection('campaigns').doc(campaignId).get();
@@ -630,17 +633,18 @@ const loadCampaignContext = async (db, campaignId) => {
             event = compact({ title: e.title, date: toIso(e.date), time: e.time, venue: e.location || e.venue, city: e.city, image: e.hubImage || e.image });
         }
     }
-    // No linked event (or it's gone): the campaign's own "where and when" from the editor, else its title.
-    if (!event.title) {
-        event = compact({
-            ...event,
-            title: campaign.eventName || campaign.title,
-            date: event.date || toIso(campaign.eventDate) || undefined,
-            time: event.time || campaign.eventTime || undefined,
-            venue: event.venue || campaign.venue || undefined,
-            city: event.city || campaign.eventCity || undefined,
-        });
-    }
+    // The campaign's own details (editor → Event passes) fill in, or override, the linked event's:
+    // name, date, time, venue, when the box office opens, and which counter creators go to.
+    event = compact({
+        ...event,
+        title: str(campaign.eventName, 120) || event.title || campaign.title,
+        date: toIso(campaign.eventDate) || event.date || undefined,
+        time: str(campaign.eventTime, 40) || event.time || undefined,
+        venue: str(campaign.venue, 160) || event.venue || undefined,
+        city: event.city || campaign.eventCity || undefined,
+        boxOffice: str(campaign.boxOfficeTime, 80) || undefined,
+        entry: ENTRY_VIA.includes(campaign.entryVia) ? campaign.entryVia : undefined,
+    });
     if (!event.image && campaign.thumbnail) event.image = campaign.thumbnail;
     return { campaign, event };
 };
@@ -732,8 +736,17 @@ const upsertCampaignPass = async (db, { campaign, event, creator, holder: holder
 
 /** Sends a campaign ticket on every channel: in the campaign, email (PDF attached), WhatsApp. */
 const deliverCampaignPass = async (db, ref, { skip = [], extra = {} } = {}) => {
-    const pass = await loadPass(db, ref);
+    let pass = await loadPass(db, ref);
     if (!pass) throw new PassError('NOT_FOUND', 'Pass not found.', 404);
+    // Event details may have changed since the pass was issued (date, time, box office,
+    // entry counter): refresh the pass's copy so the app, email and WhatsApp agree.
+    if (pass.source === 'campaign' && idOk(pass.sourceId)) {
+        const ctx = await loadCampaignContext(db, pass.sourceId).catch(() => null);
+        if (ctx?.event && JSON.stringify(ctx.event) !== JSON.stringify(pass.event || {})) {
+            await db.collection('passes').doc(ref).update({ event: ctx.event, updatedAt: nowIso() });
+            pass = { ...pass, event: ctx.event };
+        }
+    }
     const ext = pass.externalTicket || null;
     const ticketToken = makeSignedToken({ r: ref }, TICKET_LINK_TTL);
     const data = {
@@ -742,7 +755,10 @@ const deliverCampaignPass = async (db, ref, { skip = [], extra = {} } = {}) => {
         campaignId: pass.sourceId,
         eventName: pass.event?.title,
         date: pass.event?.date,
+        time: pass.event?.time,
         venue: pass.event?.venue,
+        boxOffice: pass.event?.boxOffice,
+        entry: pass.event?.entry,
         tier: pass.tier,
         qty: pass.qty,
         note: pass.note,

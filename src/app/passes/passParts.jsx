@@ -20,6 +20,17 @@ export const passWhen = (event = {}) => {
     return [format(date, 'EEE d MMM yyyy'), time].filter(Boolean).join(' · ');
 };
 
+/* Where to go at the venue (campaign editor → Event passes → Entry). */
+export const ENTRY_INFO = {
+    guestlist: { label: 'Guestlist counter', how: 'Go to the guestlist counter' },
+    tickets: { label: 'Ticket counter', how: 'Join the regular ticket holders’ entry' },
+};
+export const entryLine = (event = {}, hasQr = true) => {
+    const e = ENTRY_INFO[event.entry];
+    if (!e) return null;
+    return event.entry === 'guestlist' ? `${e.how}${hasQr ? ' and show this pass' : ' and give your name'}.` : `${e.how}${hasQr ? ' and show this pass' : ''}.`;
+};
+
 /* The QR code, drawn on the phone (works offline once the page has loaded). */
 export const PassQr = ({ value, size = 232, dimmed = false, className }) => {
     const [src, setSrc] = useState(null);

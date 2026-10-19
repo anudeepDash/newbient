@@ -1,12 +1,14 @@
 import React from 'react';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import DoorOpen from 'lucide-react/dist/esm/icons/door-open';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import Ban from 'lucide-react/dist/esm/icons/ban';
 import { AmbientBackdrop, Field, Stat, StatRow } from '../../components/app';
 import { isPresent } from '../../lib/present';
 import { cn } from '../../lib/utils';
-import { ExternalTicketButton, PassQr, passWhen } from './passParts';
+import { ExternalTicketButton, PassQr, entryLine, passWhen } from './passParts';
 
 /*
  * One pass, as the holder shows it at the gate: poster, event details, the QR
@@ -85,7 +87,9 @@ const PassView = ({ pass, token, offline = false }) => {
 
                 <div className="divide-y divide-black/[0.05] rounded-2xl border border-black/[0.05] px-4 dark:divide-white/[0.06] dark:border-white/[0.07]">
                     <Field icon={CalendarDays} label="When" value={when} />
+                    <Field icon={Clock} label="Box office" value={event.boxOffice} />
                     <Field icon={MapPin} label="Venue" value={[event.venue, event.city && !String(event.venue || '').includes(event.city) ? event.city : null].filter(Boolean).join(', ') || null} />
+                    <Field icon={DoorOpen} label="Entry" value={entryLine(event, pass.qr !== false)} />
                 </div>
 
                 <StatRow>

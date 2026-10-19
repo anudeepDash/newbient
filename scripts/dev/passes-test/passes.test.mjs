@@ -251,7 +251,7 @@ assert.equal(reReg.status, 'issued'); assert.notEqual(reReg.ref, r1.ref);
 ok('revoked guestlist pass is refused at the gate and the person can register again');
 
 console.log('Campaign passes without an event');
-await db.doc('campaigns/camp2').set({ title: 'Campus Week', eventName: 'Campus Week Finale', eventDate: future, venue: 'Main Ground', passKind: 'confirmation' });
+await db.doc('campaigns/camp2').set({ title: 'Campus Week', eventName: 'Campus Week Finale', eventDate: future, eventTime: '7 PM', boxOfficeTime: 'Opens 5 PM', entryVia: 'guestlist', venue: 'Main Ground', passKind: 'confirmation' });
 await db.doc('creators/cr4').set({ uid: 'cu4', name: 'Meera', email: 'meera@ex.com', shortlistedCampaigns: ['camp2'], joinedCampaigns: ['camp2'] });
 mails.length = 0;
 const cf = await A['issue-campaign'](db, { campaignId: 'camp2', creatorIds: ['cr4'] }, staff);
@@ -259,11 +259,13 @@ assert.equal(cf.results[0].outcome, 'issued');
 const cfPass = doc(`passes/${cf.results[0].ref}`);
 assert.equal(cfPass.qr, false); assert.equal(cfPass.mode, 'confirmation'); assert.equal(cfPass.eventId, undefined);
 assert.equal(cfPass.event.title, 'Campus Week Finale'); assert.equal(cfPass.event.venue, 'Main Ground');
+assert.equal(cfPass.event.time, '7 PM'); assert.equal(cfPass.event.boxOffice, 'Opens 5 PM'); assert.equal(cfPass.event.entry, 'guestlist');
+assert.match(mails[0].html, /Guestlist counter/); assert.match(mails[0].html, /Opens 5 PM/);
 assert.match(mails[0].subject, /^You're confirmed for Campus Week Finale/);
 const cfScan = await A.checkin(db, { code: cfPass.ref, eventId: 'camp2' }, staff);
 assert.equal(cfScan.valid, false); assert.match(cfScan.message, /confirmation without a QR/);
 assert.equal((await A['issue-campaign'](db, { campaignId: 'camp2', creatorIds: ['cr4'] }, staff)).results[0].outcome, 'skipped');
-ok("no linked event: the campaign's own name, date and venue; the campaign's setting sends a confirmation without a QR");
+ok("no linked event: the campaign's name, date, time, venue, box office and entry counter; a confirmation without a QR");
 
 const up2 = await A['issue-campaign'](db, { campaignId: 'camp2', creatorIds: ['cr4'], kind: 'qr' }, staff);
 assert.equal(up2.results[0].outcome, 'updated'); assert.equal(up2.results[0].ref, cfPass.ref);
@@ -272,17 +274,19 @@ const qrScan = await A.checkin(db, { code: cfPass.ref, eventId: 'camp2' }, staff
 assert.equal(qrScan.valid, true); assert.equal(qrScan.reason, 'admitted');
 ok('a QR pass sent later upgrades the confirmation in place, and scans in at the gate for the campaign');
 
+await db.doc('campaigns/camp2').set({ boxOfficeTime: 'Opens 4 PM' }, { merge: true });
 mails.length = 0;
 await expectErr(A.retier(db, { ref: cfPass.ref, tier: 'VIP' }, user('u1')), 'FORBIDDEN');
 const up3 = await A.retier(db, { ref: cfPass.ref, tier: 'VIP', qty: 2 }, staff);
 assert.equal(up3.outcome, 'updated');
 assert.equal(doc(`passes/${cfPass.ref}`).tier, 'VIP'); assert.equal(doc(`passes/${cfPass.ref}`).qty, 2);
-assert.match(mails[0].subject, /^You're now VIP/);
+assert.match(mails[0].subject, /^You've been upgraded to VIP/); assert.match(mails[0].html, /Opens 4 PM/); assert.match(mails[0].html, /Guestlist counter/);
+assert.equal(doc(`passes/${cfPass.ref}`).event.boxOffice, 'Opens 4 PM');
 assert.equal((await A.retier(db, { ref: cfPass.ref, tier: 'VIP' }, staff)).outcome, 'unchanged');
 const extPass = db.dump('passes/').map(([, v]) => v).find(p => p.externalTicket && p.status !== 'revoked');
 assert.ok(extPass, 'a partner ticket exists from the CSV checks');
 await expectErr(A.retier(db, { ref: extPass.ref, tier: 'VIP' }, staff), 'VALIDATION');
-ok('upgrade: staff move a pass to another category (same code) and the creator is told; partner tickets are refused');
+ok('upgrade: same code, new category; the upgrade mail has every detail, refreshed (box office); partner tickets refused');
 
 console.log('Orders');
 await db.doc('ticket_orders/o1').set({ eventId: 'ev1', bookingRef: 'NB-ABC12', status: 'approved', customerName: 'Paid Person', customerEmail: 'paid@ex.com', items: [{ name: 'GA', count: 2, price: 500 }], totalAmount: 1000, userId: 'u9' });

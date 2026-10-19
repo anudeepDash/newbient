@@ -52,7 +52,7 @@ export const EVENTS = {
             }),
         },
         push: (d) => (d.upgradedTo
-            ? { title: `You're now ${d.upgradedTo}`, body: `${d.eventName || d.campaignTitle || 'Your campaign'}: your pass was upgraded.`, link: d.campaignUrl || d.ticketUrl }
+            ? { title: `You've been upgraded to ${d.upgradedTo}`, body: `${d.eventName || d.campaignTitle || 'Your campaign'}: same pass, new category.`, link: d.campaignUrl || d.ticketUrl }
             : d.confirmation
             ? { title: "You're confirmed", body: `${d.eventName || d.campaignTitle || 'Your campaign'}: see it in the app.`, link: d.campaignUrl || d.ticketUrl }
             : { title: 'Your ticket is ready', body: `${d.eventName || d.campaignTitle || 'Your campaign'}: open it in the app.`, link: d.campaignUrl || d.ticketUrl }),
