@@ -1,0 +1,106 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==========================================
+    // 1. PUBLIC CONTENT (Everyone reads, Admins write)
+    // ==========================================
+    match /upcoming_events/{docId} { allow read: if true; allow write: if request.auth != null; }
+    match /portfolio/{docId} { allow read: if true; allow write: if request.auth != null; }
+    match /announcements/{docId} { allow read: if true; allow write: if request.auth != null; }
+    match /concerts/{docId} { allow read: if true; allow write: if request.auth != null; }
+    match /gallery/{docId} { allow read: if true; allow write: if request.auth != null; }
+    match /site_settings/{docId} { allow read: if true; allow write: if request.auth != null; }
+    match /volunteer_gigs/{docId} { allow read: if true; allow write: if request.auth != null; }
+    match /portfolio_categories/{categoryId} { allow read: if true; allow write: if request.auth != null; }
+    match /app_state/{document} { allow read: if true; allow write: if request.auth != null; }
+    
+    // Invoices, Proposals & Contracts (agreements) -> Read publicly by link, write by admins.
+    match /invoices/{docId} { allow read: if true; allow write: if request.auth != null; }
+    match /proposals/{docId} { allow read: if true; allow write: if request.auth != null; }
+    match /agreements/{docId} { allow read: if true; allow write: if request.auth != null; }
+    
+    // Marketing & Documents -> Viewable by public, managed by admins.
+    match /campaigns/{docId} { allow read: if true; allow write: if request.auth != null; }
+    match /giveaways/{docId} { allow read: if true; allow write: if request.auth != null; }
+    match /documents/{docId} { allow read: if true; allow write: if request.auth != null; }
+    match /gen_documents/{docId} { allow read: if true; allow write: if request.auth != null; }
+    
+    // Coupons -> Read publicly (validated at ticketing checkout), write by admins.
+    match /coupons/{docId} { allow read: if true; allow write: if request.auth != null; }
+
+
+    // ==========================================
+    // 2. USER GENERATED CONTENT / SUBMISSIONS (Public create, Admins read/manage)
+    // ==========================================
+    match /messages/{docId} {
+      allow create: if true; 
+      allow read, update, delete: if request.auth != null;
+    }
+    match /forms/{docId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+    match /ticket_orders/{docId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+    match /guestlists/{eventId}/entries/{entryId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+    
+    // Giveaway signups & Newsletter subscribers -> Anyone can join, only admins can manage.
+    match /giveaway_entries/{docId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+    match /subscribers/{docId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+    
+    // Client Requests (Onboarding form submissions) -> Public can create, only admins can manage.
+    match /client_requests/{docId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+
+
+    // ==========================================
+    // 3. ADMIN & PROTECTED CONTEXTS (Only authenticated Admins/Users can read/write)
+    // ==========================================
+    match /admins/{adminId} {
+      allow read: if true; // Allows UI roles lookup
+      allow write: if request.auth != null; 
+    }
+    
+    // Financial transactions ledger
+    match /spends/{docId} { allow read, write: if request.auth != null; }
+    match /other_incomes/{docId} { allow read, write: if request.auth != null; }
+    match /finance_payees/{docId} { allow read, write: if request.auth != null; }
+    
+    // Creator, Artist, and Guestlist roots
+    match /creators/{docId} { allow read, write: if request.auth != null; }
+    match /artists/{docId} { allow read, write: if request.auth != null; }
+    match /guestlists/{eventId} { allow read, write: if request.auth != null; }
+
+
+    // ==========================================
+    // 4. USER SPECIFIC DATA (Strict owner isolation)
+    // ==========================================
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // (Denies anything not explicitly allowed above by default)
+    match /email_templates/{templateId} {
+  allow read, write: if request.auth != null;
+}
+match /forms/{formId} {
+  allow read: if true;
+  allow write: if request.auth != null;
+}
+  }
+}
