@@ -2,9 +2,6 @@
 export default (data = {}) => ({
     sender: 'partnerships',
     kind: 'transactional',
-    // The logo with the company name the document is issued under.
-    brand: 'company',
-    company: data.company,
     subject: data.subject || `Proposal${data.projectName ? `: ${data.projectName}` : ''} from Newbi`,
     preheader: [data.proposalNumber, data.projectName].filter(Boolean).join(' · ') || 'Your proposal is ready to review.',
     eyebrow: 'Proposal',
@@ -14,5 +11,5 @@ export default (data = {}) => ({
         { document: { kind: 'PROPOSAL', name: `${data.projectName || 'Proposal'}${data.proposalNumber ? ` · ${data.proposalNumber}` : ''}.pdf`, meta: [data.clientName ? `For ${data.clientName}` : '', 'Proposal'], url: data.proposalUrl, label: 'Open proposal' } },
     ],
     cta: data.proposalUrl ? { label: 'Review proposal', url: data.proposalUrl } : null,
-    reason: 'Sent by Newbi Entertainment & Marketing LLP.',
+    reason: 'Sent by newbi.live.',
 });

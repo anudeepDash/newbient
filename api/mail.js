@@ -96,7 +96,7 @@ const runWorker = async (req, { budgetMs = 48000, depth = 0 } = {}) => {
 
 const pickStaffSender = (accountType, fromEmail, fromName) => {
     let serviceKey = 'OFFICIAL';
-    let defaultName = fromName || 'Newbi Entertainment';
+    let defaultName = fromName || 'newbi.live';
     let defaultEmail = fromEmail || 'partnership@newbi.live';
     const e = String(fromEmail || '').toLowerCase().trim();
     if (accountType === 'weekly') { serviceKey = 'WEEKLY'; defaultName = fromName || 'Weekly by Concert Zone'; defaultEmail = fromEmail || 'weekly@newbi.live'; }
