@@ -106,6 +106,17 @@ t('user edits own name', 'ALLOW', { who: 'rando', method: 'update', path: 'users
 t('user reads someone else\'s profile', 'DENY', { who: 'rando', method: 'get', path: 'users/u_other', existing: { name: 'O' } });
 t('staff list users (mailing)', 'ALLOW', { who: 'editor', method: 'list', path: 'users/u_other' });
 
+// --- phone and verification (written by the server only) ---
+t('user marks own phone verified', 'DENY', { who: 'rando', method: 'update', path: 'users/u_rando', existing: { name: 'R' }, data: { name: 'R', phone: '+919800000000', phoneVerified: true } });
+t('user swaps the number under a verified flag', 'DENY', { who: 'rando', method: 'update', path: 'users/u_rando', existing: { name: 'R', phone: '+919800000000', phoneVerified: true }, data: { name: 'R', phone: '+919811111111', phoneVerified: true } });
+t('user sets the legacy phoneNumber', 'DENY', { who: 'rando', method: 'update', path: 'users/u_rando', existing: { name: 'R' }, data: { name: 'R', phoneNumber: '+919811111111' } });
+t('user signs up with a verified phone', 'DENY', { who: 'rando', method: 'create', path: 'users/u_rando', data: { email: 'rando@ex.com', isPhoneVerified: true } });
+t('user with a verified phone edits their name', 'ALLOW', { who: 'rando', method: 'update', path: 'users/u_rando', existing: { name: 'R', phone: '+919800000000', phoneVerified: true }, data: { name: 'Rin', phone: '+919800000000', phoneVerified: true } });
+t('creator marks own phone verified', 'DENY', { who: 'rando', method: 'update', path: 'creators/u_rando', existing: { uid: 'u_rando', phone: '+919800000000', isPhoneVerified: false }, data: { uid: 'u_rando', phone: '+919800000000', isPhoneVerified: true } });
+t('creator changes phone directly (goes through the API)', 'DENY', { who: 'rando', method: 'update', path: 'creators/u_rando', existing: { uid: 'u_rando', phone: '+919800000000', isPhoneVerified: true }, data: { uid: 'u_rando', phone: '+919811111111', isPhoneVerified: true } });
+t('creator saves settings with phone unchanged', 'ALLOW', { who: 'rando', method: 'update', path: 'creators/u_rando', existing: { uid: 'u_rando', phone: '+919800000000', isPhoneVerified: true, bio: 'a' }, data: { uid: 'u_rando', phone: '+919800000000', isPhoneVerified: true, bio: 'b' } });
+t('signed-out visitor verifies a creator by link', 'DENY', { who: null, method: 'update', path: 'creators/c1', existing: { uid: 'u_x', verificationToken: 'abc' }, data: { uid: 'u_x', verificationToken: null, isPhoneVerified: true, isEmailVerified: true } });
+
 // --- passes ---
 t('holder reads own pass', 'ALLOW', { who: 'rando', method: 'get', path: 'passes/ABC', existing: { holderUid: 'u_rando' } });
 t('someone else reads a pass', 'DENY', { who: 'rando', method: 'get', path: 'passes/ABC', existing: { holderUid: 'u_other' } });

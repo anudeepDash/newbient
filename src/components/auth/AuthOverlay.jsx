@@ -370,8 +370,12 @@ const AuthOverlay = () => {
             await updateUserProfile(auth.currentUser.uid, {
                 displayName: formData.name,
                 ...(formData.email ? { email: formData.email.trim().toLowerCase() } : {}),
-                phoneNumber: auth.currentUser.phoneNumber
             });
+            // The phone fields are written by the server, from the sign-in account.
+            if (auth.currentUser.phoneNumber) {
+                const { saveProfilePhone } = await import('../../lib/profilePhone');
+                await saveProfilePhone(auth.currentUser.phoneNumber).catch(err => console.warn('[auth] phone save:', err.message));
+            }
             onClose();
         } catch (err) {
             setError(getFriendlyErrorMessage(err));
