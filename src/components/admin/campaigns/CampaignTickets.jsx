@@ -12,6 +12,7 @@ import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
+import ArrowUpCircle from 'lucide-react/dist/esm/icons/circle-arrow-up';
 import { db } from '../../../lib/firebase';
 import { cn } from '../../../lib/utils';
 import { useStore } from '../../../lib/store';
@@ -19,7 +20,9 @@ import { passesPost } from '../../../lib/passesApi';
 import { Avatar, Badge, Button, Card, EmptyState, Menu, MenuItem } from '../ui';
 import { ConfirmSheet } from './parts';
 import { creatorPhotoOf, formatDay } from './campaignModel';
-import { channelState, hasFailure } from './ticketModel';
+import { channelState, hasFailure, cleanPassTiers } from './ticketModel';
+import Sheet from '../Sheet';
+import { Field, fieldCls } from '../uploads/UploadKit';
 
 /*
  * The campaign's Tickets tab: every ticket sent, who it went to, and how each
@@ -83,6 +86,8 @@ const CampaignTickets = ({ campaign, applicants, passes, loaded, error, onSend }
     const uploads = useUploads(campaign.id);
     const [busy, setBusy] = useState('');
     const [revoke, setRevoke] = useState(null);
+    const [retier, setRetier] = useState(null); // { pass, tier, qty } while changing a pass's category
+    const passTiers = useMemo(() => cleanPassTiers(campaign.passTiers), [campaign.passTiers]);
 
     const byKey = useMemo(() => {
         const m = new Map();
@@ -99,6 +104,17 @@ const CampaignTickets = ({ campaign, applicants, passes, loaded, error, onSend }
         if (!res.ok) { addToast(res.error, 'error'); return; }
         const failed = res.data.results.filter(r => r.outcome === 'failed').length;
         addToast(res.data.results.length === 0 ? 'Nothing to resend.' : failed ? `Resent; ${failed} still failing.` : 'Resent.', failed ? 'warning' : 'success');
+    };
+
+    // Upgrade (or move) a pass to another category; same code, the creator is told on every channel.
+    const doRetier = async () => {
+        if (!retier?.tier.trim()) return;
+        setBusy(`retier:${retier.pass.ref}`);
+        const res = await passesPost('retier', { ref: retier.pass.ref, tier: retier.tier.trim(), qty: retier.qty || undefined });
+        setBusy('');
+        if (!res.ok) { addToast(res.error, 'error'); return; }
+        addToast(res.data.outcome === 'unchanged' ? 'Nothing changed.' : `Moved to ${retier.tier.trim()}. They've been told.`, 'success');
+        setRetier(null);
     };
 
     const doRevoke = async () => {
@@ -155,6 +171,7 @@ const CampaignTickets = ({ campaign, applicants, passes, loaded, error, onSend }
                                 <DeliveryDots delivery={p.delivery} showSeen />
                                 <Menu trigger={({ toggle }) => <Button size="sm" variant="ghost" onClick={toggle} aria-label="Ticket actions" className="h-10 w-10 px-0"><MoreHorizontal size={16} /></Button>}>
                                     <MenuItem icon={RotateCw} onClick={() => resend({ ref: p.ref }, p.ref)}>{busy === p.ref ? 'Resending…' : 'Resend'}</MenuItem>
+                                    {!p.externalTicket && <MenuItem icon={ArrowUpCircle} onClick={() => setRetier({ pass: p, tier: p.tier || '', qty: String(p.qty || '') })}>Change category</MenuItem>}
                                     <MenuItem icon={Ban} danger onClick={() => setRevoke(p)}>Revoke</MenuItem>
                                 </Menu>
                             </div>
@@ -186,6 +203,43 @@ const CampaignTickets = ({ campaign, applicants, passes, loaded, error, onSend }
                     </Card>
                 </div>
             )}
+
+            <Sheet
+                open={Boolean(retier)}
+                onClose={() => setRetier(null)}
+                title="Change category"
+                subtitle={retier ? `${retier.pass.holderName || 'Creator'} · now ${retier.pass.tier || 'no category'}` : ''}
+                footer={(
+                    <Button variant="accent" className="h-11 w-full" onClick={doRetier} disabled={!retier?.tier.trim() || busy.startsWith('retier:')}>
+                        <ArrowUpCircle size={15} /> {busy.startsWith('retier:') ? 'Saving…' : 'Update and tell them'}
+                    </Button>
+                )}
+            >
+                {retier && (
+                    <div className="space-y-4">
+                        {passTiers.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                {passTiers.map(t => (
+                                    <button
+                                        key={t.name}
+                                        type="button"
+                                        onClick={() => setRetier(r => ({ ...r, tier: t.name, qty: t.qty ? String(t.qty) : r.qty }))}
+                                        aria-pressed={retier.tier === t.name}
+                                        className={cn('h-10 rounded-full px-4 text-[13px] font-bold', retier.tier === t.name ? 'bg-gray-900 text-white dark:bg-white dark:text-black' : 'bg-black/[0.05] text-gray-700 dark:bg-white/[0.06] dark:text-zinc-300')}
+                                    >
+                                        {t.name}{t.minFollowers ? ` · ${t.minFollowers.toLocaleString('en-IN')}+` : ''}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <Field label="Category"><input className={fieldCls} value={retier.tier} onChange={e => setRetier(r => ({ ...r, tier: e.target.value }))} placeholder="e.g. VIP" maxLength={80} /></Field>
+                            <Field label="Tickets" optional><input className={fieldCls} type="number" min="1" max="20" inputMode="numeric" value={retier.qty} onChange={e => setRetier(r => ({ ...r, qty: e.target.value }))} /></Field>
+                        </div>
+                        <p className="text-[13px] text-gray-500">Same pass and code. They get the update in the app, by email and on WhatsApp.</p>
+                    </div>
+                )}
+            </Sheet>
 
             <ConfirmSheet
                 open={Boolean(revoke)}

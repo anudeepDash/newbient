@@ -18,6 +18,7 @@ import { Spinner } from './parts';
 import { creatorPhotoOf, formatDay } from './campaignModel';
 import {
     TEMPLATE_COLUMNS, ROW_STATUS, canGetTicket, evaluateRows, passFor, passesByCreator, readTicketCsv, templateRows,
+    cleanPassTiers, followerTier, followersLabel,
 } from './ticketModel';
 import { DeliveryDots } from './CampaignTickets';
 
@@ -94,6 +95,7 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
     // Newbi pass mode: 'qr' or 'confirmation' (no QR)
     const [passKind, setPassKind] = useState('qr');
     const [qrPicked, setQrPicked] = useState(() => new Set());
+    const [tierPick, setTierPick] = useState({}); // creator key → category name ('' = default), to upgrade someone
     const [qty, setQty] = useState('1');
     const [tier, setTier] = useState('');
     const [note, setNote] = useState('');
@@ -113,6 +115,7 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
         const start = (preselected || []).filter(canGetTicket);
         const kind = campaign?.passKind === 'confirmation' ? 'confirmation' : 'qr';
         setPassKind(kind);
+        setTierPick({});
         // Everyone ticked by default, minus those who already have this kind of pass.
         setQrPicked(new Set((start.length ? start : eligible).filter(e => !blocks(kind, passFor(existing, e.creator))).map(e => e.key)));
         setQty(String(Number(campaign?.ticketsPerCreator) || 1));
@@ -134,6 +137,7 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
     }, [evaluated]);
     const toSend = evaluated.filter(r => r.status === 'ready' && !r.skip);
     const qrList = eligible.filter(e => qrPicked.has(e.key));
+    const passTiers = useMemo(() => cleanPassTiers(campaign?.passTiers), [campaign?.passTiers]);
 
     const setOverride = (row, patch) => setOverrides(o => ({ ...o, [row]: { ...(o[row] || {}), ...patch } }));
 
@@ -171,18 +175,35 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
         return res.ok ? res.data.uploadId : null;
     };
 
+    // Each creator's category: one picked here (an upgrade), else from their followers
+    // (editor → Event passes), else the default tier and count typed below.
+    const earnedTier = (e) => followerTier(passTiers, e.creator);
+    const tierOf = (e) => (e.key in tierPick ? passTiers.find(t => t.name === tierPick[e.key]) || null : earnedTier(e));
+    const rank = (t) => (t ? passTiers.length - passTiers.findIndex(x => x.name === t.name) : 0);
+    const isUpgrade = (e) => e.key in tierPick && rank(tierOf(e)) > rank(earnedTier(e));
     const sendQr = async () => {
         const ids = qrList.map(e => e.creator.id);
         if (!ids.length) return;
         setPhase('sending');
         setProgress({ done: 0, total: ids.length, step: 'Sending passes' });
         const uploadId = await startLog({ rows: ids.length, matched: ids.length, sending: ids.length });
+        // One request group per category, so each gets its own tier and ticket count.
+        const groups = new Map();
+        qrList.forEach(e => {
+            const t = tierOf(e);
+            const g = { tier: t ? t.name : tier, qty: t?.qty ? String(t.qty) : qty };
+            const key = `${g.tier}|${g.qty}`;
+            if (!groups.has(key)) groups.set(key, { ...g, ids: [] });
+            groups.get(key).ids.push(e.creator.id);
+        });
         const all = [];
-        for (const batch of chunks(ids, QR_BATCH)) {
-            const res = await passesPost('issue-campaign', { campaignId: campaign.id, creatorIds: batch, kind: passKind, qty, tier, note, uploadId }, { timeoutMs: 60000 });
-            if (res.ok) all.push(...res.data.results);
-            else all.push(...batch.map(creatorId => ({ creatorId, outcome: 'failed', error: res.error })));
-            setProgress(p => ({ ...p, done: Math.min(p.total, p.done + batch.length) }));
+        for (const g of groups.values()) {
+            for (const batch of chunks(g.ids, QR_BATCH)) {
+                const res = await passesPost('issue-campaign', { campaignId: campaign.id, creatorIds: batch, kind: passKind, qty: g.qty, tier: g.tier, note, uploadId }, { timeoutMs: 60000 });
+                if (res.ok) all.push(...res.data.results);
+                else all.push(...batch.map(creatorId => ({ creatorId, outcome: 'failed', error: res.error })));
+                setProgress(p => ({ ...p, done: Math.min(p.total, p.done + batch.length) }));
+            }
         }
         if (uploadId) await passesPost('upload-finish', { uploadId });
         setResults(all);
@@ -302,7 +323,30 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
                                                 <label className={cn('flex min-h-[52px] cursor-pointer items-center gap-3 px-3 py-2', blocked && 'opacity-60')}>
                                                     <input type="checkbox" className="h-5 w-5 accent-emerald-600" disabled={blocked || sending} checked={checked && !blocked} onChange={() => setQrPicked(s => { const n = new Set(s); if (n.has(e.key)) n.delete(e.key); else n.add(e.key); return n; })} />
                                                     <Avatar src={creatorPhotoOf(e.creator)} name={e.creator.name} size={30} />
-                                                    <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{e.creator.name || 'Creator'}</span>
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="block truncate text-[14px] font-semibold">{e.creator.name || 'Creator'}</span>
+                                                        {passTiers.length > 0 && (
+                                                            <span className="block truncate text-[12px] text-gray-500">
+                                                                {Number(e.creator.instagramFollowers) > 0 ? `${followersLabel(e.creator.instagramFollowers)} followers` : 'No follower count'}
+                                                                {earnedTier(e) ? ` · earns ${earnedTier(e).name}` : ''}
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                    {passTiers.length > 0 && !blocked && (
+                                                        // The category this creator gets; pick a higher one to upgrade them.
+                                                        <select
+                                                            aria-label={`Category for ${e.creator.name || 'creator'}`}
+                                                            className={cn(fieldCls, 'h-9 w-auto max-w-[9.5rem] shrink-0 py-0 pr-7 text-[13px]', isUpgrade(e) && 'border-emerald-500 text-emerald-700 dark:border-neon-green dark:text-neon-green')}
+                                                            value={tierOf(e)?.name || ''}
+                                                            disabled={sending}
+                                                            onClick={(ev) => ev.stopPropagation()}
+                                                            onChange={(ev) => setTierPick(p => ({ ...p, [e.key]: ev.target.value }))}
+                                                        >
+                                                            <option value="">{tier || 'Default'}</option>
+                                                            {passTiers.map(t => <option key={t.name} value={t.name}>{t.name}{t.qty ? ` · ${t.qty}` : ''}</option>)}
+                                                        </select>
+                                                    )}
+                                                    {isUpgrade(e) && <Badge tone="green">Upgraded</Badge>}
                                                     {has && <Badge tone={has.qr !== false ? 'green' : has.externalTicket ? 'blue' : 'gray'}>{passLabel(has)}</Badge>}
                                                 </label>
                                             </li>
@@ -310,8 +354,8 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
                                     })}
                                 </ul>
                                 <div className="grid gap-3 sm:grid-cols-3">
-                                    <Field label="Tickets each"><input className={fieldCls} type="number" min="1" max="20" inputMode="numeric" value={qty} onChange={e => setQty(e.target.value)} /></Field>
-                                    <Field label="Tier" optional><input className={fieldCls} value={tier} onChange={e => setTier(e.target.value)} placeholder="e.g. VIP" /></Field>
+                                    <Field label={passTiers.length ? 'Tickets each (default)' : 'Tickets each'}><input className={fieldCls} type="number" min="1" max="20" inputMode="numeric" value={qty} onChange={e => setQty(e.target.value)} /></Field>
+                                    <Field label={passTiers.length ? 'Tier (default)' : 'Tier'} optional><input className={fieldCls} value={tier} onChange={e => setTier(e.target.value)} placeholder="e.g. VIP" /></Field>
                                     <Field label="Note" optional><input className={fieldCls} value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. Entry from Gate 2" /></Field>
                                 </div>
                             </>

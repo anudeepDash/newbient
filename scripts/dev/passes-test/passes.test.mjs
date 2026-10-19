@@ -272,6 +272,18 @@ const qrScan = await A.checkin(db, { code: cfPass.ref, eventId: 'camp2' }, staff
 assert.equal(qrScan.valid, true); assert.equal(qrScan.reason, 'admitted');
 ok('a QR pass sent later upgrades the confirmation in place, and scans in at the gate for the campaign');
 
+mails.length = 0;
+await expectErr(A.retier(db, { ref: cfPass.ref, tier: 'VIP' }, user('u1')), 'FORBIDDEN');
+const up3 = await A.retier(db, { ref: cfPass.ref, tier: 'VIP', qty: 2 }, staff);
+assert.equal(up3.outcome, 'updated');
+assert.equal(doc(`passes/${cfPass.ref}`).tier, 'VIP'); assert.equal(doc(`passes/${cfPass.ref}`).qty, 2);
+assert.match(mails[0].subject, /^You're now VIP/);
+assert.equal((await A.retier(db, { ref: cfPass.ref, tier: 'VIP' }, staff)).outcome, 'unchanged');
+const extPass = db.dump('passes/').map(([, v]) => v).find(p => p.externalTicket && p.status !== 'revoked');
+assert.ok(extPass, 'a partner ticket exists from the CSV checks');
+await expectErr(A.retier(db, { ref: extPass.ref, tier: 'VIP' }, staff), 'VALIDATION');
+ok('upgrade: staff move a pass to another category (same code) and the creator is told; partner tickets are refused');
+
 console.log('Orders');
 await db.doc('ticket_orders/o1').set({ eventId: 'ev1', bookingRef: 'NB-ABC12', status: 'approved', customerName: 'Paid Person', customerEmail: 'paid@ex.com', items: [{ name: 'GA', count: 2, price: 500 }], totalAmount: 1000, userId: 'u9' });
 await events.sendOrderEmail('o1');

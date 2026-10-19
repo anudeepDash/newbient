@@ -71,15 +71,19 @@ const handleKey = (v) => String(v || '').trim().replace(/^@+/, '').replace(/^htt
 export const creatorIdentifier = (c) => emailKey(c.email) || (phoneKey(c.phone) ? `+91${phoneKey(c.phone)}` : '') || (creatorHandle(c) ? `@${creatorHandle(c)}` : '') || creatorRef(c);
 
 /** Template rows, pre-filled with the creators who can get a ticket. */
-export const templateRows = (entries, campaign) => entries.map(e => ({
-    creator: creatorIdentifier(e.creator),
-    name: e.creator.name || '',
-    ticket_url: '',
-    ticket_file: '',
-    qty: String(Number(campaign?.ticketsPerCreator) || 1),
-    tier: '',
-    note: '',
-}));
+// Category and count pre-filled from the campaign's follower categories (followerTier, below).
+export const templateRows = (entries, campaign) => entries.map(e => {
+    const t = followerTier(campaign?.passTiers, e.creator);
+    return {
+        creator: creatorIdentifier(e.creator),
+        name: e.creator.name || '',
+        ticket_url: '',
+        ticket_file: '',
+        qty: String(t?.qty || Number(campaign?.ticketsPerCreator) || 1),
+        tier: t?.name || '',
+        note: '',
+    };
+});
 
 /** Lookups from every way a CSV might name a creator → applicant entry. */
 export const buildMatcher = (applicants) => {
@@ -202,4 +206,29 @@ export const ROW_STATUS = {
     unmatched: { label: 'Unmatched', tone: 'amber' },
     duplicate: { label: 'Duplicate', tone: 'gray' },
     problem: { label: 'Problem', tone: 'rose' },
+};
+
+/* ---------- ticket categories by followers ---------- */
+
+/*
+ * campaign.passTiers: [{ name, minFollowers, qty? }] from the editor (Event passes).
+ * A creator gets the highest category their Instagram follower count reaches;
+ * no count, or below every category → null (the sheet's own tier and count apply).
+ */
+export const cleanPassTiers = (tiers) => (Array.isArray(tiers) ? tiers : [])
+    .map(t => ({ name: String(t?.name || '').trim().slice(0, 60), minFollowers: Math.max(0, Math.round(Number(t?.minFollowers) || 0)), qty: Number(t?.qty) > 0 ? Math.min(20, Math.round(Number(t.qty))) : null }))
+    .filter(t => t.name)
+    .sort((a, b) => b.minFollowers - a.minFollowers);
+
+export const followerTier = (tiers, creator) => {
+    const followers = Number(creator?.instagramFollowers);
+    if (!Number.isFinite(followers) || followers <= 0) return null;
+    return cleanPassTiers(tiers).find(t => followers >= t.minFollowers) || null;
+};
+
+export const followersLabel = (n) => {
+    const v = Number(n) || 0;
+    if (v >= 1e6) return `${+(v / 1e6).toFixed(1)}M`;
+    if (v >= 1e3) return `${+(v / 1e3).toFixed(1)}K`;
+    return String(v);
 };

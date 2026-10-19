@@ -22,6 +22,8 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { TASK_TYPES, blankTask, newTaskId, campaignStatus, stripHtml, formatDay, toDayInput, daysUntil, inr } from './campaignModel';
 import ThemedSelect from '../ThemedSelect';
+import { cleanPassTiers } from './ticketModel';
+import X from 'lucide-react/dist/esm/icons/x';
 
 /*
  * Create / edit a campaign. Sections follow the order an admin thinks in:
@@ -51,7 +53,7 @@ const blankForm = (uid) => ({
     reward: '', payoutPerCreator: '', totalSpots: '', spotsLeft: '',
     thumbnail: '', websiteApplyEnabled: true, autoShortlistEligible: false, isPinned: false,
     applyMethod: 'newbi', applyFormUrl: '', applyFormNeedsSignIn: false,
-    eventId: '', ticketsPerCreator: '', passKind: 'qr',
+    eventId: '', ticketsPerCreator: '', passKind: 'qr', passTiers: [],
     eventName: '', eventDate: '', eventTime: '', venue: '',
     status: 'Open', tasks: [], createdBy: uid || '',
     ...OPEN_FORM_FIELDS,
@@ -77,6 +79,7 @@ const toForm = (c, { copy = false } = {}) => ({
     eventId: c.eventId || '',
     ticketsPerCreator: toStr(c.ticketsPerCreator),
     passKind: c.passKind === 'confirmation' ? 'confirmation' : 'qr',
+    passTiers: cleanPassTiers(c.passTiers).map(t => ({ name: t.name, minFollowers: toStr(t.minFollowers), qty: toStr(t.qty) })),
     eventName: c.eventName || '',
     eventDate: toDayInput(c.eventDate) || '',
     eventTime: c.eventTime || '',
@@ -129,6 +132,8 @@ const toPayload = (f) => ({
     // Passes go out only when an admin sends them (Send tickets); this clears the old auto-send setting.
     ticketAutoIssue: null,
     passKind: f.passKind === 'confirmation' ? 'confirmation' : 'qr',
+    // Ticket categories by Instagram followers (VIP 50K+, …); applied when passes are sent.
+    passTiers: cleanPassTiers(f.passTiers),
     eventName: f.eventId ? '' : f.eventName.trim(),
     eventDate: f.eventId ? '' : f.eventDate || '',
     eventTime: f.eventId ? '' : f.eventTime.trim(),
@@ -611,6 +616,22 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                             )}
                             <Field label="Tickets per creator">
                                 <input className={fieldCls} type="number" min="1" max="20" inputMode="numeric" value={form.ticketsPerCreator} onChange={(e) => set({ ticketsPerCreator: e.target.value })} placeholder="1" />
+                            </Field>
+                            <Field label="Categories by followers" optional hint="Each creator gets the highest category their Instagram followers reach. Anyone below them, or without a follower count, gets the default above.">
+                                <div className="space-y-2">
+                                    {form.passTiers.map((t, i) => {
+                                        const setTier = (patch) => set({ passTiers: form.passTiers.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
+                                        return (
+                                            <div key={i} className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.8fr)_auto] items-center gap-2">
+                                                <input className={fieldCls} value={t.name} onChange={(e) => setTier({ name: e.target.value })} placeholder="e.g. VIP" maxLength={60} aria-label="Category name" />
+                                                <input className={fieldCls} type="number" min="0" inputMode="numeric" value={t.minFollowers} onChange={(e) => setTier({ minFollowers: e.target.value })} placeholder="Min followers" aria-label="Minimum followers" />
+                                                <input className={fieldCls} type="number" min="1" max="20" inputMode="numeric" value={t.qty} onChange={(e) => setTier({ qty: e.target.value })} placeholder="Tickets" aria-label="Tickets each" />
+                                                <button type="button" onClick={() => set({ passTiers: form.passTiers.filter((_, j) => j !== i) })} aria-label="Remove category" className="flex h-11 w-11 items-center justify-center rounded-xl text-gray-500 hover:bg-black/5 dark:hover:bg-white/5"><X size={16} /></button>
+                                            </div>
+                                        );
+                                    })}
+                                    <Button variant="secondary" size="sm" onClick={() => set({ passTiers: [...form.passTiers, { name: '', minFollowers: '', qty: '' }] })}><Plus size={14} /> Add category</Button>
+                                </div>
                             </Field>
                         </div>
                     </BuilderCard>
