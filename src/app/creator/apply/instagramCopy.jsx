@@ -26,19 +26,19 @@ const SWITCH_STEPS = [
     'Come back here and tap “Check again”.',
 ];
 
-export const SwitchGuide = ({ onRetry, checking }) => {
+export const SwitchGuide = ({ onRetry, checking, retryLabel = 'Check again', lastStep }) => {
     const [open, setOpen] = useState(false);
     return (
         <Notice
             tone="warn"
             title="Switch to a free Professional account"
-            action={<Button size="sm" variant="secondary" icon={RefreshCw} loading={checking} onClick={onRetry}>Check again</Button>}
+            action={<Button size="sm" variant="secondary" icon={RefreshCw} loading={checking} onClick={onRetry}>{retryLabel}</Button>}
         >
             <p>We read your followers from Instagram itself, which only works for Professional (Creator or Business) accounts. It takes a minute.</p>
             <button type="button" onClick={() => setOpen(o => !o)} className="mt-1 flex min-h-[32px] items-center gap-1 font-bold">
                 How to switch <ChevronDown size={14} className={cn('transition-transform', open && 'rotate-180')} />
             </button>
-            {open && <ol className="mt-1 list-decimal space-y-1 pl-5">{SWITCH_STEPS.map(s => <li key={s}>{s}</li>)}</ol>}
+            {open && <ol className="mt-1 list-decimal space-y-1 pl-5">{(lastStep ? [...SWITCH_STEPS.slice(0, -1), lastStep] : SWITCH_STEPS).map(s => <li key={s}>{s}</li>)}</ol>}
         </Notice>
     );
 };

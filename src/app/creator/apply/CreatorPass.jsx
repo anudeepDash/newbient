@@ -25,7 +25,7 @@ const Shimmer = ({ className }) => <span className={cn('block animate-pulse roun
 const STATUS = {
     checking: { icon: Loader2, spin: true, label: 'Checking Instagram…', tone: 'text-zinc-300' },
     found: { icon: Instagram, label: 'Found on Instagram', tone: 'text-zinc-200' },
-    estimated: { icon: Instagram, label: 'From your public Instagram · we’ll confirm it', tone: 'text-zinc-300' },
+    estimated: { icon: Instagram, label: 'Read from your public Instagram', tone: 'text-zinc-300' },
     connected: { icon: BadgeCheck, label: 'Verified with Instagram', tone: 'text-neon-green' },
     later: { icon: Hourglass, label: 'We’ll verify your followers shortly', tone: 'text-zinc-300' },
     manual: { icon: Hourglass, label: 'Your count · we’ll confirm it on Instagram', tone: 'text-zinc-300' },

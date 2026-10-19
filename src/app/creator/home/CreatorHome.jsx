@@ -77,13 +77,24 @@ const StatusNotice = ({ creator, settings }) => {
     if (status === 'pending_verification') {
         return <Notice tone="info" title="Checking your Instagram">We’ll confirm your followers with Instagram shortly. You can browse campaigns meanwhile.</Notice>;
     }
+    if (status === 'pending' && settings?.metaVerification && creator.instagramVerifiedVia !== 'oauth') {
+        return (
+            <Notice
+                tone="info"
+                title="Get verified now"
+                action={<Button size="sm" variant="secondary" to={appPath('/creator/profile')}>Connect Instagram</Button>}
+            >
+                Connect your Instagram (a Creator or Business account) and you’re verified straight away, with no waiting for review.
+            </Notice>
+        );
+    }
     if (status === 'pending') {
         return <Notice tone="info" title="Your profile is in review">We check every profile by hand and will email you. You can browse and apply to campaigns meanwhile.</Notice>;
     }
     if (status === 'rejected' || status === 'suspended') {
         return <Notice tone="error" title="Your creator profile isn’t active">Write to creators@newbi.live if you think this is a mistake.</Notice>;
     }
-    if (settings?.metaVerification && !creator.instagramVerified) {
+    if (settings?.metaVerification && creator.instagramVerifiedVia !== 'oauth') {
         return (
             <Notice
                 tone="warn"

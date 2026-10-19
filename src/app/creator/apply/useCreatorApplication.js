@@ -6,6 +6,11 @@ import { isCollegeNiche } from '../../../lib/creator/options';
 /*
  * State for the one-screen creator application.
  *
+ *   Instagram            when Instagram Login is switched on (`igStatus.oauthReady`),
+ *                        the form starts with "Connect with Instagram": the
+ *                        login proves the account, fills the handle and
+ *                        followers, and the server approves automatically.
+ *                        Otherwise:
  *   Instagram username   looked up while typing (Meta when it's switched on,
  *                        else the public profile); the result fills the live
  *                        creator pass. If it can't be read, the creator types
@@ -49,7 +54,7 @@ export const clearDraft = () => {
     try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* private mode */ }
 };
 
-export function useCreatorApplication({ referredBy = '', initialCity = '' } = {}) {
+export function useCreatorApplication({ referredBy = '', initialCity = '', uid = null } = {}) {
     const draft = useRef(readDraft()).current;
     const [handle, setHandleState] = useState(draft?.handle || '');
     const [city, setCity] = useState(draft?.city || initialCity || '');
@@ -66,6 +71,8 @@ export function useCreatorApplication({ referredBy = '', initialCity = '' } = {}
     const [result, setResult] = useState(null);
     const autoSubmit = useRef(Boolean(draft?.autoSubmit));
     const seq = useRef(0);
+    // Whether Instagram Login is on, and the account this person already connected (if any).
+    const [igStatus, setIgStatus] = useState({ loaded: false, oauthReady: false, account: null });
 
     // The profile's city arrives after the first render.
     useEffect(() => { if (!city && initialCity) setCity(initialCity); }, [initialCity]); // eslint-disable-line
@@ -78,6 +85,18 @@ export function useCreatorApplication({ referredBy = '', initialCity = '' } = {}
         setHandleState(cleanHandleInput(raw));
         setError(null);
     };
+
+    // Asked again after sign-in, so a connected account shows up.
+    useEffect(() => {
+        let live = true;
+        callCreatorApi('ig-lookup', {}, { timeoutMs: 8000 }).then((res) => {
+            if (!live) return;
+            const d = res.ok ? res.data : {};
+            setIgStatus({ loaded: true, oauthReady: Boolean(d.oauthReady), account: d.account || null, minFollowers: d.minFollowers });
+            if (d.oauthReady && d.account?.username) setHandleState(h => h || d.account.username);
+        });
+        return () => { live = false; };
+    }, [uid]);
 
     const toggleNiche = (id) => setNiches((list) => {
         if (list.includes(id)) return list.filter(n => n !== id);
@@ -114,13 +133,19 @@ export function useCreatorApplication({ referredBy = '', initialCity = '' } = {}
     }, [handle]);
 
     const campus = niches.some(isCollegeNiche);
-    const manualAllowed = isValidHandle(handle) && MANUAL_STATES.includes(lookup.state);
+    const oauthReady = igStatus.oauthReady;
+    const found = lookup.state === 'found' ? lookup : null;
+    const connected = Boolean(found?.connected);
+    // With Instagram Login on, there's no typed fallback: the account is connected or it isn't.
+    const manualAllowed = !oauthReady && isValidHandle(handle) && MANUAL_STATES.includes(lookup.state);
     const manualCount = manualAllowed ? parseFollowersInput(manualFollowers) : 0;
     const manualBelowMin = Boolean(manualCount && lookup.minFollowers && manualCount < lookup.minFollowers);
     const steps = [
         {
             key: 'instagram',
-            done: manualAllowed
+            done: oauthReady
+                ? connected && !found.alreadyRegistered && found.meetsMinimum !== false
+                : manualAllowed
                 ? manualCount > 0 && !manualBelowMin
                 : isValidHandle(handle) && !['invalid', 'not_professional', 'checking'].includes(lookup.state) && !lookup.alreadyRegistered && lookup.meetsMinimum !== false,
         },
@@ -128,17 +153,22 @@ export function useCreatorApplication({ referredBy = '', initialCity = '' } = {}
         { key: 'niche', done: niches.length > 0 && (!niches.includes('Others') || Boolean(customNiche.trim())) && (!campus || Boolean(collegeName.trim())) },
     ];
     const ready = steps.every(s => s.done);
-    const found = lookup.state === 'found' ? lookup : null;
-    const needsConnect = Boolean(found && !found.connected && found.oauthReady);
+    // City and niches done: connecting Instagram is all that's left.
+    const readyButInstagram = steps.slice(1).every(s => s.done);
+    const needsConnect = oauthReady ? !connected : Boolean(found && !found.connected && found.oauthReady);
 
-    /* Instagram login. The page leaves; the draft is saved and submits on the way back. */
-    const connect = useCallback(async () => {
+    /*
+     * Instagram login. The page leaves; the draft is saved, and if the rest of
+     * the form is filled in (`auto`) it submits on the way back.
+     */
+    const connect = useCallback(async ({ auto = true, switchAccount = false } = {}) => {
         setConnecting(true);
         setError(null);
-        autoSubmit.current = true;
-        writeDraft({ handle, city, niches, customNiche, collegeName, whatsappOptIn, autoSubmit: true });
+        autoSubmit.current = auto;
+        writeDraft({ handle, city, niches, customNiche, collegeName, whatsappOptIn, autoSubmit: auto });
         const res = await callCreatorApi('ig-connect', {
-            handle,
+            // Connect-first has no typed handle to match; switching accounts drops it on purpose.
+            handle: oauthReady || switchAccount ? '' : handle,
             returnTo: `${window.location.pathname}${window.location.search}` || appPath('/creator/apply'),
             origin: window.location.origin,
         });
@@ -149,14 +179,15 @@ export function useCreatorApplication({ referredBy = '', initialCity = '' } = {}
             return;
         }
         window.location.assign(res.data.url);
-    }, [handle, city, niches, customNiche, collegeName, whatsappOptIn]);
+    }, [handle, city, niches, customNiche, collegeName, whatsappOptIn, oauthReady]);
 
-    const submit = useCallback(async () => {
+    /* `override.handle`: the account just connected, before the handle state has caught up. */
+    const submit = useCallback(async (override = {}) => {
         autoSubmit.current = false;
         setSubmitting(true);
         setError(null);
         const res = await callCreatorApi('creator-apply', {
-            handle,
+            handle: override.handle || handle,
             city: city.trim(),
             niches,
             customNiche: niches.includes('Others') ? customNiche.trim() : '',
@@ -184,7 +215,8 @@ export function useCreatorApplication({ referredBy = '', initialCity = '' } = {}
         whatsappOptIn, setWhatsappOptIn,
         manualFollowers, setManualFollowers, manualAllowed, manualCount, manualBelowMin,
         campus, steps, ready,
-        lookup, check, found, needsConnect,
+        lookup, check, found, needsConnect, connected,
+        igStatus, oauthReady, readyButInstagram,
         connect, connecting,
         submit, submitting,
         error, setError,

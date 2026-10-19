@@ -6,7 +6,6 @@ This file gives focused, actionable context for AI coding agents working in this
 - Frontend: Vite + React app in `src/` (pages in `src/pages/`, components in `src/components/`). See [src/](src/).
 - Serverless endpoints: `api/` — lightweight Node functions (Vercel-style). See [api/](api/).
 - Shared libraries: `src/lib/` and `api/lib/` contain key helpers (`src/lib/firebase.js`, `src/lib/ai.js`).
-- Standalone micro-frontend: `artisant_standalone/` (separate `package.json`).
 
 **High-level architecture & data flow**
 - Browser (Vite dev server) → React UI (`src/`) → serverless API routes (`api/*.js`) for backend work.
@@ -27,7 +26,6 @@ This file gives focused, actionable context for AI coding agents working in this
 - Build: `npm run build` (runs `vite build`).
 - Preview production build: `npm run preview`.
 - Lint: `npm run lint` (ESLint configured; run locally before PRs).
-- Note: `artisant_standalone/` has its own `package.json` — use its scripts when working in that folder.
 
 **Project-specific conventions**
 - ESM modules: `package.json` has `type: "module"` and targets Node `20.x` — use `import`/`export`.

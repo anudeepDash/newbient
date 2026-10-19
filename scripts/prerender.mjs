@@ -61,11 +61,9 @@ export async function prerender({ root = process.cwd(), log = console.log } = {}
         return seen;
     };
     const inEntry = staticGraph('landing.html');
-    // The app imports some of these pages too (src/pages/Home.jsx re-exports the landing
-    // home), so Rollup may file the shared chunk under either module.
     const pageModule = {
-        '/': ['src/landing/pages/HomePage.jsx', 'src/pages/Home.jsx'],
-        '/creator': ['src/landing/pages/CreatorPage.jsx', 'src/pages/CreatorLanding.jsx'],
+        '/': ['src/landing/pages/HomePage.jsx'],
+        '/creator': ['src/landing/pages/CreatorPage.jsx'],
         '/community': ['src/landing/pages/CommunityPage.jsx'],
         '/work': ['src/landing/pages/WorkPage.jsx'],
         '/contact': ['src/pages/Contact.jsx'],

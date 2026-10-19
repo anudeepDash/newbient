@@ -1,10 +1,11 @@
 # Instagram verification: setup
 
-Creators verify their Instagram through Meta's official APIs only, and only Professional (Creator or Business) accounts can be verified. Until you finish the steps below, the check stays **off**. While it's off:
+Creators verify their Instagram through Meta's official APIs, and only Professional (Creator or Business) accounts can be verified that way. Until you finish the steps below, the check stays **off**. While it's off:
 
-- creators type their handle and follower count;
-- every application goes to admin review;
-- nothing is scraped and no third-party API is called.
+- creators type their handle, and the server reads the follower count, name and picture from the public profile page (or from RapidAPI, if `RAPIDAPI_KEY` is set);
+- if that count is at or above `minInstagramFollowersToJoin`, the creator is approved automatically;
+- if the profile can't be read, the creator types their follower count, and that application goes to admin review;
+- the daily cron retries profiles that couldn't be read yet (`pending_verification`), and approves them once they can be read.
 
 The code is `api/_lib/instagram.js` and `api/_lib/creatorApp.js`. Both are served by `api/creator-join.js`, because the project is at the Vercel function limit.
 
@@ -20,7 +21,10 @@ The code is `api/_lib/instagram.js` and `api/_lib/creatorApp.js`. Both are serve
    - The follower count comes from Meta, never from the app.
    - The token is stored only in `private/instagram_tokens/users/{uid}`.
    - One Instagram account belongs to one person, tracked in `instagram_owners/{igUserId}`.
-3. **Approval.** The application is approved automatically when Instagram is connected and the account has at least `minInstagramFollowersToJoin` followers. Otherwise it goes to review.
+3. **Approval.** Creators are approved automatically when Instagram is connected and the account has at least `minInstagramFollowersToJoin` followers. Otherwise they go to review.
+   - With Instagram Login on, the apply page starts with **Connect with Instagram**. There's nothing to type: the login fills in the handle and follower count.
+   - A creator already in review (`pending` or `pending_verification`) is approved the moment they connect Instagram, from the apply page or from their creator profile. The daily cron also approves connected creators still in review (for example, once they've grown past the minimum).
+   - Rejected and suspended profiles never change on their own.
 4. **When Meta is down.**
    - Every call has one 3-second timeout and no retries. If Meta doesn't answer, the application is saved as `pending_verification`.
    - The daily cron (`/api/cron/refresh-instagram`) retries those applications. It also refreshes stored tokens before their 60-day expiry and updates follower counts.
@@ -50,7 +54,7 @@ The code is `api/_lib/instagram.js` and `api/_lib/creatorApp.js`. Both are serve
    | `PUBLIC_APP_URL` | `https://app.newbi.live` |
    | `META_GRAPH_VERSION` | Optional. Defaults to `v21.0` |
 
-   The old `RAPIDAPI_*` and `APIFY_*` variables are no longer used, so you can delete them.
+   `RAPIDAPI_KEY` (and optional `RAPIDAPI_HOST` / `RAPIDAPI_ENDPOINT`) is only a fallback for reading public profiles. `APIFY_*` variables are no longer used.
 4. **Switch it on.** In Admin → Creators → Settings → Instagram check, turn on **Verify through Instagram (Meta)**. This sets `site_settings/general.instagramMetaVerification`.
 5. **Test before you announce it.**
    - Connect a tester Professional account and check that it comes back connected with the right follower count.

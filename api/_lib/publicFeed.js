@@ -133,6 +133,20 @@ function pastClients(list) {
         }));
 }
 
+// Real concert photos (Wikimedia Commons, CC BY / CC BY-SA: see public/work/CREDITS.md)
+// for the headline artists whose portfolio card was a promo graphic. Matched by
+// title; they are pre-cropped 4:5, so the admin framing is reset.
+const ARTIST_PHOTOS = {
+    'shreya ghoshal': 'shreya-ghoshal',
+    'sonu nigam': 'sonu-nigam',
+    'sunidhi chauhan': 'sunidhi-chauhan',
+};
+const PHOTO_HOST = 'https://app.newbi.live/work/';
+const artistPhoto = (title) => {
+    const key = ARTIST_PHOTOS[str(title).toLowerCase().replace(/\s+/g, ' ')];
+    return key ? `${PHOTO_HOST}${key}.jpg` : '';
+};
+
 function caseStudies(list, categories, limit = 10) {
     const catName = new Map(categories.map((c) => [c.id, str(c.name || c.label || c.title, 40)]));
     return list
@@ -145,14 +159,14 @@ function caseStudies(list, categories, limit = 10) {
         .map((p) => ({
             id: p.id,
             title: str(p.title, 120),
-            image: url(p.image),
+            image: artistPhoto(p.title) || url(p.image),
             year: num(p.year) || num(eventDay(p.date).slice(0, 4)),
             sector: str(p.sector, 60),
             category: catName.get(p.category) || '',
             highlightUrl: url(p.highlightUrl),
             date: eventDay(p.date),
             // How the admin framed the photo in the 4:5 portfolio card (PortfolioSheets).
-            imageTransform: {
+            imageTransform: artistPhoto(p.title) ? { scale: 1, x: 0, y: 0 } : {
                 scale: num(p.imageTransform?.scale) || 1,
                 x: num(p.imageTransform?.x) || 0,
                 y: num(p.imageTransform?.y) || 0,
