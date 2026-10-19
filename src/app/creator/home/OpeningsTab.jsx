@@ -9,6 +9,7 @@ import { campaignCard } from '../../cards';
 import { CardGrid, CardSkeleton, EmptyState } from '../../pages/parts';
 import { ChoiceChip } from '../ui';
 import { isInCampaign, matchesCollege, creatorCity } from '../useCreatorData';
+import { isTesterRole } from '../../../constants/roles';
 
 /* Openings: open campaigns you can apply to. Campaigns for another college are left out. */
 const OpeningsTab = ({ creator }) => {
@@ -19,7 +20,8 @@ const OpeningsTab = ({ creator }) => {
     const [query, setQuery] = useState('');
     const [filter, setFilter] = useState('all');
 
-    const available = useMemo(() => campaigns.filter(c => matchesCollege(c, creator, profile)), [campaigns, creator, profile]);
+    const tester = isTesterRole(useAppStore(s => s.authUser?.role));
+    const available = useMemo(() => campaigns.filter(c => tester || matchesCollege(c, creator, profile)), [campaigns, creator, profile, tester]);
     const city = creatorCity(creator, profile);
     const filters = [
         { id: 'all', label: 'All' },

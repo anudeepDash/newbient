@@ -1,6 +1,7 @@
 import { collection, doc, getDoc, getDocs, limit, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { callCreatorApi } from '../../app/creator/api';
+import { isTesterRole } from '../../constants/roles';
 
 /*
  * Creator slice: the signed-in user's own creator profile, plus the public
@@ -118,15 +119,17 @@ export const createCreatorSlice = (set, get) => ({
     campaignsLoaded: false,
     _campaignsAt: 0,
 
-    /* Open campaigns are public: anyone can browse them, applying needs a creator profile. */
+    /* Open campaigns are public: anyone can browse them, applying needs a creator profile.
+       Developers (testers) get every campaign, whatever its status. */
     loadOpenCampaigns: async ({ force = false } = {}) => {
-        if (!db || (!force && Date.now() - get()._campaignsAt < CAMPAIGNS_TTL_MS && get().campaignsLoaded)) return;
-        set({ _campaignsAt: Date.now() });
+        const tester = isTesterRole(get().authUser?.role);
+        if (!db || (!force && Date.now() - get()._campaignsAt < CAMPAIGNS_TTL_MS && get().campaignsLoaded && get()._campaignsTester === tester)) return;
+        set({ _campaignsAt: Date.now(), _campaignsTester: tester });
         try {
             const snap = await getDocs(collection(db, 'campaigns'));
             const open = snap.docs
                 .map(d => ({ ...d.data(), id: d.id }))
-                .filter(isCampaignOpen)
+                .filter(c => tester || isCampaignOpen(c))
                 .sort((a, b) => (Number(Boolean(b.isPinned)) - Number(Boolean(a.isPinned))) || (new Date(b.createdAt || 0) - new Date(a.createdAt || 0)));
             set({ openCampaigns: open, campaignsLoaded: true });
         } catch (error) {

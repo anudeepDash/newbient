@@ -197,7 +197,8 @@ export const progressFor = (campaign, creator) => {
     const required = items.filter(i => isRequiredTask(i.task));
     return {
         items,
-        toReview: items.filter(i => i.status === 'submitted').length,
+        // Test submissions (developers trying the flow) are reviewable but never counted as work waiting.
+        toReview: items.filter(i => i.status === 'submitted' && !i.sub?.test).length,
         approved: items.filter(i => i.status === 'approved').length,
         changes: items.filter(i => i.status === 'rejected').length,
         total: items.length,

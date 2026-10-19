@@ -486,15 +486,16 @@ const CampaignManage = ({
                                             <Avatar src={creatorPhotoOf(a.creator)} name={a.creator.name || '?'} size={36} />
                                             <span className="min-w-0">
                                                 <span className="block truncate text-[14px] font-semibold">
-                                                    {a.orphan ? 'No creator profile linked' : a.creator.name || 'Creator'}
+                                                    {a.orphan ? (sub?.test ? `Test by ${sub.tester || 'a developer'}` : 'No creator profile linked') : a.creator.name || 'Creator'}
                                                 </span>
-                                                {a.orphan && <span className="block truncate font-mono text-[11px] text-gray-400" title="Their login ID. Run scripts/migrate-creators-to-uid.mjs to link their old profile.">Login {a.key.slice(0, 10)}…</span>}
+                                                {a.orphan && !sub?.test && <span className="block truncate font-mono text-[11px] text-gray-400" title="Their login ID. Run scripts/migrate-creators-to-uid.mjs to link their old profile.">Login {a.key.slice(0, 10)}…</span>}
                                                 <span className="flex flex-wrap items-center gap-x-2 text-[12px] text-gray-500">
                                                     <Badge tone={st === 'approved' ? 'green' : st === 'submitted' ? 'amber' : st === 'rejected' ? 'rose' : 'gray'}>
                                                         {st === 'approved' ? 'Approved' : st === 'submitted' ? 'To review' : st === 'rejected' ? 'Changes asked' : 'Not started'}
                                                     </Badge>
                                                     {sub?.submittedAt && <span>{formatDay(sub.submittedAt)}</span>}
-                                                    {!a.orphan && !isSelected(campaign, a.creator) && a.stage !== 'paid' && <Badge tone="gray">Not shortlisted</Badge>}
+                                                    {sub?.test && <Badge tone="violet">Test</Badge>}
+                                                    {!a.orphan && !sub?.test && !isSelected(campaign, a.creator) && a.stage !== 'paid' && <Badge tone="gray">Not shortlisted</Badge>}
                                                 </span>
                                             </span>
                                         </button>
