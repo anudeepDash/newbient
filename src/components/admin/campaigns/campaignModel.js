@@ -230,29 +230,77 @@ export const stageOf = (campaign, creator, progress = progressFor(campaign, crea
         if (progress.requiredDone) return 'approved';
         return 'selected';
     }
+    // Content waiting for review counts even from someone who wasn't shortlisted
+    // (the old flow let anyone who joined submit).
+    if (progress.toReview > 0) return 'review';
     const stage = creator?.campaignStages?.[campaign?.id];
     if (stage === 'declined') return 'declined';
     if (stage === 'shortlisted') return 'shortlisted';
     return 'applied';
 };
 
-/** Every applicant of a campaign with stage, progress and criteria worked out once. */
-export const applicantsFor = (campaign, creators) => (creators || [])
-    .filter(c => hasApplied(campaign, c))
-    .map(creator => {
-        const progress = progressFor(campaign, creator);
-        return { creator, key: creatorRef(creator), progress, stage: stageOf(campaign, creator, progress), criteria: criteriaFor(campaign, creator), payout: payoutOf(campaign, creator) };
+/**
+ * Every key (login uid or profile id) with a submission on any of the campaign's
+ * deliverables. Submissions are kept even when the person never joined or was
+ * never shortlisted, so they must count wherever applicants are listed.
+ */
+export const submitterKeys = (campaign) => {
+    const keys = new Set();
+    (campaign?.tasks || []).forEach(t => {
+        Object.entries(t?.submissions || {}).forEach(([k, s]) => { if (s?.status) keys.add(k); });
+        [...(t?.completedBy || []), ...(t?.verifiedBy || [])].forEach(k => { if (k) keys.add(k); });
     });
+    return keys;
+};
 
-/** campaignId → creators who applied or were selected, in one pass. */
-export const indexApplicants = (creators) => {
-    const map = new Map();
-    (creators || []).forEach(c => {
-        new Set([...(c.joinedCampaigns || []), ...(c.shortlistedCampaigns || [])]).forEach(id => {
-            if (!map.has(id)) map.set(id, []);
-            map.get(id).push(c);
+/** Every applicant of a campaign, plus anyone who submitted work, with stage, progress and criteria worked out once. */
+export const applicantsFor = (campaign, creators) => {
+    const submitted = submitterKeys(campaign);
+    return (creators || [])
+        .filter(c => hasApplied(campaign, c) || creatorKeys(c).some(k => submitted.has(k)))
+        .map(creator => {
+            const progress = progressFor(campaign, creator);
+            return { creator, key: creatorRef(creator), progress, stage: stageOf(campaign, creator, progress), criteria: criteriaFor(campaign, creator), payout: payoutOf(campaign, creator) };
         });
+};
+
+/**
+ * Submissions whose key matches no creator profile: an old profile that was never
+ * linked to the person's login (scripts/migrate-creators-to-uid.mjs fixes those).
+ * Shown in Deliverables so the work can still be reviewed; never treated as a
+ * creator profile (no applicant actions on them).
+ */
+export const orphanSubmitters = (campaign, creators) => {
+    const known = new Set();
+    (creators || []).forEach(c => creatorKeys(c).forEach(k => known.add(k)));
+    return [...submitterKeys(campaign)].filter(k => !known.has(k)).map(key => {
+        const creator = { id: key, uid: key, name: '', orphan: true };
+        const progress = progressFor(campaign, creator);
+        return { creator, key, progress, stage: progress.toReview > 0 ? 'review' : 'applied', criteria: { eligible: false }, payout: null, orphan: true };
     });
+};
+
+/**
+ * campaignId → creators who applied or were selected, in one pass. With
+ * `campaigns`, also anyone who submitted work to one, including submissions
+ * that match no creator profile (as a stand-in, so counts like "to review" are right).
+ */
+export const indexApplicants = (creators, campaigns = []) => {
+    const map = new Map();
+    const add = (id, c) => {
+        if (!map.has(id)) map.set(id, []);
+        if (!map.get(id).includes(c)) map.get(id).push(c);
+    };
+    (creators || []).forEach(c => {
+        new Set([...(c.joinedCampaigns || []), ...(c.shortlistedCampaigns || [])]).forEach(id => add(id, c));
+    });
+    if (campaigns?.length) {
+        const byKey = new Map();
+        (creators || []).forEach(c => creatorKeys(c).forEach(k => byKey.set(k, c)));
+        campaigns.forEach(campaign => submitterKeys(campaign).forEach(k => {
+            add(campaign.id, byKey.get(k) || { id: k, uid: k, name: '', orphan: true });
+        }));
+    }
     return map;
 };
 
@@ -260,18 +308,23 @@ export const summarize = (campaign, applicantCreators) => {
     const counts = Object.fromEntries(STAGES.map(s => [s.value, 0]));
     let toReview = 0;
     let paidOut = 0;
+    let selected = 0;
+    let undecided = 0;
     (applicantCreators || []).forEach(creator => {
         const progress = progressFor(campaign, creator);
-        counts[stageOf(campaign, creator, progress)] += 1;
+        const stage = stageOf(campaign, creator, progress);
+        counts[stage] += 1;
         toReview += progress.toReview;
         const payout = payoutOf(campaign, creator);
         if (payout?.status === 'paid') paidOut += Number(payout.amount) || 0;
+        // Shortlisted means actually shortlisted, not just "has work to review".
+        if (isSelected(campaign, creator) || stage === 'paid') selected += 1;
+        else if (!creator.orphan && stage !== 'declined') undecided += 1;
     });
-    const selected = counts.selected + counts.review + counts.approved + counts.paid;
     return {
         counts,
-        applicants: (applicantCreators || []).length,
-        undecided: counts.applied + counts.shortlisted,
+        applicants: (applicantCreators || []).filter(c => !c.orphan).length,
+        undecided,
         selected,
         toReview,
         paidOut,

@@ -34,6 +34,8 @@ import {
 import { NICHE_IDS, COLLAB_IDS, BIO_MAX, isCollegeNiche } from '../../src/lib/creator/options.js';
 import { isCampaignCityMatch } from '../../src/lib/constants.js';
 import { findMatches, readProof, checkMergeable, describeAccount, mergeAccounts, MergeError } from './accountMerge.js';
+import { isStaffCaller } from './mailing.js';
+import { FieldPath } from 'firebase-admin/firestore';
 
 /* The app's own origin (links in emails, the OAuth fallback). PUBLIC_APP_URL overrides it on previews. */
 const APP_URL = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace(/\/+$/, '');
@@ -41,6 +43,7 @@ const APP_URL = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace
 export const CREATOR_APP_ACTIONS = new Set([
     'ig-lookup', 'ig-connect', 'ig-callback', 'instagram-cron', 'creator-apply', 'campaign-apply', 'campaign-submit',
     'creator-self-delete', 'creator-sync-profile', 'account-matches', 'account-merge', 'profile-phone',
+    'my-submission', 'submissions-list', 'submissions-review',
 ]);
 /* Actions that don't take a Firebase ID token (they carry their own proof). */
 export const CREATOR_APP_PUBLIC = new Set(['ig-callback', 'instagram-cron']);
@@ -786,6 +789,53 @@ const handleCampaignSubmit = async (req, res, { db, token }) => {
     return send(res, 200, { success: true, submission });
 };
 
+/*
+ * App submissions (campaigns/{id}/submissions/{uid}) through the server, for when
+ * the Firestore rules don't let the browser read or review them directly:
+ *   my-submission       {campaignId}                          the caller's own record
+ *   submissions-list    staff: every campaign's app submissions (collection group)
+ *   submissions-review  staff: {campaignId, reviews: [{uid, taskId, status, rejectionReason}]}
+ */
+export const handleMySubmission = async (req, res, { db, token }) => {
+    const campaignId = str(req.query?.campaignId || req.body?.campaignId, 128);
+    if (!/^[\w-]{1,128}$/.test(campaignId)) return send(res, 400, { success: false, error: 'campaignId is required' });
+    const snap = await db.collection('campaigns').doc(campaignId).collection('submissions').doc(token.uid).get();
+    return send(res, 200, { success: true, submission: snap.exists ? snap.data() : null });
+};
+
+export const handleSubmissionsList = async (req, res, { db, token }) => {
+    if (!(await isStaffCaller(token, db))) return send(res, 403, { success: false, error: 'Only the Newbi team can do this.' });
+    const snap = await db.collectionGroup('submissions').get();
+    const submissions = snap.docs
+        .filter(d => d.ref.parent.parent?.parent?.id === 'campaigns')
+        .map(d => ({ campaignId: d.ref.parent.parent.id, uid: d.id, data: d.data() }));
+    return send(res, 200, { success: true, submissions });
+};
+
+const REVIEW_STATUS = new Set(['approved', 'rejected', 'submitted']);
+export const handleSubmissionsReview = async (req, res, { db, token }) => {
+    if (!(await isStaffCaller(token, db))) return send(res, 403, { success: false, error: 'Only the Newbi team can do this.' });
+    const campaignId = str(req.body?.campaignId, 128);
+    const reviews = (Array.isArray(req.body?.reviews) ? req.body.reviews : []).slice(0, 200)
+        .map(r => ({ uid: str(r?.uid, 128), taskId: str(r?.taskId, 128), status: str(r?.status, 20), reason: str(r?.rejectionReason, 600) }))
+        .filter(r => /^[\w-]{1,128}$/.test(r.uid) && r.taskId && REVIEW_STATUS.has(r.status));
+    if (!/^[\w-]{1,128}$/.test(campaignId) || !reviews.length) return send(res, 400, { success: false, error: 'Nothing to review.' });
+    const reviewedAt = nowIso();
+    const batch = db.batch();
+    for (const r of reviews) {
+        const ref = db.collection('campaigns').doc(campaignId).collection('submissions').doc(r.uid);
+        const field = (name) => new FieldPath('tasks', r.taskId, name);
+        batch.update(ref,
+            field('status'), r.status,
+            field('rejectionReason'), r.status === 'rejected' ? r.reason : '',
+            field('reviewedAt'), reviewedAt,
+            field('reviewedBy'), token.email || null,
+            'updatedAt', reviewedAt);
+    }
+    await batch.commit();
+    return send(res, 200, { success: true, reviewed: reviews.length, reviewedAt });
+};
+
 /* ── instagram-cron ───────────────────────────────────────────────────── */
 
 const isCronCall = (req) => {
@@ -1064,6 +1114,9 @@ export const handleCreatorAppAction = async (action, req, res, { decodedToken })
         if (action === 'account-matches') return await handleAccountMatches(req, res, ctx);
         if (action === 'account-merge') return await handleAccountMerge(req, res, ctx);
         if (action === 'profile-phone') return await handleProfilePhone(req, res, ctx);
+        if (action === 'my-submission') return await handleMySubmission(req, res, ctx);
+        if (action === 'submissions-list') return await handleSubmissionsList(req, res, ctx);
+        if (action === 'submissions-review') return await handleSubmissionsReview(req, res, ctx);
         return send(res, 400, { success: false, error: 'Unknown action.' });
     } catch (err) {
         console.error(`[creatorApp] ${action}:`, err);

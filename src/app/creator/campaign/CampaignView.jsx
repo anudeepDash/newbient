@@ -157,6 +157,7 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
         const res = await callCreatorApi('campaign-submit', { campaignId: id, taskId: String(task.id), via: 'google_form' });
         setMarking(null);
         if (!res.ok) { addToast?.(res.error, 'error'); return; }
+        useAppStore.getState().noteMySubmission(id, String(task.id), res.data.submission);
         addToast?.('Marked as submitted. The team will review it.', 'success');
     }, [id, marking, addToast]);
 
@@ -360,7 +361,10 @@ const CampaignView = ({ campaign, variant = 'page', initialTaskId, onClose }) =>
                 campaign={campaign}
                 task={submitting}
                 current={submitting ? submissionFor(submitting, who) : null}
-                onSubmitted={() => addToast?.('Sent for review', 'success')}
+                onSubmitted={(submission) => {
+                    if (submitting) useAppStore.getState().noteMySubmission(campaign.id, String(submitting.id), submission);
+                    addToast?.('Sent for review', 'success');
+                }}
             />
             {method !== 'newbi' && (
                 <GoogleFormSheet
