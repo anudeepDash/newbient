@@ -107,9 +107,18 @@ const textOf = (html) => String(html || '')
     .replace(/&#(\d+);/g, (m, n) => (Number(n) <= 0x10FFFF ? String.fromCodePoint(Number(n)) : m)).replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
     .replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
 
+/** HTML that was stored entity-escaped (&lt;p&gt;…, even twice over) → real markup, so it can be stripped. */
+const unescapeMarkup = (value) => {
+    let s = String(value || '');
+    for (let i = 0; i < 3 && /&(amp;)*lt;\s*\/?[a-z]/i.test(s); i += 1) {
+        s = s.replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&quot;/gi, '"').replace(/&#0*39;/g, "'").replace(/&amp;/gi, '&');
+    }
+    return s;
+};
+
 /** Editor HTML or plain text → a plain-text teaser of at most `max` chars, cut at a word. */
 export const excerpt = (value, max = 360) => {
-    const text = textOf(sanitizeHtml(value).replace(/<\/p>/gi, '</p>\n')).replace(/[ \t]*\n[ \t]*/g, '\n');
+    const text = textOf(sanitizeHtml(unescapeMarkup(value)).replace(/<\/p>/gi, '</p>\n')).replace(/[ \t]*\n[ \t]*/g, '\n');
     if (text.length <= max) return text;
     const cut = text.slice(0, max);
     const space = cut.search(/\s\S*$/);
