@@ -16,6 +16,13 @@ export const ADMIN_ROLES = [
   'blog_writer',
 ];
 
+/*
+ * admins/{key}: each team member's record is stored under their email,
+ * lowercased, so the Firestore rules can look up "is this person staff?"
+ * (rules can read a document by id but can't search by email).
+ */
+export const adminKey = (email) => String(email || '').trim().toLowerCase();
+
 // Roles with full admin access (all features)
 export const FULL_ACCESS_ROLES = ['developer', 'super_admin', 'founder'];
 
