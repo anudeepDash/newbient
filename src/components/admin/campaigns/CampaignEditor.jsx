@@ -54,7 +54,7 @@ const blankForm = (uid) => ({
     thumbnail: '', websiteApplyEnabled: true, autoShortlistEligible: false, isPinned: false,
     applyMethod: 'newbi', applyFormUrl: '', applyFormNeedsSignIn: false,
     eventId: '', ticketsPerCreator: '', passKind: 'qr', passTiers: [],
-    eventName: '', eventDate: '', eventTime: '', venue: '',
+    eventName: '', eventDate: '', eventTime: '', venue: '', boxOfficeTime: '', entryVia: '',
     status: 'Open', tasks: [], createdBy: uid || '',
     ...OPEN_FORM_FIELDS,
 });
@@ -84,6 +84,8 @@ const toForm = (c, { copy = false } = {}) => ({
     eventDate: toDayInput(c.eventDate) || '',
     eventTime: c.eventTime || '',
     venue: c.venue || '',
+    boxOfficeTime: c.boxOfficeTime || '',
+    entryVia: ['guestlist', 'tickets'].includes(c.entryVia) ? c.entryVia : '',
     websiteApplyEnabled: c.websiteApplyEnabled !== false,
     applyMethod: ['newbi', 'form', 'both'].includes(c.applyMethod) ? c.applyMethod : 'newbi',
     applyFormUrl: c.applyFormUrl || '',
@@ -134,10 +136,13 @@ const toPayload = (f) => ({
     passKind: f.passKind === 'confirmation' ? 'confirmation' : 'qr',
     // Ticket categories by Instagram followers (VIP 50K+, …); applied when passes are sent.
     passTiers: cleanPassTiers(f.passTiers),
-    eventName: f.eventId ? '' : f.eventName.trim(),
-    eventDate: f.eventId ? '' : f.eventDate || '',
-    eventTime: f.eventId ? '' : f.eventTime.trim(),
-    venue: f.eventId ? '' : f.venue.trim(),
+    // On the pass, email and WhatsApp. With a linked event, anything filled in here overrides it.
+    eventName: f.eventName.trim(),
+    eventDate: f.eventDate || '',
+    eventTime: f.eventTime.trim(),
+    venue: f.venue.trim(),
+    boxOfficeTime: f.boxOfficeTime.trim(),
+    entryVia: f.entryVia || null,
     websiteApplyEnabled: f.websiteApplyEnabled,
     // How creators apply: one tap with their Newbi ID, a Google Form, or either.
     applyMethod: f.applyFormUrl.trim() ? f.applyMethod : 'newbi',
@@ -595,25 +600,40 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                                     {eventOptions.map(e => <option key={e.id} value={e.id}>{e.label}</option>)}
                                 </ThemedSelect>
                             </Field>
-                            {!form.eventId && (
-                                <div className="space-y-3 rounded-xl bg-black/[0.02] p-3.5 dark:bg-white/[0.03]">
-                                    <p className="text-[13px] text-gray-500">Shown on the pass. Leave empty to use the campaign's name.{form.passKind === 'qr' ? ' Scan these passes by picking the campaign in the gate scanner.' : ''}</p>
-                                    <Field label="Event name" optional>
-                                        <input className={fieldCls} value={form.eventName} onChange={(e) => set({ eventName: e.target.value })} placeholder={form.title || 'e.g. Campus Week Finale'} maxLength={120} />
+                            <div className="space-y-3 rounded-xl bg-black/[0.02] p-3.5 dark:bg-white/[0.03]">
+                                <p className="text-[13px] text-gray-500">
+                                    {form.eventId ? 'Shown on the pass. Anything you fill in here replaces the linked event’s.' : 'Shown on the pass. Leave the name empty to use the campaign’s.'}
+                                    {!form.eventId && form.passKind === 'qr' ? ' Scan these passes by picking the campaign in the gate scanner.' : ''}
+                                </p>
+                                <Field label="Event name" optional>
+                                    <input className={fieldCls} value={form.eventName} onChange={(e) => set({ eventName: e.target.value })} placeholder={form.eventId ? 'From the linked event' : form.title || 'e.g. Campus Week Finale'} maxLength={120} />
+                                </Field>
+                                <div className="grid gap-3 sm:grid-cols-3">
+                                    <Field label="Date" optional>
+                                        <input className={fieldCls} type="date" value={form.eventDate} onChange={(e) => set({ eventDate: e.target.value })} />
                                     </Field>
-                                    <div className="grid gap-3 sm:grid-cols-2">
-                                        <Field label="Date" optional>
-                                            <input className={fieldCls} type="date" value={form.eventDate} onChange={(e) => set({ eventDate: e.target.value })} />
-                                        </Field>
-                                        <Field label="Time" optional>
-                                            <input className={fieldCls} value={form.eventTime} onChange={(e) => set({ eventTime: e.target.value })} placeholder="e.g. 7 PM" maxLength={40} />
-                                        </Field>
-                                    </div>
-                                    <Field label="Venue" optional>
-                                        <input className={fieldCls} value={form.venue} onChange={(e) => set({ venue: e.target.value })} placeholder="e.g. Main Ground, Christ University" maxLength={160} />
+                                    <Field label="Time" optional>
+                                        <input className={fieldCls} value={form.eventTime} onChange={(e) => set({ eventTime: e.target.value })} placeholder="e.g. 7 PM" maxLength={40} />
+                                    </Field>
+                                    <Field label="Box office" optional>
+                                        <input className={fieldCls} value={form.boxOfficeTime} onChange={(e) => set({ boxOfficeTime: e.target.value })} placeholder="e.g. Opens 5 PM" maxLength={80} />
                                     </Field>
                                 </div>
-                            )}
+                                <Field label="Venue" optional>
+                                    <input className={fieldCls} value={form.venue} onChange={(e) => set({ venue: e.target.value })} placeholder={form.eventId ? 'From the linked event' : 'e.g. Main Ground, Christ University'} maxLength={160} />
+                                </Field>
+                                <Field label="Entry" optional hint="Where creators go at the venue. Shown on the pass and in the email.">
+                                    <Choice
+                                        value={form.entryVia}
+                                        onChange={(v) => set({ entryVia: v })}
+                                        options={[
+                                            { value: '', label: 'Not set', hint: 'Say nothing' },
+                                            { value: 'guestlist', label: 'Guestlist counter', hint: 'Go to the guestlist desk' },
+                                            { value: 'tickets', label: 'Ticket counter', hint: 'Regular ticket holders’ entry' },
+                                        ]}
+                                    />
+                                </Field>
+                            </div>
                             <Field label="Tickets per creator">
                                 <input className={fieldCls} type="number" min="1" max="20" inputMode="numeric" value={form.ticketsPerCreator} onChange={(e) => set({ ticketsPerCreator: e.target.value })} placeholder="1" />
                             </Field>
