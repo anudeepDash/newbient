@@ -30,7 +30,8 @@ describe('email layout', () => {
         for (const html of [marketing, transactional]) {
             expect(html).toContain('instagram.com/newbi.live');
             expect(html).toContain('linkedin.com/company/newbi-ent');
-            expect(html).toMatch(/© \d{4} Newbi Entertainment &amp; Marketing LLP/);
+            // Emails are signed newbi.live, linked to the site (layout footer).
+            expect(html).toMatch(/© \d{4} (<a [^>]*>)?newbi\.live(<\/a>)?\. All rights reserved\./);
         }
     });
 });
