@@ -24,7 +24,7 @@ import Sheet from '../Sheet';
 import { Avatar, Badge, Button, Menu, MenuItem } from '../ui';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import { DeliveryDots } from './CampaignTickets';
-import { StageBadge, Spinner } from './parts';
+import { StageBadge, Spinner, ReferralTierBadge } from './parts';
 import { creatorHandle, creatorPhotoOf, formatCount, formatDay, inr, taskTypeOf, waNumber } from './campaignModel';
 import { isRequiredTask } from '../../../lib/creator/tasks';
 
@@ -48,7 +48,7 @@ const Check2 = ({ ok, children, neutral }) => (
 const ApplicantSheet = ({
     open, onClose, campaign, entry, busy,
     onSelect, onUnselect, onStage, onPay, onUnpay, onApprove, onRequestChanges, onMessage, onOpenProfile,
-    ticket = null, onSendTicket,
+    ticket = null, onSendTicket, referralStanding = null,
 }) => {
     if (!entry) return <Sheet open={false} onClose={onClose} />;
     const { creator, stage, criteria, progress, payout } = entry;
@@ -132,6 +132,7 @@ const ApplicantSheet = ({
                         {college && <Check2 neutral><GraduationCap size={12} /> {college}</Check2>}
                         {criteria.nicheMatch && <Badge tone="violet" className="px-2.5 py-1 text-[12px]"><Sparkles size={12} /> Niche match</Badge>}
                         {creator.profileStatus && creator.profileStatus !== 'approved' && <Badge tone="amber" className="px-2.5 py-1 text-[12px]">Profile not verified</Badge>}
+                        {referralStanding && <ReferralTierBadge standing={referralStanding} className="px-2.5 py-1 text-[12px]" />}
                     </div>
                 </section>
 

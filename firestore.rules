@@ -134,7 +134,8 @@ service cloud.firestore {
     }
 
     // Creator profiles: the creator and staff. Approval, verification, the phone (its
-    // verification depends on it) and campaign selection are set by staff or the server
+    // verification depends on it), campaign selection and referral credit (referredBy is set
+    // once on applying; staff void referrals) are set by staff or the server
     // (api/creator-join.js creator-update checks the phone against the ID token).
     function ownCreator(data) {
       return signedIn() && (data.get('uid', '') == request.auth.uid || (trustedEmail() && data.get('email', '') == myEmail()));
@@ -146,7 +147,8 @@ service cloud.firestore {
         || (((signedIn() && id == request.auth.uid) || ownCreator(resource.data))
             && !changed().hasAny(['profileStatus', 'status', 'isVerified', 'instagramVerified', 'shortlistedCampaigns', 'campaignStages', 'uid', 'role', 'points',
                 'phone', 'isPhoneVerified', 'phoneVerifiedAt', 'phoneVerificationPending', 'needsPhoneVerificationNotice',
-                'isEmailVerified', 'emailVerifiedAt', 'verificationToken']));
+                'isEmailVerified', 'emailVerifiedAt', 'verificationToken',
+                'referredBy', 'referralVoid', 'referralVoidAt']));
       allow delete: if isStaff();
     }
 
