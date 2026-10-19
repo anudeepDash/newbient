@@ -14,7 +14,8 @@ export default (data = {}) => ({
     title: data.headerText || 'Your invoice is ready',
     blocks: [
         { html: data.messageBody },
-        { details: [['Invoice', data.invoiceNumber], ['Billed to', data.clientName], ['Amount', data.amount ? `₹${data.amount}` : ''], ['Balance due', data.balance ? `₹${data.balance}` : ''], ['Due', data.dueDate]] },
+        { document: { kind: 'INVOICE', name: `Invoice${data.invoiceNumber ? ` ${data.invoiceNumber}` : ''}.pdf`, meta: [data.amount ? `₹${data.amount}` : '', data.dueDate ? `Due ${data.dueDate}` : ''], url: data.invoiceUrl, label: 'Open invoice' } },
+        { stats: [['Billed to', data.clientName], ['Amount', data.amount ? `₹${data.amount}` : ''], ['Balance due', data.balance ? `₹${data.balance}` : '']] },
     ],
     cta: data.invoiceUrl ? { label: 'View and pay invoice', url: data.invoiceUrl } : null,
     reason: 'Billing email from Newbi Entertainment & Marketing LLP.',

@@ -11,7 +11,8 @@ export default (data = {}) => ({
     title: data.headerText || 'Payment sent',
     blocks: [
         { html: data.messageBody },
-        { details: [['Reference', data.reference], ['Paid to', data.receiverName], ['Amount', data.amount ? `₹${data.amount}` : ''], ['Date', data.date], ['Method', data.paymentMode]] },
+        { document: { kind: 'RECEIPT', name: `Receipt${data.reference ? ` ${data.reference}` : ''}.pdf`, meta: [data.amount ? `₹${data.amount}` : '', data.date], url: data.verifyUrl, label: 'Open receipt' } },
+        { stats: [['Paid to', data.receiverName], ['Amount', data.amount ? `₹${data.amount}` : ''], ['Method', data.paymentMode]] },
     ],
     cta: data.verifyUrl ? { label: 'Verify this payment', url: data.verifyUrl } : null,
     reason: 'Finance email from Newbi Entertainment & Marketing LLP.',

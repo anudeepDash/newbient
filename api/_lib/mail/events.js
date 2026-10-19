@@ -239,6 +239,7 @@ const campaignShortlisted = async ({ campaignId, creatorIds = [], message = '', 
             const delivery = await notify('campaign-shortlisted', uid, {
                 name: creator.displayName || creator.name,
                 campaignTitle: campaign.title,
+                image: campaign.image || campaign.coverImage || campaign.thumbnail,
                 brand: campaign.brand || campaign.brandName,
                 reward: campaign.reward,
                 deadline: campaign.deadline || campaign.endDate,
@@ -275,6 +276,7 @@ const submissionReviewed = async ({ campaignId, reviews = [], campaignPath }, ca
         const task = tasks.find(t => String(t.id) === String(r.taskId)) || {};
         const delivery = await notify('submission-reviewed', r.uid, {
             campaignTitle: campaign.title,
+            image: campaign.image || campaign.coverImage || campaign.thumbnail,
             taskTitle: task.title || r.taskTitle,
             status,
             feedback: String(r.reason || '').slice(0, 800),

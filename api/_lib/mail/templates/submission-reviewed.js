@@ -17,6 +17,7 @@ export default (data = {}) => {
         preheader: `${what} ${copy.line}`,
         eyebrow: data.campaignTitle || 'Campaign update',
         title: copy.title,
+        hero: data.image ? { url: data.image, alt: data.campaignTitle || '' } : null,
         blocks: [
             { p: `Hi ${firstName(data.name)}, ${what.charAt(0).toLowerCase()}${what.slice(1)}${data.campaignTitle ? ` in ${data.campaignTitle}` : ''} ${copy.line}` },
             data.feedback ? { quote: data.feedback } : null,

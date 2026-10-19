@@ -11,10 +11,11 @@ export default (data = {}) => ({
     preheader: data.groupLink ? 'Join the campaign WhatsApp group to get started.' : 'Your deliverables are in the campaign.',
     eyebrow: data.brand || 'Newbi campaign',
     title: "You're shortlisted",
+    hero: data.image ? { url: data.image, alt: data.campaignTitle || '' } : null,
     blocks: [
         { p: `Hi ${firstName(data.name)}, you've been shortlisted for ${data.campaignTitle ? `the ${data.campaignTitle} campaign` : 'a Newbi campaign'}.` },
         { quote: data.message },
-        { details: [['Brand', data.brand], ['Reward', data.reward], ['Deadline', formatDate(data.deadline)]] },
+        { stats: [['Brand', data.brand], ['Reward', data.reward], ['Deadline', formatDate(data.deadline).replace(/^\w+,\s*/, '')]] },
         {
             list: [
                 data.groupLink ? 'Join the campaign WhatsApp group. Briefs and updates are shared there.' : null,
