@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { db, storage, auth } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch, runTransaction, FieldPath } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch, runTransaction, FieldPath, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { notifyEvent, subscribeToNewsletter } from './mailApi';
 import { normalizePhoneNumber } from './utils';
@@ -4117,6 +4117,63 @@ export const useStore = create((set, get) => ({
      * uid and their profile id. Read and written in one transaction so a
      * creator submitting at the same moment isn't lost.
      */
+    /*
+     * Removes submissions sent by mistake: [{ taskId, keys }] (keys = the creator's uid and
+     * profile id). Older ones live on the campaign doc (task.submissions plus the
+     * completedBy/verifiedBy arrays), app ones in campaigns/{id}/submissions/{uid}.
+     * The deliverable goes back to "not started", so the creator can send it again.
+     */
+    deleteTaskSubmissions: async (campaignId, items = []) => {
+        if (!items.length) return 0;
+        const appItems = [];
+        const legacyItems = [];
+        items.forEach(r => {
+            const keys = Array.from(new Set((r.keys || []).filter(Boolean)));
+            const appKey = keys.find(k => isAppSubmission(appSubmissionIndex, campaignId, k, r.taskId));
+            if (appKey) appItems.push({ ...r, keys, appKey });
+            legacyItems.push({ ...r, keys });
+        });
+
+        if (appItems.length) {
+            const batch = writeBatch(db);
+            appItems.forEach(r => batch.update(doc(db, 'campaigns', campaignId, 'submissions', r.appKey),
+                new FieldPath('tasks', String(r.taskId)), deleteField(), 'updatedAt', new Date().toISOString()));
+            try {
+                await batch.commit();
+            } catch (error) {
+                if (error?.code !== 'permission-denied') throw error;
+                // The Firestore rules don't allow it from the browser: through the server.
+                const res = await callCreatorApi('submissions-delete', { campaignId, items: appItems.map(r => ({ uid: r.appKey, taskId: String(r.taskId) })) });
+                if (!res.ok) throw new Error(res.error);
+            }
+            await reloadAppSubmissions?.();
+        }
+
+        // Older submissions on the campaign doc (a transaction, so a creator submitting meanwhile isn't lost).
+        let removed = 0;
+        const ref = doc(db, 'campaigns', campaignId);
+        const tasks = await runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw new Error('Campaign not found');
+            const next = (snap.data().tasks || []).map(t => {
+                const mine = legacyItems.filter(r => String(r.taskId) === String(t.id));
+                if (!mine.length) return t;
+                const keys = new Set(mine.flatMap(r => r.keys));
+                const submissions = { ...(t.submissions || {}) };
+                keys.forEach(k => { if (submissions[k]) { delete submissions[k]; removed += 1; } });
+                const drop = (list) => (list || []).filter(k => !keys.has(k));
+                return { ...t, submissions, completedBy: drop(t.completedBy), verifiedBy: drop(t.verifiedBy) };
+            });
+            tx.update(ref, { tasks: next });
+            return next;
+        });
+        if (rawCampaigns) rawCampaigns = rawCampaigns.map(c => (c.id === campaignId ? { ...c, tasks } : c));
+        set(state => ({
+            campaigns: mergeAppSubmissions((state.campaigns || []).map(c => (c.id === campaignId ? { ...c, tasks } : c)), appSubmissionIndex),
+        }));
+        return removed + appItems.length;
+    },
+
     reviewTaskSubmissions: async (campaignId, allReviews = []) => {
         if (!allReviews.length) return 0;
         const reviewedAt = new Date().toISOString();
