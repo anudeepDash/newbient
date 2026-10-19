@@ -51,8 +51,12 @@ export const EVENTS = {
                 buttons: d.ticketToken ? [{ index: 0, param: d.ticketToken }] : [],
             }),
         },
-        push: (d) => ({ title: 'Your ticket is ready', body: `${d.eventName || d.campaignTitle || 'Your campaign'}: open it in the app.`, link: d.campaignUrl || d.ticketUrl }),
-        inApp: (d) => ({ title: `Ticket ready: ${d.eventName || d.campaignTitle || 'campaign'}`, message: 'Your ticket is inside the campaign.', type: 'ticket', link: d.campaignUrl || d.ticketUrl || '' }),
+        push: (d) => (d.confirmation
+            ? { title: "You're confirmed", body: `${d.eventName || d.campaignTitle || 'Your campaign'}: see it in the app.`, link: d.campaignUrl || d.ticketUrl }
+            : { title: 'Your ticket is ready', body: `${d.eventName || d.campaignTitle || 'Your campaign'}: open it in the app.`, link: d.campaignUrl || d.ticketUrl }),
+        inApp: (d) => (d.confirmation
+            ? { title: `Confirmed: ${d.eventName || d.campaignTitle || 'campaign'}`, message: 'Your confirmation is inside the campaign.', type: 'ticket', link: d.campaignUrl || d.ticketUrl || '' }
+            : { title: `Ticket ready: ${d.eventName || d.campaignTitle || 'campaign'}`, message: 'Your ticket is inside the campaign.', type: 'ticket', link: d.campaignUrl || d.ticketUrl || '' }),
     },
     'order-received': {
         email: 'always',

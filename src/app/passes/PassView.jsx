@@ -24,6 +24,8 @@ const PassView = ({ pass, token, offline = false }) => {
     const checkedIn = pass.status === 'checked_in';
     const pending = pass.status === 'pending';
     const showQr = pass.qr !== false && pass.mode !== 'rsvp' && !revoked && !pending;
+    // A confirmation: their place is confirmed, with no QR code to scan.
+    const confirmation = pass.mode === 'confirmation' && pass.qr === false && !pass.externalTicket;
     const qty = Number(pass.qty) > 1 ? Number(pass.qty) : null;
 
     return (
@@ -37,7 +39,7 @@ const PassView = ({ pass, token, offline = false }) => {
             <div className={cn('relative space-y-5 px-5 pb-6 sm:px-6', isPresent(event.image) ? '-mt-6' : 'pt-6')}>
                 <div className="space-y-1.5 text-center">
                     <p className="text-[12px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-neon-green">
-                        {pass.mode === 'rsvp' ? 'RSVP' : SOURCE_LABEL[pass.source] || 'Pass'}
+                        {pass.mode === 'rsvp' ? 'RSVP' : confirmation ? 'Confirmation' : SOURCE_LABEL[pass.source] || 'Pass'}
                     </p>
                     <h1 className="font-heading text-[26px] font-black leading-tight tracking-tight">{title}</h1>
                     {isPresent(pass.campaignTitle) && pass.campaignTitle !== title && (
@@ -68,6 +70,14 @@ const PassView = ({ pass, token, offline = false }) => {
                         )}
                         <p className="mt-3 text-center font-mono text-[20px] font-black tracking-[0.25em]">{pass.ref}</p>
                         {!checkedIn && <p className="text-center text-[13px] text-gray-500 dark:text-zinc-400">Show this at the gate. Turn your brightness up.</p>}
+                    </div>
+                )}
+
+                {confirmation && !revoked && (
+                    <div className="flex flex-col items-center gap-2 rounded-2xl bg-emerald-500/10 px-4 py-5 text-center dark:bg-neon-green/[0.08]">
+                        <CircleCheck size={34} className="text-emerald-600 dark:text-neon-green" />
+                        <p className="font-heading text-[20px] font-black">You’re confirmed{isPresent(pass.holderName) ? `, ${String(pass.holderName).split(/\s+/)[0]}` : ''}</p>
+                        <p className="text-[14px] text-gray-600 dark:text-zinc-400">No QR code needed. Show this if anyone asks at entry.</p>
                     </div>
                 )}
 

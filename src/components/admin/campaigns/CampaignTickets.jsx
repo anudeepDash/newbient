@@ -10,6 +10,7 @@ import Send from 'lucide-react/dist/esm/icons/send';
 import QrCode from 'lucide-react/dist/esm/icons/qr-code';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Link2 from 'lucide-react/dist/esm/icons/link-2';
+import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
 import { db } from '../../../lib/firebase';
 import { cn } from '../../../lib/utils';
@@ -72,7 +73,10 @@ const useUploads = (campaignId) => {
     return uploads;
 };
 
-const kindOf = (p) => (p.externalTicket?.kind === 'pdf' ? { icon: FileText, label: 'PDF' } : p.externalTicket?.kind === 'link' ? { icon: Link2, label: 'Link' } : { icon: QrCode, label: 'Newbi pass' });
+const kindOf = (p) => (p.externalTicket?.kind === 'pdf' ? { icon: FileText, label: 'PDF' }
+    : p.externalTicket?.kind === 'link' ? { icon: Link2, label: 'Link' }
+    : p.qr === false ? { icon: CircleCheck, label: 'Confirmation' }
+    : { icon: QrCode, label: 'QR pass' });
 
 const CampaignTickets = ({ campaign, applicants, passes, loaded, error, onSend }) => {
     const addToast = useStore(s => s.addToast);
@@ -108,9 +112,13 @@ const CampaignTickets = ({ campaign, applicants, passes, loaded, error, onSend }
         <div className="space-y-4">
             <Card className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                 <div className="min-w-0 flex-1">
-                    <p className="text-[15px] font-bold">Event tickets</p>
+                    <p className="text-[15px] font-bold">Event passes</p>
                     <p className="text-[13px] text-gray-500">
-                        {campaign.eventId ? `${campaign.ticketsPerCreator || 1} per creator${campaign.ticketAutoIssue === 'selected' ? ' · sent when you select someone' : campaign.ticketAutoIssue === 'completed' ? ' · sent when their required tasks are approved' : ''}.` : 'No linked event: send official partner tickets with a CSV, or link an event in the editor for Newbi passes.'}
+                        {[
+                            campaign.passKind === 'confirmation' ? 'Confirmation, no QR' : 'QR pass',
+                            `${campaign.ticketsPerCreator || 1} per creator`,
+                            campaign.ticketAutoIssue === 'selected' ? 'sent when you select someone' : campaign.ticketAutoIssue === 'completed' ? 'sent when their required tasks are approved' : 'sent by hand',
+                        ].join(' · ')}.
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -139,7 +147,7 @@ const CampaignTickets = ({ campaign, applicants, passes, loaded, error, onSend }
                                     <p className="truncate text-[14px] font-semibold">{p.holderName || entry?.creator?.name || 'Creator'}</p>
                                     <p className="flex items-center gap-1.5 truncate text-[12px] text-gray-500">
                                         <kind.icon size={12} /> {kind.label}
-                                        {p.externalTicket && p.qr !== false && <> + <QrCode size={12} /> Newbi pass</>}
+                                        {p.externalTicket && p.qr !== false && <> + <QrCode size={12} /> QR pass</>}
                                         {Number(p.qty) > 1 && <> · {p.qty}</>}
                                         {p.tier && <> · {p.tier}</>}
                                         {p.status === 'checked_in' && <Badge tone="green" className="ml-1">Checked in</Badge>}

@@ -691,13 +691,39 @@ const ScanScreen = ({ eventId, event, onChangeEvent, onBack, canOpenDesk, onOpen
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+/*
+ * Creator campaigns that send QR passes without a linked event: their passes
+ * are scanned by picking the campaign (check-in matches the pass's campaign).
+ */
+const useCampaignGates = () => {
+    const campaigns = useStore(s => s.campaigns);
+    return useMemo(() => (campaigns || [])
+        .filter(c => !c.eventId && c.passKind !== 'confirmation' && (c.eventName || c.eventDate || c.ticketAutoIssue))
+        .map(c => {
+            const when = c.eventDate ? new Date(String(c.eventDate).length === 10 ? `${c.eventDate}T00:00:00` : c.eventDate) : null;
+            return {
+                id: c.id,
+                title: c.eventName || c.title,
+                location: c.venue || '',
+                image: c.thumbnail || '',
+                date: c.eventDate || '',
+                when: when && !Number.isNaN(when.getTime()) ? when : null,
+                guestlistIds: [],
+                isTicketed: true,
+                source: 'campaign',
+            };
+        }), [campaigns]);
+};
+
 const EventScanner = () => {
-    useStoreSubscription(['upcomingEvents', 'portfolio', 'guestlists', 'volunteerGigs', 'ticketOrders']);
+    useStoreSubscription(['upcomingEvents', 'portfolio', 'guestlists', 'volunteerGigs', 'ticketOrders', 'campaigns']);
     const user = useStore(s => s.user);
     const navigate = useNavigate();
     const [params, setParams] = useSearchParams();
     const eventId = params.get('eventId') || '';
-    const events = useOperationalEvents();
+    const operational = useOperationalEvents();
+    const campaignGates = useCampaignGates();
+    const events = useMemo(() => [...operational, ...campaignGates.filter(c => !operational.some(e => e.id === c.id))], [operational, campaignGates]);
     const event = events.find(e => e.id === eventId) || events.find(e => e.guestlistIds?.includes(eventId)) || null;
     const isScannerRole = user?.role === 'scanner';
 
