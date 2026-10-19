@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import QrCode from 'lucide-react/dist/esm/icons/qr-code';
+import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import { Button, Field, GlassChip, Stat, StatRow } from '../../components/app';
@@ -22,6 +23,7 @@ import { ExternalTicketButton, passWhen } from '../passes/passParts';
  *
  * Shows the partner's ticket ("Open ticket" / "View / Download PDF"), tier,
  * qty and note when present, and the Newbi QR pass only when one was issued.
+ * A confirmation (a pass without a QR code) reads "You're confirmed".
  * Reads the signed-in creator's own passes from the app store (passes slice).
  */
 
@@ -34,7 +36,8 @@ export const useCampaignTicket = (campaignId) => {
 export const TicketReadyBadge = ({ campaignId }) => {
     const ticket = useCampaignTicket(campaignId);
     if (!ticket) return null;
-    return <GlassChip icon={Ticket} label={ticket.status === 'checked_in' ? 'Checked in' : 'Ticket ready'} tone="accent" />;
+    const confirmation = ticket.qr === false && !ticket.externalTicket;
+    return <GlassChip icon={confirmation ? CircleCheck : Ticket} label={ticket.status === 'checked_in' ? 'Checked in' : confirmation ? 'Confirmed' : 'Ticket ready'} tone="accent" />;
 };
 
 const seen = new Set();
@@ -54,6 +57,7 @@ const YourTicket = ({ campaignId, className }) => {
     const ext = ticket.externalTicket || null;
     const event = ticket.event || {};
     const hasQr = ticket.qr !== false;
+    const confirmation = !hasQr && !ext;
     const qty = Number(ext?.qty || ticket.qty) > 1 ? Number(ext?.qty || ticket.qty) : null;
     const note = ext?.note || ticket.note;
 
@@ -62,10 +66,10 @@ const YourTicket = ({ campaignId, className }) => {
             <div className="space-y-4 p-5">
                 <div className="flex items-center gap-3">
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-700 dark:bg-neon-green/15 dark:text-neon-green">
-                        <Ticket size={20} />
+                        {confirmation ? <CircleCheck size={20} /> : <Ticket size={20} />}
                     </span>
                     <div className="min-w-0 flex-1">
-                        <p className="text-[12px] font-black uppercase tracking-[0.18em] text-emerald-700 dark:text-neon-green">{ticket.status === 'checked_in' ? 'Checked in' : 'Your ticket'}</p>
+                        <p className="text-[12px] font-black uppercase tracking-[0.18em] text-emerald-700 dark:text-neon-green">{ticket.status === 'checked_in' ? 'Checked in' : confirmation ? "You're confirmed" : 'Your ticket'}</p>
                         <p className="truncate text-[17px] font-black">{event.title || ticket.campaignTitle}</p>
                     </div>
                 </div>
@@ -83,6 +87,10 @@ const YourTicket = ({ campaignId, className }) => {
                 </StatRow>
 
                 {isPresent(note) && <p className="rounded-2xl bg-white/70 px-4 py-3 text-[15px] text-gray-700 dark:bg-white/[0.04] dark:text-zinc-300">{note}</p>}
+
+                {confirmation && (
+                    <p className="text-[15px] text-gray-700 dark:text-zinc-300">Your place is confirmed. There’s no QR code for this one; show this if anyone asks at entry.</p>
+                )}
 
                 {ext && <ExternalTicketButton pass={pass} />}
                 {hasQr && (

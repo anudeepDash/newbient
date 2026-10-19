@@ -250,6 +250,28 @@ const reReg = await A['register-guestlist'](db, { guestlistId: 'ev1' }, user('u1
 assert.equal(reReg.status, 'issued'); assert.notEqual(reReg.ref, r1.ref);
 ok('revoked guestlist pass is refused at the gate and the person can register again');
 
+console.log('Campaign passes without an event');
+await db.doc('campaigns/camp2').set({ title: 'Campus Week', eventName: 'Campus Week Finale', eventDate: future, venue: 'Main Ground', passKind: 'confirmation' });
+await db.doc('creators/cr4').set({ uid: 'cu4', name: 'Meera', email: 'meera@ex.com', shortlistedCampaigns: ['camp2'], joinedCampaigns: ['camp2'] });
+mails.length = 0;
+const cf = await A['issue-campaign'](db, { campaignId: 'camp2', creatorIds: ['cr4'] }, staff);
+assert.equal(cf.results[0].outcome, 'issued');
+const cfPass = doc(`passes/${cf.results[0].ref}`);
+assert.equal(cfPass.qr, false); assert.equal(cfPass.mode, 'confirmation'); assert.equal(cfPass.eventId, undefined);
+assert.equal(cfPass.event.title, 'Campus Week Finale'); assert.equal(cfPass.event.venue, 'Main Ground');
+assert.match(mails[0].subject, /^You're confirmed for Campus Week Finale/);
+const cfScan = await A.checkin(db, { code: cfPass.ref, eventId: 'camp2' }, staff);
+assert.equal(cfScan.valid, false); assert.match(cfScan.message, /confirmation without a QR/);
+assert.equal((await A['issue-campaign'](db, { campaignId: 'camp2', creatorIds: ['cr4'] }, staff)).results[0].outcome, 'skipped');
+ok("no linked event: the campaign's own name, date and venue; the campaign's setting sends a confirmation without a QR");
+
+const up2 = await A['issue-campaign'](db, { campaignId: 'camp2', creatorIds: ['cr4'], kind: 'qr' }, staff);
+assert.equal(up2.results[0].outcome, 'updated'); assert.equal(up2.results[0].ref, cfPass.ref);
+assert.equal(doc(`passes/${cfPass.ref}`).qr, true); assert.equal(doc(`passes/${cfPass.ref}`).mode, 'qr');
+const qrScan = await A.checkin(db, { code: cfPass.ref, eventId: 'camp2' }, staff);
+assert.equal(qrScan.valid, true); assert.equal(qrScan.reason, 'admitted');
+ok('a QR pass sent later upgrades the confirmation in place, and scans in at the gate for the campaign');
+
 console.log('Orders');
 await db.doc('ticket_orders/o1').set({ eventId: 'ev1', bookingRef: 'NB-ABC12', status: 'approved', customerName: 'Paid Person', customerEmail: 'paid@ex.com', items: [{ name: 'GA', count: 2, price: 500 }], totalAmount: 1000, userId: 'u9' });
 await events.sendOrderEmail('o1');

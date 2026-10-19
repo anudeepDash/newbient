@@ -13,9 +13,9 @@ import { downloadCsv, fileDate } from '../../../lib/xlsx';
 import { passesPost, fileToBase64 } from '../../../lib/passesApi';
 import Sheet from '../Sheet';
 import { Avatar, Badge, Button, SegmentedTabs } from '../ui';
-import { Field, fieldCls } from '../uploads/UploadKit';
+import { Field, fieldCls, Choice } from '../uploads/UploadKit';
 import { Spinner } from './parts';
-import { creatorPhotoOf } from './campaignModel';
+import { creatorPhotoOf, formatDay } from './campaignModel';
 import {
     TEMPLATE_COLUMNS, ROW_STATUS, canGetTicket, evaluateRows, passFor, passesByCreator, readTicketCsv, templateRows,
 } from './ticketModel';
@@ -24,7 +24,9 @@ import { DeliveryDots } from './CampaignTickets';
 /*
  * "Send tickets" for a campaign's selected creators. Two ways:
  *
- *   Newbi QR pass       one pass per creator for the linked event (the gate scanner checks it)
+ *   Newbi pass          one pass per creator: a QR pass (the gate scanner checks it) or a
+ *                       confirmation without a QR. For the linked event, or without one the
+ *                       campaign's own event name, date and venue.
  *   Official tickets    a CSV from the ticketing partner (links or PDFs dropped in alongside):
  *                       preview → fix or skip rows → "Send N tickets"
  *
@@ -34,6 +36,11 @@ import { DeliveryDots } from './CampaignTickets';
  */
 
 const QR_BATCH = 10;
+
+/* Whether this creator's existing pass rules out sending them another of `kind`:
+   a QR pass can still upgrade a confirmation or a partner ticket; a confirmation needs no pass at all. */
+const blocks = (kind, pass) => (pass ? (kind === 'qr' ? pass.qr !== false : true) : false);
+const passLabel = (pass) => (!pass ? null : pass.qr !== false ? 'Has a QR pass' : pass.externalTicket ? 'Has partner ticket' : 'Confirmed');
 const CSV_BATCH = 5;
 
 const chunks = (list, size) => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, i * size + size));
@@ -84,7 +91,8 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
     const [progress, setProgress] = useState({ done: 0, total: 0, step: '' });
     const [results, setResults] = useState([]);
 
-    // QR mode
+    // Newbi pass mode: 'qr' or 'confirmation' (no QR)
+    const [passKind, setPassKind] = useState('qr');
     const [qrPicked, setQrPicked] = useState(() => new Set());
     const [qty, setQty] = useState('1');
     const [tier, setTier] = useState('');
@@ -103,15 +111,17 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
     useEffect(() => {
         if (!open) return;
         const start = (preselected || []).filter(canGetTicket);
-        // Everyone ticked by default, minus those who already have a Newbi pass.
-        setQrPicked(new Set((start.length ? start : eligible).filter(e => { const p = passFor(existing, e.creator); return !p || p.qr === false; }).map(e => e.key)));
+        const kind = campaign?.passKind === 'confirmation' ? 'confirmation' : 'qr';
+        setPassKind(kind);
+        // Everyone ticked by default, minus those who already have this kind of pass.
+        setQrPicked(new Set((start.length ? start : eligible).filter(e => !blocks(kind, passFor(existing, e.creator))).map(e => e.key)));
         setQty(String(Number(campaign?.ticketsPerCreator) || 1));
         setTier('');
         setNote('');
         setPhase('edit');
         setResults([]);
         setCsvRows([]); setCsvName(''); setCsvError(''); setFiles([]); setOverrides({});
-        setMode(campaign?.eventId ? 'qr' : 'csv');
+        setMode('qr');
         // Only when the sheet opens.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, preKey]);
@@ -169,7 +179,7 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
         const uploadId = await startLog({ rows: ids.length, matched: ids.length, sending: ids.length });
         const all = [];
         for (const batch of chunks(ids, QR_BATCH)) {
-            const res = await passesPost('issue-campaign', { campaignId: campaign.id, creatorIds: batch, qty, tier, note, uploadId }, { timeoutMs: 60000 });
+            const res = await passesPost('issue-campaign', { campaignId: campaign.id, creatorIds: batch, kind: passKind, qty, tier, note, uploadId }, { timeoutMs: 60000 });
             if (res.ok) all.push(...res.data.results);
             else all.push(...batch.map(creatorId => ({ creatorId, outcome: 'failed', error: res.error })));
             setProgress(p => ({ ...p, done: Math.min(p.total, p.done + batch.length) }));
@@ -178,8 +188,15 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
         setResults(all);
         setPhase('done');
         const failed = all.filter(r => r.outcome === 'failed').length;
-        addToast(failed ? `${all.length - failed} sent, ${failed} failed.` : 'Tickets sent.', failed ? 'warning' : 'success');
+        addToast(failed ? `${all.length - failed} sent, ${failed} failed.` : passKind === 'confirmation' ? 'Confirmations sent.' : 'Passes sent.', failed ? 'warning' : 'success');
     };
+
+    // Switching QR ↔ confirmation drops anyone who can't get that kind.
+    const chooseKind = (kind) => {
+        setPassKind(kind);
+        setQrPicked(s => new Set([...s].filter(key => { const e = eligible.find(x => x.key === key); return e && !blocks(kind, passFor(existing, e.creator)); })));
+    };
+    const passWord = (n) => (passKind === 'confirmation' ? (n === 1 ? 'confirmation' : 'confirmations') : (n === 1 ? 'pass' : 'passes'));
 
     const sendCsv = async () => {
         if (!toSend.length) return;
@@ -228,8 +245,8 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
     const footer = phase === 'done' ? (
         <Button variant="accent" onClick={onClose} className="h-11 w-full">Done</Button>
     ) : mode === 'qr' ? (
-        <Button variant="accent" onClick={sendQr} disabled={sending || !qrList.length || !campaign?.eventId} className="h-11 w-full">
-            {sending ? <><Spinner /> Sending {progress.done}/{progress.total}</> : <><Send size={14} /> Send {qrList.length} {qrList.length === 1 ? 'pass' : 'passes'}</>}
+        <Button variant="accent" onClick={sendQr} disabled={sending || !qrList.length} className="h-11 w-full">
+            {sending ? <><Spinner /> Sending {progress.done}/{progress.total}</> : <><Send size={14} /> Send {qrList.length} {passWord(qrList.length)}</>}
         </Button>
     ) : (
         <Button variant="accent" onClick={sendCsv} disabled={sending || !toSend.length} className="h-11 w-full">
@@ -253,31 +270,40 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
                     <SegmentedTabs
                         value={mode}
                         onChange={(v) => !sending && setMode(v)}
-                        items={[{ value: 'qr', label: 'Newbi QR pass', icon: QrCode }, { value: 'csv', label: 'Official tickets (CSV)', icon: FileSpreadsheet }]}
+                        items={[{ value: 'qr', label: 'Newbi pass', icon: QrCode }, { value: 'csv', label: 'Official tickets (CSV)', icon: FileSpreadsheet }]}
                         className="w-full [&>button]:flex-1 [&>button]:justify-center"
                     />
 
                     {mode === 'qr' ? (
-                        !campaign?.eventId ? (
-                            <p className="rounded-xl bg-amber-500/10 px-3.5 py-3 text-[13px] font-medium text-amber-800 dark:text-amber-300">
-                                Link an event in the campaign editor (Event tickets) to send Newbi QR passes. Official partner tickets can be sent with a CSV without one.
-                            </p>
-                        ) : eligible.length === 0 ? (
-                            <p className="rounded-xl bg-black/[0.03] px-3.5 py-3 text-[13px] text-gray-500 dark:bg-white/[0.04]">Select creators first. Shortlisted, selected and finished creators can get tickets.</p>
+                        eligible.length === 0 ? (
+                            <p className="rounded-xl bg-black/[0.03] px-3.5 py-3 text-[13px] text-gray-500 dark:bg-white/[0.04]">Select creators first. Shortlisted, selected and finished creators can get passes.</p>
                         ) : (
                             <>
+                                <Choice
+                                    value={passKind}
+                                    onChange={(v) => !sending && chooseKind(v)}
+                                    options={[
+                                        { value: 'qr', label: 'QR pass', hint: 'Scanned at the gate' },
+                                        { value: 'confirmation', label: 'Confirmation', hint: 'Confirms their place, no QR' },
+                                    ]}
+                                />
+                                {!campaign?.eventId && (
+                                    <p className="text-[13px] text-gray-500">
+                                        No linked event: the pass shows <span className="font-semibold text-gray-700 dark:text-zinc-300">{campaign?.eventName || campaign?.title || 'the campaign'}</span>{[formatDay(campaign?.eventDate), campaign?.venue].filter(Boolean).length ? ` · ${[formatDay(campaign?.eventDate), campaign?.venue].filter(Boolean).join(' · ')}` : ''}. Change it in the editor (Event passes).
+                                    </p>
+                                )}
                                 <ul className="divide-y divide-black/[0.05] rounded-xl border border-black/[0.06] dark:divide-white/[0.06] dark:border-white/[0.08] sm:max-h-[38dvh] sm:overflow-y-auto">
                                     {eligible.map(e => {
                                         const has = passFor(existing, e.creator);
-                                        const hasQr = has && has.qr !== false;
+                                        const blocked = blocks(passKind, has);
                                         const checked = qrPicked.has(e.key);
                                         return (
                                             <li key={e.key}>
-                                                <label className={cn('flex min-h-[52px] cursor-pointer items-center gap-3 px-3 py-2', hasQr && 'opacity-60')}>
-                                                    <input type="checkbox" className="h-5 w-5 accent-emerald-600" disabled={hasQr || sending} checked={checked && !hasQr} onChange={() => setQrPicked(s => { const n = new Set(s); if (n.has(e.key)) n.delete(e.key); else n.add(e.key); return n; })} />
+                                                <label className={cn('flex min-h-[52px] cursor-pointer items-center gap-3 px-3 py-2', blocked && 'opacity-60')}>
+                                                    <input type="checkbox" className="h-5 w-5 accent-emerald-600" disabled={blocked || sending} checked={checked && !blocked} onChange={() => setQrPicked(s => { const n = new Set(s); if (n.has(e.key)) n.delete(e.key); else n.add(e.key); return n; })} />
                                                     <Avatar src={creatorPhotoOf(e.creator)} name={e.creator.name} size={30} />
                                                     <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{e.creator.name || 'Creator'}</span>
-                                                    {hasQr ? <Badge tone="green">Has a pass</Badge> : has ? <Badge tone="blue">Has partner ticket</Badge> : null}
+                                                    {has && <Badge tone={has.qr !== false ? 'green' : has.externalTicket ? 'blue' : 'gray'}>{passLabel(has)}</Badge>}
                                                 </label>
                                             </li>
                                         );

@@ -36,7 +36,7 @@ const SECTIONS = [
     { id: 'cm-deliverables', label: 'Deliverables' },
     { id: 'cm-eligibility', label: 'Who can apply' },
     { id: 'cm-pay', label: 'Pay and spots' },
-    { id: 'cm-tickets', label: 'Event tickets' },
+    { id: 'cm-tickets', label: 'Event passes' },
     { id: 'cm-dates', label: 'Deadlines' },
     { id: 'cm-open-form', label: 'Open form' },
     { id: 'cm-images', label: 'Images' },
@@ -51,7 +51,8 @@ const blankForm = (uid) => ({
     reward: '', payoutPerCreator: '', totalSpots: '', spotsLeft: '',
     thumbnail: '', websiteApplyEnabled: true, autoShortlistEligible: false, isPinned: false,
     applyMethod: 'newbi', applyFormUrl: '', applyFormNeedsSignIn: false,
-    eventId: '', ticketsPerCreator: '', ticketAutoIssue: '',
+    eventId: '', ticketsPerCreator: '', ticketAutoIssue: '', passKind: 'qr',
+    eventName: '', eventDate: '', eventTime: '', venue: '',
     status: 'Open', tasks: [], createdBy: uid || '',
     ...OPEN_FORM_FIELDS,
 });
@@ -76,6 +77,11 @@ const toForm = (c, { copy = false } = {}) => ({
     eventId: c.eventId || '',
     ticketsPerCreator: toStr(c.ticketsPerCreator),
     ticketAutoIssue: ['selected', 'completed'].includes(c.ticketAutoIssue) ? c.ticketAutoIssue : '',
+    passKind: c.passKind === 'confirmation' ? 'confirmation' : 'qr',
+    eventName: c.eventName || '',
+    eventDate: toDayInput(c.eventDate) || '',
+    eventTime: c.eventTime || '',
+    venue: c.venue || '',
     websiteApplyEnabled: c.websiteApplyEnabled !== false,
     applyMethod: ['newbi', 'form', 'both'].includes(c.applyMethod) ? c.applyMethod : 'newbi',
     applyFormUrl: c.applyFormUrl || '',
@@ -117,10 +123,16 @@ const toPayload = (f) => ({
     totalSpots: num(f.totalSpots),
     spotsLeft: num(f.spotsLeft),
     thumbnail: f.thumbnail.trim(),
-    // Event tickets for selected creators (Phase 5): the linked event, how many each, and when they go out.
+    // Event passes for selected creators: a linked event (optional; without one the pass uses the
+    // name, date and venue below), QR pass or confirmation without a QR, how many each, and when they go out.
     eventId: f.eventId || null,
-    ticketsPerCreator: f.eventId ? (num(f.ticketsPerCreator) || 1) : null,
-    ticketAutoIssue: f.eventId && f.ticketAutoIssue ? f.ticketAutoIssue : null,
+    ticketsPerCreator: num(f.ticketsPerCreator) || 1,
+    ticketAutoIssue: f.ticketAutoIssue || null,
+    passKind: f.passKind === 'confirmation' ? 'confirmation' : 'qr',
+    eventName: f.eventId ? '' : f.eventName.trim(),
+    eventDate: f.eventId ? '' : f.eventDate || '',
+    eventTime: f.eventId ? '' : f.eventTime.trim(),
+    venue: f.eventId ? '' : f.venue.trim(),
     websiteApplyEnabled: f.websiteApplyEnabled,
     // How creators apply: one tap with their Newbi ID, a Google Form, or either.
     applyMethod: f.applyFormUrl.trim() ? f.applyMethod : 'newbi',
@@ -560,32 +572,57 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                         </div>
                     </BuilderCard>
 
-                    <BuilderCard id="cm-tickets" title="Event tickets" hint="Optional: tickets for selected creators, sent in the app, by email and on WhatsApp">
+                    <BuilderCard id="cm-tickets" title="Event passes" hint="Optional: passes for selected creators, sent in the app, by email and on WhatsApp">
                         <div className="space-y-4">
-                            <Field label="Linked event" optional hint="Creators get passes for this event. Send them from the campaign's applicants.">
+                            <Field label="Pass" hint="A QR pass is scanned at the gate. A confirmation tells them they're in, with no QR code.">
+                                <Choice
+                                    value={form.passKind}
+                                    onChange={(v) => set({ passKind: v })}
+                                    options={[
+                                        { value: 'qr', label: 'QR pass', hint: 'Scanned at the gate' },
+                                        { value: 'confirmation', label: 'Confirmation', hint: 'No QR code' },
+                                    ]}
+                                />
+                            </Field>
+                            <Field label="Linked event" optional hint="Uses that event's name, date, venue and poster, and its gate scanner.">
                                 <ThemedSelect className={cn(fieldCls, 'cursor-pointer')} value={form.eventId} onChange={(e) => set({ eventId: e.target.value })}>
-                                    <option value="">No event tickets</option>
+                                    <option value="">No linked event</option>
                                     {eventOptions.map(e => <option key={e.id} value={e.id}>{e.label}</option>)}
                                 </ThemedSelect>
                             </Field>
-                            {form.eventId && (
-                                <>
-                                    <Field label="Tickets per creator">
-                                        <input className={fieldCls} type="number" min="1" max="20" inputMode="numeric" value={form.ticketsPerCreator} onChange={(e) => set({ ticketsPerCreator: e.target.value })} placeholder="1" />
+                            {!form.eventId && (
+                                <div className="space-y-3 rounded-xl bg-black/[0.02] p-3.5 dark:bg-white/[0.03]">
+                                    <p className="text-[13px] text-gray-500">Shown on the pass. Leave empty to use the campaign's name.{form.passKind === 'qr' ? ' Scan these passes by picking the campaign in the gate scanner.' : ''}</p>
+                                    <Field label="Event name" optional>
+                                        <input className={fieldCls} value={form.eventName} onChange={(e) => set({ eventName: e.target.value })} placeholder={form.title || 'e.g. Campus Week Finale'} maxLength={120} />
                                     </Field>
-                                    <Field label="Send Newbi passes automatically" hint="Official partner tickets (PDFs or links) are always sent by hand with a CSV.">
-                                        <Choice
-                                            value={form.ticketAutoIssue}
-                                            onChange={(v) => set({ ticketAutoIssue: v })}
-                                            options={[
-                                                { value: '', label: 'Off', hint: 'Send by hand' },
-                                                { value: 'selected', label: 'On selection', hint: 'When you select a creator' },
-                                                { value: 'completed', label: 'When done', hint: 'All required tasks approved' },
-                                            ]}
-                                        />
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <Field label="Date" optional>
+                                            <input className={fieldCls} type="date" value={form.eventDate} onChange={(e) => set({ eventDate: e.target.value })} />
+                                        </Field>
+                                        <Field label="Time" optional>
+                                            <input className={fieldCls} value={form.eventTime} onChange={(e) => set({ eventTime: e.target.value })} placeholder="e.g. 7 PM" maxLength={40} />
+                                        </Field>
+                                    </div>
+                                    <Field label="Venue" optional>
+                                        <input className={fieldCls} value={form.venue} onChange={(e) => set({ venue: e.target.value })} placeholder="e.g. Main Ground, Christ University" maxLength={160} />
                                     </Field>
-                                </>
+                                </div>
                             )}
+                            <Field label="Tickets per creator">
+                                <input className={fieldCls} type="number" min="1" max="20" inputMode="numeric" value={form.ticketsPerCreator} onChange={(e) => set({ ticketsPerCreator: e.target.value })} placeholder="1" />
+                            </Field>
+                            <Field label="Send passes automatically" hint="Official partner tickets (PDFs or links) are always sent by hand with a CSV.">
+                                <Choice
+                                    value={form.ticketAutoIssue}
+                                    onChange={(v) => set({ ticketAutoIssue: v })}
+                                    options={[
+                                        { value: '', label: 'Off', hint: 'Send by hand' },
+                                        { value: 'selected', label: 'On selection', hint: 'When you select a creator' },
+                                        { value: 'completed', label: 'When done', hint: 'All required tasks approved' },
+                                    ]}
+                                />
+                            </Field>
                         </div>
                     </BuilderCard>
 

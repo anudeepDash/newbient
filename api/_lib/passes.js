@@ -21,7 +21,8 @@
  *   GET  get                      {ref}                        a pass to show (holder/staff get everything)
  *   POST file                     {ref} or {token}             short-lived link to the ticket PDF / link
  *   GET  open-token               {token}                      the ticket behind a signed /t/<token> link
- *   POST issue-campaign           {campaignId, creatorIds, qty?, tier?, note?}          staff
+ *   POST issue-campaign           {campaignId, creatorIds, kind?, qty?, tier?, note?}   staff
+ *                                 kind 'qr' (default: the campaign's passKind) or 'confirmation' (no QR)
  *   POST issue-campaign-external  {campaignId, uploadId, rows: [...]}                   staff
  *   POST upload-start / upload-finish / upload-pdf                                       staff
  *   POST resend                   {ref} | {campaignId, failedOnly}                       staff
@@ -627,7 +628,17 @@ const loadCampaignContext = async (db, campaignId) => {
             event = compact({ title: e.title, date: toIso(e.date), time: e.time, venue: e.location || e.venue, city: e.city, image: e.hubImage || e.image });
         }
     }
-    if (!event.title) event = compact({ ...event, title: campaign.eventName || campaign.title, date: event.date || toIso(campaign.eventDate) || undefined, venue: event.venue || campaign.venue || undefined });
+    // No linked event (or it's gone): the campaign's own "where and when" from the editor, else its title.
+    if (!event.title) {
+        event = compact({
+            ...event,
+            title: campaign.eventName || campaign.title,
+            date: event.date || toIso(campaign.eventDate) || undefined,
+            time: event.time || campaign.eventTime || undefined,
+            venue: event.venue || campaign.venue || undefined,
+            city: event.city || campaign.eventCity || undefined,
+        });
+    }
     if (!event.image && campaign.thumbnail) event.image = campaign.thumbnail;
     return { campaign, event };
 };
@@ -658,7 +669,9 @@ const ticketSignature = (t) => (t ? [t.kind, t.kind === 'pdf' ? `${t.filename ||
 
 /**
  * Creates or updates one creator's campaign pass in a transaction.
- * mode 'qr': a Newbi QR pass. mode 'external': the partner's ticket (link or PDF).
+ * mode 'qr': a Newbi QR pass. mode 'confirmation': a pass without a QR code,
+ * confirming their place. mode 'external': the partner's ticket (link or PDF).
+ * A QR pass sent later upgrades a confirmation or a partner ticket in place.
  * Returns { ref, outcome: 'issued' | 'updated' | 'unchanged' | 'exists' }.
  */
 const upsertCampaignPass = async (db, { campaign, event, creator, holder: holderIn = null, keyId = null, mode, ticket = null, qty, tier, note, staffEmail, uploadId }) => {
@@ -674,9 +687,10 @@ const upsertCampaignPass = async (db, { campaign, event, creator, holder: holder
         }
         const now = nowIso();
         if (existing) {
+            if (mode === 'confirmation') return { ref: existing.ref, outcome: 'exists' };
             if (mode === 'qr') {
                 if (existing.qr !== false) return { ref: existing.ref, outcome: 'exists' };
-                tx.update(db.collection('passes').doc(existing.ref), { qr: true, qrIssuedAt: now, updatedAt: now });
+                tx.update(db.collection('passes').doc(existing.ref), { qr: true, mode: 'qr', qrIssuedAt: now, updatedAt: now });
                 return { ref: existing.ref, outcome: 'updated' };
             }
             if (ticketSignature(existing.externalTicket) === ticketSignature(ticket)) return { ref: existing.ref, outcome: 'unchanged' };
@@ -702,7 +716,7 @@ const upsertCampaignPass = async (db, { campaign, event, creator, holder: holder
             tier: ticket?.tier || tier || null,
             note: ticket?.note || note || null,
             qr: mode === 'qr',
-            mode: 'qr',
+            mode: mode === 'confirmation' ? 'confirmation' : 'qr',
             externalTicket: mode === 'external' ? { ...ticket, uploadId: uploadId || null, updatedAt: now } : null,
             event,
             campaignTitle: str(campaign.title, 200),
@@ -731,6 +745,7 @@ const deliverCampaignPass = async (db, ref, { skip = [] } = {}) => {
         qty: pass.qty,
         note: pass.note,
         ref: pass.qr !== false ? ref : '',
+        confirmation: pass.mode === 'confirmation' && pass.qr === false && !ext,
         ticketUrl: ticketToken ? ticketLinkUrl(ticketToken) : passUrl(ref),
         campaignUrl: campaignUrl(pass.sourceId),
         ticketToken,
@@ -794,6 +809,12 @@ const runLimited = async (items, limit, fn) => {
     return out;
 };
 
+/* 'qr' or 'confirmation': what the send asked for, else the campaign's setting (editor → Event passes). */
+export const passModeFor = (campaign, kind) => {
+    const k = kind || campaign?.passKind;
+    return k === 'confirmation' ? 'confirmation' : 'qr';
+};
+
 const issueCampaignAction = async (db, body, caller) => {
     requireStaff(caller);
     const { campaign, event } = await loadCampaignContext(db, str(body.campaignId, 128));
@@ -802,14 +823,15 @@ const issueCampaignAction = async (db, body, caller) => {
     const qty = intIn(body.qty ?? campaign.ticketsPerCreator, 1, 20, 1);
     const tier = str(body.tier, 80) || null;
     const note = str(body.note, 500) || null;
+    const mode = passModeFor(campaign, body.kind);
 
     const results = await runLimited(ids, 3, async (creatorId) => {
         try {
             const creator = await loadCreator(db, creatorId);
             if (!creator) return { creatorId, outcome: 'failed', error: 'Creator not found' };
             if (!isTicketEligible(campaign, creator)) return { creatorId, outcome: 'skipped', error: 'Not selected for this campaign' };
-            const { ref, outcome } = await upsertCampaignPass(db, { campaign, event, creator, mode: 'qr', qty, tier, note, staffEmail: caller.email, uploadId: body.uploadId });
-            if (outcome === 'exists') return { creatorId, ref, outcome: 'skipped', error: 'Already has a ticket' };
+            const { ref, outcome } = await upsertCampaignPass(db, { campaign, event, creator, mode, qty, tier, note, staffEmail: caller.email, uploadId: body.uploadId });
+            if (outcome === 'exists') return { creatorId, ref, outcome: 'skipped', error: mode === 'confirmation' ? 'Already has a pass' : 'Already has a QR pass' };
             const delivery = await deliverCampaignPass(db, ref);
             return { creatorId, ref, outcome, channels: channelSummary(delivery) };
         } catch (err) {
@@ -1010,7 +1032,10 @@ const checkinAction = async (db, body, caller) => {
         const forThisEvent = lists.has(pass.eventId) || lists.has(pass.sourceId);
         if (!forThisEvent) return { success: true, found: true, valid: false, reason: 'wrong_event', message: `This pass is for ${pass.event?.title || 'another event'}.`, data };
         if (pass.status === 'revoked') return { success: true, found: true, valid: false, reason: 'rejected', message: 'This pass was cancelled.', data };
-        if (pass.qr === false) return { success: true, found: true, valid: false, reason: 'rejected', message: 'This is a partner ticket. Check it with the ticketing partner.', data };
+        if (pass.qr === false) {
+            const message = pass.externalTicket ? 'This is a partner ticket. Check it with the ticketing partner.' : 'This is a confirmation without a QR code. Check the name on your list.';
+            return { success: true, found: true, valid: false, reason: 'rejected', message, data };
+        }
         // The linked guestlist entry or order: the check-in desk may have marked it already.
         let linkedRef = null;
         let linked = null;
@@ -1098,7 +1123,7 @@ export const releaseApplicationPass = async (db, { campaignId, appId, staffEmail
         applicationId: appSnap.id,
     };
     const { ref, outcome } = await upsertCampaignPass(db, {
-        campaign, event, holder, keyId: holder.holderUid || `app_${appSnap.id}`, mode: 'qr',
+        campaign, event, holder, keyId: holder.holderUid || `app_${appSnap.id}`, mode: passModeFor(campaign),
         qty: qty || campaign.ticketsPerCreator, tier, note, staffEmail,
     });
     const delivery = outcome === 'exists' ? null : await deliverCampaignPass(db, ref);
