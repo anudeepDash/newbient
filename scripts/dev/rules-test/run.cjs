@@ -103,10 +103,18 @@ t('random user reads payees', 'DENY', { who: 'rando', method: 'get', path: 'fina
 // --- people ---
 t('random user lists ticket orders', 'DENY', { who: 'rando', method: 'list', path: 'ticket_orders/o1' });
 t('scanner lists ticket orders', 'ALLOW', { who: 'scanner', method: 'list', path: 'ticket_orders/o1' });
-t('visitor places an order', 'ALLOW', { who: null, method: 'create', path: 'ticket_orders/o2', data: { name: 'A' } });
+t('visitor places an order directly (the ticket API saves orders)', 'DENY', { who: null, method: 'create', path: 'ticket_orders/o2', data: { name: 'A', status: 'pending' } });
+t('signed-in user saves a confirmed order', 'DENY', { who: 'rando', method: 'create', path: 'ticket_orders/o2', data: { name: 'A', status: 'confirmed', userId: 'u_rando' } });
 t('random user lists guestlist entries', 'DENY', { who: 'rando', method: 'list', path: 'guestlists/g1/entries/e1' });
-t('visitor joins a guestlist', 'ALLOW', { who: null, method: 'create', path: 'guestlists/g1/entries/e2', data: { name: 'A' } });
-t('registration raises the spot count by 1', 'ALLOW', { who: 'rando', method: 'update', path: 'guestlists/g1', existing: { currentSpots: 5, title: 'x' }, data: { currentSpots: 6, title: 'x' } });
+t('visitor joins a guestlist directly (the passes API saves entries)', 'DENY', { who: null, method: 'create', path: 'guestlists/g1/entries/e2', data: { name: 'A', status: 'pending' } });
+t('signed-in user confirms their own guestlist entry', 'DENY', { who: 'rando', method: 'create', path: 'guestlists/g1/entries/e2', data: { name: 'A', status: 'confirmed', userId: 'u_rando' } });
+t('staff approve a guestlist entry', 'ALLOW', { who: 'editor', method: 'update', path: 'guestlists/g1/entries/e2', existing: { status: 'pending' }, data: { status: 'approved' } });
+t('signed-in user reads a guestlist', 'ALLOW', { who: 'rando', method: 'get', path: 'guestlists/g1', existing: { title: 'x' } });
+t('user raises the spot count directly', 'DENY', { who: 'rando', method: 'update', path: 'guestlists/g1', existing: { currentSpots: 5, title: 'x' }, data: { currentSpots: 6, title: 'x' } });
+t('visitor bumps a coupon\'s use count', 'DENY', { who: null, method: 'update', path: 'coupons/c1', existing: { code: 'X', usedCount: 1 }, data: { code: 'X', usedCount: 2 } });
+t('signed-in user resets a coupon\'s use count', 'DENY', { who: 'rando', method: 'update', path: 'coupons/c1', existing: { code: 'X', usedCount: 5 }, data: { code: 'X', usedCount: 0 } });
+t('visitor lists coupon codes', 'DENY', { who: null, method: 'list', path: 'coupons/c1' });
+t('staff edit a coupon', 'ALLOW', { who: 'editor', method: 'update', path: 'coupons/c1', existing: { code: 'X', usedCount: 5 }, data: { code: 'X', usedCount: 0 } });
 t('random user resets the spot count', 'DENY', { who: 'rando', method: 'update', path: 'guestlists/g1', existing: { currentSpots: 5, title: 'x' }, data: { currentSpots: 0, title: 'x' } });
 t('random user lists creators', 'DENY', { who: 'rando', method: 'list', path: 'creators/c9' });
 t('creator reads own profile', 'ALLOW', { who: 'rando', method: 'get', path: 'creators/u_rando', existing: { uid: 'u_rando', name: 'R' } });

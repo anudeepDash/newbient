@@ -4,7 +4,7 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, order
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { notifyEvent, subscribeToNewsletter } from './mailApi';
 import { normalizePhoneNumber } from './utils';
-import { couponProblem, normalizeCouponCode, isGuestAdmissible, orderItems, orderTicketCount } from './ticketing';
+import { isGuestAdmissible, orderItems, orderTicketCount } from './ticketing';
 import { invoiceBalance, INVOICE_STATUS, nextInvoiceNumber, todayKey } from './invoicing';
 import { CONTRACT_STATUS, CONTRACT_NON_COPYABLE_FIELDS } from './contracts';
 import { isProposalClosed, isProposalExpired, nextProposalNumber, proposalValue, PROPOSAL_NON_COPYABLE_FIELDS, PROPOSAL_STATUS } from './proposals';
@@ -3015,60 +3015,7 @@ export const useStore = create((set, get) => ({
         });
     },
 
-    addGuestlistEntry: async (id, entry) => {
-        const docRef = doc(db, 'guestlists', id);
-        const docSnap = await getDoc(docRef);
-        
-        if (!docSnap.exists()) {
-            // Auto-heal: check if there's a corresponding upcoming_events doc
-            const eventRef = doc(db, 'upcoming_events', id);
-            const eventSnap = await getDoc(eventRef);
-            if (eventSnap.exists()) {
-                const eventData = eventSnap.data();
-                console.log(`[Store] Auto-healing missing guestlist doc for event: ${id}`);
-                await setDoc(docRef, {
-                    id: id,
-                    title: eventData.title || 'Event',
-                    date: eventData.date || null,
-                    status: 'Open',
-                    createdAt: new Date().toISOString(),
-                    isEmbedded: true,
-                    eventId: id,
-                    guestlistMode: eventData.guestlistMode || 'qr',
-                    perUserLimit: eventData.perUserLimit || 5,
-                    isGuestlistEnabled: true
-                });
-            } else {
-                console.error(`[Store] Guestlist ${id} does not exist. Aborting entry.`);
-                throw new Error("Guestlist no longer active.");
-            }
-        }
-
-        // 1+2. Add the entry and bump currentSpots together, refusing the
-        // request when the list is closed, full, or asks for too many spots.
-        const entryRef = doc(collection(db, 'guestlists', id, 'entries'));
-        await runTransaction(db, async (tx) => {
-            const parent = await tx.get(docRef);
-            const gl = parent.exists() ? parent.data() : {};
-            const want = Math.max(1, Number(entry.guestsCount) || 1);
-            if (String(gl.status || '').toLowerCase() === 'closed') {
-                throw new Error('This guestlist is closed.');
-            }
-            const perUser = Number(gl.perUserLimit) || 0;
-            if (perUser > 0 && want > perUser) {
-                throw new Error(`You can request at most ${perUser} ${perUser === 1 ? 'spot' : 'spots'}.`);
-            }
-            const max = Number(gl.maxSpots) || 0;
-            const taken = Math.max(0, Number(gl.currentSpots) || 0);
-            if (max > 0 && taken + want > max) {
-                const left = Math.max(0, max - taken);
-                throw new Error(left ? `Only ${left} ${left === 1 ? 'spot is' : 'spots are'} left.` : 'This guestlist is full.');
-            }
-            tx.set(entryRef, { ...entry, createdAt: new Date().toISOString() });
-            tx.update(docRef, { currentSpots: increment(want) });
-        });
-        return entryRef.id;
-    },
+    // Sign-ups go through the server: /api/forms?type=passes&action=register-guestlist.
     markGuestlistAttendance: async (id, entryId, attended) => {
         await updateDoc(doc(db, 'guestlists', id, 'entries', entryId), {
             attended,
@@ -3122,13 +3069,7 @@ export const useStore = create((set, get) => ({
         }
     },
 
-    // Ticketing & Scanning Operations
-    addTicketOrder: async (orderData) => {
-        return await addDoc(collection(db, 'ticket_orders'), {
-            ...orderData,
-            createdAt: new Date().toISOString()
-        });
-    },
+    // Ticketing & Scanning Operations. Orders are saved by the ticket API only (api/_lib/tickets.js).
     // Door check-in for one scanned or typed code. Every outcome carries a
     // `reason` the scanner shows: admitted | already | pending | rejected |
     // unpaid | wrong_event | not_found. `guestlistIds` lists every guestlist
@@ -4645,23 +4586,6 @@ export const useStore = create((set, get) => ({
     deleteCoupon: async (id) => {
         await deleteDoc(doc(db, 'coupons', id));
     },
-    // Fallback used by checkout when the ticket API is unreachable. Reads the
-    // coupon straight from Firestore (the coupons list is only loaded for admins).
-    validateCoupon: async (code, eventId) => {
-        const normalized = normalizeCouponCode(code);
-        let candidates = (get().coupons || []).filter(c => normalizeCouponCode(c.code) === normalized);
-        if (!candidates.length) {
-            const snap = await getDocs(query(collection(db, 'coupons'), where('code', '==', normalized), limit(10)));
-            candidates = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-        }
-        const coupon = candidates.find(c => c.eventId === eventId && c.isActive !== false)
-            || candidates.find(c => !c.eventId && c.isActive !== false)
-            || candidates[0];
-        const problem = couponProblem(coupon, eventId);
-        if (problem) throw new Error(problem);
-        return coupon;
-    },
-
     // Ticket Vault (Bulk Assets)
     addTicketToVault: async (ticket) => {
         await addDoc(collection(db, 'ticket_vault'), {
