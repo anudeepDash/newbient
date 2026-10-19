@@ -14,7 +14,7 @@ import useDynamicMeta from '../../../hooks/useDynamicMeta';
 import { PageBody } from '../../pages/PageHeader';
 import { GLASS } from '../../pages/parts';
 import Sticker from '../../../components/brand/Sticker';
-import { creatorPassId } from '../format';
+import { compactCount, creatorPassId } from '../format';
 import { ChoiceChip, Notice, STICKY_DOCK } from '../ui';
 import { useCreatorApplication, MAX_NICHES, isValidHandle } from './useCreatorApplication';
 import CreatorPass from './CreatorPass';
@@ -24,6 +24,10 @@ import { SwitchGuide, oauthErrorMessage } from './instagramCopy';
 /*
  * /creator/apply: one screen, about 30 seconds.
  *
+ *   With Instagram Login switched on, it starts with "Connect with Instagram":
+ *   sign in, Instagram login, back here with the account filled in and
+ *   verified; the server approves on Apply (or right away, if the rest was
+ *   already filled in). Otherwise:
  *   Instagram username → the live creator pass fills in from Instagram
  *   City (one tap) → Niches (up to 3) → College only for campus niches
  *   Sticky "Apply" (or "Connect Instagram & apply" when Meta can prove it)
@@ -87,6 +91,55 @@ const ManualFollowers = ({ app }) => (
         <button type="button" onClick={() => app.check(app.handle)} className="text-[13px] font-bold text-gray-700 underline underline-offset-2 dark:text-zinc-300">Try the automatic check again</button>
     </div>
 );
+
+const INSTAGRAM_GRADIENT = 'bg-[linear-gradient(45deg,#f09433_0%,#e6683c_25%,#dc2743_50%,#cc2366_75%,#bc1888_100%)]';
+
+/* Instagram Login is on: connect the account (no typing), then it shows as verified. */
+const ConnectInstagram = ({ app, belowMin, oauthError, onConnect }) => {
+    const { found, lookup } = app;
+    const checking = lookup.state === 'checking';
+    const account = app.connected ? found.profile : null;
+    return (
+        <div className="space-y-3">
+            {account ? (
+                <div className={cn('flex h-16 items-center gap-3 rounded-[1.25rem] pl-4 pr-3', GLASS)}>
+                    <Instagram size={20} className="shrink-0 text-gray-500 dark:text-zinc-400" />
+                    <div className="min-w-0 flex-1">
+                        <p className="truncate text-[17px] font-bold leading-tight">@{account.username}</p>
+                        <p className="truncate text-[12px] font-semibold text-emerald-700 dark:text-neon-green">
+                            Verified with Instagram{account.followers ? ` · ${compactCount(account.followers)} followers` : ''}
+                        </p>
+                    </div>
+                    <button type="button" onClick={() => onConnect({ switchAccount: true })} disabled={app.connecting} className="min-h-[44px] shrink-0 px-2 text-[13px] font-bold text-gray-600 underline underline-offset-2 dark:text-zinc-400">Switch</button>
+                </div>
+            ) : checking ? (
+                <div className={cn('flex h-16 items-center gap-3 rounded-[1.25rem] px-4 text-[15px] font-semibold text-gray-600 dark:text-zinc-400', GLASS)}>
+                    <Loader2 size={18} className="animate-spin" /> Checking your Instagram…
+                </div>
+            ) : (
+                <div className="space-y-2">
+                    <button
+                        type="button"
+                        onClick={() => onConnect()}
+                        disabled={app.connecting}
+                        className={cn('flex h-16 w-full items-center justify-center gap-3 rounded-[1.25rem] text-[17px] font-bold text-white shadow-[0_10px_30px_-10px_rgba(220,39,67,0.7)] transition-transform active:scale-[0.98] disabled:opacity-70', INSTAGRAM_GRADIENT)}
+                    >
+                        {app.connecting ? <Loader2 size={20} className="animate-spin" /> : <Instagram size={22} />}
+                        Connect with Instagram
+                    </button>
+                    <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-400">For Creator or Business accounts. We read your followers from Instagram, so you’re verified straight away.</p>
+                </div>
+            )}
+            {found?.alreadyRegistered && <Notice tone="error">This Instagram account is already linked to another Newbi creator profile.</Notice>}
+            {belowMin && !found?.alreadyRegistered && (
+                <Notice tone="warn" title={`Newbi Creators starts at ${(found.minFollowers || 0).toLocaleString('en-IN')} followers`}>Keep growing and apply again when you get there.</Notice>
+            )}
+            {oauthError?.reason === 'personal' ? (
+                <SwitchGuide onRetry={() => onConnect()} retryLabel="Connect again" lastStep="Come back here and tap “Connect again”." />
+            ) : oauthError ? <Notice tone="error">{oauthError.text}</Notice> : null}
+        </div>
+    );
+};
 
 const confetti = () => {
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
@@ -169,14 +222,14 @@ const SheetFrame = ({ children, footer, onClose }) => (
 const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
     const [params, setParams] = useSearchParams();
     const profile = useAppStore(s => s.profile);
-    const profileLoaded = useAppStore(s => s.profileLoaded);
+    const authUid = useAppStore(s => s.authUser?.uid || null);
     const creator = useAppStore(s => s.creatorProfile);
     const creatorLoaded = useAppStore(s => s.creatorLoaded);
     const settings = useAppStore(s => s.creatorSettings);
     const loadCreatorSettings = useAppStore(s => s.loadCreatorSettings);
     const referredBy = useMemo(() => readRef(params), [params]);
     const next = safeNext(params.get('next'));
-    const app = useCreatorApplication({ referredBy, initialCity: profile?.city || '' });
+    const app = useCreatorApplication({ referredBy, initialCity: profile?.city || '', uid: authUid });
     // Opened from a campaign ("Get my creator ID"): apply to it as soon as the creator profile exists.
     const [campaignApply, setCampaignApply] = useState(null);
     useEffect(() => {
@@ -200,27 +253,39 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
         return () => clearTimeout(t);
     }, [handle, check]);
 
-    const go = () => (app.needsConnect ? app.connect() : app.submit());
+    const canApply = app.ready || (app.needsConnect && app.readyButInstagram);
+    const go = () => (app.needsConnect ? app.connect({ auto: app.readyButInstagram }) : app.submit());
     // One account sheet: sign in, then any missing name, email or verified phone, then send.
+    const ACCOUNT_FIELDS = ['name', 'email', 'phoneVerified'];
     const apply = () => {
-        if (!app.ready) return;
-        gate.run({ type: INTENTS.creatorApply }, go, { require: ['name', 'email', 'phoneVerified'] });
+        if (!canApply) return;
+        gate.run({ type: INTENTS.creatorApply }, go, { require: ACCOUNT_FIELDS });
     };
-    useResumeIntent(INTENTS.creatorApply, () => { if (app.ready) go(); });
+    useResumeIntent(INTENTS.creatorApply, () => { if (canApply) go(); });
+    // "Connect with Instagram" first: the account sheet, then the Instagram login. It applies on
+    // the way back only if city and niches were already picked.
+    const connectInstagram = ({ switchAccount = false } = {}) => {
+        setOauthError(null);
+        gate.run({ type: INTENTS.creatorConnectInstagram, payload: { switchAccount } }, () => app.connect({ auto: app.readyButInstagram, switchAccount }), { require: ACCOUNT_FIELDS });
+    };
+    useResumeIntent(INTENTS.creatorConnectInstagram, (payload) => app.connect({ auto: app.readyButInstagram, switchAccount: Boolean(payload?.switchAccount) }));
 
     // Back from the Instagram login: show the result, and send the application if that's what was asked.
     useEffect(() => {
         const ig = params.get('ig');
         if (!ig) return;
         if (ig === 'connected') {
+            // The account that was connected, which may not be what was typed before.
+            const connectedHandle = params.get('handle') || '';
             setOauthError(null);
-            check(handle);
-            if (app.wantsAutoSubmit()) app.submit();
+            if (connectedHandle) app.setHandle(connectedHandle);
+            check(connectedHandle || handle);
+            if (app.wantsAutoSubmit()) app.submit({ handle: connectedHandle });
         } else {
-            setOauthError(oauthErrorMessage(params.get('reason'), params.get('handle')));
+            setOauthError({ reason: params.get('reason'), text: oauthErrorMessage(params.get('reason'), params.get('handle')) });
         }
         const clean = new URLSearchParams(params);
-        ['ig', 'reason', 'handle'].forEach(k => clean.delete(k));
+        ['ig', 'reason', 'handle', 'approved'].forEach(k => clean.delete(k));
         setParams(clean, { replace: true });
         // eslint-disable-next-line
     }, [params]);
@@ -247,12 +312,12 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
             <Button
                 className="w-full"
                 size="lg"
-                icon={app.needsConnect ? Instagram : undefined}
-                disabled={!app.ready || !isValidHandle(app.handle) || belowMin || found?.alreadyRegistered}
+                icon={app.needsConnect && canApply ? Instagram : undefined}
+                disabled={!canApply || (!app.oauthReady && !isValidHandle(app.handle)) || belowMin || found?.alreadyRegistered}
                 loading={app.submitting || app.connecting}
                 onClick={apply}
             >
-                {app.needsConnect ? 'Verify & apply' : app.ready ? 'Apply' : `Apply · ${doneCount} of 3`}
+                {app.needsConnect && canApply ? (app.oauthReady ? 'Connect Instagram & apply' : 'Verify & apply') : app.ready ? 'Apply' : `Apply · ${doneCount} of 3`}
             </Button>
         </div>
     );
@@ -266,12 +331,19 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
                         <span className="h-1.5 w-1.5 rounded-full bg-neon-green shadow-[0_0_8px_rgba(57,255,20,0.9)]" aria-hidden="true" /> Newbi creators
                     </p>
                     <h1 className="font-heading text-[34px] font-extrabold leading-[1.02] tracking-[-0.035em] sm:text-[40px]">Apply in <Sticker subtle>30 seconds.</Sticker></h1>
-                    <p className="mt-2 text-[15px] text-gray-600 dark:text-zinc-400">Type your Instagram. We fill in your profile from it.</p>
+                    <p className="mt-2 text-[15px] text-gray-600 dark:text-zinc-400">
+                        {app.oauthReady ? 'Connect your Instagram and you’re verified straight away.' : 'Type your Instagram. We fill in your profile from it.'}
+                    </p>
                 </header>
 
                 {settings?.announcement && <Notice tone="info">{settings.announcement}</Notice>}
 
-                {/* The Instagram field: big, first, and it does the work */}
+                {/* Instagram: big, first, and it does the work */}
+                {!app.igStatus.loaded ? (
+                    <div className={cn('h-16 animate-pulse rounded-[1.25rem]', GLASS)} aria-hidden="true" />
+                ) : app.oauthReady ? (
+                    <ConnectInstagram app={app} belowMin={belowMin} oauthError={oauthError} onConnect={connectInstagram} />
+                ) : (
                 <div className="space-y-3">
                     <label className={cn('relative flex h-16 items-center rounded-[1.25rem] pl-4 pr-3', GLASS, lookup.state === 'invalid' || lookup.state === 'not_found' ? 'ring-red-500/60 dark:ring-red-500/60' : 'focus-within:ring-2 focus-within:ring-neon-green/70')}>
                         <span className="sr-only">Instagram username</span>
@@ -305,8 +377,9 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
                     {app.needsConnect && !belowMin && !found.alreadyRegistered && (
                         <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-400">When you apply, you’ll confirm it’s yours on Instagram and come straight back.</p>
                     )}
-                    {oauthError && <Notice tone="error">{oauthError}</Notice>}
+                    {oauthError && <Notice tone="error">{oauthError.text}</Notice>}
                 </div>
+                )}
 
                 {!twoColumns && pass}
 

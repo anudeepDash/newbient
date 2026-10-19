@@ -7,8 +7,8 @@
  *      Professional accounts; a personal account gets the "switch" message.
  *   2. Otherwise, or if Meta is down: the public profile page (follower count,
  *      name and picture from its preview tags), then RapidAPI if RAPIDAPI_KEY is
- *      set. These counts are estimates (source 'public' / 'rapidapi'), so the
- *      application still goes to admin review.
+ *      set. These counts are estimates (source 'public' / 'rapidapi'), but they're
+ *      read automatically, so the application is approved when it's over the minimum.
  *
  *   Step A  lookupInstagram(handle)
  *           Business Discovery through Newbi's own Instagram Business account

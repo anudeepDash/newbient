@@ -17,8 +17,9 @@
  *   ?action=account-merge    POST { proofToken, confirm? } merges one of them into this account
  *
  * Instagram verification is behind site_settings/general.instagramMetaVerification.
- * While it's off, applications go to admin review with the handle the creator
- * typed (no scraping, no third-party APIs).
+ * On: Instagram Login (OAuth) proves the account. Off: followers are read from
+ * the public profile. Either way a count read automatically is approved when
+ * it's over the minimum; a count the creator typed in goes to admin review.
  */
 import { getDb, nowIso, FieldValue } from './db.js';
 import { hasAdminCredentials, auth as defaultAdminAuth, verifyIdTokenSafe } from './auth.js';
@@ -102,26 +103,54 @@ const lookupLimited = (req) => {
     return rec.count > 12;
 };
 
-const handleLookup = async (req, res, { db, token }) => {
+/* The account this person connected through Instagram Login, as a lookup profile. */
+const connectedProfile = (t) => ({
+    igUserId: t.igUserId,
+    username: t.username,
+    name: t.name || '',
+    followers: Number(t.followers) || 0,
+    profilePic: t.profilePic || '',
+    accountType: t.accountType || '',
+    source: 'oauth',
+});
+
+/*
+ * With no handle: just the switches and the signed-in person's connected
+ * account ({ ok:false, reason:'idle', account }), so the apply page can start
+ * with "Connect with Instagram". With the connected handle: that account
+ * straight from the login, without needing Business Discovery.
+ */
+export const handleLookup = async (req, res, { db, token }) => {
     const settings = await readCreatorSettings(db);
+    const oauthReady = settings.metaVerification && isOauthConfigured();
+    const base = { success: true, enabled: true, metaVerification: settings.metaVerification, oauthReady, minFollowers: settings.minFollowers };
+    const meetsMinimum = (followers) => !settings.requireVerification || settings.minFollowers <= 0 || followers >= settings.minFollowers;
+
+    const tokenSnap = token && settings.metaVerification ? await tokenRef(token.uid, db).get().catch(() => null) : null;
+    const t = tokenSnap?.exists ? tokenSnap.data() : null;
+    const account = t?.igUserId && !t.expired ? connectedProfile(t) : null;
+    const handle = cleanHandle(req.body?.handle || req.query?.handle);
+
+    if (!handle) return send(res, 200, { ...base, ok: false, reason: 'idle', account });
+    if (account && account.username === handle) {
+        return send(res, 200, { ...base, ok: true, profile: account, account, connected: true, alreadyRegistered: false, meetsMinimum: meetsMinimum(account.followers) });
+    }
+
     // Meta when it's switched on; otherwise (or if Meta is down) the public-profile estimate.
-    const result = await lookupInstagram(req.body?.handle || req.query?.handle, { db, useMeta: settings.metaVerification });
-    const base = { success: true, enabled: true, metaVerification: settings.metaVerification, oauthReady: settings.metaVerification && isOauthConfigured(), minFollowers: settings.minFollowers };
-    if (!result.ok) return send(res, 200, { ...base, ok: false, reason: result.reason, message: result.message });
+    const result = await lookupInstagram(handle, { db, useMeta: settings.metaVerification });
+    if (!result.ok) return send(res, 200, { ...base, ok: false, reason: result.reason, message: result.message, account });
 
     const { profile } = result;
-    const [taken, tokenSnap] = await Promise.all([
-        profile.igUserId && token ? otherOwnerOf(profile.igUserId, token.uid, db) : null,
-        token ? tokenRef(token.uid, db).get().catch(() => null) : null,
-    ]);
-    const connected = Boolean(tokenSnap?.exists && tokenSnap.data()?.igUserId === profile.igUserId);
+    const taken = profile.igUserId && token ? await otherOwnerOf(profile.igUserId, token.uid, db) : null;
+    const connected = Boolean(account && account.igUserId === profile.igUserId);
     return send(res, 200, {
         ...base,
         ok: true,
         profile,
+        account,
         connected,
         alreadyRegistered: Boolean(taken),
-        meetsMinimum: !settings.requireVerification || settings.minFollowers <= 0 || profile.followers >= settings.minFollowers,
+        meetsMinimum: meetsMinimum(profile.followers),
     });
 };
 
@@ -213,7 +242,7 @@ const recordVerifiedInstagram = async (db, uid, me, via) => {
     return { ...creatorSnap.data(), ...patch, id: creatorSnap.id };
 };
 
-const handleCallback = async (req, res, { db }) => {
+export const handleCallback = async (req, res, { db }) => {
     const q = req.query || {};
     const state = readSignedToken(q.state);
     const origin = state?.origin || APP_URL;
@@ -276,29 +305,38 @@ const handleCallback = async (req, res, { db }) => {
     await db.collection('instagram_profiles').doc(`h_${me.username}`).set({ ...verified, source: 'oauth', fetchedAt: now }, { merge: true });
 
     const creator = await recordVerifiedInstagram(db, state.uid, verified, 'oauth');
-    // A creator waiting on Instagram gets their decision now.
-    if (creator?.profileStatus === 'pending_verification') {
-        await settlePendingCreator(db, creator, { followers: me.followers, ownershipVerified: true });
+    // A creator waiting on Instagram or on review is verified automatically now (if over the minimum).
+    let status = creator?.profileStatus || '';
+    if (AWAITING_VERIFICATION.has(status)) {
+        status = await settlePendingCreator(db, creator, { followers: me.followers, ownershipVerified: true });
     }
-    return back({ ig: 'connected' });
+    return back({ ig: 'connected', handle: me.username, approved: status === 'approved' ? '1' : '' });
 };
 
 /* ── Status rules ─────────────────────────────────────────────────────── */
 
 /*
- * approved            Instagram proven through Meta (OAuth) and over the minimum
- * pending             admin review (no Meta check, or the account isn't proven yet)
- * pending_verification Meta didn't answer; the cron retries
+ * approved            followers read automatically and over the minimum. Either Instagram
+ *                     Login proved the account (OAuth), or the automatic check read it
+ *                     (Business Discovery, the public profile, RapidAPI: `autoChecked`).
+ *                     At apply time, or later the moment a pending creator connects Instagram.
+ * pending             admin review: the creator typed their follower count, or it's under the minimum
+ * pending_verification nothing could read the profile yet; the cron retries
  */
-const decideStatus = ({ ownershipVerified, followers, settings }) => {
-    if (!ownershipVerified) return 'pending';
+/* Statuses that an automatic check can move to approved. Rejected and suspended stay as they are. */
+const AWAITING_VERIFICATION = new Set(['pending', 'pending_verification']);
+/* Where an automatically read follower count came from (anything but the creator's own typing). */
+const AUTO_SOURCES = new Set(['business_discovery', 'public', 'rapidapi']);
+
+const decideStatus = ({ ownershipVerified, autoChecked = false, followers, settings }) => {
+    if (!ownershipVerified && !autoChecked) return 'pending';
     if (settings.requireVerification && settings.minFollowers > 0 && followers < settings.minFollowers) return 'pending';
     return 'approved';
 };
 
-const settlePendingCreator = async (db, creator, { followers, ownershipVerified }) => {
+const settlePendingCreator = async (db, creator, { followers, ownershipVerified, autoChecked = false }) => {
     const settings = await readCreatorSettings(db);
-    const status = decideStatus({ ownershipVerified, followers, settings });
+    const status = decideStatus({ ownershipVerified, autoChecked, followers, settings });
     const uid = creator.uid || creator.id;
     const now = nowIso();
     await db.collection('creators').doc(creator.id).set({
@@ -347,7 +385,7 @@ const socialHandle = (v) => str(v, 120).replace(/^https?:\/\/(www\.)?[^/]+\//i, 
  * Name, email and verified phone come from users/{uid}; a missing name or
  * photo is filled from Instagram.
  */
-const handleApply = async (req, res, { db, token }) => {
+export const handleApply = async (req, res, { db, token }) => {
     if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
     const body = req.body || {};
     const uid = token.uid;
@@ -387,14 +425,26 @@ const handleApply = async (req, res, { db, token }) => {
     const handle = cleanHandle(body.handle) || cleanHandle(existing?.instagram);
     // Typed by the creator when the automatic check couldn't read their profile. Always reviewed.
     const manualFollowers = Math.min(1e9, Math.max(0, Math.floor(Number(body.manualFollowers) || 0)));
-    const selfReported = (base) => ({ ...base, handle, followers: manualFollowers, via: 'self_reported', pending: true });
-    let ig = { handle, igUserId: existing?.igUserId || null, followers: Number(existing?.instagramFollowers) || 0, ownershipVerified: false, via: null, pending: false, profilePic: '', name: '' };
+    const selfReported = (base) => ({ ...base, handle, followers: manualFollowers, via: 'self_reported', pending: false });
+    // ownershipVerified: Instagram Login proved it. autoChecked: the followers were read automatically.
+    let ig = { handle, igUserId: existing?.igUserId || null, followers: Number(existing?.instagramFollowers) || 0, ownershipVerified: false, autoChecked: false, via: null, pending: false, profilePic: '', name: '' };
+    const fromLookup = (profile) => ({
+        ...ig,
+        handle: profile.username || handle,
+        igUserId: profile.igUserId || ig.igUserId,
+        followers: profile.followers,
+        profilePic: profile.profilePic || '',
+        name: profile.name || '',
+        via: profile.source || 'business_discovery',
+        autoChecked: true,
+        pending: false,
+    });
     // An existing creator editing their profile (same handle) keeps their Instagram record as it is.
     const detailsOnly = Boolean(existing && existing.profileStatus !== 'pending_verification'
         && (!cleanHandle(body.handle) || cleanHandle(body.handle) === cleanHandle(existing.instagram)));
 
     if (detailsOnly) {
-        ig = { ...ig, ownershipVerified: existing.instagramVerifiedVia === 'oauth', via: existing.instagramVerifiedVia || null };
+        ig = { ...ig, ownershipVerified: existing.instagramVerifiedVia === 'oauth', autoChecked: AUTO_SOURCES.has(existing.instagramVerifiedVia), via: existing.instagramVerifiedVia || null };
     } else {
         if (!handle) return send(res, 400, { success: false, field: 'handle', error: 'Add your Instagram username.' });
         const tokenSnap = settings.metaVerification ? await tokenRef(uid, db).get().catch(() => null) : null;
@@ -416,25 +466,26 @@ const handleApply = async (req, res, { db, token }) => {
                 return send(res, 409, { success: false, code: 'connect_required', error: 'Connect your Instagram account to finish.' });
             }
             if (lookup.ok) {
-                // Found through Meta, but ownership can't be proven yet (Instagram Login not set up): review.
-                ig = { ...ig, handle: lookup.profile.username, igUserId: lookup.profile.igUserId, followers: lookup.profile.followers, profilePic: lookup.profile.profilePic || '', name: lookup.profile.name || '' };
+                // Instagram Login isn't set up, but the followers were read automatically: approved if over the minimum.
+                ig = fromLookup(lookup.profile);
             } else if (lookup.reason === 'not_professional' || lookup.reason === 'invalid') {
                 return send(res, 400, { success: false, code: lookup.reason, field: 'handle', error: lookup.message });
             } else {
-                // Meta is down or not set up: save it (with the creator's own count, if given) and let the cron confirm.
+                // Nothing could read it: a typed count goes to review; without one, the cron tries again.
                 ig = manualFollowers ? selfReported(ig) : { ...ig, handle, pending: true };
             }
         } else {
-            // Meta verification is off: fill in followers, name and picture from the public profile
-            // (an estimate), and leave ownership for an admin to review.
+            // Meta verification is off: followers, name and picture from the public profile. Read
+            // automatically, so approved if over the minimum; a typed count goes to review.
             const lookup = await lookupInstagram(handle, { db, useMeta: false });
             if (!lookup.ok && lookup.reason === 'not_found' && !manualFollowers) {
                 return send(res, 400, { success: false, code: 'not_found', field: 'handle', error: `${lookup.message} Check the spelling, or enter your followers yourself.` });
             }
             if (lookup.ok) {
-                ig = { ...ig, handle: lookup.profile.username || handle, followers: lookup.profile.followers, profilePic: lookup.profile.profilePic || '', name: lookup.profile.name || '', via: lookup.profile.source, pending: true };
+                ig = fromLookup(lookup.profile);
             } else {
-                ig = manualFollowers ? selfReported(ig) : { ...ig, handle, pending: true };
+                // No cron runs while Meta is off, so this is a person's call either way.
+                ig = manualFollowers ? selfReported(ig) : { ...ig, handle };
             }
         }
         // A count the creator typed still has to meet the minimum.
@@ -469,13 +520,14 @@ const handleApply = async (req, res, { db, token }) => {
     const instagramFields = detailsOnly ? {} : {
         instagram: ig.handle,
         instagramFollowers: String(ig.followers || 0),
-        instagramVerified: ig.ownershipVerified,
+        instagramVerified: ig.ownershipVerified || ig.autoChecked,
         instagramVerifiedVia: ig.via,
         ...(ig.igUserId ? { igUserId: ig.igUserId } : {}),
         ...(ig.profilePic ? { instagramProfilePic: ig.profilePic } : {}),
         ...(ig.ownershipVerified ? { instagramVerifiedAt: nowIso(), instagramProfessional: true, needsInstagramReconnect: false } : {}),
-        manualFollowerEntry: !ig.ownershipVerified,
-        requiresManualVerification: !ig.ownershipVerified,
+        ...(ig.autoChecked ? { instagramVerifiedAt: nowIso() } : {}),
+        manualFollowerEntry: !ig.ownershipVerified && !ig.autoChecked,
+        requiresManualVerification: !ig.ownershipVerified && !ig.autoChecked,
         instagramPending: ig.pending ? { handle: ig.handle, since: nowIso(), attempts: 0 } : FieldValue.delete(),
     };
 
@@ -491,10 +543,13 @@ const handleApply = async (req, res, { db, token }) => {
     }
 
     // ── Status, decided here ──
+    // Approved, rejected and suspended profiles keep their status; a pending one is re-decided, so a
+    // creator who has connected Instagram since applying is verified automatically.
     let profileStatus;
-    if (existing?.profileStatus && existing.profileStatus !== 'pending_verification') profileStatus = existing.profileStatus;
+    if (existing?.profileStatus && !AWAITING_VERIFICATION.has(existing.profileStatus)) profileStatus = existing.profileStatus;
     else if (ig.pending) profileStatus = 'pending_verification';
-    else profileStatus = decideStatus({ ownershipVerified: ig.ownershipVerified, followers: ig.followers, settings });
+    else profileStatus = decideStatus({ ownershipVerified: ig.ownershipVerified, autoChecked: ig.autoChecked, followers: ig.followers, settings });
+    const newlyApproved = !isNew && profileStatus === 'approved' && existing.profileStatus !== 'approved';
     const now = nowIso();
     const docId = existingSnap?.id || uid;
     const creatorId = (existing?.creatorId || uid.slice(0, 8)).toUpperCase();
@@ -536,7 +591,7 @@ const handleApply = async (req, res, { db, token }) => {
         } : {}),
         updatedAt: now,
     };
-    if (profileStatus === 'approved' && existing?.profileStatus === 'pending_verification') {
+    if (newlyApproved) {
         creator.verifiedAt = now;
         creator.verifiedBy = 'meta_auto_verify';
     }
@@ -564,6 +619,9 @@ const handleApply = async (req, res, { db, token }) => {
     }
     await db.collection('users').doc(uid).set(userPatch, { merge: true });
 
+    if (newlyApproved) {
+        await notify('creator-approved', uid, { name: id.name, dashboardUrl: `${APP_URL}/creator` }, { idempotencyKey: `creator-approved_${uid}` }).catch(e => console.warn('[creator] approve notify:', e.message));
+    }
     if (isNew) {
         await Promise.allSettled([
             notifyReferrer(db, referredBy, creator),
@@ -586,7 +644,7 @@ const handleApply = async (req, res, { db, token }) => {
             id: docId, uid, creatorId, profileStatus,
             name: id.name, city: id.city, niches: creator.niches || allNiches,
             instagram: ig.handle, instagramFollowers: creator.instagramFollowers ?? existing?.instagramFollowers,
-            instagramVerified: ig.ownershipVerified, profilePicture: creator.profilePicture,
+            instagramVerified: ig.ownershipVerified || ig.autoChecked, profilePicture: creator.profilePicture,
         },
     });
 };
@@ -738,21 +796,26 @@ const isCronCall = (req) => {
 
 const PENDING_GIVE_UP_MS = 3 * 24 * 60 * 60 * 1000;
 
-const handleCron = async (req, res, { db }) => {
+export const handleCron = async (req, res, { db }) => {
     if (!isCronCall(req)) return send(res, 401, { success: false, error: 'Unauthorized' });
     const deadline = Date.now() + 45_000;
     const report = { pending: { checked: 0, settled: 0 }, tokens: { refreshed: 0, failed: 0 }, counts: { updated: 0 } };
     const settings = await readCreatorSettings(db);
-    if (!settings.metaVerification) return send(res, 200, { success: true, skipped: 'instagramMetaVerification is off' });
 
-    // 1. Applications saved while Meta was unreachable.
+    // 1. Applications nothing could read yet (runs with Meta on or off: the public profile is read either way).
     const pending = await db.collection('creators').where('profileStatus', '==', 'pending_verification').limit(50).get();
     for (const doc of pending.docs) {
         if (Date.now() > deadline) break;
         report.pending.checked += 1;
         const creator = { ...doc.data(), id: doc.id };
         const uid = creator.uid || doc.id;
-        const t = await tokenRef(uid, db).get().catch(() => null);
+        // A count the creator typed goes to a person, not the automatic check.
+        if (creator.instagramVerifiedVia === 'self_reported') {
+            await settlePendingCreator(db, creator, { followers: Number(creator.instagramFollowers) || 0, ownershipVerified: false });
+            report.pending.settled += 1;
+            continue;
+        }
+        const t = settings.metaVerification ? await tokenRef(uid, db).get().catch(() => null) : null;
         if (t?.exists) {
             const fresh = await fetchMe(t.data().token);
             if (fresh.ok) {
@@ -762,10 +825,13 @@ const handleCron = async (req, res, { db }) => {
             }
         } else {
             const handle = creator.instagramPending?.handle || creator.instagram;
-            const lookup = await lookupInstagram(handle, { db, force: true });
+            const lookup = await lookupInstagram(handle, { db, force: true, useMeta: settings.metaVerification });
             if (lookup.ok || lookup.reason === 'not_professional') {
-                // Found (but not proven) or not Professional: a person decides.
-                await settlePendingCreator(db, creator, { followers: lookup.ok ? lookup.profile.followers : 0, ownershipVerified: false });
+                // Read automatically now: approved if over the minimum. Not Professional: a person decides.
+                if (lookup.ok) {
+                    await doc.ref.set({ instagramVerified: true, instagramVerifiedVia: lookup.profile.source || 'business_discovery', instagramVerifiedAt: nowIso(), manualFollowerEntry: false, requiresManualVerification: false }, { merge: true });
+                }
+                await settlePendingCreator(db, creator, { followers: lookup.ok ? lookup.profile.followers : 0, ownershipVerified: false, autoChecked: lookup.ok });
                 report.pending.settled += 1;
                 continue;
             }
@@ -778,6 +844,8 @@ const handleCron = async (req, res, { db }) => {
             await doc.ref.set({ instagramPending: { ...(creator.instagramPending || {}), attempts: FieldValue.increment(1), lastTriedAt: nowIso() } }, { merge: true });
         }
     }
+
+    if (!settings.metaVerification) return send(res, 200, { success: true, ...report, tokens: 'skipped: instagramMetaVerification is off' });
 
     // 2. Stored tokens: refresh before the 60-day expiry, and refresh follower counts daily.
     const tokens = await db.collection('private').doc('instagram_tokens').collection('users')
@@ -796,8 +864,12 @@ const handleCron = async (req, res, { db }) => {
         if (me.ok) {
             patch.followers = me.me.followers;
             patch.username = me.me.username;
-            await recordVerifiedInstagram(db, doc.id, { ...me.me, profilePic: t.profilePic }, 'oauth');
+            const creator = await recordVerifiedInstagram(db, doc.id, { ...me.me, profilePic: t.profilePic }, 'oauth');
             report.counts.updated += 1;
+            // Connected but still waiting on review (connected before auto-approval, or since grown past the minimum).
+            if (creator?.profileStatus === 'pending') {
+                await settlePendingCreator(db, creator, { followers: me.me.followers, ownershipVerified: true });
+            }
         } else if (expiresIn <= 0) {
             patch.expired = true;
             await db.collection('creators').doc(doc.id).set({ needsInstagramReconnect: true }, { merge: true }).catch(() => {});

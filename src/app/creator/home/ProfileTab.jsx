@@ -72,11 +72,13 @@ const InstagramSection = ({ creator, settings }) => {
     useEffect(() => {
         const ig = params.get('ig');
         if (!ig) return;
-        setMessage(ig === 'connected'
-            ? { tone: 'success', text: 'Instagram connected. Your follower count now comes straight from Instagram.' }
-            : { tone: 'error', text: oauthErrorMessage(params.get('reason'), params.get('handle')) });
+        setMessage(ig !== 'connected'
+            ? { tone: 'error', text: oauthErrorMessage(params.get('reason'), params.get('handle')) }
+            : params.get('approved')
+                ? { tone: 'success', text: 'Instagram connected, and you’re verified. Your creator profile is live.' }
+                : { tone: 'success', text: 'Instagram connected. Your follower count now comes straight from Instagram.' });
         const next = new URLSearchParams(params);
-        ['ig', 'reason', 'handle'].forEach(k => next.delete(k));
+        ['ig', 'reason', 'handle', 'approved'].forEach(k => next.delete(k));
         setParams(next, { replace: true });
         // eslint-disable-next-line
     }, [params]);

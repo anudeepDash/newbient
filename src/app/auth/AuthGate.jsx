@@ -38,6 +38,7 @@ export const INTENTS = {
     giveawayEnter: 'giveaway-enter',
     gigInterest: 'gig-interest',
     creatorApply: 'creator-apply',
+    creatorConnectInstagram: 'creator-connect-instagram',
     joinCommunity: 'join-community',
 };
 
