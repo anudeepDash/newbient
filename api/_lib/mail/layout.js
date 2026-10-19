@@ -19,7 +19,6 @@ export const BRAND_GREEN = '#39FF14';
  *   'company'     the logo with the company name (model.company: entertainment |
  *                 media | marketing) on a light band, for invoices, proposals,
  *                 contracts and receipts
- *   'concertzone' ConcertZone is its own brand: the Weekly logo, cyan accent
  * Logos are served from the site (public/brand, public/weekly_logo_dark.png).
  * `ink` is the accent dark enough to read on white (neon green isn't).
  */
@@ -27,13 +26,6 @@ const COMPANY_ACCENT = { entertainment: '#39FF14', media: '#00D1FF', marketing: 
 const COMPANY_INK = { entertainment: '#15803d', media: '#0369a1', marketing: '#e11d48' };
 
 export const brandFor = (model = {}, origin = DEFAULT_ORIGIN) => {
-    if (model.brand === 'concertzone') {
-        return {
-            accent: '#00F2FF', onAccent: '#000000', ink: '#0e7490', headerBg: '#000000', headerClass: 'hdr-dark',
-            logo: `${origin}/weekly_logo_dark.png`, logoAlt: 'Weekly by Concert Zone', logoWidth: 160, logoHeight: 47, align: 'center',
-            note: 'Weekly by Concert Zone is a Newbi Entertainment & Marketing LLP publication.',
-        };
-    }
     if (model.brand === 'company') {
         const company = COMPANY_ACCENT[model.company] ? model.company : 'entertainment';
         return {
