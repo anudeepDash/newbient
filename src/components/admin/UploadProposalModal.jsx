@@ -58,6 +58,15 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
     const [saving, setSaving] = useState(null); // { percent, step }
     const [error, setError] = useState('');
 
+    // A new proposal gets the next code automatically (after the most recent one), kept up to date
+    // as the proposals list loads, until someone types their own.
+    const proposals = useStore(s => s.proposals);
+    const [numberEdited, setNumberEdited] = useState(false);
+    useEffect(() => {
+        if (!isOpen || editingProposal || numberEdited) return;
+        setForm(f => ({ ...f, proposalNumber: generateNextProposalNumber(proposals) }));
+    }, [isOpen, editingProposal, numberEdited, proposals]);
+
     const set = (patch) => {
         setForm(f => ({ ...f, ...patch }));
         setAuto(a => { const next = { ...a }; Object.keys(patch).forEach(k => delete next[k]); return next; });
@@ -84,6 +93,7 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
     useEffect(() => {
         if (!isOpen) return;
         setForm(editingProposal ? fromProposal(editingProposal) : emptyForm());
+        setNumberEdited(false);
         setAuto({});
         setSaving(null);
         setError('');
@@ -98,6 +108,10 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
         if (form.dealValue && !(Number(form.dealValue) >= 0)) return setError('The value should be a number.');
 
         const { uploadProposalFile, addProposal, updateProposal, addToast, proposals } = useStore.getState();
+        const typed = form.proposalNumber.trim().toUpperCase();
+        if (typed && (proposals || []).some(p => p.id !== editingProposal?.id && String(p.proposalNumber || '').trim().toUpperCase() === typed)) {
+            return setError(`${typed} is already used by another proposal. Leave the number as suggested, or pick another.`);
+        }
         const number = form.proposalNumber.trim() || generateNextProposalNumber(proposals);
         const stamp = { ourSignature: form.ourSignature, senderName: 'Newbi Entertainment & Marketing LLP' };
 
@@ -239,8 +253,8 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
                         <Field label="Value (₹)" optional auto={auto.dealValue} hint="Counts in your pipeline">
                             <input className={fieldCls} type="number" inputMode="decimal" min="0" value={form.dealValue} onChange={e => set({ dealValue: e.target.value })} placeholder="0" />
                         </Field>
-                        <Field label="Proposal no.">
-                            <input className={cn(fieldCls, 'font-mono')} value={form.proposalNumber} onChange={e => set({ proposalNumber: e.target.value.toUpperCase() })} autoCapitalize="characters" />
+                        <Field label="Proposal no." hint={editingProposal ? undefined : 'Assigned automatically: the next after your latest proposal'}>
+                            <input className={cn(fieldCls, 'font-mono')} value={form.proposalNumber} onChange={e => { setNumberEdited(true); set({ proposalNumber: e.target.value.toUpperCase() }); }} autoCapitalize="characters" />
                         </Field>
                     </div>
                     <Field label="Valid until" optional auto={auto.validUntil} hint="After this the link shows the offer as expired">

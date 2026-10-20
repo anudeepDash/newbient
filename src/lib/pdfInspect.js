@@ -5,7 +5,7 @@
  */
 
 let pdfjsPromise = null;
-const loadPdfjs = () => {
+export const loadPdfjs = () => {
     if (!pdfjsPromise) {
         pdfjsPromise = Promise.all([
             import('pdfjs-dist'),
