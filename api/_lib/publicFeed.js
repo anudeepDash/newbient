@@ -9,7 +9,14 @@
  *
  * Served by api/forms.js as GET /api/forms?type=public-feed (the project is
  * at Vercel's function limit, so this is a handler, not its own function).
+ *
+ * The app (app.newbi.live) has its own cached document, GET
+ * /api/forms?type=app-feed: the public collections behind the community feed
+ * and the open campaigns, so first paint needs no Firestore connection.
  */
+
+import { isPresent } from '../../src/lib/present.js';
+import { closingDate, isCampaignOpen, isOpen } from '../../src/lib/feedItems.js';
 
 const str = (v, max = 400) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const num = (v) => (Number.isFinite(Number(v)) && v !== '' && v !== null ? Number(v) : null);
@@ -274,6 +281,104 @@ export async function handlePublicArchive(db, req, res) {
         console.error('[public-archive] error:', err);
         res.setHeader('Cache-Control', 'no-store');
         return res.status(500).json({ success: false, error: 'Archive unavailable' });
+    }
+}
+
+// ---- The app's feed (type=app-feed) ----
+
+const APP_READ_LIMIT = 500;
+const DAY_MS = 24 * 3600 * 1000;
+
+// Every field the app's buildFeed (src/lib/store/community.js) reads. Nothing else is sent.
+export const COMMUNITY_FIELDS = [
+    'title', 'name', 'description', 'subtitle',
+    'date', 'dates', 'eventDate', 'startDate', 'endsAt', 'endDate', 'closesAt', 'deadline',
+    'status', 'activeLabel', 'isActive', 'hidden', 'isPinned', 'showInApp',
+    'hubImage', 'image', 'posterUrl', 'poster', 'thumbnail', 'coverImage',
+    'venue', 'location', 'city', 'targetCity',
+    'isGuestlistEnabled', 'guestlistEnabled', 'eventId', 'isEmbedded',
+    'formId', 'applyType', 'applyLink', 'interestedCount', 'slots', 'totalSlots', 'maxVolunteers', 'slug',
+];
+
+const isPlainObject = (v) => v !== null && typeof v === 'object' && [Object.prototype, null].includes(Object.getPrototypeOf(v));
+
+// Firestore values as JSON: Timestamps become ISO strings (the app reads both alike),
+// references their path, geopoints their coordinates.
+export const plain = (v) => {
+    if (v === null || typeof v !== 'object') return v;
+    if (typeof v.toDate === 'function') {
+        const d = v.toDate();
+        return Number.isNaN(d.getTime()) ? null : d.toISOString();
+    }
+    if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString();
+    if (Array.isArray(v)) return v.map(plain);
+    if (isPlainObject(v)) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plain(x)]));
+    if (typeof v.latitude === 'number' && typeof v.longitude === 'number') return { latitude: v.latitude, longitude: v.longitude };
+    if (typeof v.path === 'string') return v.path;
+    return null;
+};
+
+const pickFields = (item) => {
+    const out = { id: item.id };
+    COMMUNITY_FIELDS.forEach((k) => { if (item[k] !== undefined) out[k] = plain(item[k]); });
+    return out;
+};
+
+/*
+ * A giveaway or form the app would hide from everyone: switched off, untitled,
+ * or closed more than two days ago. The margin covers every visitor's time
+ * zone; the app still applies the exact day itself.
+ */
+export const isListable = (item, now = Date.now()) => {
+    if (!isOpen(item) || !isPresent(item.title || item.name || '')) return false;
+    const closes = closingDate(item);
+    return !closes || closes.getTime() >= now - 2 * DAY_MS;
+};
+
+export function communityCollections({ events = [], gigs = [], giveaways = [], forms = [] }, now = Date.now()) {
+    const listable = (list) => list.map(pickFields).filter((item) => isListable(item, now));
+    return {
+        // Events and gigs are sent whole (only their feed fields): a signed-in user's
+        // guestlists borrow their date and poster, and ownership, even from closed ones.
+        events: events.map(pickFields),
+        gigs: gigs.map(pickFields),
+        giveaways: listable(giveaways),
+        forms: listable(forms),
+    };
+}
+
+// Campaigns taking applications, whole (the campaign pages read most fields; all are public).
+export const appCampaigns = (list = []) => list.filter(isCampaignOpen).map(plain);
+
+// Unlike readCollection, a failed read fails the feed, so the app falls back to Firestore.
+async function readAll(db, name) {
+    const snap = await db.collection(name).limit(APP_READ_LIMIT).get();
+    return snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+}
+
+export async function getAppFeed(db) {
+    const [events, gigs, giveaways, forms, campaigns] = await Promise.all(
+        ['upcoming_events', 'volunteer_gigs', 'giveaways', 'forms', 'campaigns'].map((name) => readAll(db, name)),
+    );
+    return {
+        generatedAt: new Date().toISOString(),
+        community: communityCollections({ events, gigs, giveaways, forms }),
+        campaigns: appCampaigns(campaigns),
+    };
+}
+
+export async function handleAppFeed(db, req, res) {
+    if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (!db) return res.status(503).json({ success: false, error: 'Feed unavailable' });
+    try {
+        const feed = await getAppFeed(db);
+        // A minute at the edge (new campaigns and forms show up quickly), then stale while it refreshes.
+        res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=60, stale-while-revalidate=300');
+        return res.status(200).json({ success: true, ...feed });
+    } catch (err) {
+        console.error('[app-feed] error:', err);
+        res.setHeader('Cache-Control', 'no-store');
+        return res.status(500).json({ success: false, error: 'Feed unavailable' });
     }
 }
 

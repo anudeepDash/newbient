@@ -2,7 +2,7 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { verifyToken } from './_lib/auth.js';
 import { handleSubscribe } from './_lib/publicMail.js';
-import { handlePublicFeed, handlePublicArchive } from './_lib/publicFeed.js';
+import { handlePublicFeed, handlePublicArchive, handleAppFeed } from './_lib/publicFeed.js';
 import { handleEnquiry } from './_lib/enquiry.js';
 import { handlePasses } from './_lib/passes.js';
 import { handleCommunity } from './_lib/community.js';
@@ -92,6 +92,8 @@ export default async function handler(req, res) {
     // Landing site (newbi.live): the cached public feed and the enquiry form.
     if (req.query?.type === 'public-feed') return handlePublicFeed(adminDb, req, res);
     if (req.query?.type === 'public-archive') return handlePublicArchive(adminDb, req, res);
+    // The app (app.newbi.live): community feed collections and open campaigns, cached.
+    if (req.query?.type === 'app-feed') return handleAppFeed(adminDb, req, res);
     if (req.query?.type === 'enquiry') return handleEnquiry(adminDb, req, res);
     // Hinglish for uploaded content (campaign briefs), written by Gemini on first view and cached.
     if (req.query?.type === 'hinglish') return handleHinglish(adminDb, req, res);

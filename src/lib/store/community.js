@@ -1,40 +1,26 @@
 import { collection, doc, getDocs, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { isPresent } from '../present';
+import { closingDate, isOpen, itemDate } from '../feedItems';
+import { fetchAppFeed } from '../appFeed';
+
+export { itemDate };
 
 /*
  * Community slice.
  *
- * The feed (guestlists, gigs, giveaways, forms) is one read per collection
- * when the app needs it, cached for a few minutes, not a live listener per
- * collection. Events with their guestlist switched on are public, so they
- * show signed out; standalone guestlists join after sign-in. Every item links
- * to its page inside the app (`link(path)` adds the app's base path).
+ * The public collections (events, gigs, giveaways, forms) come from the
+ * server's cached app feed (src/lib/appFeed.js), already stripped of closed
+ * giveaways and forms; Firestore is read directly only when that request
+ * fails. Events with their guestlist switched on are public, so they show
+ * signed out; standalone guestlists join after sign-in and are the one part
+ * read from Firestore for the user. Cached here for a few minutes, not a
+ * live listener. Every item links to its page inside the app (`link(path)`
+ * adds the app's base path).
  */
 
 const FEED_TTL_MS = 5 * 60 * 1000;
-const CLOSED = /^(closed|archived|ended|expired|inactive|draft|hidden|completed|cancel+ed|past)$/i;
-
 const firstImage = (...values) => values.find(v => typeof v === 'string' && /^(https?:)?\/\//.test(v)) || null;
-
-/* The first date on an item, as a Date, or null. Accepts 'YYYY-MM-DD', ISO strings, Timestamps and arrays. */
-export const itemDate = (item = {}) => {
-    const raw = item.date ?? (Array.isArray(item.dates) ? item.dates[0]?.date ?? item.dates[0] : null) ?? item.eventDate ?? item.startDate ?? item.endsAt ?? null;
-    if (!raw) return null;
-    if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw)) return new Date(`${raw}T00:00:00`);
-    const value = typeof raw?.toDate === 'function' ? raw.toDate() : new Date(raw);
-    return Number.isNaN(value.getTime()) ? null : value;
-};
-
-/* When an item stops being listed: a form's or giveaway's closing date, else the event day. */
-const closingDate = (item = {}) => {
-    const raw = item.endDate ?? item.closesAt ?? item.deadline ?? null;
-    if (raw) {
-        const d = typeof raw?.toDate === 'function' ? raw.toDate() : new Date(/^\d{4}-\d{2}-\d{2}$/.test(String(raw)) ? `${raw}T00:00:00` : raw);
-        if (!Number.isNaN(d.getTime())) return d;
-    }
-    return itemDate(item);
-};
 
 const isPast = (date) => {
     if (!date) return false;
@@ -42,8 +28,6 @@ const isPast = (date) => {
     endOfDay.setHours(23, 59, 59, 999);
     return endOfDay.getTime() < Date.now();
 };
-
-const isOpen = (item) => !CLOSED.test(String(item.status || '').trim()) && !CLOSED.test(String(item.activeLabel || '').trim()) && item.isActive !== false && item.hidden !== true;
 
 const normalise = (type, item, to, extra = {}) => {
     const date = itemDate(item);
@@ -145,12 +129,21 @@ export const createCommunitySlice = (set, get) => ({
         if (!db || (!force && fresh && get().communityFeedLoaded)) return;
         set({ _feedFor: uid, _feedAt: Date.now() });
 
-        const [events, guestlists, gigs, giveaways, forms] = await Promise.all([
-            read('upcoming_events'),
+        const readPublic = async () => {
+            const feed = (await fetchAppFeed({ force }))?.community;
+            if (feed) return feed;
+            const [events, gigs, giveaways, forms] = await Promise.all([
+                read('upcoming_events'),
+                read('volunteer_gigs'),
+                read('giveaways'),
+                read('forms'),
+            ]);
+            return { events, gigs, giveaways, forms };
+        };
+        // Signed-in only (the rules keep guestlists from visitors), so never part of the shared cache.
+        const [{ events = [], gigs = [], giveaways = [], forms = [] }, guestlists] = await Promise.all([
+            readPublic(),
             uid ? read('guestlists') : [],
-            read('volunteer_gigs'),
-            read('giveaways'),
-            read('forms'),
         ]);
 
         set({ communityFeed: buildFeed({ events, guestlists, gigs, giveaways, forms }, link), communityFeedLoaded: true });
