@@ -10,25 +10,49 @@ firebase.initializeApp({
     appId: "1:860370467784:web:d7b4dfc66336f6da50defd"
 });
 
+/*
+ * Pushes arrive data-only (api/_lib/push.js), so this is the one place a
+ * notification is drawn: no second copy from the SDK. The tag makes a newer
+ * alert about the same thing replace the older one.
+ */
+const ICON = '/brand/push/icon-192.png';
+const BADGE = '/brand/push/badge-96.png';
+
+const showPush = (data = {}) => {
+  if (!data.title) return Promise.resolve();
+  return self.registration.showNotification(data.title, {
+    body: data.body || '',
+    icon: data.icon || ICON,
+    badge: data.badge || BADGE,
+    ...(data.image ? { image: data.image } : {}),
+    tag: data.tag || undefined,
+    renotify: Boolean(data.tag),
+    timestamp: Date.now(),
+    data: { link: data.link || '/' },
+  });
+};
+
 // Push isn't available everywhere this worker runs (iPhone Safari outside the
 // Home Screen app), so a missing Messaging must not stop the worker installing.
 try {
   const messaging = firebase.messaging();
-
-  messaging.onBackgroundMessage((payload) => {
-    console.log('[firebase-messaging-sw.js] Received background message ', payload);
-    const notificationTitle = payload.notification.title;
-    const notificationOptions = {
-      body: payload.notification.body,
-      icon: '/logo_full.png',
-      data: payload.data
-    };
-
-    self.registration.showNotification(notificationTitle, notificationOptions);
-  });
+  messaging.onBackgroundMessage((payload) => showPush((payload && payload.data) || {}));
 } catch (e) {
   console.warn('[firebase-messaging-sw.js] Push is not available here:', e && e.message);
 }
+
+// Tapping opens the link in an open app tab when there is one, else a new one.
+self.addEventListener('notificationclick', (event) => {
+  const link = event.notification.data && event.notification.data.link;
+  if (!link) return;
+  event.notification.close();
+  const target = new URL(link, self.location.origin).href;
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+    const same = windows.find((w) => new URL(w.url).origin === new URL(target).origin && 'navigate' in w);
+    if (same) return same.focus().then((w) => (w || same).navigate(target)).catch(() => self.clients.openWindow(target));
+    return self.clients.openWindow(target);
+  }));
+});
 
 /*
  * Passes offline. A pass page (/p/REF, /t/TOKEN) that has loaded once asks

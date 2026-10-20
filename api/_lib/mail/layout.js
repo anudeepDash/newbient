@@ -117,6 +117,10 @@ export const excerpt = (value, max = 360) => {
     return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s.,;:!?-]+$/, '')}…`;
 };
 
+// Invisible filler after the preheader, so inbox previews stop there instead of
+// running on into the header and title ("Approved You're approved, Anu…").
+const PREHEADER_PAD = '&#847;&zwnj;&nbsp;'.repeat(110);
+
 const para = (text) => esc(text).replace(/\r?\n/g, '<br>');
 
 const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
@@ -141,6 +145,14 @@ const renderBlock = (block, ctx) => {
     if (block.list) {
         const items = block.list.filter(isPresent);
         return items.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px">${items.map((item, i) => `<tr><td valign="top" style="width:28px;padding:0 0 12px"><span class="num" style="display:inline-block;width:22px;height:22px;border-radius:11px;background:${ctx.accent};color:${ctx.onAccent};font-size:12px;font-weight:800;line-height:22px;text-align:center">${i + 1}</span></td><td class="txt" style="padding:1px 0 12px 6px;font-size:15px;line-height:1.55;color:#d4d4d8">${para(item)}</td></tr>`).join('')}</table>` : '';
+    }
+    if (block.steps) {
+        const steps = block.steps.filter(r => Array.isArray(r) && isPresent(r[0]));
+        if (!steps.length) return '';
+        return `<table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;${CARD}">
+${block.title ? `<tr><td colspan="2" class="muted" style="padding:16px 18px 4px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#9ca3af">${esc(block.title)}</td></tr>` : ''}
+${steps.map(([head, text], i) => `<tr><td valign="top" style="width:30px;padding:${i === 0 ? '12px' : '4px'} 0 14px 18px"><span class="num" style="display:inline-block;width:22px;height:22px;border-radius:11px;background:${ctx.accent};color:${ctx.onAccent};font-size:12px;font-weight:800;line-height:22px;text-align:center">${i + 1}</span></td><td style="padding:${i === 0 ? '12px' : '4px'} 18px 14px 8px"><p class="strong" style="margin:0 0 2px;font-size:15px;font-weight:800;line-height:1.4;color:#ffffff">${esc(head)}</p>${isPresent(text) ? `<p class="txt" style="margin:0;font-size:14px;line-height:1.55;color:#d4d4d8">${para(text)}</p>` : ''}</td></tr>`).join('')}
+</table>`;
     }
     if (block.details) {
         const rows = block.details.filter(r => Array.isArray(r) && isPresent(r[1]));
@@ -212,6 +224,7 @@ const blockText = (block, ctx) => {
     if (block.quote !== undefined) return isPresent(block.quote) ? `"${block.quote}"` : '';
     if (block.html !== undefined) return textOf(sanitizeHtml(block.html));
     if (block.list) return block.list.filter(isPresent).map(i => `- ${i}`).join('\n');
+    if (block.steps) return block.steps.filter(r => Array.isArray(r) && isPresent(r[0])).map(([h, t], i) => `${i + 1}. ${h}${isPresent(t) ? `: ${t}` : ''}`).join('\n');
     if (block.details) return block.details.filter(r => Array.isArray(r) && isPresent(r[1])).map(([l, v]) => `${l}: ${v}`).join('\n');
     if (block.items) {
         const lines = block.items.filter(i => i && isPresent(i.name)).map(i => `${i.name}${Number(i.count) > 1 ? ` x ${i.count}` : ''}`);
@@ -300,7 +313,7 @@ a{color:${brand.ink}!important}
 </style>
 </head>
 <body class="bg" style="margin:0;padding:0;background:#05070a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${esc(preheader)}&#8203;&nbsp;&#8203;&nbsp;&#8203;&nbsp;</div>
+<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;overflow:hidden;opacity:0;color:transparent;mso-hide:all">${esc(preheader)}${PREHEADER_PAD}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="bg" bgcolor="#05070a" style="background:#05070a">
 <tr><td align="center" class="wrap" style="padding:32px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="box" bgcolor="#0b0f17" style="max-width:600px;background:#0b0f17;border:1px solid #1f2630;border-radius:28px;overflow:hidden">

@@ -37,8 +37,8 @@ export const triggerNotification = async ({ userId, type, title, content, link, 
             try {
                 new Notification(title, {
                     body: content,
-                    icon: image || '/favicon.png',
-                    badge: '/favicon.png', // Small icon for mobile status bar
+                    icon: image || '/brand/push/icon-192.png',
+                    badge: '/brand/push/badge-96.png', // Monochrome icon for the status bar
                     data: { link: link || '' } 
                 });
             } catch (e) {

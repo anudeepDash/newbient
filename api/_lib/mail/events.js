@@ -7,7 +7,7 @@
  *   POST /api/mail { action: 'event', event: 'pass-confirmed', guestlistId, entryId }
  */
 import { getDb, nowIso, istDate, SITE_URL } from '../db.js';
-import { notify } from '../notify.js';
+import { notify, campaignInvitePush } from '../notify.js';
 import { sendTransactional } from './send.js';
 import { render } from './templates/index.js';
 import { createCampaign } from './campaigns.js';
@@ -192,11 +192,13 @@ const campaignInvite = async ({ campaignId, again = false }, caller) => {
     let pushed = 0;
     const withUid = creators.filter(c => c.uid || c.id).slice(0, 500);
     for (let i = 0; i < withUid.length; i += 20) {
-        const res = await Promise.all(withUid.slice(i, i + 20).map(c => sendPush(c.uid || c.id, {
-            title: `New campaign: ${String(campaign.title || '').slice(0, 80)}`,
-            body: campaign.reward ? `Reward: ${String(campaign.reward).slice(0, 80)}` : 'Tap to see the brief and apply.',
-            link: `/campaign/${encodeURIComponent(campaignId)}`,
-        })));
+        const res = await Promise.all(withUid.slice(i, i + 20).map(c => sendPush(c.uid || c.id, campaignInvitePush({
+            brand: campaign.brand || campaign.brandName,
+            campaignTitle: campaign.title,
+            reward: campaign.reward,
+            campaignId,
+            campaignUrl: `/c/${encodeURIComponent(campaignId)}`,
+        }))));
         pushed += res.filter(r => r.ok).length;
     }
     return { emailCampaignId: queued?.campaignId || null, emailed: queued?.queued || 0, pushed };
@@ -283,7 +285,9 @@ const submissionReviewed = async ({ campaignId, reviews = [], campaignPath }, ca
             taskTitle: task.title || r.taskTitle,
             status,
             feedback: String(r.reason || '').slice(0, 800),
-            campaignUrl: `${SITE_URL}${safePath(campaignPath, `/creator-dashboard?campaignId=${encodeURIComponent(campaignId)}`)}`,
+            campaignUrl: campaignPath ? `${SITE_URL}${safePath(campaignPath, '/')}` : `${CAMPAIGN_ORIGIN}/c/${encodeURIComponent(campaignId)}`,
+            campaignId,
+            taskId: r.taskId,
         }, { idempotencyKey: `review_${campaignId}_${r.taskId}_${r.uid}_${status}_${Date.now() - (Date.now() % 60000)}` });
         results.push({ uid: r.uid, delivery });
     }

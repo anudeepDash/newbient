@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { db, storage, auth } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch, runTransaction, FieldPath, deleteField } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, arrayRemove, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch, runTransaction, FieldPath, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { notifyEvent, subscribeToNewsletter } from './mailApi';
 import { normalizePhoneNumber } from './utils';
@@ -17,6 +17,12 @@ import { DEFAULT_CREATOR_GROUPS, isCampaignCityMatch } from './constants';
 import { TOAST_TYPES, toFriendlyMessage, getSupportHint, getToastDuration } from './toastCopy';
 import { indexAppSubmissions, mergeAppSubmissions, isAppSubmission } from './creator/appSubmissions';
 import { ADMIN_ROLES } from '../constants/roles';
+
+/** A short, stable key for a push token (tokens are too long and odd-charactered to be field names). */
+const pushDeviceId = async (token) => {
+    const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token)));
+    return Array.from(bytes.slice(0, 10), b => b.toString(16).padStart(2, '0')).join('');
+};
 
 const MAX_TOASTS = 4;
 let toastSeq = 0;
@@ -5552,13 +5558,25 @@ export const useStore = create((set, get) => ({
         }
     },
 
+    // pushDevices remembers which site each browser registered on, so the server
+    // only pushes to the app (api/_lib/push.js). fcmTokens stays for older readers.
     saveFcmToken: async (token) => {
         const { user } = get();
         if (user) {
-            // fcmTokens keeps every device; fcmToken stays for older readers.
-            await setDoc(doc(db, 'users', user.uid), { fcmToken: token, fcmTokens: arrayUnion(token) }, { merge: true });
+            const id = await pushDeviceId(token);
+            await setDoc(doc(db, 'users', user.uid), {
+                fcmToken: token,
+                fcmTokens: arrayUnion(token),
+                pushDevices: { [id]: { token, origin: window.location.origin, at: new Date().toISOString() } },
+            }, { merge: true });
         }
         set({ fcmToken: token });
+    },
+    removeFcmToken: async (token) => {
+        const { user } = get();
+        if (!user || !token) return;
+        const id = await pushDeviceId(token);
+        await updateDoc(doc(db, 'users', user.uid), { fcmTokens: arrayRemove(token), [`pushDevices.${id}`]: deleteField() }).catch(() => {});
     },
     // A visit to a shared invoice/proposal/contract link. The server adds the log
     // entry (its own IP and time) and lastOpened; rules keep these off the browser.

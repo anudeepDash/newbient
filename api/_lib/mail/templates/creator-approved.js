@@ -4,15 +4,20 @@ import { firstName } from '../layout.js';
 export default (data = {}) => ({
     sender: 'creators',
     kind: 'transactional',
-    subject: "You're approved: welcome to Newbi Creators",
-    preheader: 'Your creator profile is approved. Start applying to campaigns.',
-    eyebrow: 'Approved',
-    title: `You're approved, ${firstName(data.name)}`,
+    subject: 'Your Newbi creator profile is approved',
+    preheader: 'You can apply to brand campaigns from today. Here is how it works.',
+    eyebrow: 'Creators',
+    title: `Welcome to Newbi Creators, ${firstName(data.name)}`,
     blocks: [
-        { p: 'Good news: your Newbi creator profile has been approved. Open campaigns that match your city and niche are now in your dashboard, and you can apply in a tap.' },
-        { list: ['Apply to campaigns that fit you', 'Submit your deliverables from the dashboard', 'Get tickets and updates right inside each campaign'] },
-        data.cityGroupUrl ? { button: { label: `Join the ${data.cityGroupName || 'city'} creators group`, url: data.cityGroupUrl } } : null,
+        { p: "We've reviewed your profile and approved it. From now on, brand campaigns in your city show up on your creator dashboard, and you can apply to any of them." },
+        { title: 'How campaigns work', steps: [
+            ['Apply', 'Open a campaign, read the brief and send your application.'],
+            ['Get shortlisted', 'We pick creators for each campaign with the brand. If you are picked, we tell you by email and in the app.'],
+            ['Post and submit', 'Share your content, then submit the link in the campaign.'],
+        ] },
+        data.cityGroupUrl ? { p: `Local campaigns and guestlist passes are also posted in the ${data.cityGroupName || 'city'} creators group on WhatsApp.` } : null,
+        data.cityGroupUrl ? { button: { label: `Join the ${data.cityGroupName || 'city'} group`, url: data.cityGroupUrl } } : null,
     ],
-    cta: { label: 'See open campaigns', url: data.dashboardUrl || '/creator-dashboard' },
+    cta: { label: 'Open my dashboard', url: data.dashboardUrl || '/creator' },
     reason: "You're getting this because you applied to Newbi Creators.",
 });
