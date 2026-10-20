@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
@@ -6,26 +6,27 @@ import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
 import Clock from 'lucide-react/dist/esm/icons/clock';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
-import { Card, Sheet } from '../../components/app';
+import { Card } from '../../components/app';
 import { isPresent } from '../../lib/present';
+import { useAppStore } from '../../lib/store/appStore';
 import PageHeader, { PageBody } from '../pages/PageHeader';
-import { CardGrid, CardSkeleton, EmptyState } from '../pages/parts';
+import { CardGrid, CardSkeleton, EmptyState, Rail, SectionHeader } from '../pages/parts';
+import { bySoonest, isUpcomingPass, passCard } from '../passes/passCards';
 import { fromPrice, useTicketedEvents } from './useTicketedEvents';
 import { useAuthGate, useResumeIntent } from '../auth/AuthGate';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
 import { useT, t as tNow } from '../../i18n';
+import TicketSheet from './TicketSheet';
 
 /*
  * /tickets: upcoming shows that sell tickets. Tapping one opens the ticket
  * flow in a sheet over the list (?event=ID, so the link can be shared and
- * Back closes it). The flow itself (tiers, coupons, UPI payment, the booking
- * reference) is the existing EventTicketingModal, embedded in the sheet; the
- * confirmed order becomes a pass in the app.
+ * Back closes it). The flow (tiers, coupons, UPI payment, the booking
+ * reference) is TicketSheet; a confirmed order becomes a pass at /p/{ref},
+ * listed here under Your tickets.
  */
 
 const TICKET_INTENT = 'tickets-buy';
-
-const EventTicketingModal = lazy(() => import('../../components/tickets/EventTicketingModal'));
 
 const dayLabel = (day) => {
     if (!day) return null;
@@ -60,6 +61,9 @@ const TicketsPage = () => {
     const [params, setParams] = useSearchParams();
     const openId = params.get('event');
     const open = openId ? events.find(e => e.id === openId) : null;
+    // Keep the last event while the sheet animates closed.
+    const shown = useRef(null);
+    if (open) shown.current = open;
 
     const gate = useAuthGate();
     const showEvent = (id) => {
@@ -70,6 +74,9 @@ const TicketsPage = () => {
     // Buying needs an account: sign in first, then the sheet opens where you left off.
     const openEvent = (id) => gate.run({ type: TICKET_INTENT, payload: { id } }, () => showEvent(id), { require: ['name'] });
     useResumeIntent(TICKET_INTENT, (payload) => payload?.id && showEvent(payload.id));
+    const passes = useAppStore(s => s.passes);
+    const mine = useMemo(() => (passes || []).filter(p => p.source === 'order' && isUpcomingPass(p)).sort(bySoonest), [passes]);
+
     const close = () => {
         const next = new URLSearchParams(params);
         next.delete('event');
@@ -79,6 +86,13 @@ const TicketsPage = () => {
     return (
         <PageBody>
             <PageHeader eyebrow={t('Tickets')} title={t('Get your')} highlight={t('tickets.')} subtitle={t('Pick a show, pay by UPI, and your ticket shows up in the app.')} />
+
+            {mine.length > 0 && (
+                <section className="space-y-3">
+                    <SectionHeader title={mine.length === 1 ? t('Your ticket') : t('Your tickets')} />
+                    <Rail>{mine.map(p => <Card key={p.ref} {...passCard(p)} />)}</Rail>
+                </section>
+            )}
 
             {!loaded ? (
                 <CardGrid><CardSkeleton /><CardSkeleton /></CardGrid>
@@ -91,21 +105,7 @@ const TicketsPage = () => {
             )}
 
             {/* The ticket flow, over the list. An unknown or past event just closes. */}
-            <Sheet
-                open={Boolean(open)}
-                onClose={close}
-                size="full"
-                width="lg"
-                title={open?.title}
-                subtitle={[dayLabel(open?.day), open?.venue || open?.location, open?.city].filter(isPresent).join(' · ') || undefined}
-                bodyClassName="px-0 pb-0"
-            >
-                {open && (
-                    <Suspense fallback={<div className="mx-5 h-64 animate-pulse rounded-3xl bg-black/[0.04] dark:bg-white/[0.04]" />}>
-                        <EventTicketingModal event={open} isOpen onClose={close} isEmbedded chrome={false} />
-                    </Suspense>
-                )}
-            </Sheet>
+            <TicketSheet event={open || shown.current} open={Boolean(open)} onClose={close} />
             {openId && loaded && !open && <CloseUnknown onClose={close} />}
         </PageBody>
     );
