@@ -1,5 +1,5 @@
 import React from 'react';
-import { safeSessionStorage } from '../lib/storage';
+import { isChunkLoadError, reloadForNewChunks } from '../lib/chunkReload';
 import { forceHideSplash } from '../lib/splash';
 
 class ErrorBoundary extends React.Component {
@@ -9,7 +9,7 @@ class ErrorBoundary extends React.Component {
     }
 
     static getDerivedStateFromError(error) {
-        return { hasError: true };
+        return { hasError: true, error };
     }
 
     componentDidCatch(error, errorInfo) {
@@ -18,31 +18,35 @@ class ErrorBoundary extends React.Component {
         this.setState({ error, errorInfo });
         console.error("Uncaught error:", error, errorInfo);
 
-        // Check if it's a dynamic import error (chunk failure)
-        const errorMessage = error?.message || "";
-        const isDynamicImportError = 
-            errorMessage.includes('Failed to fetch dynamically imported module') ||
-            errorMessage.includes('Importing a module script failed');
-
-        if (isDynamicImportError) {
-            try {
-                const lastReload = safeSessionStorage.getItem('last-chunk-reload');
-                const now = Date.now();
-                
-                // Only reload if we haven't reloaded in the last 5 seconds to avoid infinite loops
-                if (!lastReload || now - parseInt(lastReload) > 5000) {
-                    safeSessionStorage.setItem('last-chunk-reload', now.toString());
-                    console.warn('Detected dynamic import error in ErrorBoundary, reloading page...');
-                    window.location.reload();
-                }
-            } catch (e) {
-                console.warn('Error in ErrorBoundary chunk reload handler:', e);
-            }
+        // A chunk that failed to load (usually right after a deploy): reload rather than show the dump.
+        if (isChunkLoadError(error)) {
+            this.setState({ reloading: reloadForNewChunks() });
         }
     }
 
 
     render() {
+        if (this.state.hasError && isChunkLoadError(this.state.error)) {
+            return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', padding: '2rem', minHeight: '100vh', background: '#111', color: 'white', fontFamily: 'system-ui, sans-serif', textAlign: 'center' }}>
+                    <h1 style={{ fontSize: '1.25rem', fontWeight: 600 }}>
+                        {this.state.reloading ? 'Loading the latest version…' : "This page didn't load"}
+                    </h1>
+                    {!this.state.reloading && (
+                        <>
+                            <p style={{ color: '#aaa', maxWidth: '22rem' }}>Check your connection and try again.</p>
+                            <button
+                                onClick={() => window.location.reload()}
+                                style={{ padding: '0.6rem 1.2rem', background: '#333', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                            >
+                                Reload
+                            </button>
+                        </>
+                    )}
+                </div>
+            );
+        }
+
         if (this.state.hasError) {
             return (
                 <div style={{ padding: '2rem', color: 'white', background: '#111', minHeight: '100vh', fontFamily: 'monospace' }}>
