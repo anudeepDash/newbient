@@ -9,6 +9,7 @@ import { isPresent } from '../../../lib/present';
 import { cn } from '../../../lib/utils';
 import { GLASS } from '../../pages/parts';
 import { compactCount, creatorPassId } from '../format';
+import { useT, t as translateNow } from '../../../i18n';
 
 /*
  * How you apply to a campaign.
@@ -29,6 +30,7 @@ const Avatar = ({ src, size = 'h-12 w-12' }) => (
 );
 
 export const NewbiIdCard = ({ creator, profile }) => {
+    const t = useT();
     const handle = creator?.instagram ? `@${String(creator.instagram).replace(/^@/, '')}` : null;
     const followers = compactCount(creator?.instagramFollowers);
     const id = creatorPassId(creator);
@@ -38,13 +40,13 @@ export const NewbiIdCard = ({ creator, profile }) => {
             <div className="relative flex items-center gap-3">
                 <Avatar src={creator?.profilePicture || profile?.photoURL} />
                 <div className="min-w-0 flex-1">
-                    <p className="truncate font-heading text-[16px] font-extrabold tracking-[-0.01em]">{creator?.name || profile?.name || 'Your Newbi ID'}</p>
-                    <p className="truncate text-[13px] text-zinc-400">{[handle, followers && `${followers} followers`].filter(Boolean).join(' · ') || 'Creator profile'}</p>
+                    <p className="truncate font-heading text-[16px] font-extrabold tracking-[-0.01em]">{creator?.name || profile?.name || t('Your Newbi ID')}</p>
+                    <p className="truncate text-[13px] text-zinc-400">{[handle, followers && t('{count} followers', { count: followers })].filter(Boolean).join(' · ') || t('Creator profile')}</p>
                 </div>
             </div>
             {id && (
                 <p className="relative mt-3 flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-neon-green">
-                    <IdCard size={13} /> Newbi ID · {id}
+                    <IdCard size={13} /> {t('Newbi ID')} · {id}
                 </p>
             )}
         </div>
@@ -55,23 +57,24 @@ export const NewbiIdCard = ({ creator, profile }) => {
 const primaryFor = ({ method, signedIn, loading, creator, blocker, applying, onApply, onGetId, onSignIn, onOpenForm }) => {
     if (method === 'form') {
         if (creator && blocker) return null;
-        return { label: 'Apply with the form', icon: FileText, onClick: onOpenForm, hint: 'Opens the campaign’s Google Form here.' };
+        return { label: translateNow('Apply with the form'), icon: FileText, onClick: onOpenForm, hint: translateNow('Opens the campaign’s Google Form here.') };
     }
-    if (!signedIn) return { label: 'Apply with Newbi ID', icon: Zap, onClick: onSignIn, hint: 'Sign in, then it’s one tap.' };
-    if (loading) return { label: 'Loading', loading: true };
-    if (!creator) return { label: 'Get my creator ID', icon: IdCard, onClick: onGetId, hint: '30 seconds. We apply you to this campaign right after.' };
+    if (!signedIn) return { label: translateNow('Apply with Newbi ID'), icon: Zap, onClick: onSignIn, hint: translateNow('Sign in, then it’s one tap.') };
+    if (loading) return { label: translateNow('Loading'), loading: true };
+    if (!creator) return { label: translateNow('Get my creator ID'), icon: IdCard, onClick: onGetId, hint: translateNow('30 seconds. We apply you to this campaign right after.') };
     if (blocker) return null;
-    return { label: '1-click apply', icon: Zap, onClick: onApply, loading: applying, hint: 'Your Newbi ID is sent to the brand.' };
+    return { label: translateNow('1-click apply'), icon: Zap, onClick: onApply, loading: applying, hint: translateNow('Your Newbi ID is sent to the brand.') };
 };
 
 const ApplyPanel = (props) => {
+    const t = useT();
     const { method, creator, profile, signedIn, blocker, status, onOpenForm, onShare, compact } = props;
     const primary = status ? null : primaryFor(props);
     const formToo = !status && method === 'both' && !(creator && blocker);
     const showCard = !status && method !== 'form' && signedIn && creator;
 
     const shareButton = onShare && (
-        <Button variant="secondary" size="lg" icon={Share2} onClick={onShare} aria-label="Share campaign" className="w-14 shrink-0 px-0" />
+        <Button variant="secondary" size="lg" icon={Share2} onClick={onShare} aria-label={t('Share campaign')} className="w-14 shrink-0 px-0" />
     );
     const blockerText = !status && creator && blocker
         ? <p className="flex min-h-[48px] flex-1 items-center text-[14px] font-semibold text-gray-600 dark:text-zinc-400">{blocker}</p>
@@ -86,7 +89,7 @@ const ApplyPanel = (props) => {
                     <div className="flex items-center gap-2.5">
                         <Avatar src={creator?.profilePicture || profile?.photoURL} size="h-8 w-8" />
                         <p className="min-w-0 flex-1 truncate text-[13px] text-gray-600 dark:text-zinc-400">
-                            Applying as <span className="font-bold text-gray-900 dark:text-white">{handle || creator?.name}</span>
+                            {t('Applying as')} <span className="font-bold text-gray-900 dark:text-white">{handle || creator?.name}</span>
                             {id && <span className="ml-1.5 font-mono text-[11px] font-bold tracking-[0.12em] text-emerald-700 dark:text-neon-green">ID {id}</span>}
                         </p>
                     </div>
@@ -98,17 +101,17 @@ const ApplyPanel = (props) => {
                     {shareButton}
                 </div>
                 {formToo && (
-                    <button type="button" onClick={onOpenForm} className="block w-full text-center text-[13px] font-bold text-gray-700 underline decoration-neon-green decoration-2 underline-offset-4 dark:text-zinc-300">Or apply with the Google Form</button>
+                    <button type="button" onClick={onOpenForm} className="block w-full text-center text-[13px] font-bold text-gray-700 underline decoration-neon-green decoration-2 underline-offset-4 dark:text-zinc-300">{t('Or apply with the Google Form')}</button>
                 )}
             </div>
         );
     }
 
     return (
-        <section className={cn('space-y-4 rounded-[1.75rem] p-5', GLASS)} aria-label="Apply">
+        <section className={cn('space-y-4 rounded-[1.75rem] p-5', GLASS)} aria-label={t('Apply')}>
             <p className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-600 dark:text-zinc-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-neon-green shadow-[0_0_8px_rgba(57,255,20,0.9)]" aria-hidden="true" />
-                {status ? 'Your status' : method === 'form' ? 'Apply' : 'Apply with your Newbi ID'}
+                {status ? t('Your status') : method === 'form' ? t('Apply') : t('Apply with your Newbi ID')}
             </p>
             {showCard && <NewbiIdCard creator={creator} profile={profile} />}
             {status ? <div className="flex items-center gap-2">{status}{shareButton}</div> : (
@@ -119,7 +122,7 @@ const ApplyPanel = (props) => {
                         ))}
                         {shareButton}
                     </div>
-                    {formToo && <Button className="w-full" variant="secondary" icon={FileText} onClick={onOpenForm}>Or apply with the Google Form</Button>}
+                    {formToo && <Button className="w-full" variant="secondary" icon={FileText} onClick={onOpenForm}>{t('Or apply with the Google Form')}</Button>}
                     {isPresent(primary?.hint) && <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-400">{primary.hint}</p>}
                 </div>
             )}

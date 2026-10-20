@@ -12,6 +12,7 @@ import ProfileDetailsForm from '../profile/ProfileDetailsForm';
 import { missingFields, fieldLabel } from '../profile/requirements';
 import { landingUrl } from '../host';
 import newbiIcon from '../../assets/logo/newbi-icon.svg';
+import { useT, t as tNow } from '../../i18n';
 
 /*
  * The app's sign-in sheet (replaces the site's AuthOverlay inside the app).
@@ -46,20 +47,20 @@ const GoogleMark = () => (
 const friendly = (err) => {
     const code = err?.code || err?.message || '';
     if (code.includes('popup-closed') || code.includes('cancelled-popup')) return '';
-    if (code.includes('popup-blocked')) return 'Your browser blocked the Google window. Allow pop-ups, or sign in with your phone.';
-    if (code.includes('invalid-credential') || code.includes('wrong-password') || code.includes('user-not-found')) return 'That email and password don’t match. Try again, or reset your password.';
-    if (code.includes('email-already-in-use')) return 'There’s already an account with this email. Sign in instead.';
-    if (code.includes('weak-password')) return 'Use at least 6 characters for your password.';
-    if (code.includes('invalid-email')) return 'That email doesn’t look right.';
-    if (code.includes('too-many-requests')) return 'Too many attempts. Wait a few minutes and try again.';
-    if (code.includes('network-request-failed')) return 'No connection. Check your internet and try again.';
-    if (code.includes('account-exists-with-different-credential')) return 'This email already signs in another way. Try Google or your phone.';
-    return 'Sign-in didn’t work. Please try again.';
+    if (code.includes('popup-blocked')) return tNow('Your browser blocked the Google window. Allow pop-ups, or sign in with your phone.');
+    if (code.includes('invalid-credential') || code.includes('wrong-password') || code.includes('user-not-found')) return tNow('That email and password don’t match. Try again, or reset your password.');
+    if (code.includes('email-already-in-use')) return tNow('There’s already an account with this email. Sign in instead.');
+    if (code.includes('weak-password')) return tNow('Use at least 6 characters for your password.');
+    if (code.includes('invalid-email')) return tNow('That email doesn’t look right.');
+    if (code.includes('too-many-requests')) return tNow('Too many attempts. Wait a few minutes and try again.');
+    if (code.includes('network-request-failed')) return tNow('No connection. Check your internet and try again.');
+    if (code.includes('account-exists-with-different-credential')) return tNow('This email already signs in another way. Try Google or your phone.');
+    return tNow('Sign-in didn’t work. Please try again.');
 };
 
 /* How each field reads in "This needs …". */
 const NEEDS = { name: 'your name', email: 'an email', phone: 'a phone number', phoneVerified: 'a verified phone number', city: 'your city', college: 'your college', photo: 'a profile photo', instagram: 'your Instagram', instagramVerified: 'a verified Instagram' };
-const listOf = (items) => (items.length <= 1 ? items[0] || 'a few details' : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`);
+const listOf = (items) => (items.length <= 1 ? items[0] || tNow('a few details') : tNow('{list} and {last}', { list: items.slice(0, -1).join(', '), last: items[items.length - 1] }));
 
 const OptionButton = ({ icon: Icon, children, onClick, loading }) => (
     <button
@@ -74,6 +75,7 @@ const OptionButton = ({ icon: Icon, children, onClick, loading }) => (
 );
 
 const SignInSheet = () => {
+    const t = useT();
     const isOpen = useLegacyStore(s => s.isAuthOpen);
     const setAuthModal = useLegacyStore(s => s.setAuthModal);
     const authUser = useAppStore(s => s.authUser);
@@ -113,11 +115,11 @@ const SignInSheet = () => {
 
     useEffect(() => {
         if (isOpen) return;
-        const t = setTimeout(() => {
+        const timer = setTimeout(() => {
             setStep('start'); setEmailMode('signIn'); setError(''); setNotice(''); setDetailFields(null);
             setForm({ email: '', password: '', name: '' });
         }, 250);
-        return () => clearTimeout(t);
+        return () => clearTimeout(timer);
     }, [isOpen]);
 
     const close = () => setAuthModal(false);
@@ -151,10 +153,10 @@ const SignInSheet = () => {
         if (emailMode === 'forgot') {
             return run(async () => {
                 await legacy.resetPassword(email.trim());
-                setNotice('If there’s an account for that email, a reset link is on its way.');
+                setNotice(t('If there’s an account for that email, a reset link is on its way.'));
             });
         }
-        if (emailMode === 'signUp' && !name.trim()) return setError('Add your name.');
+        if (emailMode === 'signUp' && !name.trim()) return setError(t('Add your name.'));
         return run(async () => {
             if (emailMode === 'signUp') await legacy.signUpWithEmail(email.trim(), password, name.trim());
             else await legacy.signInWithEmail(email.trim(), password);
@@ -163,12 +165,15 @@ const SignInSheet = () => {
     };
 
     const titles = {
-        start: ['Sign in to Newbi', 'One account for passes, giveaways and creator campaigns.'],
-        phone: ['Sign in with phone', 'We’ll text you a 6-digit code.'],
-        email: emailMode === 'signUp' ? ['Create your account', 'Use your email and a password.']
-            : emailMode === 'forgot' ? ['Reset your password', 'We’ll email you a link.']
-                : ['Sign in with email', 'Welcome back.'],
-        details: ['A few details first', `This needs ${listOf((detailFields || []).map(f => NEEDS[f] || fieldLabel(f).toLowerCase()))}. You only add ${(detailFields || []).length > 1 ? 'them' : 'it'} once.`],
+        start: [t('Sign in to Newbi'), t('One account for passes, giveaways and creator campaigns.')],
+        phone: [t('Sign in with phone'), t('We’ll text you a 6-digit code.')],
+        email: emailMode === 'signUp' ? [t('Create your account'), t('Use your email and a password.')]
+            : emailMode === 'forgot' ? [t('Reset your password'), t('We’ll email you a link.')]
+                : [t('Sign in with email'), t('Welcome back.')],
+        details: [t('A few details first'), (() => {
+            const list = listOf((detailFields || []).map(f => (NEEDS[f] ? t(NEEDS[f]) : fieldLabel(f).toLowerCase())));
+            return (detailFields || []).length > 1 ? t('This needs {list}. You only add them once.', { list }) : t('This needs {list}. You only add it once.', { list });
+        })()],
     };
     const [title, subtitle] = titles[step];
 
@@ -184,7 +189,7 @@ const SignInSheet = () => {
                         <button
                             type="button"
                             onClick={() => { setStep('start'); setError(''); setNotice(''); }}
-                            aria-label="Back"
+                            aria-label={t('Back')}
                             className="-ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-black/5 dark:text-zinc-400 dark:hover:bg-white/10"
                         >
                             <ChevronLeft size={22} />
@@ -202,14 +207,14 @@ const SignInSheet = () => {
             <div className="space-y-3 pb-1 pt-2">
                 {step === 'start' && (
                     <>
-                        <OptionButton icon={<GoogleMark />} onClick={google} loading={busy}>Continue with Google</OptionButton>
-                        <OptionButton icon={<Phone size={19} />} onClick={() => { setStep('phone'); setError(''); }}>Continue with phone</OptionButton>
-                        <OptionButton icon={<Mail size={19} />} onClick={() => { setStep('email'); setError(''); }}>Continue with email</OptionButton>
+                        <OptionButton icon={<GoogleMark />} onClick={google} loading={busy}>{t('Continue with Google')}</OptionButton>
+                        <OptionButton icon={<Phone size={19} />} onClick={() => { setStep('phone'); setError(''); }}>{t('Continue with phone')}</OptionButton>
+                        <OptionButton icon={<Mail size={19} />} onClick={() => { setStep('email'); setError(''); }}>{t('Continue with email')}</OptionButton>
                         {isInAppBrowser() && (
-                            <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-500">Google sign-in opens in this window and brings you back here.</p>
+                            <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-500">{t('Google sign-in opens in this window and brings you back here.')}</p>
                         )}
                         <p className="px-1 pt-2 text-[12px] leading-relaxed text-gray-400 dark:text-zinc-500">
-                            By continuing you agree to Newbi’s <a href={landingUrl('/terms')} className="underline">Terms</a> and <a href={landingUrl('/privacy')} className="underline">Privacy Policy</a>.
+                            {t('By continuing you agree to Newbi’s')} <a href={landingUrl('/terms')} className="underline">{t('Terms')}</a> {t('and')} <a href={landingUrl('/privacy')} className="underline">{t('Privacy Policy')}</a>.
                         </p>
                     </>
                 )}
@@ -217,34 +222,34 @@ const SignInSheet = () => {
                 {step === 'phone' && (
                     <PhoneVerifyField
                         mode="signIn"
-                        sendLabel="Get code"
+                        sendLabel={t('Get code')}
                         onVerified={() => signedIn()}
                     />
                 )}
 
                 {step === 'email' && (
                     <form onSubmit={submitEmail} className="space-y-3" noValidate>
-                        {emailMode === 'signUp' && <TextInput label="Your name" autoComplete="name" {...field('name')} />}
-                        <TextInput label="Email" type="email" inputMode="email" autoComplete="email" autoCapitalize="none" {...field('email')} />
+                        {emailMode === 'signUp' && <TextInput label={t('Your name')} autoComplete="name" {...field('name')} />}
+                        <TextInput label={t('Email')} type="email" inputMode="email" autoComplete="email" autoCapitalize="none" {...field('email')} />
                         {emailMode !== 'forgot' && (
                             <TextInput
-                                label="Password"
+                                label={t('Password')}
                                 type="password"
                                 autoComplete={emailMode === 'signUp' ? 'new-password' : 'current-password'}
                                 {...field('password')}
                             />
                         )}
                         <Button type="submit" className="w-full" loading={busy} disabled={!form.email.trim() || (emailMode !== 'forgot' && !form.password)}>
-                            {emailMode === 'signUp' ? 'Create account' : emailMode === 'forgot' ? 'Send reset link' : 'Sign in'}
+                            {emailMode === 'signUp' ? t('Create account') : emailMode === 'forgot' ? t('Send reset link') : t('Sign in')}
                         </Button>
                         <div className="flex items-center justify-between gap-3 px-1 pt-1 text-[14px] font-semibold">
                             {emailMode === 'signIn' ? (
                                 <>
-                                    <button type="button" className="h-10 text-gray-500 dark:text-zinc-400" onClick={() => { setEmailMode('forgot'); setError(''); }}>Forgot password?</button>
-                                    <button type="button" className="h-10 text-emerald-700 dark:text-neon-green" onClick={() => { setEmailMode('signUp'); setError(''); }}>Create account</button>
+                                    <button type="button" className="h-10 text-gray-500 dark:text-zinc-400" onClick={() => { setEmailMode('forgot'); setError(''); }}>{t('Forgot password?')}</button>
+                                    <button type="button" className="h-10 text-emerald-700 dark:text-neon-green" onClick={() => { setEmailMode('signUp'); setError(''); }}>{t('Create account')}</button>
                                 </>
                             ) : (
-                                <button type="button" className="h-10 text-emerald-700 dark:text-neon-green" onClick={() => { setEmailMode('signIn'); setError(''); setNotice(''); }}>I have an account</button>
+                                <button type="button" className="h-10 text-emerald-700 dark:text-neon-green" onClick={() => { setEmailMode('signIn'); setError(''); setNotice(''); }}>{t('I have an account')}</button>
                             )}
                         </div>
                     </form>

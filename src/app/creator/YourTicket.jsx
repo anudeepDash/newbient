@@ -14,6 +14,7 @@ import { isPresent } from '../../lib/present';
 import { cn } from '../../lib/utils';
 import { appPath } from '../host';
 import { ExternalTicketButton, entryLine, passWhen } from '../passes/passParts';
+import { useT } from '../../i18n';
 
 /*
  * "Your ticket" inside a campaign (/c/:id). Standalone, so the campaign page
@@ -36,15 +37,17 @@ export const useCampaignTicket = (campaignId) => {
 };
 
 export const TicketReadyBadge = ({ campaignId }) => {
+    const t = useT();
     const ticket = useCampaignTicket(campaignId);
     if (!ticket) return null;
     const confirmation = ticket.qr === false && !ticket.externalTicket;
-    return <GlassChip icon={confirmation ? CircleCheck : Ticket} label={ticket.status === 'checked_in' ? 'Checked in' : confirmation ? 'Confirmed' : 'Ticket ready'} tone="accent" />;
+    return <GlassChip icon={confirmation ? CircleCheck : Ticket} label={ticket.status === 'checked_in' ? t('Checked in') : confirmation ? t('Confirmed') : t('Ticket ready')} tone="accent" />;
 };
 
 const seen = new Set();
 
 const YourTicket = ({ campaignId, className }) => {
+    const t = useT();
     const ticket = useCampaignTicket(campaignId);
 
     // Opening the pass through the API records that the creator has seen it (delivery.inApp.seenAt).
@@ -64,42 +67,42 @@ const YourTicket = ({ campaignId, className }) => {
     const note = ext?.note || ticket.note;
 
     return (
-        <section aria-label="Your ticket" className={cn('overflow-hidden rounded-3xl border border-emerald-500/25 bg-emerald-500/[0.05] dark:border-neon-green/20 dark:bg-neon-green/[0.04]', className)}>
+        <section aria-label={t('Your ticket')} className={cn('overflow-hidden rounded-3xl border border-emerald-500/25 bg-emerald-500/[0.05] dark:border-neon-green/20 dark:bg-neon-green/[0.04]', className)}>
             <div className="space-y-4 p-5">
                 <div className="flex items-center gap-3">
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-700 dark:bg-neon-green/15 dark:text-neon-green">
                         {confirmation ? <CircleCheck size={20} /> : <Ticket size={20} />}
                     </span>
                     <div className="min-w-0 flex-1">
-                        <p className="text-[12px] font-black uppercase tracking-[0.18em] text-emerald-700 dark:text-neon-green">{ticket.status === 'checked_in' ? 'Checked in' : confirmation ? "You're confirmed" : 'Your ticket'}</p>
+                        <p className="text-[12px] font-black uppercase tracking-[0.18em] text-emerald-700 dark:text-neon-green">{ticket.status === 'checked_in' ? t('Checked in') : confirmation ? t('You’re confirmed') : t('Your ticket')}</p>
                         <p className="truncate text-[17px] font-black">{event.title || ticket.campaignTitle}</p>
                     </div>
                 </div>
 
                 {(isPresent(passWhen(event)) || isPresent(event.venue) || isPresent(event.boxOffice) || isPresent(event.entry)) && (
                     <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
-                        <Field icon={CalendarDays} label="When" value={passWhen(event)} />
-                        <Field icon={Clock} label="Box office" value={event.boxOffice} />
-                        <Field icon={MapPin} label="Venue" value={event.venue} />
-                        <Field icon={DoorOpen} label="Entry" value={entryLine(event, hasQr)} />
+                        <Field icon={CalendarDays} label={t('When')} value={passWhen(event)} />
+                        <Field icon={Clock} label={t('Box office')} value={event.boxOffice} />
+                        <Field icon={MapPin} label={t('Venue')} value={event.venue} />
+                        <Field icon={DoorOpen} label={t('Entry')} value={entryLine(event, hasQr)} />
                     </div>
                 )}
 
                 <StatRow>
-                    <Stat label="Tickets" value={qty} />
-                    <Stat label="Tier" value={ext?.tier || ticket.tier} tone="accent" />
+                    <Stat label={t('Tickets')} value={qty} />
+                    <Stat label={t('Tier')} value={ext?.tier || ticket.tier} tone="accent" />
                 </StatRow>
 
                 {isPresent(note) && <p className="rounded-2xl bg-white/70 px-4 py-3 text-[15px] text-gray-700 dark:bg-white/[0.04] dark:text-zinc-300">{note}</p>}
 
                 {confirmation && (
-                    <p className="text-[15px] text-gray-700 dark:text-zinc-300">Your place is confirmed. There’s no QR code for this one; show this if anyone asks at entry.</p>
+                    <p className="text-[15px] text-gray-700 dark:text-zinc-300">{t('Your place is confirmed. There’s no QR code for this one; show this if anyone asks at entry.')}</p>
                 )}
 
                 {ext && <ExternalTicketButton pass={pass} />}
                 {hasQr && (
                     <Button className="w-full" size={ext ? 'md' : 'lg'} variant={ext ? 'secondary' : 'primary'} icon={QrCode} to={appPath(`/p/${ticket.ref}`)}>
-                        {ext ? 'Newbi QR pass' : 'Show my pass'}
+                        {ext ? t('Newbi QR pass') : t('Show my pass')}
                     </Button>
                 )}
             </div>

@@ -3,6 +3,7 @@ import CheckCircle2 from 'lucide-react/dist/esm/icons/circle-check';
 import { Button, TextInput } from '../../components/app/controls';
 import { usePhoneVerification } from './usePhoneVerification';
 import MergeConfirm from './MergeConfirm';
+import { useT } from '../../i18n';
 
 /*
  * Phone number + OTP in one block, on top of usePhoneVerification.
@@ -11,6 +12,7 @@ import MergeConfirm from './MergeConfirm';
  * (MergeConfirm), so one number never means two accounts.
  */
 const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile number', mode, sendLabel = 'Send code' }) => {
+    const t = useT();
     const [number, setNumber] = useState(initialPhone || '');
     const [code, setCode] = useState('');
     const phone = usePhoneVerification({ mode, onVerified });
@@ -19,7 +21,7 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
         return (
             <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-[15px] font-semibold text-emerald-700 dark:text-neon-green">
                 <CheckCircle2 size={18} />
-                <span className="min-w-0 flex-1 truncate">{phone.phone} verified{phone.testMode ? ' (test mode)' : ''}</span>
+                <span className="min-w-0 flex-1 truncate">{phone.testMode ? t('{phone} verified (test mode)', { phone: phone.phone }) : t('{phone} verified', { phone: phone.phone })}</span>
             </div>
         );
     }
@@ -29,7 +31,7 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
             <MergeConfirm
                 proof={phone.conflict.proof}
                 preview={phone.conflict.preview}
-                what={phone.phone || 'This number'}
+                what={phone.phone || t('This number')}
                 onMerged={phone.completeMerge}
                 onCancel={() => { setCode(''); phone.reset(); }}
             />
@@ -40,7 +42,7 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
         <div className="space-y-3">
             <div className="flex items-end gap-2">
                 <TextInput
-                    label={label}
+                    label={t(label)}
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel"
@@ -52,7 +54,7 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
                 />
                 {!phone.codeSent && (
                     <Button variant="secondary" onClick={() => phone.send(number)} loading={phone.isSending} disabled={!number.trim()}>
-                        {sendLabel}
+                        {t(sendLabel)}
                     </Button>
                 )}
             </div>
@@ -60,12 +62,12 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
             {phone.codeSent && (
                 <div className="space-y-3">
                     <TextInput
-                        label={`Code sent to ${phone.phone}`}
+                        label={t('Code sent to {phone}', { phone: phone.phone })}
                         inputMode="numeric"
                         autoComplete="one-time-code"
                         pattern="[0-9]*"
                         maxLength={6}
-                        placeholder="6-digit code"
+                        placeholder={t('6-digit code')}
                         value={code}
                         onChange={(e) => {
                             const next = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -80,10 +82,10 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
                             onClick={() => { setCode(''); phone.reset(); }}
                             className="h-10 text-[13px] font-semibold text-gray-500 underline-offset-2 hover:underline dark:text-zinc-400"
                         >
-                            Change number
+                            {t('Change number')}
                         </button>
                         <Button size="sm" onClick={() => phone.verify(code)} loading={phone.isVerifying} disabled={code.length !== 6}>
-                            Verify
+                            {t('Verify')}
                         </Button>
                     </div>
                     <button
@@ -92,7 +94,7 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
                         onClick={() => phone.send(phone.phone)}
                         className="text-[13px] font-semibold text-gray-500 disabled:opacity-60 dark:text-zinc-400"
                     >
-                        {phone.cooldown > 0 ? `Resend code in ${phone.cooldown}s` : 'Resend code'}
+                        {phone.cooldown > 0 ? t('Resend code in {seconds}s', { seconds: phone.cooldown }) : t('Resend code')}
                     </button>
                 </div>
             )}

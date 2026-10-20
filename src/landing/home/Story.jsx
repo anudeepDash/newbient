@@ -4,6 +4,7 @@ import useSidewaysScroll from '../components/useSidewaysScroll';
 import SectionLabel from '../components/SectionLabel';
 import { ArrowDown } from 'lucide-react';
 import ScrollCue from '../components/ScrollCue';
+import { useT } from '../../i18n';
 
 // What Newbi runs, one panel per service. On desktop the section pins and the
 // panels slide sideways with the scroll; on phones they stack.
@@ -59,6 +60,7 @@ const COUNT = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight
  * (phones included); elsewhere they stack.
  */
 export default function Story() {
+    const t = useT();
     const ref = useRef(null);
     useSidewaysScroll(ref, '.nb-story-track');
     return (
@@ -71,12 +73,12 @@ export default function Story() {
                         <div className="w-full">
                             <SectionLabel index="01">About &amp; what we run</SectionLabel>
                             <h2 id="story-title" className="mt-5 font-heading font-extrabold tracking-[-0.04em] leading-[0.92] text-[11.5vw] sm:text-[8vw] lg:text-[5.6vw] text-gray-950 dark:text-white">
-                                Plans are easy.<br />We're the crew<br /><Sticker subtle>that runs them.</Sticker>
+                                {t('Plans are easy.')}<br />{t("We're the crew")}<br /><Sticker subtle>{t('that runs them.')}</Sticker>
                             </h2>
                             <p className="mt-6 max-w-lg text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400">
-                                Newbi is an event marketing and live entertainment company. You bring a goal, a date and a budget; we bring the artists, the venue, the build, the creators, the press and the crew, run it, and report on it. One team, so nothing falls between vendors.
+                                {t('Newbi is an event marketing and live entertainment company. You bring a goal, a date and a budget; we bring the artists, the venue, the build, the creators, the press and the crew, run it, and report on it. One team, so nothing falls between vendors.')}
                             </p>
-                            <p className="nb-story-hint mt-8 hidden items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">Scroll for the {COUNT} things we run <ArrowDown size={14} aria-hidden="true" /></p>
+                            <p className="nb-story-hint mt-8 hidden items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">{t('Scroll for the {count} things we run', { count: t(COUNT) })} <ArrowDown size={14} aria-hidden="true" /></p>
                         </div>
                     </div>
 
@@ -86,14 +88,14 @@ export default function Story() {
                                 <div>
                                     <span className="block font-heading font-extrabold text-[18vw] sm:text-[12vw] lg:text-[8vw] leading-[0.8] tracking-[-0.05em] nb-ghost">{p.n}</span>
                                     <h3 className="mt-2 font-heading font-extrabold tracking-[-0.04em] leading-[0.92] text-[10.5vw] sm:text-[8vw] lg:text-[5.2vw] text-gray-950 dark:text-white lg:whitespace-nowrap">
-                                        {p.title[0]}<br /><Sticker subtle>{p.title[1]}</Sticker>
+                                        {t(p.title[0])}<br /><Sticker subtle>{t(p.title[1])}</Sticker>
                                     </h3>
                                 </div>
                                 <div className="lg:pl-12 lg:border-l lg:border-gray-950/15 lg:dark:border-white/15">
-                                    <p className="text-base sm:text-lg md:text-xl leading-relaxed text-gray-700 dark:text-zinc-300">{p.text}</p>
-                                    <ul className="mt-5 md:mt-7 flex flex-wrap gap-2" aria-label={`${p.title.join(' ')}: what we handle`}>
+                                    <p className="text-base sm:text-lg md:text-xl leading-relaxed text-gray-700 dark:text-zinc-300">{t(p.text)}</p>
+                                    <ul className="mt-5 md:mt-7 flex flex-wrap gap-2" aria-label={t('{name}: what we handle', { name: t(p.title.join(' ')) })}>
                                         {p.chips.map((c) => (
-                                            <li key={c} className="px-3.5 py-2 md:px-4 md:py-2.5 rounded-full border border-gray-950/15 dark:border-white/15 font-mono text-[11px] md:text-[12px] font-bold uppercase tracking-[0.1em] text-gray-800 dark:text-zinc-200">{c}</li>
+                                            <li key={c} className="px-3.5 py-2 md:px-4 md:py-2.5 rounded-full border border-gray-950/15 dark:border-white/15 font-mono text-[11px] md:text-[12px] font-bold uppercase tracking-[0.1em] text-gray-800 dark:text-zinc-200">{t(c)}</li>
                                         ))}
                                     </ul>
                                 </div>

@@ -4,6 +4,7 @@ import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import { Button } from '../../../components/app';
 import { cn } from '../../../lib/utils';
 import { Notice } from '../ui';
+import { useT, t as translateNow } from '../../../i18n';
 
 /* Instagram messages shared by the application and the creator profile. */
 
@@ -17,7 +18,7 @@ const OAUTH_ERRORS = {
     failed: 'The Instagram login didn’t finish. Please try again.',
 };
 
-export const oauthErrorMessage = (reason, handle) => (OAUTH_ERRORS[reason] || OAUTH_ERRORS.failed).replace('HANDLE', handle || 'your account');
+export const oauthErrorMessage = (reason, handle) => translateNow(OAUTH_ERRORS[reason] || OAUTH_ERRORS.failed).replace('HANDLE', handle || translateNow('your account'));
 
 const SWITCH_STEPS = [
     'Open Instagram and go to your profile.',
@@ -26,19 +27,20 @@ const SWITCH_STEPS = [
     'Come back here and tap “Check again”.',
 ];
 
-export const SwitchGuide = ({ onRetry, checking, retryLabel = 'Check again', lastStep }) => {
+export const SwitchGuide = ({ onRetry, checking, retryLabel, lastStep }) => {
+    const t = useT();
     const [open, setOpen] = useState(false);
     return (
         <Notice
             tone="warn"
-            title="Switch to a free Professional account"
-            action={<Button size="sm" variant="secondary" icon={RefreshCw} loading={checking} onClick={onRetry}>{retryLabel}</Button>}
+            title={t('Switch to a free Professional account')}
+            action={<Button size="sm" variant="secondary" icon={RefreshCw} loading={checking} onClick={onRetry}>{retryLabel || t('Check again')}</Button>}
         >
-            <p>We read your followers from Instagram itself, which only works for Professional (Creator or Business) accounts. It takes a minute.</p>
+            <p>{t('We read your followers from Instagram itself, which only works for Professional (Creator or Business) accounts. It takes a minute.')}</p>
             <button type="button" onClick={() => setOpen(o => !o)} className="mt-1 flex min-h-[32px] items-center gap-1 font-bold">
-                How to switch <ChevronDown size={14} className={cn('transition-transform', open && 'rotate-180')} />
+                {t('How to switch')} <ChevronDown size={14} className={cn('transition-transform', open && 'rotate-180')} />
             </button>
-            {open && <ol className="mt-1 list-decimal space-y-1 pl-5">{(lastStep ? [...SWITCH_STEPS.slice(0, -1), lastStep] : SWITCH_STEPS).map(s => <li key={s}>{s}</li>)}</ol>}
+            {open && <ol className="mt-1 list-decimal space-y-1 pl-5">{(lastStep ? [...SWITCH_STEPS.slice(0, -1), lastStep] : SWITCH_STEPS).map(s => <li key={s}>{t(s)}</li>)}</ol>}
         </Notice>
     );
 };

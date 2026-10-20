@@ -5,6 +5,7 @@ import './landing.css';
 import LandingApp from './LandingApp';
 import { findRoute } from './routes';
 import { loadFeed } from './feed';
+import { initLang } from '../i18n';
 
 // Start the (edge-cached) feed request before React even starts.
 loadFeed();
@@ -40,6 +41,7 @@ const route = findRoute(window.location.pathname);
         });
     }
     else createRoot(container).render(app);
+    initLang();
 });
 
 // A new deploy renames chunks; reload once instead of leaving a broken page.

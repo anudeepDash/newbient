@@ -3,20 +3,24 @@ import { Link } from 'react-router-dom';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import { cn } from '../../lib/utils';
 import BrandLayers, { BRAND_GLASS } from '../../components/app/BrandLayers';
+import { useT } from '../../i18n';
 
 /* Layout pieces shared by the app pages. */
 
 /* Section title with an optional "See all" link. */
-export const SectionHeader = ({ title, to, linkLabel = 'See all' }) => (
+export const SectionHeader = ({ title, to, linkLabel = 'See all' }) => {
+    const t = useT();
+    return (
     <div className="flex items-end justify-between gap-3">
         <h2 className="font-heading text-[22px] font-extrabold tracking-[-0.03em] lg:text-[28px]">{title}</h2>
         {to && (
             <Link to={to} className="-mr-1 flex h-9 items-center gap-0.5 rounded-full px-2 text-[14px] font-semibold text-gray-800 underline decoration-neon-green decoration-2 underline-offset-4 dark:text-zinc-200">
-                {linkLabel} <ChevronRight size={16} />
+                {t(linkLabel)} <ChevronRight size={16} />
             </Link>
         )}
     </div>
-);
+    );
+};
 
 /* Phones: a swipeable row of cards. Larger screens: a grid. */
 export const Rail = ({ children, className }) => (

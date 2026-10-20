@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
+import { initLang } from './i18n'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 import { safeSessionStorage } from './lib/storage'
@@ -22,6 +23,8 @@ window.addEventListener('vite:preloadError', (event) => {
     console.warn('Error handling preload reload:', e);
   }
 });
+initLang()
+
 createRoot(document.getElementById('root')).render(
   <ErrorBoundary>
     <App />

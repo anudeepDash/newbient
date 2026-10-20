@@ -1,6 +1,7 @@
 import React from 'react';
 import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
 import { cn } from '../../../lib/utils';
+import { useT } from '../../../i18n';
 
 /* A deliverable's links (form, ticket, post to repost, assets) as small pills. The form or ticket is the green one. */
 
@@ -13,11 +14,14 @@ const KIND = {
 
 /* compact: the one-link version that sits at the end of the deliverable's row (shorter label on phones). */
 const TaskLinks = ({ links = [], compact = false, className }) => {
+    const t = useT();
     if (!links.length) return null;
     return (
         <div className={cn('flex flex-wrap gap-2', className)} onClick={e => e.stopPropagation()}>
             {links.map((item, i) => {
                 const kind = KIND[item.type] || { label: 'Open link', short: 'Open' };
+                const kindLabel = t(kind.label);
+                const kindShort = t(kind.short);
                 return (
                     <a
                         key={`${item.url}-${i}`}
@@ -33,7 +37,7 @@ const TaskLinks = ({ links = [], compact = false, className }) => {
                                 : 'bg-black/[0.05] text-gray-800 hover:bg-black/[0.08] dark:bg-white/[0.08] dark:text-zinc-200 dark:hover:bg-white/[0.12]'
                         )}
                     >
-                        {compact ? <><span className="sm:hidden">{kind.short}</span><span className="hidden sm:inline">{kind.label}</span></> : kind.label}
+                        {compact ? <><span className="sm:hidden">{kindShort}</span><span className="hidden sm:inline">{kindLabel}</span></> : kindLabel}
                         <ArrowUpRight size={14} />
                     </a>
                 );

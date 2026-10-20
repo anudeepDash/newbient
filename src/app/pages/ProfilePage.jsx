@@ -31,6 +31,7 @@ import JoinCommunitySheet from '../community/JoinCommunitySheet';
 import { interestLabel } from '../community/welcomeForm';
 import PageHeader, { PageBody } from './PageHeader';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
+import { useT } from '../../i18n';
 
 /*
  * Profile: the one place for your details. "Edit profile" opens the same
@@ -40,6 +41,7 @@ import useDynamicMeta from '../../hooks/useDynamicMeta';
  */
 
 const ProfileDetails = () => {
+    const t = useT();
     const authUser = useAppStore(s => s.authUser);
     const profile = useAppStore(s => s.profile);
     const signOut = useAppStore(s => s.signOut);
@@ -83,48 +85,48 @@ const ProfileDetails = () => {
                     </div>
                     {newbiId && (
                         <p className="relative mt-4 flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-neon-green">
-                            <IdCard size={13} /> Newbi ID · {newbiId}
+                            <IdCard size={13} /> {t('Newbi ID')} · {newbiId}
                         </p>
                     )}
                 </section>
 
                 <div className="grid gap-2">
-                    <Button className="w-full" icon={UserRound} onClick={() => setEditOpen(true)}>Edit profile</Button>
+                    <Button className="w-full" icon={UserRound} onClick={() => setEditOpen(true)}>{t('Edit profile')}</Button>
                     <Button className="w-full" variant="secondary" icon={Smartphone} onClick={() => setPhoneOpen(true)}>
-                        {profile?.phoneVerified ? 'Change phone number' : 'Verify phone number'}
+                        {profile?.phoneVerified ? t('Change phone number') : t('Verify phone number')}
                     </Button>
                     <div className="grid grid-cols-2 gap-2">
                         <Button variant="secondary" icon={isDark ? Sun : Moon} onClick={() => toggleTheme()}>
-                            {isDark ? 'Light' : 'Dark'}
+                            {isDark ? t('Light') : t('Dark')}
                         </Button>
-                        <Button variant="danger" icon={LogOut} onClick={() => signOut()}>Sign out</Button>
+                        <Button variant="danger" icon={LogOut} onClick={() => signOut()}>{t('Sign out')}</Button>
                     </div>
                 </div>
             </div>
 
             {/* Your details, and shortcuts */}
             <div className="space-y-6">
-                <Panel label="Details">
+                <Panel label={t('Details')}>
                     <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
-                        <Field label="Phone" icon={Phone} value={profile?.phone}>
+                        <Field label={t('Phone')} icon={Phone} value={profile?.phone}>
                             {profile?.phone && (
                                 <span className="flex items-center gap-2">
                                     {profile.phone}
-                                    {profile.phoneVerified && <ShieldCheck size={15} className="text-emerald-600 dark:text-neon-green" aria-label="Verified" />}
+                                    {profile.phoneVerified && <ShieldCheck size={15} className="text-emerald-600 dark:text-neon-green" aria-label={t('Verified')} />}
                                 </span>
                             )}
                         </Field>
-                        <Field label="Email" icon={Mail} value={profile?.email} />
-                        <Field label="City" icon={MapPin} value={profile?.city} />
-                        <Field label="College" icon={GraduationCap} value={profile?.college} />
-                        <Field label="What you do" icon={Briefcase} value={profile?.isStudent === false ? profile?.occupation : null} />
-                        <Field label="Gender" icon={UserRound} value={profile?.gender} />
-                        <Field label="Into" icon={Heart} value={profile?.interests?.length ? profile.interests.map(interestLabel).join(', ') : null} />
-                        <Field label="Instagram" icon={Instagram} value={handle} />
+                        <Field label={t('Email')} icon={Mail} value={profile?.email} />
+                        <Field label={t('City')} icon={MapPin} value={profile?.city} />
+                        <Field label={t('College')} icon={GraduationCap} value={profile?.college} />
+                        <Field label={t('What you do')} icon={Briefcase} value={profile?.isStudent === false ? profile?.occupation : null} />
+                        <Field label={t('Gender')} icon={UserRound} value={profile?.gender ? t(profile.gender) : null} />
+                        <Field label={t('Into')} icon={Heart} value={profile?.interests?.length ? profile.interests.map(id => t(interestLabel(id))).join(', ') : null} />
+                        <Field label={t('Instagram')} icon={Instagram} value={handle} />
                     </div>
                 </Panel>
 
-                <Panel label="Shortcuts">
+                <Panel label={t('Shortcuts')}>
                     <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                         {shortcuts.map(({ to, href, icon: Icon, label, hint }) => {
                             const Row = href ? 'a' : Link;
@@ -133,8 +135,8 @@ const ProfileDetails = () => {
                                 <Row {...(href ? { href } : { to })} className={`flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-white dark:hover:bg-white/[0.08] ${ROW}`}>
                                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black/[0.05] text-gray-700 dark:bg-white/[0.08] dark:text-zinc-300"><Icon size={18} /></span>
                                     <span className="min-w-0 flex-1">
-                                        <span className="block text-[15px] font-bold">{label}</span>
-                                        <span className="block truncate text-[13px] text-gray-500 dark:text-zinc-400">{hint}</span>
+                                        <span className="block text-[15px] font-bold">{t(label)}</span>
+                                        <span className="block truncate text-[13px] text-gray-500 dark:text-zinc-400">{t(hint)}</span>
                                     </span>
                                     <ChevronRight size={17} className="shrink-0 text-gray-400" />
                                 </Row>
@@ -158,11 +160,12 @@ const ProfileDetails = () => {
 };
 
 const ProfilePage = () => {
+    const t = useT();
     useDynamicMeta({ page: 'profile' });
     return (
         <PageBody>
-            <PageHeader eyebrow="Profile" title="Your" highlight="profile." subtitle="Used for every pass, giveaway and application, so you only fill it once." />
-            <AuthGate title="Sign in to see your profile" message="Your passes, campaigns and details live in one account.">
+            <PageHeader eyebrow={t('Profile')} title={t('Your')} highlight={t('profile.')} subtitle={t('Used for every pass, giveaway and application, so you only fill it once.')} />
+            <AuthGate title={t('Sign in to see your profile')} message={t('Your passes, campaigns and details live in one account.')}>
                 <ProfileDetails />
             </AuthGate>
         </PageBody>

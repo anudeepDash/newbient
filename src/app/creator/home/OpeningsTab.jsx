@@ -10,11 +10,15 @@ import { CardGrid, CardSkeleton, EmptyState } from '../../pages/parts';
 import { ChoiceChip } from '../ui';
 import { isInCampaign, matchesCollege, creatorCity } from '../useCreatorData';
 import { isTesterRole } from '../../../constants/roles';
+import { useT } from '../../../i18n';
+import { useLocalizedCampaigns } from '../../../i18n/useHinglish';
 
 /* Openings: open campaigns you can apply to. Campaigns for another college are left out. */
 const OpeningsTab = ({ creator }) => {
+    const t = useT();
     const location = useLocation();
-    const campaigns = useAppStore(s => s.openCampaigns);
+    const openCampaigns = useAppStore(s => s.openCampaigns);
+    const campaigns = useLocalizedCampaigns(openCampaigns, { fields: ['title', 'reward', 'description'] });
     const loaded = useAppStore(s => s.campaignsLoaded);
     const profile = useAppStore(s => s.profile);
     const [query, setQuery] = useState('');
@@ -24,9 +28,9 @@ const OpeningsTab = ({ creator }) => {
     const available = useMemo(() => campaigns.filter(c => tester || matchesCollege(c, creator, profile)), [campaigns, creator, profile, tester]);
     const city = creatorCity(creator, profile);
     const filters = [
-        { id: 'all', label: 'All' },
-        { id: 'new', label: 'Not applied' },
-        city ? { id: 'city', label: `In ${city}` } : null,
+        { id: 'all', label: t('All') },
+        { id: 'new', label: t('Not applied') },
+        city ? { id: 'city', label: t('In {city}', { city }) } : null,
     ].filter(Boolean);
 
     const shown = useMemo(() => {
@@ -42,7 +46,7 @@ const OpeningsTab = ({ creator }) => {
 
     if (!loaded) return <CardGrid><CardSkeleton /><CardSkeleton /></CardGrid>;
     if (!available.length) {
-        return <EmptyState icon={Megaphone} title="No open campaigns right now" message="New brand and event campaigns show up here first." />;
+        return <EmptyState icon={Megaphone} title={t('No open campaigns right now')} message={t('New brand and event campaigns show up here first.')} />;
     }
 
     return (
@@ -54,8 +58,8 @@ const OpeningsTab = ({ creator }) => {
                         type="search"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search campaigns"
-                        aria-label="Search campaigns"
+                        placeholder={t('Search campaigns')}
+                        aria-label={t('Search campaigns')}
                         className="h-full w-full bg-transparent text-[16px] outline-none placeholder:text-gray-400"
                     />
                 </label>
@@ -70,7 +74,7 @@ const OpeningsTab = ({ creator }) => {
                     {shown.map(c => <Card key={c.id} {...campaignCard(c, { applied: isInCampaign(creator, c.id), from: location })} />)}
                 </CardGrid>
             ) : (
-                <EmptyState icon={Search} title="Nothing matches" message="Try another search or filter." />
+                <EmptyState icon={Search} title={t('Nothing matches')} message={t('Try another search or filter.')} />
             )}
         </div>
     );

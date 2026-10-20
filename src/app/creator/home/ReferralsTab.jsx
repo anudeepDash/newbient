@@ -21,6 +21,7 @@ import { EmptyState, HeroPanel } from '../../pages/parts';
 import { creatorPassId, handleOf } from '../format';
 import { inviteUrl, shareInvite, whatsappShareUrl } from '../referral';
 import { ToneChip } from '../ui';
+import { useT, t as tNow } from '../../../i18n';
 
 /*
  * Referrals: your invite link, your tier, this month's and the all-time
@@ -64,33 +65,37 @@ const RankPill = ({ rank, size = 32 }) => (
     </span>
 );
 
-const displayName = (p) => p.name || (handleOf(p.instagram) ? `@${handleOf(p.instagram)}` : 'Creator');
+const displayName = (p) => p.name || (handleOf(p.instagram) ? `@${handleOf(p.instagram)}` : tNow('Creator'));
 
 /* ── Invite ─────────────────────────────────────────────────────────── */
 
-const InviteCard = ({ link, code, onCopy }) => (
-    <HeroPanel eyebrow="Refer creators" title="Bring creators you rate. Climb the board.">
-        <p className="text-[15px] text-gray-600 dark:text-zinc-300">Every creator who applies with your link and gets approved moves you up a tier.</p>
+const InviteCard = ({ link, code, onCopy }) => {
+    const t = useT();
+    return (
+    <HeroPanel eyebrow={t('Refer creators')} title={t('Bring creators you rate. Climb the board.')}>
+        <p className="text-[15px] text-gray-600 dark:text-zinc-300">{t('Every creator who applies with your link and gets approved moves you up a tier.')}</p>
         <button
             type="button"
             onClick={onCopy}
             className="flex w-full items-center gap-2 rounded-2xl bg-white/70 px-4 py-3 text-left ring-1 ring-inset ring-black/[0.06] dark:bg-white/[0.05] dark:ring-white/[0.08]"
-            aria-label="Copy invite link"
+            aria-label={t('Copy invite link')}
         >
             <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-gray-700 dark:text-zinc-300">{link}</span>
             <Copy size={15} className="shrink-0 text-gray-400" />
         </button>
         <div className="flex flex-wrap gap-2 pt-1">
             <Button className="flex-1" icon={MessageCircle} href={whatsappShareUrl(link)} target="_blank" rel="noopener noreferrer">WhatsApp</Button>
-            <Button variant="secondary" icon={Share2} onClick={() => shareInvite(link, onCopy)}>Share</Button>
+            <Button variant="secondary" icon={Share2} onClick={() => shareInvite(link, onCopy)}>{t('Share')}</Button>
         </div>
-        {code && <p className="text-[12px] text-gray-500 dark:text-zinc-500">Your invite code <span className="font-mono font-bold text-gray-700 dark:text-zinc-300">{code}</span> is built into the link.</p>}
+        {code && <p className="text-[12px] text-gray-500 dark:text-zinc-500">{t('Your invite code')} <span className="font-mono font-bold text-gray-700 dark:text-zinc-300">{code}</span> {t('is built into the link.')}</p>}
     </HeroPanel>
-);
+    );
+};
 
 /* ── Tier ───────────────────────────────────────────────────────────── */
 
 const TierCard = ({ approved }) => {
+    const t = useT();
     const { tier, next, toNext, ratio } = tierProgress(approved);
     const tone = accent(tier?.tone || 'green');
     const nextTone = accent(next?.tone || tier?.tone || 'green');
@@ -101,12 +106,12 @@ const TierCard = ({ approved }) => {
                     <Medal size={22} />
                 </span>
                 <div className="min-w-0 flex-1">
-                    <p className="text-[12px] font-semibold text-gray-500 dark:text-zinc-400">Your tier</p>
-                    <p className={cn('font-heading text-[22px] font-extrabold leading-tight tracking-tight', tier && tone.text)}>{tier ? tier.label : 'No tier yet'}</p>
+                    <p className="text-[12px] font-semibold text-gray-500 dark:text-zinc-400">{t('Your tier')}</p>
+                    <p className={cn('font-heading text-[22px] font-extrabold leading-tight tracking-tight', tier && tone.text)}>{tier ? tier.label : t('No tier yet')}</p>
                 </div>
                 <div className="text-right">
                     <p className="font-heading text-[26px] font-extrabold leading-none tabular-nums">{approved}</p>
-                    <p className="text-[11px] font-semibold text-gray-500">approved</p>
+                    <p className="text-[11px] font-semibold text-gray-500">{t('approved')}</p>
                 </div>
             </div>
 
@@ -116,23 +121,23 @@ const TierCard = ({ approved }) => {
                 </div>
                 <p className="mt-2 text-[13px] text-gray-600 dark:text-zinc-400">
                     {next
-                        ? <><span className="font-bold text-gray-900 dark:text-white">{toNext} more approved creator{toNext === 1 ? '' : 's'}</span> to {next.label}</>
-                        : 'You’ve reached the top tier. Thank you for growing the community.'}
+                        ? <><span className="font-bold text-gray-900 dark:text-white">{toNext === 1 ? t('1 more approved creator') : t('{n} more approved creators', { n: toNext })}</span> {t('to {tier}', { tier: next.label })}</>
+                        : t('You’ve reached the top tier. Thank you for growing the community.')}
                 </p>
             </div>
 
             <ol className="mt-4 space-y-1.5">
-                {REFERRAL_TIERS.map(t => {
-                    const reached = approved >= t.min;
-                    const a = accent(t.tone);
+                {REFERRAL_TIERS.map(tr => {
+                    const reached = approved >= tr.min;
+                    const a = accent(tr.tone);
                     return (
-                        <li key={t.id} className={cn('flex items-center gap-3 rounded-2xl px-3 py-2.5', reached ? a.soft : 'bg-black/[0.02] dark:bg-white/[0.02]')}>
+                        <li key={tr.id} className={cn('flex items-center gap-3 rounded-2xl px-3 py-2.5', reached ? a.soft : 'bg-black/[0.02] dark:bg-white/[0.02]')}>
                             <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[12px] font-black tabular-nums', reached ? a.solid : 'bg-black/[0.06] text-gray-500 dark:bg-white/[0.07] dark:text-zinc-400')}>
-                                {reached ? <Check size={14} strokeWidth={3} /> : t.min}
+                                {reached ? <Check size={14} strokeWidth={3} /> : tr.min}
                             </span>
                             <span className="min-w-0 flex-1">
-                                <span className={cn('block text-[14px] font-bold', reached && a.text)}>{t.label} <span className="font-semibold text-gray-400">· {t.min} approved</span></span>
-                                <span className="block text-[13px] text-gray-600 dark:text-zinc-400">{t.reward}</span>
+                                <span className={cn('block text-[14px] font-bold', reached && a.text)}>{tr.label} <span className="font-semibold text-gray-400">{t('· {n} approved', { n: tr.min })}</span></span>
+                                <span className="block text-[13px] text-gray-600 dark:text-zinc-400">{t(tr.reward)}</span>
                             </span>
                         </li>
                     );
@@ -161,6 +166,7 @@ const StatTile = ({ icon: Icon, tone, label, value, hint }) => {
 /* ── Leaderboard ────────────────────────────────────────────────────── */
 
 const PodiumCard = ({ row, leader, me, tall }) => {
+    const t = useT();
     const medal = MEDALS[row.rank] || MEDALS[3];
     return (
         <div className={cn('relative flex flex-col items-center rounded-3xl border px-2 pb-4 text-center', medal.card.border, medal.card.soft,
@@ -170,9 +176,9 @@ const PodiumCard = ({ row, leader, me, tall }) => {
                 <Avatar person={row} size={tall ? 60 : 48} />
                 <span className="absolute -bottom-1 -right-1"><RankPill rank={row.rank} size={24} /></span>
             </div>
-            <p className="mt-2 w-full truncate text-[13px] font-extrabold">{me ? 'You' : displayName(row)}</p>
+            <p className="mt-2 w-full truncate text-[13px] font-extrabold">{me ? t('You') : displayName(row)}</p>
             <p className={cn('mt-1 font-heading text-[26px] font-extrabold leading-none tabular-nums', medal.card.text)}>{row.score}</p>
-            <p className="text-[11px] font-semibold text-gray-500">approved</p>
+            <p className="text-[11px] font-semibold text-gray-500">{t('approved')}</p>
             <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-black/[0.06] dark:bg-white/[0.08]">
                 <div className={cn('h-full rounded-full', medal.bar)} style={{ width: `${Math.max(6, (row.score / leader) * 100)}%` }} />
             </div>
@@ -181,6 +187,7 @@ const PodiumCard = ({ row, leader, me, tall }) => {
 };
 
 const BoardRow = ({ row, leader, me }) => {
+    const t = useT();
     const tier = tierById(row.tier);
     return (
         <li className={cn('flex items-center gap-3 px-4 py-3', me && 'bg-emerald-500/[0.07] dark:bg-neon-green/[0.07]')}>
@@ -188,7 +195,7 @@ const BoardRow = ({ row, leader, me }) => {
             <Avatar person={row} size={38} />
             <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-1.5">
-                    <span className="truncate text-[15px] font-bold">{me ? 'You' : displayName(row)}</span>
+                    <span className="truncate text-[15px] font-bold">{me ? t('You') : displayName(row)}</span>
                     {tier && <span className={cn('shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide', accent(tier.tone).chip)}>{tier.label}</span>}
                 </span>
                 <span className="mt-1.5 block h-1.5 w-full max-w-[220px] overflow-hidden rounded-full bg-black/[0.06] dark:bg-white/[0.08]">
@@ -197,13 +204,14 @@ const BoardRow = ({ row, leader, me }) => {
             </span>
             <span className="w-12 shrink-0 text-right">
                 <span className="block text-[18px] font-extrabold leading-none tabular-nums">{row.score}</span>
-                <span className="text-[11px] text-gray-500">approved</span>
+                <span className="text-[11px] text-gray-500">{t('approved')}</span>
             </span>
         </li>
     );
 };
 
 const Leaderboard = ({ referrals, myUid }) => {
+    const t = useT();
     const [period, setPeriod] = useState('month');
     const rows = (period === 'month' ? referrals.monthLeaderboard : referrals.leaderboard) || [];
     const mine = period === 'month' ? referrals.me?.monthRow : referrals.me?.row;
@@ -215,8 +223,8 @@ const Leaderboard = ({ referrals, myUid }) => {
     return (
         <section className="space-y-3">
             <div className="flex items-center justify-between gap-3 px-1">
-                <h2 className="flex items-center gap-2 font-heading text-[20px] font-black tracking-tight"><Trophy size={18} className="text-amber-500" /> Leaderboard</h2>
-                <div className="inline-flex gap-1 rounded-2xl bg-black/[0.04] p-1 dark:bg-white/[0.05]" role="tablist" aria-label="Leaderboard period">
+                <h2 className="flex items-center gap-2 font-heading text-[20px] font-black tracking-tight"><Trophy size={18} className="text-amber-500" /> {t('Leaderboard')}</h2>
+                <div className="inline-flex gap-1 rounded-2xl bg-black/[0.04] p-1 dark:bg-white/[0.05]" role="tablist" aria-label={t('Leaderboard period')}>
                     {PERIODS.map(p => (
                         <button
                             key={p.id}
@@ -227,7 +235,7 @@ const Leaderboard = ({ referrals, myUid }) => {
                             className={cn('h-9 whitespace-nowrap rounded-xl px-3 text-[13px] font-bold transition-colors',
                                 period === p.id ? 'bg-white text-gray-900 shadow-sm dark:bg-white/[0.12] dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white')}
                         >
-                            {p.label}
+                            {t(p.label)}
                         </button>
                     ))}
                 </div>
@@ -237,8 +245,8 @@ const Leaderboard = ({ referrals, myUid }) => {
                 <div className={cn(CARD, 'p-2')}>
                     <EmptyState
                         icon={Trophy}
-                        title={period === 'month' ? 'Nobody on the board this month' : 'No approved referrals yet'}
-                        message="The first creator whose invite gets approved takes the top spot."
+                        title={period === 'month' ? t('Nobody on the board this month') : t('No approved referrals yet')}
+                        message={t('The first creator whose invite gets approved takes the top spot.')}
                     />
                 </div>
             ) : (
@@ -258,7 +266,9 @@ const Leaderboard = ({ referrals, myUid }) => {
                 </>
             )}
             <p className="px-1 text-[12px] text-gray-500 dark:text-zinc-500">
-                Ranked by approved referrals{period === 'month' ? ' from creators who applied this month (resets on the 1st)' : ''}. Applications still in review don’t count yet.
+                {period === 'month'
+                    ? t('Ranked by approved referrals from creators who applied this month (resets on the 1st). Applications still in review don’t count yet.')
+                    : t('Ranked by approved referrals. Applications still in review don’t count yet.')}
             </p>
         </section>
     );
@@ -267,15 +277,17 @@ const Leaderboard = ({ referrals, myUid }) => {
 /* ── Your referrals ─────────────────────────────────────────────────── */
 
 const referralChip = (p) => {
-    if (p.counts) return { tone: 'green', label: 'Counts' };
-    if (p.voided) return { tone: 'gray', label: 'Doesn’t count' };
-    if (!p.profileStatus || p.profileStatus === 'pending' || p.profileStatus === 'pending_verification') return { tone: 'amber', label: 'In review' };
-    return { tone: 'gray', label: 'Not approved' };
+    if (p.counts) return { tone: 'green', label: tNow('Counts') };
+    if (p.voided) return { tone: 'gray', label: tNow('Doesn’t count') };
+    if (!p.profileStatus || p.profileStatus === 'pending' || p.profileStatus === 'pending_verification') return { tone: 'amber', label: tNow('In review') };
+    return { tone: 'gray', label: tNow('Not approved') };
 };
 
-const YourReferrals = ({ list }) => (
+const YourReferrals = ({ list }) => {
+    const t = useT();
+    return (
     <section className="space-y-3">
-        <h2 className="px-1 font-heading text-[20px] font-black tracking-tight">Applied with your link</h2>
+        <h2 className="px-1 font-heading text-[20px] font-black tracking-tight">{t('Applied with your link')}</h2>
         {list.length ? (
             <ul className={cn(CARD, 'overflow-hidden rounded-2xl divide-y divide-black/[0.05] dark:divide-white/[0.05]')}>
                 {list.map(p => {
@@ -295,23 +307,27 @@ const YourReferrals = ({ list }) => (
             </ul>
         ) : (
             <div className={cn(CARD, 'p-2')}>
-                <EmptyState icon={UsersRound} title="No one yet" message="Send your link to two or three creators you know. They show up here as soon as they apply." />
+                <EmptyState icon={UsersRound} title={t('No one yet')} message={t('Send your link to two or three creators you know. They show up here as soon as they apply.')} />
             </div>
         )}
     </section>
-);
+    );
+};
 
 /* ── Coming soon + rules ────────────────────────────────────────────── */
 
-const PointsSoon = () => (
+const PointsSoon = () => {
+    const t = useT();
+    return (
     <section className={cn(CARD, 'flex gap-4 p-5', accent('fuchsia').soft)}>
         <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl', accent('fuchsia').chip)}><TicketPercent size={20} /></span>
         <div className="min-w-0 space-y-1">
-            <p className="flex flex-wrap items-center gap-2 text-[15px] font-extrabold">Newbi points and vouchers <span className="rounded-full bg-black/[0.06] px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-gray-600 dark:bg-white/[0.1] dark:text-zinc-300">Coming soon</span></p>
-            <p className="text-[14px] text-gray-600 dark:text-zinc-400">Approved referrals will earn Newbi points you can swap for vouchers from our partner brands. Your approved referrals are already being tracked.</p>
+            <p className="flex flex-wrap items-center gap-2 text-[15px] font-extrabold">{t('Newbi points and vouchers')} <span className="rounded-full bg-black/[0.06] px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-gray-600 dark:bg-white/[0.1] dark:text-zinc-300">{t('Coming soon')}</span></p>
+            <p className="text-[14px] text-gray-600 dark:text-zinc-400">{t('Approved referrals will earn Newbi points you can swap for vouchers from our partner brands. Your approved referrals are already being tracked.')}</p>
         </div>
     </section>
-);
+    );
+};
 
 const STEPS = [
     { title: 'Share your link', body: 'On WhatsApp, in your stories, or with your college group.' },
@@ -319,29 +335,33 @@ const STEPS = [
     { title: 'You move up', body: 'Each approved creator counts towards your tier and your rank.' },
 ];
 
-const HowItWorks = () => (
+const HowItWorks = () => {
+    const t = useT();
+    return (
     <section className={cn(CARD, 'p-5')}>
-        <h2 className="font-heading text-[18px] font-black tracking-tight">How it works</h2>
+        <h2 className="font-heading text-[18px] font-black tracking-tight">{t('How it works')}</h2>
         <ol className="mt-3 space-y-3">
             {STEPS.map((s, i) => (
                 <li key={s.title} className="flex gap-3">
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neon-green text-[13px] font-black text-black">{i + 1}</span>
                     <span className="min-w-0">
-                        <span className="block text-[14px] font-bold">{s.title}</span>
-                        <span className="block text-[13px] text-gray-600 dark:text-zinc-400">{s.body}</span>
+                        <span className="block text-[14px] font-bold">{t(s.title)}</span>
+                        <span className="block text-[13px] text-gray-600 dark:text-zinc-400">{t(s.body)}</span>
                     </span>
                 </li>
             ))}
         </ol>
         <p className="mt-4 border-t border-black/[0.06] pt-3 text-[12px] text-gray-500 dark:border-white/[0.06] dark:text-zinc-500">
-            Only approved creators count. Inviting yourself or a second account doesn’t count, and we can remove referrals that break the rules.
+            {t('Only approved creators count. Inviting yourself or a second account doesn’t count, and we can remove referrals that break the rules.')}
         </p>
     </section>
-);
+    );
+};
 
 /* ── Page ───────────────────────────────────────────────────────────── */
 
 const ReferralsTab = ({ creator, referrals }) => {
+    const t = useT();
     const addToast = useLegacyStore(s => s.addToast);
     const code = creatorPassId(creator);
     const link = inviteUrl(code);
@@ -349,7 +369,7 @@ const ReferralsTab = ({ creator, referrals }) => {
     const me = referrals?.me || { approved: 0, pending: 0, month: 0 };
 
     const copy = async () => {
-        if (await copyToClipboard(link)) addToast?.('Invite link copied', 'success');
+        if (await copyToClipboard(link)) addToast?.(t('Invite link copied'), 'success');
     };
 
     return (
@@ -365,10 +385,10 @@ const ReferralsTab = ({ creator, referrals }) => {
                 <>
                     <TierCard approved={me.approved || 0} />
                     <div className="grid grid-cols-2 gap-3">
-                        <StatTile icon={ShieldCheck} tone="green" label="Approved" value={me.approved || 0} hint="Count towards your tier" />
-                        <StatTile icon={Hourglass} tone="amber" label="In review" value={me.pending || 0} hint="Count once approved" />
-                        <StatTile icon={Trophy} tone="violet" label="All-time rank" value={me.rank ? `#${me.rank}` : 'Unranked'} hint={referrals.referrers ? `of ${referrals.referrers} referrers` : null} />
-                        <StatTile icon={CalendarDays} tone="pink" label="This month" value={me.month || 0} hint={me.monthRank ? `Approved · #${me.monthRank} this month` : 'Approved this month'} />
+                        <StatTile icon={ShieldCheck} tone="green" label={t('Approved')} value={me.approved || 0} hint={t('Count towards your tier')} />
+                        <StatTile icon={Hourglass} tone="amber" label={t('In review')} value={me.pending || 0} hint={t('Count once approved')} />
+                        <StatTile icon={Trophy} tone="violet" label={t('All-time rank')} value={me.rank ? `#${me.rank}` : t('Unranked')} hint={referrals.referrers ? t('of {n} referrers', { n: referrals.referrers }) : null} />
+                        <StatTile icon={CalendarDays} tone="pink" label={t('This month')} value={me.month || 0} hint={me.monthRank ? t('Approved · #{rank} this month', { rank: me.monthRank }) : t('Approved this month')} />
                     </div>
                     <Leaderboard referrals={referrals} myUid={myUid} />
                     <YourReferrals list={referrals.list || []} />

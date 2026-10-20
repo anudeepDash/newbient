@@ -7,6 +7,7 @@ import { cn } from '../../lib/utils';
 import { INPUT } from '../../components/app/controls';
 import { isPresent } from '../../lib/present';
 import { CREATOR_STATUS, TONES } from './format';
+import { useT } from '../../i18n';
 
 /* UI pieces shared by the creator pages. Every one renders nothing when empty. */
 
@@ -18,9 +19,10 @@ import { CREATOR_STATUS, TONES } from './format';
 export const STICKY_DOCK = 'sticky bottom-0 z-30 -mx-4 space-y-2 border-t border-black/[0.06] bg-[#f4f4f1]/90 backdrop-blur-xl px-4 pt-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] dark:border-white/[0.06] dark:bg-[#050608] sm:-mx-6 sm:px-6 lg:mx-0 lg:rounded-[1.5rem] lg:border lg:px-5 lg:pb-3 lg:bottom-6';
 
 export const StatusChip = ({ status, className }) => {
+    const t = useT();
     const meta = CREATOR_STATUS[status];
     if (!meta) return null;
-    return <span className={cn('inline-flex h-7 items-center rounded-full px-3 text-[13px] font-bold', TONES[meta.tone], className)}>{meta.label}</span>;
+    return <span className={cn('inline-flex h-7 items-center rounded-full px-3 text-[13px] font-bold', TONES[meta.tone], className)}>{t(meta.label)}</span>;
 };
 
 export const ToneChip = ({ tone = 'gray', icon: Icon, children, className }) => {
@@ -74,7 +76,9 @@ export const ChoiceChip = ({ selected, onClick, children, hint, className }) => 
 );
 
 /* Step progress for the application: "Step 1 of 2" plus two bars. */
-export const StepBars = ({ step, total = 2, labels = [] }) => (
+export const StepBars = ({ step, total = 2, labels = [] }) => {
+    const t = useT();
+    return (
     <div className="space-y-2">
         <div className="flex gap-1.5">
             {Array.from({ length: total }, (_, i) => (
@@ -82,13 +86,15 @@ export const StepBars = ({ step, total = 2, labels = [] }) => (
             ))}
         </div>
         <p className="text-[12px] font-bold uppercase tracking-widest text-gray-500 dark:text-zinc-500">
-            Step {step} of {total}{labels[step - 1] ? ` · ${labels[step - 1]}` : ''}
+            {t('Step {step} of {total}', { step, total })}{labels[step - 1] ? ` · ${t(labels[step - 1])}` : ''}
         </p>
     </div>
-);
+    );
+};
 
 /* The creator home's sections, as a segmented row of links (the shell's tab bar stays the only bottom bar). */
 export const SubTabs = ({ tabs }) => {
+    const t = useT();
     const ref = useRef(null);
     const { pathname } = useLocation();
     // Keep the current section in view on narrow screens.
@@ -100,21 +106,21 @@ export const SubTabs = ({ tabs }) => {
         nav.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
     }, [pathname]);
     return (
-    <nav ref={ref} aria-label="Creator sections" className="relative -mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
+    <nav ref={ref} aria-label={t('Creator sections')} className="relative -mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
         <div className="inline-flex gap-1 rounded-2xl bg-black/[0.04] p-1 dark:bg-white/[0.05]">
-            {tabs.map(t => (
+            {tabs.map(tab => (
                 <NavLink
-                    key={t.to}
-                    to={t.to}
-                    end={t.end}
+                    key={tab.to}
+                    to={tab.to}
+                    end={tab.end}
                     replace
                     className={({ isActive }) => cn(
                         'flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl px-4 text-[14px] font-bold transition-colors',
                         isActive ? 'bg-white text-gray-900 shadow-sm dark:bg-white/[0.12] dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white'
                     )}
                 >
-                    {t.label}
-                    {isPresent(t.count) && <span className="rounded-full bg-black/[0.06] px-1.5 text-[11px] font-black dark:bg-white/[0.1]">{t.count}</span>}
+                    {t(tab.label)}
+                    {isPresent(tab.count) && <span className="rounded-full bg-black/[0.06] px-1.5 text-[11px] font-black dark:bg-white/[0.1]">{tab.count}</span>}
                 </NavLink>
             ))}
         </div>

@@ -5,6 +5,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { callCreatorApi } from '../creator/api';
+import { t } from '../../i18n';
 
 /*
  * Merging another account into the signed-in one (api/_lib/accountMerge.js).
@@ -30,12 +31,12 @@ const getProofAuth = () => {
 const friendly = (err) => {
     const code = String(err?.code || '');
     if (code.includes('popup-closed') || code.includes('cancelled-popup')) return '';
-    if (code.includes('popup-blocked')) return 'Your browser blocked the Google window. Allow pop-ups and try again.';
-    if (code.includes('wrong-password') || code.includes('invalid-credential') || code.includes('invalid-login')) return 'That email and password don’t match.';
-    if (code.includes('user-not-found')) return 'There’s no account with that email.';
-    if (code.includes('too-many-requests')) return 'Too many attempts. Wait a few minutes and try again.';
-    if (code.includes('network-request-failed')) return 'No connection. Check your internet and try again.';
-    return 'We couldn’t sign in to that account. Please try again.';
+    if (code.includes('popup-blocked')) return t('Your browser blocked the Google window. Allow pop-ups and try again.');
+    if (code.includes('wrong-password') || code.includes('invalid-credential') || code.includes('invalid-login')) return t('That email and password don’t match.');
+    if (code.includes('user-not-found')) return t('There’s no account with that email.');
+    if (code.includes('too-many-requests')) return t('Too many attempts. Wait a few minutes and try again.');
+    if (code.includes('network-request-failed')) return t('No connection. Check your internet and try again.');
+    return t('We couldn’t sign in to that account. Please try again.');
 };
 
 /* Signs in to the other account in the throwaway session; returns { token, credential } (the credential is linked here after the merge). */
@@ -91,12 +92,12 @@ export const confirmMerge = async (proof) => {
 
 /* "2 passes, 1 ticket order and your creator profile" */
 export const describeHoldings = (holds = {}) => {
-    const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+    const plural = (count, one, many) => t(count === 1 ? one : many, { count });
     const parts = [];
-    if (holds.passes) parts.push(plural(holds.passes, 'pass', 'passes'));
-    if (holds.ticketOrders) parts.push(plural(holds.ticketOrders, 'ticket order', 'ticket orders'));
-    if (holds.giveawayEntries) parts.push(plural(holds.giveawayEntries, 'giveaway entry', 'giveaway entries'));
-    if (holds.creatorProfile) parts.push('a creator profile');
+    if (holds.passes) parts.push(plural(holds.passes, '{count} pass', '{count} passes'));
+    if (holds.ticketOrders) parts.push(plural(holds.ticketOrders, '{count} ticket order', '{count} ticket orders'));
+    if (holds.giveawayEntries) parts.push(plural(holds.giveawayEntries, '{count} giveaway entry', '{count} giveaway entries'));
+    if (holds.creatorProfile) parts.push(t('a creator profile'));
     if (!parts.length) return '';
-    return parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0];
+    return parts.length > 1 ? t('{list} and {last}', { list: parts.slice(0, -1).join(', '), last: parts[parts.length - 1] }) : parts[0];
 };

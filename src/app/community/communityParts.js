@@ -1,4 +1,5 @@
 import { useStore as useLegacyStore } from '../../lib/store.js';
+import { t } from '../../i18n';
 
 /* Small helpers shared by the Community pages. */
 
@@ -25,6 +26,6 @@ export const shareLink = ({ title, text, url }) => {
     }
     const toast = useLegacyStore.getState().addToast;
     navigator.clipboard?.writeText(url)
-        .then(() => toast?.('Link copied.', 'success'))
-        .catch(() => toast?.('Copy this link from the address bar.', 'info'));
+        .then(() => toast?.(t('Link copied.'), 'success'))
+        .catch(() => toast?.(t('Copy this link from the address bar.'), 'info'));
 };

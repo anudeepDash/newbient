@@ -14,6 +14,7 @@ import EnquiryForm from '../components/EnquiryForm';
 import SectionHeading from '../components/SectionHeading';
 import { usePublicFeed, isOff } from '../feed';
 import { APP_LINKS } from '../links';
+import { useT } from '../../i18n';
 
 // Old share links on "/" (?event=, ?gl=, ?gig=, ?form=, ?campaign=) now live in the app.
 function useLegacyQueryRedirect() {
@@ -29,6 +30,7 @@ function useLegacyQueryRedirect() {
 }
 
 export default function HomePage() {
+    const t = useT();
     useLegacyQueryRedirect();
     const feed = usePublicFeed();
     const [audience, setAudience] = useState('');
@@ -60,7 +62,7 @@ export default function HomePage() {
                         />
                         {(contact.email || contact.phone) && (
                             <div className="nb-reveal mt-10 space-y-1">
-                                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500 mb-3">Or reach us directly</p>
+                                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500 mb-3">{t('Or reach us directly')}</p>
                                 {contact.email && (
                                     <a href={`mailto:${contact.email}`} className="flex items-center gap-3 min-h-[44px] font-heading text-xl font-extrabold text-gray-950 dark:text-white hover:text-emerald-700 dark:hover:text-neon-green">
                                         <Mail size={18} aria-hidden="true" /> {contact.email}

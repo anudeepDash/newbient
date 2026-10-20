@@ -1,12 +1,16 @@
 import { Instagram, FileText, ArrowUpRight, MapPin, Users, Award, Flame } from 'lucide-react';
 import { APP_LINKS, sizedImage } from '../links';
+import { useT } from '../../i18n';
+import { useLocalizedCampaign } from '../../i18n/useHinglish';
 
 /*
  * An open campaign on the /creator landing, in the campaign card style
  * (src/components/ui/CampaignCard.jsx) but static: it links to the campaign in
  * the app, needs no store, and leaves out anything the campaign doesn't have.
  */
-export default function CampaignTeaser({ campaign: c }) {
+export default function CampaignTeaser({ campaign: source }) {
+    const t = useT();
+    const c = useLocalizedCampaign(source, { fields: ['title', 'reward'] });
     const chips = [
         c.reward && { icon: Award, label: 'Reward', value: c.reward },
         c.taskCount && { icon: FileText, label: 'Tasks', value: String(c.taskCount) },
@@ -38,7 +42,7 @@ export default function CampaignTeaser({ campaign: c }) {
                 {spots !== null && (
                     <span className="absolute top-3.5 right-3.5 z-20 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border bg-black/60 text-white border-white/15 flex items-center gap-1 font-mono">
                         <Flame size={10} className="text-amber-400 fill-amber-400" aria-hidden="true" />
-                        {spots === 0 ? 'Full' : `${spots} left`}
+                        {spots === 0 ? t('Full') : t('{count} left', { count: spots })}
                     </span>
                 )}
             </div>
@@ -53,7 +57,7 @@ export default function CampaignTeaser({ campaign: c }) {
                         {chips.map((ch) => (
                             <div key={ch.label} className="flex-1 min-w-0 flex flex-col items-center py-2.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.04] dark:border-white/[0.06]">
                                 <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                                    <ch.icon size={10} className="text-emerald-600 dark:text-neon-green" aria-hidden="true" /> {ch.label}
+                                    <ch.icon size={10} className="text-emerald-600 dark:text-neon-green" aria-hidden="true" /> {t(ch.label)}
                                 </span>
                                 <span className="text-emerald-700 dark:text-neon-green text-xs font-black truncate max-w-full px-1">{ch.value}</span>
                             </div>
@@ -63,7 +67,7 @@ export default function CampaignTeaser({ campaign: c }) {
 
                 <div className="mt-auto pt-5">
                     <span className="flex items-center justify-between px-4 h-11 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.07] dark:group-hover:bg-neon-green dark:group-hover:border-neon-green transition-colors">
-                        <span className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-600 dark:text-zinc-400 dark:group-hover:text-black">View campaign</span>
+                        <span className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-600 dark:text-zinc-400 dark:group-hover:text-black">{t('View campaign')}</span>
                         <ArrowUpRight size={15} className="text-gray-400 dark:text-zinc-500 dark:group-hover:text-black" aria-hidden="true" />
                     </span>
                 </div>

@@ -22,6 +22,8 @@ import DetailLayout, { BackLink, DetailSkeleton, Panel, ROW } from '../pages/Det
 import { passWhen } from '../passes/passParts';
 import GuestlistTaskFields, { validateTask } from './GuestlistTaskFields';
 import { plainText, shareLink } from './communityParts';
+import { useT } from '../../i18n';
+import { useLocalizedField } from '../../i18n/useHinglish';
 
 /*
  * /community/g/:id: a guestlist (or an event with its guestlist on). Replaces
@@ -34,6 +36,7 @@ import { plainText, shareLink } from './communityParts';
  */
 
 const GuestlistPage = () => {
+    const t = useT();
     const { id } = useParams();
     const uid = useAppStore(s => s.authUser?.uid);
     const authReady = useAppStore(s => s.authReady);
@@ -52,7 +55,7 @@ const GuestlistPage = () => {
     const [error, setError] = useState('');
     const [profileFields, setProfileFields] = useState(null);
 
-    useDynamicMeta({ page: 'guestlist', title: gl?.title ? `${gl.title} | Guestlist` : undefined, description: gl ? plainText(gl.description).slice(0, 160) || undefined : undefined, image: gl?.image || undefined });
+    useDynamicMeta({ page: 'guestlist', title: gl?.title ? t('{title} | Guestlist', { title: gl.title }) : undefined, description: gl ? plainText(gl.description).slice(0, 160) || undefined : undefined, image: gl?.image || undefined });
 
     const load = useCallback(async () => {
         const res = await passesGet('guestlist', { id });
@@ -117,15 +120,16 @@ const GuestlistPage = () => {
 
     const when = gl ? passWhen({ date: gl.date, time: gl.time }) : null;
     const venue = gl ? [gl.venue, gl.city && !String(gl.venue || '').includes(gl.city) ? gl.city : null].filter(Boolean).join(', ') : null;
-    const description = useMemo(() => plainText(gl?.description), [gl?.description]);
+    const hiDescription = useLocalizedField('guestlist', id, 'description', gl?.description);
+    const description = useMemo(() => plainText(hiDescription), [hiDescription]);
 
     if (loadError && !gl) {
         return (
             <PageBody>
                 <div className="mx-auto max-w-md space-y-4 rounded-3xl border border-dashed border-black/[0.1] px-6 py-10 text-center dark:border-white/[0.1]">
-                    <p className="text-[17px] font-bold">Guestlist not found</p>
+                    <p className="text-[17px] font-bold">{t('Guestlist not found')}</p>
                     <p className="text-[15px] text-gray-600 dark:text-zinc-400">{loadError}</p>
-                    <Button variant="secondary" to={appPath('/community')}>See what’s on</Button>
+                    <Button variant="secondary" to={appPath('/community')}>{t('See what’s on')}</Button>
                 </div>
             </PageBody>
         );
@@ -133,7 +137,7 @@ const GuestlistPage = () => {
 
     if (!gl) return <DetailSkeleton />;
 
-    const statusChip = gl.past ? 'Ended' : gl.closed ? 'Closed' : gl.full ? 'Full' : gl.spotsLeft !== null && gl.spotsLeft <= 20 ? `${gl.spotsLeft} spots left` : null;
+    const statusChip = gl.past ? t('Ended') : gl.closed ? t('Closed') : gl.full ? t('Full') : gl.spotsLeft !== null && gl.spotsLeft <= 20 ? t('{count} spots left', { count: gl.spotsLeft }) : null;
 
     const action = (() => {
         if (me?.status === 'pending') {
@@ -141,8 +145,8 @@ const GuestlistPage = () => {
                 <div className="flex items-start gap-3 rounded-2xl bg-amber-500/10 px-4 py-3 text-amber-900 dark:text-amber-200">
                     <Hourglass size={18} className="mt-0.5 shrink-0" />
                     <div>
-                        <p className="text-[15px] font-bold">Request sent</p>
-                        <p className="text-[14px]">We’ll send your pass by email and WhatsApp once you’re approved.</p>
+                        <p className="text-[15px] font-bold">{t('Request sent')}</p>
+                        <p className="text-[14px]">{t('We’ll send your pass by email and WhatsApp once you’re approved.')}</p>
                     </div>
                 </div>
             );
@@ -150,22 +154,22 @@ const GuestlistPage = () => {
         if (me) {
             return (
                 <div className="space-y-3">
-                    <p className="text-center text-[15px] font-bold text-emerald-700 dark:text-neon-green">You’re on the list.</p>
+                    <p className="text-center text-[15px] font-bold text-emerald-700 dark:text-neon-green">{t('You’re on the list.')}</p>
                     {me.ref
-                        ? <Button size="lg" className="w-full" icon={Ticket} to={appPath(`/p/${me.ref}`)}>{gl.mode === 'rsvp' ? 'Open my RSVP' : 'Open my pass'}</Button>
-                        : <Button size="lg" variant="secondary" className="w-full" to={appPath('/community')}>See My guestlists</Button>}
+                        ? <Button size="lg" className="w-full" icon={Ticket} to={appPath(`/p/${me.ref}`)}>{gl.mode === 'rsvp' ? t('Open my RSVP') : t('Open my pass')}</Button>
+                        : <Button size="lg" variant="secondary" className="w-full" to={appPath('/community')}>{t('See My guestlists')}</Button>}
                 </div>
             );
         }
         if (!gl.open) {
-            return <p className="rounded-2xl bg-black/[0.04] px-4 py-3 text-center text-[15px] font-semibold text-gray-600 dark:bg-white/[0.05] dark:text-zinc-400">{gl.past ? 'This event has happened.' : gl.full ? 'This guestlist is full.' : 'This guestlist is closed.'}</p>;
+            return <p className="rounded-2xl bg-black/[0.04] px-4 py-3 text-center text-[15px] font-semibold text-gray-600 dark:bg-white/[0.05] dark:text-zinc-400">{gl.past ? t('This event has happened.') : gl.full ? t('This guestlist is full.') : t('This guestlist is closed.')}</p>;
         }
         return (
             <div className="space-y-2">
                 <Button size="lg" className="w-full" onClick={register} loading={submitting && !step}>
-                    {gl.mode === 'rsvp' ? 'RSVP' : 'Get on the list'}
+                    {gl.mode === 'rsvp' ? t('RSVP') : t('Get on the list')}
                 </Button>
-                {gl.needsApproval && <p className="text-center text-[13px] text-gray-500 dark:text-zinc-400">The team reviews requests before sending passes.</p>}
+                {gl.needsApproval && <p className="text-center text-[13px] text-gray-500 dark:text-zinc-400">{t('The team reviews requests before sending passes.')}</p>}
                 {error && !step && <p role="alert" className="text-center text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
             </div>
         );
@@ -173,7 +177,7 @@ const GuestlistPage = () => {
 
     const badges = (
         <>
-            <GlassChip icon={Ticket} label={gl.mode === 'rsvp' ? 'RSVP' : 'Guestlist'} />
+            <GlassChip icon={Ticket} label={gl.mode === 'rsvp' ? t('RSVP') : t('Guestlist')} />
             {statusChip && <GlassChip label={statusChip} tone={gl.open ? 'warn' : 'default'} />}
         </>
     );
@@ -181,7 +185,7 @@ const GuestlistPage = () => {
     return (
         <>
             <DetailLayout
-                back={<BackLink to={appPath('/community')}>Community</BackLink>}
+                back={<BackLink to={appPath('/community')}>{t('Community')}</BackLink>}
                 image={gl.image}
                 badges={badges}
                 title={gl.title}
@@ -189,22 +193,22 @@ const GuestlistPage = () => {
             >
                 <Panel>
                     <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
-                        <Field icon={CalendarDays} label="When" value={when} />
-                        <Field icon={MapPin} label="Venue" value={venue} />
-                        <Field icon={Users} label="Spots left" value={gl.open && gl.spotsLeft !== null ? gl.spotsLeft : null} />
-                        <Field icon={Mic2} label="Line-up" value={(gl.artists || []).join(', ')} />
+                        <Field icon={CalendarDays} label={t('When')} value={when} />
+                        <Field icon={MapPin} label={t('Venue')} value={venue} />
+                        <Field icon={Users} label={t('Spots left')} value={gl.open && gl.spotsLeft !== null ? gl.spotsLeft : null} />
+                        <Field icon={Mic2} label={t('Line-up')} value={(gl.artists || []).join(', ')} />
                     </div>
                     <div className="pt-1">{action}</div>
                 </Panel>
 
-                <Section title="About">
+                <Section title={t('About')}>
                     {description && <p className="whitespace-pre-line px-1 text-[15px] leading-relaxed text-gray-700 dark:text-zinc-300 lg:text-[16px]">{description}</p>}
                 </Section>
 
-                <Section title="To get on the list">
+                <Section title={t('To get on the list')}>
                     {gl.task && !me && (
                         <div className={`${ROW} px-4 py-3.5`}>
-                            <p className="text-[15px] font-bold">{gl.task.title || 'A quick task'}</p>
+                            <p className="text-[15px] font-bold">{gl.task.title || t('A quick task')}</p>
                             {isPresent(gl.task.description) && <p className="mt-1 whitespace-pre-line text-[14px] text-gray-600 dark:text-zinc-400">{gl.task.description}</p>}
                         </div>
                     )}
@@ -214,7 +218,7 @@ const GuestlistPage = () => {
             <CompleteProfileSheet
                 open={step === 'profile'}
                 required={profileFields || requirementsFor('guestlist')}
-                reason="for your pass"
+                reason={t('for your pass')}
                 onClose={() => setStep(s => (s === 'profile' ? null : s))}
                 onComplete={() => setTimeout(proceed, 0)}
             />
@@ -222,21 +226,21 @@ const GuestlistPage = () => {
             <Sheet
                 open={step === 'details'}
                 onClose={() => !submitting && setStep(null)}
-                title={gl.task ? 'One more step' : 'How many of you?'}
+                title={gl.task ? t('One more step') : t('How many of you?')}
                 subtitle={gl.title}
-                footer={<Button className="w-full" size="lg" onClick={submit} loading={submitting} disabled={uploading}>{gl.mode === 'rsvp' ? 'Confirm RSVP' : 'Get my pass'}</Button>}
+                footer={<Button className="w-full" size="lg" onClick={submit} loading={submitting} disabled={uploading}>{gl.mode === 'rsvp' ? t('Confirm RSVP') : t('Get my pass')}</Button>}
             >
                 <div className="space-y-6">
                     {(gl.perUserLimit || 1) > 1 && (
                         <div className="flex items-center justify-between gap-4">
                             <div>
-                                <p className="text-[16px] font-bold">Guests</p>
-                                <p className="text-[13px] text-gray-500 dark:text-zinc-400">Including you, up to {gl.perUserLimit}</p>
+                                <p className="text-[16px] font-bold">{t('Guests')}</p>
+                                <p className="text-[13px] text-gray-500 dark:text-zinc-400">{t('Including you, up to {max}', { max: gl.perUserLimit })}</p>
                             </div>
                             <div className="flex items-center gap-3">
-                                <button type="button" aria-label="Fewer guests" disabled={guests <= 1} onClick={() => setGuests(g => Math.max(1, g - 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-black/[0.1] disabled:opacity-40 dark:border-white/[0.12]"><Minus size={16} /></button>
+                                <button type="button" aria-label={t('Fewer guests')} disabled={guests <= 1} onClick={() => setGuests(g => Math.max(1, g - 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-black/[0.1] disabled:opacity-40 dark:border-white/[0.12]"><Minus size={16} /></button>
                                 <span className="w-6 text-center text-[20px] font-black tabular-nums">{guests}</span>
-                                <button type="button" aria-label="More guests" disabled={guests >= gl.perUserLimit || (gl.spotsLeft !== null && guests >= gl.spotsLeft)} onClick={() => setGuests(g => Math.min(gl.perUserLimit, g + 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-black/[0.1] disabled:opacity-40 dark:border-white/[0.12]"><Plus size={16} /></button>
+                                <button type="button" aria-label={t('More guests')} disabled={guests >= gl.perUserLimit || (gl.spotsLeft !== null && guests >= gl.spotsLeft)} onClick={() => setGuests(g => Math.min(gl.perUserLimit, g + 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-black/[0.1] disabled:opacity-40 dark:border-white/[0.12]"><Plus size={16} /></button>
                             </div>
                         </div>
                     )}

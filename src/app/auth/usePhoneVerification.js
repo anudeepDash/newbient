@@ -5,6 +5,7 @@ import {
 import { auth } from '../../lib/firebase';
 import { toE164 } from '../../lib/store/profile';
 import { proveWithCredential, previewMerge } from './accountMerge';
+import { t } from '../../i18n';
 
 /*
  * Phone OTP verification, shared by every flow. Built from the copies in
@@ -38,19 +39,19 @@ const COOLDOWN_SECONDS = 30;
 
 const friendlyError = (err) => {
     const code = err?.code || err?.message || '';
-    if (code.includes('invalid-phone-number')) return 'That phone number doesn’t look right. Check the digits and try again.';
-    if (code.includes('too-many-requests')) return 'Too many attempts. Wait a few minutes and try again.';
-    if (code.includes('quota-exceeded')) return 'We can’t send more codes today. Please try again later.';
-    if (code.includes('captcha')) return 'The security check didn’t finish. Tap “Send code” again.';
-    if (code.includes('network-request-failed')) return 'No connection. Check your internet and try again.';
-    if (code.includes('invalid-verification-code')) return 'That code isn’t right. Check it and try again.';
-    if (code.includes('code-expired')) return 'That code has expired. Send a new one.';
+    if (code.includes('invalid-phone-number')) return t('That phone number doesn’t look right. Check the digits and try again.');
+    if (code.includes('too-many-requests')) return t('Too many attempts. Wait a few minutes and try again.');
+    if (code.includes('quota-exceeded')) return t('We can’t send more codes today. Please try again later.');
+    if (code.includes('captcha')) return t('The security check didn’t finish. Tap “Send code” again.');
+    if (code.includes('network-request-failed')) return t('No connection. Check your internet and try again.');
+    if (code.includes('invalid-verification-code')) return t('That code isn’t right. Check it and try again.');
+    if (code.includes('code-expired')) return t('That code has expired. Send a new one.');
     if (code.includes('credential-already-in-use') || code.includes('account-exists-with-different-credential')) {
-        return 'This number is already linked to another Newbi account. Sign in with that account, or use a different number.';
+        return t('This number is already linked to another Newbi account. Sign in with that account, or use a different number.');
     }
-    if (code.includes('requires-recent-login')) return 'For your security, sign out and back in, then verify your number.';
-    if (code.includes('unauthorized-domain') || code.includes('operation-not-allowed')) return 'Phone verification isn’t available on this site right now.';
-    return 'We couldn’t verify your number right now. Please try again.';
+    if (code.includes('requires-recent-login')) return t('For your security, sign out and back in, then verify your number.');
+    if (code.includes('unauthorized-domain') || code.includes('operation-not-allowed')) return t('Phone verification isn’t available on this site right now.');
+    return t('We couldn’t verify your number right now. Please try again.');
 };
 
 const isTestMode = () => import.meta.env.DEV && import.meta.env.VITE_PHONE_TEST_MODE === 'true';
@@ -79,7 +80,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         }
         verifierRef.current = new RecaptchaVerifier(auth, containerRef.current, {
             size: 'invisible',
-            'expired-callback': () => setError('The security check expired. Tap “Send code” again.'),
+            'expired-callback': () => setError(t('The security check expired. Tap “Send code” again.')),
         });
         await verifierRef.current.render();
         return verifierRef.current;
@@ -117,7 +118,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         const e164 = toE164(input, defaultCountry);
         const digits = (e164 || '').replace(/\D/g, '');
         if (!e164 || digits.length < 10 || digits.length > 15) {
-            setError('Enter a valid mobile number.');
+            setError(t('Enter a valid mobile number.'));
             return false;
         }
         if (cooldown > 0 && e164 === phone) return false;
@@ -157,12 +158,12 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
     const verify = useCallback(async (code) => {
         const clean = String(code || '').replace(/\D/g, '');
         if (clean.length !== 6) {
-            setError('Enter the 6-digit code.');
+            setError(t('Enter the 6-digit code.'));
             return false;
         }
         const pending = confirmationRef.current;
         if (!pending) {
-            setError('Send a code first.');
+            setError(t('Send a code first.'));
             return false;
         }
         setStatus('verifying');
@@ -191,7 +192,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
                     } catch (err) {
                         // Can't merge (a team account, two creator profiles…): that number can't be used here.
                         setStatus('idle');
-                        setError(err?.friendly || 'This number is on another Newbi account that can’t be merged from here.');
+                        setError(err?.friendly || t('This number is on another Newbi account that can’t be merged from here.'));
                     }
                     return false;
                 }

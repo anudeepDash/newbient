@@ -15,6 +15,7 @@ import TaskLinks from './TaskLinks';
 import { Button } from '../../../components/app';
 import { dueLabel } from '../format';
 import { ToneChip } from '../ui';
+import { useT } from '../../../i18n';
 
 /*
  * One deliverable: what to make, its links, and (for shortlisted creators) its status and submit buttons.
@@ -30,8 +31,8 @@ const TYPES = {
 };
 
 const typeOf = (task) => {
-    const t = String(task?.taskType || '').toLowerCase();
-    if (TYPES[t]) return TYPES[t];
+    const kind = String(task?.taskType || '').toLowerCase();
+    if (TYPES[kind]) return TYPES[kind];
     const title = String(task?.title || '').toLowerCase();
     if (/reel|short|video/.test(title)) return TYPES.reel;
     if (/stor(y|ies)/.test(title)) return TYPES.story;
@@ -49,6 +50,7 @@ const STATUS = {
 export const hasSubmitForm = (task) => /^https?:\/\//i.test(String(task?.googleFormLink || '').trim());
 
 const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, onMarkSubmitted, marking, highlight }) => {
+    const t = useT();
     const required = isRequiredTask(task);
     const type = typeOf(task);
     const allLinks = useMemo(() => extractTaskActionLinks(task), [task]);
@@ -65,7 +67,7 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, onMark
     const due = dueLabel(task.deadline);
 
     // One quiet line: what it is and when. "Required" is the norm, so only "Optional" is said.
-    const line = [type?.label, due, required ? null : 'Optional'].filter(Boolean).join(' · ');
+    const line = [type ? t(type.label) : null, due, required ? null : t('Optional')].filter(Boolean).join(' · ');
 
     return (
         <li
@@ -81,10 +83,10 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, onMark
                     {type ? <type.icon size={18} /> : <span className="text-[14px] font-black">{index + 1}</span>}
                 </span>
                 <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-[15px] font-bold leading-snug">{isPresent(task.title) ? task.title : `Deliverable ${index + 1}`}</h3>
+                    <h3 className="truncate text-[15px] font-bold leading-snug">{isPresent(task.title) ? task.title : t('Deliverable {n}', { n: index + 1 })}</h3>
                     {line && <p className="mt-0.5 truncate text-[13px] text-gray-500 dark:text-zinc-400">{line}</p>}
                 </div>
-                {meta && <ToneChip tone={meta.tone} className="shrink-0">{meta.label}</ToneChip>}
+                {meta && <ToneChip tone={meta.tone} className="shrink-0">{t(meta.label)}</ToneChip>}
                 {links.length === 1 && <TaskLinks links={links} compact className="shrink-0" />}
             </div>
 
@@ -95,8 +97,8 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, onMark
                     {caption && (
                         <div className="rounded-xl bg-black/[0.04] px-3 py-2.5 dark:bg-white/[0.05]">
                             <div className="mb-1 flex items-center justify-between gap-2">
-                                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500 dark:text-zinc-400">Caption to use</span>
-                                <button type="button" onClick={copyCaption} className="text-[12px] font-bold text-emerald-700 dark:text-neon-green">{copied ? 'Copied' : 'Copy'}</button>
+                                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500 dark:text-zinc-400">{t('Caption to use')}</span>
+                                <button type="button" onClick={copyCaption} className="text-[12px] font-bold text-emerald-700 dark:text-neon-green">{copied ? t('Copied') : t('Copy')}</button>
                             </div>
                             <p className="whitespace-pre-line text-[14px] text-gray-800 dark:text-zinc-200">{caption}</p>
                         </div>
@@ -119,11 +121,11 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, onMark
                     <div className="flex flex-wrap items-center gap-2">
                         {status !== 'submitted' && (
                             <Button size="sm" icon={CircleCheck} loading={marking} onClick={() => onMarkSubmitted?.(task)}>
-                                {status === 'rejected' ? 'Mark as resubmitted' : 'Mark as submitted'}
+                                {status === 'rejected' ? t('Mark as resubmitted') : t('Mark as submitted')}
                             </Button>
                         )}
                         <Button size="sm" variant="secondary" icon={Upload} onClick={() => onSubmit(task)}>
-                            {status === 'submitted' ? 'Add a link or screenshot' : 'Send a link instead'}
+                            {status === 'submitted' ? t('Add a link or screenshot') : t('Send a link instead')}
                         </Button>
                     </div>
                 ) : (
@@ -133,7 +135,7 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, onMark
                         icon={Upload}
                         onClick={() => onSubmit(task)}
                     >
-                        {status === 'rejected' ? 'Resubmit' : status === 'submitted' ? 'Update submission' : 'Submit'}
+                        {status === 'rejected' ? t('Resubmit') : status === 'submitted' ? t('Update submission') : t('Submit')}
                     </Button>
                 )
             )}

@@ -5,6 +5,7 @@ import { fieldLabel } from './requirements';
 import PhoneVerifyField from '../auth/PhoneVerifyField';
 import AccountMergeFlow from '../auth/AccountMergeFlow';
 import { findOtherAccounts } from '../auth/accountMerge';
+import { useT } from '../../i18n';
 
 /*
  * The profile fields a flow still needs (name, city, college, verified phone),
@@ -23,6 +24,7 @@ const TEXT_FIELDS = {
 };
 
 const ProfileDetailsForm = ({ fields = [], onSaved, submitLabel = 'Continue', editAll = false, footer }) => {
+    const t = useT();
     const profile = useAppStore(s => s.profile);
     const updateProfile = useAppStore(s => s.updateProfile);
     const savePhoneVerified = useAppStore(s => s.savePhoneVerified);
@@ -40,10 +42,10 @@ const ProfileDetailsForm = ({ fields = [], onSaved, submitLabel = 'Continue', ed
     const save = async () => {
         // When editing, only the name can't be cleared.
         const blank = textFields.find(f => (!editAll || f === 'name') && !String(values[f] || '').trim());
-        if (blank) return setError(`Add your ${fieldLabel(blank).toLowerCase()}.`);
+        if (blank) return setError(t('Add your {field}.', { field: fieldLabel(blank).toLowerCase().replace(/^your /, '') }));
         const email = String(values.email || '').trim();
-        if (needsEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return setError('Add a valid email address.');
-        if (needsPhone && !phoneDone) return setError('Verify your phone number to continue.');
+        if (needsEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return setError(t('Add a valid email address.'));
+        if (needsPhone && !phoneDone) return setError(t('Verify your phone number to continue.'));
         setSaving(true);
         setError('');
         try {
@@ -57,24 +59,24 @@ const ProfileDetailsForm = ({ fields = [], onSaved, submitLabel = 'Continue', ed
             onSaved?.();
         } catch (err) {
             console.warn('[profile] save failed:', err);
-            setError('We couldn’t save your details. Check your connection and try again.');
+            setError(t('We couldn’t save your details. Check your connection and try again.'));
         } finally {
             setSaving(false);
         }
     };
 
-    const button = <Button className="w-full" size="lg" onClick={save} loading={saving}>{submitLabel}</Button>;
+    const button = <Button className="w-full" size="lg" onClick={save} loading={saving}>{t(submitLabel)}</Button>;
 
     if (emailMatch) {
         return (
             <div className="space-y-4">
-                <p className="text-[15px] font-bold leading-snug">{String(values.email).trim()} is on another Newbi account</p>
+                <p className="text-[15px] font-bold leading-snug">{t('{email} is on another Newbi account', { email: String(values.email).trim() })}</p>
                 <AccountMergeFlow
                     match={emailMatch}
                     email={String(values.email).trim()}
                     onDone={() => { setEmailMatch(null); save(); }}
-                    onCancel={() => { setEmailMatch(null); setError('That email is on another account. Merge it, or use a different email.'); }}
-                    cancelLabel="Use a different email"
+                    onCancel={() => { setEmailMatch(null); setError(t('That email is on another account. Merge it, or use a different email.')); }}
+                    cancelLabel={t('Use a different email')}
                 />
             </div>
         );
@@ -90,19 +92,20 @@ const ProfileDetailsForm = ({ fields = [], onSaved, submitLabel = 'Continue', ed
                     onChange={(e) => setValues(v => ({ ...v, [f]: e.target.value }))}
                     autoFocus={f === textFields[0]}
                     {...TEXT_FIELDS[f]}
+                    placeholder={t(TEXT_FIELDS[f].placeholder)}
                 />
             ))}
 
             {needsEmail && (
                 // Phone sign-ins have no email; this is where updates and tickets go.
                 <TextInput
-                    label="Email"
+                    label={t('Email')}
                     type="email"
                     inputMode="email"
                     autoComplete="email"
                     autoCapitalize="none"
                     placeholder="you@example.com"
-                    hint="For campaign updates and tickets."
+                    hint={t('For campaign updates and tickets.')}
                     value={values.email}
                     onChange={(e) => setValues(v => ({ ...v, email: e.target.value }))}
                     autoFocus={!textFields.length}
@@ -122,7 +125,7 @@ const ProfileDetailsForm = ({ fields = [], onSaved, submitLabel = 'Continue', ed
             )}
 
             {fields.length === 0 && (
-                <p className="text-[15px] text-gray-600 dark:text-zinc-400">Your profile has everything this needs.</p>
+                <p className="text-[15px] text-gray-600 dark:text-zinc-400">{t('Your profile has everything this needs.')}</p>
             )}
 
             {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}

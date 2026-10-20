@@ -1,6 +1,7 @@
 import { ArrowUpRight } from 'lucide-react';
 import SectionHeading from '../components/SectionHeading';
 import { APP_LINKS } from '../links';
+import { useT } from '../../i18n';
 
 const parts = (iso) => {
     const d = new Date(`${iso}T00:00:00+05:30`);
@@ -13,6 +14,7 @@ const cta = (e) => (e.isTicketed ? 'Get tickets' : e.hasGuestlist ? 'Get on the 
 
 // The next three public events, laid out like a tour-date list. Each row opens the event page.
 export default function Upcoming({ events = [], index = '06' }) {
+    const t = useT();
     if (!events.length) return null;
     return (
         <section id="upcoming" aria-labelledby="upcoming-title" className="scroll-mt-20 py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
@@ -20,7 +22,7 @@ export default function Upcoming({ events = [], index = '06' }) {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <SectionHeading id="upcoming-title" index={index} eyebrow="Coming up" title="Next on" highlight="stage." />
                     <a href={APP_LINKS.home} className="nb-reveal inline-flex items-center gap-2 min-h-[44px] font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-700 dark:text-zinc-300 hover:text-emerald-700 dark:hover:text-neon-green">
-                        All events <ArrowUpRight size={14} aria-hidden="true" />
+                        {t('All events')} <ArrowUpRight size={14} aria-hidden="true" />
                     </a>
                 </div>
                 <ol className="mt-12 border-t border-gray-950/10 dark:border-white/10">
@@ -40,7 +42,7 @@ export default function Upcoming({ events = [], index = '06' }) {
                                         )}
                                     </span>
                                     <span className="inline-flex items-center gap-2 h-11 px-4 md:px-5 rounded-full border border-gray-950/20 dark:border-white/20 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-gray-950 dark:text-white group-hover:bg-neon-green group-hover:text-black group-hover:border-transparent transition-colors">
-                                        <span className="hidden sm:inline">{cta(e)}</span><ArrowUpRight size={15} aria-hidden="true" />
+                                        <span className="hidden sm:inline">{t(cta(e))}</span><ArrowUpRight size={15} aria-hidden="true" />
                                     </span>
                                 </a>
                             </li>

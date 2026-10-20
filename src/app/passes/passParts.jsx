@@ -6,6 +6,7 @@ import { Button } from '../../components/app';
 import { passesPost } from '../../lib/passesApi';
 import { isPresent } from '../../lib/present';
 import { cn } from '../../lib/utils';
+import { useT, t } from '../../i18n';
 
 /* Pieces shared by the pass page, the /t/ ticket link page and "Your ticket". */
 
@@ -28,11 +29,13 @@ export const ENTRY_INFO = {
 export const entryLine = (event = {}, hasQr = true) => {
     const e = ENTRY_INFO[event.entry];
     if (!e) return null;
-    return event.entry === 'guestlist' ? `${e.how}${hasQr ? ' and show this pass' : ' and give your name'}.` : `${e.how}${hasQr ? ' and show this pass' : ''}.`;
+    if (event.entry === 'guestlist') return hasQr ? t('Go to the guestlist counter and show this pass.') : t('Go to the guestlist counter and give your name.');
+    return hasQr ? t('Join the regular ticket holders’ entry and show this pass.') : t('Join the regular ticket holders’ entry.');
 };
 
 /* The QR code, drawn on the phone (works offline once the page has loaded). */
 export const PassQr = ({ value, size = 232, dimmed = false, className }) => {
+    const tr = useT();
     const [src, setSrc] = useState(null);
     useEffect(() => {
         let cancelled = false;
@@ -53,7 +56,7 @@ export const PassQr = ({ value, size = 232, dimmed = false, className }) => {
     }, [value, size]);
     return (
         <div className={cn('mx-auto rounded-3xl bg-white p-3 shadow-[0_8px_30px_rgba(0,0,0,0.12)]', dimmed && 'opacity-30 grayscale', className)} style={{ width: size + 24, height: size + 24 }}>
-            {src ? <img src={src} alt={`Pass code ${value}`} width={size} height={size} className="h-full w-full [image-rendering:pixelated]" />
+            {src ? <img src={src} alt={tr('Pass code {code}', { code: value })} width={size} height={size} className="h-full w-full [image-rendering:pixelated]" />
                 : <div className="h-full w-full animate-pulse rounded-2xl bg-black/[0.06]" />}
         </div>
     );
@@ -90,6 +93,7 @@ export const useOpenTicket = ({ ref, token }) => {
 
 /* The partner's ticket: "Open ticket" for a link, "View / Download PDF" for a file. */
 export const ExternalTicketButton = ({ pass, token, className }) => {
+    const tr = useT();
     const ext = pass?.externalTicket;
     const { open, busy, error } = useOpenTicket({ ref: pass?.ref, token });
     if (!ext || !pass.isHolder) return null;
@@ -97,9 +101,9 @@ export const ExternalTicketButton = ({ pass, token, className }) => {
     return (
         <div className={cn('space-y-2', className)}>
             <Button className="w-full" size="lg" icon={isPdf ? FileText : ExternalLink} loading={busy} onClick={() => open(isPdf ? null : ext.url)}>
-                {isPdf ? 'View / Download PDF' : 'Open ticket'}
+                {isPdf ? tr('View / Download PDF') : tr('Open ticket')}
             </Button>
-            {isPresent(ext.provider) && <p className="text-center text-[13px] text-gray-500 dark:text-zinc-400">Issued by {ext.provider}</p>}
+            {isPresent(ext.provider) && <p className="text-center text-[13px] text-gray-500 dark:text-zinc-400">{tr('Issued by {provider}', { provider: ext.provider })}</p>}
             {error && <p role="alert" className="text-center text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
         </div>
     );

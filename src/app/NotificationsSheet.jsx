@@ -11,6 +11,7 @@ import { Sheet, Button } from '../components/app';
 import { appPath, isAppHost, landingUrl } from './host';
 import { legacyAppPath } from './redirects';
 import AuthGate from './auth/AuthGate';
+import { useT } from '../i18n';
 
 /* The bell's list: your notifications plus global announcements. */
 
@@ -21,6 +22,7 @@ const timeAgo = (value) => {
 };
 
 const NotificationsSheet = ({ open, onClose }) => {
+    const t = useT();
     const navigate = useNavigate();
     const allNotifications = useAppStore(s => s.notifications);
     const isCreator = useAppStore(s => Boolean(s.profile?.capabilities?.creator || s.creatorProfile));
@@ -54,21 +56,21 @@ const NotificationsSheet = ({ open, onClose }) => {
         <Sheet
             open={open}
             onClose={onClose}
-            title="Notifications"
+            title={t('Notifications')}
             header={(
                 <div className="flex items-center justify-between gap-3 pr-1">
-                    <h2 className="text-lg font-extrabold tracking-tight">Notifications</h2>
+                    <h2 className="text-lg font-extrabold tracking-tight">{t('Notifications')}</h2>
                     {unreadCount > 0 && (
-                        <Button size="sm" variant="ghost" icon={CheckCheck} onClick={() => markAllRead()}>Mark all read</Button>
+                        <Button size="sm" variant="ghost" icon={CheckCheck} onClick={() => markAllRead()}>{t('Mark all read')}</Button>
                     )}
                 </div>
             )}
         >
-            <AuthGate title="Your notifications" message="Sign in to see updates about your passes, campaigns and giveaways.">
+            <AuthGate title={t('Your notifications')} message={t('Sign in to see updates about your passes, campaigns and giveaways.')}>
                 {notifications.length === 0 ? (
                     <div className="flex flex-col items-center gap-3 py-12 text-center text-gray-500 dark:text-zinc-500">
                         <Bell size={28} />
-                        <p className="text-[15px] font-semibold">You’re all caught up.</p>
+                        <p className="text-[15px] font-semibold">{t('You’re all caught up.')}</p>
                     </div>
                 ) : (
                     <ul className="-mx-2 space-y-1">
