@@ -6,7 +6,6 @@ import Printer from 'lucide-react/dist/esm/icons/printer';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
 import Mail from 'lucide-react/dist/esm/icons/mail';
 import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
-import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
 import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
 import Settings from 'lucide-react/dist/esm/icons/settings';
 import LogOut from 'lucide-react/dist/esm/icons/log-out';
@@ -21,7 +20,6 @@ import Wallet from 'lucide-react/dist/esm/icons/wallet';
 import Copy from 'lucide-react/dist/esm/icons/copy';
 import Check from 'lucide-react/dist/esm/icons/check';
 import Paperclip from 'lucide-react/dist/esm/icons/paperclip';
-import DocumentSeal from '../components/ui/DocumentSeal';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
@@ -30,13 +28,12 @@ import { sharedDocPost } from '../lib/passesApi';
 import { safeLocalStorage } from '../lib/storage';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { cn } from '../lib/utils';
 import NotificationBell from '../components/NotificationBell';
 import MarkAsPaidModal from '../components/invoice/MarkAsPaidModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
-import { invoiceReceived, invoiceAmounts, invoiceLineAmount, daysOverdue } from '../lib/invoicing';
-import { invoiceTaxLines, placeOfSupply, panOfGstin, amountInWords } from '../components/admin/invoices/builder/gst';
+import { invoiceReceived, invoiceAmounts, daysOverdue } from '../lib/invoicing';
+import { InvoicePage, paginateInvoice, paperDataFrom } from '../components/admin/invoices/builder/InvoicePaper';
 
 
 const Invoice = () => {
@@ -391,168 +388,20 @@ const Invoice = () => {
 
 
 
-    const getGridTemplate = () => {
-        const columns = displayInvoice.customColumns || [];
-        const customFr = columns.map(() => '1.5fr').join(' ');
-        return `3fr ${customFr} 0.8fr 1.2fr 1.2fr`;
-    };
 
     const items = displayInvoice.items || [];
     // Same maths as the invoice builder (GST rounded to paise).
     const { subtotal, gstAmount, total: computedTotal } = invoiceAmounts(displayInvoice);
     const totalAmount = isQuickUpload ? (displayInvoice.amount || 0) : computedTotal;
-    // GST rows (CGST + SGST or IGST), place of supply and PAN, as the builder prints them.
-    const taxLines = invoiceTaxLines(displayInvoice, gstAmount).lines;
-    const supply = placeOfSupply(displayInvoice);
-    const sellerPan = panOfGstin(displayInvoice.senderGst);
     const advancePaid = Number(displayInvoice.advancePaid) || 0;
     // Part-payments recorded by the team since the invoice was issued.
     const paymentsReceived = displayInvoice.status === 'Paid' ? 0 : invoiceReceived(displayInvoice);
     // Rounded to paise: this amount goes into the UPI link and QR.
     const toBePaid = Math.max(0, Math.round((totalAmount - (displayInvoice.showAdvance ? advancePaid : 0) - paymentsReceived) * 100) / 100);
 
-    const logoOptions = [
-        { id: 'entertainment', label: 'Newbi Entertainment', path: '/brand/newbi-logo-entertainment-800w.png', color: '#39FF14' },
-        { id: 'media', label: 'Newbi Media', path: '/brand/newbi-logo-media-800w.png', color: '#00D1FF' },
-        { id: 'marketing', label: 'Newbi Marketing', path: '/brand/newbi-logo-marketing-800w.png', color: '#FF0055' }
-    ];
-    const currentBrand = logoOptions.find(l => l.id === displayInvoice.selectedLogo) || logoOptions[0];
-    const brandColor = currentBrand.color;
-    
-    const inlineFmt = (t) => {
-        if (!t) return '';
-        return t
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>');
-    };
-
-    const processHtmlHeadings = (html) => {
-        if (!html) return html;
-        return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
-            const level = hashes.length;
-            const headingClass = level === 1
-                ? "text-[18px] font-black text-gray-900 dark:text-white print:text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
-                : level === 2
-                ? "text-[15px] font-bold text-gray-900 dark:text-white print:text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
-                : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
-            const headingTag = `h${Math.min(level + 1, 6)}`;
-            return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
-        });
-    };
-
-    const renderFormatted = (text, baseClass = '') => {
-        if (!text) return null;
-        const lines = text.split('\n');
-        const elements = [];
-        let i = 0;
-        while (i < lines.length) {
-            const line = lines[i];
-            
-            if (line.trim() === '') {
-                const lastElement = elements[elements.length - 1];
-                const isLastSpacer = lastElement && lastElement.key && String(lastElement.key).startsWith('spacer-');
-                if (!isLastSpacer) {
-                    elements.push(<div key={`spacer-${i}`} className="h-3" />);
-                }
-                i++;
-                continue;
-            }
-
-            const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
-            if (headingMatch) {
-                const level = headingMatch[1].length;
-                const headingText = headingMatch[2];
-                const headingClass = level === 1
-                    ? "text-[18px] font-black text-gray-900 dark:text-white print:text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
-                    : level === 2
-                    ? "text-[15px] font-bold text-gray-900 dark:text-white print:text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
-                    : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
-                const headingTag = level === 1 ? 'h2' : level === 2 ? 'h3' : 'h4';
-                const Tag = headingTag;
-                elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: inlineFmt(headingText) }} />);
-            } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
-                const items = [];
-                while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) { 
-                    items.push(lines[i].replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, '').trim()); 
-                    i++; 
-                }
-                elements.push(
-                    <div key={`ul-${i}`} className="pl-6 space-y-2 my-3">
-                        {items.map((item, j) => (
-                            <div key={j} className="flex items-start gap-3">
-                                <span className="text-black mt-[8px] text-[6px] select-none shrink-0">■</span>
-                                <span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />
-                            </div>
-                        ))}
-                    </div>
-                );
-                continue;
-            } else {
-                elements.push(<p key={i} className={cn("whitespace-pre-line leading-relaxed", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
-            }
-            i++;
-        }
-        return <div>{elements}</div>;
-    };
-
-    const renderContent = (content, baseClass = '') => {
-        if (!content) return null;
-        const isHtml = content.includes('<') && content.includes('>');
-        
-        if (isHtml) {
-            return (
-                <div 
-                    className={cn("article-content", baseClass)} 
-                    dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} 
-                />
-            );
-        }
-        
-        return renderFormatted(content, baseClass);
-    };
-
-    // Pagination Logic
-    // Reserve space for totals/notes if they are on the last page.
-    const ROWS_PER_PAGE_P1 = 12;
-    const ROWS_PER_PAGE_NEXT = 20;
-    const ROWS_RESERVED_FOR_TOTALS = 6; // Reserve space for totals/notes block
-
-    const getPaginatedPages = () => {
-        const pages = [];
-        let itemsRemaining = [...items];
-        
-        // Dynamic limits based on enabled blocks to prevent footer overlap
-        // Functional blocks that impact vertical space significantly
-        const functionalBlocksCount = [
-            displayInvoice.showGst,
-            taxLines.length > 1,
-            displayInvoice.showAdvance && (displayInvoice.advanceAmount > 0),
-            displayInvoice.paymentLink,
-            displayInvoice.upiId && displayInvoice.showUPI !== false
-        ].filter(Boolean).length;
-
-        // If 3 or more functional blocks are active, split at 4 items. Otherwise, allow 7.
-        const lastPageWithTotalsLimit = functionalBlocksCount >= 3 ? 4 : 7;
-        const firstPageLimit = 7; 
-        const standardLimit = 15;
-
-        let isFirstPage = true;
-        while (itemsRemaining.length > 0) {
-            const limit = isFirstPage ? firstPageLimit : standardLimit;
-            const pageItems = itemsRemaining.splice(0, limit);
-            pages.push(pageItems);
-
-            const totalsLimit = lastPageWithTotalsLimit;
-            if (itemsRemaining.length === 0 && pageItems.length > totalsLimit) {
-                pages.push([]);
-            }
-            isFirstPage = false;
-        }
-        
-        return pages.length > 0 ? pages : [[]];
-    };
-
-    const paginatedPages = getPaginatedPages();
+    // The same pages, split the same way, as the invoice builder and its PDF.
+    const paperData = paperDataFrom(displayInvoice);
+    const paperPages = paginateInvoice(items, paperData);
 
 
     const isPaid = displayInvoice.status === 'Paid';
@@ -692,268 +541,14 @@ const Invoice = () => {
                 {!isQuickUpload && (
                     <div className="w-full flex flex-col items-center relative z-10">
                         <div className="w-full flex flex-col items-center gap-4 sm:gap-8 relative z-10">
-                    {paginatedPages.map((pageItems, pageIdx) => {
-                                    const isLastPage = pageIdx === paginatedPages.length - 1;
-                                    const isFirstPage = pageIdx === 0;
-
-                                    return (
-                                        <div key={pageIdx} style={{ width: 794 * scale, height: 1123 * scale }} className="relative shrink-0 shadow-2xl rounded-xl overflow-hidden bg-[#F3F4F6]">
-                                            <div
-                                                className="invoice-page-render absolute top-0 left-0 w-[794px] h-[1123px] bg-[#F3F4F6] text-black overflow-hidden shrink-0 p-[12mm] flex flex-col origin-top-left"
-                                                style={{ fontFamily: "'Inter', sans-serif", transform: `scale(${scale})` }}
-                                            >
-                                                <div className={cn("relative z-10 flex flex-col flex-1", isLastPage ? "pb-48" : "pb-48")}>
-                                                    {/* Header - Only on Page 1 or Summary Page */}
-                                                {isFirstPage ? (
-                                                    <div className="flex justify-between items-start mb-6">
-                                                        <div>
-                                                            <img src={currentBrand.path} alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <h2 className="text-4xl font-black text-gray-600 tracking-tighter uppercase mb-0">#{displayInvoice.invoiceNumber}</h2>
-                                                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest leading-tight mt-1">INVOICE ID</p>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex justify-between items-center mb-6 border-b border-gray-300 pb-4">
-                                                        <img src="/brand/newbi-logo-entertainment-800w.png" alt="Newbi Logo" className="w-[100px] object-contain opacity-50" crossOrigin="anonymous" />
-                                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Invoice #{displayInvoice.invoiceNumber} — Page {pageIdx + 1}</p>
-                                                    </div>
-                                                )}
-
-                                                {/* Info Boxes - Only on Page 1 */}
-                                                {isFirstPage && (
-                                                    <div className="grid grid-cols-2 gap-8 mb-4">
-                                                        <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                            <div className="px-6 py-2" style={{ backgroundColor: `${brandColor}66` }}>
-                                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE BY</h4>
-                                                            </div>
-                                                            <div className="p-4">
-                                                                <p className="text-xl font-bold mb-3 leading-none">{displayInvoice.senderName || 'Newbi Entertainment'}</p>
-                                                                <div className="text-[11px] text-gray-600 font-semibold space-y-1.5 leading-normal">
-                                                                    {displayInvoice.senderAddress && <p className="whitespace-pre-wrap leading-relaxed max-w-xs">{displayInvoice.senderAddress}</p>}
-                                                                    <p>Contact: {displayInvoice.senderContact}</p>
-                                                                    <p>Email: {displayInvoice.senderEmail}</p>
-                                                                    {displayInvoice.senderGst && <p>GSTIN: {displayInvoice.senderGst}</p>}
-                                                                    {sellerPan && <p>PAN: {sellerPan}</p>}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                            <div className="px-6 py-2" style={{ backgroundColor: `${brandColor}66` }}>
-                                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE TO</h4>
-                                                            </div>
-                                                            <div className="p-4">
-                                                                <p className="text-xl font-bold uppercase mb-3 leading-none">{displayInvoice.clientName || 'CLIENT NAME'}</p>
-                                                                <div className="text-[11px] text-gray-600 font-semibold space-y-1.5 leading-normal">
-                                                                    <p>Date: {new Date(displayInvoice.invoiceDate || displayInvoice.issueDate || displayInvoice.createdAt || Date.now()).toLocaleDateString('en-GB')}</p>
-                                                                    {displayInvoice.dueDate && <p className="font-black italic" style={{ color: brandColor }}>Due Date: {new Date(displayInvoice.dueDate).toLocaleDateString('en-GB')}</p>}
-                                                                    {displayInvoice.clientAddress && <p className="whitespace-pre-line">{displayInvoice.clientAddress}</p>}
-                                                                    {displayInvoice.clientGst && <p className="mt-1 pt-1 border-t border-gray-200 inline-block">GST: {displayInvoice.clientGst}</p>}
-                                                                    {supply && <p>Place of Supply: {supply.name} ({supply.code})</p>}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Items Table */}
-                                                {pageItems.length > 0 && (
-                                                    <div className={cn("mb-4 overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white", !isFirstPage && "mt-4")}>
-                                                        <table className="w-full">
-                                                            <thead>
-                                                                <tr className="text-black" style={{ backgroundColor: `${brandColor}66` }}>
-                                                                    <th className="py-4 px-6 text-left text-[10px] font-black uppercase tracking-widest border-r border-black/5">SERVICE DESCRIPTION</th>
-                                                                    {(displayInvoice.customColumns || []).map(col => (
-                                                                        <th key={col.id} className="py-4 px-4 text-center text-[10px] font-black uppercase tracking-widest border-r border-black/5">{col.label}</th>
-                                                                    ))}
-                                                                    <th className="py-4 px-4 text-center text-[10px] font-black uppercase tracking-widest border-r border-black/5">QTY.</th>
-                                                                    <th className="py-4 px-4 text-center text-[10px] font-black uppercase tracking-widest border-r border-black/5">PRICE</th>
-                                                                    <th className="py-4 px-6 text-right text-[10px] font-black uppercase tracking-widest">TOTAL</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-gray-200">
-                                                                {pageItems.map((item, idx) => (
-                                                                    <tr key={idx} className="hover:bg-black/5 transition-colors">
-                                                                        <td className="py-2 px-6 text-[11px] font-bold uppercase border-r border-dashed border-gray-200 leading-relaxed font-heading italic">{item.name ? (<><span className="block">{item.name}</span>{item.description && <span className="mt-0.5 block text-[10px] font-medium normal-case not-italic text-gray-500 whitespace-pre-wrap">{item.description}</span>}</>) : (item.description || "SERVICE")}</td>
-                                                                        {(displayInvoice.customColumns || []).map(col => (
-                                                                            <td key={col.id} className="py-2 px-4 text-center text-[10px] font-semibold border-r border-dashed border-gray-200 leading-relaxed">{item.customValues?.[col.id] || "-"}</td>
-                                                                        ))}
-                                                                        <td className="py-2 px-4 text-center text-[11px] font-black border-r border-dashed border-gray-200 leading-relaxed">{item.qty || 1}</td>
-                                                                        <td className="py-2 px-4 text-center text-[11px] font-black border-r border-dashed border-gray-200 leading-relaxed">₹{(item.price || 0).toLocaleString()}</td>
-                                                                        <td className="py-2 px-6 text-right text-[11px] font-black leading-relaxed">₹{invoiceLineAmount(item).toLocaleString()}</td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                )}
-
-                                                {/* Totals Section & Left Details - Only on Last Page */}
-                                                {/* Totals Section & Left Details - Only on Last Page */}
-                                                {isLastPage && (
-                                                    <div className="mt-2 flex gap-x-8 items-start pt-2 border-t border-gray-200 relative z-10 w-full">
-                                                        {/* Left Column: Payment Details & Notes */}
-                                                        <div className="flex-1 space-y-2">
-                                                            {/* Payment Details */}
-                                                            {displayInvoice.showPaymentDetails !== false && displayInvoice.paymentDetails && (
-                                                                <div className="p-4 border-2 border-dashed border-gray-300 rounded-2xl text-[10px] text-left leading-relaxed text-gray-600 bg-white/40 shadow-sm w-full">
-                                                                    <p className="text-[10px] font-black text-black mb-3 border-b-2 pb-1.5 inline-block uppercase tracking-widest" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
-                                                                    <div className="font-mono">
-                                                                        {renderContent(displayInvoice.paymentDetails)}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                            {displayInvoice.showNotes !== false && displayInvoice.note && (
-                                                                <div className="bg-white/40 border border-black/5 rounded-2xl overflow-hidden shadow-sm">
-                                                                    <div className="px-4 py-1.5 border-b border-black/10" style={{ backgroundColor: `${brandColor}66` }}>
-                                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4>
-                                                                    </div>
-                                                                    <div className="p-4">
-                                                                        <div className="text-[10px] text-gray-700 leading-relaxed italic">
-                                                                            {renderContent(displayInvoice.note)}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Right Column: Totals, QR & Signature */}
-                                                        <div className="flex-1 flex flex-col items-end space-y-2">
-                                                            {/* Totals Section */}
-                                                            <div className="w-full space-y-1.5">
-                                                                <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest">
-                                                                    <span>SUBTOTAL</span>
-                                                                    <span className="text-black text-[11px] font-bold italic">₹{subtotal.toLocaleString()}</span>
-                                                                </div>
-                                                                {taxLines.map(line => (
-                                                                    <div key={line.label} className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest text-black">
-                                                                        <span>{line.label}</span>
-                                                                        <span className="text-black text-[11px] font-bold italic">₹{line.amount.toLocaleString()}</span>
-                                                                    </div>
-                                                                ))}
-                                                                <div className="flex justify-between items-center py-2 px-3 text-black border border-black/5 mt-1 rounded-lg" style={{ backgroundColor: `${brandColor}66` }}>
-                                                                    <span className="text-[9px] font-black uppercase italic">TOTAL</span>
-                                                                    <span className="text-lg font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
-                                                                </div>
-                                                                {totalAmount > 0 && <p className="text-right text-[9px] font-bold italic leading-snug text-gray-600">{amountInWords(totalAmount)}</p>}
-                                                                {((displayInvoice.showAdvance && advancePaid > 0) || paymentsReceived > 0) && (
-                                                                    <>
-                                                                        {displayInvoice.showAdvance && advancePaid > 0 && (
-                                                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest mt-1">
-                                                                                <span>ADVANCE PAID</span>
-                                                                                <span className="text-black text-[11px] font-bold italic">₹{advancePaid.toLocaleString()}</span>
-                                                                            </div>
-                                                                        )}
-                                                                        {paymentsReceived > 0 && (
-                                                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest mt-1">
-                                                                                <span>PAYMENTS RECEIVED</span>
-                                                                                <span className="text-black text-[11px] font-bold italic">₹{paymentsReceived.toLocaleString()}</span>
-                                                                            </div>
-                                                                        )}
-                                                                        <div className="flex justify-between items-center py-2 px-4 text-black border border-black/10 rounded-xl shadow-lg mt-1" style={{ backgroundColor: `${brandColor}66` }}>
-                                                                            <span className="text-[10px] font-black uppercase italic">BALANCE DUE</span>
-                                                                            <span className="text-2xl font-black italic tracking-tighter">₹{toBePaid.toLocaleString()}</span>
-                                                                        </div>
-                                                                    </>
-                                                                )}
-                                                                {displayInvoice.paymentLink && (
-                                                                    <a href={displayInvoice.paymentLink} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center justify-center gap-2 w-full h-11 bg-white text-gray-900 rounded-xl font-black uppercase tracking-[0.2em] text-[9px] hover:scale-[1.02] active:scale-95 transition-all shadow-xl">
-                                                                        <DollarSign size={14} className="text-neon-blue" />
-                                                                        Pay Now Online
-                                                                    </a>
-                                                                )}
-                                                            </div>
-
-                                                            {/* QR & Authentication Flex Row */}
-                                                            <div className="flex w-full items-end justify-between pt-6 mt-4 border-t border-gray-300/50 print:border-gray-200">
-                                                                
-                                                                {/* QR Code Section */}
-                                                                {(!invoice || invoice.showUPI !== false) && displayInvoice.upiId && (
-                                                                    <div className="flex flex-col items-center gap-2 shrink-0">
-                                                                        <div className="bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center w-[90px]">
-                                                                            <img 
-                                                                                src={displayInvoice.qrType === 'custom' && displayInvoice.customQrImage
-                                                                                    ? displayInvoice.customQrImage
-                                                                                    : `/api/qr?size=200&margin=1&text=${encodeURIComponent(`upi://pay?pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`}
-                                                                                alt="Payment QR" 
-                                                                                className="w-[70px] h-[70px] grayscale contrast-125 mx-auto"
-                                                                                crossOrigin="anonymous"
-                                                                            />
-                                                                            <p className="text-[6.5px] font-black text-center mt-2 text-gray-600 tracking-widest uppercase italic font-bold">Scan to pay</p>
-                                                                        </div>
-                                                                        <a 
-                                                                            href={`upi://pay?pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`} 
-                                                                            className="flex items-center justify-center gap-1 w-[90px] h-9 bg-black text-white rounded-xl text-[7.5px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
-                                                                            data-html2canvas-ignore="true"
-                                                                        >
-                                                                            Pay via UPI
-                                                                        </a>
-                                                                    </div>
-                                                                )}
-
-                                                                {/* Authentication Layer */}
-                                                                {(displayInvoice.showSeal || displayInvoice.showSignatures) && (
-                                                                    <div className="flex items-end relative pb-1 pr-1">
-                                                                        {displayInvoice.showSeal && (
-                                                                            <div className={displayInvoice.showSignatures ? "absolute -left-12 -top-4 pointer-events-none z-10 opacity-80 mix-blend-multiply (255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none rotate-[-4deg]" : "pointer-events-none z-10 opacity-80 mix-blend-multiply (255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none mb-0.5 rotate-[-4deg]"}>
-                                                                                <DocumentSeal className="w-[85px] h-[85px]" />
-                                                                            </div>
-                                                                        )}
-                                                                        {displayInvoice.showSignatures && (
-
-                                                                            <div className="z-20 flex flex-col items-center relative space-y-1 w-[150px]">
-                                                                            <p className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest mb-1 text-center whitespace-nowrap">For {displayInvoice.senderName || 'Newbi Entertainment'}</p>
-                                                                            <div className="h-12 w-full flex items-end justify-center relative border-b border-black/20 print:border-black/20 pb-1">
-                                                                                {displayInvoice.providerSignature ? (
-                                                                                    <img src={displayInvoice.providerSignature} alt="Provider Signature" className="h-full object-contain mix-blend-multiply print:mix-blend-multiply print:invert-0 grayscale-0" crossOrigin="anonymous" />
-                                                                                ) : (
-                                                                                    <p className="text-[11px] font-formal italic text-gray-900 print:text-black opacity-40">Authorized Signatory</p>
-                                                                                )}
-                                                                            </div>
-                                                                            <p className="text-[7.5px] font-black text-gray-900 print:text-black uppercase tracking-widest leading-tight mt-1 text-center whitespace-nowrap">Authorized Signatory</p>
-                                                                        </div>
-
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                            </div>
-
-                                                {displayInvoice.showFooter !== false && (
-                                                    <footer 
-                                                        className="absolute bottom-[12mm] left-[12mm] right-[12mm] h-11 flex items-center justify-between px-6 rounded-full text-black shadow-sm z-30" 
-                                                        style={{ backgroundColor: `${brandColor}66` }}
-                                                    >
-                                                        <div className="flex items-center gap-5 text-[8.5px] font-black tracking-widest uppercase">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="opacity-50 text-[7px] tracking-[0.2em]">CALL</span>
-                                                                <span className="whitespace-nowrap font-bold">+91 93043 72773</span>
-                                                            </div>
-                                                            <div className="h-3 w-[1px] bg-black/15" />
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="opacity-50 text-[7px] tracking-[0.2em]">EMAIL</span>
-                                                                <span className="whitespace-nowrap font-bold">partnership@newbi.live</span>
-                                                            </div>
-                                                            <div className="h-3 w-[1px] bg-black/15" />
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="opacity-50 text-[7px] tracking-[0.2em]">WEB</span>
-                                                                <span className="whitespace-nowrap font-bold">newbi.live</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-[8.5px] font-black tracking-widest uppercase italic opacity-80 whitespace-nowrap pl-4">
-                                                            PAGE {pageIdx + 1} OF {paginatedPages.length}
-                                                        </div>
-                                                    </footer>
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                    {paperPages.map((pageItems, pageIdx) => (
+                        <div key={pageIdx} style={{ width: 794 * scale, height: 1123 * scale }} className="relative shrink-0 overflow-hidden rounded-xl shadow-2xl">
+                            <div className="absolute left-0 top-0 origin-top-left" style={{ transform: `scale(${scale})` }}>
+                                <InvoicePage forCapture data={paperData} columns={paperData.customColumns || []} pageItems={pageItems} pageIndex={pageIdx} pageCount={paperPages.length}
+                                    amounts={{ subtotal, gstAmount, total: totalAmount }} balanceDue={toBePaid} paymentsReceived={paymentsReceived} />
+                            </div>
+                        </div>
+                    ))}
                 </div>
                     </div>
                 )}

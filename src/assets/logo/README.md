@@ -6,7 +6,9 @@ ConcertZone keeps its own brand and does not use these.
 | File | Use |
 |---|---|
 | `newbi-logo.svg` / `newbi-logo-2000w.png` | Main logo: landing, app shell, admin, emails |
-| `newbi-logo-entertainment.svg` / `-media` / `-marketing` (+ `-2000w.png`) | Logo with the company name, for invoices, proposals and contracts |
+| `newbi-logo-black.svg` | Black and green logo for light backgrounds |
+| `newbi-logo-black-entertainment.svg` / `-media` / `-marketing` | Black and green logo with the company name, for invoices (copies in `public/brand/`) |
+| `newbi-logo-entertainment.svg` / `-media` / `-marketing` (+ `-2000w.png`) | Logo with the company name, for proposals and contracts |
 | `newbi-icon.svg` | The "N." mark (transparent), for small spaces |
 | `newbi-icon-app.svg` | App icon on a dark square |
 

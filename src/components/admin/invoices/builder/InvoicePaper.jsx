@@ -1,21 +1,22 @@
 import React from 'react';
 import Zap from 'lucide-react/dist/esm/icons/zap';
-import DocumentSeal from '../../../ui/DocumentSeal';
 import { cn } from '../../../../lib/utils';
 import { invoiceLineAmount } from '../../../../lib/invoicing';
 import { invoiceTaxLines, placeOfSupply, panOfGstin, amountInWords } from './gst';
 
 /*
- * The invoice paper as the builder previews it and downloads it as a PDF.
- * This is product output: its look is unchanged from the original builder
- * preview. One component now draws both the on-screen preview and the pages
- * captured for the PDF, so the download always matches what you see.
+ * The invoice paper: the builder's preview, its PDF, and the public invoice
+ * page all draw these pages, so what you build is what the client sees and
+ * downloads. White A4 in the newbi.live look: Outfit display type, tracked
+ * uppercase labels, black rules and one acid-green accent.
  */
 
+// Which Newbi company sends the invoice: its black and green newbi.live logo (with the company
+// name under it) heads the paper, and it names the seller when "Sender name" is empty.
 export const BRANDS = [
-    { id: 'entertainment', label: 'Newbi Entertainment', path: '/brand/newbi-logo-entertainment-800w.png', color: '#39FF14' },
-    { id: 'media', label: 'Newbi Media', path: '/brand/newbi-logo-media-800w.png', color: '#00D1FF' },
-    { id: 'marketing', label: 'Newbi Marketing', path: '/brand/newbi-logo-marketing-800w.png', color: '#FF0055' },
+    { id: 'entertainment', label: 'Newbi Entertainment', path: '/brand/newbi-logo-black-entertainment.svg' },
+    { id: 'media', label: 'Newbi Media', path: '/brand/newbi-logo-black-media.svg' },
+    { id: 'marketing', label: 'Newbi Marketing', path: '/brand/newbi-logo-black-marketing.svg' },
 ];
 export const brandOf = (id) => BRANDS.find(b => b.id === id) || BRANDS[0];
 
@@ -119,8 +120,50 @@ export const paginateInvoice = (items, data) => {
     return pages.length > 0 ? pages : [[]];
 };
 
-const money = (n) => `₹${(Number(n) || 0).toLocaleString()}`;
-const day = (key) => (key ? new Date(`${String(key).slice(0, 10)}T00:00:00`).toLocaleDateString('en-GB') : '');
+const money = (n) => `₹${(Number(n) || 0).toLocaleString('en-IN')}`;
+const day = (key) => (key ? new Date(`${String(key).slice(0, 10)}T00:00:00`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '');
+
+/**
+ * A saved invoice as the paper reads it, with the same defaults the builder
+ * applies when it opens one. The public invoice page draws its pages from this.
+ */
+export const paperDataFrom = (invoice = {}) => ({
+    ...invoice,
+    invoiceDate: invoice.invoiceDate || invoice.issueDate || invoice.createdAt || '',
+    showNotes: invoice.showNotes !== false,
+    showPaymentDetails: invoice.showPaymentDetails !== false,
+    showFooter: invoice.showFooter !== false,
+    showUPI: invoice.showUPI === undefined ? Boolean(invoice.upiId) : Boolean(invoice.showUPI),
+    advancePaid: Number(invoice.advancePaid) || 0,
+    gstPercentage: Number(invoice.gstPercentage) || 0,
+});
+
+// The site's acid green. Used only as a fill (dots, bars, the amount on black), never as text on white.
+const GREEN = '#39FF14';
+const display = { fontFamily: "'Outfit', 'Inter', sans-serif" };
+
+/** Small tracked uppercase label with a green dot, like the chips on newbi.live. */
+const Label = ({ children, className }) => (
+    <p className={cn('flex items-center gap-1.5 text-[8.5px] font-bold uppercase tracking-[0.22em] text-gray-500', className)}>
+        <span className="h-[6px] w-[6px] shrink-0 rounded-full" style={{ backgroundColor: GREEN }} />
+        {children}
+    </p>
+);
+
+const Row = ({ label, value, strong = false }) => (
+    <div className="flex items-baseline justify-between border-b border-gray-200 py-[7px]">
+        <span className="text-[8.5px] font-bold uppercase tracking-[0.18em] text-gray-500">{label}</span>
+        <span className={cn('tabular-nums text-gray-950', strong ? 'text-[13px] font-bold' : 'text-[11px] font-semibold')}>{value}</span>
+    </div>
+);
+
+/** The black block with the amount in green: the one loud thing on the page. */
+const AmountBlock = ({ label, value }) => (
+    <div className="mt-2 flex items-center justify-between rounded-2xl bg-[#0a0a0a] px-5 py-3.5">
+        <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/70">{label}</span>
+        <span className="text-[26px] font-extrabold leading-none tracking-[-0.03em] tabular-nums" style={{ ...display, color: GREEN }}>{value}</span>
+    </div>
+);
 
 /**
  * One A4 page (794 × 1123 px). `amounts` = { subtotal, gstAmount, total },
@@ -129,238 +172,214 @@ const day = (key) => (key ? new Date(`${String(key).slice(0, 10)}T00:00:00`).toL
  */
 export const InvoicePage = ({ data, columns = [], pageItems, pageIndex, pageCount, amounts, balanceDue, paymentsReceived = 0, forCapture = false }) => {
     const brand = brandOf(data.selectedLogo);
-    const brandColor = brand.color;
+    const sender = data.senderName || brand.label;
+    const isFirst = pageIndex === 0;
     const isLast = pageIndex === pageCount - 1;
     const upiLink = `upi://pay?pa=${data.upiId}&pn=NEWBI&am=${balanceDue}&cu=INR`;
     const tax = invoiceTaxLines(data, amounts.gstAmount);
     const supply = placeOfSupply(data);
     const sellerPan = panOfGstin(data.senderGst);
-    const showBalance = (data.showAdvance && data.advancePaid > 0) || paymentsReceived > 0;
+    const advance = data.showAdvance && data.advancePaid > 0 ? data.advancePaid : 0;
+    const showBalance = advance > 0 || paymentsReceived > 0;
+    const firstRow = isFirst ? 0 : 7 + (pageIndex - 1) * 14; // row numbers carry on across pages
+    const numCell = 'py-3 px-3 text-right text-[11px] font-semibold tabular-nums text-gray-950 align-top';
+    const headCell = 'pb-2.5 pt-1 px-3 text-[8.5px] font-bold uppercase tracking-[0.2em] text-gray-950';
 
     return (
         <div
-            className={cn('invoice-page-render w-[794px] h-[1123px] bg-white text-gray-900 print:bg-white print:text-black relative flex flex-col p-[12mm] overflow-hidden', !forCapture && 'shadow-2xl rounded-[2px]')}
+            className={cn('invoice-page-render relative flex h-[1123px] w-[794px] flex-col overflow-hidden bg-white p-[12mm] text-gray-950 print:bg-white print:text-black', !forCapture && 'rounded-[2px] shadow-2xl')}
             style={{ fontFamily: "'Inter', sans-serif" }}
         >
-            {pageIndex === 0 ? (
-                <div className="flex justify-between items-start mb-6">
-                    <div>
-                        <img src={brand.path} alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
+            {isFirst ? (
+                <header>
+                    <div className="flex items-start justify-between">
+                        <img src={brand.path} alt={`newbi.live · ${brand.label}`} className="h-[84px] w-auto object-contain" crossOrigin="anonymous" />
+                        <div className="text-right">
+                            <p className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-2.5 py-1 text-[8.5px] font-bold uppercase tracking-[0.22em] text-gray-700">
+                                <span className="h-[6px] w-[6px] rounded-full" style={{ backgroundColor: GREEN }} />
+                                {data.showGst ? 'Tax invoice' : 'Invoice'}
+                            </p>
+                            <h1 className="mt-2 text-[34px] font-extrabold uppercase leading-none tracking-[-0.04em] text-gray-950" style={display}>{data.invoiceNumber || 'Draft'}</h1>
+                        </div>
                     </div>
-                    <div className="text-right">
-                        <h2 className="text-4xl font-black text-gray-900 tracking-tighter uppercase mb-0">#{data.invoiceNumber}</h2>
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-tight mt-1">INVOICE ID</p>
+
+                    <div className="mt-7 grid grid-cols-4 border-y-2 border-gray-950">
+                        {[
+                            ['Issued', day(data.invoiceDate) || '—'],
+                            ['Due', day(data.dueDate) || 'On receipt'],
+                            ['Place of supply', supply ? `${supply.name} (${supply.code})` : '—'],
+                            [showBalance ? 'Balance due' : 'Amount due', money(showBalance ? balanceDue : amounts.total)],
+                        ].map(([label, value], i) => (
+                            <div key={label} className={cn('py-3', i > 0 && 'border-l border-gray-200 pl-4')}>
+                                <p className="text-[8.5px] font-bold uppercase tracking-[0.2em] text-gray-500">{label}</p>
+                                <p className={cn('mt-1 truncate text-gray-950 tabular-nums', i === 3 ? 'text-[15px] font-extrabold tracking-[-0.02em]' : 'text-[12px] font-semibold')} style={i === 3 ? display : undefined}>{value}</p>
+                            </div>
+                        ))}
                     </div>
-                </div>
+
+                    <div className="mt-7 grid grid-cols-2 gap-10">
+                        <div>
+                            <Label>Billed by</Label>
+                            <p className="mt-2.5 text-[17px] font-bold leading-tight tracking-[-0.02em]" style={display}>{sender}</p>
+                            <div className="mt-2 space-y-1 text-[10.5px] leading-relaxed text-gray-600">
+                                {data.senderAddress && <p className="max-w-xs whitespace-pre-wrap">{data.senderAddress}</p>}
+                                {data.senderContact && <p>{data.senderContact}</p>}
+                                {data.senderEmail && <p>{data.senderEmail}</p>}
+                                {(data.senderGst || sellerPan) && (
+                                    <p className="pt-1 text-[9.5px] font-semibold uppercase tracking-[0.08em] text-gray-700">
+                                        {data.senderGst && <>GSTIN {data.senderGst}</>}
+                                        {data.senderGst && sellerPan && <span className="px-1.5 text-gray-300">·</span>}
+                                        {sellerPan && <>PAN {sellerPan}</>}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        <div>
+                            <Label>Billed to</Label>
+                            <p className="mt-2.5 text-[17px] font-bold leading-tight tracking-[-0.02em]" style={display}>{data.clientName || 'Client name'}</p>
+                            <div className="mt-2 space-y-1 text-[10.5px] leading-relaxed text-gray-600">
+                                {data.clientAddress && <p className="whitespace-pre-line">{data.clientAddress}</p>}
+                                {data.clientGst && <p className="pt-1 text-[9.5px] font-semibold uppercase tracking-[0.08em] text-gray-700">GSTIN {data.clientGst}</p>}
+                            </div>
+                        </div>
+                    </div>
+                </header>
             ) : (
-                <div className="flex justify-between items-center mb-6 border-b border-gray-300 pb-4">
-                    <img src={brand.path} alt="Logo" className="w-[100px] object-contain opacity-50" crossOrigin="anonymous" />
-                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Invoice #{data.invoiceNumber} — Page {pageIndex + 1}</p>
-                </div>
+                <header className="flex items-center justify-between border-b-2 border-gray-950 pb-3">
+                    <img src={brand.path} alt={`newbi.live · ${brand.label}`} className="h-[34px] w-auto object-contain" crossOrigin="anonymous" />
+                    <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-gray-600">{data.invoiceNumber} <span className="px-1 text-gray-300">·</span> continued</p>
+                </header>
             )}
 
-            <div className="relative z-10 flex flex-col flex-1 pb-20">
-                {pageIndex === 0 && (
-                    <div className="grid grid-cols-2 gap-8 mb-8">
-                        <div className="bg-white/80 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                            <div className="px-6 py-2" style={{ backgroundColor: `${brandColor}66` }}>
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE BY</h4>
-                            </div>
-                            <div className="p-6">
-                                <p className="text-xl font-bold mb-3 leading-none">{data.senderName || 'Newbi Entertainment'}</p>
-                                <div className="text-[11px] text-gray-600 font-semibold space-y-1.5 leading-normal">
-                                    {data.senderAddress && <p className="whitespace-pre-wrap leading-relaxed max-w-xs">{data.senderAddress}</p>}
-                                    <p>Contact: {data.senderContact}</p>
-                                    <p>Email: {data.senderEmail}</p>
-                                    {data.senderGst && <p>GSTIN: {data.senderGst}</p>}
-                                    {sellerPan && <p>PAN: {sellerPan}</p>}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-white/80 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                            <div className="px-6 py-2" style={{ backgroundColor: `${brandColor}66` }}>
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE TO</h4>
-                            </div>
-                            <div className="p-6">
-                                <p className="text-xl font-bold uppercase mb-3 leading-none">{data.clientName || 'CLIENT NAME'}</p>
-                                <div className="text-[11px] text-gray-600 font-semibold space-y-1.5 leading-normal">
-                                    <p>Date: {day(data.invoiceDate)}</p>
-                                    {data.dueDate && <p className="font-black italic" style={{ color: brandColor }}>Due Date: {day(data.dueDate)}</p>}
-                                    {data.clientAddress && <p className="whitespace-pre-line">{data.clientAddress}</p>}
-                                    {data.clientGst && <p className="mt-1 pt-1 border-t border-gray-200 inline-block text-[10px]">GST: {data.clientGst}</p>}
-                                    {supply && <p className="text-[10px]">Place of Supply: {supply.name} ({supply.code})</p>}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
+            <div className="relative z-10 flex flex-1 flex-col pb-16">
                 {pageItems.length > 0 && (
-                    <div className={cn('mb-8 overflow-hidden rounded-2xl border border-gray-300 shadow-sm bg-white', pageIndex > 0 && 'mt-4')}>
-                        <table className="w-full">
-                            <thead>
-                                <tr className="text-black" style={{ backgroundColor: `${brandColor}66` }}>
-                                    <th className="py-4 px-6 text-left text-[10px] font-black uppercase tracking-widest border-r border-black/5">SERVICE DESCRIPTION</th>
+                    <table className={cn('w-full border-collapse', isFirst ? 'mt-8' : 'mt-6')}>
+                        <thead>
+                            <tr className="border-b-2 border-gray-950">
+                                <th className={cn(headCell, 'w-8 pl-0 text-left')}>#</th>
+                                <th className={cn(headCell, 'text-left')}>Item</th>
+                                {columns.map(col => <th key={col.id} className={cn(headCell, 'text-left')}>{col.label}</th>)}
+                                <th className={cn(headCell, 'text-right')}>Qty</th>
+                                <th className={cn(headCell, 'text-right')}>Rate</th>
+                                <th className={cn(headCell, 'pr-0 text-right')}>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {pageItems.map((item, idx) => (
+                                <tr key={idx} className="border-b border-gray-200">
+                                    <td className="py-3 pr-3 align-top text-[10px] font-semibold tabular-nums text-gray-400">{String(firstRow + idx + 1).padStart(2, '0')}</td>
+                                    <td className="py-3 px-3 align-top">
+                                        <span className="block text-[11.5px] font-semibold leading-snug text-gray-950">{item.name || item.description || 'Service'}</span>
+                                        {item.name && item.description && <span className="mt-0.5 block whitespace-pre-wrap text-[10px] leading-snug text-gray-500">{item.description}</span>}
+                                    </td>
                                     {columns.map(col => (
-                                        <th key={col.id} className="py-4 px-4 text-center text-[10px] font-black uppercase tracking-widest border-r border-black/5">{col.label}</th>
+                                        <td key={col.id} className="py-3 px-3 align-top text-[10.5px] text-gray-600">{item.customValues?.[col.id] || '—'}</td>
                                     ))}
-                                    <th className="py-4 px-4 text-center text-[10px] font-black uppercase tracking-widest border-r border-black/5">QTY.</th>
-                                    <th className="py-4 px-4 text-center text-[10px] font-black uppercase tracking-widest border-r border-black/5">PRICE</th>
-                                    <th className="py-4 px-6 text-right text-[10px] font-black uppercase tracking-widest">TOTAL</th>
+                                    <td className={numCell}>{item.qty || 1}</td>
+                                    <td className={numCell}>{money(item.price)}</td>
+                                    <td className={cn(numCell, 'pr-0 font-bold')}>{money(invoiceLineAmount(item))}</td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {pageItems.map((item, idx) => (
-                                    <tr key={idx}>
-                                        <td className="py-3 px-6 text-[11px] font-bold uppercase border-r border-dashed border-gray-200 leading-relaxed italic text-gray-900">{item.name ? (<><span className="block">{item.name}</span>{item.description && <span className="mt-0.5 block text-[10px] font-medium normal-case not-italic text-gray-500 whitespace-pre-wrap">{item.description}</span>}</>) : (item.description || 'SERVICE')}</td>
-                                        {columns.map(col => (
-                                            <td key={col.id} className="py-3 px-4 text-center text-[10px] font-semibold border-r border-dashed border-gray-200 leading-relaxed italic text-gray-500">{item.customValues?.[col.id] || '-'}</td>
-                                        ))}
-                                        <td className="py-3 px-4 text-center text-[11px] font-black border-r border-dashed border-gray-200 leading-relaxed text-gray-900">{item.qty || 1}</td>
-                                        <td className="py-3 px-4 text-center text-[11px] font-black border-r border-dashed border-gray-200 leading-relaxed text-gray-900">{money(item.price)}</td>
-                                        <td className="py-3 px-6 text-right text-[11px] font-black leading-relaxed text-gray-900">{money(invoiceLineAmount(item))}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                            ))}
+                        </tbody>
+                    </table>
                 )}
 
                 {isLast && (
-                    <div className="mt-4 flex gap-x-8 items-start pt-4 border-t border-gray-200 relative z-10 w-full">
-                        <div className="flex-1 space-y-2">
-                            {data.showPaymentDetails && data.paymentDetails && (
-                                <div className="p-4 border-2 border-dashed border-gray-300 rounded-2xl text-[10px] text-left leading-relaxed text-gray-600 bg-white/60 shadow-sm w-full">
-                                    <p className="text-[10px] font-black text-black mb-3 border-b-2 pb-1.5 inline-block uppercase tracking-widest" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
-                                    <div className="font-mono">{renderContent(data.paymentDetails)}</div>
+                    <div className="mt-7 flex w-full items-start gap-10">
+                        <div className="flex-1 space-y-5">
+                            {data.showPaymentDetails && !isBlankText(data.paymentDetails) && (
+                                <div>
+                                    <Label>Payment details</Label>
+                                    <div className="mt-2.5 rounded-2xl border border-gray-200 bg-[#F4F2EC]/60 p-4 text-[10px] leading-relaxed text-gray-700">{renderContent(data.paymentDetails)}</div>
                                 </div>
                             )}
                             {data.showNotes && !isBlankText(data.note) && (
-                                <div className="bg-white/60 border border-black/5 rounded-2xl overflow-hidden shadow-sm">
-                                    <div className="px-4 py-1.5 border-b border-black/10" style={{ backgroundColor: `${brandColor}66` }}>
-                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4>
-                                    </div>
-                                    <div className="p-4">
-                                        <div className="text-[10px] text-gray-700 leading-relaxed italic">{renderContent(data.note)}</div>
-                                    </div>
+                                <div>
+                                    <Label>Note</Label>
+                                    <div className="mt-2.5 text-[10px] leading-relaxed text-gray-600">{renderContent(data.note)}</div>
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex-1 flex flex-col items-end space-y-1">
-                            <div className="w-full space-y-1.5">
-                                <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest">
-                                    <span>SUBTOTAL</span>
-                                    <span className="text-black text-[11px] font-bold italic">{money(amounts.subtotal)}</span>
-                                </div>
-                                {tax.lines.map(line => (
-                                    <div key={line.label} className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest text-black">
-                                        <span>{line.label}</span>
-                                        <span className="text-black text-[11px] font-bold italic">{money(line.amount)}</span>
-                                    </div>
-                                ))}
-                                <div className="flex justify-between items-center py-2 px-3 text-black border border-black/5 mt-1 rounded-lg" style={{ backgroundColor: `${brandColor}66` }}>
-                                    <span className="text-[9px] font-black uppercase italic">TOTAL</span>
-                                    <span className="text-lg font-black italic tracking-tighter">{money(amounts.total)}</span>
-                                </div>
-                                {amounts.total > 0 && <p className="text-right text-[9px] font-bold italic leading-snug text-gray-600">{amountInWords(amounts.total)}</p>}
-                                {showBalance && (
-                                    <>
-                                        {data.showAdvance && data.advancePaid > 0 && (
-                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest mt-1">
-                                                <span>ADVANCE PAID</span>
-                                                <span className="text-black text-[11px] font-bold italic">{money(data.advancePaid)}</span>
-                                            </div>
-                                        )}
-                                        {paymentsReceived > 0 && (
-                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest mt-1">
-                                                <span>PAYMENTS RECEIVED</span>
-                                                <span className="text-black text-[11px] font-bold italic">{money(paymentsReceived)}</span>
-                                            </div>
-                                        )}
-                                        <div className="flex justify-between items-center py-2 px-4 text-black border border-black/10 rounded-xl shadow-lg mt-1" style={{ backgroundColor: `${brandColor}66` }}>
-                                            <span className="text-[10px] font-black uppercase italic">BALANCE DUE</span>
-                                            <span className="text-2xl font-black italic tracking-tighter">{money(balanceDue)}</span>
-                                        </div>
-                                    </>
-                                )}
-                                {data.paymentLink && (
-                                    <a href={data.paymentLink} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center justify-center gap-2 w-full h-11 bg-black text-white rounded-xl font-black uppercase tracking-[0.2em] text-[9px] transition-all shadow-xl">
-                                        <Zap size={14} className="text-neon-blue" />
-                                        Pay Now Online
-                                    </a>
-                                )}
-                            </div>
-
-                            <div className="flex w-full items-end justify-between pt-4 mt-2 border-t border-gray-300/50 print:border-gray-200">
-                                {data.showUPI && data.upiId && (
-                                    <div className="flex flex-col items-center gap-2 shrink-0">
-                                        <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center w-[85px]">
-                                            <img
-                                                src={data.qrType === 'custom' && data.customQrImage
-                                                    ? data.customQrImage
-                                                    : `/api/qr?size=200&margin=1&text=${encodeURIComponent(upiLink)}`}
-                                                alt="Payment QR"
-                                                className="w-[65px] h-[65px] grayscale contrast-125 mx-auto"
-                                                crossOrigin="anonymous"
-                                            />
-                                            <p className="text-[6px] font-black text-center mt-1 text-gray-600 tracking-widest uppercase italic font-bold">Scan to pay</p>
-                                        </div>
-                                        <a href={upiLink} className="flex items-center justify-center gap-1 w-[85px] h-8 bg-black text-white rounded-xl text-[7px] font-black uppercase tracking-widest transition-all" data-html2canvas-ignore="true">
-                                            Pay via UPI
-                                        </a>
-                                    </div>
-                                )}
-
-                                {(data.showSeal || data.showSignatures) && (
-                                    <div className="flex items-end relative pb-1 pr-1">
-                                        {data.showSeal && (
-                                            <div className={data.showSignatures ? 'absolute -left-12 -top-4 pointer-events-none z-10 opacity-80 mix-blend-multiply print:mix-blend-multiply print:drop-shadow-none mb-0.5 rotate-[-4deg]' : 'pointer-events-none z-10 opacity-80 mix-blend-multiply print:mix-blend-multiply print:drop-shadow-none mb-0.5 rotate-[-4deg]'}>
-                                                <DocumentSeal className="w-[85px] h-[85px]" />
-                                            </div>
-                                        )}
-                                        {data.showSignatures && (
-                                            <div className="z-20 flex flex-col items-center relative space-y-1 w-[150px]">
-                                                <p className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest mb-1 text-center whitespace-nowrap">For {data.senderName || 'Newbi Entertainment'}</p>
-                                                <div className="h-12 w-full flex items-end justify-center relative border-b border-black/20 print:border-black/20 pb-1">
-                                                    {data.providerSignature ? (
-                                                        <img src={data.providerSignature} alt="Provider Signature" className="h-full object-contain mix-blend-multiply print:mix-blend-multiply print:invert-0 grayscale-0" crossOrigin="anonymous" />
-                                                    ) : (
-                                                        <p className="text-[11px] font-formal italic text-gray-900 print:text-black opacity-40">Authorized Signatory</p>
-                                                    )}
-                                                </div>
-                                                <p className="text-[7.5px] font-black text-gray-900 print:text-black uppercase tracking-widest leading-tight mt-1 text-center whitespace-nowrap">Authorized Signatory</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+                        <div className="flex w-[300px] shrink-0 flex-col">
+                            <Row label="Subtotal" value={money(amounts.subtotal)} />
+                            {tax.lines.map(line => <Row key={line.label} label={line.label} value={money(line.amount)} />)}
+                            {showBalance ? (
+                                <>
+                                    <Row label="Total" value={money(amounts.total)} strong />
+                                    {advance > 0 && <Row label="Advance paid" value={`− ${money(advance)}`} />}
+                                    {paymentsReceived > 0 && <Row label="Payments received" value={`− ${money(paymentsReceived)}`} />}
+                                    <AmountBlock label="Balance due" value={money(balanceDue)} />
+                                </>
+                            ) : (
+                                <AmountBlock label="Total" value={money(amounts.total)} />
+                            )}
+                            {amounts.total > 0 && <p className="mt-2 text-right text-[9px] leading-snug text-gray-500">{amountInWords(amounts.total)}</p>}
+                            {data.paymentLink && (
+                                <a href={data.paymentLink} target="_blank" rel="noopener noreferrer" className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-full border-2 border-gray-950 text-[9px] font-bold uppercase tracking-[0.22em] text-gray-950">
+                                    <Zap size={12} className="fill-current" /> Pay online
+                                </a>
+                            )}
                         </div>
+                    </div>
+                )}
+
+                {isLast && ((data.showUPI && data.upiId) || data.showSeal || data.showSignatures) && (
+                    <div className="mt-auto flex w-full items-end justify-between border-t border-gray-200 pt-5">
+                        {data.showUPI && data.upiId ? (
+                            <div className="flex items-center gap-3">
+                                <div className="rounded-xl border border-gray-200 bg-white p-1.5">
+                                    <img
+                                        src={data.qrType === 'custom' && data.customQrImage
+                                            ? data.customQrImage
+                                            : `/api/qr?size=200&margin=1&text=${encodeURIComponent(upiLink)}`}
+                                        alt="Payment QR"
+                                        className="h-[72px] w-[72px]"
+                                        crossOrigin="anonymous"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label>Scan to pay</Label>
+                                    <p className="text-[10px] text-gray-600">Any UPI app · <span className="font-semibold text-gray-950">{data.upiId}</span></p>
+                                    <a href={upiLink} className="inline-block text-[9px] font-bold uppercase tracking-[0.2em] text-gray-950 underline decoration-2 underline-offset-4" style={{ textDecorationColor: GREEN }} data-html2canvas-ignore="true">Pay via UPI</a>
+                                </div>
+                            </div>
+                        ) : <span />}
+
+                        {(data.showSeal || data.showSignatures) && (
+                            <div className="relative flex items-end pb-1">
+                                {data.showSeal && ( // a plain image, not the animated DocumentSeal: the PDF capture must never catch it mid-fade
+                                    <div className={cn('pointer-events-none z-10 rotate-[-4deg] opacity-90', data.showSignatures && 'absolute -left-[92px] bottom-1')}>
+                                        <img src="/official_seal.png" alt="Official seal" className="h-[85px] w-[85px] object-contain" crossOrigin="anonymous" />
+                                    </div>
+                                )}
+                                {data.showSignatures && (
+                                    <div className="relative z-20 flex w-[170px] flex-col items-center">
+                                        <p className="mb-1 whitespace-nowrap text-center text-[8px] font-bold uppercase tracking-[0.2em] text-gray-500">For {sender}</p>
+                                        <div className="flex h-12 w-full items-end justify-center border-b-2 border-gray-950 pb-1">
+                                            {data.providerSignature
+                                                ? <img src={data.providerSignature} alt="Signature" className="h-full object-contain mix-blend-multiply" crossOrigin="anonymous" />
+                                                : <p className="font-formal text-[11px] italic text-gray-900 opacity-40">Authorised signatory</p>}
+                                        </div>
+                                        <p className="mt-1.5 whitespace-nowrap text-center text-[8px] font-bold uppercase tracking-[0.2em] text-gray-950">Authorised signatory</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
 
             {data.showFooter !== false && (
-                <footer className="absolute bottom-[12mm] left-[12mm] right-[12mm] h-11 flex items-center justify-between px-6 rounded-full text-black shadow-sm z-30" style={{ backgroundColor: `${brandColor}66` }}>
-                    <div className="flex items-center gap-5 text-[8.5px] font-black tracking-widest uppercase">
-                        <div className="flex items-center gap-1.5">
-                            <span className="opacity-50 text-[7px] tracking-[0.2em]">CALL</span>
-                            <span className="whitespace-nowrap font-bold">+91 93043 72773</span>
-                        </div>
-                        <div className="h-3 w-[1px] bg-black/15" />
-                        <div className="flex items-center gap-1.5">
-                            <span className="opacity-50 text-[7px] tracking-[0.2em]">EMAIL</span>
-                            <span className="whitespace-nowrap font-bold">partnership@newbi.live</span>
-                        </div>
-                        <div className="h-3 w-[1px] bg-black/15" />
-                        <div className="flex items-center gap-1.5">
-                            <span className="opacity-50 text-[7px] tracking-[0.2em]">WEB</span>
-                            <span className="whitespace-nowrap font-bold">newbi.live</span>
-                        </div>
+                <footer className="absolute bottom-[10mm] left-[12mm] right-[12mm] z-30 flex items-center justify-between border-t border-gray-950 pt-3 text-[8px] font-bold uppercase tracking-[0.2em] text-gray-600">
+                    <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1.5 text-gray-950">
+                            <span className="h-[6px] w-[6px] rounded-full" style={{ backgroundColor: GREEN }} />newbi.live
+                        </span>
+                        <span>+91 93043 72773</span>
+                        <span>partnership@newbi.live</span>
                     </div>
-                    <div className="text-[8.5px] font-black tracking-widest uppercase italic opacity-80 whitespace-nowrap pl-4">
-                        PAGE {pageIndex + 1} OF {pageCount}
-                    </div>
+                    <span className="tabular-nums">Page {pageIndex + 1} / {pageCount}</span>
                 </footer>
             )}
         </div>
