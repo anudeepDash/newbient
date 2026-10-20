@@ -11,6 +11,7 @@ import { GlassChip } from '../components/app';
 import { getCampaignSpotsInfo } from '../lib/utils';
 import { appPath } from './host';
 import { TicketReadyBadge } from './creator/YourTicket';
+import { t } from '../i18n';
 
 /*
  * Card props for the app's data, so every list renders the same Card.
@@ -48,22 +49,22 @@ export function campaignCard(c, { applied = false, from = null, progress = null 
             <>
                 <TicketReadyBadge campaignId={c.id} />
                 {progress?.requiredDone
-                    ? <GlassChip icon={CircleCheck} label="Completed" tone="accent" />
+                    ? <GlassChip icon={CircleCheck} label={t('Completed')} tone="accent" />
                     : applied
-                        ? <GlassChip icon={CircleCheck} label="Applied" tone="accent" />
-                        : fewLeft ? <GlassChip icon={Flame} label={`${spots.spotsLeft} left`} tone="warn" /> : null}
+                        ? <GlassChip icon={CircleCheck} label={t('Applied')} tone="accent" />
+                        : fewLeft ? <GlassChip icon={Flame} label={t('{count} left', { count: spots.spotsLeft })} tone="warn" /> : null}
             </>
         ),
         meta: [
-            { icon: Flame, label: spots.hasSpots ? `${spots.spotsLeft} ${spots.spotsLeft === 1 ? 'spot' : 'spots'} left` : null, tone: fewLeft ? 'warn' : 'default' },
+            { icon: Flame, label: spots.hasSpots ? (spots.spotsLeft === 1 ? t('{count} spot left', { count: spots.spotsLeft }) : t('{count} spots left', { count: spots.spotsLeft })) : null, tone: fewLeft ? 'warn' : 'default' },
         ],
         stats: [
-            { label: 'Reward', value: c.reward, icon: Award, tone: 'accent' },
-            { label: 'Tasks', value: tasks || null, icon: FileText },
-            { label: 'Followers', value: followers ? `${followers}+` : null, icon: Users },
+            { label: t('Reward'), value: c.reward, icon: Award, tone: 'accent' },
+            { label: t('Tasks'), value: tasks || null, icon: FileText },
+            { label: t('Followers'), value: followers ? `${followers}+` : null, icon: Users },
         ],
         progress: progress && progress.total ? Math.round((progress.approved / progress.total) * 100) : null,
-        cta: { label: applied ? 'Open campaign' : 'View brief' },
+        cta: { label: applied ? t('Open campaign') : t('View brief') },
         to: appPath(`/c/${c.id}`),
         linkState: from ? { backgroundLocation: from } : undefined,
     };
@@ -80,8 +81,8 @@ export function feedCard(item) {
         chips: [{ icon: MapPin, label: item.city }],
         badges: item.label ? <GlassChip label={item.label} tone="accent" /> : null,
         meta: [{ icon: CalendarDays, label: dateLabel(item.date) }],
-        stats: [{ label: 'Venue', value: item.venue, icon: MapPin }],
-        cta: { label: FEED_CTA[item.type] || 'Open' },
+        stats: [{ label: t('Venue'), value: item.venue, icon: MapPin }],
+        cta: { label: t(FEED_CTA[item.type] || 'Open') },
         // Gigs open their sheet on the Community page (?gig=ID).
         to: item.to || (item.type === 'gig' ? `${appPath('/community')}?gig=${encodeURIComponent(item.id)}` : undefined),
     };

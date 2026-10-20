@@ -10,6 +10,7 @@ import { BrandArt } from '../home/Hero';
 import Sticker from '../components/Sticker';
 import { usePublicFeed, isOff } from '../feed';
 import { APP_LINKS } from '../links';
+import { useT } from '../../i18n';
 
 const THINGS = [
     { icon: ListChecks, t: 'Guestlists', d: 'Get on the list for concerts, college nights and launches in your city, before they fill up.' },
@@ -58,6 +59,7 @@ function useLegacyQueryRedirect() {
  * in the app.
  */
 export default function CommunityPage() {
+    const t = useT();
     useLegacyQueryRedirect();
     const feed = usePublicFeed();
     const events = isOff(feed, { section: 'home_upcoming' }) ? [] : (feed?.events || []);
@@ -75,19 +77,19 @@ export default function CommunityPage() {
                     <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-x-10">
                         <div className="order-2 lg:order-1">
                             <h1 className="font-heading font-extrabold leading-[0.92] tracking-[-0.045em] text-gray-950 dark:text-white text-[14vw] sm:text-[10.5vw] lg:text-[6.2vw] 2xl:text-[7.2rem]">
-                                <span className="nb-exit-l block">Be on the list</span>{' '}
-                                <span className="nb-exit-r block">for every show</span>{' '}
-                                <span className="nb-exit-l block"><Sticker tilt="-rotate-[2deg]">near you.</Sticker></span>
+                                <span className="nb-exit-l block">{t('Be on the list')}</span>{' '}
+                                <span className="nb-exit-r block">{t('for every show')}</span>{' '}
+                                <span className="nb-exit-l block"><Sticker tilt="-rotate-[2deg]">{t('near you.')}</Sticker></span>
                             </h1>
                             <p className="nb-exit-fade mt-6 max-w-lg text-lg leading-snug text-gray-700 dark:text-zinc-300 md:text-xl">
-                                Guestlists, volunteer gigs, giveaways and passes, all in one account. Sign in once; your QR code does the rest at the gate.
+                                {t('Guestlists, volunteer gigs, giveaways and passes, all in one account. Sign in once; your QR code does the rest at the gate.')}
                             </p>
                             <div className="nb-exit-fade mt-8 flex flex-col gap-3 sm:flex-row">
                                 <a href={APP_LINKS.community} className="group inline-flex h-14 items-center justify-center gap-2 rounded-full border-[3px] border-black bg-neon-green px-8 font-heading text-base font-extrabold text-black shadow-[4px_4px_0_#000] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000] active:translate-y-0 active:shadow-[2px_2px_0_#000]">
-                                    Join the community <ArrowUpRight size={18} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+                                    {t('Join the community')} <ArrowUpRight size={18} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
                                 </a>
                                 <a href="#upcoming" className="inline-flex h-14 items-center justify-center rounded-full bg-white/60 px-8 font-heading text-base font-bold text-gray-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_8px_24px_-12px_rgba(0,0,0,0.3)] ring-1 ring-inset ring-black/[0.08] backdrop-blur-xl transition hover:bg-white/80 dark:bg-white/[0.08] dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] dark:ring-white/15 dark:hover:bg-white/[0.14]">
-                                    What's coming up
+                                    {t("What's coming up")}
                                 </a>
                             </div>
                         </div>
@@ -103,13 +105,13 @@ export default function CommunityPage() {
 
             <section aria-labelledby="things-title" className="py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
                 <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
-                    <SectionHeading id="things-title" index={events.length ? '02' : '01'} eyebrow="What you can do" title="One account." highlight="Every night." text="Everything Newbi runs for the crowd lives in one place, under your name." />
+                    <SectionHeading id="things-title" index={events.length ? '02' : '01'} eyebrow={t('What you can do')} title={t('One account.')} highlight={t('Every night.')} text={t('Everything Newbi runs for the crowd lives in one place, under your name.')} />
                     <ul className="mt-12 md:mt-16 grid gap-4 md:grid-cols-2">
                         {THINGS.map((p) => (
                             <li key={p.t} className="nb-reveal group p-7 md:p-10 rounded-[1.75rem] border border-gray-950/10 dark:border-white/10 bg-white/60 dark:bg-white/[0.03] hover:border-gray-950/30 dark:hover:border-neon-green/40 transition-colors">
                                 <span className="w-12 h-12 rounded-2xl bg-gray-950 text-neon-green dark:bg-white/[0.06] flex items-center justify-center"><p.icon size={22} aria-hidden="true" /></span>
-                                <h3 className="mt-6 font-heading text-2xl md:text-3xl font-bold tracking-[-0.02em] text-gray-950 dark:text-white">{p.t}</h3>
-                                <p className="mt-3 text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400">{p.d}</p>
+                                <h3 className="mt-6 font-heading text-2xl md:text-3xl font-bold tracking-[-0.02em] text-gray-950 dark:text-white">{t(p.t)}</h3>
+                                <p className="mt-3 text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400">{t(p.d)}</p>
                             </li>
                         ))}
                     </ul>
@@ -118,40 +120,40 @@ export default function CommunityPage() {
 
             <section aria-labelledby="chow-title" className="py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
                 <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 grid gap-14 lg:grid-cols-[0.9fr_1.1fr]">
-                    <SectionHeading id="chow-title" index={events.length ? '03' : '02'} eyebrow="How it works" title="Sign in once." highlight="Scan at the door." text="No printouts, no screenshots, no re-entering your details for every show." className="lg:sticky lg:top-28 self-start" />
-                    <Timeline steps={STEPS} />
+                    <SectionHeading id="chow-title" index={events.length ? '03' : '02'} eyebrow={t('How it works')} title={t('Sign in once.')} highlight={t('Scan at the door.')} text={t('No printouts, no screenshots, no re-entering your details for every show.')} className="lg:sticky lg:top-28 self-start" />
+                    <Timeline steps={STEPS.map((s) => ({ ...s, t: t(s.t), d: t(s.d) }))} />
                 </div>
             </section>
 
             {events.length === 0 && (
                 <section id="upcoming" aria-labelledby="noup-title" className="scroll-mt-20 py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
                     <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
-                        <SectionHeading id="noup-title" index="03" eyebrow="Coming up" title="Next shows land" highlight="here first." text="Nothing public is announced right now. Members hear about new lists first, in their account and by email." />
-                        <a href={APP_LINKS.community} className="nb-reveal mt-8 inline-flex items-center gap-2 min-h-[44px] font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-700 dark:text-zinc-300 hover:text-emerald-700 dark:hover:text-neon-green">Join to hear first <ArrowUpRight size={14} aria-hidden="true" /></a>
+                        <SectionHeading id="noup-title" index="03" eyebrow={t('Coming up')} title={t('Next shows land')} highlight={t('here first.')} text={t('Nothing public is announced right now. Members hear about new lists first, in their account and by email.')} />
+                        <a href={APP_LINKS.community} className="nb-reveal mt-8 inline-flex items-center gap-2 min-h-[44px] font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-700 dark:text-zinc-300 hover:text-emerald-700 dark:hover:text-neon-green">{t('Join to hear first')} <ArrowUpRight size={14} aria-hidden="true" /></a>
                     </div>
                 </section>
             )}
 
             <section aria-labelledby="cmfaq-title" className="py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
                 <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
-                    <SectionHeading id="cmfaq-title" index="04" eyebrow="Questions" title="Good to" highlight="know." className="lg:sticky lg:top-28 self-start" />
+                    <SectionHeading id="cmfaq-title" index="04" eyebrow={t('Questions')} title={t('Good to')} highlight={t('know.')} className="lg:sticky lg:top-28 self-start" />
                     <div className="nb-reveal border-t border-gray-950/10 dark:border-white/10">
                         {FAQS.map((f, i) => (
                             <details key={f.q} className="group border-b border-gray-950/10 dark:border-white/10">
                                 <summary className="flex items-center gap-5 min-h-[72px] py-5 cursor-pointer">
                                     <span className="font-mono text-[11px] font-bold tracking-[0.2em] text-gray-400 dark:text-zinc-600">0{i + 1}</span>
-                                    <span className="flex-1 font-heading text-xl md:text-2xl font-bold tracking-[-0.02em] text-gray-950 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-neon-green transition-colors">{f.q}</span>
+                                    <span className="flex-1 font-heading text-xl md:text-2xl font-bold tracking-[-0.02em] text-gray-950 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-neon-green transition-colors">{t(f.q)}</span>
                                     <span className="w-10 h-10 shrink-0 rounded-full border border-gray-950/15 dark:border-white/15 flex items-center justify-center text-gray-950 dark:text-white group-open:bg-neon-green group-open:border-neon-green group-open:text-black"><Plus size={17} className="nb-plus" aria-hidden="true" /></span>
                                 </summary>
-                                <p className="pb-7 pl-9 pr-4 max-w-2xl text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400">{f.a}</p>
+                                <p className="pb-7 pl-9 pr-4 max-w-2xl text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400">{t(f.a)}</p>
                             </details>
                         ))}
                     </div>
                 </div>
             </section>
 
-            <ClosingCta title="The next night out" highlight="starts here." text="Join once and every guestlist, gig and giveaway is one tap away." cta={{ label: 'Join the community', href: APP_LINKS.community }} />
-            <p className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6 text-sm text-gray-500 dark:text-zinc-500">Creator with an audience? <Link to="/creator" className="inline-flex items-center gap-1 min-h-[44px] underline underline-offset-4 decoration-neon-green text-gray-950 dark:text-white">See the creator network <ArrowRight size={14} aria-hidden="true" /></Link></p>
+            <ClosingCta title={t('The next night out')} highlight={t('starts here.')} text={t('Join once and every guestlist, gig and giveaway is one tap away.')} cta={{ label: t('Join the community'), href: APP_LINKS.community }} />
+            <p className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6 text-sm text-gray-500 dark:text-zinc-500">{t('Creator with an audience?')} <Link to="/creator" className="inline-flex items-center gap-1 min-h-[44px] underline underline-offset-4 decoration-neon-green text-gray-950 dark:text-white">{t('See the creator network')} <ArrowRight size={14} aria-hidden="true" /></Link></p>
             <Wordmark />
         </div>
     );

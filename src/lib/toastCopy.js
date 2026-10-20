@@ -1,13 +1,16 @@
+import { t } from '../i18n';
+
 // Helpers that keep toast banners short, human and readable.
 
 export const TOAST_TYPES = ['success', 'error', 'warning', 'info'];
 
 // Shown to screen readers and as a fallback heading when a toast has no title.
+// Getters, so the text follows the current language at read time.
 export const TOAST_LABELS = {
-    success: 'Done',
-    error: "Couldn't complete that",
-    warning: 'Heads up',
-    info: 'Good to know',
+    get success() { return t('Done'); },
+    get error() { return t("Couldn't complete that"); },
+    get warning() { return t('Heads up'); },
+    get info() { return t('Good to know'); },
 };
 
 const SUPPORT_EMAIL = 'support@newbi.live';
@@ -55,9 +58,9 @@ export const toFriendlyMessage = (input, type) => {
 
     if (type === 'error') {
         for (const [pattern, friendly] of FRIENDLY_ERRORS) {
-            if (pattern.test(raw)) return friendly;
+            if (pattern.test(raw)) return t(friendly);
         }
-        if (!text || looksTechnical(text)) return 'Something went wrong. Please try again.';
+        if (!text || looksTechnical(text)) return t('Something went wrong. Please try again.');
     }
 
     if (!text) return TOAST_LABELS[type] || '';
@@ -73,7 +76,7 @@ export const getSupportHint = (message, type, code) => {
     if (type !== 'error') return null;
     const m = String(message || '').toLowerCase();
     const isMoneyRelated = /^(TKT|EVT|PAY)/.test(code || '') || m.includes('ticket') || m.includes('payment');
-    return isMoneyRelated && !m.includes(SUPPORT_EMAIL) ? `Need help? Email ${SUPPORT_EMAIL}` : null;
+    return isMoneyRelated && !m.includes(SUPPORT_EMAIL) ? t('Need help? Email {email}', { email: SUPPORT_EMAIL }) : null;
 };
 
 /**

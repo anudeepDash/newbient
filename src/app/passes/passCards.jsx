@@ -5,6 +5,7 @@ import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import { GlassChip } from '../../components/app';
 import { appPath } from '../host';
 import { passWhen } from './passParts';
+import { t } from '../../i18n';
 
 /* Card props for a pass (Community → My guestlists, Home → Your passes). */
 
@@ -32,14 +33,14 @@ export const passCard = (pass) => {
         title: pass.event?.title || pass.campaignTitle,
         eyebrow: campaign && pass.campaignTitle !== pass.event?.title ? pass.campaignTitle : null,
         chips: [{ icon: MapPin, label: pass.event?.city }],
-        badges: pass.status === 'checked_in' ? <GlassChip icon={CircleCheck} label="Checked in" tone="accent" /> : null,
+        badges: pass.status === 'checked_in' ? <GlassChip icon={CircleCheck} label={t('Checked in')} tone="accent" /> : null,
         meta: [{ icon: CalendarDays, label: passWhen(pass.event || {}) }],
         stats: [
-            { label: campaign ? 'Tickets' : 'Guests', value: Number(pass.qty) > 1 ? pass.qty : null },
-            { label: 'Tier', value: pass.tier, tone: 'accent' },
-            { label: 'Venue', value: pass.event?.venue, icon: MapPin },
+            { label: campaign ? t('Tickets') : t('Guests'), value: Number(pass.qty) > 1 ? pass.qty : null },
+            { label: t('Tier'), value: pass.tier, tone: 'accent' },
+            { label: t('Venue'), value: pass.event?.venue, icon: MapPin },
         ],
-        cta: { label: campaign ? 'Open ticket' : pass.mode === 'rsvp' ? 'Open RSVP' : 'Open pass' },
+        cta: { label: campaign ? t('Open ticket') : pass.mode === 'rsvp' ? t('Open RSVP') : t('Open pass') },
         to: appPath(`/p/${pass.ref}`),
     };
 };

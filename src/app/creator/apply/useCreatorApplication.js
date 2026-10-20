@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { callCreatorApi } from '../api';
 import { appPath } from '../../host';
 import { isCollegeNiche } from '../../../lib/creator/options';
+import { t } from '../../../i18n';
 
 /*
  * State for the one-screen creator application.
@@ -177,7 +178,7 @@ export function useCreatorApplication({ referredBy = '', initialCity = '', uid =
         if (!res.ok || !res.data?.url) {
             autoSubmit.current = false;
             setConnecting(false);
-            setError({ error: res.error || 'We couldn’t start the Instagram login.' });
+            setError({ error: res.error || t('We couldn’t start the Instagram login.') });
             return;
         }
         window.location.assign(res.data.url);

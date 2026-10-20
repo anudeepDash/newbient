@@ -33,6 +33,8 @@ import { isPresent } from '../../lib/present';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
 import Clock from 'lucide-react/dist/esm/icons/clock';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import { useT } from '../../i18n';
+import { useLocalizedCampaigns, useLocalizedFeed } from '../../i18n/useHinglish';
 
 /*
  * Home, top to bottom:
@@ -87,7 +89,7 @@ const useUpcomingShows = () => {
     }, [ticketed, loaded, feed, community]);
 };
 
-const showCard = (e) => ({
+const showCard = (e, t) => ({
     type: 'event',
     image: e.image || null,
     title: e.title,
@@ -98,23 +100,25 @@ const showCard = (e) => ({
         { icon: Clock, label: isPresent(e.time) ? e.time : null },
     ],
     stats: [
-        { label: e.ticketed ? 'Tickets' : 'Entry', value: e.ticketed ? (e.price ? `From ₹${Number(e.price).toLocaleString('en-IN')}` : 'On sale') : e.guestlist ? 'Guestlist' : null, tone: 'accent' },
-        { label: 'Venue', value: e.venue },
+        { label: e.ticketed ? t('Tickets') : t('Entry'), value: e.ticketed ? (e.price ? t('From ₹{price}', { price: Number(e.price).toLocaleString('en-IN') }) : t('On sale')) : e.guestlist ? t('Guestlist') : null, tone: 'accent' },
+        { label: t('Venue'), value: e.venue },
     ],
-    cta: e.ticketed || e.guestlist ? { label: e.ticketed ? 'Get tickets' : 'Get on the list' } : false,
+    cta: e.ticketed || e.guestlist ? { label: e.ticketed ? t('Get tickets') : t('Get on the list') } : false,
     to: e.ticketed ? `${appPath('/tickets')}?event=${encodeURIComponent(e.id)}` : e.guestlist ? appPath(`/community/g/${e.id}`) : undefined,
 });
 
 const HomePage = () => {
+    const t = useT();
     useDynamicMeta({ page: 'app-home' });
     useAppContent();
     const location = useLocation();
     const authUser = useAppStore(s => s.authUser);
     const profile = useAppStore(s => s.profile);
     const profileLoaded = useAppStore(s => s.profileLoaded);
-    const campaigns = useAppStore(s => s.openCampaigns);
+    const openCampaigns = useAppStore(s => s.openCampaigns);
+    const campaigns = useLocalizedCampaigns(openCampaigns, { fields: ['title', 'reward', 'description'] });
     const campaignsLoaded = useAppStore(s => s.campaignsLoaded);
-    const feed = useAppStore(s => s.communityFeed);
+    const feed = useLocalizedFeed(useAppStore(s => s.communityFeed));
     const feedLoaded = useAppStore(s => s.communityFeedLoaded);
     const creator = useAppStore(s => s.creatorProfile);
     const { requestSignIn } = useAuthGate();
@@ -152,18 +156,18 @@ const HomePage = () => {
                 <p className="text-[16px] text-gray-700 dark:text-zinc-300 lg:text-[18px]">{greet.line}</p>
                 {!authUser && (
                     <div className="flex flex-wrap gap-3 pt-1">
-                        <Button onClick={() => requestSignIn()}>Sign in</Button>
-                        <Button variant="secondary" to={appPath('/community')}>Explore</Button>
+                        <Button onClick={() => requestSignIn()}>{t('Sign in')}</Button>
+                        <Button variant="secondary" to={appPath('/community')}>{t('Explore')}</Button>
                     </div>
                 )}
             </HeroPanel>
 
             {/* Quick ways to the most-used places. */}
-            <nav aria-label="Quick links" className="grid grid-cols-4 gap-2 sm:gap-3">
+            <nav aria-label={t('Quick links')} className="grid grid-cols-4 gap-2 sm:gap-3">
                 {QUICK.map(({ to, icon: Icon, label }) => (
                     <Link key={label} to={appPath(to)} className={cn('flex flex-col items-center gap-2 rounded-2xl px-1 py-3.5 text-center transition-transform active:scale-95', GLASS)}>
                         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:bg-neon-green/10 dark:text-neon-green"><Icon size={19} /></span>
-                        <span className="text-[12px] font-bold sm:text-[13px]">{label}</span>
+                        <span className="text-[12px] font-bold sm:text-[13px]">{t(label)}</span>
                     </Link>
                 ))}
             </nav>
@@ -180,9 +184,9 @@ const HomePage = () => {
                         <UserRoundPen size={20} />
                     </span>
                     <span className="min-w-0 flex-1">
-                        <span className="block text-[15px] font-bold">Finish your profile</span>
+                        <span className="block text-[15px] font-bold">{t('Finish your profile')}</span>
                         <span className="block text-[13px] text-gray-600 dark:text-zinc-400">
-                            Add your {missing.map(f => fieldLabel(f).toLowerCase().replace(/^your /, '')).join(' and ')} once for every pass and application.
+                            {t('Add your {fields} once for every pass and application.', { fields: missing.map(f => fieldLabel(f).toLowerCase().replace(/^your /, '')).reduce((a, b) => t('{a} and {b}', { a, b })) })}
                         </span>
                     </span>
                 </button>
@@ -190,13 +194,13 @@ const HomePage = () => {
 
             {upcoming.length > 0 && (
                 <section className="space-y-3">
-                    <SectionHeader title={upcoming.length === 1 ? 'Your pass' : 'Your passes'} />
+                    <SectionHeader title={upcoming.length === 1 ? t('Your pass') : t('Your passes')} />
                     <Rail>{upcoming.map(pass => <Card key={pass.ref} {...passCard(pass)} />)}</Rail>
                 </section>
             )}
 
             <section className="space-y-3">
-                <SectionHeader title="Open campaigns" to={appPath('/creator')} />
+                <SectionHeader title={t('Open campaigns')} to={appPath('/creator')} />
                 {!campaignsLoaded ? (
                     <Rail><CardSkeleton /><CardSkeleton /></Rail>
                 ) : campaigns.length ? (
@@ -204,24 +208,24 @@ const HomePage = () => {
                         {campaigns.slice(0, 6).map(c => <Card key={c.id} {...campaignCard(c, { applied: joined.has(c.id), from: location })} />)}
                     </Rail>
                 ) : (
-                    <EmptyState icon={Megaphone} title="No open campaigns right now" message="New brand and event campaigns show up here first." />
+                    <EmptyState icon={Megaphone} title={t('No open campaigns right now')} message={t('New brand and event campaigns show up here first.')} />
                 )}
             </section>
 
             {(!showsLoaded || shows.length > 0) && (
                 <section className="space-y-3">
-                    <SectionHeader title="Upcoming" to={appPath('/tickets')} />
+                    <SectionHeader title={t('Upcoming')} to={appPath('/tickets')} />
                     {!showsLoaded ? (
                         <Rail><CardSkeleton /><CardSkeleton /></Rail>
                     ) : (
-                        <Rail>{shows.map(e => <Card key={e.id} {...showCard(e)} />)}</Rail>
+                        <Rail>{shows.map(e => <Card key={e.id} {...showCard(e, t)} />)}</Rail>
                     )}
                 </section>
             )}
 
             {(!feedLoaded || feed.length > 0) && (
                 <section className="space-y-3">
-                    <SectionHeader title="In the community" to={appPath('/community')} />
+                    <SectionHeader title={t('In the community')} to={appPath('/community')} />
                     {!feedLoaded ? (
                         <Rail><CardSkeleton /><CardSkeleton /></Rail>
                     ) : (
@@ -234,8 +238,8 @@ const HomePage = () => {
                 <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={cn('flex items-center gap-4 rounded-[1.75rem] p-4', GLASS)}>
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#25D366] text-white"><MessageCircle size={20} /></span>
                     <span className="min-w-0 flex-1">
-                        <span className="block font-heading text-[16px] font-extrabold tracking-[-0.02em]">The Newbi WhatsApp community</span>
-                        <span className="block text-[13px] text-gray-600 dark:text-zinc-400">First word on drops, guestlists and giveaways.</span>
+                        <span className="block font-heading text-[16px] font-extrabold tracking-[-0.02em]">{t('The Newbi WhatsApp community')}</span>
+                        <span className="block text-[13px] text-gray-600 dark:text-zinc-400">{t('First word on drops, guestlists and giveaways.')}</span>
                     </span>
                     <ChevronRight size={18} className="shrink-0 text-gray-400" />
                 </a>
@@ -245,7 +249,7 @@ const HomePage = () => {
                 open={completeOpen}
                 onClose={() => setCompleteOpen(false)}
                 required={ONBOARDING_FIELDS}
-                title="Finish your profile"
+                title={t('Finish your profile')}
             />
         </PageBody>
     );

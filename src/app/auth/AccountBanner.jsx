@@ -11,6 +11,7 @@ import { missingFields } from '../profile/requirements';
 import CompleteProfileSheet from '../profile/CompleteProfileSheet';
 import AccountMergeFlow from './AccountMergeFlow';
 import { findOtherAccounts } from './accountMerge';
+import { useT } from '../../i18n';
 
 /*
  * Home's account banner. Signing in never asks for anything beyond the
@@ -42,6 +43,7 @@ const readDismissed = () => {
 };
 
 const AccountBanner = () => {
+    const t = useT();
     const authUser = useAppStore(s => s.authUser);
     const profile = useAppStore(s => s.profile);
     const profileLoaded = useAppStore(s => s.profileLoaded);
@@ -71,15 +73,15 @@ const AccountBanner = () => {
     };
 
     const one = missing.length === 1 ? COPY[missing[0]] : null;
-    const steps = missing.map(f => SHORT[f]);
-    const list = steps.length > 1 ? `${steps.slice(0, -1).join(', ')} and ${steps[steps.length - 1]}` : steps[0] || '';
-    const by = other?.matchedBy?.includes('phone') ? 'your phone number' : 'your email';
+    const steps = missing.map(f => t(SHORT[f]));
+    const list = steps.length > 1 ? t('{list} and {last}', { list: steps.slice(0, -1).join(', '), last: steps[steps.length - 1] }) : steps[0] || '';
+    const by = other?.matchedBy?.includes('phone') ? t('your phone number') : t('your email');
     const Icon = other ? Users : one?.icon || UserRoundPen;
-    const title = other ? 'You have another Newbi account' : one?.title || 'Finish setting up your account';
+    const title = other ? t('You have another Newbi account') : t(one?.title || 'Finish setting up your account');
     const text = other
-        ? `It has ${by}. Merge it so your passes and tickets are in one place.`
-        : one?.text || `${list.replace(/^./, c => c.toUpperCase())}. Takes a minute.`;
-    const cta = other ? 'Merge' : one?.cta || 'Finish';
+        ? t('It has {by}. Merge it so your passes and tickets are in one place.', { by })
+        : one ? t(one.text) : `${list.replace(/^./, c => c.toUpperCase())}. ${t('Takes a minute.')}`;
+    const cta = other ? t('Merge') : t(one?.cta || 'Finish');
     const act = () => (other ? setMerging(other) : setOpen(true));
 
     const merged = () => {
@@ -103,7 +105,7 @@ const AccountBanner = () => {
                     <button
                         type="button"
                         onClick={dismiss}
-                        aria-label="Not now"
+                        aria-label={t('Not now')}
                         className="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-black/5 dark:text-zinc-400 dark:hover:bg-white/10"
                     >
                         <X size={18} />
@@ -111,7 +113,7 @@ const AccountBanner = () => {
                 </div>
             )}
             <CompleteProfileSheet open={open} onClose={() => setOpen(false)} required={FIELDS} title={one ? one.title : 'Finish your account'} />
-            <Sheet open={Boolean(merging)} onClose={() => setMerging(null)} title="Merge your accounts" subtitle="Everything moves to the account you're signed in to.">
+            <Sheet open={Boolean(merging)} onClose={() => setMerging(null)} title={t('Merge your accounts')} subtitle={t('Everything moves to the account you\'re signed in to.')}>
                 {merging && <AccountMergeFlow key={merging.uid} match={merging} onDone={merged} onCancel={() => setMerging(null)} />}
             </Sheet>
         </>

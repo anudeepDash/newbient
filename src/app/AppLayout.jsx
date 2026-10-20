@@ -18,6 +18,8 @@ import NotificationsSheet from './NotificationsSheet';
 import SignInSheet from './auth/SignInSheet';
 import NewbiLogo from '../components/brand/NewbiLogo';
 import NLoader from '../components/ui/NLoader';
+import LangToggle from '../i18n/LangToggle';
+import { useT } from '../i18n';
 
 /*
  * The app shell (app.newbi.live, or /app on localhost).
@@ -34,11 +36,13 @@ const Logo = ({ className }) => (
     <NewbiLogo className={cn('w-auto', className)} />
 );
 
-const BellButton = ({ count, onClick, className }) => (
+const BellButton = ({ count, onClick, className }) => {
+    const t = useT();
+    return (
     <button
         type="button"
         onClick={onClick}
-        aria-label={count ? `Notifications, ${count} unread` : 'Notifications'}
+        aria-label={count ? t('Notifications, {count} unread', { count }) : t('Notifications')}
         className={cn('relative flex h-11 w-11 items-center justify-center rounded-xl text-gray-700 transition-colors hover:bg-black/[0.04] active:bg-black/5 dark:text-zinc-300 dark:hover:bg-white/[0.06] dark:active:bg-white/10', className)}
     >
         <Bell size={20} />
@@ -48,7 +52,8 @@ const BellButton = ({ count, onClick, className }) => (
             </span>
         )}
     </button>
-);
+    );
+};
 
 const PageFallback = () => (
     <div className="flex min-h-[60dvh] items-center justify-center">
@@ -57,6 +62,7 @@ const PageFallback = () => (
 );
 
 const AppLayout = () => {
+    const t = useT();
     const location = useLocation();
     const path = stripAppBase(location.pathname);
     const authUser = useAppStore(s => s.authUser);
@@ -109,9 +115,9 @@ const AppLayout = () => {
             {/* ── Top bar ── */}
             <header className="fixed inset-x-0 top-0 z-40 border-b border-black/[0.05] bg-[#f4f4f1]/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl dark:border-white/[0.05] dark:bg-[#050608]/80">
                 <div className="mx-auto flex h-14 max-w-6xl items-center justify-between pl-4 pr-1.5 sm:px-4 lg:h-[4.5rem] lg:px-8">
-                    <a href={landingUrl('/')} aria-label="Go to newbi.live" className="flex h-11 items-center lg:w-48"><Logo className="h-7 lg:h-8" /></a>
+                    <a href={landingUrl('/')} aria-label={t('Go to newbi.live')} className="flex h-11 items-center lg:w-48"><Logo className="h-7 lg:h-8" /></a>
                     {/* Desktop: the tabs live in the top bar. */}
-                    <nav aria-label="App sections" className="hidden items-center gap-1 rounded-full bg-black/[0.04] p-1 ring-1 ring-inset ring-black/[0.04] dark:bg-white/[0.05] dark:ring-white/[0.06] lg:flex">
+                    <nav aria-label={t('App sections')} className="hidden items-center gap-1 rounded-full bg-black/[0.04] p-1 ring-1 ring-inset ring-black/[0.04] dark:bg-white/[0.05] dark:ring-white/[0.06] lg:flex">
                         {tabs.map(({ module, label }) => {
                             const Icon = module.tab.icon;
                             const active = activeModule?.id === module.id;
@@ -133,7 +139,7 @@ const AppLayout = () => {
                                         />
                                     )}
                                     <Icon size={17} strokeWidth={active ? 2.3 : 1.9} className={cn('relative', active && 'text-emerald-600 dark:text-neon-green')} />
-                                    <span className="relative">{label}</span>
+                                    <span className="relative">{t(label)}</span>
                                 </Link>
                             );
                         })}
@@ -143,17 +149,18 @@ const AppLayout = () => {
                             // Staff only: into the admin (admin.newbi.live in production).
                             <Link
                                 to="/admin"
-                                aria-label="Open admin"
+                                aria-label={t('Open admin')}
                                 className="mr-1 flex h-9 items-center gap-2 rounded-full bg-white/70 pl-1 pr-3.5 font-heading text-[13px] font-bold text-gray-900 ring-1 ring-inset ring-black/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition-colors hover:bg-white dark:bg-white/[0.08] dark:text-white dark:ring-white/15 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] dark:hover:bg-white/[0.12]"
                             >
                                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-neon-green text-black"><LayoutDashboard size={14} strokeWidth={2.4} /></span>
-                                Admin
+                                {t('Admin')}
                             </Link>
                         )}
+                        <LangToggle />
                         <button
                             type="button"
                             onClick={() => toggleTheme()}
-                            aria-label={isDark ? 'Light mode' : 'Dark mode'}
+                            aria-label={isDark ? t('Light mode') : t('Dark mode')}
                             className="hidden h-11 w-11 items-center justify-center rounded-xl text-gray-700 transition-colors hover:bg-black/[0.04] dark:text-zinc-300 dark:hover:bg-white/[0.06] sm:flex"
                         >
                             {isDark ? <Sun size={19} /> : <Moon size={19} />}
@@ -172,7 +179,7 @@ const AppLayout = () => {
 
             {/* ── Tab bar (phones and tablets): a floating glass pill; only the active tab shows its label ── */}
             <nav
-                aria-label="App sections"
+                aria-label={t('App sections')}
                 className={cn('pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-5 lg:hidden', ownBottomBar && 'hidden')}
             >
                 <div
@@ -193,7 +200,7 @@ const AppLayout = () => {
                                 key={module.id}
                                 to={appPath(module.path)}
                                 aria-current={active ? 'page' : undefined}
-                                aria-label={active ? undefined : label}
+                                aria-label={active ? undefined : t(label)}
                                 className={cn(
                                     'relative flex h-12 items-center justify-center rounded-full transition-[padding,color] duration-300',
                                     active ? 'gap-2 pl-4 pr-5 text-gray-900 dark:text-white' : 'w-12 text-gray-500 active:scale-95 dark:text-zinc-400'
@@ -210,7 +217,7 @@ const AppLayout = () => {
                                 <span className="relative">
                                     <Icon size={21} strokeWidth={active ? 2.3 : 1.9} className={active ? 'text-emerald-600 dark:text-neon-green' : undefined} />
                                 </span>
-                                {active && <span className="relative whitespace-nowrap text-[14px] font-bold">{module.tab.label}</span>}
+                                {active && <span className="relative whitespace-nowrap text-[14px] font-bold">{t(module.tab.label)}</span>}
                             </Link>
                         );
                     })}

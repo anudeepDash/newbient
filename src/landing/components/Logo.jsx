@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import NewbiLogo from '../../components/brand/NewbiLogo';
+import { useT } from '../../i18n';
 
 // The newbi.live logo: black in light mode, outlined in dark mode (NewbiLogo).
 // ConcertZone keeps its own brand and never uses this.
@@ -9,8 +10,9 @@ export function LogoImage({ height = 32, className = '', priority = false }) {
 }
 
 export default function Logo({ height = 32, className = '' }) {
+    const t = useT();
     return (
-        <Link to="/" aria-label="newbi.live home" className={`inline-flex items-center min-h-[44px] ${className}`}>
+        <Link to="/" aria-label={t('newbi.live home')} className={`inline-flex items-center min-h-[44px] ${className}`}>
             <LogoImage height={height} priority />
         </Link>
     );

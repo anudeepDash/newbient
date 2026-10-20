@@ -9,6 +9,7 @@ import { appPath } from '../../host';
 import { PageBody } from '../../pages/PageHeader';
 import { EmptyState } from '../../pages/parts';
 import CampaignView from './CampaignView';
+import { useT } from '../../../i18n';
 
 /*
  * /c/:id, the campaign page.
@@ -35,16 +36,20 @@ const Loading = () => (
     </div>
 );
 
-const Missing = () => (
+const Missing = () => {
+    const t = useT();
+    return (
     <EmptyState
         icon={SearchX}
-        title="Campaign not found"
-        message="It may have ended or the link is wrong."
-        action={<Button variant="secondary" to={appPath('/creator')}>See open campaigns</Button>}
+        title={t('Campaign not found')}
+        message={t('It may have ended or the link is wrong.')}
+        action={<Button variant="secondary" to={appPath('/creator')}>{t('See open campaigns')}</Button>}
     />
-);
+    );
+};
 
 const CampaignPage = ({ overlay = false }) => {
+    const t = useT();
     const { id } = useParams();
     const [params] = useSearchParams();
     const navigate = useNavigate();
@@ -66,7 +71,7 @@ const CampaignPage = ({ overlay = false }) => {
     if (overlay) {
         if (campaign) return <CampaignView campaign={campaign} variant="sheet" initialTaskId={taskId} onClose={close} />;
         return (
-            <Sheet open onClose={close} size="full" width="lg" header={<span className="sr-only">Campaign</span>}>
+            <Sheet open onClose={close} size="full" width="lg" header={<span className="sr-only">{t('Campaign')}</span>}>
                 {campaign === null ? <Missing /> : <Loading />}
             </Sheet>
         );
@@ -75,7 +80,7 @@ const CampaignPage = ({ overlay = false }) => {
     return (
         <PageBody>
             <div>
-                <Button variant="ghost" size="sm" icon={ArrowLeft} to={appPath('/creator')} className="-ml-2 mb-3">Campaigns</Button>
+                <Button variant="ghost" size="sm" icon={ArrowLeft} to={appPath('/creator')} className="-ml-2 mb-3">{t('Campaigns')}</Button>
                 {campaign ? <CampaignView campaign={campaign} variant="page" initialTaskId={taskId} /> : campaign === null ? <Missing /> : <Loading />}
             </div>
         </PageBody>

@@ -2,6 +2,7 @@ import React from 'react';
 import { TextInput } from '../../../components/app';
 import { CREATOR_NICHE_OPTIONS, COLLAB_OPTIONS, RATE_OPTIONS, BIO_MAX, isCollegeNiche } from '../../../lib/creator/options';
 import { ChoiceChip, FormBlock, TextArea } from '../ui';
+import { useT, t as translateNow } from '../../../i18n';
 
 /*
  * The creator details edited from the profile ("add later" after applying):
@@ -16,10 +17,10 @@ const hasOthers = (d) => (d.niches || []).includes('Others');
 const isCampus = (d) => (d.niches || []).some(isCollegeNiche);
 
 export const validateDetails = (details, profileCollege) => {
-    if (!(details.niches || []).length) return { field: 'niches', error: 'Pick at least one niche.' };
-    if (hasOthers(details) && !String(details.customNiche || '').trim()) return { field: 'customNiche', error: 'Tell us your niche.' };
+    if (!(details.niches || []).length) return { field: 'niches', error: translateNow('Pick at least one niche.') };
+    if (hasOthers(details) && !String(details.customNiche || '').trim()) return { field: 'customNiche', error: translateNow('Tell us your niche.') };
     if (isCampus(details) && !String(details.collegeName || profileCollege || '').trim()) {
-        return { field: 'collegeName', error: 'Add your college.' };
+        return { field: 'collegeName', error: translateNow('Add your college.') };
     }
     return null;
 };
@@ -31,6 +32,7 @@ const SOCIALS = [
 ];
 
 const DetailsStep = ({ details, setDetails, profileCollege, fieldError }) => {
+    const t = useT();
     const set = (patch) => setDetails(d => ({ ...d, ...patch }));
     const campus = isCampus(details);
     const niches = details.niches || [];
@@ -38,10 +40,10 @@ const DetailsStep = ({ details, setDetails, profileCollege, fieldError }) => {
 
     return (
         <div className="space-y-6">
-            <FormBlock label={`What you post (up to ${MAX_NICHES})`}>
+            <FormBlock label={t('What you post (up to {max})', { max: MAX_NICHES })}>
                 <div className="flex flex-wrap gap-2">
                     {CREATOR_NICHE_OPTIONS.map(n => (
-                        <ChoiceChip key={n.id} selected={niches.includes(n.id)} onClick={() => toggle(n.id)} className="py-2">{n.label}</ChoiceChip>
+                        <ChoiceChip key={n.id} selected={niches.includes(n.id)} onClick={() => toggle(n.id)} className="py-2">{t(n.label)}</ChoiceChip>
                     ))}
                 </div>
                 {fieldError?.field === 'niches' && <p className="text-[13px] font-medium text-red-600 dark:text-red-400">{fieldError.error}</p>}
@@ -49,10 +51,10 @@ const DetailsStep = ({ details, setDetails, profileCollege, fieldError }) => {
 
             {hasOthers(details) && (
                 <TextInput
-                    label="Your niche"
+                    label={t('Your niche')}
                     value={details.customNiche}
                     onChange={(e) => set({ customNiche: e.target.value })}
-                    placeholder="e.g. Sneakers"
+                    placeholder={t('e.g. Sneakers')}
                     maxLength={60}
                     error={fieldError?.field === 'customNiche' ? fieldError.error : null}
                 />
@@ -60,36 +62,36 @@ const DetailsStep = ({ details, setDetails, profileCollege, fieldError }) => {
 
             {niches.includes('City Pages') && (
                 <TextInput
-                    label="What your page covers (optional)"
+                    label={t('What your page covers (optional)')}
                     value={details.cityPageFocus}
                     onChange={(e) => set({ cityPageFocus: e.target.value })}
-                    placeholder="e.g. Food and events in Pune"
+                    placeholder={t('e.g. Food and events in Pune')}
                     maxLength={80}
                 />
             )}
 
             {campus && (
                 <TextInput
-                    label={niches.includes('College Pages') ? 'College this page represents' : 'Your college'}
+                    label={niches.includes('College Pages') ? t('College this page represents') : t('Your college')}
                     value={details.collegeName || ''}
                     onChange={(e) => set({ collegeName: e.target.value })}
-                    placeholder={profileCollege || 'e.g. Christ University'}
+                    placeholder={profileCollege || t('e.g. Christ University')}
                     autoComplete="organization"
                     maxLength={160}
-                    hint={profileCollege && !details.collegeName ? `We’ll use ${profileCollege} from your profile.` : null}
+                    hint={profileCollege && !details.collegeName ? t('We’ll use {college} from your profile.', { college: profileCollege }) : null}
                     error={fieldError?.field === 'collegeName' ? fieldError.error : null}
                 />
             )}
 
-            <FormBlock label="How you like to work">
+            <FormBlock label={t('How you like to work')}>
                 <div className="grid gap-2 sm:grid-cols-3">
                     {COLLAB_OPTIONS.map(o => (
-                        <ChoiceChip key={o.id} selected={details.collaboration === o.id} hint={o.hint} onClick={() => set({ collaboration: o.id })}>{o.label}</ChoiceChip>
+                        <ChoiceChip key={o.id} selected={details.collaboration === o.id} hint={t(o.hint)} onClick={() => set({ collaboration: o.id })}>{t(o.label)}</ChoiceChip>
                     ))}
                 </div>
             </FormBlock>
 
-            <FormBlock label="Your usual rate per deliverable" hint="Optional. Brands use it to plan budgets.">
+            <FormBlock label={t('Your usual rate per deliverable')} hint={t('Optional. Brands use it to plan budgets.')}>
                 <div className="flex flex-wrap gap-2">
                     {RATE_OPTIONS.map(r => (
                         <ChoiceChip
@@ -97,23 +99,23 @@ const DetailsStep = ({ details, setDetails, profileCollege, fieldError }) => {
                             selected={details.commercials === r.commercials}
                             onClick={() => set({ commercials: details.commercials === r.commercials ? '' : r.commercials })}
                         >
-                            {r.label}
+                            {t(r.label)}
                         </ChoiceChip>
                     ))}
                 </div>
             </FormBlock>
 
-            <FormBlock label="A line about you" hint="Optional. What you post and who follows you.">
+            <FormBlock label={t('A line about you')} hint={t('Optional. What you post and who follows you.')}>
                 <TextArea
                     value={details.bio}
                     onChange={(e) => set({ bio: e.target.value })}
                     maxLength={BIO_MAX}
                     rows={3}
-                    placeholder="Weekend gig reels and food spots around Bengaluru."
+                    placeholder={t('Weekend gig reels and food spots around Bengaluru.')}
                 />
             </FormBlock>
 
-            <FormBlock label="Other socials" hint="Optional. Just the username.">
+            <FormBlock label={t('Other socials')} hint={t('Optional. Just the username.')}>
                 <div className="space-y-3">
                     {SOCIALS.map(x => (
                         <TextInput

@@ -10,6 +10,7 @@ import { BrandArt } from '../home/Hero';
 import Sticker from '../components/Sticker';
 import { usePublicFeed, isOff } from '../feed';
 import { APP_LINKS, sizedImage } from '../links';
+import { useT } from '../../i18n';
 
 const STEPS = [
     { t: 'Apply', d: 'Tell us your Instagram, city and niche. It takes a few minutes and it is free.' },
@@ -41,6 +42,7 @@ const FAQS = [
  * from the cached public feed; applying happens in the app.
  */
 export default function CreatorPage() {
+    const t = useT();
     const feed = usePublicFeed();
     const campaigns = feed?.campaigns || [];
     const testimonials = feed?.testimonials || [];
@@ -52,7 +54,7 @@ export default function CreatorPage() {
         { icon: Ticket, t: 'Into the shows', d: 'Coverage gigs, guestlists and passes at the concerts, fests and launches Newbi runs.' },
         { icon: LayoutDashboard, t: 'One dashboard', d: 'Briefs, deliverables, approvals and the tickets for campaigns you are on, in one place.' },
         points
-            ? { icon: Coins, t: `${points.toLocaleString('en-IN')} Newbi points to start`, d: 'Credited to your creator pass the day you join, next to your campaign history.' }
+            ? { icon: Coins, t: '{n} Newbi points to start', vars: { n: points.toLocaleString('en-IN') }, d: 'Credited to your creator pass the day you join, next to your campaign history.' }
             : { icon: Star, t: 'A verified creator pass', d: 'Your Newbi profile, campaign history and status, visible to the brands we brief.' },
     ];
 
@@ -70,19 +72,19 @@ export default function CreatorPage() {
                     <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-x-10">
                         <div className="order-2 lg:order-1">
                             <h1 className="font-heading font-extrabold leading-[0.92] tracking-[-0.045em] text-gray-950 dark:text-white text-[14vw] sm:text-[10.5vw] lg:text-[6.2vw] 2xl:text-[7.2rem]">
-                                <span className="nb-exit-l block">Create with brands.</span>{' '}
-                                <span className="nb-exit-r block">Get into</span>{' '}
-                                <span className="nb-exit-l block"><Sticker tilt="-rotate-[2deg]">the shows.</Sticker></span>
+                                <span className="nb-exit-l block">{t('Create with brands.')}</span>{' '}
+                                <span className="nb-exit-r block">{t('Get into')}</span>{' '}
+                                <span className="nb-exit-l block"><Sticker tilt="-rotate-[2deg]">{t('the shows.')}</Sticker></span>
                             </h1>
                             <p className="nb-exit-fade mt-6 max-w-lg text-lg leading-snug text-gray-700 dark:text-zinc-300 md:text-xl">
-                                Apply once. We match you to brand campaigns by city, niche and audience, and you work every campaign from one dashboard.
+                                {t('Apply once. We match you to brand campaigns by city, niche and audience, and you work every campaign from one dashboard.')}
                             </p>
                             <div className="nb-exit-fade mt-8 flex flex-col gap-3 sm:flex-row">
                                 <a href={APP_LINKS.creatorApply} className="group inline-flex h-14 items-center justify-center gap-2 rounded-full border-[3px] border-black bg-neon-green px-8 font-heading text-base font-extrabold text-black shadow-[4px_4px_0_#000] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000] active:translate-y-0 active:shadow-[2px_2px_0_#000]">
-                                    Apply as a creator <ArrowUpRight size={18} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+                                    {t('Apply as a creator')} <ArrowUpRight size={18} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
                                 </a>
                                 <a href="#campaigns" className="inline-flex h-14 items-center justify-center rounded-full bg-white/60 px-8 font-heading text-base font-bold text-gray-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_8px_24px_-12px_rgba(0,0,0,0.3)] ring-1 ring-inset ring-black/[0.08] backdrop-blur-xl transition hover:bg-white/80 dark:bg-white/[0.08] dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] dark:ring-white/15 dark:hover:bg-white/[0.14]">
-                                    {campaigns.length ? `See ${campaigns.length} live ${campaigns.length === 1 ? 'brief' : 'briefs'}` : 'See live briefs'}
+                                    {campaigns.length ? t(campaigns.length === 1 ? 'See {n} live brief' : 'See {n} live briefs', { n: campaigns.length }) : t('See live briefs')}
                                 </a>
                             </div>
                         </div>
@@ -97,8 +99,8 @@ export default function CreatorPage() {
             <section id="campaigns" aria-labelledby="campaigns-title" className="scroll-mt-20 py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10 overflow-hidden">
                 <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                        <SectionHeading id="campaigns-title" index="01" eyebrow="Open now" title="Live" highlight="briefs." text="Open a brief to see the reward, the deliverables and the follower minimum. Applying happens from your dashboard." />
-                        <a href={APP_LINKS.creatorApply} className="nb-reveal inline-flex items-center gap-2 min-h-[44px] font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-700 dark:text-zinc-300 hover:text-emerald-700 dark:hover:text-neon-green">Apply to get notified <ArrowUpRight size={14} aria-hidden="true" /></a>
+                        <SectionHeading id="campaigns-title" index="01" eyebrow={t('Open now')} title={t('Live')} highlight={t('briefs.')} text={t('Open a brief to see the reward, the deliverables and the follower minimum. Applying happens from your dashboard.')} />
+                        <a href={APP_LINKS.creatorApply} className="nb-reveal inline-flex items-center gap-2 min-h-[44px] font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-700 dark:text-zinc-300 hover:text-emerald-700 dark:hover:text-neon-green">{t('Apply to get notified')} <ArrowUpRight size={14} aria-hidden="true" /></a>
                     </div>
                     {campaigns.length > 0 ? (
                         <ul className="mt-12 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0 flex gap-4 md:gap-6 overflow-x-auto snap-x snap-mandatory pb-4 carousel-scrollbar lg:grid lg:grid-cols-3 lg:overflow-visible" style={{ scrollPaddingLeft: '1rem' }}>
@@ -108,8 +110,8 @@ export default function CreatorPage() {
                         </ul>
                     ) : (
                         <div className="nb-reveal mt-12 p-8 md:p-12 rounded-[1.75rem] border border-dashed border-gray-950/20 dark:border-white/20">
-                            <p className="font-heading text-2xl font-bold text-gray-950 dark:text-white">New briefs drop often.</p>
-                            <p className="mt-2 max-w-lg text-gray-600 dark:text-zinc-400">Nothing is open to the public right now. Creators in the network hear first, by email and in their dashboard.</p>
+                            <p className="font-heading text-2xl font-bold text-gray-950 dark:text-white">{t('New briefs drop often.')}</p>
+                            <p className="mt-2 max-w-lg text-gray-600 dark:text-zinc-400">{t('Nothing is open to the public right now. Creators in the network hear first, by email and in their dashboard.')}</p>
                         </div>
                     )}
                 </div>
@@ -118,13 +120,13 @@ export default function CreatorPage() {
             {/* What you get */}
             <section aria-labelledby="perks-title" className="py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
                 <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
-                    <SectionHeading id="perks-title" index="02" eyebrow="What you get" title="More than" highlight="sponsored posts." text="Campaigns you would actually want to post, access to the nights we run, and one place to manage all of it." />
+                    <SectionHeading id="perks-title" index="02" eyebrow={t('What you get')} title={t('More than')} highlight={t('sponsored posts.')} text={t('Campaigns you would actually want to post, access to the nights we run, and one place to manage all of it.')} />
                     <ul className="mt-12 md:mt-16 grid gap-4 md:grid-cols-2">
                         {perks.map((p) => (
                             <li key={p.t} className="nb-reveal group p-7 md:p-10 rounded-[1.75rem] border border-gray-950/10 dark:border-white/10 bg-white/60 dark:bg-white/[0.03] hover:border-gray-950/30 dark:hover:border-neon-green/40 transition-colors">
                                 <span className="w-12 h-12 rounded-2xl bg-gray-950 text-neon-green dark:bg-white/[0.06] flex items-center justify-center"><p.icon size={22} aria-hidden="true" /></span>
-                                <h3 className="mt-6 font-heading text-2xl md:text-3xl font-bold tracking-[-0.02em] text-gray-950 dark:text-white">{p.t}</h3>
-                                <p className="mt-3 text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400">{p.d}</p>
+                                <h3 className="mt-6 font-heading text-2xl md:text-3xl font-bold tracking-[-0.02em] text-gray-950 dark:text-white">{t(p.t, p.vars)}</h3>
+                                <p className="mt-3 text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400">{t(p.d)}</p>
                             </li>
                         ))}
                     </ul>
@@ -135,29 +137,29 @@ export default function CreatorPage() {
             <section aria-labelledby="how-title" className="py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
                 <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 grid gap-14 lg:grid-cols-[0.9fr_1.1fr]">
                     <div className="lg:sticky lg:top-28 self-start">
-                        <SectionHeading id="how-title" index="03" eyebrow="How it works" title="From apply to" highlight="paid." text="Four steps. Your dashboard shows where you are on every campaign." />
+                        <SectionHeading id="how-title" index="03" eyebrow={t('How it works')} title={t('From apply to')} highlight={t('paid.')} text={t('Four steps. Your dashboard shows where you are on every campaign.')} />
                         <div className="nb-reveal-late mt-10 p-6 rounded-[1.5rem] border border-gray-950/10 dark:border-white/10 bg-white/60 dark:bg-white/[0.03]">
-                            <p className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500"><Instagram size={14} aria-hidden="true" /> To apply you need</p>
-                            <p className="mt-2 font-heading text-lg font-bold text-gray-950 dark:text-white">A Professional Instagram account (Creator or Business).</p>
-                            <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400">Switching takes a minute in Instagram settings. It lets us confirm your numbers through Instagram itself, with no screenshots.</p>
+                            <p className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500"><Instagram size={14} aria-hidden="true" /> {t('To apply you need')}</p>
+                            <p className="mt-2 font-heading text-lg font-bold text-gray-950 dark:text-white">{t('A Professional Instagram account (Creator or Business).')}</p>
+                            <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400">{t('Switching takes a minute in Instagram settings. It lets us confirm your numbers through Instagram itself, with no screenshots.')}</p>
                         </div>
                     </div>
-                    <Timeline steps={STEPS} />
+                    <Timeline steps={STEPS.map((s) => ({ ...s, t: t(s.t), d: t(s.d) }))} />
                 </div>
             </section>
 
             {testimonials.length > 0 && (
                 <section aria-labelledby="voices-title" className="py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
                     <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
-                        <SectionHeading id="voices-title" index="04" eyebrow="Creator voices" title="From the" highlight="network." />
+                        <SectionHeading id="voices-title" index="04" eyebrow={t('Creator voices')} title={t('From the')} highlight={t('network.')} />
                         <ul className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {testimonials.map((t) => (
-                                <li key={t.id} className="nb-reveal flex flex-col p-7 rounded-[1.75rem] border border-gray-950/10 dark:border-white/10 bg-white/60 dark:bg-white/[0.03]">
-                                    <p className="flex gap-0.5 text-amber-400" aria-label={`${t.rating} out of 5`}>{Array.from({ length: t.rating }).map((_, i) => <Star key={i} size={14} className="fill-current" aria-hidden="true" />)}</p>
-                                    <p className="mt-4 text-lg leading-relaxed text-gray-800 dark:text-zinc-200">“{t.quote}”</p>
+                            {testimonials.map((tm) => (
+                                <li key={tm.id} className="nb-reveal flex flex-col p-7 rounded-[1.75rem] border border-gray-950/10 dark:border-white/10 bg-white/60 dark:bg-white/[0.03]">
+                                    <p className="flex gap-0.5 text-amber-400" aria-label={t('{n} out of 5', { n: tm.rating })}>{Array.from({ length: tm.rating }).map((_, i) => <Star key={i} size={14} className="fill-current" aria-hidden="true" />)}</p>
+                                    <p className="mt-4 text-lg leading-relaxed text-gray-800 dark:text-zinc-200">“{tm.quote}”</p>
                                     <div className="mt-6 pt-5 border-t border-gray-950/10 dark:border-white/10 flex items-center gap-3">
-                                        {t.avatarUrl ? <img src={sizedImage(t.avatarUrl, 80)} alt="" width="40" height="40" loading="lazy" decoding="async" className="w-10 h-10 rounded-full object-cover" /> : <span className="w-10 h-10 rounded-full bg-neon-green/20 text-emerald-700 dark:text-neon-green font-bold text-xs flex items-center justify-center">{t.name.slice(0, 2).toUpperCase()}</span>}
-                                        <div><p className="font-heading font-bold text-gray-950 dark:text-white">{t.name}</p><p className="font-mono text-[11px] uppercase tracking-[0.15em] text-gray-500 dark:text-zinc-500">{[t.city, t.niche || t.handle].filter(Boolean).join(' · ')}</p></div>
+                                        {tm.avatarUrl ? <img src={sizedImage(tm.avatarUrl, 80)} alt="" width="40" height="40" loading="lazy" decoding="async" className="w-10 h-10 rounded-full object-cover" /> : <span className="w-10 h-10 rounded-full bg-neon-green/20 text-emerald-700 dark:text-neon-green font-bold text-xs flex items-center justify-center">{tm.name.slice(0, 2).toUpperCase()}</span>}
+                                        <div><p className="font-heading font-bold text-gray-950 dark:text-white">{tm.name}</p><p className="font-mono text-[11px] uppercase tracking-[0.15em] text-gray-500 dark:text-zinc-500">{[tm.city, tm.niche || tm.handle].filter(Boolean).join(' · ')}</p></div>
                                     </div>
                                 </li>
                             ))}
@@ -171,24 +173,24 @@ export default function CreatorPage() {
             {/* FAQ */}
             <section aria-labelledby="cfaq-title" className="py-24 md:py-36 border-t border-gray-950/10 dark:border-white/10">
                 <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
-                    <SectionHeading id="cfaq-title" index={testimonials.length ? '05' : '04'} eyebrow="Questions" title="Before you" highlight="apply." className="lg:sticky lg:top-28 self-start" />
+                    <SectionHeading id="cfaq-title" index={testimonials.length ? '05' : '04'} eyebrow={t('Questions')} title={t('Before you')} highlight={t('apply.')} className="lg:sticky lg:top-28 self-start" />
                     <div className="nb-reveal border-t border-gray-950/10 dark:border-white/10">
                         {FAQS.map((f, i) => (
                             <details key={f.q} className="group border-b border-gray-950/10 dark:border-white/10">
                                 <summary className="flex items-center gap-5 min-h-[72px] py-5 cursor-pointer">
                                     <span className="font-mono text-[11px] font-bold tracking-[0.2em] text-gray-400 dark:text-zinc-600">0{i + 1}</span>
-                                    <span className="flex-1 font-heading text-xl md:text-2xl font-bold tracking-[-0.02em] text-gray-950 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-neon-green transition-colors">{f.q}</span>
+                                    <span className="flex-1 font-heading text-xl md:text-2xl font-bold tracking-[-0.02em] text-gray-950 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-neon-green transition-colors">{t(f.q)}</span>
                                     <span className="w-10 h-10 shrink-0 rounded-full border border-gray-950/15 dark:border-white/15 flex items-center justify-center text-gray-950 dark:text-white group-open:bg-neon-green group-open:border-neon-green group-open:text-black"><Plus size={17} className="nb-plus" aria-hidden="true" /></span>
                                 </summary>
-                                <p className="pb-7 pl-9 pr-4 max-w-2xl text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400">{f.a}</p>
+                                <p className="pb-7 pl-9 pr-4 max-w-2xl text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400">{t(f.a)}</p>
                             </details>
                         ))}
                     </div>
                 </div>
             </section>
 
-            <ClosingCta title="Your next brief" highlight="is waiting." text="Free to join. A few minutes to apply. Your dashboard is ready the moment you are in." cta={{ label: 'Apply as a creator', href: APP_LINKS.creatorApply }} />
-            <p className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6 text-sm text-gray-500 dark:text-zinc-500">Brand or college looking to run a campaign? <Link to="/#enquire" className="inline-flex items-center gap-1 min-h-[44px] underline underline-offset-4 decoration-neon-green text-gray-950 dark:text-white">Work with us <ArrowRight size={14} aria-hidden="true" /></Link></p>
+            <ClosingCta title={t('Your next brief')} highlight={t('is waiting.')} text={t('Free to join. A few minutes to apply. Your dashboard is ready the moment you are in.')} cta={{ label: t('Apply as a creator'), href: APP_LINKS.creatorApply }} />
+            <p className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6 text-sm text-gray-500 dark:text-zinc-500">{t('Brand or college looking to run a campaign?')} <Link to="/#enquire" className="inline-flex items-center gap-1 min-h-[44px] underline underline-offset-4 decoration-neon-green text-gray-950 dark:text-white">{t('Work with us')} <ArrowRight size={14} aria-hidden="true" /></Link></p>
             <Wordmark />
         </div>
     );

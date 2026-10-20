@@ -13,6 +13,7 @@ import { CardGrid, CardSkeleton, EmptyState } from '../pages/parts';
 import { fromPrice, useTicketedEvents } from './useTicketedEvents';
 import { useAuthGate, useResumeIntent } from '../auth/AuthGate';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
+import { useT, t as tNow } from '../../i18n';
 
 /*
  * /tickets: upcoming shows that sell tickets. Tapping one opens the ticket
@@ -31,7 +32,7 @@ const dayLabel = (day) => {
     const d = new Date(`${day}T00:00:00`);
     return Number.isNaN(d.getTime()) ? null : format(d, 'EEE d MMM');
 };
-const rupees = (n) => (n ? `From ₹${Number(n).toLocaleString('en-IN')}` : null);
+const rupees = (n) => (n ? tNow('From ₹{amount}', { amount: Number(n).toLocaleString('en-IN') }) : null);
 
 export const ticketCard = (e, onOpen) => ({
     type: 'event',
@@ -45,14 +46,15 @@ export const ticketCard = (e, onOpen) => ({
         { icon: Clock, label: isPresent(e.time) ? e.time : null },
     ],
     stats: [
-        { label: 'Tickets', value: rupees(fromPrice(e)), icon: IndianRupee, tone: 'accent' },
-        { label: 'Venue', value: e.venue || e.location, icon: MapPin },
+        { label: tNow('Tickets'), value: rupees(fromPrice(e)), icon: IndianRupee, tone: 'accent' },
+        { label: tNow('Venue'), value: e.venue || e.location, icon: MapPin },
     ],
-    cta: { label: 'Get tickets' },
+    cta: { label: tNow('Get tickets') },
     onClick: () => onOpen(e.id),
 });
 
 const TicketsPage = () => {
+    const t = useT();
     useDynamicMeta({ page: 'tickets' });
     const { events, loaded } = useTicketedEvents();
     const [params, setParams] = useSearchParams();
@@ -76,7 +78,7 @@ const TicketsPage = () => {
 
     return (
         <PageBody>
-            <PageHeader eyebrow="Tickets" title="Get your" highlight="tickets." subtitle="Pick a show, pay by UPI, and your ticket shows up in the app." />
+            <PageHeader eyebrow={t('Tickets')} title={t('Get your')} highlight={t('tickets.')} subtitle={t('Pick a show, pay by UPI, and your ticket shows up in the app.')} />
 
             {!loaded ? (
                 <CardGrid><CardSkeleton /><CardSkeleton /></CardGrid>
@@ -85,7 +87,7 @@ const TicketsPage = () => {
                     {events.map(e => <Card key={e.id} {...ticketCard(e, openEvent)} />)}
                 </CardGrid>
             ) : (
-                <EmptyState icon={Ticket} title="No ticket sales right now" message="Shows with tickets on sale appear here first." />
+                <EmptyState icon={Ticket} title={t('No ticket sales right now')} message={t('Shows with tickets on sale appear here first.')} />
             )}
 
             {/* The ticket flow, over the list. An unknown or past event just closes. */}

@@ -1,4 +1,5 @@
 import SectionLabel from '../components/SectionLabel';
+import { useT } from '../../i18n';
 // Why Newbi, read like lyrics: as each line scrolls up, its green phrase fills
 // with colour, then the rest of the line fills white.
 const LINES = [
@@ -9,16 +10,17 @@ const LINES = [
 ];
 
 export default function Manifesto() {
+    const t = useT();
     return (
         <section aria-labelledby="why-title" className="[--nb-ghost:rgba(255,255,255,0.42)] py-24 md:py-40 border-t border-gray-950/10 dark:border-white/10 bg-gray-950 text-white dark:bg-[#0a0a0a]">
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
                 <SectionLabel index="03" dark>Why Newbi</SectionLabel>
-                <h2 id="why-title" className="sr-only">Why Newbi</h2>
+                <h2 id="why-title" className="sr-only">{t('Why Newbi')}</h2>
                 <ul className="mt-10 md:mt-16 space-y-6 md:space-y-10">
                     {LINES.map(([lead, rest]) => (
                         <li key={lead} className="font-heading font-extrabold tracking-[-0.03em] leading-[0.95] text-[2.4rem] sm:text-6xl lg:text-7xl xl:text-[5.5rem]">
-                            <span className="nb-fill-green">{lead}</span>{' '}
-                            <span className="nb-fill-white">{rest}</span>
+                            <span className="nb-fill-green">{t(lead)}</span>{' '}
+                            <span className="nb-fill-white">{t(rest)}</span>
                         </li>
                     ))}
                 </ul>

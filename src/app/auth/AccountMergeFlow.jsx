@@ -5,6 +5,7 @@ import { isInAppBrowser } from '../../lib/platform';
 import { proveWithGoogle, proveWithPassword, previewMerge } from './accountMerge';
 import MergeConfirm from './MergeConfirm';
 import PhoneVerifyField from './PhoneVerifyField';
+import { useT } from '../../i18n';
 
 /*
  * Merging an account found by account-matches (same phone or email): the
@@ -14,6 +15,7 @@ import PhoneVerifyField from './PhoneVerifyField';
  *   <AccountMergeFlow match={match} email={typedEmail} onDone={…} onCancel={…} />
  */
 const AccountMergeFlow = ({ match, email = '', onDone, onCancel, cancelLabel = 'Not now' }) => {
+    const t = useT();
     const profile = useAppStore(s => s.profile);
     const [step, setStep] = useState(null); // { proof, preview }
     const [busy, setBusy] = useState('');
@@ -32,7 +34,7 @@ const AccountMergeFlow = ({ match, email = '', onDone, onCancel, cancelLabel = '
             // The confirm step names the account they signed in to, whichever it was.
             setStep({ proof, preview: await previewMerge(proof) });
         } catch (err) {
-            if (err?.friendly !== '') setError(err?.friendly || 'We couldn’t sign in to that account. Please try again.');
+            if (err?.friendly !== '') setError(err?.friendly || t('We couldn’t sign in to that account. Please try again.'));
         } finally {
             setBusy('');
         }
@@ -52,31 +54,32 @@ const AccountMergeFlow = ({ match, email = '', onDone, onCancel, cancelLabel = '
     }
 
     const ways = [
-        methods.google && `Google (${methods.google})`,
-        methods.password && `email and password (${methods.password})`,
-        methods.phone && `phone (${methods.phone})`,
+        methods.google && t('Google ({detail})', { detail: methods.google }),
+        methods.password && t('email and password ({detail})', { detail: methods.password }),
+        methods.phone && t('phone ({detail})', { detail: methods.phone }),
     ].filter(Boolean);
+    const waysText = ways.length ? ways.reduce((a, b) => t('{a} or {b}', { a, b })) : t('another method');
 
     return (
         <div className="space-y-4">
             <p className="text-[14px] leading-snug text-gray-600 dark:text-zinc-400">
-                Your other account{name ? ` (${name})` : ''} signs in with {ways.join(' or ') || 'another method'}.
-                Sign in to it once here to show it's yours; you stay signed in to this one.
+                {name ? t('Your other account ({name}) signs in with {ways}.', { name, ways: waysText }) : t('Your other account signs in with {ways}.', { ways: waysText })}{' '}
+                {t("Sign in to it once here to show it's yours; you stay signed in to this one.")}
             </p>
 
             {methods.google && (
                 <div className="space-y-2">
                     <Button className="w-full" variant="secondary" onClick={() => run('google', proveWithGoogle)} loading={busy === 'google'} disabled={inApp || Boolean(busy)}>
-                        Confirm with Google
+                        {t('Confirm with Google')}
                     </Button>
-                    {inApp && <p className="text-[13px] text-gray-500 dark:text-zinc-400">Open this page in your browser (Safari or Chrome) to confirm with Google.</p>}
+                    {inApp && <p className="text-[13px] text-gray-500 dark:text-zinc-400">{t('Open this page in your browser (Safari or Chrome) to confirm with Google.')}</p>}
                 </div>
             )}
 
             {methods.password && (
                 <div className="space-y-2">
-                    <TextInput label="Email" type="email" autoComplete="username" autoCapitalize="none" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
-                    <TextInput label="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <TextInput label={t('Email')} type="email" autoComplete="username" autoCapitalize="none" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+                    <TextInput label={t('Password')} type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
                     <Button
                         className="w-full"
                         variant="secondary"
@@ -84,7 +87,7 @@ const AccountMergeFlow = ({ match, email = '', onDone, onCancel, cancelLabel = '
                         loading={busy === 'password'}
                         disabled={!loginEmail.trim() || !password || Boolean(busy)}
                     >
-                        Confirm with password
+                        {t('Confirm with password')}
                     </Button>
                 </div>
             )}
@@ -93,7 +96,7 @@ const AccountMergeFlow = ({ match, email = '', onDone, onCancel, cancelLabel = '
                 // The code proves the number; since it signs in to the other account, the field turns into the merge step.
                 <PhoneVerifyField
                     initialPhone={match.phoneIsYours ? profile?.phone || '' : ''}
-                    label={match.phoneIsYours ? 'Your number' : `Its number (${methods.phone})`}
+                    label={match.phoneIsYours ? 'Your number' : t('Its number ({phone})', { phone: methods.phone })}
                     onVerified={(e164, result) => onDone?.(result?.merged || result)}
                 />
             )}
@@ -102,7 +105,7 @@ const AccountMergeFlow = ({ match, email = '', onDone, onCancel, cancelLabel = '
 
             {onCancel && (
                 <button type="button" onClick={onCancel} className="h-10 text-[13px] font-semibold text-gray-500 underline-offset-2 hover:underline dark:text-zinc-400">
-                    {cancelLabel}
+                    {t(cancelLabel)}
                 </button>
             )}
         </div>

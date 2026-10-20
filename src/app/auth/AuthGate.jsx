@@ -6,6 +6,7 @@ import { useAppStore } from '../../lib/store/appStore';
 import { useStore as useLegacyStore } from '../../lib/store.js';
 import { auth } from '../../lib/firebase';
 import { Button } from '../../components/app/controls';
+import { useT, t as tNow } from '../../i18n';
 
 /*
  * Sign-in that picks up where you left off.
@@ -154,7 +155,7 @@ export function AuthResumer() {
     useEffect(() => {
         finishRedirectSignIn().catch((err) => {
             console.warn('[auth] redirect sign-in failed:', err?.code || err);
-            useLegacyStore.getState().addToast?.('Sign-in didn’t finish. Please try again.', 'error');
+            useLegacyStore.getState().addToast?.(tNow('Sign-in didn’t finish. Please try again.'), 'error');
         });
     }, [finishRedirectSignIn]);
 
@@ -190,6 +191,7 @@ export function AuthResumer() {
 
 /* Page guard: shows a sign-in panel instead of the children when signed out. */
 const AuthGate = ({ children, title = 'Sign in to continue', message = 'One account for passes, campaigns and the community.', intent }) => {
+    const t = useT();
     const authUser = useAppStore(s => s.authUser);
     const authReady = useAppStore(s => s.authReady);
     const { requestSignIn } = useAuthGate();
@@ -204,9 +206,9 @@ const AuthGate = ({ children, title = 'Sign in to continue', message = 'One acco
                 <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-neon-green text-black shadow-[0_8px_24px_-8px_rgba(57,255,20,0.8)]">
                     <LogIn size={22} />
                 </span>
-                <h2 className="font-heading text-[22px] font-extrabold tracking-[-0.03em]">{title}</h2>
-                <p className="text-[15px] text-gray-600 dark:text-zinc-400">{message}</p>
-                <Button className="w-full" onClick={() => requestSignIn(intent)}>Sign in</Button>
+                <h2 className="font-heading text-[22px] font-extrabold tracking-[-0.03em]">{t(title)}</h2>
+                <p className="text-[15px] text-gray-600 dark:text-zinc-400">{t(message)}</p>
+                <Button className="w-full" onClick={() => requestSignIn(intent)}>{t('Sign in')}</Button>
             </div>
         </div>
     );

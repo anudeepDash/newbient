@@ -6,6 +6,7 @@ import { STATUS_META } from '../../../lib/outreach/status';
 import { appPath } from '../../host';
 import { callCreatorApi } from '../api';
 import { ToneChip } from '../ui';
+import { useT } from '../../../i18n';
 
 /*
  * "Your campaigns": the campaigns you applied to with an open form, each
@@ -17,6 +18,7 @@ const TONE = { violet: 'blue', pink: 'green', teal: 'green', orange: 'amber', ro
 const LABEL = { message_queued: 'Shortlisted', message_sent: 'Shortlisted', replied: 'Shortlisted' };
 
 const MyOutreachCampaigns = () => {
+    const t = useT();
     const uid = useAppStore(s => s.authUser?.uid);
     const [items, setItems] = useState([]);
     useEffect(() => {
@@ -27,8 +29,8 @@ const MyOutreachCampaigns = () => {
     }, [uid]);
     if (!items.length) return null;
     return (
-        <section className="space-y-2" aria-label="Your campaigns">
-            <h2 className="px-1 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-400">Your campaigns</h2>
+        <section className="space-y-2" aria-label={t('Your campaigns')}>
+            <h2 className="px-1 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-400">{t('Your campaigns')}</h2>
             <ul className="space-y-2">
                 {items.map(item => {
                     const meta = STATUS_META[item.status] || STATUS_META.applied;
@@ -38,7 +40,7 @@ const MyOutreachCampaigns = () => {
                             <span className="min-w-0 flex-1">
                                 <span className="block truncate text-[15px] font-bold">{item.title}</span>
                             </span>
-                            <ToneChip tone={TONE[meta.tone] || meta.tone} className="shrink-0 whitespace-nowrap">{LABEL[item.status] || meta.label}</ToneChip>
+                            <ToneChip tone={TONE[meta.tone] || meta.tone} className="shrink-0 whitespace-nowrap">{t(LABEL[item.status] || meta.label)}</ToneChip>
                             {path && <ChevronRight size={18} className="shrink-0 text-gray-400" />}
                         </>
                     );

@@ -9,6 +9,7 @@ import { AmbientBackdrop, Field, Stat, StatRow } from '../../components/app';
 import { isPresent } from '../../lib/present';
 import { cn } from '../../lib/utils';
 import { ExternalTicketButton, PassQr, entryLine, passWhen } from './passParts';
+import { useT } from '../../i18n';
 
 /*
  * One pass, as the holder shows it at the gate: poster, event details, the QR
@@ -19,8 +20,9 @@ import { ExternalTicketButton, PassQr, entryLine, passWhen } from './passParts';
 const SOURCE_LABEL = { guestlist: 'Guestlist pass', campaign: 'Creator ticket', order: 'Ticket' };
 
 const PassView = ({ pass, token, offline = false }) => {
+    const t = useT();
     const event = pass.event || {};
-    const title = event.title || pass.campaignTitle || 'Your pass';
+    const title = event.title || pass.campaignTitle || t('Your pass');
     const when = passWhen(event);
     const revoked = pass.status === 'revoked';
     const checkedIn = pass.status === 'checked_in';
@@ -41,7 +43,7 @@ const PassView = ({ pass, token, offline = false }) => {
             <div className={cn('relative space-y-5 px-5 pb-6 sm:px-6', isPresent(event.image) ? '-mt-6' : 'pt-6')}>
                 <div className="space-y-1.5 text-center">
                     <p className="text-[12px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-neon-green">
-                        {pass.mode === 'rsvp' ? 'RSVP' : confirmation ? 'Confirmation' : SOURCE_LABEL[pass.source] || 'Pass'}
+                        {pass.mode === 'rsvp' ? 'RSVP' : confirmation ? t('Confirmation') : t(SOURCE_LABEL[pass.source] || 'Pass')}
                     </p>
                     <h1 className="font-heading text-[26px] font-black leading-tight tracking-tight">{title}</h1>
                     {isPresent(pass.campaignTitle) && pass.campaignTitle !== title && (
@@ -51,12 +53,12 @@ const PassView = ({ pass, token, offline = false }) => {
 
                 {revoked && (
                     <p className="flex items-center justify-center gap-2 rounded-2xl bg-red-500/10 px-4 py-3 text-[15px] font-bold text-red-700 dark:text-red-300">
-                        <Ban size={17} /> This pass was cancelled.
+                        <Ban size={17} /> {t('This pass was cancelled.')}
                     </p>
                 )}
                 {pending && (
                     <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-center text-[15px] font-semibold text-amber-800 dark:text-amber-300">
-                        Waiting for approval. We’ll send your pass as soon as you’re in.
+                        {t('Waiting for approval. We’ll send your pass as soon as you’re in.')}
                     </p>
                 )}
 
@@ -66,43 +68,43 @@ const PassView = ({ pass, token, offline = false }) => {
                         {checkedIn && (
                             <span className="absolute inset-0 flex items-center justify-center">
                                 <span className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-[15px] font-black text-white shadow-lg">
-                                    <CircleCheck size={18} /> Checked in
+                                    <CircleCheck size={18} /> {t('Checked in')}
                                 </span>
                             </span>
                         )}
                         <p className="mt-3 text-center font-mono text-[20px] font-black tracking-[0.25em]">{pass.ref}</p>
-                        {!checkedIn && <p className="text-center text-[13px] text-gray-500 dark:text-zinc-400">Show this at the gate. Turn your brightness up.</p>}
+                        {!checkedIn && <p className="text-center text-[13px] text-gray-500 dark:text-zinc-400">{t('Show this at the gate. Turn your brightness up.')}</p>}
                     </div>
                 )}
 
                 {confirmation && !revoked && (
                     <div className="flex flex-col items-center gap-2 rounded-2xl bg-emerald-500/10 px-4 py-5 text-center dark:bg-neon-green/[0.08]">
                         <CircleCheck size={34} className="text-emerald-600 dark:text-neon-green" />
-                        <p className="font-heading text-[20px] font-black">You’re confirmed{isPresent(pass.holderName) ? `, ${String(pass.holderName).split(/\s+/)[0]}` : ''}</p>
-                        <p className="text-[14px] text-gray-600 dark:text-zinc-400">No QR code needed. Show this if anyone asks at entry.</p>
+                        <p className="font-heading text-[20px] font-black">{isPresent(pass.holderName) ? t('You’re confirmed, {name}', { name: String(pass.holderName).split(/\s+/)[0] }) : t('You’re confirmed')}</p>
+                        <p className="text-[14px] text-gray-600 dark:text-zinc-400">{t('No QR code needed. Show this if anyone asks at entry.')}</p>
                     </div>
                 )}
 
                 <ExternalTicketButton pass={pass} token={token} />
 
                 <div className="divide-y divide-black/[0.05] rounded-2xl border border-black/[0.05] px-4 dark:divide-white/[0.06] dark:border-white/[0.07]">
-                    <Field icon={CalendarDays} label="When" value={when} />
-                    <Field icon={Clock} label="Box office" value={event.boxOffice} />
-                    <Field icon={MapPin} label="Venue" value={[event.venue, event.city && !String(event.venue || '').includes(event.city) ? event.city : null].filter(Boolean).join(', ') || null} />
-                    <Field icon={DoorOpen} label="Entry" value={entryLine(event, pass.qr !== false)} />
+                    <Field icon={CalendarDays} label={t('When')} value={when} />
+                    <Field icon={Clock} label={t('Box office')} value={event.boxOffice} />
+                    <Field icon={MapPin} label={t('Venue')} value={[event.venue, event.city && !String(event.venue || '').includes(event.city) ? event.city : null].filter(Boolean).join(', ') || null} />
+                    <Field icon={DoorOpen} label={t('Entry')} value={entryLine(event, pass.qr !== false)} />
                 </div>
 
                 <StatRow>
-                    <Stat label={pass.source === 'guestlist' ? 'Guests' : 'Tickets'} value={qty} />
-                    <Stat label="Tier" value={pass.tier || pass.externalTicket?.tier} tone="accent" />
-                    <Stat label="Name" value={pass.holderName} />
+                    <Stat label={pass.source === 'guestlist' ? t('Guests') : t('Tickets')} value={qty} />
+                    <Stat label={t('Tier')} value={pass.tier || pass.externalTicket?.tier} tone="accent" />
+                    <Stat label={t('Name')} value={pass.holderName} />
                 </StatRow>
 
                 {isPresent(pass.note || pass.externalTicket?.note) && (
                     <p className="rounded-2xl bg-black/[0.03] px-4 py-3 text-[15px] text-gray-700 dark:bg-white/[0.04] dark:text-zinc-300">{pass.note || pass.externalTicket?.note}</p>
                 )}
 
-                {offline && <p className="text-center text-[13px] text-gray-500 dark:text-zinc-500">Offline copy saved on this phone.</p>}
+                {offline && <p className="text-center text-[13px] text-gray-500 dark:text-zinc-500">{t('Offline copy saved on this phone.')}</p>}
             </div>
         </article>
     );

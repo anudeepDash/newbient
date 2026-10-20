@@ -8,6 +8,8 @@
  *   → { hello: 'Good evening', name: 'Anudeep', line: 'The night’s young. Here’s what’s on.' }
  */
 
+import { t } from '../../i18n';
+
 const LINES = {
     morning: [
         'Fresh day, fresh shows. Here’s what’s on.',
@@ -54,24 +56,28 @@ const daysUntil = (when, now) => {
 
 export function greetingFor({ name = '', city = '', nextPass = null, signedIn = false, now = new Date() } = {}) {
     const part = partOfDay(now.getHours());
-    const hello = HELLO[part];
+    const hello = t(HELLO[part]);
 
     // Something real beats a nice line.
     if (nextPass?.when instanceof Date && !Number.isNaN(nextPass.when.getTime())) {
         const n = daysUntil(nextPass.when, now);
         if (n >= 0 && n <= 7 && nextPass.title) {
-            const when = n === 0 ? 'is tonight' : n === 1 ? 'is tomorrow' : `is in ${n} days`;
-            return { hello, name, line: `Your pass for ${nextPass.title} ${when}. See you there.` };
+            const line = n === 0
+                ? t('Your pass for {title} is tonight. See you there.', { title: nextPass.title })
+                : n === 1
+                    ? t('Your pass for {title} is tomorrow. See you there.', { title: nextPass.title })
+                    : t('Your pass for {title} is in {n} days. See you there.', { title: nextPass.title, n });
+            return { hello, name, line };
         }
     }
     if (!signedIn) {
-        return { hello, name: '', line: 'Concerts, campaigns and the community, in one place.' };
+        return { hello, name: '', line: t('Concerts, campaigns and the community, in one place.') };
     }
 
     const day = now.getDay();
     let pool = day === 0 ? LINES.sunday : (day === 5 && part !== 'morning') || day === 6 ? LINES.weekend : LINES[part];
-    if (city) pool = [...pool, `Here’s what’s on in ${city} this week.`];
+    if (city) pool = [...pool, 'Here’s what’s on in {city} this week.'];
     // Changes daily (and with the part of the day), stays the same while you're here.
     const seed = dayOfYear(now) * 4 + ['morning', 'afternoon', 'evening', 'night'].indexOf(part);
-    return { hello, name, line: pool[seed % pool.length] };
+    return { hello, name, line: t(pool[seed % pool.length], { city }) };
 }

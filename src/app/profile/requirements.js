@@ -1,4 +1,5 @@
 import { isPresent } from '../../lib/present';
+import { t } from '../../i18n';
 
 /*
  * The progressive profile: each flow asks only for what's still missing.
@@ -48,4 +49,5 @@ export function missingFields(profile, required = []) {
 
 export const isProfileComplete = (profile, required) => missingFields(profile, required).length === 0;
 
-export const fieldLabel = (key) => PROFILE_FIELDS[key]?.label || key;
+// Read at call time, so it follows the current language.
+export const fieldLabel = (key) => t(PROFILE_FIELDS[key]?.label || key);

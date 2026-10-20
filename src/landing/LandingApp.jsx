@@ -4,6 +4,7 @@ import LandingNav from './components/LandingNav';
 import LandingFooter from './components/LandingFooter';
 import { LANDING_ROUTES, findRoute } from './routes';
 import { usePublicFeed, isOff } from './feed';
+import { useT } from '../i18n';
 
 const useIsoLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
@@ -39,12 +40,13 @@ function TitleSync() {
 }
 
 function Maintenance() {
+    const t = useT();
     return (
         <div className="min-h-[70dvh] flex items-center justify-center px-6 text-center">
             <div className="space-y-4 max-w-md">
-                <h1 className="font-heading text-3xl font-bold text-gray-950 dark:text-white">Back shortly</h1>
-                <p className="text-gray-600 dark:text-zinc-400">We are updating this page. Please check back in a little while.</p>
-                <Link to="/" className="inline-flex h-12 px-6 items-center rounded-xl bg-gray-950 text-white dark:bg-white dark:text-black font-semibold">Go to the home page</Link>
+                <h1 className="font-heading text-3xl font-bold text-gray-950 dark:text-white">{t('Back shortly')}</h1>
+                <p className="text-gray-600 dark:text-zinc-400">{t('We are updating this page. Please check back in a little while.')}</p>
+                <Link to="/" className="inline-flex h-12 px-6 items-center rounded-xl bg-gray-950 text-white dark:bg-white dark:text-black font-semibold">{t('Go to the home page')}</Link>
             </div>
         </div>
     );
@@ -59,22 +61,24 @@ function RoutePage({ route }) {
 }
 
 function NotFound() {
+    const t = useT();
     return (
         <div className="min-h-[70dvh] flex items-center justify-center px-6 text-center">
             <div className="space-y-4">
                 <h1 className="font-heading text-5xl font-bold text-gray-950 dark:text-white">404</h1>
-                <p className="text-gray-600 dark:text-zinc-400">This page does not exist.</p>
-                <Link to="/" className="inline-flex h-12 px-6 items-center rounded-xl bg-gray-950 text-white dark:bg-white dark:text-black font-semibold">Go to the home page</Link>
+                <p className="text-gray-600 dark:text-zinc-400">{t('This page does not exist.')}</p>
+                <Link to="/" className="inline-flex h-12 px-6 items-center rounded-xl bg-gray-950 text-white dark:bg-white dark:text-black font-semibold">{t('Go to the home page')}</Link>
             </div>
         </div>
     );
 }
 
 function Shell({ route }) {
+    const t = useT();
     if (route.ownHeader) return <RoutePage route={route} />;
     return (
         <div className="nb-landing nb-grain min-h-dvh flex flex-col bg-[#F4F2EC] dark:bg-[#050505] text-gray-950 dark:text-white">
-            <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:px-4 focus:py-3 focus:rounded-xl focus:bg-white focus:text-black">Skip to content</a>
+            <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:px-4 focus:py-3 focus:rounded-xl focus:bg-white focus:text-black">{t('Skip to content')}</a>
             <LandingNav />
             <main id="main" className="flex-1">
                 <RoutePage route={route} />

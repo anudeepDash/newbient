@@ -1,3 +1,5 @@
+import { t } from '../../i18n';
+
 /* Small display helpers for the creator module. Empty values come back as null. */
 
 export const compactCount = (n) => {
@@ -41,5 +43,5 @@ export const dueLabel = (value) => {
     if (!value) return null;
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return null;
-    return `Due ${d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`;
+    return t('Due {date}', { date: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) });
 };

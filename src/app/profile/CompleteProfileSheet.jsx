@@ -3,6 +3,7 @@ import { Sheet } from '../../components/app';
 import { useAppStore } from '../../lib/store/appStore';
 import { missingFields } from './requirements';
 import ProfileDetailsForm from './ProfileDetailsForm';
+import { useT } from '../../i18n';
 
 /*
  * Asks only for the profile fields a flow still needs, then hands back.
@@ -14,6 +15,7 @@ import ProfileDetailsForm from './ProfileDetailsForm';
  */
 
 const CompleteProfileSheet = ({ open, onClose, onComplete, required = [], reason, title = 'A few details first', editAll = false }) => {
+    const t = useT();
     const profile = useAppStore(s => s.profile);
     // Freeze the list when the sheet opens, so a field doesn't vanish mid-typing.
     const [fields, setFields] = useState([]);
@@ -31,8 +33,8 @@ const CompleteProfileSheet = ({ open, onClose, onComplete, required = [], reason
         <Sheet
             open={open}
             onClose={onClose}
-            title={title}
-            subtitle={reason ? `We just need these ${reason}.` : 'We only ask for what’s missing.'}
+            title={t(title)}
+            subtitle={reason ? t('We just need these {reason}.', { reason }) : t('We only ask for what’s missing.')}
         >
             <ProfileDetailsForm
                 key={key}

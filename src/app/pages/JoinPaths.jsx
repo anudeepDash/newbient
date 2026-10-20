@@ -9,6 +9,7 @@ import Users from 'lucide-react/dist/esm/icons/users';
 import { cn } from '../../lib/utils';
 import { GLASS } from './parts';
 import JoinCommunitySheet from '../community/JoinCommunitySheet';
+import { useT } from '../../i18n';
 
 /*
  * The ways into the app on Home: become a creator (campaigns) and join the
@@ -21,20 +22,24 @@ import JoinCommunitySheet from '../community/JoinCommunitySheet';
  * visitors sign in first and the form opens when they come back.
  */
 
-const Row = ({ icon: Icon, accent, title, text, action }) => (
+const Row = ({ icon: Icon, accent, title, text, action }) => {
+    const t = useT();
+    return (
     <div className="flex items-center gap-4 py-4 first:pt-0 last:pb-0 lg:py-0">
         <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl', accent ? 'bg-neon-green text-black shadow-[0_8px_24px_-10px_rgba(57,255,20,0.8)]' : 'bg-emerald-500/10 text-emerald-700 dark:bg-neon-green/10 dark:text-neon-green')}>
             <Icon size={20} strokeWidth={2.2} />
         </span>
         <div className="min-w-0 flex-1">
-            <p className="font-heading text-[16px] font-extrabold tracking-[-0.02em]">{title}</p>
-            <p className="text-[13px] leading-snug text-gray-600 dark:text-zinc-400">{text}</p>
+            <p className="font-heading text-[16px] font-extrabold tracking-[-0.02em]">{t(title)}</p>
+            <p className="text-[13px] leading-snug text-gray-600 dark:text-zinc-400">{t(text)}</p>
         </div>
         <div className="shrink-0">{action}</div>
     </div>
-);
+    );
+};
 
 const JoinPaths = () => {
+    const t = useT();
     const authUser = useAppStore(s => s.authUser);
     const profileLoaded = useAppStore(s => s.profileLoaded);
     const isCreator = useCapability('creator');
@@ -56,14 +61,14 @@ const JoinPaths = () => {
             accent: true,
             title: 'Become a Newbi creator',
             text: 'Passes, products and paid work for posting about shows.',
-            action: <Button size="sm" to={appPath('/creator/apply')} state={{ backgroundLocation: location }}>Apply</Button>,
+            action: <Button size="sm" to={appPath('/creator/apply')} state={{ backgroundLocation: location }}>{t('Apply')}</Button>,
         },
         !isMember && {
             key: 'community',
             icon: Users,
             title: 'Join the community',
             text: 'Guestlists, gigs and giveaways near you. Free.',
-            action: <Button size="sm" variant="secondary" onClick={() => run({ type: INTENTS.joinCommunity }, join)}>Join</Button>,
+            action: <Button size="sm" variant="secondary" onClick={() => run({ type: INTENTS.joinCommunity }, join)}>{t('Join')}</Button>,
         },
     ].filter(Boolean);
 
@@ -71,8 +76,8 @@ const JoinPaths = () => {
 
     return (
         <>
-            <section aria-label="Ways in" className={cn('rounded-[1.75rem] px-5 py-5 lg:grid lg:gap-8 lg:px-7', GLASS, tiles.length > 1 && 'divide-y divide-black/[0.06] dark:divide-white/[0.08] lg:grid-cols-2 lg:divide-y-0')}>
-                {tiles.map(({ key, ...t }) => <Row key={key} {...t} />)}
+            <section aria-label={t('Ways in')} className={cn('rounded-[1.75rem] px-5 py-5 lg:grid lg:gap-8 lg:px-7', GLASS, tiles.length > 1 && 'divide-y divide-black/[0.06] dark:divide-white/[0.08] lg:grid-cols-2 lg:divide-y-0')}>
+                {tiles.map(({ key, ...tile }) => <Row key={key} {...tile} />)}
             </section>
             <JoinCommunitySheet open={joinOpen} onClose={() => setJoinOpen(false)} />
         </>

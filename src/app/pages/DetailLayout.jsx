@@ -6,6 +6,7 @@ import { isPresent } from '../../lib/present';
 import { cn } from '../../lib/utils';
 import { PageBody } from './PageHeader';
 import { GLASS } from './parts';
+import { useT } from '../../i18n';
 
 /*
  * The page for one thing (a guestlist, a giveaway, a form), laid out like the
@@ -43,16 +44,19 @@ export const PanelLabel = ({ children }) => (
 /* A row inside a list panel (task, leaderboard entry, link). */
 export const ROW = 'rounded-2xl bg-white/60 ring-1 ring-inset ring-black/[0.06] dark:bg-white/[0.04] dark:ring-white/[0.08]';
 
-export const ShareButton = ({ onClick, label = 'Share' }) => (
+export const ShareButton = ({ onClick, label = 'Share' }) => {
+    const t = useT();
+    return (
     <button
         type="button"
-        aria-label={label}
+        aria-label={t(label)}
         onClick={onClick}
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/60 text-gray-700 ring-1 ring-inset ring-black/[0.08] transition-colors hover:bg-white dark:bg-white/[0.06] dark:text-zinc-300 dark:ring-white/[0.12] dark:hover:bg-white/[0.1]"
     >
         <Share2 size={17} />
     </button>
-);
+    );
+};
 
 export const DetailSkeleton = () => (
     <PageBody>

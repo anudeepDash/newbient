@@ -25,6 +25,7 @@ import CompleteProfileSheet from '../../profile/CompleteProfileSheet';
 import { CITIES } from '../../community/welcomeForm';
 import DetailsStep, { validateDetails } from '../apply/DetailsStep';
 import { oauthErrorMessage } from '../apply/instagramCopy';
+import { useT } from '../../../i18n';
 
 /*
  * Profile: contact details are the account's own (the same "Edit profile"
@@ -64,6 +65,7 @@ const detailsFrom = (c) => ({
 });
 
 const InstagramSection = ({ creator, settings }) => {
+    const t = useT();
     const [params, setParams] = useSearchParams();
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState(null);
@@ -75,8 +77,8 @@ const InstagramSection = ({ creator, settings }) => {
         setMessage(ig !== 'connected'
             ? { tone: 'error', text: oauthErrorMessage(params.get('reason'), params.get('handle')) }
             : params.get('approved')
-                ? { tone: 'success', text: 'Instagram connected, and you’re verified. Your creator profile is live.' }
-                : { tone: 'success', text: 'Instagram connected. Your follower count now comes straight from Instagram.' });
+                ? { tone: 'success', text: t('Instagram connected, and you’re verified. Your creator profile is live.') }
+                : { tone: 'success', text: t('Instagram connected. Your follower count now comes straight from Instagram.') });
         const next = new URLSearchParams(params);
         ['ig', 'reason', 'handle', 'approved'].forEach(k => next.delete(k));
         setParams(next, { replace: true });
@@ -95,15 +97,15 @@ const InstagramSection = ({ creator, settings }) => {
     return (
         <div className="space-y-2">
             <FieldCard title="Instagram">
-                <Field label="Account" icon={Instagram} value={handle ? `@${handle}` : null} href={handle ? `https://instagram.com/${handle}` : undefined} />
-                <Field label="Followers" icon={Users} value={compactCount(creator.instagramFollowers)} />
-                <Field label="Verified" icon={BadgeCheck} value={creator.instagramVerified ? (creator.instagramVerifiedVia === 'oauth' ? 'Connected with Instagram' : 'Checked by Newbi') : null} />
+                <Field label={t('Account')} icon={Instagram} value={handle ? `@${handle}` : null} href={handle ? `https://instagram.com/${handle}` : undefined} />
+                <Field label={t('Followers')} icon={Users} value={compactCount(creator.instagramFollowers)} />
+                <Field label={t('Verified')} icon={BadgeCheck} value={creator.instagramVerified ? (creator.instagramVerifiedVia === 'oauth' ? t('Connected with Instagram') : t('Checked by Newbi')) : null} />
             </FieldCard>
             {message && <Notice tone={message.tone}>{message.text}</Notice>}
             {settings?.metaVerification && creator.instagramVerifiedVia !== 'oauth' && (
                 <div className="space-y-2">
-                    <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-400">Connect a Professional (Creator or Business) account so brands see your real follower count.</p>
-                    <Button variant="secondary" icon={Instagram} loading={busy} onClick={connect}>Connect Instagram</Button>
+                    <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-400">{t('Connect a Professional (Creator or Business) account so brands see your real follower count.')}</p>
+                    <Button variant="secondary" icon={Instagram} loading={busy} onClick={connect}>{t('Connect Instagram')}</Button>
                 </div>
             )}
         </div>
@@ -112,6 +114,7 @@ const InstagramSection = ({ creator, settings }) => {
 
 /* Deletes the creator profile after a confirm sheet that says what goes and what stays. */
 const DeleteCreatorProfile = () => {
+    const t = useT();
     const navigate = useNavigate();
     const [open, setOpen] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -124,7 +127,7 @@ const DeleteCreatorProfile = () => {
         setBusy(false);
         if (!res.ok) return setError(res.error);
         setOpen(false);
-        useLegacyStore.getState().addToast?.('Your creator profile is deleted. Your account and passes are still here.', 'success');
+        useLegacyStore.getState().addToast?.(t('Your creator profile is deleted. Your account and passes are still here.'), 'success');
         navigate(appPath('/profile'), { replace: true });
         return undefined;
     };
@@ -132,26 +135,26 @@ const DeleteCreatorProfile = () => {
     return (
         <>
             <div className="space-y-2 border-t border-black/[0.06] pt-6 dark:border-white/[0.08]">
-                <Button variant="danger" icon={Trash2} onClick={() => { setError(null); setOpen(true); }}>Delete creator profile</Button>
-                <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-400">Your Newbi account, passes and tickets stay. You can apply again later.</p>
+                <Button variant="danger" icon={Trash2} onClick={() => { setError(null); setOpen(true); }}>{t('Delete creator profile')}</Button>
+                <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-400">{t('Your Newbi account, passes and tickets stay. You can apply again later.')}</p>
             </div>
             <Sheet
                 open={open}
                 onClose={() => !busy && setOpen(false)}
-                title="Delete your creator profile?"
-                subtitle="This can’t be undone."
+                title={t('Delete your creator profile?')}
+                subtitle={t('This can’t be undone.')}
                 footer={(
                     <div className="space-y-2">
                         {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
-                        <Button className="w-full" variant="danger" icon={Trash2} loading={busy} onClick={remove}>Delete creator profile</Button>
-                        <Button className="w-full" variant="secondary" disabled={busy} onClick={() => setOpen(false)}>Keep it</Button>
+                        <Button className="w-full" variant="danger" icon={Trash2} loading={busy} onClick={remove}>{t('Delete creator profile')}</Button>
+                        <Button className="w-full" variant="secondary" disabled={busy} onClick={() => setOpen(false)}>{t('Keep it')}</Button>
                     </div>
                 )}
             >
                 <ul className="list-disc space-y-2 pb-2 pl-5 text-[15px] text-gray-700 dark:text-zinc-300">
-                    <li>Your Newbi ID, niches, rates, bio and campaign applications go.</li>
-                    <li>Your Instagram is unlinked, so its verification goes too.</li>
-                    <li>Your account, guestlist passes and tickets stay.</li>
+                    <li>{t('Your Newbi ID, niches, rates, bio and campaign applications go.')}</li>
+                    <li>{t('Your Instagram is unlinked, so its verification goes too.')}</li>
+                    <li>{t('Your account, guestlist passes and tickets stay.')}</li>
                 </ul>
             </Sheet>
         </>
@@ -159,6 +162,7 @@ const DeleteCreatorProfile = () => {
 };
 
 const ProfileTab = ({ creator, profile, settings }) => {
+    const t = useT();
     const [editing, setEditing] = useState(false);
     const [contactOpen, setContactOpen] = useState(false);
     const [phoneOpen, setPhoneOpen] = useState(false);
@@ -184,8 +188,8 @@ const ProfileTab = ({ creator, profile, settings }) => {
 
     const save = async () => {
         const cleanHandle = handle.trim().replace(/^@+/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[/?#].*$/, '');
-        const invalid = !city.trim() ? { field: 'city', error: 'Add your city.' }
-            : !cleanHandle ? { field: 'handle', error: 'Add your Instagram username.' }
+        const invalid = !city.trim() ? { field: 'city', error: t('Add your city.') }
+            : !cleanHandle ? { field: 'handle', error: t('Add your Instagram username.') }
                 : validateDetails(details, profile?.college);
         setFieldError(invalid);
         if (invalid) return;
@@ -193,7 +197,7 @@ const ProfileTab = ({ creator, profile, settings }) => {
         const res = await callCreatorApi('creator-apply', { ...details, city: city.trim(), handle: cleanHandle });
         setSaving(false);
         if (!res.ok) {
-            if (res.code === 'connect_required') setError('To use a new Instagram account, connect it with "Connect Instagram" on this page.');
+            if (res.code === 'connect_required') setError(t('To use a new Instagram account, connect it with "Connect Instagram" on this page.'));
             else if (res.field) setFieldError({ field: res.field, error: res.error });
             else setError(res.error);
             return;
@@ -205,30 +209,31 @@ const ProfileTab = ({ creator, profile, settings }) => {
     const cityChoices = city && !CITIES.includes(city) && !otherCity ? [city, ...CITIES] : CITIES;
     const fieldNote = (field) => (fieldError?.field === field ? <p role="alert" className="px-1 text-[13px] font-medium text-red-600 dark:text-red-400">{fieldError.error}</p> : null);
 
-    const collab = COLLAB_OPTIONS.find(o => o.id === creator.doBarter)?.label || null;
+    const collabLabel = COLLAB_OPTIONS.find(o => o.id === creator.doBarter)?.label;
+    const collab = collabLabel ? t(collabLabel) : null;
 
     return (
         <div className="space-y-6">
-            <FieldCard title="Contact" always action={<Button variant="ghost" size="sm" onClick={() => setContactOpen(true)}>Edit</Button>}>
-                <Field label="Name" icon={UserRound} value={profile?.name || creator.name} />
-                <Field label="Email" icon={Mail} value={profile?.email || creator.email} />
-                <Field label="Phone" icon={Phone} value={profile?.phone || creator.phone} />
-                <Field label="City" icon={MapPin} value={profile?.city || creator.city} />
+            <FieldCard title={t('Contact')} always action={<Button variant="ghost" size="sm" onClick={() => setContactOpen(true)}>{t('Edit')}</Button>}>
+                <Field label={t('Name')} icon={UserRound} value={profile?.name || creator.name} />
+                <Field label={t('Email')} icon={Mail} value={profile?.email || creator.email} />
+                <Field label={t('Phone')} icon={Phone} value={profile?.phone || creator.phone} />
+                <Field label={t('City')} icon={MapPin} value={profile?.city || creator.city} />
             </FieldCard>
             <div className="-mt-3 px-1">
                 <Button variant="ghost" size="sm" icon={Smartphone} onClick={() => setPhoneOpen(true)}>
-                    {profile?.phoneVerified ? 'Change phone number' : 'Verify phone number'}
+                    {profile?.phoneVerified ? t('Change phone number') : t('Verify phone number')}
                 </Button>
             </div>
 
             <InstagramSection creator={creator} settings={settings} />
 
-            <FieldCard title="Creator details" always action={<Button variant="ghost" size="sm" onClick={openEdit}>Edit</Button>}>
-                <Field label="Niche" icon={Sparkles} value={nicheLabel(creator)} />
-                <Field label="College" icon={GraduationCap} value={creator.collegeName} />
-                <Field label="Works on" icon={Handshake} value={collab} />
-                <Field label="Rate" icon={IndianRupee} value={creator.commercials} />
-                <Field label="About" value={creator.bio} valueClassName="font-medium" />
+            <FieldCard title={t('Creator details')} always action={<Button variant="ghost" size="sm" onClick={openEdit}>{t('Edit')}</Button>}>
+                <Field label={t('Niche')} icon={Sparkles} value={nicheLabel(creator)} />
+                <Field label={t('College')} icon={GraduationCap} value={creator.collegeName} />
+                <Field label={t('Works on')} icon={Handshake} value={collab} />
+                <Field label={t('Rate')} icon={IndianRupee} value={creator.commercials} />
+                <Field label={t('About')} value={creator.bio} valueClassName="font-medium" />
                 <Field label="YouTube" value={creator.youtube ? `@${String(creator.youtube).replace(/^@/, '')}` : null} href={creator.youtube ? `https://youtube.com/@${String(creator.youtube).replace(/^@/, '')}` : undefined} />
                 <Field label="LinkedIn" value={creator.linkedin || null} href={creator.linkedin ? `https://www.linkedin.com/in/${creator.linkedin}` : undefined} />
                 <Field label="X" value={creator.twitter ? `@${String(creator.twitter).replace(/^@/, '')}` : null} href={creator.twitter ? `https://x.com/${String(creator.twitter).replace(/^@/, '')}` : undefined} />
@@ -236,10 +241,10 @@ const ProfileTab = ({ creator, profile, settings }) => {
             {(!creator.bio || !creator.commercials) && (
                 <button type="button" onClick={openEdit} className="flex w-full items-center justify-between gap-3 rounded-3xl border border-dashed border-black/[0.12] px-5 py-4 text-left dark:border-white/[0.12]">
                     <span>
-                        <span className="block text-[15px] font-bold">Add your rates and bio</span>
-                        <span className="block text-[13px] text-gray-500 dark:text-zinc-400">Brands use them to pick creators. Takes a minute.</span>
+                        <span className="block text-[15px] font-bold">{t('Add your rates and bio')}</span>
+                        <span className="block text-[13px] text-gray-500 dark:text-zinc-400">{t('Brands use them to pick creators. Takes a minute.')}</span>
                     </span>
-                    <span className="shrink-0 text-[14px] font-bold text-emerald-700 dark:text-neon-green">Add</span>
+                    <span className="shrink-0 text-[14px] font-bold text-emerald-700 dark:text-neon-green">{t('Add')}</span>
                 </button>
             )}
 
@@ -248,27 +253,27 @@ const ProfileTab = ({ creator, profile, settings }) => {
             <Sheet
                 open={editing}
                 onClose={() => setEditing(false)}
-                title="Creator details"
+                title={t('Creator details')}
                 size="full"
                 footer={(
                     <div className="space-y-2">
                         {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
-                        <Button className="w-full" loading={saving} onClick={save}>Save</Button>
+                        <Button className="w-full" loading={saving} onClick={save}>{t('Save')}</Button>
                     </div>
                 )}
             >
                 <div className="space-y-6">
-                    <FormBlock label="Your city">
+                    <FormBlock label={t('Your city')}>
                         <div className="flex flex-wrap gap-2">
                             {cityChoices.map(c => (
                                 <ChoiceChip key={c} selected={city === c && !otherCity} onClick={() => { setOtherCity(false); setCity(c); }} className="py-2">{c}</ChoiceChip>
                             ))}
-                            <ChoiceChip selected={otherCity} onClick={() => { setOtherCity(true); setCity(''); }} className="py-2">Other</ChoiceChip>
+                            <ChoiceChip selected={otherCity} onClick={() => { setOtherCity(true); setCity(''); }} className="py-2">{t('Other')}</ChoiceChip>
                         </div>
-                        {otherCity && <TextInput label="City" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Mysuru" autoComplete="address-level2" />}
+                        {otherCity && <TextInput label={t('City')} value={city} onChange={(e) => setCity(e.target.value)} placeholder={t('e.g. Mysuru')} autoComplete="address-level2" />}
                         {fieldNote('city')}
                     </FormBlock>
-                    <FormBlock label="Instagram username" hint={handle.replace(/^@+/, '').trim() !== currentHandle ? 'A new username is checked again: followers and verification come from the new account.' : null}>
+                    <FormBlock label={t('Instagram username')} hint={handle.replace(/^@+/, '').trim() !== currentHandle ? t('A new username is checked again: followers and verification come from the new account.') : null}>
                         <TextInput value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="@yourhandle" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
                         {fieldNote('handle')}
                     </FormBlock>
@@ -282,7 +287,7 @@ const ProfileTab = ({ creator, profile, settings }) => {
                 onClose={() => setPhoneOpen(false)}
                 required={['phoneVerified']}
                 editAll
-                title={profile?.phoneVerified ? 'Change phone number' : 'Verify phone number'}
+                title={profile?.phoneVerified ? t('Change phone number') : t('Verify phone number')}
             />
         </div>
     );

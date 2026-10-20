@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import { auth } from '../../lib/firebase';
 
 /*
@@ -29,13 +30,13 @@ export async function callCreatorApi(action, body = {}, { method = 'POST', timeo
             ok: false,
             status: res.status,
             code: data?.code || null,
-            error: data?.error || 'Something went wrong. Please try again.',
+            error: data?.error || t('Something went wrong. Please try again.'),
             missing: data?.missing || null,
             field: data?.field || null,
             errors: data?.errors || null,
         };
     } catch (e) {
-        return { ok: false, status: 0, error: 'Check your connection and try again.' };
+        return { ok: false, status: 0, error: t('Check your connection and try again.') };
     } finally {
         if (timer) clearTimeout(timer);
     }

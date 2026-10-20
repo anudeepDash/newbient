@@ -1,8 +1,10 @@
 import { sizedImage } from '../links';
+import { useT } from '../../i18n';
 
 const LOGO_H = 40;
 
 function ClientMark({ client, dupe }) {
+    const t = useT();
     const ratio = client.logoWidth && client.logoHeight ? client.logoWidth / client.logoHeight : 3;
     return (
         <li
@@ -13,7 +15,7 @@ function ClientMark({ client, dupe }) {
             {client.logoUrl ? (
                 <img
                     src={sizedImage(client.logoUrl, 320)}
-                    alt={dupe ? '' : client.name || 'Client logo'}
+                    alt={dupe ? '' : client.name || t('Client logo')}
                     width={Math.round(LOGO_H * ratio)}
                     height={LOGO_H}
                     loading="lazy"
@@ -32,6 +34,7 @@ function ClientMark({ client, dupe }) {
  * entered in site settings. Nothing is shown until there is data.
  */
 export default function Proof({ clients = [], stats = [] }) {
+    const t = useT();
     if (!clients.length && !stats.length) return null;
     const scroll = clients.length >= 6;
 
@@ -40,7 +43,7 @@ export default function Proof({ clients = [], stats = [] }) {
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
                 <p className="nb-reveal flex items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">
                     <span className="w-8 h-px bg-neon-green" aria-hidden="true" />
-                    <span id="proof-title">{clients.length ? 'Trusted by brands, venues and colleges' : 'Newbi in numbers'}</span>
+                    <span id="proof-title">{clients.length ? t('Trusted by brands, venues and colleges') : t('Newbi in numbers')}</span>
                 </p>
             </div>
 

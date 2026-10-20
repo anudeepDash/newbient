@@ -11,6 +11,7 @@ import { isPresent } from '../../../lib/present';
 import { CREATOR_NICHE_OPTIONS } from '../../../lib/creator/options';
 import newbiIcon from '../../../assets/logo/newbi-icon.svg';
 import { compactCount } from '../format';
+import { useT } from '../../../i18n';
 
 /*
  * The live creator pass on the application: it fills in as you type. The
@@ -34,6 +35,7 @@ const STATUS = {
 };
 
 const CreatorPass = ({ handle, lookup, profile, city, niches = [], customNiche, manualFollowers = 0, status, passId, className }) => {
+    const t = useT();
     const found = lookup?.state === 'found' ? lookup.profile : null;
     const picture = found?.profilePic || profile?.photoURL || null;
     const name = found?.name || profile?.name || null;
@@ -43,7 +45,7 @@ const CreatorPass = ({ handle, lookup, profile, city, niches = [], customNiche, 
             : handle && manualFollowers ? 'manual'
                 : handle && ['unavailable', 'disabled'].includes(lookup?.state) ? 'later' : null);
     const s = STATUS[statusKey];
-    const shownNiches = niches.map(n => nicheLabel(n, customNiche)).filter(Boolean);
+    const shownNiches = niches.map(n => nicheLabel(n, customNiche)).filter(Boolean).map(n => t(n));
 
     return (
         <div className={cn(
@@ -58,7 +60,7 @@ const CreatorPass = ({ handle, lookup, profile, city, niches = [], customNiche, 
 
             <div className="relative space-y-4">
                 <div className="flex items-center justify-between gap-3">
-                    <span className="text-[11px] font-black uppercase tracking-[0.22em] text-neon-green">Creator pass</span>
+                    <span className="text-[11px] font-black uppercase tracking-[0.22em] text-neon-green">{t('Creator pass')}</span>
                     {passId && <span className="font-mono text-[11px] font-bold text-zinc-400">#{passId}</span>}
                 </div>
 
@@ -81,7 +83,7 @@ const CreatorPass = ({ handle, lookup, profile, city, niches = [], customNiche, 
 
                 <div className="flex flex-wrap items-center gap-2">
                     {followers && (
-                        <span className="flex h-8 items-center gap-1.5 rounded-full bg-neon-green/15 px-3 text-[13px] font-black text-neon-green">{followers} followers</span>
+                        <span className="flex h-8 items-center gap-1.5 rounded-full bg-neon-green/15 px-3 text-[13px] font-black text-neon-green">{t('{count} followers', { count: followers })}</span>
                     )}
                     {isPresent(city) && (
                         <span className="flex h-8 items-center gap-1.5 rounded-full bg-white/[0.08] px-3 text-[13px] font-bold text-zinc-200"><MapPin size={13} /> {city}</span>
@@ -94,7 +96,7 @@ const CreatorPass = ({ handle, lookup, profile, city, niches = [], customNiche, 
 
                 {s && (
                     <p className={cn('flex items-center gap-1.5 border-t border-white/[0.08] pt-3 text-[13px] font-semibold', s.tone)}>
-                        <s.icon size={15} className={cn('shrink-0', s.spin && 'animate-spin')} /> {s.label}
+                        <s.icon size={15} className={cn('shrink-0', s.spin && 'animate-spin')} /> {t(s.label)}
                     </p>
                 )}
             </div>

@@ -1,5 +1,6 @@
 import { Play } from 'lucide-react';
 import { sizedImage } from '../links';
+import { useT } from '../../i18n';
 
 const monthYear = (iso) => {
     if (!iso) return '';
@@ -12,7 +13,8 @@ export const workMeta = (item) => [item.category, item.sector, monthYear(item.da
 // A portfolio poster in its 4:5 frame, keeping the framing the team set in the
 // admin (imageTransform: zoom and x/y offset). Caption sits under the frame.
 export default function WorkPoster({ item, index, eager = false, className = '' }) {
-    const t = item.imageTransform || {};
+    const tr = item.imageTransform || {};
+    const t = useT();
     const meta = workMeta(item);
     return (
         <figure className={`group ${className}`}>
@@ -25,12 +27,12 @@ export default function WorkPoster({ item, index, eager = false, className = '' 
                     loading={eager ? 'eager' : 'lazy'}
                     decoding="async"
                     className="absolute inset-0 w-full h-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                    style={{ objectPosition: `calc(50% + ${t.x || 0}%) calc(50% + ${t.y || 0}%)`, transform: `scale(${t.scale || 1})`, transformOrigin: 'center' }}
+                    style={{ objectPosition: `calc(50% + ${tr.x || 0}%) calc(50% + ${tr.y || 0}%)`, transform: `scale(${tr.scale || 1})`, transformOrigin: 'center' }}
                 />
                 <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
                 {index !== undefined && <span className="absolute top-4 left-4 font-mono text-[11px] font-bold tracking-[0.2em] text-white/85">{String(index + 1).padStart(2, '0')}</span>}
                 {item.highlightUrl && (
-                    <a href={item.highlightUrl} target="_blank" rel="noopener noreferrer" aria-label={`Watch the reel: ${item.title}`} className="absolute top-3 right-3 w-11 h-11 rounded-full bg-neon-green text-black flex items-center justify-center hover:scale-110 transition-transform">
+                    <a href={item.highlightUrl} target="_blank" rel="noopener noreferrer" aria-label={t('Watch the reel: {title}', { title: item.title })} className="absolute top-3 right-3 w-11 h-11 rounded-full bg-neon-green text-black flex items-center justify-center hover:scale-110 transition-transform">
                         <Play size={16} fill="currentColor" aria-hidden="true" />
                     </a>
                 )}

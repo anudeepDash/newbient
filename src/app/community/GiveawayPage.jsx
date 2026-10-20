@@ -23,6 +23,8 @@ import { PageBody } from '../pages/PageHeader';
 import DetailLayout, { BackLink, DetailSkeleton, Panel, ROW } from '../pages/DetailLayout';
 import AppNotFound from '../pages/AppNotFound';
 import { plainText, shareLink } from './communityParts';
+import { useT } from '../../i18n';
+import { useLocalizedField } from '../../i18n/useHinglish';
 
 /*
  * /community/giveaways/:slug. Your name and city come from your profile (only
@@ -38,6 +40,7 @@ const endsLabel = (iso) => {
 };
 
 const GiveawayPage = () => {
+    const t = useT();
     const { slug } = useParams();
     const [searchParams] = useSearchParams();
     const referredBy = searchParams.get('ref') || '';
@@ -75,17 +78,18 @@ const GiveawayPage = () => {
     }, []);
     useEffect(() => { if (g?.id) loadBoard(g.id); }, [g?.id, g?.me?.entryScore, loadBoard]);
 
-    useDynamicMeta({ page: 'giveaway', title: g?.name ? `${g.name} | Giveaway` : undefined, description: g ? plainText(g.description).slice(0, 160) || undefined : undefined, image: g?.posterUrl || undefined });
+    useDynamicMeta({ page: 'giveaway', title: g?.name ? t('{name} | Giveaway', { name: g.name }) : undefined, description: g ? plainText(g.description).slice(0, 160) || undefined : undefined, image: g?.posterUrl || undefined });
 
     const me = g?.me || null;
+    const hiDescription = useLocalizedField('giveaway', g?.id, 'description', g?.description);
     const needed = useMemo(() => (g?.askCollege ? ['city', 'college'] : ['city']).filter(f => missingFields(profile, [f]).length), [g?.askCollege, profile]);
     const needsSheet = needed.length > 0 || Boolean(g?.question) || Boolean(g?.askInstagram);
 
     const enter = async () => {
         setError('');
-        if (g.question && !form.answer.trim()) { setError('Answer the question to enter.'); return; }
-        if (needed.includes('city') && !form.city.trim()) { setError('Add your city.'); return; }
-        if (needed.includes('college') && !form.college.trim()) { setError('Add your college.'); return; }
+        if (g.question && !form.answer.trim()) { setError(t('Answer the question to enter.')); return; }
+        if (needed.includes('city') && !form.city.trim()) { setError(t('Add your city.')); return; }
+        if (needed.includes('college') && !form.college.trim()) { setError(t('Add your college.')); return; }
         setBusy('enter');
         // Keep what they typed on their profile, so the next giveaway doesn't ask again.
         const patch = Object.fromEntries(needed.map(f => [f, form[f].trim()]));
@@ -157,7 +161,7 @@ const GiveawayPage = () => {
     }
 
     const shareUrl = me?.referralCode ? `${window.location.origin}${appPath(`/community/giveaways/${g.slug || slug}`)}?ref=${me.referralCode}` : window.location.href;
-    const description = plainText(g.description);
+    const description = plainText(hiDescription);
     const winner = board?.winner;
 
     const rowCls = `flex items-center gap-3 px-4 py-3.5 ${ROW}`;
@@ -165,36 +169,36 @@ const GiveawayPage = () => {
     return (
         <>
             <DetailLayout
-                back={<BackLink to={appPath('/community')}>Community</BackLink>}
+                back={<BackLink to={appPath('/community')}>{t('Community')}</BackLink>}
                 image={g.posterUrl}
-                badges={<GlassChip icon={Gift} label={g.ended ? 'Ended' : 'Giveaway'} />}
+                badges={<GlassChip icon={Gift} label={g.ended ? t('Ended') : t('Giveaway')} />}
                 title={g.name}
-                onShare={() => shareLink({ title: g.name, text: `Enter the ${g.name} giveaway on Newbi`, url: shareUrl })}
+                onShare={() => shareLink({ title: g.name, text: t('Enter the {name} giveaway on Newbi', { name: g.name }), url: shareUrl })}
             >
                 <Panel>
                     <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
-                        <Field icon={Trophy} label="Prize" value={g.prize} />
-                        <Field icon={CalendarDays} label={g.ended ? 'Ended' : 'Closes'} value={endsLabel(g.endsAt)} />
+                        <Field icon={Trophy} label={t('Prize')} value={g.prize} />
+                        <Field icon={CalendarDays} label={g.ended ? t('Ended') : t('Closes')} value={endsLabel(g.endsAt)} />
                     </div>
 
                     {winner && (
                         <p className="flex items-center gap-2 rounded-2xl bg-emerald-500/10 px-4 py-3 text-[15px] font-bold text-emerald-800 ring-1 ring-inset ring-emerald-500/20 dark:text-neon-green dark:ring-neon-green/20">
-                            <Trophy size={17} /> Winner: {winner.name}{me?.isWinner ? ' (that’s you!)' : ''}
+                            <Trophy size={17} /> {me?.isWinner ? t('Winner: {name} (that’s you!)', { name: winner.name }) : t('Winner: {name}', { name: winner.name })}
                         </p>
                     )}
 
                     <div className="pt-1">
                         {me ? (
                             <StatRow>
-                                <Stat label="Your points" value={me.entryScore} tone="accent" allowZero />
-                                <Stat label="Friends" value={me.referralCount} />
-                                <Stat label="Entries" value={board?.totalEntries} />
+                                <Stat label={t('Your points')} value={me.entryScore} tone="accent" allowZero />
+                                <Stat label={t('Friends')} value={me.referralCount} />
+                                <Stat label={t('Entries')} value={board?.totalEntries} />
                             </StatRow>
                         ) : g.ended ? (
-                            <p className="rounded-2xl bg-black/[0.04] px-4 py-3 text-center text-[15px] font-semibold text-gray-600 dark:bg-white/[0.05] dark:text-zinc-400">This giveaway has ended.</p>
+                            <p className="rounded-2xl bg-black/[0.04] px-4 py-3 text-center text-[15px] font-semibold text-gray-600 dark:bg-white/[0.05] dark:text-zinc-400">{t('This giveaway has ended.')}</p>
                         ) : (
                             <div className="space-y-2">
-                                <Button size="lg" className="w-full" icon={Gift} onClick={onEnter} loading={busy === 'enter' && !step}>Enter giveaway</Button>
+                                <Button size="lg" className="w-full" icon={Gift} onClick={onEnter} loading={busy === 'enter' && !step}>{t('Enter giveaway')}</Button>
                                 {error && !step && <p role="alert" className="text-center text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
                             </div>
                         )}
@@ -202,7 +206,7 @@ const GiveawayPage = () => {
                 </Panel>
 
                 {me && !g.ended && (
-                    <Section title="Earn more points">
+                    <Section title={t('Earn more points')}>
                         {g.tasks.length > 0 && (
                             <ul className="space-y-2">
                                 {g.tasks.map(task => {
@@ -211,11 +215,11 @@ const GiveawayPage = () => {
                                         <li key={task.id} className={rowCls}>
                                             <div className="min-w-0 flex-1">
                                                 <p className="text-[15px] font-semibold">{task.label}</p>
-                                                {task.points > 0 && <p className="text-[13px] text-gray-500 dark:text-zinc-400">+{task.points} {task.points === 1 ? 'point' : 'points'}</p>}
+                                                {task.points > 0 && <p className="text-[13px] text-gray-500 dark:text-zinc-400">{task.points === 1 ? t('+{points} point', { points: task.points }) : t('+{points} points', { points: task.points })}</p>}
                                             </div>
                                             {done
-                                                ? <span className="flex items-center gap-1.5 text-[14px] font-bold text-emerald-700 dark:text-neon-green"><CircleCheck size={16} /> Done</span>
-                                                : <Button size="sm" variant="secondary" icon={task.url ? ExternalLink : undefined} loading={busy === `task:${task.id}`} onClick={() => openTask(task)}>{task.url ? 'Go' : 'Done'}</Button>}
+                                                ? <span className="flex items-center gap-1.5 text-[14px] font-bold text-emerald-700 dark:text-neon-green"><CircleCheck size={16} /> {t('Done')}</span>
+                                                : <Button size="sm" variant="secondary" icon={task.url ? ExternalLink : undefined} loading={busy === `task:${task.id}`} onClick={() => openTask(task)}>{task.url ? t('Go') : t('Done')}</Button>}
                                         </li>
                                     );
                                 })}
@@ -223,29 +227,29 @@ const GiveawayPage = () => {
                         )}
                         <div className={rowCls}>
                             <div className="min-w-0 flex-1">
-                                <p className="text-[15px] font-semibold">Invite friends</p>
-                                <p className="text-[13px] text-gray-500 dark:text-zinc-400">+{g.referralPoints} points for each friend who enters with your link</p>
+                                <p className="text-[15px] font-semibold">{t('Invite friends')}</p>
+                                <p className="text-[13px] text-gray-500 dark:text-zinc-400">{t('+{points} points for each friend who enters with your link', { points: g.referralPoints })}</p>
                             </div>
-                            <Button size="sm" variant="secondary" icon={Share2} onClick={() => shareLink({ title: g.name, text: `Enter the ${g.name} giveaway on Newbi`, url: shareUrl })}>Share</Button>
+                            <Button size="sm" variant="secondary" icon={Share2} onClick={() => shareLink({ title: g.name, text: t('Enter the {name} giveaway on Newbi', { name: g.name }), url: shareUrl })}>{t('Share')}</Button>
                         </div>
                         {g.showSpinWheel && (
                             <div className={rowCls}>
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-[15px] font-semibold">Bonus spin</p>
-                                    <p className="text-[13px] text-gray-500 dark:text-zinc-400">{me.hasSpunWheel ? `You won ${String(me.spinReward || '').toLowerCase()}.` : `One spin: ${g.wheel.map(w => w.label).join(', ')}`}</p>
+                                    <p className="text-[15px] font-semibold">{t('Bonus spin')}</p>
+                                    <p className="text-[13px] text-gray-500 dark:text-zinc-400">{me.hasSpunWheel ? t('You won {reward}.', { reward: String(me.spinReward || '').toLowerCase() }) : t('One spin: {options}', { options: g.wheel.map(w => w.label).join(', ') })}</p>
                                 </div>
-                                {!me.hasSpunWheel && <Button size="sm" icon={Sparkles} loading={busy === 'spin'} onClick={doSpin}>Spin</Button>}
+                                {!me.hasSpunWheel && <Button size="sm" icon={Sparkles} loading={busy === 'spin'} onClick={doSpin}>{t('Spin')}</Button>}
                             </div>
                         )}
                         {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
                     </Section>
                 )}
 
-                <Section title="About">
+                <Section title={t('About')}>
                     {description && <p className="whitespace-pre-line px-1 text-[15px] leading-relaxed text-gray-700 dark:text-zinc-300 lg:text-[16px]">{description}</p>}
                 </Section>
 
-                <Section title="Leaderboard">
+                <Section title={t('Leaderboard')}>
                     {(board?.leaderboard || []).length > 0 && (
                         <ol className={`divide-y divide-black/[0.05] px-4 dark:divide-white/[0.06] ${ROW}`}>
                             {board.leaderboard.map((p, i) => (
@@ -260,19 +264,19 @@ const GiveawayPage = () => {
                 </Section>
             </DetailLayout>
 
-            <CompleteProfileSheet open={step === 'name'} required={['name']} reason="to enter" onClose={() => setStep(s => (s === 'name' ? null : s))} onComplete={() => setTimeout(() => (needsSheet ? setStep('enter') : enter()), 0)} />
+            <CompleteProfileSheet open={step === 'name'} required={['name']} reason={t('to enter')} onClose={() => setStep(s => (s === 'name' ? null : s))} onComplete={() => setTimeout(() => (needsSheet ? setStep('enter') : enter()), 0)} />
 
             <Sheet
                 open={step === 'enter'}
                 onClose={() => busy !== 'enter' && setStep(null)}
-                title="Enter the giveaway"
+                title={t('Enter the giveaway')}
                 subtitle={g.name}
-                footer={<Button className="w-full" size="lg" onClick={enter} loading={busy === 'enter'}>Enter</Button>}
+                footer={<Button className="w-full" size="lg" onClick={enter} loading={busy === 'enter'}>{t('Enter')}</Button>}
             >
                 <div className="space-y-4">
-                    {needed.includes('city') && <TextInput label="City" autoComplete="address-level2" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />}
-                    {needed.includes('college') && <TextInput label="College" autoComplete="organization" value={form.college} onChange={e => setForm(f => ({ ...f, college: e.target.value }))} />}
-                    {g.askInstagram && <TextInput label="Instagram username" hint="For the follow task" autoCapitalize="none" autoCorrect="off" placeholder="yourhandle" value={form.instagram} onChange={e => setForm(f => ({ ...f, instagram: e.target.value }))} />}
+                    {needed.includes('city') && <TextInput label={t('City')} autoComplete="address-level2" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />}
+                    {needed.includes('college') && <TextInput label={t('College')} autoComplete="organization" value={form.college} onChange={e => setForm(f => ({ ...f, college: e.target.value }))} />}
+                    {g.askInstagram && <TextInput label={t('Instagram username')} hint={t('For the follow task')} autoCapitalize="none" autoCorrect="off" placeholder={t('yourhandle')} value={form.instagram} onChange={e => setForm(f => ({ ...f, instagram: e.target.value }))} />}
                     {g.question && (
                         <label className="block space-y-1.5">
                             <span className="block text-[13px] font-semibold text-gray-600 dark:text-zinc-400">{g.question}</span>
@@ -286,14 +290,14 @@ const GiveawayPage = () => {
             <Sheet
                 open={Boolean(igFor)}
                 onClose={() => setIgFor(null)}
-                title="Your Instagram"
-                subtitle="So we can check the follow when we pick winners."
-                footer={<Button className="w-full" onClick={() => doTask(igFor, form.instagram.replace(/^@+/, ''))} loading={Boolean(igFor) && busy === `task:${igFor?.id}`}>Save</Button>}
+                title={t('Your Instagram')}
+                subtitle={t('So we can check the follow when we pick winners.')}
+                footer={<Button className="w-full" onClick={() => doTask(igFor, form.instagram.replace(/^@+/, ''))} loading={Boolean(igFor) && busy === `task:${igFor?.id}`}>{t('Save')}</Button>}
             >
-                <TextInput label="Instagram username" autoCapitalize="none" autoCorrect="off" placeholder="yourhandle" value={form.instagram} onChange={e => setForm(f => ({ ...f, instagram: e.target.value }))} />
+                <TextInput label={t('Instagram username')} autoCapitalize="none" autoCorrect="off" placeholder={t('yourhandle')} value={form.instagram} onChange={e => setForm(f => ({ ...f, instagram: e.target.value }))} />
             </Sheet>
 
-            <Sheet open={Boolean(spin)} onClose={() => setSpin(null)} title="Bonus spin" footer={<Button className="w-full" onClick={() => setSpin(null)}>Nice</Button>}>
+            <Sheet open={Boolean(spin)} onClose={() => setSpin(null)} title={t('Bonus spin')} footer={<Button className="w-full" onClick={() => setSpin(null)}>{t('Nice')}</Button>}>
                 <p className="py-6 text-center font-heading text-[40px] font-black text-emerald-700 dark:text-neon-green">{spin?.label}</p>
             </Sheet>
         </>

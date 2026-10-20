@@ -4,6 +4,7 @@ import SectionLabel from '../landing/components/SectionLabel';
 import Sticker from '../landing/components/Sticker';
 import { usePublicFeed } from '../landing/feed';
 import { APP_LINKS } from '../landing/links';
+import { useT } from '../i18n';
 
 /*
  * /contact on the landing site: prerendered, no Firestore. Contact details
@@ -14,6 +15,7 @@ import { APP_LINKS } from '../landing/links';
 const handleOf = (url) => '@' + (String(url).replace(/\/+$/, '').split('/').pop() || 'newbi.live');
 
 function Direct({ icon: Icon, label, value, href, external }) {
+    const t = useT();
     return (
         <li>
             <a
@@ -25,7 +27,7 @@ function Direct({ icon: Icon, label, value, href, external }) {
                     <Icon size={18} aria-hidden="true" />
                 </span>
                 <span className="min-w-0 flex-1">
-                    <span className="block font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-gray-500 dark:text-zinc-500">{label}</span>
+                    <span className="block font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-gray-500 dark:text-zinc-500">{t(label)}</span>
                     <span className="block mt-0.5 font-heading text-lg sm:text-xl font-extrabold text-gray-950 dark:text-white break-words">{value}</span>
                 </span>
                 <ArrowUpRight size={18} className="shrink-0 text-gray-400 group-hover:text-gray-950 dark:group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition" aria-hidden="true" />
@@ -41,6 +43,7 @@ const OTHER_WAYS = [
 ];
 
 export default function Contact() {
+    const t = useT();
     const feed = usePublicFeed();
     const c = feed?.contact || {};
     const phoneDigits = (c.phone || '').replace(/[^0-9]/g, '');
@@ -57,20 +60,20 @@ export default function Contact() {
             <section className="relative">
                 <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(55% 60% at 85% 0%, rgba(57,255,20,0.16), transparent 70%)' }} />
                 <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-14 md:pt-24 pb-10 md:pb-14">
-                    <SectionLabel>Contact</SectionLabel>
+                    <SectionLabel>{t('Contact')}</SectionLabel>
                     <h1 className="mt-5 max-w-5xl font-heading font-extrabold tracking-[-0.045em] leading-[0.92] text-[3rem] sm:text-7xl lg:text-[6.5rem] text-gray-950 dark:text-white">
-                        Tell us what you're <Sticker subtle>planning.</Sticker>
+                        {t("Tell us what you're")} <Sticker subtle>{t('planning.')}</Sticker>
                     </h1>
                     <p className="mt-6 max-w-xl text-base md:text-lg leading-relaxed text-gray-600 dark:text-zinc-400">
-                        A college activation, a live show or a creator campaign. Write to us here and the team replies by email within a working day.
+                        {t('A college activation, a live show or a creator campaign. Write to us here and the team replies by email within a working day.')}
                     </p>
                 </div>
             </section>
 
-            <section aria-label="Get in touch" className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pb-24 md:pb-32 grid gap-12 lg:gap-16 lg:grid-cols-[0.85fr_1.15fr]">
+            <section aria-label={t('Get in touch')} className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pb-24 md:pb-32 grid gap-12 lg:gap-16 lg:grid-cols-[0.85fr_1.15fr]">
                 <div className="order-2 lg:order-1 lg:sticky lg:top-28 self-start space-y-12">
                     <div>
-                        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">Or reach us directly</p>
+                        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">{t('Or reach us directly')}</p>
                         {feed === null ? (
                             <ul aria-hidden="true" className="mt-2 divide-y divide-gray-950/10 dark:divide-white/10">
                                 {[0, 1, 2].map((i) => (
@@ -85,20 +88,20 @@ export default function Contact() {
                                 {direct.map((m) => <Direct key={m.label} {...m} />)}
                             </ul>
                         ) : (
-                            <p className="mt-3 text-gray-600 dark:text-zinc-400">Use the form and we'll reply by email.</p>
+                            <p className="mt-3 text-gray-600 dark:text-zinc-400">{t("Use the form and we'll reply by email.")}</p>
                         )}
                     </div>
 
                     <div>
-                        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">Looking for something else?</p>
+                        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500 dark:text-zinc-500">{t('Looking for something else?')}</p>
                         <ul className="mt-4 grid gap-3">
                             {OTHER_WAYS.map(({ icon: Icon, title, text, href }) => (
                                 <li key={title}>
                                     <a href={href} className="group flex items-start gap-4 p-4 rounded-2xl bg-white/70 dark:bg-white/[0.03] ring-1 ring-black/[0.06] dark:ring-white/[0.08] hover:ring-black/20 dark:hover:ring-white/25 transition">
                                         <Icon size={20} className="mt-0.5 shrink-0 text-gray-800 dark:text-zinc-200" aria-hidden="true" />
                                         <span className="min-w-0 flex-1">
-                                            <span className="block font-heading font-bold text-gray-950 dark:text-white">{title}</span>
-                                            <span className="block mt-0.5 text-sm text-gray-600 dark:text-zinc-400">{text}</span>
+                                            <span className="block font-heading font-bold text-gray-950 dark:text-white">{t(title)}</span>
+                                            <span className="block mt-0.5 text-sm text-gray-600 dark:text-zinc-400">{t(text)}</span>
                                         </span>
                                         <ArrowUpRight size={18} className="shrink-0 text-gray-400 group-hover:text-gray-950 dark:group-hover:text-white transition-colors" aria-hidden="true" />
                                     </a>

@@ -13,6 +13,7 @@ import { monthStartIST, tierProgress } from '../../../lib/creator/referralTiers'
 import { appPath } from '../../host';
 import { creatorPassId } from '../format';
 import { inviteUrl, whatsappShareUrl } from '../referral';
+import { useT } from '../../../i18n';
 
 /*
  * "Refer more creators" on the Openings tab, for approved creators.
@@ -36,6 +37,7 @@ const isHidden = (d, tierId) => {
 };
 
 const ReferBanner = ({ creator, referrals }) => {
+    const t = useT();
     const addToast = useLegacyStore(s => s.addToast);
     const uid = creator.uid || creator.id;
     const approved = referrals?.me?.approved || 0;
@@ -53,23 +55,27 @@ const ReferBanner = ({ creator, referrals }) => {
         setDismissal(d);
     };
     const copy = async () => {
-        if (await copyToClipboard(link)) addToast?.('Invite link copied', 'success');
+        if (await copyToClipboard(link)) addToast?.(t('Invite link copied'), 'success');
     };
 
     const tone = accent(next?.tone || tier?.tone || 'green');
     const title = !tier
-        ? 'Invite a creator, become a Scout'
-        : next ? `You’re a ${tier.label}. ${toNext} more to ${next.label}.` : `You’re a ${tier.label}. Keep the top spot.`;
+        ? t('Invite a creator, become a Scout')
+        : next ? t('You’re a {tier}. {n} more to {next}.', { tier: tier.label, n: toNext, next: next.label }) : t('You’re a {tier}. Keep the top spot.', { tier: tier.label });
+    const reward = next ? t(next.reward) : '';
+    const rewardText = `${reward.charAt(0).toLowerCase()}${reward.slice(1)}`;
     const body = next
-        ? `Get ${toNext} more creator${toNext === 1 ? '' : 's'} approved with your link to unlock: ${next.reward.charAt(0).toLowerCase()}${next.reward.slice(1)}.`
-        : 'Every creator you bring in keeps you on the leaderboard.';
+        ? (toNext === 1
+            ? t('Get 1 more creator approved with your link to unlock: {reward}.', { reward: rewardText })
+            : t('Get {n} more creators approved with your link to unlock: {reward}.', { n: toNext, reward: rewardText }))
+        : t('Every creator you bring in keeps you on the leaderboard.');
 
     return (
-        <section className={cn('relative overflow-hidden rounded-3xl border p-4 sm:p-5', tone.border, tone.soft)} aria-label="Refer creators">
+        <section className={cn('relative overflow-hidden rounded-3xl border p-4 sm:p-5', tone.border, tone.soft)} aria-label={t('Refer creators')}>
             <button
                 type="button"
                 onClick={dismiss}
-                aria-label="Hide for now"
+                aria-label={t('Hide for now')}
                 className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-black/5 dark:text-zinc-400 dark:hover:bg-white/5"
             >
                 <X size={16} />
@@ -87,9 +93,9 @@ const ReferBanner = ({ creator, referrals }) => {
                 </div>
             )}
             <div className="mt-3 flex flex-wrap items-center gap-2">
-                <Button size="sm" icon={MessageCircle} href={whatsappShareUrl(link)} target="_blank" rel="noopener noreferrer">Invite on WhatsApp</Button>
-                <Button size="sm" variant="secondary" icon={Copy} onClick={copy}>Copy link</Button>
-                <Button size="sm" variant="ghost" to={appPath('/creator/referrals')} className="ml-auto">Leaderboard <ChevronRight size={15} /></Button>
+                <Button size="sm" icon={MessageCircle} href={whatsappShareUrl(link)} target="_blank" rel="noopener noreferrer">{t('Invite on WhatsApp')}</Button>
+                <Button size="sm" variant="secondary" icon={Copy} onClick={copy}>{t('Copy link')}</Button>
+                <Button size="sm" variant="ghost" to={appPath('/creator/referrals')} className="ml-auto">{t('Leaderboard')} <ChevronRight size={15} /></Button>
             </div>
         </section>
     );

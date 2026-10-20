@@ -6,6 +6,8 @@ import { campaignCard } from '../../cards';
 import { appPath } from '../../host';
 import { CardGrid, EmptyState } from '../../pages/parts';
 import { ChoiceChip } from '../ui';
+import { useT } from '../../../i18n';
+import { useLocalizedCampaigns } from '../../../i18n/useHinglish';
 
 /*
  * Deliverables: campaigns you applied to or were picked for.
@@ -24,6 +26,7 @@ const FILTERS = [
 ];
 
 const DeliverablesTab = ({ mine }) => {
+    const t = useT();
     const location = useLocation();
     const [filter, setFilter] = useState('all');
     const counts = useMemo(() => mine.reduce((acc, m) => ({ ...acc, [stageOf(m)]: (acc[stageOf(m)] || 0) + 1 }), {}), [mine]);
@@ -32,15 +35,17 @@ const DeliverablesTab = ({ mine }) => {
         const order = { active: 0, applied: 1, done: 2 };
         return (order[stageOf(a)] - order[stageOf(b)]) || (b.progress.todo - a.progress.todo);
     }), [mine]);
-    const shown = filter === 'all' ? sorted : sorted.filter(m => stageOf(m) === filter);
+    const shownRaw = filter === 'all' ? sorted : sorted.filter(m => stageOf(m) === filter);
+    const shownCampaigns = useLocalizedCampaigns(shownRaw.map(m => m.campaign), { fields: ['title', 'reward', 'description'] });
+    const shown = shownRaw.map((m, i) => (shownCampaigns[i] === m.campaign ? m : { ...m, campaign: shownCampaigns[i] }));
 
     if (!mine.length) {
         return (
             <EmptyState
                 icon={Layers}
-                title="No campaigns yet"
-                message="Apply to an open campaign and its deliverables show up here."
-                action={<Button variant="secondary" to={appPath('/creator')}>See openings</Button>}
+                title={t('No campaigns yet')}
+                message={t('Apply to an open campaign and its deliverables show up here.')}
+                action={<Button variant="secondary" to={appPath('/creator')}>{t('See openings')}</Button>}
             />
         );
     }
@@ -50,7 +55,7 @@ const DeliverablesTab = ({ mine }) => {
             <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
                 {FILTERS.filter(f => f.id === 'all' || counts[f.id]).map(f => (
                     <ChoiceChip key={f.id} selected={filter === f.id} onClick={() => setFilter(f.id)} className="shrink-0 whitespace-nowrap py-2">
-                        {f.label}{f.id !== 'all' && counts[f.id] ? ` · ${counts[f.id]}` : ''}
+                        {t(f.label)}{f.id !== 'all' && counts[f.id] ? ` · ${counts[f.id]}` : ''}
                     </ChoiceChip>
                 ))}
             </div>
@@ -58,9 +63,9 @@ const DeliverablesTab = ({ mine }) => {
                 {shown.map(({ campaign, progress, shortlisted }) => {
                     const card = campaignCard(campaign, { applied: true, from: location, progress: shortlisted ? progress : null });
                     const stage = stageOf({ shortlisted, progress });
-                    const label = stage === 'done' ? 'Completed'
-                        : stage === 'active' ? (progress.todo ? `${progress.todo} to do` : progress.submitted ? 'In review' : 'In progress')
-                            : 'Waiting to hear back';
+                    const label = stage === 'done' ? t('Completed')
+                        : stage === 'active' ? (progress.todo ? t('{n} to do', { n: progress.todo }) : progress.submitted ? t('In review') : t('In progress'))
+                            : t('Waiting to hear back');
                     return <Card key={campaign.id} {...card} cta={{ label }} />;
                 })}
             </CardGrid>

@@ -6,6 +6,7 @@ import SectionLabel from '../components/SectionLabel';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import WorkPoster from '../components/WorkPoster';
+import { useT } from '../../i18n';
 
 /*
  * Nights we built: a cinematic film strip on a black stage. The section pins
@@ -19,6 +20,7 @@ export default function CaseStudies({ items = [] }) {
 }
 
 function FilmStrip({ items }) {
+    const t = useT();
     const ref = useRef(null);
     useSidewaysScroll(ref, '.nb-film-track');
     return (
@@ -31,11 +33,11 @@ function FilmStrip({ items }) {
                         <div>
                             <SectionLabel index="04" dark>Selected work</SectionLabel>
                             <h2 id="work-title" className="mt-4 font-heading font-extrabold tracking-[-0.04em] leading-[0.9] text-[2.6rem] sm:text-6xl lg:text-7xl">
-                                Nights we <Sticker subtle>built.</Sticker>
+                                {t('Nights we')} <Sticker subtle>{t('built.')}</Sticker>
                             </h2>
                         </div>
                         <Link to="/work" className="hidden sm:inline-flex items-center gap-2 h-12 px-6 rounded-full border border-white/20 font-heading font-bold text-sm hover:bg-white hover:text-black transition-colors shrink-0">
-                            Full archive <ArrowRight size={16} aria-hidden="true" />
+                            {t('Full archive')} <ArrowRight size={16} aria-hidden="true" />
                         </Link>
                     </div>
                 </div>
@@ -49,11 +51,11 @@ function FilmStrip({ items }) {
                     {/* A size container: everything in the card scales with its width (cqw), so it fits at any poster size. */}
                     <li className={`nb-film-frame shrink-0 snap-start w-[60vw] sm:w-[36vw] lg:w-[min(24vw,320px)] [container-type:inline-size] ${items.length % 2 ? 'nb-film-low' : ''}`}>
                                                 <Link to="/work" className="group flex flex-col justify-between aspect-[4/5] rounded-[1.5rem] border border-dashed border-white/25 p-[9cqw] hover:border-neon-green hover:bg-white/[0.03] transition-colors">
-                            <span className="font-mono text-[clamp(9px,4cqw,11px)] font-bold uppercase tracking-[0.28em] text-zinc-500">The archive</span>
+                            <span className="font-mono text-[clamp(9px,4cqw,11px)] font-bold uppercase tracking-[0.28em] text-zinc-500">{t('The archive')}</span>
                             <span>
-                                <span className="block font-heading font-extrabold tracking-[-0.045em] leading-[0.9] text-[17cqw]">And many <span className="text-neon-green">more.</span></span>
+                                <span className="block font-heading font-extrabold tracking-[-0.045em] leading-[0.9] text-[17cqw]">{t('And many')} <span className="text-neon-green">{t('more.')}</span></span>
                                 <span className="mt-[7cqw] inline-flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-full bg-neon-green px-[6cqw] py-[3.5cqw] font-heading text-[clamp(11px,5.4cqw,14px)] font-bold text-black transition-transform group-hover:scale-[1.03]">
-                                    Full archive <ArrowRight size={14} aria-hidden="true" />
+                                    {t('Full archive')} <ArrowRight size={14} aria-hidden="true" />
                                 </span>
                             </span>
                         </Link>
