@@ -5,23 +5,11 @@ import App from './App.jsx'
 import { initLang } from './i18n'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 
-import { safeSessionStorage } from './lib/storage'
+import { reloadForNewChunks } from './lib/chunkReload'
 
 // Handle dynamic import failures (common after new deployments)
-window.addEventListener('vite:preloadError', (event) => {
-  try {
-    const lastReload = safeSessionStorage.getItem('last-chunk-reload');
-    const now = Date.now();
-    
-    // Only reload if we haven't reloaded in the last 5 seconds to avoid infinite loops
-    if (!lastReload || now - parseInt(lastReload) > 5000) {
-      safeSessionStorage.setItem('last-chunk-reload', now.toString());
-      console.warn('Dynamic import failed, reloading page to fetch latest version...', event);
-      window.location.reload();
-    }
-  } catch (e) {
-    console.warn('Error handling preload reload:', e);
-  }
+window.addEventListener('vite:preloadError', () => {
+  reloadForNewChunks();
 });
 initLang()
 
