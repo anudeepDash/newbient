@@ -14,7 +14,7 @@ const CityGroupBanner = ({ creator, profile }) => {
     const feed = usePublicFeed();
     const { isJoined, markJoined } = useJoinedGroups();
     if (!feed || creator.profileStatus === 'rejected' || creator.profileStatus === 'suspended') return null;
-    const group = cityGroupFor(feed.creatorGroups, creatorCity(creator, profile));
+    const group = cityGroupFor(feed.creatorGroups, creatorCity(creator, profile), { withDefaults: true });
     if (!group || isJoined(group.url)) return null;
     return (
         <WhatsAppGroupCard
