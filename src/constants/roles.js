@@ -24,7 +24,8 @@ export const ADMIN_ROLES = [
 export const adminKey = (email) => String(email || '').trim().toLowerCase();
 
 /*
- * Testers: see every campaign in the app (any status) and can apply without
+ * Testers: can open any campaign from its link (any status; the lists show
+ * only open ones, as for everyone) and can apply without
  * meeting the criteria. Submitting still needs the shortlist, as for everyone
  * (shortlist yourself in the admin to test it); their submissions are saved
  * with test: true and marked "Test" in the admin.

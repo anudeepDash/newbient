@@ -98,7 +98,7 @@ export default {
     "You’re picked for this campaign.": "Tumhe is campaign ke liye pick kiya gaya hai.",
     "The brand is picking creators. If you’re shortlisted, we’ll send the WhatsApp group and your deliverables by email and WhatsApp.": "Brand abhi creators pick kar raha hai. Shortlist hue toh hum WhatsApp group aur tumhare deliverables email aur WhatsApp pe bhejenge.",
     "Developer test mode": "Developer test mode",
-    "You can see every campaign and apply without meeting its criteria": "Tum har campaign dekh sakte ho aur criteria poore kiye bina bhi apply kar sakte ho",
+    "You can open any campaign from its link and apply without meeting its criteria": "Tum kisi bhi campaign ko uske link se khol sakte ho aur criteria poore kiye bina bhi apply kar sakte ho",
     "(this one isn’t open to creators)": "(ye creators ke liye open nahi hai)",
     "To test submitting, shortlist yourself in the admin; what you send is marked Test.": "Submit karna test karne ke liye admin mein khud ko shortlist karo; jo tum bhejoge wo Test mark hoga.",
     "Join the campaign WhatsApp group": "Join the campaign WhatsApp group",
