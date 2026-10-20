@@ -3,8 +3,9 @@ import { Navigate, useLocation } from 'react-router-dom';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 import Copy from 'lucide-react/dist/esm/icons/copy';
+import Coins from 'lucide-react/dist/esm/icons/coins';
 import { useAppStore } from '../../../lib/store/appStore';
-import { Card, Button, Stat, StatRow } from '../../../components/app';
+import { Card, Button } from '../../../components/app';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { useStore as useLegacyStore } from '../../../lib/store.js';
 import { appPath, stripAppBase } from '../../host';
@@ -35,6 +36,44 @@ import MyOutreachCampaigns from './MyOutreachCampaigns';
  */
 
 const SECTIONS = ['', 'deliverables', 'referrals', 'profile'];
+
+/*
+ * The hero's numbers: compact tiles that keep their size however many show
+ * (a lone tile never stretches across the hero). Points get the coin and the
+ * green accent.
+ */
+const HeroStats = ({ stats }) => {
+    const t = useT();
+    const shown = stats.filter(s => s.value !== null && s.value !== undefined && s.value !== '' && s.value !== 0);
+    if (!shown.length) return null;
+    return (
+        <div className="flex flex-wrap gap-2 pt-2">
+            {shown.map(s => {
+                const points = s.kind === 'points';
+                return (
+                    <div
+                        key={s.label}
+                        className={points
+                            ? 'flex min-w-[132px] items-center gap-3 rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-white/90 to-emerald-50/80 py-2.5 pl-2.5 pr-4 shadow-[0_6px_20px_-12px_rgba(16,185,129,0.45)] dark:border-neon-green/15 dark:from-white/[0.06] dark:to-neon-green/[0.06]'
+                            : 'flex min-w-[96px] flex-col rounded-2xl border border-black/[0.05] bg-white/75 px-4 py-2.5 dark:border-white/[0.07] dark:bg-white/[0.04]'}
+                    >
+                        {points && (
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neon-green text-black shadow-[0_0_14px_rgba(57,255,20,0.45)]" aria-hidden="true">
+                                <Coins size={17} strokeWidth={2.2} />
+                            </span>
+                        )}
+                        <div className="flex min-w-0 flex-col">
+                            <span className={'font-heading text-[22px] font-extrabold leading-none tracking-[-0.03em] tabular-nums ' + (s.tone === 'accent' ? 'text-emerald-600 dark:text-neon-green' : 'text-gray-900 dark:text-white')}>
+                                {s.value}
+                            </span>
+                            <span className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-zinc-400">{t(s.label)}</span>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
 
 const CreatorHeader = ({ creator, profile, stats }) => {
     const handle = handleOf(creator.instagram);
@@ -70,9 +109,7 @@ const CreatorHeader = ({ creator, profile, stats }) => {
                     </button>
                 )}
             </div>
-            <StatRow className="pt-2">
-                {stats.map(s => <Stat key={s.label} {...s} label={t(s.label)} className="bg-white/70 dark:bg-white/[0.04]" />)}
-            </StatRow>
+            <HeroStats stats={stats} />
         </HeroPanel>
     );
 };
@@ -168,7 +205,7 @@ const CreatorHome = () => {
             { label: 'To do', value: todo || null, tone: 'accent' },
             { label: 'Approved', value: approved || null },
             { label: 'Referrals', value: referrals?.list?.length || null },
-            { label: 'Points', value: creator?.profileStatus === 'approved' && settings?.welcomePoints ? settings.welcomePoints.toLocaleString('en-IN') : null },
+            { label: 'Points', kind: 'points', value: creator?.profileStatus === 'approved' && settings?.welcomePoints ? settings.welcomePoints.toLocaleString('en-IN') : null },
         ];
     }, [mine, referrals, settings, creator?.profileStatus]);
 
