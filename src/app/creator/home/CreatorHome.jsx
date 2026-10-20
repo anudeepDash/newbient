@@ -22,6 +22,7 @@ import OpeningsTab from './OpeningsTab';
 import DeliverablesTab from './DeliverablesTab';
 import ReferralsTab from './ReferralsTab';
 import ReferBanner from './ReferBanner';
+import CityGroupBanner from './CityGroupBanner';
 import ProfileTab from './ProfileTab';
 import MyOutreachCampaigns from './MyOutreachCampaigns';
 
@@ -202,6 +203,7 @@ const CreatorHome = () => {
                     <CreatorHeader creator={creator} profile={profile} stats={stats} />
                     <StatusNotice creator={creator} settings={settings} />
                     <SubTabs tabs={tabs} />
+                    {section === '' && <CityGroupBanner creator={creator} profile={profile} />}
                     {section === '' && <ReferBanner creator={creator} referrals={referrals} />}
                     {section === '' && <OpeningsTab creator={creator} />}
                     {section === 'deliverables' && <DeliverablesTab mine={mine} />}

@@ -6,7 +6,7 @@ import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import Wallet from 'lucide-react/dist/esm/icons/wallet';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import Users from 'lucide-react/dist/esm/icons/users';
-import { Button, TextInput } from '../../../../components/app';
+import { Button, TextInput, WhatsAppLogo } from '../../../../components/app';
 import { cn } from '../../../../lib/utils';
 import { isOnShortlist } from '../../../../lib/outreach/status';
 import { isPresent } from '../../../../lib/present';
@@ -50,7 +50,7 @@ const GroupCard = ({ token, which, title, hint, group, onDone }) => {
             </div>
             {!group.joined && (
                 <div className="flex flex-col gap-2 sm:flex-row">
-                    <Button href={group.url} target="_blank" rel="noopener noreferrer" className="w-full sm:flex-1">{t('Join on WhatsApp')}</Button>
+                    <Button href={group.url} target="_blank" rel="noopener noreferrer" icon={WhatsAppLogo} className="w-full bg-[#25D366] sm:flex-1">{t('Join on WhatsApp')}</Button>
                     <Button variant="secondary" loading={busy} onClick={joined} className="w-full sm:flex-1">{t('I’ve joined')}</Button>
                 </div>
             )}

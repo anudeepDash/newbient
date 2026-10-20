@@ -7,7 +7,6 @@ import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
 import Gift from 'lucide-react/dist/esm/icons/gift';
 import Zap from 'lucide-react/dist/esm/icons/zap';
-import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import Sticker from '../../components/brand/Sticker';
 import { usePublicFeed } from '../usePublicFeed';
@@ -15,7 +14,7 @@ import { fromPrice, useTicketedEvents } from '../tickets/useTicketedEvents';
 import { greetingFor } from './greeting';
 import { useAppStore } from '../../lib/store/appStore';
 import { useStore as useLegacyStore } from '../../lib/store.js';
-import { Card, Button } from '../../components/app';
+import { Card, Button, WhatsAppBadge } from '../../components/app';
 import { appPath } from '../host';
 import { useAuthGate } from '../auth/AuthGate';
 import { missingFields, fieldLabel } from '../profile/requirements';
@@ -236,7 +235,7 @@ const HomePage = () => {
 
             {isPresent(whatsapp) && (
                 <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={cn('flex items-center gap-4 rounded-[1.75rem] p-4', GLASS)}>
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#25D366] text-white"><MessageCircle size={20} /></span>
+                    <WhatsAppBadge size={44} />
                     <span className="min-w-0 flex-1">
                         <span className="block font-heading text-[16px] font-extrabold tracking-[-0.02em]">{t('The Newbi WhatsApp community')}</span>
                         <span className="block text-[13px] text-gray-600 dark:text-zinc-400">{t('First word on drops, guestlists and giveaways.')}</span>

@@ -5,3 +5,4 @@ export { default as Sheet, useIsPhone } from './Sheet';
 export { default as AmbientBackdrop, tinyBlurredUrl, PosterGlow } from './AmbientBackdrop';
 export { default as BrandLayers, BRAND_GLASS } from './BrandLayers';
 export { Button, TextInput, INPUT, ERROR_RING } from './controls';
+export { default as WhatsAppLogo, WhatsAppBadge, WHATSAPP_GREEN } from './WhatsAppLogo';

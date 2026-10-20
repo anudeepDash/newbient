@@ -7,11 +7,10 @@ import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
 import Flame from 'lucide-react/dist/esm/icons/flame';
 import CalendarClock from 'lucide-react/dist/esm/icons/calendar-clock';
 import GraduationCap from 'lucide-react/dist/esm/icons/graduation-cap';
-import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import Hourglass from 'lucide-react/dist/esm/icons/hourglass';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
-import { PosterGlow, BrandLayers, BRAND_GLASS, Button, CARD_TYPES, GlassChip, MetaPill, Sheet, Stat, StatRow } from '../../../components/app';
+import { PosterGlow, BrandLayers, BRAND_GLASS, Button, CARD_TYPES, GlassChip, MetaPill, Sheet, Stat, StatRow, WhatsAppLogo } from '../../../components/app';
 import { useAppStore } from '../../../lib/store/appStore';
 import { useStore as useLegacyStore } from '../../../lib/store.js';
 import { isPresent } from '../../../lib/present';
@@ -324,7 +323,7 @@ const CampaignView = ({ campaign: source, variant = 'page', initialTaskId, onClo
             {applyError && <Notice tone="error">{applyError}</Notice>}
 
             {shortlisted && isPresent(campaign.whatsappLink) && (
-                <Button variant="secondary" icon={MessageCircle} href={campaign.whatsappLink} target="_blank" rel="noopener noreferrer">{t('Join the campaign WhatsApp group')}</Button>
+                <Button variant="secondary" icon={WhatsAppLogo} href={campaign.whatsappLink} target="_blank" rel="noopener noreferrer">{t('Join the campaign WhatsApp group')}</Button>
             )}
 
             <TicketSlot campaign={campaign} creator={creator} />
