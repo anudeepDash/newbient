@@ -202,8 +202,8 @@ const CreatorHome = () => {
                 <>
                     <CreatorHeader creator={creator} profile={profile} stats={stats} />
                     <StatusNotice creator={creator} settings={settings} />
+                    <CityGroupBanner creator={creator} profile={profile} />
                     <SubTabs tabs={tabs} />
-                    {section === '' && <CityGroupBanner creator={creator} profile={profile} />}
                     {section === '' && <ReferBanner creator={creator} referrals={referrals} />}
                     {section === '' && <OpeningsTab creator={creator} />}
                     {section === 'deliverables' && <DeliverablesTab mine={mine} />}
