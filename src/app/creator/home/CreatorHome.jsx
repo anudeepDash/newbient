@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
@@ -203,6 +203,41 @@ const CreatorHome = () => {
 
     useEffect(() => { loadCreatorSettings(); }, [loadCreatorSettings]);
 
+    // Arriving on a section (a link to /creator/badges, or a tab tap) scrolls its
+    // content up under the header instead of leaving it below the hero. Plain
+    // /creator on first load stays at the top.
+    const tabsRef = useRef(null);
+    const shownSection = useRef(null);
+    const ready = authReady && !(authUser && !creatorLoaded) && Boolean(creator);
+    useEffect(() => {
+        if (!ready || shownSection.current === section) return;
+        const first = shownSection.current === null;
+        if (first && section === '') { shownSection.current = section; return; }
+        // Marked only once it has scrolled: sign-in can flip `ready` off and on,
+        // and that cancels this run.
+        // Instant: the shell has just jumped to the top, so the tab bar lands back
+        // where it was rather than gliding down from there.
+        const scroll = () => {
+            shownSection.current = section;
+            tabsRef.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
+        };
+        // A sheet (e.g. the badge unlock) pins the page and puts it back where it
+        // was on close, so wait for it to close before scrolling.
+        let observer = null;
+        // After the shell's scroll-to-top for the new path.
+        const timer = setTimeout(() => {
+            if (document.body.style.position !== 'fixed') { scroll(); return; }
+            observer = new MutationObserver(() => {
+                if (document.body.style.position === 'fixed') return;
+                observer.disconnect();
+                observer = null;
+                setTimeout(scroll);
+            });
+            observer.observe(document.body, { attributes: true, attributeFilter: ['style'] });
+        });
+        return () => { clearTimeout(timer); observer?.disconnect(); };
+    }, [ready, section]);
+
     const stats = useMemo(() => {
         const todo = mine.filter(m => m.shortlisted).reduce((n, m) => n + m.progress.todo, 0);
         const approved = mine.reduce((n, m) => n + m.progress.approved, 0);
@@ -247,7 +282,9 @@ const CreatorHome = () => {
                     <CreatorHeader creator={creator} profile={profile} stats={stats} badges={badges} />
                     <StatusNotice creator={creator} settings={settings} />
                     <CityGroupBanner creator={creator} profile={profile} />
-                    <SubTabs tabs={tabs} />
+                    <div ref={tabsRef} className="scroll-mt-[calc(4.25rem+env(safe-area-inset-top))] lg:scroll-mt-[5.5rem]">
+                        <SubTabs tabs={tabs} />
+                    </div>
                     {section === '' && <ReferBanner creator={creator} referrals={referrals} />}
                     {section === '' && <OpeningsTab creator={creator} />}
                     {section === 'deliverables' && <DeliverablesTab mine={mine} />}
