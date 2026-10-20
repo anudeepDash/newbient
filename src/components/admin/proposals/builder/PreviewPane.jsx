@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import Minus from 'lucide-react/dist/esm/icons/minus';
@@ -9,12 +9,24 @@ import ProposalPaper from './ProposalPaper';
 const PAGE_W = 794;
 const PAGE_H = 1123;
 
+/* True when the page's content runs past the bottom of its body area (it gets cut off). */
+const isOverfull = (paper) => {
+    const body = paper?.querySelector('.proposal-page-render')?.children?.[1];
+    if (!body) return false;
+    const top = body.getBoundingClientRect().top;
+    const limit = body.clientHeight * (body.getBoundingClientRect().height / (body.offsetHeight || 1));
+    const bottom = Array.from(body.children).reduce((m, ch) => Math.max(m, ch.getBoundingClientRect().bottom - top), 0);
+    return bottom > limit + 1;
+};
+
 /**
  * Live preview of the proposal: one A4 page at a time, scaled to fit the
  * pane's width, with page and zoom controls.
  */
 const PreviewPane = ({ pages, page, onPage, formData, totals, className, toolbarExtra }) => {
     const boxRef = useRef(null);
+    const paperRef = useRef(null);
+    const [overfull, setOverfull] = useState(false);
     const [fit, setFit] = useState(0.5);
     const [zoom, setZoom] = useState(1);
 
@@ -31,6 +43,14 @@ const PreviewPane = ({ pages, page, onPage, formData, totals, className, toolbar
     const scale = fit * zoom;
     const total = pages.length;
     const current = Math.min(page, Math.max(0, total - 1));
+
+    // Fonts and images can change the height after the first paint, so check again shortly after.
+    useLayoutEffect(() => {
+        const check = () => setOverfull(isOverfull(paperRef.current));
+        check();
+        const t = setTimeout(check, 600);
+        return () => clearTimeout(t);
+    }, [pages, current, formData, scale]);
     const btn = 'flex h-10 w-10 items-center justify-center rounded-lg disabled:opacity-25 hover:bg-black/5 dark:hover:bg-white/10';
 
     return (
@@ -50,12 +70,17 @@ const PreviewPane = ({ pages, page, onPage, formData, totals, className, toolbar
                     {toolbarExtra}
                 </div>
             </div>
+            {overfull && (
+                <p role="status" className="shrink-0 border-b border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[12px] font-semibold text-amber-700 dark:text-amber-300">
+                    Page {current + 1} is too full, so its end is cut off. Move some of it to another page.
+                </p>
+            )}
             <div ref={boxRef} className="min-h-0 flex-1 overflow-auto overscroll-contain bg-gray-200/70 p-4 dark:bg-[#050608]">
                 {total === 0 ? (
                     <p className="mt-10 text-center text-[13px] text-gray-500">Every page is turned off. Turn a page on to see the proposal.</p>
                 ) : (
                     <div className="mx-auto" style={{ width: PAGE_W * scale, height: PAGE_H * scale }}>
-                        <div style={{ width: PAGE_W, height: PAGE_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+                        <div ref={paperRef} style={{ width: PAGE_W, height: PAGE_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
                             <ProposalPaper page={pages[current]} idx={current} totalPages={total} formData={formData} totals={totals} />
                         </div>
                     </div>

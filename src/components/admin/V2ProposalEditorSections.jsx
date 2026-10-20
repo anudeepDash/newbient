@@ -9,6 +9,7 @@ import {
     TextInput, TextArea, MoneyInput, ListCard, RowActions, AddButton, OptionalBlock, Chips, moveItem,
 } from './proposals/builder/parts';
 import { rupees } from './proposals/builder/model';
+import BlocksEditor from './proposals/builder/BlocksEditor';
 
 /*
  * Editors for each part of the 8-page proposal (the "v2" paper). Field names
@@ -91,7 +92,7 @@ export function V2CoverEditor({ formData, setFormData, onRefine }) {
                     <OptionalBlock on={formData.showCoverPill !== false}>
                         <Toggle label="Label at the top of the cover" checked={formData.showCoverPill !== false} onChange={v => set({ showCoverPill: v })} />
                         {formData.showCoverPill !== false && (
-                            <TextInput aria-label="Cover label" value={formData.coverPillText} onChange={v => set({ coverPillText: v })} placeholder="OFFICIAL STRATEGIC QUOTATION" />
+                            <TextInput aria-label="Cover label" value={formData.coverPillText} onChange={v => set({ coverPillText: v })} placeholder="OFFICIAL STRATEGIC PROPOSAL" />
                         )}
                     </OptionalBlock>
                     <TextArea
@@ -101,8 +102,8 @@ export function V2CoverEditor({ formData, setFormData, onRefine }) {
                         onChange={v => set({ introParagraph: v })}
                         placeholder="NewBi Entertainment & Marketing LLP is pleased to present…"
                         onRefine={() => onRefine?.({ label: 'Introduction', value: formData.introParagraph, apply: (t) => set({ introParagraph: t }) })}
+                        hint="Use **double stars** for bold."
                     />
-                    <TextInput label="Classification" optional value={formData.classification} onChange={v => set({ classification: v })} placeholder="Strategic Commercial" />
                 </div>
             </BuilderCard>
 
@@ -202,6 +203,10 @@ export function V2StrategyEditor({ formData, setFormData, onRefine }) {
                     )}
                 </OptionalBlock>
             </BuilderCard>
+
+            <BuilderCard title="More on this page" hint="Campaign phases, another box or a table, after the summary">
+                <BlocksEditor blocks={formData.executiveBlocks} onChange={(next) => set({ executiveBlocks: next })} />
+            </BuilderCard>
         </div>
     );
 }
@@ -280,7 +285,8 @@ export function V2DeliverablesEditor({ formData, setFormData, onRefine }) {
                         <KickerTitle formData={formData} set={set} kickerKey="deliverablesSub" titleKey="deliverablesTitle" kickerPlaceholder="SCOPE SUMMARY" titlePlaceholder="Per City Deliverables" />
                         {rows.map((row, idx) => (
                             <ListCard key={idx} badge={row.id || pad2(idx + 1)} actions={<RowActions index={idx} count={rows.length} onMove={(i, d) => setList('deliverablesTable', l => renumber(moveItem(l, i, d)))} onRemove={(i) => setList('deliverablesTable', l => renumber(l.filter((_, j) => j !== i)))} removeLabel="Remove deliverable" />}>
-                                <TextInput label="Deliverable" value={row.deliverable ?? row.item} onChange={v => update(idx, { deliverable: v })} placeholder="e.g. Creator reels (1 reel + 3 stories)" />
+                                <TextInput label="Deliverable" value={row.deliverable ?? row.item} onChange={v => update(idx, { deliverable: v })} placeholder="e.g. Campus creators" />
+                                <TextInput label="Detail" optional value={row.description} onChange={v => update(idx, { description: v })} placeholder="e.g. (1 Reel + 3 Stories)" hint="A small grey line under the deliverable." />
                                 <div className="grid grid-cols-2 gap-3">
                                     <TextInput label="Qty / unit" value={row.qty} onChange={v => update(idx, { qty: v })} placeholder="e.g. 20–30" />
                                     <TextInput label="Timeline" value={row.timeline} onChange={v => update(idx, { timeline: v })} placeholder="e.g. Week 1–2" />
@@ -294,6 +300,9 @@ export function V2DeliverablesEditor({ formData, setFormData, onRefine }) {
             </BuilderCard>
             <BuilderCard title="Market note" hint="A highlighted note about a lead city or market">
                 <Callout formData={formData} set={set} onRefine={onRefine} showKey="showCityNote" titleKey="cityNoteTitle" textKey="cityNoteText" label="Show the note" titlePlaceholder="NOTE ON BENGALURU" textPlaceholder="Bengaluru is treated as the primary market…" />
+            </BuilderCard>
+            <BuilderCard title="More on this page" hint="For example a box of what is still to confirm">
+                <BlocksEditor blocks={formData.deliverablesBlocks} onChange={(next) => set({ deliverablesBlocks: next })} />
             </BuilderCard>
         </div>
     );

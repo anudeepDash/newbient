@@ -421,7 +421,7 @@ export const applyAiDraft = (prev, aiData = {}) => {
     if (filled(data.customPages)) {
         next.customPages = [
             ...(prev.customPages || []),
-            ...data.customPages.map((cp, i) => ({ id: `${Date.now()}_cp${i}`, title: cp.title || 'New page', subtitle: cp.subtitle || '', content: cp.content || '', insertAfter: cp.insertAfter || 'default' })),
+            ...data.customPages.map((cp, i) => ({ ...cp, id: `${Date.now()}_cp${i}`, title: cp.title || 'New page', subtitle: cp.subtitle || '', content: cp.content || '', insertAfter: cp.insertAfter || 'default' })),
         ];
     }
     return repairV2Fields(next);
@@ -474,7 +474,7 @@ export const applyRevision = (prev, revised = {}) => {
         next[k] = v;
     });
     if (Array.isArray(next.customPages)) {
-        next.customPages = next.customPages.map((cp, i) => ({ id: cp.id || `${Date.now()}_rcp${i}`, title: cp.title || 'Page', subtitle: cp.subtitle || '', content: cp.content || '', insertAfter: cp.insertAfter || 'default' }));
+        next.customPages = next.customPages.map((cp, i) => ({ ...cp, id: cp.id || `${Date.now()}_rcp${i}`, title: cp.title || 'Page', subtitle: cp.subtitle || '', content: cp.content || '', insertAfter: cp.insertAfter || 'default' }));
     }
     return repairV2Fields(next);
 };

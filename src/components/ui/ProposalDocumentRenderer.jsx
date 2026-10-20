@@ -1,6 +1,9 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
-import DocumentSeal from './DocumentSeal';
+import {
+    Paper, SectionTitle, Label, Callout, Table, Steps, Bullets, Note, Chips, Blocks, Rich,
+    bodyText, HEADING_FONT, GREEN, NEON, INK, useProposalFonts,
+} from './proposalDesign';
 
 export default function ProposalDocumentRenderer({ 
     page, 
@@ -52,468 +55,19 @@ export default function ProposalDocumentRenderer({
         return <p className={className}>{decoded}</p>;
     };
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // NEW v2 DESIGN SYSTEM (8-PAGE MASTER SPECIFICATION)
-    // ═════════════════════════════════════════════════════════════════════════
     if (isV2) {
         return (
-            <div 
-                className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[16mm] shadow-2xl rounded-[2px] overflow-hidden shrink-0 font-['Outfit']"
-                style={{ margin: isExporting ? '0' : undefined }}
-            >
-                {/* Standard Top Header across ALL pages */}
-                <div className="flex justify-between items-start mb-6 border-b border-black/10 pb-4 relative z-10 shrink-0">
-                    <div className="flex flex-col items-start">
-                        <img 
-                            src={currentLogo?.path || '/brand/newbi-logo-entertainment-800w.png'} 
-                            alt="Newbi Entertainment" 
-                            className="h-14 w-auto object-contain" 
-                            crossOrigin="anonymous" 
-                        />
-                    </div>
-                    
-                    <div className="text-right space-y-0.5">
-                        <h4 className="text-[9px] font-bold uppercase text-gray-500 tracking-[0.25em]">QUOTATION</h4>
-                        <p className="text-sm font-black text-black tracking-wider font-mono">
-                            {formData.proposalNumber || 'NBQ-XXXX'}
-                        </p>
-                    </div>
-                </div>
-
-                {/* Page Body Content */}
-                <div className="flex-1 overflow-hidden relative z-10 flex flex-col justify-start">
-                    
-                    {/* ── PAGE 1: COVER PAGE ────────────────────────────────────────── */}
-                    {page.type === 'v2-cover' && (
-                        <div className="h-full flex flex-col justify-start">
-                            {/* Official Strategic Quotation Pill */}
-                            {formData.showCoverPill !== false && (
-                                <div className="mb-6 inline-flex items-center px-4 py-1.5 rounded-full bg-[#E8FAF0] border border-[#B8F2D1] text-[#15803D] text-[10px] font-black uppercase tracking-widest shadow-sm self-start">
-                                    {formData.coverPillText || 'OFFICIAL STRATEGIC QUOTATION'}
-                                </div>
-                            )}
-
-                            {/* 2-Column Metadata Grid */}
-                            <div className="grid grid-cols-2 gap-8 mb-6 pb-6 border-b border-gray-100">
-                                <div>
-                                    <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 mb-1.5">CLIENT ENTITY</p>
-                                    <h2 className="text-2xl font-black text-black tracking-tight leading-tight">
-                                        {formData.clientName || 'Client Entity'}
-                                    </h2>
-                                    {formData.clientSubtitle && (
-                                        <p className="text-xs text-gray-500 font-medium italic mt-1">
-                                            {formData.clientSubtitle}
-                                        </p>
-                                    )}
-                                    {formData.clientAddress && (
-                                        <p className="text-[11px] text-gray-500 font-normal mt-1 leading-snug">
-                                            {formData.clientAddress}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="text-right flex flex-col items-end">
-                                    <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 mb-1.5">PROJECT SPECIFICATION</p>
-                                    <h2 className="text-2xl font-black text-black tracking-tight leading-tight">
-                                        {formData.campaignName || 'Project Specification'}
-                                    </h2>
-                                    {formData.campaignSubtitle && (
-                                        <p className="text-base font-black text-black tracking-tight mt-0.5">
-                                            {formData.campaignSubtitle}
-                                        </p>
-                                    )}
-                                    {formData.showDuration !== false && formData.campaignDuration && (
-                                        <div className="mt-2.5 inline-flex items-center px-3 py-1 rounded-full bg-[#E8FAF0] border border-[#B8F2D1] text-[#15803D] text-[9px] font-black uppercase tracking-wider">
-                                            DURATION: {formData.campaignDuration}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Introduction Narrative */}
-                            <div className="text-[12.5px] text-gray-800 leading-relaxed font-normal mb-6">
-                                {renderSafeText(formData.introParagraph || formData.coverDescription)}
-                            </div>
-
-                            {/* WHAT'S INSIDE Grid */}
-                            {formData.showWhatsInside !== false && (
-                                <div className="mb-6">
-                                    <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 mb-2.5">WHAT'S INSIDE</p>
-                                    <div className="grid grid-cols-3 gap-2.5">
-                                        {(formData.whatsInside || []).map((card, idx) => (
-                                            <div key={idx} className="border border-gray-200 rounded-xl p-3 bg-white flex flex-col justify-start">
-                                                <span className="text-sm font-black text-[#16A34A] mb-1">
-                                                    {card.num || String(idx + 1).padStart(2, '0')}
-                                                </span>
-                                                <span className="text-[11px] font-bold text-gray-900 leading-snug">
-                                                    {card.title}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* PREPARED FOR Callout Box */}
-                            {formData.showPreparedFor !== false && (
-                                <div className="bg-[#F9FAFB] border-l-4 border-[#16A34A] p-3.5 rounded-r-xl mb-4">
-                                    <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[#16A34A] mb-1">PREPARED FOR</p>
-                                    <div className="text-[11.5px] text-gray-700 leading-relaxed font-medium">
-                                        {renderSafeText(formData.preparedForText || `This quotation has been prepared exclusively for ${formData.clientName || 'the client'}, in connection with ${formData.campaignName || 'the campaign'}. All figures and scope items are indicative and open to discussion ahead of final sign-off.`)}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Bottom Metadata Row */}
-                            <div className="mt-auto grid grid-cols-2 pt-3 border-t border-gray-100 text-[9px]">
-                                <div>
-                                    <span className="font-bold uppercase tracking-widest text-gray-400 block mb-0.5">QUOTE REFERENCE</span>
-                                    <span className="font-black text-black">{formData.proposalNumber || 'NBQ-XXXX'}</span>
-                                </div>
-                                <div className="text-right">
-                                    <span className="font-bold uppercase tracking-widest text-gray-400 block mb-0.5">CLASSIFICATION</span>
-                                    <span className="font-black text-black">{formData.classification || 'Strategic Commercial'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ── PAGE 2: STRATEGIC OUTLINE / EXECUTIVE SUMMARY ───────────── */}
-                    {page.type === 'v2-executive' && (
-                        <div className="h-full flex flex-col justify-start space-y-5">
-                            <div>
-                                <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 mb-1">
-                                    {formData.strategySub || 'STRATEGIC OUTLINE'}
-                                </p>
-                                <h2 className="text-2xl font-black text-black tracking-tight">
-                                    {formData.strategyTitle || 'Executive Summary'}
-                                </h2>
-                            </div>
-
-                            {/* Paragraphs */}
-                            <div className="space-y-2.5 text-[12px] text-gray-800 leading-relaxed">
-                                {(formData.executiveParagraphs || [formData.overview]).map((p, idx) => (
-                                    <p key={idx}>{p}</p>
-                                ))}
-                            </div>
-
-                            {/* PRIMARY OBJECTIVE Box */}
-                            {formData.showPrimaryObjective !== false && (
-                                <div className="bg-[#F9FAFB] border-l-4 border-[#16A34A] p-3.5 rounded-r-xl">
-                                    <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[#16A34A] mb-1">
-                                        {formData.primaryObjectiveTitle || 'PRIMARY OBJECTIVE'}
-                                    </p>
-                                    <p className="text-[11.5px] text-gray-700 leading-relaxed font-medium">
-                                        {formData.primaryObjectiveText || formData.primaryGoal}
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* KEY ANCHOR MARKETS Matrix */}
-                            {formData.showAnchorMarkets !== false && (
-                                <div>
-                                    <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 mb-2">
-                                        {formData.anchorMarketsTitle || 'KEY ANCHOR MARKETS'}
-                                    </p>
-                                    <div className="grid grid-cols-3 gap-2 mb-1.5">
-                                        {(formData.anchorMarkets || []).map((m, idx) => (
-                                            <div key={idx} className="border border-gray-200 rounded-lg py-2 px-3 text-center text-xs font-bold text-gray-900 bg-white">
-                                                {m}
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {formData.anchorMarketsCaption && (
-                                        <p className="text-[9.5px] text-gray-500 italic">
-                                            {formData.anchorMarketsCaption}
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* WHY THIS APPROACH Box */}
-                            {formData.showWhyThisApproach !== false && (
-                                <div className="bg-[#F9FAFB] border-l-4 border-[#16A34A] p-3.5 rounded-r-xl">
-                                    <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[#16A34A] mb-1">
-                                        {formData.whyThisApproachTitle || 'WHY THIS APPROACH'}
-                                    </p>
-                                    <p className="text-[11.5px] text-gray-700 leading-relaxed font-medium">
-                                        {formData.whyThisApproachText}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* ── PAGES 3 & 4: PROCESS & EXECUTION BLUEPRINT ──────────────── */}
-                    {(page.type === 'v2-blueprint-1' || page.type === 'v2-blueprint-2') && (
-                        <div className="h-full flex flex-col justify-start">
-                            <div className="mb-6">
-                                <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 mb-1">
-                                    {formData.blueprintSub || "HOW WE'LL EXECUTE"}
-                                </p>
-                                <h2 className="text-2xl font-black text-black tracking-tight">
-                                    {page.title || (formData.blueprintTitle || 'Process & Execution Blueprint')}
-                                </h2>
-                            </div>
-
-                            <div className="space-y-6 flex-1">
-                                {(page.steps || []).map((step, sIdx) => (
-                                    <div key={sIdx} className="space-y-2">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-7 h-7 bg-[#E8FAF0] text-[#15803D] font-black text-xs rounded-md flex items-center justify-center shrink-0">
-                                                {step.stepNumber || sIdx + 1}
-                                            </div>
-                                            <h3 className="text-sm font-bold text-black">{step.title}</h3>
-                                        </div>
-                                        <ul className="pl-10 space-y-1.5">
-                                            {(step.bullets || []).map((b, bIdx) => (
-                                                <li key={bIdx} className="text-[11.5px] text-gray-700 leading-relaxed flex items-start gap-2">
-                                                    <span className="text-[#16A34A] font-bold mt-0.5">•</span>
-                                                    <span>{b}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ── PAGE 5: DELIVERABLES & SCOPE SUMMARY ────────────────────── */}
-                    {page.type === 'v2-deliverables' && (
-                        <div className="h-full flex flex-col justify-start">
-                            <div className="mb-5">
-                                <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 mb-1">
-                                    {formData.deliverablesSub || 'SCOPE SUMMARY'}
-                                </p>
-                                <h2 className="text-2xl font-black text-black tracking-tight">
-                                    {formData.deliverablesTitle || 'Per City Deliverables'}
-                                </h2>
-                            </div>
-
-                            {/* Table */}
-                            <table className="w-full text-left border-collapse rounded-xl overflow-hidden mb-2.5 border border-gray-100">
-                                <thead className="bg-gray-50/80 border-b border-gray-200">
-                                    <tr>
-                                        <th className="py-2.5 px-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider w-10 text-center">#</th>
-                                        <th className="py-2.5 px-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider">DELIVERABLE</th>
-                                        <th className="py-2.5 px-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider w-36">QTY / UNIT</th>
-                                        <th className="py-2.5 px-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider w-36">TIMELINE</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100 text-[11.5px]">
-                                    {(formData.deliverablesTable || formData.deliverables || []).map((row, rIdx) => (
-                                        <tr key={rIdx} className="hover:bg-gray-50/50">
-                                            <td className="py-2.5 px-3 font-mono font-medium text-gray-400 text-center">
-                                                {row.id || String(rIdx + 1).padStart(2, '0')}
-                                            </td>
-                                            <td className="py-2.5 px-3 font-bold text-gray-900">{row.deliverable || row.item}</td>
-                                            <td className="py-2.5 px-3 text-gray-600 font-medium">{row.qty || '—'}</td>
-                                            <td className="py-2.5 px-3 text-gray-600 font-medium">{row.timeline || '—'}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-
-                            {formData.deliverablesTableNote && (
-                                <p className="text-[8.5px] font-bold uppercase tracking-wider text-gray-400 mb-6">
-                                    {formData.deliverablesTableNote}
-                                </p>
-                            )}
-
-                            {/* Note on Primary Market Box */}
-                            {formData.showCityNote !== false && (
-                                <div className="bg-[#F9FAFB] border-l-4 border-[#16A34A] p-3.5 rounded-r-xl mt-auto">
-                                    <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[#16A34A] mb-1">
-                                        {formData.cityNoteTitle || 'NOTE ON BENGALURU'}
-                                    </p>
-                                    <p className="text-[11.5px] text-gray-700 leading-relaxed font-medium">
-                                        {formData.cityNoteText}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* ── PAGE 6: COMMERCIALS & PRICING STRUCTURE ─────────────────── */}
-                    {page.type === 'v2-commercials' && (
-                        <div className="h-full flex flex-col justify-start">
-                            <div className="mb-4">
-                                <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 mb-1">
-                                    {formData.commercialsSub || 'COMMERCIALS'}
-                                </p>
-                                <h2 className="text-2xl font-black text-black tracking-tight mb-1">
-                                    {formData.commercialsTitle || '04 · Pricing Structure'}
-                                </h2>
-                                {formData.commercialsSubtitle && (
-                                    <p className="text-xs text-gray-700 leading-relaxed">
-                                        {formData.commercialsSubtitle}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Pricing Table */}
-                            <table className="w-full text-left border-collapse rounded-xl overflow-hidden mb-2 border border-gray-100">
-                                <thead className="bg-gray-50/80 border-b border-gray-200">
-                                    <tr>
-                                        <th className="py-2.5 px-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider w-10 text-center">#</th>
-                                        <th className="py-2.5 px-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider">DELIVERABLE</th>
-                                        <th className="py-2.5 px-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider w-36">QTY / UNIT</th>
-                                        <th className="py-2.5 px-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider w-36">TIMELINE</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100 text-[11.5px]">
-                                    {(formData.pricingTable || []).map((row, rIdx) => (
-                                        <tr key={rIdx} className="hover:bg-gray-50/50">
-                                            <td className="py-3 px-3 font-mono font-medium text-gray-400 text-center">
-                                                {row.id || String(rIdx + 1).padStart(2, '0')}
-                                            </td>
-                                            <td className="py-3 px-3">
-                                                <p className="font-bold text-gray-900">{row.deliverable}</p>
-                                                {row.description && (
-                                                    <p className="text-[10px] text-gray-500 mt-0.5">{row.description}</p>
-                                                )}
-                                            </td>
-                                            <td className="py-3 px-3 font-bold text-black">{row.qtyPrice || '—'}</td>
-                                            <td className="py-3 px-3 text-gray-600 font-medium">{row.timeline || '—'}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-
-                            {formData.pricingTableNote && (
-                                <p className="text-[8.5px] font-bold uppercase tracking-wider text-gray-400 mb-5">
-                                    {formData.pricingTableNote}
-                                </p>
-                            )}
-
-                            {/* WHAT'S INCLUDED Box */}
-                            {formData.showWhatsIncluded !== false && (
-                                <div className="bg-[#F9FAFB] border-l-4 border-[#16A34A] p-3.5 rounded-r-xl mb-4">
-                                    <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[#16A34A] mb-1">
-                                        {formData.whatsIncludedTitle || "WHAT'S INCLUDED"}
-                                    </p>
-                                    <p className="text-[11.5px] text-gray-700 leading-relaxed font-medium">
-                                        {formData.whatsIncludedText}
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* PAYMENT & SCALING Box */}
-                            {formData.showPaymentScaling !== false && (
-                                <div className="bg-[#F9FAFB] border-l-4 border-[#16A34A] p-3.5 rounded-r-xl">
-                                    <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[#16A34A] mb-1">
-                                        {formData.paymentScalingTitle || 'PAYMENT & SCALING'}
-                                    </p>
-                                    <p className="text-[11.5px] text-gray-700 leading-relaxed font-medium">
-                                        {formData.paymentScalingText}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* ── PAGE 7: CITY DEEP-DIVE / BENGALURU MANAGEMENT ───────────── */}
-                    {page.type === 'v2-deepdive' && (
-                        <div className="h-full flex flex-col justify-start">
-                            <div className="mb-4">
-                                <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 mb-1">
-                                    {formData.deepDiveSub || 'CITY DEEP-DIVE · BENGALURU'}
-                                </p>
-                                <h2 className="text-2xl font-black text-black tracking-tight mb-2">
-                                    {formData.deepDiveTitle || '05 · Bengaluru Management'}
-                                </h2>
-                                {formData.deepDiveIntro && (
-                                    <p className="text-xs text-gray-800 leading-relaxed mb-6">
-                                        {formData.deepDiveIntro}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="space-y-6 flex-1">
-                                {(formData.deepDiveSubsections || []).map((sec, idx) => (
-                                    <div key={idx} className="space-y-2">
-                                        <div className="flex items-center gap-2.5">
-                                            <span className="px-2 py-0.5 bg-[#E8FAF0] text-[#15803D] font-bold text-xs rounded-md">
-                                                {sec.badge || `5.${idx + 1}`}
-                                            </span>
-                                            <h3 className="text-sm font-bold text-black">{sec.title}</h3>
-                                        </div>
-                                        <ul className="pl-8 space-y-1.5">
-                                            {(sec.bullets || []).map((b, bIdx) => (
-                                                <li key={bIdx} className="text-[11.5px] text-gray-700 leading-relaxed flex items-start gap-2">
-                                                    <span className="text-[#16A34A] font-bold mt-0.5">•</span>
-                                                    <span>{b}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ── PAGE 8: CLOSING, NEXT STEPS & EXECUTION ─────────────────── */}
-                    {page.type === 'v2-closing' && (
-                        <div className="h-full flex flex-col justify-start">
-                            <div className="mb-4">
-                                <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 mb-1">
-                                    {formData.closingSub || 'CLOSING'}
-                                </p>
-                                <h2 className="text-2xl font-black text-black tracking-tight mb-3">
-                                    {formData.closingTitle || '06 · Next Steps'}
-                                </h2>
-                                <div className="text-xs text-gray-800 leading-relaxed">
-                                    {renderSafeText(formData.closingText)}
-                                </div>
-                            </div>
-
-                            {/* Sign-Off Metadata Block */}
-                            <div className="grid grid-cols-2 pt-6 border-t border-gray-200 mt-6 mb-8">
-                                <div>
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">PREPARED BY</p>
-                                    <p className="text-xs font-bold text-black">{formData.preparedBy || 'NewBi Entertainment & Marketing LLP'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">QUOTE REFERENCE</p>
-                                    <p className="text-xs font-mono font-bold text-black">{formData.proposalNumber || 'NBQ-XXXX'}</p>
-                                </div>
-                            </div>
-
-                            {/* Digital Signatures & Seal only if explicit signatureArea component supplied */}
-                            {signatureArea ? (
-                                <div className="mt-auto border-t border-gray-100 pt-6">
-                                    {signatureArea}
-                                </div>
-                            ) : null}
-                        </div>
-                    )}
-
-                    {/* ── CUSTOM PAGES ────────────────────────────────────────────── */}
-                    {page.type === 'v2-custom' && (
-                        <div className="h-full flex flex-col justify-start">
-                            {page.subtitle && (
-                                <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 mb-1">{page.subtitle}</p>
-                            )}
-                            <h2 className="text-2xl font-black text-black tracking-tight mb-6">{page.title}</h2>
-                            <div className="flex-1 text-[13px] leading-relaxed text-gray-800 whitespace-pre-line">
-                                {renderContent(page.content || '')}
-                            </div>
-                        </div>
-                    )}
-
-                </div>
-
-                {/* Running Footer across ALL v2 pages */}
-                <div className="flex items-center justify-between pt-4 border-t border-black/10 mt-auto relative z-10 shrink-0">
-                    <p className="text-[8px] font-black uppercase text-gray-400 tracking-[0.2em]">
-                        © NEWBI ENTERTAINMENT & MARKETING LLP
-                    </p>
-                    <p className="text-[8px] font-black uppercase text-gray-400 tracking-[0.2em]">
-                        PAGE {pageIdx + 1} OF {totalPages}
-                    </p>
-                </div>
-            </div>
+            <V2Page
+                page={page}
+                pageIdx={pageIdx}
+                totalPages={totalPages}
+                formData={formData}
+                brand={formData.selectedLogo}
+                renderSafeText={renderSafeText}
+                renderContent={renderContent}
+                isExporting={isExporting}
+                signatureArea={signatureArea}
+            />
         );
     }
 
@@ -756,5 +310,243 @@ export default function ProposalDocumentRenderer({
                 </p>
             </div>
         </div>
+    );
+}
+
+/* The old cover pill said "quotation"; the paper now calls itself a proposal. */
+const pillText = (t) => (!t || /^official strategic quotation$/i.test(String(t).trim()) ? 'Official Strategic Proposal' : t);
+
+/* The intro opens with our name in bold, as on the reference design. */
+const COMPANY = 'NewBi Entertainment & Marketing LLP';
+const boldCompany = (text) => {
+    const t = String(text || '');
+    if (!t || t.includes('**')) return t;
+    const re = /^(NewBi Entertainment & Marketing LLP)/i;
+    return t.replace(re, '**$1**');
+};
+
+const isHtml = (t) => typeof t === 'string' && /<\/?[a-z][\s\S]*>/i.test(t);
+
+/** Plain text gets the paper's formatting; HTML from older editors goes through the caller's renderer. */
+const Body = ({ text, renderSafeText, className = bodyText }) => {
+    if (!text) return null;
+    if (isHtml(text)) return <div className={className}>{renderSafeText(text)}</div>;
+    return <Rich text={text} paragraphClassName={className} />;
+};
+
+const deliverableRows = (rows = []) => rows.map(r => [
+    [r.deliverable || r.item || '', r.description || r.note || ''].filter(Boolean).join('\n'),
+    r.qty || r.qtyPrice || '—',
+    r.timeline || '—',
+]);
+
+/** One page of the built-in proposal, in the Pinnaca design. */
+function V2Page({ page, pageIdx, totalPages, formData, brand, renderSafeText, renderContent, isExporting, signatureArea }) {
+    useProposalFonts();
+    const f = formData;
+    const number = f.proposalNumber || 'NBQ-XXXX';
+    const headers = Array.isArray(f.deliverablesTableHeaders) && f.deliverablesTableHeaders.length >= 4
+        ? f.deliverablesTableHeaders.slice(1, 4)
+        : ['Deliverable', 'Qty / Unit', 'Timeline'];
+
+    let content = null;
+    switch (page.type) {
+        case 'v2-cover': {
+            const inside = (f.whatsInside || []).filter(c => c && c.title);
+            content = (
+                <div className="-mt-[8px] flex flex-col">
+                    {f.showCoverPill !== false && (
+                        <span className="self-start rounded-full px-[22px] py-[11px] text-[8.5px] font-bold uppercase tracking-[0.3em]" style={{ background: '#E8F7EE', color: GREEN }}>
+                            {pillText(f.coverPillText)}
+                        </span>
+                    )}
+                    <div className="mt-[38px] grid grid-cols-2 gap-[32px] border-b pb-[26px]" style={{ borderColor: '#E8EAE8' }}>
+                        <div>
+                            <Label className="mb-[16px]">Client entity</Label>
+                            <h1 className="text-[20px] font-bold leading-[1.25] tracking-[-0.01em]" style={HEADING_FONT}>{f.clientName || 'Client name'}</h1>
+                            {f.clientSubtitle && <p className="mt-[8px] text-[10.7px] leading-[1.5] text-gray-500">{f.clientSubtitle}</p>}
+                            {f.clientAddress && <p className="mt-[4px] text-[10px] leading-[1.5] text-gray-400">{f.clientAddress}</p>}
+                        </div>
+                        <div className="flex flex-col items-end text-right">
+                            <Label className="mb-[16px]">Project specification</Label>
+                            <h1 className="text-[20px] font-bold leading-[1.25] tracking-[-0.01em]" style={HEADING_FONT}>{f.campaignName || 'Project name'}</h1>
+                            {f.campaignSubtitle && <p className="mt-[6px] text-[10.7px] leading-[1.5] text-gray-500">{f.campaignSubtitle}</p>}
+                            {f.showDuration !== false && f.campaignDuration && (
+                                <span className="mt-[14px] rounded-full border px-[20px] py-[7px] text-[8.5px] font-bold uppercase tracking-[0.2em]" style={{ background: NEON, borderColor: INK, color: INK }}>
+                                    Duration: {f.campaignDuration}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                    <div className="mt-[26px]">
+                        <Body text={isHtml(f.introParagraph || f.coverDescription) ? (f.introParagraph || f.coverDescription) : boldCompany(f.introParagraph || f.coverDescription)} renderSafeText={renderSafeText} className="text-[13px] leading-[24px] text-[#2B2D31]" />
+                    </div>
+                    {f.showWhatsInside !== false && inside.length > 0 && (
+                        <div className="mt-[30px]">
+                            <Label>What&apos;s inside</Label>
+                            <div className="grid gap-[12px]" style={{ gridTemplateColumns: `repeat(${inside.length > 6 ? 5 : 3}, minmax(0, 1fr))` }}>
+                                {inside.map((c, i) => (
+                                    <div key={i} className="min-h-[80px] rounded-[10px] border bg-white px-[12px] py-[14px]" style={{ borderColor: '#E8EAE8' }}>
+                                        <p className="text-[9.3px] font-bold" style={{ color: GREEN, ...HEADING_FONT }}>{c.num || String(i + 1).padStart(2, '0')}</p>
+                                        <p className="mt-[10px] text-[10px] font-bold leading-[1.4]" style={HEADING_FONT}>{c.title}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {f.showPreparedFor !== false && (
+                        <Callout className="mt-[24px]" label="Prepared for">
+                            <Body
+                                text={f.preparedForText || `This proposal has been prepared exclusively for ${f.clientName || 'the client'}, in connection with ${f.campaignName || 'the campaign'}. All figures and scope items are indicative and open to discussion ahead of final sign-off.`}
+                                renderSafeText={renderSafeText}
+                                className="text-[11.7px] leading-[20px] text-[#2B2D31]"
+                            />
+                        </Callout>
+                    )}
+                </div>
+            );
+            break;
+        }
+
+        case 'v2-executive':
+            content = (
+                <>
+                    <SectionTitle eyebrow={f.strategySub || 'Strategic outline'} title={f.strategyTitle || 'Executive Summary'} />
+                    <div className="space-y-[26px]">
+                        <div className="space-y-[12px]">
+                            {(f.executiveParagraphs || [f.overview]).filter(Boolean).map((p, i) => <Body key={i} text={p} renderSafeText={renderSafeText} />)}
+                        </div>
+                        {f.showPrimaryObjective !== false && (
+                            <Callout accent label={f.primaryObjectiveTitle || 'Primary objective'} text={isHtml(f.primaryObjectiveText || f.primaryGoal) ? null : (f.primaryObjectiveText || f.primaryGoal)}>
+                                {isHtml(f.primaryObjectiveText || f.primaryGoal) && <Body text={f.primaryObjectiveText || f.primaryGoal} renderSafeText={renderSafeText} />}
+                            </Callout>
+                        )}
+                        {f.showAnchorMarkets !== false && (f.anchorMarkets || []).length > 0 && (
+                            <div>
+                                <Label>{f.anchorMarketsTitle || 'Key anchor markets'}</Label>
+                                <Chips items={f.anchorMarkets} />
+                                {f.anchorMarketsCaption && <p className="mt-[8px] text-[9.5px] italic text-gray-500">{f.anchorMarketsCaption}</p>}
+                            </div>
+                        )}
+                        {f.showWhyThisApproach !== false && <Callout label={f.whyThisApproachTitle || 'Why this approach'} text={f.whyThisApproachText} />}
+                        <Blocks blocks={f.executiveBlocks} />
+                    </div>
+                </>
+            );
+            break;
+
+        case 'v2-blueprint-1':
+        case 'v2-blueprint-2':
+            content = (
+                <>
+                    <SectionTitle
+                        eyebrow={f.blueprintSub || "How we'll execute"}
+                        title={f.blueprintTitle || 'Process & Execution Blueprint'}
+                        aside={page.continued || page.type === 'v2-blueprint-2' ? '(continued)' : null}
+                    />
+                    <Steps items={page.steps || []} start={(page.startIndex || 0) + 1} />
+                </>
+            );
+            break;
+
+        case 'v2-deliverables':
+            content = (
+                <>
+                    <SectionTitle eyebrow={f.deliverablesSub || 'Scope summary'} title={f.deliverablesTitle || 'Deliverables'} />
+                    <Table numbered columns={headers} rows={deliverableRows(f.deliverablesTable || f.deliverables || [])} />
+                    <Note className="mt-[12px]">{f.deliverablesTableNote}</Note>
+                    {f.showCityNote !== false && <Callout className="mt-[26px]" label={f.cityNoteTitle} text={f.cityNoteText} />}
+                    <Blocks blocks={f.deliverablesBlocks} className="mt-[26px]" />
+                </>
+            );
+            break;
+
+        case 'v2-commercials':
+            content = (
+                <>
+                    <SectionTitle eyebrow={f.commercialsSub || 'Commercials'} title={f.commercialsTitle || 'Pricing Structure'} />
+                    <div className="space-y-[26px]">
+                        {f.commercialsSubtitle && <Rich text={f.commercialsSubtitle} paragraphClassName={bodyText} />}
+                        <div>
+                            <Table
+                                numbered
+                                columns={headers}
+                                rows={(f.pricingTable || []).map(r => [
+                                    [r.deliverable || '', r.description || ''].filter(Boolean).join('\n'),
+                                    r.qtyPrice || '—',
+                                    r.timeline || '—',
+                                ])}
+                            />
+                            <Note className="mt-[12px]">{f.pricingTableNote}</Note>
+                        </div>
+                        {f.showWhatsIncluded !== false && <Callout label={f.whatsIncludedTitle || "What's included"} text={f.whatsIncludedText} />}
+                        {f.showPaymentScaling !== false && <Callout label={f.paymentScalingTitle || 'Payment & scaling'} text={f.paymentScalingText} />}
+                    </div>
+                </>
+            );
+            break;
+
+        case 'v2-deepdive':
+            content = (
+                <>
+                    <SectionTitle eyebrow={f.deepDiveSub} title={f.deepDiveTitle} />
+                    {f.deepDiveIntro && <Rich text={f.deepDiveIntro} className="mb-[22px]" paragraphClassName={bodyText} />}
+                    <div>
+                        {(f.deepDiveSubsections || []).map((sec, i) => (
+                            <div key={i} className="border-b py-[16px] first:pt-0" style={{ borderColor: '#E8EAE8' }}>
+                                <div className="flex items-center gap-[10px]">
+                                    <span className="rounded-full border px-[8px] py-[2px] text-[8.5px] font-bold" style={{ background: NEON, borderColor: INK }}>{sec.badge || i + 1}</span>
+                                    <h3 className="text-[12.4px] font-bold" style={HEADING_FONT}>{sec.title}</h3>
+                                </div>
+                                <Bullets items={sec.bullets} className="mt-[10px] pl-[4px]" />
+                            </div>
+                        ))}
+                    </div>
+                </>
+            );
+            break;
+
+        case 'v2-closing':
+            content = (
+                <>
+                    <SectionTitle eyebrow={f.closingSub || 'Closing'} title={f.closingTitle || 'Next Steps'} />
+                    <Body text={f.closingText} renderSafeText={renderSafeText} />
+                    <div className="mt-[30px] grid grid-cols-2 border-t pt-[20px]" style={{ borderColor: '#E8EAE8' }}>
+                        <div>
+                            <Label className="mb-[8px]">Prepared by</Label>
+                            <p className="text-[12px] font-bold">{f.preparedBy || COMPANY}</p>
+                        </div>
+                        <div className="text-right">
+                            <Label className="mb-[8px]">Proposal reference</Label>
+                            <p className="text-[12px] font-bold tracking-[0.08em]">{number}</p>
+                        </div>
+                    </div>
+                    {signatureArea ? <div className="mt-auto border-t pt-6" style={{ borderColor: '#E8EAE8' }}>{signatureArea}</div> : null}
+                </>
+            );
+            break;
+
+        case 'v2-custom':
+            content = (
+                <>
+                    <SectionTitle eyebrow={page.subtitle} title={page.title} aside={page.aside} />
+                    {page.content && (
+                        <div className="mb-[26px] text-[12px] leading-[20.4px] text-[#2B2D31]">
+                            {isHtml(page.content) ? renderContent(page.content) : <Rich text={page.content} paragraphClassName={bodyText} />}
+                        </div>
+                    )}
+                    <Blocks blocks={page.blocks} />
+                </>
+            );
+            break;
+
+        default:
+            content = null;
+    }
+
+    return (
+        <Paper number={number} pageIdx={pageIdx} totalPages={totalPages} brand={brand} isExporting={isExporting}>
+            {content}
+        </Paper>
     );
 }
