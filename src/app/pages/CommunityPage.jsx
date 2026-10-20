@@ -144,7 +144,7 @@ const WhatsAppSection = () => {
     if (!feed) return null;
     const community = feed.contact?.whatsappCommunity;
     const active = creator && creator.profileStatus !== 'rejected' && creator.profileStatus !== 'suspended';
-    const cityGroup = active ? cityGroupFor(feed.creatorGroups, creatorCity(creator, profile)) : null;
+    const cityGroup = active ? cityGroupFor(feed.creatorGroups, creatorCity(creator, profile), { withDefaults: true }) : null;
     const cards = [
         isPresent(community) && {
             url: community,
