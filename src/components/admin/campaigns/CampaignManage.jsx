@@ -139,6 +139,11 @@ const CampaignManage = ({
     const chosen = (a) => !a.orphan && (isSelected(campaign, a.creator) || a.stage === 'paid');
     const selectedCount = applicants.filter(chosen).length;
     const qualifyingUndecided = applicants.filter(a => (a.stage === 'applied' || a.stage === 'shortlisted') && a.criteria.eligible);
+    // Shortlisted by the server on apply (api/_lib/creatorApp.js autoShortlist). The team checks
+    // them once; anyone shortlisted after the last check counts as new.
+    const autoAt = (a) => a.creator.campaignAutoShortlisted?.[campaign?.id];
+    const autoPicked = applicants.filter(a => chosen(a) && autoAt(a));
+    const autoToCheck = autoPicked.filter(a => String(autoAt(a)) > String(campaign?.autoShortlistReviewedAt || ''));
 
     useEffect(() => { setChecked(new Set()); }, [stageFilter, tab, campaignId]);
 
@@ -147,7 +152,7 @@ const CampaignManage = ({
         const rank = (a) => (a.criteria.eligible ? 2 : 0) + (a.criteria.nicheMatch ? 1 : 0);
         return applicants
             .filter(a => stageFilter === 'all' || a.stage === stageFilter)
-            .filter(a => fit === 'all' || (fit === 'match' ? a.criteria.eligible : !a.criteria.eligible))
+            .filter(a => fit === 'all' || (fit === 'auto' ? chosen(a) && autoAt(a) : fit === 'match' ? a.criteria.eligible : !a.criteria.eligible))
             .filter(a => {
                 if (!term) return true;
                 const c = a.creator;
@@ -667,6 +672,28 @@ const CampaignManage = ({
 
     const applicantsTab = (
         <div className="space-y-4">
+            {autoToCheck.length > 0 && (
+                <div className={cn('flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center', accent('teal').border, accent('teal').soft)}>
+                    <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', accent('teal').chip)}><Sparkles size={18} /></span>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-[14px] font-bold">{autoToCheck.length} creator{autoToCheck.length === 1 ? ' was' : 's were'} shortlisted automatically</p>
+                        <p className="text-[12px] text-gray-600 dark:text-zinc-400">
+                            They met the criteria when they applied and already got the welcome. Check their profiles, and remove anyone who isn&apos;t a fit.
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="secondary" onClick={() => { setFit('auto'); setQuery(''); setParams({ stage: null }); }} className="h-11 flex-1 sm:flex-none">View them</Button>
+                        <Button
+                            variant="accent"
+                            onClick={() => { setFit('all'); onPatch(campaign, { autoShortlistReviewedAt: new Date().toISOString() }, autoToCheck.length === 1 ? 'Marked as checked.' : `${autoToCheck.length} creators marked as checked.`); }}
+                            disabled={busyId === campaign.id}
+                            className="h-11 flex-1 sm:flex-none"
+                        >
+                            <CheckCheck size={14} /> {fit === 'auto' ? 'Done, all checked' : 'Mark as checked'}
+                        </Button>
+                    </div>
+                </div>
+            )}
             {qualifyingUndecided.length > 0 && status !== 'closed' && (
                 <div className={cn('flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center', accent('pink').border, accent('pink').soft)}>
                     <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', accent('pink').chip)}><Zap size={18} /></span>
@@ -691,6 +718,7 @@ const CampaignManage = ({
                         { value: 'all', label: 'Everyone' },
                         { value: 'match', label: 'Meets the rules' },
                         { value: 'below', label: "Doesn't meet them" },
+                        ...(autoPicked.length || fit === 'auto' ? [{ value: 'auto', label: 'Shortlisted automatically' }] : []),
                     ]} />
                     <Select value={sort} onChange={setSort} label="Sort" className="hidden min-w-0 flex-1 sm:inline-flex xl:w-48 xl:flex-none" options={SORTS} />
                     <ExportMenu getSpec={() => clientSheetSpec(campaign, applicants, { fileDate, exportSubtitle })} label="Client sheet" hint="Every applicant, no phone or email, with a Shortlist column" />
@@ -772,7 +800,9 @@ const CampaignManage = ({
                                         </button>
                                         <div className="flex flex-wrap items-center gap-1.5 pl-[54px] sm:w-[260px] sm:pl-0">
                                             <StageBadge stage={a.stage} />
-                                            {a.creator.campaignAutoShortlisted?.[campaign.id] && chosen(a) && <Badge tone="teal" title="Shortlisted automatically: met the criteria when they applied">Auto</Badge>}
+                                            {autoAt(a) && chosen(a) && (autoToCheck.includes(a)
+                                                ? <Badge tone="amber" title="Shortlisted automatically: met the criteria when they applied. Not checked by the team yet.">Auto · to check</Badge>
+                                                : <Badge tone="teal" title="Shortlisted automatically: met the criteria when they applied">Auto</Badge>)}
                                             {a.criteria.eligible ? <Badge tone="green"><Check size={10} strokeWidth={3} /> Meets rules</Badge> : <Badge tone="amber">Below rules</Badge>}
                                             {a.criteria.nicheMatch && <Badge tone="violet"><Sparkles size={10} /> Niche</Badge>}
                                             {referralTiers.get(creatorKey(c)) && <ReferralTierBadge standing={referralTiers.get(creatorKey(c))} />}
