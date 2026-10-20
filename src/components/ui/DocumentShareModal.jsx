@@ -12,6 +12,7 @@ import { cn } from '../../lib/utils';
 import { getDocumentShareMeta, getPdfPreviewImageUrl } from '../../lib/documentPreviewUtils';
 import { docTheme } from './docviewer/DocKit';
 import { DEFAULT_IMAGE } from '../../app/seo';
+import { shareLinkWithCard } from '../../lib/docShareCard';
 
 /*
  * Share a document link: copy, WhatsApp, email, the phone's own share sheet,
@@ -30,8 +31,12 @@ export default function DocumentShareModal({
     const [qr, setQr] = useState('');
     const [canNativeShare, setCanNativeShare] = useState(false);
 
-    const shareUrl = typeof window !== 'undefined' ? window.location.href.split('#')[0] : 'https://www.newbi.live/';
+    const shareUrl = typeof window !== 'undefined'
+        ? shareLinkWithCard(window.location.href.split('#')[0], documentData?.previewKey)
+        : 'https://www.newbi.live/';
     const meta = getDocumentShareMeta(documentData, type);
+    // The saved card (the document's first pages) is exactly what chats show.
+    const card = documentData?.previewImage || null;
     const preview = pdfPagePreview || getPdfPreviewImageUrl(documentData?.fileUrl, { width: 800, height: 1100 }) || meta.previewImage;
     const hasRealPreview = preview && !preview.endsWith('/og-image.png') && !preview.endsWith(DEFAULT_IMAGE.path);
 
@@ -89,6 +94,16 @@ export default function DocumentShareModal({
             <div className="space-y-5">
                 {/* How the link unfurls in a chat */}
                 <div className="overflow-hidden rounded-2xl border border-black/[0.08] bg-white dark:border-white/[0.08] dark:bg-white/[0.03]">
+                    {card ? (
+                        <>
+                            <img src={card} alt="" className="aspect-[1200/630] w-full bg-zinc-900 object-cover" />
+                            <div className="px-3.5 py-3">
+                                <p className="line-clamp-2 text-[14px] font-semibold leading-snug text-gray-900 dark:text-white">{meta.title}</p>
+                                <p className="mt-1 line-clamp-2 text-[12.5px] leading-snug text-gray-500 dark:text-zinc-400">{meta.description}</p>
+                                <p className="mt-1.5 text-[11.5px] text-gray-500 dark:text-zinc-400">newbi.live</p>
+                            </div>
+                        </>
+                    ) : (
                     <div className="flex gap-3 p-3">
                         <div className="flex aspect-[1/1.414] w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-black/10 bg-white">
                             {hasRealPreview
@@ -101,6 +116,7 @@ export default function DocumentShareModal({
                             <p className="mt-1 line-clamp-2 text-[12.5px] leading-snug text-gray-500 dark:text-zinc-400">{meta.description}</p>
                         </div>
                     </div>
+                    )}
                 </div>
 
                 {/* Link + copy */}

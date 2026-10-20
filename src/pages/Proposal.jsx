@@ -52,6 +52,7 @@ import { getV2PaginatedPages, normalizeProposalData } from '../lib/proposalTempl
 import ProposalDocumentRenderer from '../components/ui/ProposalDocumentRenderer';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
+import { syncShareCard } from '../lib/docShareCard';
 
 const isHtmlEmpty = (html) => {
     if (!html) return true;
@@ -431,6 +432,46 @@ const Proposal = () => {
         };
         logVisit();
     }, [id, isAdmin, proposal, location.search]);
+
+    // Staff views keep the link's chat card in step with the document: its first
+    // pages, drawn from the hidden export copy (or the uploaded PDF's first page).
+    // The first render of each uploaded file only; zooming re-renders it at other sizes.
+    const [firstPageShot, setFirstPageShot] = useState(null);
+    const fileUrl = proposal?.fileUrl;
+    const keepFirstPage = (page) => setFirstPageShot(prev => (prev && prev.fileUrl === fileUrl ? prev : { fileUrl, page }));
+    const uploadedFirstPage = firstPageShot && firstPageShot.fileUrl === fileUrl ? firstPageShot.page : null;
+    const shareCardSig = proposal
+        ? JSON.stringify({ ...proposal, previewImage: null, previewKey: null, accessLogs: null, lastOpened: null })
+        : '';
+    const shareCardRan = useRef('');
+    useEffect(() => {
+        if (!isAdmin || !proposal || !shareCardSig) return;
+        const uploaded = Boolean(proposal.isUploaded && proposal.fileUrl);
+        if (uploaded && !uploadedFirstPage) return;
+        if (shareCardRan.current === shareCardSig) return;
+
+        // Once started it runs to the end; a newer snapshot only resets the wait.
+        const timer = setTimeout(async () => {
+            shareCardRan.current = shareCardSig;
+            try {
+                let pages;
+                if (uploaded) {
+                    pages = [uploadedFirstPage];
+                } else {
+                    await document.fonts?.ready;
+                    const nodes = Array.from(document.querySelectorAll('.pdf-export-only .proposal-page-render')).slice(0, 2);
+                    pages = [];
+                    for (const node of nodes) {
+                        pages.push(await html2canvas(node, { scale: 1, useCORS: true, backgroundColor: '#FFFFFF', logging: false }));
+                    }
+                }
+                await syncShareCard('proposals', id, proposal, pages);
+            } catch (err) {
+                console.warn('Could not update the share card:', err);
+            }
+        }, 2500);
+        return () => clearTimeout(timer);
+    }, [isAdmin, id, proposal, shareCardSig, uploadedFirstPage]);
 
     const proposalShareMeta = getDocumentShareMeta(displayProposal, 'proposal');
     useDynamicMeta({
@@ -1146,6 +1187,7 @@ const Proposal = () => {
                 actionPanel={actionPanel}
                 actionLabel="Review and accept"
                 onStageWidth={fitToStage}
+                onFirstPageRendered={keepFirstPage}
                 banner={proposalExpired && !isAdmin ? (
                     <div role="status" className="border-b border-amber-500/20 bg-amber-400/90 px-4 py-2.5 text-center text-[13px] font-semibold text-black">
                         This proposal expired on {expiryLabel}. Contact us for an updated one.
