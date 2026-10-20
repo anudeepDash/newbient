@@ -7,6 +7,7 @@ export default {
     content: [
         './landing.html',
         './src/landing/**/*.{js,jsx}',
+        './src/i18n/**/*.{js,jsx}',
         './src/pages/Contact.jsx',
         './src/pages/Terms.jsx',
         './src/pages/Privacy.jsx',
