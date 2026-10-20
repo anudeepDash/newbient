@@ -224,7 +224,7 @@ describe('admin actions', () => {
         expect(res.body.followUps).toEqual({ inApp: 1, api: 0, byHand: 1 });
         expect(apps().find(x => x.id === a)).toMatchObject({ status: 'message_sent', messageSentBy: 'Newbi app' });
         expect(apps().find(x => x.id === b).status).toBe('shortlisted');
-        const note = Object.values(db.dump('notifications')).find(n => n.title.startsWith("You're shortlisted"));
+        const note = Object.values(db.dump('notifications')).find(n => n.title.startsWith('Shortlisted'));
         expect(note).toMatchObject({ userId: apps().find(x => x.id === a).uid, type: 'campaign' });
         expect(note.message).toContain('I’ve joined');
     });

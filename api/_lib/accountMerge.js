@@ -215,7 +215,7 @@ export const mergedProfile = (to, from, fromAuth) => {
     if (tokens.length > (to.fcmTokens || []).length) patch.fcmTokens = tokens;
     if (from.capabilities?.member && !to.capabilities?.member) patch.capabilities = { ...(patch.capabilities || {}), member: true };
     if (from.createdAt && (!to.createdAt || String(from.createdAt) < String(to.createdAt))) patch.createdAt = from.createdAt;
-    for (const k of ['onboarding', 'emailPrefs', 'channelPrefs']) {
+    for (const k of ['onboarding', 'emailPrefs', 'channelPrefs', 'pushDevices']) {
         if (from[k] && typeof from[k] === 'object') patch[k] = { ...from[k], ...(to[k] || {}) };
     }
     return patch;
