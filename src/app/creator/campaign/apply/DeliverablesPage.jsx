@@ -162,7 +162,11 @@ const TaskCard = ({ token, task, onDone }) => {
                 </p>
             )}
             {task.status === 'approved' && <p className="flex items-center gap-1.5 text-[14px] font-semibold text-emerald-700 dark:text-neon-green"><CircleCheck size={16} /> {t('Approved. Thank you!')}</p>}
-            {open && task.status !== 'approved' && <TaskForm token={token} task={task} onDone={() => { setEditing(false); onDone(); }} />}
+            {/* The team opens posts one at a time: until then there's nothing to send. */}
+            {task.open === false && task.status === 'not_started' && (
+                <p className="text-[14px] text-gray-500 dark:text-zinc-400">{t('Not open yet. We’ll tell you when to post this one.')}</p>
+            )}
+            {open && task.status !== 'approved' && task.open !== false && <TaskForm token={token} task={task} onDone={() => { setEditing(false); onDone(); }} />}
         </section>
     );
 };

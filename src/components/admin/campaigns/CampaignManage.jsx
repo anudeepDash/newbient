@@ -65,7 +65,7 @@ import {
     STAGES, applicantsFor, orphanSubmitters, isSelected, campaignStatus, creatorHandle, creatorPhotoOf, creatorKeys, creatorRef, formatCount, formatDay,
     inr, stageMeta, taskTypeOf, platformOf, daysUntil, waNumber, isUniversalCity,
 } from './campaignModel';
-import { isRequiredTask } from '../../../lib/creator/tasks';
+import { isRequiredTask, isTaskOpen } from '../../../lib/creator/tasks';
 import OutreachTab from './outreach/OutreachTab';
 import { stripPastedStyles } from '../../../lib/taskLinks';
 import { canSeeOutreach } from './outreach/outreachApi';
@@ -400,6 +400,16 @@ const CampaignManage = ({
             tone: 'success',
         });
     };
+    const toggleTaskOpen = (task) => guard(async () => {
+        const open = !isTaskOpen(task);
+        try {
+            await useStore.getState().setTaskSubmissionsOpen(campaign.id, task.id, open);
+            addToast(open ? `“${task.title}” is open: shortlisted creators can submit it now.` : `“${task.title}” is closed for submissions.`, 'success');
+        } catch {
+            addToast("Couldn't change it. Please try again.", 'error');
+        }
+    });
+
     // A submission sent by mistake (or at random): remove it, so the deliverable is "not started" again.
     const askRemoveSubmission = (entry, task) => {
         const who = entry.orphan ? 'this person' : (entry.creator.name || 'this creator');
@@ -517,9 +527,20 @@ const CampaignManage = ({
                                     {!isRequiredTask(task) && <span>Optional</span>}
                                     {task.deadline && <span className={cn(due !== null && due < 0 && 'font-semibold text-rose-600 dark:text-rose-300')}>Due {formatDay(task.deadline)}</span>}
                                     <span>{approved} of {rows.length} approved</span>
+                                    {isTaskOpen(task) ? <Badge tone="green">Open for submissions</Badge> : <Badge tone="gray">Closed</Badge>}
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
+                                {/* Deliverables open one at a time: creators can't submit a closed one. */}
+                                <Button
+                                    size="sm"
+                                    variant={isTaskOpen(task) ? 'secondary' : 'accent'}
+                                    onClick={() => toggleTaskOpen(task)}
+                                    disabled={busy}
+                                    className="h-10"
+                                >
+                                    {isTaskOpen(task) ? <><Lock size={14} /> Close</> : <><Unlock size={14} /> Open submissions</>}
+                                </Button>
                                 {pending.length > 1 && (
                                     <Button size="sm" variant="success" onClick={() => askApproveAll(task, pending.map(r => ({ entry: r.a, task })))} disabled={busy} className="h-10"><CheckCheck size={14} /> Approve all {pending.length}</Button>
                                 )}

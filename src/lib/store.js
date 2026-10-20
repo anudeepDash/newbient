@@ -4118,6 +4118,25 @@ export const useStore = create((set, get) => ({
      * creator submitting at the same moment isn't lost.
      */
     /*
+     * Opens or closes one deliverable for submissions (task.submissionsOpen), from the
+     * Deliverables tab. A transaction on the tasks list, so submissions arriving meanwhile stay.
+     */
+    setTaskSubmissionsOpen: async (campaignId, taskId, open) => {
+        const ref = doc(db, 'campaigns', campaignId);
+        const tasks = await runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw new Error('Campaign not found');
+            const next = (snap.data().tasks || []).map(t => (String(t.id) === String(taskId) ? { ...t, submissionsOpen: Boolean(open) } : t));
+            tx.update(ref, { tasks: next });
+            return next;
+        });
+        if (rawCampaigns) rawCampaigns = rawCampaigns.map(c => (c.id === campaignId ? { ...c, tasks } : c));
+        set(state => ({
+            campaigns: mergeAppSubmissions((state.campaigns || []).map(c => (c.id === campaignId ? { ...c, tasks } : c)), appSubmissionIndex),
+        }));
+    },
+
+    /*
      * Removes submissions sent by mistake: [{ taskId, keys }] (keys = the creator's uid and
      * profile id). Older ones live on the campaign doc (task.submissions plus the
      * completedBy/verifiedBy arrays), app ones in campaigns/{id}/submissions/{uid}.

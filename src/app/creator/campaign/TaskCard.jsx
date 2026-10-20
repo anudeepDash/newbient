@@ -9,7 +9,7 @@ import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import { cn } from '../../../lib/utils';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { isPresent } from '../../../lib/present';
-import { isRequiredTask } from '../../../lib/creator/tasks';
+import { isRequiredTask, isTaskOpen } from '../../../lib/creator/tasks';
 import { cleanTaskDescription, extractTaskActionLinks, linkifyContent } from '../../../lib/taskLinks';
 import TaskLinks from './TaskLinks';
 import { Button } from '../../../components/app';
@@ -53,9 +53,12 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, onMark
     const t = useT();
     const required = isRequiredTask(task);
     const type = typeOf(task);
+    // The team opens deliverables one at a time: until then it's shown, but can't be sent yet.
+    const opensSoon = !isTaskOpen(task) && status !== 'submitted' && status !== 'approved';
+    const canSend = canSubmit && !opensSoon;
     const allLinks = useMemo(() => extractTaskActionLinks(task), [task]);
-    const links = useMemo(() => (canSubmit ? allLinks : allLinks.filter(l => l.type !== 'google_form')), [allLinks, canSubmit]);
-    const withForm = canSubmit && hasSubmitForm(task);
+    const links = useMemo(() => (canSend ? allLinks : allLinks.filter(l => l.type !== 'google_form')), [allLinks, canSend]);
+    const withForm = canSend && hasSubmitForm(task);
     const description = useMemo(() => {
         const cleaned = cleanTaskDescription(task.description || '', allLinks);
         return isPresent(cleaned?.replace(/<[^>]+>/g, '')) ? linkifyContent(cleaned) : null;
@@ -86,7 +89,9 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, onMark
                     <h3 className="truncate text-[15px] font-bold leading-snug">{isPresent(task.title) ? task.title : t('Deliverable {n}', { n: index + 1 })}</h3>
                     {line && <p className="mt-0.5 truncate text-[13px] text-gray-500 dark:text-zinc-400">{line}</p>}
                 </div>
-                {meta && <ToneChip tone={meta.tone} className="shrink-0">{t(meta.label)}</ToneChip>}
+                {opensSoon
+                    ? <ToneChip tone="gray" className="shrink-0">{t('Opens soon')}</ToneChip>
+                    : meta && <ToneChip tone={meta.tone} className="shrink-0">{t(meta.label)}</ToneChip>}
                 {links.length === 1 && <TaskLinks links={links} compact className="shrink-0" />}
             </div>
 
@@ -116,7 +121,10 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, onMark
                 </a>
             )}
 
-            {canSubmit && status !== 'approved' && (
+            {canSubmit && opensSoon && (
+                <p className="pl-[3.25rem] text-[13px] text-gray-500 dark:text-zinc-400">{t('Not open for submissions yet. We’ll let you know when to post this one.')}</p>
+            )}
+            {canSend && status !== 'approved' && (
                 withForm ? (
                     <div className="flex flex-wrap items-center gap-2">
                         {status !== 'submitted' && (

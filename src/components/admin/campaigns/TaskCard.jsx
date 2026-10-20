@@ -16,7 +16,8 @@ import Share2 from 'lucide-react/dist/esm/icons/share-2';
 import { cn } from '../../../lib/utils';
 import { accent } from '../theme';
 import { Badge, Button, Menu, MenuItem } from '../ui';
-import { Field, fieldCls, Choice } from '../uploads/UploadKit';
+import { Field, fieldCls, Choice, Toggle } from '../uploads/UploadKit';
+import { isTaskOpen } from '../../../lib/creator/tasks';
 import RichEditor from '../RichEditor';
 import { TASK_TYPES, PLATFORMS, taskTypeOf, platformOf, formatDay, toDayInput, daysUntil } from './campaignModel';
 import { Spinner } from './parts';
@@ -79,6 +80,7 @@ const TaskCard = ({
                         <span className="flex items-center gap-2">
                             <span className="truncate text-[14px] font-bold">{task.title || `Deliverable ${index + 1}`}</span>
                             <Badge tone={task.priority === 'optional' ? 'gray' : 'pink'}>{task.priority === 'optional' ? 'Optional' : 'Required'}</Badge>
+                            {isTaskOpen(task) ? <Badge tone="green">Open</Badge> : <Badge tone="gray">Closed</Badge>}
                         </span>
                         <span className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[12px] text-gray-500">
                             <span className="inline-flex items-center gap-1"><PlatformIcon size={12} /> {platformOf(task.platform).label}</span>
@@ -137,6 +139,12 @@ const TaskCard = ({
                             <input className={fieldCls} type="date" value={toDayInput(task.deadline)} onChange={(e) => set({ deadline: e.target.value })} />
                         </Field>
                     </div>
+                    <Toggle
+                        label="Open for submissions"
+                        hint="Off: creators see this deliverable marked “Opens soon” and can’t submit it yet. Open deliverables one at a time as the campaign goes."
+                        checked={isTaskOpen(task)}
+                        onChange={(v) => set({ submissionsOpen: v })}
+                    />
 
                     <div className="space-y-2">
                         <div>

@@ -65,6 +65,8 @@ export const blankTask = (kind = 'custom', existing = []) => {
         taskType: kind,
         platform: 'instagram',
         priority: 'required',
+        // Closed until the team opens it (isTaskOpen): creators see it, but can't submit yet.
+        submissionsOpen: false,
         deadline: '',
         googleFormLink: '',
         googleFormLabel: '',
