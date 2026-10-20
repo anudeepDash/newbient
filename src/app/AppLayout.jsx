@@ -17,6 +17,7 @@ import { AuthResumer } from './auth/AuthGate';
 import NotificationsSheet from './NotificationsSheet';
 import SignInSheet from './auth/SignInSheet';
 import NewbiLogo from '../components/brand/NewbiLogo';
+import NLoader from '../components/ui/NLoader';
 
 /*
  * The app shell (app.newbi.live, or /app on localhost).
@@ -50,9 +51,8 @@ const BellButton = ({ count, onClick, className }) => (
 );
 
 const PageFallback = () => (
-    <div className="mx-auto max-w-6xl space-y-4 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="h-8 w-40 animate-pulse rounded-xl bg-black/[0.05] dark:bg-white/[0.05]" />
-        <div className="aspect-video animate-pulse rounded-3xl bg-black/[0.04] dark:bg-white/[0.04]" />
+    <div className="flex min-h-[60dvh] items-center justify-center">
+        <NLoader size={64} color="#3DF03D" />
     </div>
 );
 

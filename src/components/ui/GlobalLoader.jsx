@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import LoadingSpinner from './LoadingSpinner';
+import NLoader from './NLoader';
 
 const GlobalLoader = ({ color = "#39FF14" }) => {
     return (
@@ -21,9 +21,9 @@ const GlobalLoader = ({ color = "#39FF14" }) => {
                 />
             </div>
 
-            {/* Spinner Section */}
+            {/* Animated N mark */}
             <div className="relative">
-                <LoadingSpinner size="lg" color={color} />
+                <NLoader size={104} color={color} />
             </div>
 
             {/* Subtle Horizontal Scanning Line (Very faint for texture) */}
