@@ -17,6 +17,8 @@ import DocumentSeal from '../../../ui/DocumentSeal';
 import { TextInput, RichField, ListCard, RowActions, AddButton, Chips, moveItem } from './parts';
 import { LOGO_OPTIONS, addDaysKey, todayKey, newId } from './model';
 import ThemedSelect from '../../ThemedSelect';
+import BlocksEditor from './BlocksEditor';
+import { V2_PLACEMENTS } from '../../../../lib/proposalTemplateV2';
 
 /* Builder sections shared by both proposal formats. */
 
@@ -124,7 +126,7 @@ export const CustomPagesSection = ({ formData, setFormData, isV2, onRefine }) =>
     const hidden = (formData.hiddenFields || []).includes('customPages');
     const hasTerms = pages.some(p => /terms/i.test(p.title || ''));
     return (
-        <BuilderCard title="Terms and extra pages" hint={isV2 ? 'Added after the closing page' : 'Extra pages placed where you choose'}>
+        <BuilderCard title={isV2 ? 'Extra pages' : 'Terms and extra pages'} hint={isV2 ? 'Build pages from text, boxes, cards, tables and steps, and place them anywhere' : 'Extra pages placed where you choose'}>
             {!isV2 && (
                 <div className="mb-4 rounded-xl bg-black/[0.025] px-3 py-2 dark:bg-white/[0.03]">
                     <Toggle label="Show extra pages" checked={!hidden} onChange={v => setFormData(prev => { const l = prev.hiddenFields || []; return { ...prev, hiddenFields: v ? l.filter(f => f !== 'customPages') : [...l, 'customPages'] }; })} />
@@ -136,25 +138,33 @@ export const CustomPagesSection = ({ formData, setFormData, isV2, onRefine }) =>
                         key={cp.id || idx}
                         badge={idx + 1}
                         title={cp.title || 'Untitled page'}
-                        actions={<RowActions index={idx} count={pages.length} onMove={(i, d) => setPages(l => moveItem(l, i, d))} onDuplicate={(i) => setPages(l => { const copy = { ...l[i], id: newId(), title: `${l[i].title || 'Page'} (copy)` }; return [...l.slice(0, i + 1), copy, ...l.slice(i + 1)]; })} onRemove={(i) => { if (window.confirm(`Remove the page "${pages[i].title || 'Untitled page'}"?`)) setPages(l => l.filter((_, j) => j !== i)); }} removeLabel="Remove page" />}
+                        actions={<RowActions index={idx} count={pages.length} onMove={(i, d) => setPages(l => moveItem(l, i, d))} onDuplicate={(i) => setPages(l => { const copy = { ...JSON.parse(JSON.stringify(l[i])), id: newId(), title: `${l[i].title || 'Page'} (copy)` }; return [...l.slice(0, i + 1), copy, ...l.slice(i + 1)]; })} onRemove={(i) => { if (window.confirm(`Remove the page "${pages[i].title || 'Untitled page'}"?`)) setPages(l => l.filter((_, j) => j !== i)); }} removeLabel="Remove page" />}
                     >
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <TextInput label="Page title" value={cp.title} onChange={v => update(idx, { title: v })} placeholder="e.g. Terms and conditions" />
-                            <TextInput label="Small heading" optional value={cp.subtitle} onChange={v => update(idx, { subtitle: v })} />
+                            <TextInput label={isV2 ? 'Green heading' : 'Small heading'} optional value={cp.subtitle} onChange={v => update(idx, { subtitle: v })} placeholder={isV2 ? 'e.g. THE ACTIVATION' : undefined} />
+                            <TextInput label="Page title" value={cp.title} onChange={v => update(idx, { title: v })} placeholder={isV2 ? 'e.g. The Peak Booth' : 'e.g. Terms and conditions'} />
                         </div>
-                        {!isV2 && (
-                            <Field label="Where it goes">
-                                <ThemedSelect className={fieldCls} value={cp.insertAfter || 'default'} onChange={e => update(idx, { insertAfter: e.target.value })}>
-                                    {PLACEMENTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                                </ThemedSelect>
-                            </Field>
+                        {isV2 && <TextInput label="Grey words after the title" optional value={cp.aside} onChange={v => update(idx, { aside: v })} placeholder="e.g. (continued)" />}
+                        <Field label="Where it goes">
+                            <ThemedSelect className={fieldCls} value={isV2 ? (cp.placeAfter || 'end') : (cp.insertAfter || 'default')} onChange={e => update(idx, isV2 ? { placeAfter: e.target.value } : { insertAfter: e.target.value })}>
+                                {(isV2 ? V2_PLACEMENTS : PLACEMENTS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                            </ThemedSelect>
+                        </Field>
+                        {(!isV2 || String(cp.content || '').trim()) && (
+                            <RichField label="Page text" minHeight={200} value={cp.content} onChange={v => update(idx, { content: v })} onRefine={() => onRefine?.({ label: cp.title || `Page ${idx + 1}`, value: cp.content, apply: (t) => update(idx, { content: t }) })} />
                         )}
-                        <RichField label="Page text" minHeight={200} value={cp.content} onChange={v => update(idx, { content: v })} onRefine={() => onRefine?.({ label: cp.title || `Page ${idx + 1}`, value: cp.content, apply: (t) => update(idx, { content: t }) })} />
+                        {isV2 && (
+                            <BlocksEditor
+                                blocks={cp.blocks}
+                                onChange={(next) => update(idx, { blocks: next })}
+                                emptyHint="Add text, boxes, cards, tables or steps to fill this page."
+                            />
+                        )}
                     </ListCard>
                 ))}
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {!hasTerms && <AddButton onClick={() => setPages(l => [...l, { id: newId(), title: 'Terms and conditions', subtitle: 'TERMS', content: TERMS_TEMPLATE, insertAfter: 'commercials' }])}>Add terms and conditions</AddButton>}
-                    <AddButton onClick={() => setPages(l => [...l, { id: newId(), title: '', subtitle: '', content: '', insertAfter: 'default' }])}>Add a blank page</AddButton>
+                    {!hasTerms && <AddButton onClick={() => setPages(l => [...l, { id: newId(), title: 'Terms and conditions', subtitle: 'TERMS', content: TERMS_TEMPLATE, insertAfter: 'commercials', placeAfter: 'end' }])}>Add terms and conditions</AddButton>}
+                    <AddButton onClick={() => setPages(l => [...l, isV2 ? { id: newId(), title: '', subtitle: '', aside: '', content: '', blocks: [{ id: newId(), type: 'text', text: '' }], placeAfter: 'end' } : { id: newId(), title: '', subtitle: '', content: '', insertAfter: 'default' }])}>Add a page</AddButton>
                 </div>
             </div>
         </BuilderCard>

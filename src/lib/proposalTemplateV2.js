@@ -10,10 +10,10 @@ export const DEFAULT_V2_PROPOSAL_DATA = {
     selectedLogo: 'entertainment',
     status: 'Draft',
 
-    // Page 1: Official Strategic Quotation Cover
+    // Page 1: Official Strategic Proposal Cover
     showCover: true,
     showCoverPill: true,
-    coverPillText: 'OFFICIAL STRATEGIC QUOTATION',
+    coverPillText: 'OFFICIAL STRATEGIC PROPOSAL',
     clientName: "ITW Playworks",
     clientSubtitle: "In association with Playworx",
     clientAddress: "",
@@ -218,74 +218,117 @@ export function normalizeProposalData(raw = {}) {
     };
 }
 
+/** Where an extra page can go: after one of the built-in pages, or at the end. */
+export const V2_PLACEMENTS = [
+    ['v2-cover', 'After the cover'],
+    ['v2-executive', 'After the executive summary'],
+    ['v2-blueprint', 'After the plan'],
+    ['v2-deliverables', 'After the deliverables'],
+    ['v2-commercials', 'After pricing'],
+    ['v2-deepdive', 'After the city deep-dive'],
+    ['end', 'At the end'],
+];
+const V2_PLACEMENT_IDS = V2_PLACEMENTS.map(([id]) => id);
+
+/*
+ * Splits the plan's steps into pages by roughly how much room each takes
+ * (a title plus wrapped bullet lines), so short plans fit on one page.
+ */
+const LINE_CHARS = 105;
+const PAGE_LINES = 44;
+const stepLines = (step) => 3 + (step?.bullets || []).reduce((n, b) => n + Math.max(1, Math.ceil(String(b || '').length / LINE_CHARS)) + 0.4, 0);
+export function chunkSteps(steps = []) {
+    const chunks = [];
+    let current = { steps: [], start: 0, lines: 0 };
+    steps.forEach((step, i) => {
+        const lines = stepLines(step);
+        if (current.steps.length && current.lines + lines > PAGE_LINES) {
+            chunks.push(current);
+            current = { steps: [], start: i, lines: 0 };
+        }
+        current.steps.push(step);
+        current.lines += lines;
+    });
+    if (current.steps.length) chunks.push(current);
+    return chunks;
+}
+
 /**
- * Calculates page breakdown for the v2 proposal design.
+ * Calculates page breakdown for the v2 proposal design. Extra pages go after
+ * the built-in page their `placeAfter` names, or at the end.
  */
 export function getV2PaginatedPages(formData = {}) {
     const data = normalizeProposalData(formData);
     const pages = [];
+    const custom = Array.isArray(data.customPages) ? data.customPages : [];
+    const addCustom = (after) => {
+        custom.forEach((cp, idx) => {
+            if (!cp || cp.hidden === true) return;
+            const place = V2_PLACEMENT_IDS.includes(cp.placeAfter) ? cp.placeAfter : 'end';
+            if (place !== after) return;
+            pages.push({
+                type: 'v2-custom',
+                title: cp.title || `Custom Section ${idx + 1}`,
+                subtitle: cp.subtitle || '',
+                aside: cp.aside || '',
+                content: cp.content || '',
+                blocks: Array.isArray(cp.blocks) ? cp.blocks : [],
+                pageIndex: idx,
+            });
+        });
+    };
 
-    // Page 1: Official Strategic Quotation Cover
+    // Page 1: Official Strategic Proposal Cover
     if (data.showCover !== false) {
-        pages.push({ type: 'v2-cover', title: 'Official Strategic Quotation' });
+        pages.push({ type: 'v2-cover', title: 'Official Strategic Proposal' });
     }
+    addCustom('v2-cover');
 
     // Page 2: Strategic Outline / Executive Summary
     if (data.showExecutiveSummary !== false) {
         pages.push({ type: 'v2-executive', title: data.strategyTitle || 'Executive Summary' });
     }
+    addCustom('v2-executive');
 
-    // Pages 3 & 4: Process & Execution Blueprint
+    // Process & Execution Blueprint: as many steps per page as fit
     if (data.showBlueprint !== false && Array.isArray(data.blueprintSteps) && data.blueprintSteps.length > 0) {
-        const stepPage1 = data.blueprintSteps.slice(0, 3);
-        pages.push({
-            type: 'v2-blueprint-1',
-            title: data.blueprintTitle || 'Process & Execution Blueprint',
-            steps: stepPage1
-        });
-
-        if (data.blueprintSteps.length > 3) {
-            const stepPage2 = data.blueprintSteps.slice(3);
+        const title = data.blueprintTitle || 'Process & Execution Blueprint';
+        chunkSteps(data.blueprintSteps).forEach((chunk, i) => {
             pages.push({
-                type: 'v2-blueprint-2',
-                title: `${data.blueprintTitle || 'Process & Execution Blueprint'} (Continued)`,
-                steps: stepPage2
+                type: i === 0 ? 'v2-blueprint-1' : 'v2-blueprint-2',
+                title,
+                continued: i > 0,
+                steps: chunk.steps,
+                startIndex: chunk.start,
             });
-        }
+        });
     }
+    addCustom('v2-blueprint');
 
     // Page 5: Scope Summary / Per City Deliverables
     if (data.showDeliverables !== false) {
         pages.push({ type: 'v2-deliverables', title: data.deliverablesTitle || 'Per City Deliverables' });
     }
+    addCustom('v2-deliverables');
 
     // Page 6: Commercials / Pricing Structure
     if (data.showCommercials !== false) {
         pages.push({ type: 'v2-commercials', title: data.commercialsTitle || '04 · Pricing Structure' });
     }
+    addCustom('v2-commercials');
 
     // Page 7: City Deep-Dive / Bengaluru Management
     if (data.showDeepDive !== false && Array.isArray(data.deepDiveSubsections) && data.deepDiveSubsections.length > 0) {
         pages.push({ type: 'v2-deepdive', title: data.deepDiveTitle || '05 · Bengaluru Management' });
     }
+    addCustom('v2-deepdive');
 
     // Page 8: Closing & Next Steps
     if (data.showClosing !== false) {
         pages.push({ type: 'v2-closing', title: data.closingTitle || '06 · Next Steps' });
     }
 
-    // Custom Pages (if added)
-    if (Array.isArray(data.customPages) && data.customPages.length > 0) {
-        data.customPages.forEach((cp, idx) => {
-            pages.push({
-                type: 'v2-custom',
-                title: cp.title || `Custom Section ${idx + 1}`,
-                subtitle: cp.subtitle || '',
-                content: cp.content || '',
-                pageIndex: idx
-            });
-        });
-    }
+    addCustom('end');
 
     return pages;
 }
