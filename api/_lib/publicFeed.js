@@ -224,8 +224,21 @@ function openCampaigns(list) {
         });
 }
 
+// The city creator communities (WhatsApp invite links) from the admin's Groups page.
+function creatorGroups(list) {
+    return list
+        .filter((g) => g.isActive !== false && str(g.city) && /^https:\/\/chat\.whatsapp\.com\//i.test(str(g.groupUrl, 1000)))
+        .sort((a, b) => (num(a.order) ?? 999) - (num(b.order) ?? 999))
+        .map((g) => ({
+            city: str(g.city, 60),
+            title: str(g.title, 80) || `${str(g.city, 60)} Creators Community`,
+            groupUrl: url(g.groupUrl),
+            isActive: true,
+        }));
+}
+
 export async function getPublicFeed(db, { maintenanceDoc = 'maintenance' } = {}) {
-    const [general, contact, maintenance, events, clients, portfolio, categories, quotes, campaigns, guestlists] = await Promise.all([
+    const [general, contact, maintenance, events, clients, portfolio, categories, quotes, campaigns, guestlists, groups] = await Promise.all([
         readDoc(db, 'site_settings', 'general'),
         readDoc(db, 'site_settings', 'contact_info'),
         readDoc(db, 'app_state', maintenanceDoc),
@@ -236,6 +249,7 @@ export async function getPublicFeed(db, { maintenanceDoc = 'maintenance' } = {})
         readCollection(db, 'creator_testimonials'),
         readCollection(db, 'campaigns'),
         readCollection(db, 'guestlists'),
+        readCollection(db, 'creator_groups'),
     ]);
 
     const settings = publicSettings(general);
@@ -256,6 +270,7 @@ export async function getPublicFeed(db, { maintenanceDoc = 'maintenance' } = {})
         caseStudies: caseStudies(portfolio, categories),
         testimonials: settings.showCreatorTestimonials ? testimonials(quotes) : [],
         campaigns: openCampaigns(campaigns),
+        creatorGroups: creatorGroups(groups),
     };
 }
 

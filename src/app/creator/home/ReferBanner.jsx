@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import Copy from 'lucide-react/dist/esm/icons/copy';
 import Medal from 'lucide-react/dist/esm/icons/medal';
 import X from 'lucide-react/dist/esm/icons/x';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
-import { Button } from '../../../components/app';
+import { Button, WhatsAppLogo } from '../../../components/app';
 import { accent } from '../../../components/admin/theme';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { useStore as useLegacyStore } from '../../../lib/store.js';
@@ -93,7 +92,7 @@ const ReferBanner = ({ creator, referrals }) => {
                 </div>
             )}
             <div className="mt-3 flex flex-wrap items-center gap-2">
-                <Button size="sm" icon={MessageCircle} href={whatsappShareUrl(link)} target="_blank" rel="noopener noreferrer">{t('Invite on WhatsApp')}</Button>
+                <Button size="sm" icon={WhatsAppLogo} href={whatsappShareUrl(link)} target="_blank" rel="noopener noreferrer">{t('Invite on WhatsApp')}</Button>
                 <Button size="sm" variant="secondary" icon={Copy} onClick={copy}>{t('Copy link')}</Button>
                 <Button size="sm" variant="ghost" to={appPath('/creator/referrals')} className="ml-auto">{t('Leaderboard')} <ChevronRight size={15} /></Button>
             </div>

@@ -4,7 +4,6 @@ import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import Users from 'lucide-react/dist/esm/icons/users';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
-import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import HeartHandshake from 'lucide-react/dist/esm/icons/heart-handshake';
@@ -13,7 +12,7 @@ import { useAppStore } from '../../lib/store/appStore';
 import { guestlistPasses } from '../../lib/store/passes';
 import { communityPost } from '../../lib/passesApi';
 import { isPresent } from '../../lib/present';
-import { Card, Button, Field, Sheet } from '../../components/app';
+import { Card, Button, Field, Sheet, WhatsAppLogo } from '../../components/app';
 import { useAuthGate, useResumeIntent, INTENTS } from '../auth/AuthGate';
 import { useAppContent } from '../useAppContent';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
@@ -24,7 +23,10 @@ import { isUpcomingPass, passCard } from '../passes/passCards';
 import PageHeader, { PageBody } from './PageHeader';
 import { requirementsFor } from '../profile/requirements';
 import JoinCommunitySheet from '../community/JoinCommunitySheet';
-import { usePublicContact } from '../usePublicFeed';
+import { usePublicContact, usePublicFeed } from '../usePublicFeed';
+import WhatsAppGroupCard, { useJoinedGroups } from '../community/WhatsAppGroupCard';
+import { cityGroupFor } from '../../lib/outreach/cityGroups';
+import { creatorCity } from '../creator/useCreatorData';
 import { CardGrid, CardSkeleton, EmptyState, SectionHeader, Rail, GLASS } from './parts';
 import { useT } from '../../i18n';
 import { useLocalizedFeed } from '../../i18n/useHinglish';
@@ -58,7 +60,7 @@ const GigSheet = ({ gig, onClose }) => {
     if (!gig) return null;
     const wa = gig.applyType === 'whatsapp' ? String(gig.applyLink || '').replace(/\D/g, '') : '';
     const next = gig.applyType === 'whatsapp'
-        ? (wa ? { label: t('Message the team on WhatsApp'), icon: MessageCircle, href: `https://wa.me/${wa}?text=${encodeURIComponent(`Hi! I'm interested in the gig: ${gig.title}`)}` } : null)
+        ? (wa ? { label: t('Message the team on WhatsApp'), icon: WhatsAppLogo, href: `https://wa.me/${wa}?text=${encodeURIComponent(`Hi! I'm interested in the gig: ${gig.title}`)}` } : null)
         : gig.applyType === 'form' ? { label: t('Fill the form'), to: gig.applyLink }
             : /^https?:\/\//.test(gig.applyLink || '') ? { label: t('Apply'), icon: ExternalLink, href: gig.applyLink } : null;
     const description = plainText(gig.description);
@@ -116,7 +118,7 @@ const JoinPanel = () => {
             <div className={`flex flex-wrap items-center gap-3 rounded-3xl px-5 py-4 ${GLASS}`}>
                 <CircleCheck size={20} className="shrink-0 text-emerald-700 dark:text-neon-green" />
                 <p className="min-w-0 flex-1 text-[15px] font-semibold">{t('You’re in the Newbi community.')}</p>
-                <Button size="sm" variant="secondary" icon={MessageCircle} href={whatsappCommunity} target="_blank" rel="noopener noreferrer">{t('WhatsApp group')}</Button>
+                <Button size="sm" variant="secondary" icon={WhatsAppLogo} href={whatsappCommunity} target="_blank" rel="noopener noreferrer">{t('WhatsApp group')}</Button>
             </div>
         );
     }
@@ -129,6 +131,42 @@ const JoinPanel = () => {
             <Button onClick={() => gate.run({ type: INTENTS.joinCommunity }, join, { require: requirementsFor('community') })}>{t('Join')}</Button>
             <JoinCommunitySheet open={joinOpen} onClose={() => setJoinOpen(false)} />
         </div>
+    );
+};
+
+/* The WhatsApp groups: the Newbi community for everyone, plus a creator's city group. */
+const WhatsAppSection = () => {
+    const t = useT();
+    const feed = usePublicFeed();
+    const profile = useAppStore(s => s.profile);
+    const creator = useAppStore(s => s.creatorProfile);
+    const { isJoined, markJoined } = useJoinedGroups();
+    if (!feed) return null;
+    const community = feed.contact?.whatsappCommunity;
+    const active = creator && creator.profileStatus !== 'rejected' && creator.profileStatus !== 'suspended';
+    const cityGroup = active ? cityGroupFor(feed.creatorGroups, creatorCity(creator, profile)) : null;
+    const cards = [
+        isPresent(community) && {
+            url: community,
+            eyebrow: t('Newbi on WhatsApp'),
+            title: t('Join the Newbi WhatsApp community'),
+            body: t('First word on guestlists, gigs, giveaways and drops near you. Free to join.'),
+        },
+        cityGroup && {
+            url: cityGroup.url,
+            eyebrow: t('Your city group'),
+            title: t('Join the {city} creators community', { city: cityGroup.city }),
+            body: t('Paid gigs, guestlist passes and meetups in {city} drop there first.', { city: cityGroup.city }),
+        },
+    ].filter(c => c && !isJoined(c.url));
+    if (!cards.length) return null;
+    return (
+        <section className="space-y-3">
+            <SectionHeader title={t('WhatsApp community')} />
+            <div className={cn('grid gap-4', cards.length > 1 && 'lg:grid-cols-2')}>
+                {cards.map(c => <WhatsAppGroupCard key={c.url} {...c} onJoined={markJoined} />)}
+            </div>
+        </section>
     );
 };
 
@@ -199,6 +237,8 @@ const CommunityPage = () => {
             )}
 
             <JoinPanel />
+
+            <WhatsAppSection />
 
             {/* One section per kind, like the old community hub: guestlists, gigs, giveaways, forms. */}
             {cities.length > 1 && (

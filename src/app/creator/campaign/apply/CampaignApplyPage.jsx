@@ -6,7 +6,7 @@ import LogIn from 'lucide-react/dist/esm/icons/log-in';
 import Users from 'lucide-react/dist/esm/icons/users';
 import { useAppStore } from '../../../../lib/store/appStore';
 import { useAuthGate } from '../../../auth/AuthGate';
-import { Button, TextInput, INPUT, ERROR_RING } from '../../../../components/app';
+import { Button, TextInput, INPUT, ERROR_RING, WhatsAppLogo } from '../../../../components/app';
 import { cn } from '../../../../lib/utils';
 import { isPresent } from '../../../../lib/present';
 import useDynamicMeta from '../../../../hooks/useDynamicMeta';
@@ -218,7 +218,7 @@ const CampaignApplyPage = () => {
                         <div className="space-y-3 rounded-[1.5rem] bg-white p-5 text-left ring-1 ring-inset ring-black/[0.06] dark:bg-[#0c0e14] dark:ring-white/[0.08]">
                             <p className="flex items-center gap-2 text-[16px] font-bold"><Users size={18} /> {t('Join the {city} creators community', { city: done.cityGroup.city })}</p>
                             <p className="text-[14px] text-gray-600 dark:text-zinc-400">{t('Paid gigs, guestlist passes and meetups in {city} drop there first.', { city: done.cityGroup.city })}</p>
-                            <Button href={done.cityGroup.url} target="_blank" rel="noopener noreferrer" className="w-full">{t('Join on WhatsApp')}</Button>
+                            <Button href={done.cityGroup.url} target="_blank" rel="noopener noreferrer" icon={WhatsAppLogo} className="w-full bg-[#25D366]">{t('Join on WhatsApp')}</Button>
                         </div>
                     )}
                 </div>

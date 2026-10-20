@@ -64,7 +64,7 @@ const OpeningsTab = ({ creator }) => {
                     />
                 </label>
             )}
-            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
+            <div className="-mx-4 -my-1 flex gap-2 overflow-x-auto px-4 py-1 pr-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0 sm:pr-1">
                 {filters.map(f => (
                     <ChoiceChip key={f.id} selected={filter === f.id} onClick={() => setFilter(f.id)} className="shrink-0 whitespace-nowrap py-2">{f.label}</ChoiceChip>
                 ))}
