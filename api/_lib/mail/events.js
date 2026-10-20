@@ -261,6 +261,9 @@ const campaignShortlisted = async ({ campaignId, creatorIds = [], message = '', 
     return { results };
 };
 
+/** The same welcome, sent by the server itself (a campaign that shortlists eligible applicants automatically). */
+export const sendShortlistWelcome = (campaignId, creatorIds) => campaignShortlisted({ campaignId, creatorIds }, { staff: true });
+
 const submissionReviewed = async ({ campaignId, reviews = [], campaignPath }, caller) => {
     if (!caller.staff) throw new EventError('Forbidden', 403);
     if (!idOk(campaignId)) throw new EventError('Missing campaign.');

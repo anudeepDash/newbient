@@ -751,6 +751,7 @@ const CampaignManage = ({
                                         </button>
                                         <div className="flex flex-wrap items-center gap-1.5 pl-[54px] sm:w-[260px] sm:pl-0">
                                             <StageBadge stage={a.stage} />
+                                            {a.creator.campaignAutoShortlisted?.[campaign.id] && chosen(a) && <Badge tone="teal" title="Shortlisted automatically: met the criteria when they applied">Auto</Badge>}
                                             {a.criteria.eligible ? <Badge tone="green"><Check size={10} strokeWidth={3} /> Meets rules</Badge> : <Badge tone="amber">Below rules</Badge>}
                                             {a.criteria.nicheMatch && <Badge tone="violet"><Sparkles size={10} /> Niche</Badge>}
                                             {referralTiers.get(creatorKey(c)) && <ReferralTierBadge standing={referralTiers.get(creatorKey(c))} />}
