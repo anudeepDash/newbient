@@ -314,7 +314,7 @@ const CampaignView = ({ campaign: source, variant = 'page', initialTaskId, onClo
             )}
             {tester && !shortlisted && (
                 <Notice tone="info" title={t('Developer test mode')}>
-                    {`${t('You can see every campaign and apply without meeting its criteria')}${isOpen(campaign) ? '' : ` ${t('(this one isn’t open to creators)')}`}. ${t('To test submitting, shortlist yourself in the admin; what you send is marked Test.')}`}
+                    {`${t('You can open any campaign from its link and apply without meeting its criteria')}${isOpen(campaign) ? '' : ` ${t('(this one isn’t open to creators)')}`}. ${t('To test submitting, shortlist yourself in the admin; what you send is marked Test.')}`}
                 </Notice>
             )}
             {applyError && <Notice tone="error">{applyError}</Notice>}

@@ -1,7 +1,6 @@
 import { collection, doc, getDoc, getDocs, limit, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { callCreatorApi } from '../../app/creator/api';
-import { isTesterRole } from '../../constants/roles';
 import { isCampaignOpen } from '../feedItems';
 import { fetchAppFeed } from '../appFeed';
 
@@ -18,7 +17,7 @@ export { isCampaignOpen };
  */
 
 const CAMPAIGNS_TTL_MS = 5 * 60 * 1000;
-// Testers' full list (every status): bounded, far above the number of campaigns ever run.
+// The Firestore fallback: bounded, far above the number of campaigns ever run.
 const CAMPAIGNS_READ_LIMIT = 500;
 
 const REFERRALS_TTL_MS = 2 * 60 * 1000;
@@ -129,18 +128,16 @@ export const createCreatorSlice = (set, get) => ({
     _campaignsAt: 0,
 
     /* Open campaigns are public: anyone can browse them, applying needs a creator profile.
-       They come pre-filtered from the server's cached app feed. Developers (testers) get
-       every campaign, whatever its status, straight from Firestore (and so does anyone
-       when the server feed fails). */
+       They come pre-filtered from the server's cached app feed (Firestore when it fails).
+       Developers get the same list; they test a closed campaign from its link (/c/:id). */
     loadOpenCampaigns: async ({ force = false } = {}) => {
-        const tester = isTesterRole(get().authUser?.role);
-        if (!db || (!force && Date.now() - get()._campaignsAt < CAMPAIGNS_TTL_MS && get().campaignsLoaded && get()._campaignsTester === tester)) return;
-        set({ _campaignsAt: Date.now(), _campaignsTester: tester });
+        if (!db || (!force && Date.now() - get()._campaignsAt < CAMPAIGNS_TTL_MS && get().campaignsLoaded)) return;
+        set({ _campaignsAt: Date.now() });
         try {
-            const fromServer = tester ? null : (await fetchAppFeed())?.campaigns;
+            const fromServer = (await fetchAppFeed())?.campaigns;
             const list = fromServer || (await getDocs(query(collection(db, 'campaigns'), limit(CAMPAIGNS_READ_LIMIT)))).docs.map(d => ({ ...d.data(), id: d.id }));
             const open = list
-                .filter(c => tester || isCampaignOpen(c))
+                .filter(c => isCampaignOpen(c))
                 .sort((a, b) => (Number(Boolean(b.isPinned)) - Number(Boolean(a.isPinned))) || (new Date(b.createdAt || 0) - new Date(a.createdAt || 0)));
             set({ openCampaigns: open, campaignsLoaded: true });
         } catch (error) {
