@@ -63,6 +63,7 @@ export const APP_MODULES = [
             { path: '', Component: CreatorHome },
             { path: 'deliverables', Component: CreatorHome },
             { path: 'referrals', Component: CreatorHome },
+            { path: 'badges', Component: CreatorHome },
             { path: 'profile', Component: CreatorHome },
             { path: 'apply', Component: CreatorApplyPage },
             { path: '/c/:id', Component: CampaignPage },

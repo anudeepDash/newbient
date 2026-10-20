@@ -26,36 +26,40 @@ import ReferBanner from './ReferBanner';
 import CityGroupBanner from './CityGroupBanner';
 import ProfileTab from './ProfileTab';
 import MyOutreachCampaigns from './MyOutreachCampaigns';
+import BadgesTab from '../badges/BadgesTab';
+import BadgeUnlock from '../badges/BadgeUnlock';
+import { BadgeShelf } from '../badges/BadgeParts';
+import { useBadges } from '../badges/useBadges';
 
 /*
- * /creator: creator home. Openings, Deliverables, Referrals and Profile are
- * sub-pages (/creator, /creator/deliverables, …); the shell's own tab bar is
+ * /creator: creator home. Openings, Deliverables, Referrals, Badges and
+ * Profile are sub-pages (/creator, /creator/deliverables, …); the shell's own tab bar is
  * the only bottom bar. Reads only creators/{uid}; referrals come from the
  * server. Points come from site_settings creatorWelcomePoints only, and the
  * Vault stays hidden until it exists.
  */
 
-const SECTIONS = ['', 'deliverables', 'referrals', 'profile'];
+const SECTIONS = ['', 'deliverables', 'referrals', 'badges', 'profile'];
 
 /*
- * The hero's numbers: compact tiles that keep their size however many show
- * (a lone tile never stretches across the hero). Points get the coin and the
- * green accent.
+ * The hero's numbers: equal tiles on a grid (two across on phones, four on
+ * wider screens), so their edges line up and a lone tile never stretches
+ * across the hero. Points get the coin and the green accent.
  */
 const HeroStats = ({ stats }) => {
     const t = useT();
     const shown = stats.filter(s => s.value !== null && s.value !== undefined && s.value !== '' && s.value !== 0);
     if (!shown.length) return null;
     return (
-        <div className="flex flex-wrap gap-2 pt-2">
+        <div className="grid grid-cols-2 gap-2 pt-2 sm:grid-cols-4">
             {shown.map(s => {
                 const points = s.kind === 'points';
                 return (
                     <div
                         key={s.label}
                         className={points
-                            ? 'flex min-w-[132px] items-center gap-3 rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-white/90 to-emerald-50/80 py-2.5 pl-2.5 pr-4 shadow-[0_6px_20px_-12px_rgba(16,185,129,0.45)] dark:border-neon-green/15 dark:from-white/[0.06] dark:to-neon-green/[0.06]'
-                            : 'flex min-w-[96px] flex-col rounded-2xl border border-black/[0.05] bg-white/75 px-4 py-2.5 dark:border-white/[0.07] dark:bg-white/[0.04]'}
+                            ? 'flex min-w-0 items-center gap-3 rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-white/90 to-emerald-50/80 py-2.5 pl-2.5 pr-4 shadow-[0_6px_20px_-12px_rgba(16,185,129,0.45)] dark:border-neon-green/15 dark:from-white/[0.06] dark:to-neon-green/[0.06]'
+                            : 'flex min-w-0 flex-col rounded-2xl border border-black/[0.05] bg-white/75 px-4 py-2.5 dark:border-white/[0.07] dark:bg-white/[0.04]'}
                     >
                         {points && (
                             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neon-green text-black shadow-[0_0_14px_rgba(57,255,20,0.45)]" aria-hidden="true">
@@ -75,7 +79,7 @@ const HeroStats = ({ stats }) => {
     );
 };
 
-const CreatorHeader = ({ creator, profile, stats }) => {
+const CreatorHeader = ({ creator, profile, stats, badges }) => {
     const handle = handleOf(creator.instagram);
     const followers = compactCount(creator.instagramFollowers);
     const photo = creatorPhoto(creator, profile);
@@ -110,6 +114,7 @@ const CreatorHeader = ({ creator, profile, stats }) => {
                 )}
             </div>
             <HeroStats stats={stats} />
+            <BadgeShelf badges={badges} className="!mt-2" />
         </HeroPanel>
     );
 };
@@ -194,6 +199,7 @@ const CreatorHome = () => {
     const loadCreatorSettings = useAppStore(s => s.loadCreatorSettings);
     const mine = useMyCampaigns(creator);
     const referrals = useReferrals(Boolean(creator));
+    const badges = useBadges({ creator, profile, mine, referrals });
 
     useEffect(() => { loadCreatorSettings(); }, [loadCreatorSettings]);
 
@@ -225,6 +231,7 @@ const CreatorHome = () => {
         { to: appPath('/creator'), label: t('Openings'), end: true },
         { to: appPath('/creator/deliverables'), label: t('Deliverables'), count: mine.length || null },
         { to: appPath('/creator/referrals'), label: t('Referrals'), count: referrals?.list?.length || null },
+        { to: appPath('/creator/badges'), label: t('Badges'), count: badges.filter(b => b.earned).length || null },
         { to: appPath('/creator/profile'), label: t('Profile') },
     ];
 
@@ -237,7 +244,7 @@ const CreatorHome = () => {
                 <BecomeCreator />
             ) : (
                 <>
-                    <CreatorHeader creator={creator} profile={profile} stats={stats} />
+                    <CreatorHeader creator={creator} profile={profile} stats={stats} badges={badges} />
                     <StatusNotice creator={creator} settings={settings} />
                     <CityGroupBanner creator={creator} profile={profile} />
                     <SubTabs tabs={tabs} />
@@ -245,7 +252,9 @@ const CreatorHome = () => {
                     {section === '' && <OpeningsTab creator={creator} />}
                     {section === 'deliverables' && <DeliverablesTab mine={mine} />}
                     {section === 'referrals' && <ReferralsTab creator={creator} referrals={referrals} />}
+                    {section === 'badges' && <BadgesTab badges={badges} />}
                     {section === 'profile' && <ProfileTab creator={creator} profile={profile} settings={settings} />}
+                    <BadgeUnlock uid={authUser?.uid || creator.uid} badges={badges} ready={Boolean(referrals)} />
                 </>
             )}
         </PageBody>
