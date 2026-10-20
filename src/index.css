@@ -1553,3 +1553,12 @@
 .cz-article ul { list-style: disc outside; padding-left: 1.4rem; margin: 0 0 1.25rem; }
 .cz-article ol { list-style: decimal outside; padding-left: 1.4rem; margin: 0 0 1.25rem; }
 .cz-article li p { margin: 0; display: inline; }
+
+/* PDF exports (html2canvas): it finds each font's baseline from a hidden 1×1 image it adds
+   to the live page. Tailwind's base `img { display: block }` pushes that image onto its own
+   line, so every exported text line came out ~6px too low (labels slipped off their dots,
+   short boxes clipped their text). Only html2canvas's measuring image matches this. */
+body > div > img[src^="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"] {
+  display: inline;
+  vertical-align: baseline;
+}

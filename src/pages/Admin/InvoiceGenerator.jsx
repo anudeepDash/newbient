@@ -917,7 +917,7 @@ const InvoiceGenerator = () => {
 
                         {step === 'details' && (
                             <div className="space-y-5">
-                                <BuilderCard title="Brand" hint="The logo and colour on the invoice">
+                                <BuilderCard title="Company" hint="Its logo heads the invoice">
                                     <div className="grid grid-cols-3 gap-2">
                                         {BRANDS.map(brand => {
                                             const on = formData.selectedLogo === brand.id;
@@ -926,7 +926,7 @@ const InvoiceGenerator = () => {
                                                     className={cn('flex flex-col items-center gap-2 rounded-xl border p-2 text-[12px] font-semibold transition-colors',
                                                         on ? cn(a.border, a.soft) : 'border-black/10 hover:border-black/20 dark:border-white/10 dark:hover:border-white/20')}>
                                                     <span className="flex aspect-[4/3] w-full items-center justify-center rounded-lg bg-white p-2"><img src={brand.path} alt="" className="h-full w-full object-contain" /></span>
-                                                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: brand.color }} />{brand.label.replace('Newbi ', '')}</span>
+                                                    {brand.label.replace('Newbi ', '')}
                                                 </button>
                                             );
                                         })}
