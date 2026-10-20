@@ -489,7 +489,7 @@ const SpendsManagement = () => {
 
     // The slot the receipt slides out of.
     const renderPrinterSlot = (statusText, busy) => (
-        <div className="relative z-30 w-[284px] max-w-full select-none">
+        <div className="relative z-30 w-[304px] max-w-full select-none">
             <div className="flex items-center justify-between px-1 pb-2 text-[12px] font-semibold text-gray-500">
                 <span>Newbi payout receipt</span>
                 <span className="inline-flex items-center gap-1.5">
@@ -504,80 +504,79 @@ const SpendsManagement = () => {
     const renderThermalReceipt = (data, utrVal) => {
         if (!data) return null;
         const finalUTR = utrVal || data.reference || 'N/A';
-        
+        const verifyUrl = `https://newbi.live/verify-payout?ref=${finalUTR}&amt=${data.amount}&payee=${encodeURIComponent(data.receiverName)}&date=${encodeURIComponent(data.date)}&mode=${encodeURIComponent(data.paymentMode)}${(data.receiptUrl || data.proofUrl) ? `&proof=${encodeURIComponent(data.receiptUrl || data.proofUrl)}` : ''}`;
+        const rows = [
+            ['Date', data.date],
+            ['Method', data.paymentMode],
+            data.payoutType && ['Type', data.payoutType],
+            ['Reference', finalUTR, true],
+        ].filter(Boolean);
+        // Zig-zag tear edge: 28 teeth across the receipt width.
+        const teeth = Array.from({ length: 28 }, (_, i) => `L ${(i + 0.5) * 10} 8 L ${(i + 1) * 10} 0`).join(' ');
+
         return (
-            <div 
+            <div
                 id="thermal-receipt-body"
-                className="w-[260px] bg-transparent text-white flex flex-col relative select-none"
-                style={{
-                    fontFamily: "Outfit, Inter, system-ui, sans-serif"
-                }}
+                className="relative flex w-[280px] select-none flex-col text-white"
+                style={{ fontFamily: 'Outfit, Inter, system-ui, sans-serif' }}
             >
-                {/* Top Header Card */}
-                <div className="bg-gradient-to-br from-[#06120a] via-[#0b2416] to-[#070b09] p-4 text-center text-white rounded-t-none relative overflow-hidden border-b border-[#39ff14]/25">
-                    <img 
-                        src="/brand/newbi-logo-800w.png" 
-                        alt="Newbi Logo" 
-                        className="h-8 object-contain mx-auto mb-1.5"
-                    />
-                    <p className="text-[7px] font-black uppercase tracking-[0.3em] text-[#39ff14]">Disbursement Voucher</p>
-                    <h4 className="text-xl font-black tracking-tight text-white mt-1.5 mb-0.5 drop-shadow-[0_2px_8px_rgba(57,255,20,0.35)]">
-                        ₹{Number(data.amount).toLocaleString('en-IN')}
-                    </h4>
-                    <p className="text-[7px] font-mono text-white/70 tracking-wider">REF: {finalUTR}</p>
-                </div>
+                <div
+                    className="border-x border-white/[0.06] bg-[#0a0f0c] px-5 pb-5 pt-5"
+                    style={{ backgroundImage: 'radial-gradient(120% 55% at 50% 0%, rgba(57,255,20,0.16), rgba(57,255,20,0) 70%)' }}
+                >
+                    {/* Brand + status */}
+                    <div className="flex items-center justify-between">
+                        <img src="/brand/newbi-logo-800w.png" alt="Newbi" className="h-7 object-contain" />
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#39ff14]/10 px-2.5 py-1 text-[11px] font-bold text-[#39ff14] ring-1 ring-[#39ff14]/30">
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#39ff14]" />
+                            Paid
+                        </span>
+                    </div>
 
-                {/* Details Card Body */}
-                <div className="bg-[#070b09] text-white px-5 pt-3 pb-2 flex flex-col relative border-x border-[#39ff14]/10">
-                    <div className="space-y-2 text-[9px] uppercase font-bold text-zinc-300">
-                        <div className="flex justify-between items-center py-0.5">
-                            <span className="text-gray-500 font-extrabold text-[7.5px] tracking-wider">Date</span>
-                            <span className="text-white font-bold">{data.date}</span>
+                    {/* Amount + payee */}
+                    <div className="mt-7">
+                        <p className="text-[11px] font-semibold text-white/50">Amount paid</p>
+                        <p className="mt-1 text-[36px] font-extrabold leading-none tracking-tight">
+                            ₹{Number(data.amount).toLocaleString('en-IN')}
+                        </p>
+                        <p className="mt-3 text-[11px] font-semibold text-white/50">Paid to</p>
+                        <p className="mt-0.5 break-all text-[14px] font-bold leading-snug text-white">{data.receiverName}</p>
+                    </div>
+
+                    <div className="my-5 border-t-2 border-dashed border-white/10" />
+
+                    {/* Details */}
+                    <div className="space-y-2.5 text-[12px]">
+                        {rows.map(([label, value, mono]) => (
+                            <div key={label} className="flex items-start justify-between gap-4">
+                                <span className="shrink-0 text-white/45">{label}</span>
+                                <span className={cn('min-w-0 break-all text-right font-semibold text-white', mono && 'font-mono text-[11px]')}>{value}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Verification */}
+                    <div className="mt-5 flex items-center gap-3 rounded-xl bg-white/[0.04] p-2.5 ring-1 ring-white/10">
+                        <div className="shrink-0 rounded-lg bg-white p-1">
+                            <img
+                                src={`/api/qr?size=160&margin=1&text=${encodeURIComponent(verifyUrl)}`}
+                                alt="Verification QR"
+                                className="h-14 w-14"
+                            />
                         </div>
-                        <div className="flex justify-between items-center py-0.5 border-t border-white/5 pt-1.5">
-                            <span className="text-gray-500 font-extrabold text-[7.5px] tracking-wider">Payee</span>
-                            <span className="text-[#39ff14] font-bold">{data.receiverName}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5 border-t border-white/5 pt-1.5">
-                            <span className="text-gray-500 font-extrabold text-[7.5px] tracking-wider">Method</span>
-                            <span className="text-[#39ff14] font-bold border border-[#39ff14]/20 bg-[#39ff14]/5 px-1.5 py-0.5 rounded text-[7.5px]">
-                                {data.paymentMode}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5 border-t border-white/5 pt-1.5 font-mono">
-                            <span className="text-gray-500 font-extrabold text-[7.5px] tracking-wider font-sans uppercase">Txn ID / UTR</span>
-                            <span className="text-white font-bold select-all tracking-normal text-right truncate max-w-[140px]">{finalUTR}</span>
+                        <div className="min-w-0">
+                            <p className="text-[12px] font-bold text-white">Scan to verify</p>
+                            <p className="mt-0.5 text-[10.5px] leading-snug text-white/45">Confirms this payout on newbi.live</p>
                         </div>
                     </div>
 
-                    <div className="border-t border-dashed border-[#39ff14]/20 my-2.5" />
-
-                    {/* Verification QR Code pointing to functional verification URL */}
-                    <div className="flex flex-col items-center justify-center p-1.5 bg-white rounded-xl border border-white/10 w-fit mx-auto shadow-inner mb-2.5">
-                        <img 
-                            src={`/api/qr?size=160&margin=1&text=${encodeURIComponent(
-                                `https://newbi.live/verify-payout?ref=${finalUTR}&amt=${data.amount}&payee=${encodeURIComponent(data.receiverName)}&date=${encodeURIComponent(data.date)}&mode=${encodeURIComponent(data.paymentMode)}${(data.receiptUrl || data.proofUrl) ? `&proof=${encodeURIComponent(data.receiptUrl || data.proofUrl)}` : ''}`
-                            )}`}
-                            alt="Verification QR"
-                            className="w-12 h-12 rounded-md"
-                        />
-                    </div>
-
-                    {/* Glowing Verified Banner */}
-                    <div className="text-center font-black text-[8px] tracking-[0.2em] text-[#39ff14] border border-[#39ff14]/30 bg-[#39ff14]/5 p-1.5 rounded-lg uppercase shadow-[0_0_12px_rgba(57,255,20,0.1)]">
-                        ★ Verified & Paid ★
-                    </div>
+                    <p className="mt-4 text-center text-[10px] text-white/30">Newbi Entertainment Pvt. Ltd.</p>
                 </div>
 
-                {/* Jagged Saw-tooth Bottom Edge SVG with Neon Glow */}
-                <div className="w-full h-4 -mt-px select-none" style={{ filter: 'drop-shadow(0 1.5px 3px rgba(57,255,20,0.25))' }}>
-                    <svg viewBox="0 0 300 14" preserveAspectRatio="none" className="w-full h-full block">
-                        {/* Solid fill of the paper body extending into teeth */}
-                        <path d="M 0 0 L 300 0 L 300 14 L 295 5 L 290 14 L 285 5 L 280 14 L 275 5 L 270 14 L 265 5 L 260 14 L 255 5 L 250 14 L 245 5 L 240 14 L 235 5 L 230 14 L 225 5 L 220 14 L 215 5 L 210 14 L 205 5 L 200 14 L 195 5 L 190 14 L 185 5 L 180 14 L 175 5 L 170 14 L 165 5 L 160 14 L 155 5 L 150 14 L 145 5 L 140 14 L 135 5 L 130 14 L 125 5 L 120 14 L 115 5 L 110 14 L 105 5 L 100 14 L 95 5 L 90 14 L 85 5 L 80 14 L 75 5 L 70 14 L 65 5 L 60 14 L 55 5 L 50 14 L 45 5 L 40 14 L 35 5 L 30 14 L 25 5 L 20 14 L 15 5 L 10 14 L 5 5 L 0 14 Z" fill="#070b09" />
-                        {/* Glowing neon-green stroke on the jagged edge only */}
-                        <path d="M 300 14 L 295 5 L 290 14 L 285 5 L 280 14 L 275 5 L 270 14 L 265 5 L 260 14 L 255 5 L 250 14 L 245 5 L 240 14 L 235 5 L 230 14 L 225 5 L 220 14 L 215 5 L 210 14 L 205 5 L 200 14 L 195 5 L 190 14 L 185 5 L 180 14 L 175 5 L 170 14 L 165 5 L 160 14 L 155 5 L 150 14 L 145 5 L 140 14 L 135 5 L 130 14 L 125 5 L 120 14 L 115 5 L 110 14 L 105 5 L 100 14 L 95 5 L 90 14 L 85 5 L 80 14 L 75 5 L 70 14 L 65 5 L 60 14 L 55 5 L 50 14 L 45 5 L 40 14 L 35 5 L 30 14 L 25 5 L 20 14 L 15 5 L 10 14 L 5 5 L 0 14" fill="none" stroke="#39ff14" strokeWidth="1" strokeLinejoin="round" />
-                    </svg>
-                </div>
+                {/* Torn bottom edge */}
+                <svg viewBox="0 0 280 8" preserveAspectRatio="none" className="-mt-px block h-2 w-full">
+                    <path d={`M 0 0 ${teeth} Z`} fill="#0a0f0c" />
+                </svg>
             </div>
         );
     };
@@ -1810,7 +1809,7 @@ const SpendsManagement = () => {
             <div className="flex flex-col items-center gap-6">
                 <div className="flex w-full flex-col items-center">
                     {renderPrinterSlot(printerStage === 'printing' ? 'Printing' : 'Ready', printerStage === 'printing')}
-                    <div className="relative z-20 -mt-1.5 flex w-[260px] justify-center overflow-hidden">
+                    <div className="relative z-20 -mt-1.5 flex w-[280px] justify-center overflow-hidden">
                         {printerStage === 'printing' ? (
                             <motion.div
                                 initial={{ y: '-100%' }}
