@@ -226,6 +226,16 @@ const blockText = (block, ctx) => {
     return '';
 };
 
+/**
+ * The poster, faded into the card's colour at the bottom (like the app's cards).
+ * Only possible for Cloudinary uploads, which can do it in the URL; anything else
+ * is shown as it is. The whole image is kept, nothing is cropped.
+ */
+const heroFaded = (url, hex) => {
+    const m = String(url).match(/^(https?:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(.+)$/);
+    return m ? `${m[1]}w_1200,c_limit/e_gradient_fade,y_-0.5/b_rgb:${hex}/f_jpg/${m[2]}` : '';
+};
+
 /* ---------- Layout ---------- */
 
 /**
@@ -295,7 +305,12 @@ a{color:${brand.ink}!important}
 <tr><td align="center" class="wrap" style="padding:32px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="box" bgcolor="#0b0f17" style="max-width:600px;background:#0b0f17;border:1px solid #1f2630;border-radius:28px;overflow:hidden">
 <tr><td class="hdr" align="left" bgcolor="#0b0f17" style="padding:20px 32px;background:#0b0f17;text-align:left"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="left" valign="middle"><a href="${esc(origin)}" target="_blank" style="display:inline-block;text-decoration:none"><img class="dk" src="${esc(brand.logo)}" alt="${esc(brand.logoAlt)}" width="${brand.logoWidth}" height="${brand.logoHeight}" style="display:block;width:${brand.logoWidth}px;height:${brand.logoHeight}px;max-width:100%;border:0" /><!--[if !mso]><!--><img class="lt" src="${esc(brand.logoLight)}" alt="${esc(brand.logoAlt)}" width="${brand.logoWidth}" height="${brand.logoHeight}" style="display:none;width:${brand.logoWidth}px;height:${brand.logoHeight}px;max-width:100%;border:0" /><!--<![endif]--></a></td>${isPresent(model.eyebrow) ? `<td align="right" valign="middle"><span style="display:inline-block;padding:6px 12px;border-radius:12px;background:#000000;border:1px solid #2a3340;color:${brand.accent};font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;font-weight:900;letter-spacing:1.4px;text-transform:uppercase">${esc(model.eyebrow)}</span></td>` : ''}</tr></table></td></tr>
-${heroSrc ? `<tr><td class="herobg" style="padding:0;font-size:0;line-height:0;background:#0b0f17"><img src="${esc(heroSrc)}" alt="${esc(model.hero.alt || model.title || '')}" width="600" style="display:block;width:100%;max-width:600px;height:auto;border:0" /></td></tr>` : ''}
+${heroSrc ? `<tr><td class="herobg" style="padding:0;font-size:0;line-height:0;background:#0b0f17">${(() => {
+        const alt = esc(model.hero.alt || model.title || '');
+        const img = (src, cls, hide) => `<img${cls ? ` class="${cls}"` : ''} src="${esc(src)}" alt="${alt}" width="600" style="display:${hide ? 'none' : 'block'};width:100%;max-width:600px;height:auto;border:0" />`;
+        const dark = heroFaded(heroSrc, '0b0f17');
+        return dark ? `${img(dark, 'dk')}${img(heroFaded(heroSrc, 'ffffff'), 'lt', true)}` : img(heroSrc);
+    })()}</td></tr>` : ''}
 <tr><td class="pad" background="${esc(`${origin}/brand/email/card-bg.png`)}" bgcolor="#0b0f17" valign="top" style="padding:${heroSrc ? '28px' : '10px'} 32px 12px;background:#0b0f17 url('${esc(`${origin}/brand/email/card-bg.png`)}') right bottom no-repeat">
 ${isPresent(model.title) ? `<h1 class="title" style="margin:0 0 22px;font-size:30px;line-height:1.15;font-weight:900;letter-spacing:-0.8px;color:#ffffff">${esc(model.title)}</h1>` : ''}
 ${blocks.map(b => renderBlock(b, ctx)).join('\n')}
