@@ -16,6 +16,14 @@ export const isRequiredTask = (task = {}) => {
 };
 
 export const requiredTasks = (tasks = []) => (tasks || []).filter(isRequiredTask);
+
+/*
+ * Whether creators can submit a deliverable yet. The team opens deliverables one
+ * at a time (campaign editor, or the Deliverables tab); until then creators see
+ * it with "Opens soon" and the server refuses submissions. New deliverables start
+ * closed (submissionsOpen: false); older ones, saved before this existed, stay open.
+ */
+export const isTaskOpen = (task = {}) => task?.submissionsOpen !== false;
 export const optionalTasks = (tasks = []) => (tasks || []).filter(t => !isRequiredTask(t));
 
 /*

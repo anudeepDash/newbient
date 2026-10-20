@@ -37,6 +37,7 @@ import { findMatches, readProof, checkMergeable, describeAccount, mergeAccounts,
 import { isStaffCaller, staffRoleOf } from './mailing.js';
 import { isTesterRole } from '../../src/constants/roles.js';
 import { sendShortlistWelcome } from './mail/events.js';
+import { isTaskOpen } from '../../src/lib/creator/tasks.js';
 import { FieldPath } from 'firebase-admin/firestore';
 
 /* The app's own origin (links in emails, the OAuth fallback). PUBLIC_APP_URL overrides it on previews. */
@@ -800,6 +801,7 @@ const handleCampaignSubmit = async (req, res, { db, token }) => {
     const creator = creatorSnap.data();
     const task = (campSnap.data().tasks || []).find(t => String(t.id) === taskId);
     if (!task) return send(res, 404, { success: false, error: 'This deliverable no longer exists.' });
+    if (!isTaskOpen(task)) return send(res, 409, { success: false, code: 'task_closed', error: 'This deliverable isn’t open for submissions yet. We’ll let you know when it is.' });
     // Only shortlisted creators work on (and submit) deliverables; applying isn't enough.
     if (!(creator.shortlistedCampaigns || []).includes(campaignId)) {
         return send(res, 403, { success: false, code: 'not_shortlisted', error: 'Only shortlisted creators can submit for this campaign.' });

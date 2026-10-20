@@ -17,7 +17,7 @@ import { useStore as useLegacyStore } from '../../../lib/store.js';
 import { isPresent } from '../../../lib/present';
 import { isCampaignCityMatch } from '../../../lib/constants';
 import { linkifyContent } from '../../../lib/taskLinks';
-import { submissionFor, taskProgress } from '../../../lib/creator/tasks';
+import { isTaskOpen, submissionFor, taskProgress } from '../../../lib/creator/tasks';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { cn } from '../../../lib/utils';
 import { INTENTS, useAuthGate, useResumeIntent } from '../../auth/AuthGate';
@@ -209,7 +209,8 @@ const CampaignView = ({ campaign: source, variant = 'page', initialTaskId, onClo
     const min = Number(campaign.minInstagramFollowers) || 0;
     const brief = isPresent(String(campaign.description || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ')) ? linkifyContent(campaign.description) : null;
     const blocker = creator && !inCampaign && !tester ? blockerFor(campaign, creator, profile) : null;
-    const nextTask = canWork ? tasks.find(tk => ['not_started', 'rejected'].includes(submissionFor(tk, who)?.status || 'not_started')) : null;
+    // The next deliverable that's open for submissions (the team opens them one at a time).
+    const nextTask = canWork ? tasks.find(tk => isTaskOpen(tk) && ['not_started', 'rejected'].includes(submissionFor(tk, who)?.status || 'not_started')) : null;
 
     /* ── Once you're in the campaign: your status (or the next thing to do) ── */
     let status = null;
@@ -223,6 +224,8 @@ const CampaignView = ({ campaign: source, variant = 'page', initialTaskId, onClo
             if (hasSubmitForm(nextTask)) {
                 status = <Button className="flex-1" size="lg" href={nextTask.googleFormLink} target="_blank" rel="noopener noreferrer">{t('Open the submission form')}</Button>;
             }
+        } else if (tasks.some(tk => !isTaskOpen(tk) && (submissionFor(tk, who)?.status || 'not_started') === 'not_started')) {
+            status = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-semibold text-gray-700 dark:text-zinc-300"><Hourglass size={17} className="shrink-0 text-sky-600 dark:text-sky-300" /> {t('Your next deliverable opens soon. We’ll let you know.')}</p>;
         } else if (tasks.length) {
             status = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-semibold text-gray-700 dark:text-zinc-300"><Hourglass size={17} className="shrink-0 text-sky-600 dark:text-sky-300" /> {t('Everything’s in review')}</p>;
         } else {

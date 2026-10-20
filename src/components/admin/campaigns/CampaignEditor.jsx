@@ -97,7 +97,8 @@ const toForm = (c, { copy = false } = {}) => ({
     ...openFormFromCampaign(c, { copy }),
     tasks: (c.tasks || []).map((t, i) => ({
         ...t,
-        ...(copy ? { id: newTaskId(), submissions: {}, completedBy: [], verifiedBy: [] } : {}),
+        // A copied campaign starts with its deliverables closed, like new ones.
+        ...(copy ? { id: newTaskId(), submissions: {}, completedBy: [], verifiedBy: [], submissionsOpen: false } : {}),
         title: t.title || '',
         taskType: t.taskType || 'custom',
         platform: t.platform || 'instagram',

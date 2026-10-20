@@ -166,6 +166,7 @@ export const handleCreatorSubmit = async (req, res, { db, rateLimit, now = nowIs
     const taskId = str(req.body?.taskId, 120);
     const task = TASK_ID.test(taskId) ? deliverablesFor(ctx.campaign).find(t => t.id === taskId) : null;
     if (!task) return send(res, 404, { success: false, error: 'This deliverable no longer exists.' });
+    if (!task.open) return send(res, 409, { success: false, code: 'task_closed', error: 'This post isn’t open yet. We’ll tell you when to send it.' });
     const { ok, value, errors } = validateSubmission(task, req.body || {});
     if (!ok) return send(res, 400, { success: false, code: 'invalid', errors, error: 'Check the highlighted fields.' });
     if (rateLimit && (await rateLimit(db, req, { bucket: 'outreach-submit' })).limited) {

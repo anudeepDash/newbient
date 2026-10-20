@@ -40,6 +40,8 @@ export const deliverablesFor = (campaign) => (Array.isArray(campaign?.tasks) ? c
         required: isRequiredTask(t),
         deadline: t.deadline || '',
         proof: proofKind(t),
+        // Closed until the team opens it (src/lib/creator/tasks.js isTaskOpen).
+        open: t.submissionsOpen !== false,
     }));
 
 const POST_LINK = /^https:\/\/(?:www\.|m\.)?instagram\.com\/(?:[a-z0-9._]{1,30}\/)?(?:reel|reels|p|tv)\/[A-Za-z0-9_-]{5,}\/?(?:\?.*)?$/i;
