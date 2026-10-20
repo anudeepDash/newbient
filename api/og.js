@@ -409,6 +409,9 @@ const loaders = {
         return {
             title: `${stripHtml(data.proposalNumber) || 'Proposal'} | ${stripHtml(data.clientName) || 'Valued Partner'}`,
             description: `Proposal for ${stripHtml(data.campaignName) || 'your campaign'} from Newbi Entertainment & Marketing.`,
+            // The proposal's own first pages, saved by src/lib/docShareCard.js.
+            image: data.previewImage,
+            alt: `${stripHtml(data.proposalNumber) || 'Proposal'} for ${stripHtml(data.clientName) || 'a client'}`,
         };
     },
 

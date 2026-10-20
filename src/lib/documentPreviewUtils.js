@@ -53,7 +53,7 @@ export const getDocumentShareMeta = (rawDocument, type = 'proposal') => {
     const formattedAmount = rawAmount ? `₹${Number(rawAmount).toLocaleString('en-IN')}` : null;
     const fileUrl = documentData.fileUrl || documentData.pdfUrl;
 
-    const previewImage = getPdfPreviewImageUrl(fileUrl) || documentData.thumbnail || documentData.coverImage || `${LANDING_ORIGIN}${DEFAULT_IMAGE.path}`;
+    const previewImage = documentData.previewImage || getPdfPreviewImageUrl(fileUrl) || documentData.thumbnail || documentData.coverImage || `${LANDING_ORIGIN}${DEFAULT_IMAGE.path}`;
 
     if (type === 'invoice') {
         const title = `Tax Invoice ${docNumber} · ${clientName}`;

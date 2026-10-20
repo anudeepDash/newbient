@@ -108,6 +108,7 @@ export default function SharedDocumentViewer({
     banner,
     summary = {},
     onStageWidth,
+    onFirstPageRendered,
     children
 }) {
     const theme = docTheme(type);
@@ -441,7 +442,7 @@ export default function SharedDocumentViewer({
                                             pdfUrl={effectivePdfUrl}
                                             documentData={documentData}
                                             theme={theme}
-                                            onFirstPageRendered={setPdfPagePreview}
+                                            onFirstPageRendered={(page) => { setPdfPagePreview(page); onFirstPageRendered?.(page); }}
                                             onDownload={() => (onDownloadPDF ? onDownloadPDF(pdfBlobUrl) : downloadFile(effectivePdfUrl))}
                                             onPrint={() => window.open(effectivePdfUrl, '_blank')}
                                         />
