@@ -1,7 +1,15 @@
 User-agent: *
 Allow: /
-Disallow: /admin/
+Disallow: /admin
 Disallow: /invoice/
+Disallow: /proposal/
+Disallow: /agreement/
+Disallow: /doc/
 Disallow: /forms/
+Disallow: /api/
+Disallow: /p/
+Disallow: /verify-creator
+Disallow: /verify-payout
+Disallow: /register-payment
 
-Sitemap: https://newbi.live/sitemap.xml
+Sitemap: https://www.newbi.live/sitemap.xml
