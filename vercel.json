@@ -306,6 +306,11 @@
     "headers": [
         {
             "source": "/(.*)",
+            "has": [{ "type": "host", "value": "^admin\\.newbi\\.live$" }],
+            "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+        },
+        {
+            "source": "/(.*)",
             "headers": [
                 {
                     "key": "X-Content-Type-Options",
@@ -339,6 +344,11 @@
         }
     ],
     "rewrites": [
+        {
+            "source": "/robots.txt",
+            "has": [{ "type": "host", "value": "^admin\\.newbi\\.live$" }],
+            "destination": "/robots-admin.txt"
+        },
         {
             "source": "/api/track",
             "destination": "/api/track.js"
