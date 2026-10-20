@@ -1,5 +1,6 @@
 import React from 'react';
 import { safeSessionStorage } from '../lib/storage';
+import { forceHideSplash } from '../lib/splash';
 
 class ErrorBoundary extends React.Component {
     constructor(props) {
@@ -12,6 +13,8 @@ class ErrorBoundary extends React.Component {
     }
 
     componentDidCatch(error, errorInfo) {
+        // The error screen must be visible, not covered by the loading splash.
+        forceHideSplash();
         this.setState({ error, errorInfo });
         console.error("Uncaught error:", error, errorInfo);
 

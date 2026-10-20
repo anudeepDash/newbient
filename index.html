@@ -27,6 +27,35 @@
   <!-- Browser chrome colour: one tag, set from the page's own top colour (src/hooks/useSafariChrome.js) -->
   <meta name="theme-color" content="#F8F9FA" />
   <script>try { document.querySelector('meta[name="theme-color"]').setAttribute('content', window.__nbFirstChrome || '#F8F9FA'); } catch (e) {}</script>
+  <!-- The N. splash: shown from the first paint, before any script loads. src/lib/splash.js
+       hides it once the app is ready, after finishing the animation cycle it is in. -->
+  <style>
+    #nb-splash{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:#F8F9FA;transition:opacity .4s ease;-webkit-tap-highlight-color:transparent}
+    html.dark #nb-splash{background:#000}
+    html.admin-route #nb-splash{background:#f6f7f9}
+    html.dark.admin-route #nb-splash{background:#07080b}
+    #nb-splash.nb-splash-out{opacity:0;pointer-events:none}
+    #nb-splash[hidden]{display:none}
+    #nb-splash .nb-splash-box{position:relative;width:104px;height:104px}
+    #nb-splash .nb-splash-glow{position:absolute;inset:0;border-radius:9999px;background:var(--nb-splash-dot,#39FF14);filter:blur(40px);opacity:0}
+    #nb-splash svg{position:relative;width:100%;height:100%;overflow:visible}
+    #nb-splash .nb-splash-n{fill:#000;stroke:#000;stroke-width:14;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;fill-opacity:0}
+    html.dark #nb-splash .nb-splash-n{fill:#fff;stroke:#fff}
+    #nb-splash .nb-splash-dot{fill:var(--nb-splash-dot,#39FF14);transform-box:view-box;transform-origin:540px 594px;opacity:0}
+    #nb-splash.nb-splash-run .nb-splash-glow{animation:nb-sp-glow 2.6s ease-in-out infinite}
+    #nb-splash.nb-splash-run svg{animation:nb-sp-mark 2.6s ease-in-out infinite}
+    #nb-splash.nb-splash-run .nb-splash-n{animation:nb-sp-n 2.6s ease-in-out infinite}
+    #nb-splash.nb-splash-run .nb-splash-dot{animation:nb-sp-dot 2.6s ease-out infinite}
+    @keyframes nb-sp-n{0%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:1}38%{stroke-dashoffset:0;fill-opacity:0;stroke-opacity:1}55%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:1}85%{stroke-dashoffset:0;fill-opacity:1;stroke-opacity:1}100%{stroke-dashoffset:1;fill-opacity:0;stroke-opacity:0}}
+    @keyframes nb-sp-dot{0%,45%{opacity:0;transform:translateY(-120px) scale(0)}62%{opacity:1;transform:translateY(0) scale(1.35)}85%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(0) scale(0)}}
+    @keyframes nb-sp-mark{0%,38%{transform:scale(.96)}55%{transform:scale(1.02)}85%{transform:scale(1)}100%{transform:scale(.96)}}
+    @keyframes nb-sp-glow{0%,38%{opacity:0;transform:scale(.7)}55%{opacity:.35;transform:scale(1.15)}85%{opacity:.1;transform:scale(1)}100%{opacity:0;transform:scale(.8)}}
+    @media (prefers-reduced-motion:reduce){
+      #nb-splash.nb-splash-run .nb-splash-glow,#nb-splash.nb-splash-run svg,#nb-splash.nb-splash-run .nb-splash-n,#nb-splash.nb-splash-run .nb-splash-dot{animation:none}
+      #nb-splash .nb-splash-n{stroke-dashoffset:0;fill-opacity:1}
+      #nb-splash .nb-splash-dot{opacity:1}
+    }
+  </style>
   <meta name="color-scheme" content="light dark" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -167,6 +196,15 @@
 </head>
 
 <body>
+  <div id="nb-splash" class="nb-splash-run" role="status" aria-label="Loading">
+    <div class="nb-splash-box">
+      <div class="nb-splash-glow"></div>
+      <svg viewBox="68 178 560 560" aria-hidden="true">
+        <path class="nb-splash-n" pathLength="1" d="M77,296 L182,283 L292,490 L270,250 L422,238 L382,645 L287,655 L160,422 L181,670 L80,678 Z" />
+        <circle class="nb-splash-dot" cx="540" cy="594" r="80" />
+      </svg>
+    </div>
+  </div>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
