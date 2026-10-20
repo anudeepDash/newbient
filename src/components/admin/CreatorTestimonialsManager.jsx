@@ -230,9 +230,12 @@ const CreatorTestimonialsManager = () => {
         setBusy(true);
         try {
             await useStore.getState().updateCreatorTestimonial(t.id, { isActive: t.isActive === false });
-            addToast(t.isActive === false ? 'Testimonial is visible.' : 'Testimonial hidden.', 'success');
+            addToast(t.isActive === false ? 'Testimonial is showing again.' : 'Testimonial hidden.', 'success');
         } catch {
-            addToast("Couldn't update the testimonial. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: t.isActive === false ? "Couldn't show the testimonial" : "Couldn't hide the testimonial",
+                action: { label: 'Try again', onClick: () => toggleActive(t) },
+            });
         } finally {
             setBusy(false);
         }
@@ -244,7 +247,7 @@ const CreatorTestimonialsManager = () => {
         try {
             await moveItem(testimonials, index, delta, useStore.getState().updateCreatorTestimonial);
         } catch {
-            addToast("Couldn't change the order. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Order not changed' });
         } finally {
             setBusy(false);
         }
@@ -255,7 +258,10 @@ const CreatorTestimonialsManager = () => {
             await useStore.getState().updateGeneralSettings({ showCreatorTestimonials: true });
             addToast('Testimonials are showing on the creator page.', 'success');
         } catch {
-            addToast("Couldn't change that. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: "Couldn't show the testimonials",
+                action: { label: 'Try again', onClick: () => showSection() },
+            });
         }
     };
 
@@ -265,7 +271,10 @@ const CreatorTestimonialsManager = () => {
             addToast('Testimonial deleted.', 'success');
             setDeleting(null);
         } catch {
-            addToast("Couldn't delete the testimonial. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: 'Testimonial not deleted',
+                action: { label: 'Try again', onClick: () => remove() },
+            });
         }
     };
 

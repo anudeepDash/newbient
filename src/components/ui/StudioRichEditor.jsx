@@ -258,7 +258,7 @@ const StudioRichEditor = ({
                 }
             } catch (err) {
                 console.error("Toolbar upload failed:", err);
-                useStore.getState().addToast?.("Upload failed.", "error");
+                useStore.getState().addToast?.("Check your connection and try again.", "error", { title: "Image didn’t upload" });
             } finally {
                 setIsUploading(false);
             }
@@ -752,7 +752,7 @@ const StudioRichEditor = ({
                                         }
                                     } catch (err) {
                                         console.error("Paste upload failed:", err);
-                                        useStore.getState().addToast?.("Upload failed.", "error");
+                                        useStore.getState().addToast?.("Check your connection and try again.", "error", { title: "Image didn’t upload" });
                                     } finally {
                                         setIsUploading(false);
                                     }
@@ -855,7 +855,7 @@ const StudioRichEditor = ({
                                             }
                                         } catch (err) {
                                             console.error("Drop upload failed:", err);
-                                            useStore.getState().addToast?.("Upload failed.", "error");
+                                            useStore.getState().addToast?.("Check your connection and try again.", "error", { title: "Image didn’t upload" });
                                         } finally {
                                             setIsUploading(false);
                                         }

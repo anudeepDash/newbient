@@ -7,7 +7,7 @@ import { useStore } from '../../../lib/store';
  * Small centred confirm for money actions. Blocks double taps, keeps the
  * dialog open and shows the error if the action fails.
  */
-const toast = (msg, type = 'success') => useStore.getState().addToast?.(msg, type);
+const toast = (msg, type = 'success', options) => useStore.getState().addToast?.(msg, type, options);
 
 const ConfirmDialog = ({ open, onClose, title, body, confirmLabel = 'Delete', tone = 'danger', onConfirm }) => {
     const [busy, setBusy] = useState(false);
@@ -20,7 +20,7 @@ const ConfirmDialog = ({ open, onClose, title, body, confirmLabel = 'Delete', to
             onClose();
         } catch (err) {
             console.error(err);
-            toast(err?.message && !/firebase|permission/i.test(err.message) ? err.message : "Couldn't do that. Please try again.", 'error');
+            toast(err?.message && !/firebase|permission/i.test(err.message) ? err.message : 'Check your connection and try again.', 'error', { title: "That didn't go through" });
             setBusy(false);
         }
     };

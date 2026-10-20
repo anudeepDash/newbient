@@ -77,7 +77,7 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
     const set = (patch) => setForm(f => ({ ...f, ...patch }));
 
     const upload = async (file) => {
-        if (!file?.type?.startsWith('image/')) { addToast('Choose an image file.', 'error'); return; }
+        if (!file?.type?.startsWith('image/')) { addToast('Pick an image file, like a JPG or PNG.', 'warning'); return; }
         setUploading(true);
         try {
             const url = await useStore.getState().uploadToCloudinary(file);
@@ -85,7 +85,10 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
             set({ image: url });
         } catch (err) {
             console.error(err);
-            addToast("Couldn't upload the image. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: 'Image not uploaded',
+                action: { label: 'Try again', onClick: () => upload(file) },
+            });
         } finally {
             setUploading(false);
         }
@@ -143,7 +146,7 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
                         );
                     } catch (err) {
                         console.error(err);
-                        addToast("Guestlist created, but the notification didn't go out.", 'error');
+                        addToast("The guestlist is saved, but people weren't notified about it.", 'warning', { title: "Notification didn't go out" });
                     }
                 }
             }

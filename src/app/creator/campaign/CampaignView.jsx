@@ -156,7 +156,8 @@ const CampaignView = ({ campaign: source, variant = 'page', initialTaskId, onClo
         setApplying(false);
         if (!res.ok) { setApplyError(res.error); return false; }
         setJustApplied({ shortlisted: Boolean(res.data.shortlisted) });
-        addToast?.(res.data.shortlisted ? t('You’re in. Your deliverables are below.') : t('Applied. We’ll message you if you’re shortlisted.'), 'success');
+        if (res.data.shortlisted) addToast?.(t('Your deliverables are below.'), 'success', { title: t('You’re in') });
+        else addToast?.(t('We’ll message you if you’re shortlisted.'), 'success', { title: t('Applied') });
         return true;
     }, [id, addToast, t]);
 
@@ -166,9 +167,9 @@ const CampaignView = ({ campaign: source, variant = 'page', initialTaskId, onClo
         setMarking(String(task.id));
         const res = await callCreatorApi('campaign-submit', { campaignId: id, taskId: String(task.id), via: 'google_form' });
         setMarking(null);
-        if (!res.ok) { addToast?.(res.error, 'error'); return; }
+        if (!res.ok) { addToast?.(res.error || t('Please try again.'), 'error', { title: t('Couldn’t mark it as submitted'), action: { label: t('Try again'), onClick: () => markSubmitted(task) } }); return; }
         useAppStore.getState().noteMySubmission(id, String(task.id), res.data.submission);
-        addToast?.(t('Marked as submitted. The team will review it.'), 'success');
+        addToast?.(t('The team will review it.'), 'success', { title: t('Marked as submitted') });
     }, [id, marking, addToast, t]);
 
     // No Newbi ID yet: the 30-second creator form, which applies to this campaign when it's done.

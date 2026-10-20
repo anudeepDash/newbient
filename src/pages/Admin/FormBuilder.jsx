@@ -170,7 +170,7 @@ const FormBuilder = () => {
         setShowProblems(true);
         const list = problemList();
         if (list.length) {
-            addToast(list[0], 'error');
+            addToast(list[0], 'warning');
             const firstBad = fields.find(f => problems[f.id]);
             if (firstBad) { setExpanded(firstBad.id); document.getElementById(`field_${firstBad.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
             return;
@@ -220,7 +220,7 @@ const FormBuilder = () => {
             navigate('/admin/forms');
         } catch (err) {
             console.error('Error saving form:', err);
-            addToast("Couldn't save the form. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't save the form", action: { label: 'Try again', onClick: () => save() } });
         } finally {
             setSaving(false);
         }

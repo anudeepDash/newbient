@@ -216,7 +216,7 @@ const SystemControlCenter = () => {
 
     const onSwitch = (item, nextOn) => {
         if (saving[busyKey(item)]) return;
-        if (nextOn) { writeSwitch(item, false).catch(err => addToast(err.userMessage, 'error')); return; }
+        if (nextOn) { writeSwitch(item, false).catch(() => addToast('Please try again.', 'error', { title: `Couldn't switch ${item.label} on`, action: { label: 'Try again', onClick: () => onSwitch(item, nextOn) } })); return; }
         const group = SWITCH_GROUPS.find(g => g.items.includes(item));
         setConfirm({
             title: `Switch off ${item.label}?`,
@@ -250,7 +250,7 @@ const SystemControlCenter = () => {
 
     const onSiteFeature = (feature, nextOn) => {
         if (saving[feature.key]) return;
-        if (nextOn || feature.notAFeature) { writeSiteFeature(feature, nextOn).catch(err => addToast(err.userMessage, 'error')); return; }
+        if (nextOn || feature.notAFeature) { writeSiteFeature(feature, nextOn).catch(() => addToast('Please try again.', 'error', { title: 'Setting not saved', action: { label: 'Try again', onClick: () => onSiteFeature(feature, nextOn) } })); return; }
         setConfirm({
             title: `Turn off ${feature.label.toLowerCase()}?`,
             description: `${feature.hint} will be hidden from visitors until you turn it back on.`,
@@ -277,7 +277,7 @@ const SystemControlCenter = () => {
         icon: Power,
         onConfirm: async () => {
             await toggleGlobalMaintenance(true).catch(() => { throw Object.assign(new Error("Couldn't turn on maintenance mode. Please try again."), { userMessage: "Couldn't turn on maintenance mode. Please try again." }); });
-            addToast('Maintenance mode is on. The site is offline for visitors.', 'warning');
+            addToast('The site is offline for visitors.', 'warning', { title: 'Maintenance mode is on' });
         },
     } : {
         title: 'Bring the site back online?',
@@ -308,7 +308,7 @@ const SystemControlCenter = () => {
             addToast('Site details saved.', 'success');
         } catch (error) {
             console.error(error);
-            addToast("Couldn't save the site details. Please try again.", 'error');
+            addToast('Please try again.', 'error', { title: 'Site details not saved' });
         } finally {
             setSavingDetails(false);
         }

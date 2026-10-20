@@ -120,7 +120,7 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
     const verify = (o) => {
         const doIt = () => run(o.id, 'approve', async () => {
             await updateTicketOrderStatus(o.id, 'approved');
-            addToast(`Payment verified for ${personName(o, 'the buyer')}. Send the ticket next.`, 'success');
+            addToast('Send the ticket next.', 'success', { title: `Payment verified for ${personName(o, 'the buyer')}` });
         });
         // Bringing back a rejected order takes seats again; say so if that oversells.
         if (o.status === 'rejected') {
@@ -155,7 +155,10 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
 
     const send = (o) => run(o.id, 'send', async () => {
         const res = await updateTicketOrderStatus(o.id, 'dispatched');
-        if (res?.emailed === false) addToast(`Marked as sent, but the email to ${o.customerEmail || personName(o)} didn't go out. Try Resend.`, 'error');
+        if (res?.emailed === false) addToast(`It's marked as sent, but the email to ${o.customerEmail || personName(o)} didn't go out.`, 'warning', {
+            title: "Ticket email didn't go out",
+            action: { label: 'Try again', onClick: () => send(o) },
+        });
         else addToast(`Ticket sent to ${o.customerEmail || personName(o)}.`, 'success');
     });
 
@@ -187,7 +190,11 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
             confirmLabel: 'Verify all',
             action: async () => {
                 const failed = await runBulk('Verifying', list, (o) => updateTicketOrderStatus(o.id, 'approved'));
-                addToast(failed ? `${list.length - failed} verified, ${failed} failed. Try those again.` : `${list.length} payments verified.`, failed ? 'error' : 'success');
+                addToast(
+                    failed ? `${failed} couldn't be verified. Try those again.` : `${list.length} ${list.length === 1 ? 'payment' : 'payments'} verified.`,
+                    failed ? 'warning' : 'success',
+                    failed ? { title: `Verified ${list.length - failed} of ${list.length}` } : undefined,
+                );
             },
         });
     };
@@ -201,7 +208,11 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
             danger: true,
             action: async () => {
                 const failed = await runBulk('Rejecting', list, (o) => updateTicketOrderStatus(o.id, 'rejected'));
-                addToast(failed ? `${list.length - failed} rejected, ${failed} failed.` : `${list.length} orders rejected.`, failed ? 'error' : 'info');
+                addToast(
+                    failed ? `${failed} couldn't be rejected. Try those again.` : `${list.length} ${list.length === 1 ? 'order' : 'orders'} rejected.`,
+                    failed ? 'warning' : 'info',
+                    failed ? { title: `Rejected ${list.length - failed} of ${list.length}` } : undefined,
+                );
             },
         });
     };
@@ -215,7 +226,11 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
                 const res = await updateTicketOrderStatus(o.id, 'dispatched');
                 return res?.emailed !== false;
             });
-            addToast(failed ? `Sent ${list.length - failed}; ${failed} didn't go out. Use Resend on those.` : 'All tickets sent.', failed ? 'error' : 'success');
+            addToast(
+                failed ? `${failed} didn't go out. Use Resend on those.` : 'All tickets sent.',
+                failed ? 'warning' : 'success',
+                failed ? { title: `Sent ${list.length - failed} of ${list.length} tickets` } : undefined,
+            );
         },
     });
 

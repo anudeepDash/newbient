@@ -245,9 +245,9 @@ const ContractGenerator = () => {
     const saveError = (err) => {
         if (err?.code === 'LOCKED') {
             lockedRef.current = true;
-            addToast("This contract was just signed, so it's locked. Your latest edits weren't saved.", 'error');
+            addToast("It was just signed, so your latest edits weren't saved.", 'error', { title: 'This contract is locked' });
         } else {
-            addToast("Couldn't save the contract. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Contract not saved' });
         }
     };
 
@@ -347,20 +347,20 @@ const ContractGenerator = () => {
             pdf.save(`Newbi-Contract-${previewData.agreementNumber || ''}-${who}.pdf`);
         } catch (error) {
             console.error(error);
-            addToast("Couldn't create the PDF. Please try again.", 'error');
+            addToast('Please try again.', 'error', { title: "Couldn't create the PDF", action: { label: 'Try again', onClick: () => generatePDF() } });
         } finally { setBusy(''); }
     };
 
     const markReady = async () => {
         setShowIssues(true);
         if (blocking.length) {
-            addToast('Fix the items marked in red first.', 'error');
+            addToast('Fix the items marked in red first.', 'warning');
             return;
         }
         setBusy('ready');
         try {
             await persist({ status: CONTRACT_STATUS.FINAL });
-            addToast('Ready to sign. Share the link from the contracts list or copy it here.', 'success');
+            addToast('Share the link from the contracts list, or copy it here.', 'success', { title: 'Ready to sign' });
         } catch (err) { saveError(err); } finally { setBusy(''); }
     };
 
@@ -376,7 +376,7 @@ const ContractGenerator = () => {
     const copyLink = async () => {
         if (!signingLink) return;
         const ok = await copyToClipboard(`${signingLink}?via=link`);
-        addToast(ok ? 'Signing link copied.' : "Couldn't copy the link.", ok ? 'success' : 'error');
+        addToast(ok ? 'Signing link copied.' : 'Please try again.', ok ? 'success' : 'error', ok ? undefined : { title: "Couldn't copy the link" });
         if (ok && idRef.current) useStore.getState().markAgreementShared(idRef.current, 'link').catch(() => {});
     };
 
@@ -389,7 +389,7 @@ const ContractGenerator = () => {
             navigate(`/admin/agreements/edit/${newId}`);
         } catch (err) {
             console.error(err);
-            addToast("Couldn't copy the contract. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Contract not copied', action: { label: 'Try again', onClick: () => makeCopy() } });
         } finally { setBusy(''); }
     };
 
@@ -434,7 +434,7 @@ const ContractGenerator = () => {
                     clauses: data.clauses?.length ? mapAiClauses(data.clauses) : prev.clauses,
                     template: data.template || prev.template,
                 }));
-                addToast('Draft ready. Check each step before sending.', 'success');
+                addToast('Check each step before sending.', 'success', { title: 'Draft ready' });
             } else {
                 const updated = await reviseDocument(formData, prompt, 'Premium', { strict: true });
                 setFormData(prev => normalizeContract({
@@ -451,13 +451,13 @@ const ContractGenerator = () => {
                     commercials: { ...prev.commercials, ...(updated.commercials || {}) },
                     clauses: updated.clauses?.length ? mapAiClauses(updated.clauses) : prev.clauses,
                 }));
-                addToast('Changes applied. Check the preview.', 'success');
+                addToast('Check the preview to see them.', 'success', { title: 'Changes applied' });
             }
             setAiOpen(false);
             return true;
         } catch (err) {
             console.error(err);
-            addToast("AI couldn't draft that. Please try again or rephrase.", 'error');
+            addToast('Try again, or describe it a different way.', 'error', { title: "Couldn't draft that", action: { label: 'Try again', onClick: () => runAiDraft(mode, prompt) } });
             return false;
         } finally { setAiBusy(false); }
     };
@@ -475,7 +475,7 @@ const ContractGenerator = () => {
             setRefineTarget(null);
         } catch (err) {
             console.error(err);
-            addToast("Couldn't rewrite that. Please try again.", 'error');
+            addToast('Please try again.', 'error', { title: "Couldn't rewrite that", action: { label: 'Try again', onClick: () => runRefine(instruction) } });
         } finally { setRefineBusy(false); }
     };
 

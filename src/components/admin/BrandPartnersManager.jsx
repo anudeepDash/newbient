@@ -166,7 +166,7 @@ const BrandPartnersManager = () => {
             await useStore.getState().updateGeneralSettings({ showPastClients: next });
             addToast(next ? 'Brand logos are showing.' : 'Brand logos are hidden.', 'success');
         } catch {
-            addToast("Couldn't change that. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: next ? "Couldn't show the brand logos" : "Couldn't hide the brand logos", action: { label: 'Try again', onClick: () => setVisible(next) } });
         } finally {
             setTogglingVisibility(false);
         }
@@ -178,7 +178,7 @@ const BrandPartnersManager = () => {
         try {
             await moveItem(clients, index, delta, useStore.getState().updatePastClient);
         } catch {
-            addToast("Couldn't change the order. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't change the order", action: { label: 'Try again', onClick: () => move(index, delta) } });
         } finally {
             setBusy(false);
         }
@@ -190,7 +190,7 @@ const BrandPartnersManager = () => {
             addToast(`${deleting.name || 'Brand'} removed.`, 'success');
             setDeleting(null);
         } catch {
-            addToast("Couldn't remove the brand. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't remove the brand", action: { label: 'Try again', onClick: () => remove() } });
         }
     };
 

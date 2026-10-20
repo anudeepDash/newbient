@@ -53,7 +53,7 @@ const ProposalDetailPanel = ({ proposalId, onClose, canManage, canInvoice, onEdi
             if (message) addToast(message, 'success');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't update the proposal. Please try again.", 'error');
+            addToast('Please try again.', 'error', { title: "Couldn't update the proposal", action: { label: 'Try again', onClick: () => update(updates, message) } });
         }
     };
 

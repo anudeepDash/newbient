@@ -228,7 +228,7 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
 
     const openWhatsApp = useCallback((p) => {
         if (wameLeft <= 0) {
-            addToast(`Today’s limit of ${wame?.cap} WhatsApp chats by hand is reached. Use the app or email, or try tomorrow.`, 'error');
+            addToast(`You can open ${wame?.cap} WhatsApp chats by hand a day. Use the app or email, or try again tomorrow.`, 'warning', { title: 'Today’s WhatsApp limit is reached' });
             return;
         }
         setWame(w => (w ? { ...w, usedToday: w.usedToday + 1 } : w));
@@ -326,7 +326,7 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
 
     const start = async () => {
         if (!plan.app.length && !plan.wa.length && !plan.mail.length) {
-            addToast('No one selected can be invited on that channel.', 'info');
+            addToast('Pick creators who can be reached on that channel.', 'info', { title: 'No one to invite' });
             return;
         }
         if (plan.mail.length && !window.confirm(`Email the group invite to ${plan.mail.length} creator${plan.mail.length === 1 ? '' : 's'} now?`)) return;
@@ -334,11 +334,11 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
             const r = await callOutreach('outreach-city-notify', { creatorIds: plan.app.map(p => p.id) });
             const sentIds = r.ok ? r.data.results.filter(x => x.outcome === 'sent').map(x => x.id) : [];
             if (sentIds.length) await useStore.getState().bulkMarkCreatorInvitesSent(sentIds, 'app');
-            addToast(r.ok ? `${sentIds.length} told in the Newbi app.` : r.error, r.ok ? 'success' : 'error');
+            addToast(r.ok ? `Invite sent to ${sentIds.length} creator${sentIds.length === 1 ? '' : 's'} in the Newbi app.` : (r.error || 'Please try again.'), r.ok ? 'success' : 'error', r.ok ? undefined : { title: 'Couldn’t send the app invites' });
         }
         // WhatsApp by hand only up to what's left of today's cap.
         const waQueue = plan.wa.slice(0, Number.isFinite(wameLeft) ? wameLeft : plan.wa.length);
-        if (waQueue.length < plan.wa.length) addToast(`${plan.wa.length - waQueue.length} left for tomorrow: today’s WhatsApp-by-hand limit.`, 'warning');
+        if (waQueue.length < plan.wa.length) addToast('You’ve reached today’s limit for WhatsApp chats by hand.', 'warning', { title: `${plan.wa.length - waQueue.length} left for tomorrow` });
         if (!waQueue.length && !plan.mail.length) return;
         setRun({
             queue: waQueue.map(p => p.id),
@@ -352,7 +352,7 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
         if (plan.mail.length) {
             const { sent, failed } = await sendEmails(plan.mail);
             setRun(r => (r ? { ...r, emailing: false, done: r.index >= r.queue.length } : r));
-            addToast(failed ? `Emailed ${sent}. ${failed} couldn't be sent.` : `Emailed ${sent} creator${sent === 1 ? '' : 's'}.`, failed ? 'warning' : 'success');
+            addToast(failed ? `${failed} couldn’t be sent. Try those again.` : `Invite emailed to ${sent} creator${sent === 1 ? '' : 's'}.`, failed ? 'warning' : 'success', failed ? { title: `Emailed ${sent} of ${sent + failed}` } : undefined);
         }
     };
 
@@ -363,10 +363,13 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
         setBusy(true);
         try {
             await useStore.getState().bulkAddCreatorsToCityGroup(city === 'all' ? '' : city, ids);
-            addToast(`${ids.length} marked as in the group.`, 'success');
+            addToast(`${ids.length} creator${ids.length === 1 ? '' : 's'} marked as in the group.`, 'success');
             setPicked(null);
         } catch {
-            addToast("Couldn't update them. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: 'Couldn’t mark them as in the group',
+                action: { label: 'Try again', onClick: () => markJoined(ids) },
+            });
         } finally {
             setBusy(false);
         }
@@ -377,7 +380,10 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
             await useStore.getState().updateCreator(p.id, { inviteLinkSent: false, inviteLinkSentAt: null, inviteLinkChannel: null });
             addToast(`${firstName(p.c)} is back on the to-invite list.`, 'info');
         } catch {
-            addToast("Couldn't undo that. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: 'Couldn’t undo that',
+                action: { label: 'Try again', onClick: () => undoSent(p) },
+            });
         }
     };
     const undoJoined = async (p) => {
@@ -385,7 +391,10 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
             await useStore.getState().updateCreator(p.id, { hasJoinedCityGroup: false, joinedCityGroupAt: null });
             addToast(`${firstName(p.c)} is no longer marked as in the group.`, 'info');
         } catch {
-            addToast("Couldn't update that. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: 'Couldn’t undo that',
+                action: { label: 'Try again', onClick: () => undoJoined(p) },
+            });
         }
     };
 

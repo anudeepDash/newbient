@@ -66,13 +66,13 @@ const CampaignManager = () => {
         const store = useStore.getState();
         if (editingId) {
             await store.updateCampaign(editing?.id || editingId, payload, { notify });
-            addToast(notify ? 'Saved and announced to matching creators.' : 'Campaign saved.', 'success');
+            if (notify) addToast('Matching creators are being told about it.', 'success', { title: 'Campaign saved' });
+            else addToast('Campaign saved.', 'success');
             goManage(editing?.id || editingId);
         } else {
             const id = await store.addCampaign(payload, { notify: notify !== false });
-            addToast(payload.status === 'Open'
-                ? (notify !== false ? 'Campaign is live. Matching creators are being told.' : 'Campaign is live.')
-                : payload.status === 'Draft' ? 'Draft saved.' : 'Campaign created.', 'success');
+            if (payload.status === 'Open' && notify !== false) addToast('Matching creators are being told.', 'success', { title: 'Campaign is live' });
+            else addToast(payload.status === 'Open' ? 'Campaign is live.' : payload.status === 'Draft' ? 'Draft saved.' : 'Campaign created.', 'success');
             if (id) navigate(`/admin/campaigns/manage/${encodeURIComponent(id)}`, { replace: true });
             else goList();
         }
@@ -83,7 +83,10 @@ const CampaignManager = () => {
             await useStore.getState().updateCampaign(c.id, updates, options);
             if (okMessage) addToast(okMessage, 'success');
         } catch {
-            addToast("Couldn't update the campaign. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: 'Campaign not updated',
+                action: { label: 'Try again', onClick: () => patch(c, updates, okMessage, options) },
+            });
         }
     });
 
@@ -114,19 +117,19 @@ const CampaignManager = () => {
                     await useStore.getState().announceCampaign(c.id);
                     addToast('Matching creators have been told.', 'success');
                 } catch {
-                    addToast("Couldn't send the announcement. Please try again.", 'error');
+                    addToast('Check your connection and try again.', 'error', { title: 'Announcement not sent' });
                 }
             });
         } else if (kind === 'delete') {
             await withBusy(c.id, async () => {
                 try {
                     const result = await useStore.getState().deleteCampaign(c.id);
-                    addToast(result?.failed
-                        ? `Campaign deleted. ${result.failed} creator profile${result.failed === 1 ? '' : 's'} still list it; they'll be tidied next time.`
-                        : 'Campaign deleted.', result?.failed ? 'warning' : 'success');
+                    if (result?.failed) {
+                        addToast(`${result.failed} creator profile${result.failed === 1 ? ' still shows' : 's still show'} it. They'll be cleaned up automatically next time.`, 'warning', { title: 'Campaign deleted' });
+                    } else addToast('Campaign deleted.', 'success');
                     if (manageId || editingId) goList();
                 } catch {
-                    addToast("Couldn't delete the campaign. Please try again.", 'error');
+                    addToast('Check your connection and try again.', 'error', { title: 'Campaign not deleted' });
                 }
             });
         }

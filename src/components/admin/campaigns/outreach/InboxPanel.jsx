@@ -29,7 +29,13 @@ const Bubble = ({ m, threadId }) => {
         setLoading(true);
         const r = await callOutreach('inbox-media', { threadId, messageId: m.id });
         setLoading(false);
-        if (!r.ok) { addToast(r.error, 'error'); return; }
+        if (!r.ok) {
+            addToast(r.error || 'Please try again.', 'error', {
+                title: 'Couldn’t open the attachment',
+                action: { label: 'Try again', onClick: () => load() },
+            });
+            return;
+        }
         setMedia(r.data);
     };
     const out = m.direction === 'out';
@@ -81,14 +87,18 @@ const Conversation = ({ threadId, onBack, onChanged }) => {
         setSending(true);
         const r = await callOutreach('inbox-reply', { threadId, text });
         setSending(false);
-        if (!r.ok) { addToast(r.error, 'error'); load(); return; }
+        if (!r.ok) { addToast(r.error || 'Please try again.', 'error', { title: 'Reply not sent' }); load(); return; }
         setText('');
         load();
         onChanged();
     };
     const template = async (kind) => {
         const r = await callOutreach('inbox-template', { threadId, kind });
-        addToast(r.ok ? 'Sent.' : r.error, r.ok ? 'success' : 'error');
+        if (r.ok) addToast('Sent.', 'success');
+        else addToast(r.error || 'Please try again.', 'error', {
+            title: 'Message not sent',
+            action: { label: 'Try again', onClick: () => template(kind) },
+        });
         load();
     };
     const setState = async (state) => {

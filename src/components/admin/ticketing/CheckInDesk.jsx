@@ -100,8 +100,8 @@ const CheckInDesk = ({ eventId, orders, guestEntries }) => {
         }
         run(p.key, 'in', async () => {
             await write(p, true);
-            addToast(`${p.name} checked in${p.count > 1 ? ` (${p.count} people)` : ''}.`, 'success');
-        }, { errorMessage: "Couldn't check them in. Check your connection and try again." });
+            addToast(p.count > 1 ? `All ${p.count} people on this pass are in.` : `${p.name} checked in.`, 'success', p.count > 1 ? { title: `${p.name} checked in` } : undefined);
+        }, { errorTitle: "Couldn't check them in", errorMessage: 'Check your connection and try again.' });
     };
 
     const pct = expected ? Math.round((arrived / expected) * 100) : 0;

@@ -114,19 +114,19 @@ const ConcertZoneStudio = () => {
     const publicUrl = (p) => `${window.location.origin}${postPath(p)}`;
     const copyLink = async (p) => {
         try { await navigator.clipboard.writeText(publicUrl(p)); addToast('Link copied.', 'success'); }
-        catch { addToast("Couldn't copy. The link is " + publicUrl(p), 'info'); }
+        catch { addToast(publicUrl(p), 'warning', { title: "Couldn't copy the link", hint: 'Select it and copy it by hand.' }); }
     };
     const toggleFeatured = (p) => guard(async () => {
         try {
             await updatePost(p.id, { featured: !p.featured });
             addToast(p.featured ? 'No longer featured.' : 'Featured on the blog and home page.', 'success');
-        } catch (err) { console.error(err); addToast("Couldn't update the post. Please try again.", 'error'); }
+        } catch (err) { console.error(err); addToast('Check your connection and try again.', 'error', { title: 'Post not updated', action: { label: 'Try again', onClick: () => toggleFeatured(p) } }); }
     });
     const unpublish = (p) => guard(async () => {
         try {
             await updatePost(p.id, { status: 'Draft' });
-            addToast('Moved to drafts. It is no longer on the site.', 'success');
-        } catch (err) { console.error(err); addToast("Couldn't update the post. Please try again.", 'error'); }
+            addToast("It's no longer on the site.", 'success', { title: 'Moved to drafts' });
+        } catch (err) { console.error(err); addToast('Check your connection and try again.', 'error', { title: 'Post not updated', action: { label: 'Try again', onClick: () => unpublish(p) } }); }
     });
     const duplicate = (p) => guard(async () => {
         try {
@@ -136,7 +136,7 @@ const ConcertZoneStudio = () => {
             const ref = await addPost({ ...rest, title: `${p.title || 'Untitled'} (copy)`, slug, status: 'Draft', featured: false, publishDate: toDateInput(new Date()) });
             addToast('Copied as a new draft.', 'success');
             if (ref?.id) navigate(`/admin/blog/edit/${ref.id}`);
-        } catch (err) { console.error(err); addToast("Couldn't copy the post. Please try again.", 'error'); }
+        } catch (err) { console.error(err); addToast('Check your connection and try again.', 'error', { title: "Couldn't copy the post", action: { label: 'Try again', onClick: () => duplicate(p) } }); }
     });
     const emailViaMailing = (p) => {
         const qs = new URLSearchParams({
@@ -159,19 +159,22 @@ const ConcertZoneStudio = () => {
                 addToast('Post deleted.', 'success');
             } else if (kind === 'publish') {
                 await updatePost(item.id, { status: 'Published', publishAt: new Date().toISOString(), publishDate: toDateInput(new Date()) });
-                addToast('Published. It is live on the blog.', 'success');
+                addToast("It's live on the blog.", 'success', { title: 'Post published' });
             } else if (kind === 'notify') {
                 const claimed = await useStore.getState().claimContentNotification('posts', item.id, { force: !!item.notifiedAt });
                 if (!claimed) addToast('It was already sent a moment ago.', 'info');
                 else {
                     await notifyAllUsers(`New article: ${item.title}`, item.shortDescription || 'Our latest blog post is up. Take a look.', postPath(item), item.coverImage || '', !!email);
-                    addToast(email ? 'Notification sent. Opening Mailing for the email…' : 'Notification sent to everyone.', 'success');
+                    addToast(email ? 'Opening Mailing for the email…' : 'Notification sent to everyone.', 'success', email ? { title: 'Notification sent' } : undefined);
                 }
             }
             setConfirm(null);
         } catch (err) {
             console.error(err);
-            addToast("That didn't work. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: kind === 'delete' ? 'Post not deleted' : kind === 'publish' ? 'Post not published' : 'Notification not sent',
+                action: { label: 'Try again', onClick: () => runConfirm() },
+            });
         }
     });
 
@@ -408,7 +411,10 @@ const BlogPageSettings = ({ open, onClose }) => {
             onClose();
         } catch (err) {
             console.error(err);
-            addToast("Couldn't save. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: 'Blog page not saved',
+                action: { label: 'Try again', onClick: () => save() },
+            });
         } finally {
             setSaving(false);
         }

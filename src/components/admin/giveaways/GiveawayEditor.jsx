@@ -163,7 +163,7 @@ const GiveawayEditor = ({ giveaway, giveaways, onDone }) => {
         if (saving) return;
         setTried(true);
         const first = Object.values(problems)[0];
-        if (first) { addToast(first, 'error'); return; }
+        if (first) { addToast(first, 'warning', { title: 'Giveaway not saved yet' }); return; }
         if (editing && giveaway.slug && giveaway.slug !== data.slug && !(await confirm({
             title: 'Change the link?',
             body: `The old link /giveaway/${giveaway.slug} will stop working, including referral links people already shared.`,
@@ -208,7 +208,10 @@ const GiveawayEditor = ({ giveaway, giveaways, onDone }) => {
             onDone(true);
         } catch (err) {
             console.error(err);
-            addToast("Couldn't save the giveaway. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: 'Giveaway not saved',
+                action: { label: 'Try again', onClick: () => save() },
+            });
         } finally {
             setSaving(false);
         }

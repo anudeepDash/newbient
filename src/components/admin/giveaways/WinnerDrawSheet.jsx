@@ -102,11 +102,13 @@ const WinnerDrawSheet = ({ open, onClose, giveaway, entries }) => {
                     'giveaway'
                 ).then(() => { notified += 1; }).catch(() => {})));
             }
-            addToast(`${drawn.length === 1 ? `${drawn[0].name || 'The winner'} is` : `${drawn.length} winners are`} confirmed${closeAfter ? ' and the giveaway is closed' : ''}.${notified ? ` ${notified} notified.` : ''}`, 'success');
+            const doneTitle = drawn.length === 1 ? `${drawn[0].name || 'The winner'} is confirmed` : `${drawn.length} winners confirmed`;
+            const doneDetail = [closeAfter && 'The giveaway is now closed.', notified && `${notified} ${notified === 1 ? 'winner' : 'winners'} notified.`].filter(Boolean).join(' ');
+            addToast(doneDetail || `${doneTitle}.`, 'success', doneDetail ? { title: doneTitle } : undefined);
             onClose();
         } catch (err) {
             console.error(err);
-            addToast(err?.message && !/firestore|permission|network/i.test(err.message) ? `${err.message} Draw again.` : "Couldn't save the winners. Please try again.", 'error');
+            addToast(err?.message && !/firestore|permission|network/i.test(err.message) ? `${err.message} Draw again.` : 'Check your connection and try again.', 'error', { title: 'Winners not saved' });
             setStep('setup');
         } finally {
             setSaving(false);

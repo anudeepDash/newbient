@@ -213,7 +213,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
                 addToast(`City set to ${result.city} based on your location.`, 'success');
             }
         } catch {
-            addToast("Couldn't get your location. Please pick the city from the list.", 'info');
+            addToast("Pick the city from the list instead.", 'info', { title: "Couldn't find your location" });
         } finally {
             setIsLocatingCity(false);
         }
@@ -259,14 +259,14 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
                         instagram: cleanHandle,
                         instagramFollowers: String(mockFollowers)
                     }));
-                    addToast(`Test mode: Instagram verified with ${mockFollowers.toLocaleString()} followers.`, 'info');
+                    addToast(`Instagram verified with ${mockFollowers.toLocaleString()} followers.`, 'info', { title: 'Test mode' });
                     return;
                 }
 
                 if (data.requiresManualEntry) {
                     setIsManualFollowerEntry(true);
                     setInstagramVerificationError('');
-                    addToast("We couldn't fetch Instagram followers automatically. Please enter the count yourself.", 'info');
+                    addToast("Enter the follower count yourself.", 'info', { title: "Couldn't check the followers" });
                     return;
                 }
 
@@ -301,7 +301,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
                 ...(data.profilePic && !prev.profilePicture ? { profilePicture: data.profilePic } : {})
             }));
 
-            addToast(`Instagram verified: @${data.handle} has ${count.toLocaleString()} followers.`, 'success');
+            addToast(`@${data.handle} has ${count.toLocaleString()} followers.`, 'success', { title: 'Instagram verified' });
         } catch (err) {
             console.warn("Instagram verification error:", err);
             const isLocal = typeof window !== 'undefined' &&
@@ -324,7 +324,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
                     instagram: cleanHandle,
                     instagramFollowers: String(mockFollowers)
                 }));
-                addToast(`Test mode: Instagram verified with ${mockFollowers.toLocaleString()} followers.`, 'info');
+                addToast(`Instagram verified with ${mockFollowers.toLocaleString()} followers.`, 'info', { title: 'Test mode' });
                 return;
             }
             setIsManualFollowerEntry(true);
@@ -358,7 +358,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
         e.target.value = '';
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
-            addToast("This image is too large. Please choose one under 10MB.", "error");
+            addToast("Choose an image under 10 MB.", "warning", { title: 'This image is too large' });
             return;
         }
         const localPreview = URL.createObjectURL(file);
@@ -374,7 +374,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
             }
         } catch (err) {
             console.error("Cloudinary upload failed, using local preview:", err);
-            addToast("Couldn't upload the photo, so we're using the preview for now.", "info");
+            addToast("We're using the preview for now. You can try uploading it again later.", "warning", { title: "Photo not uploaded" });
         } finally {
             setIsUploadingPhoto(false);
         }
@@ -397,38 +397,38 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
 
         if (!form.name.trim()) {
             goToSection('identity');
-            addToast("Please enter the creator's full name.", "error");
+            addToast("Enter the creator's full name.", "warning");
             return;
         }
 
         if (!form.city) {
             goToSection('city');
-            addToast("Please select the creator's city.", "error");
+            addToast("Choose the creator's city.", "warning");
             return;
         }
 
         if (form.city === 'Others' && !form.customCity?.trim()) {
             goToSection('city');
-            addToast("Please enter the city name.", "error");
+            addToast("Enter the city name.", "warning");
             return;
         }
 
         if (!form.categories) {
             goToSection('niche');
-            addToast("Please select the creator's main niche.", "error");
+            addToast("Choose the creator's main niche.", "warning");
             return;
         }
 
         if (form.categories === 'Others' && !form.customNiche?.trim()) {
             goToSection('niche');
-            addToast("Please enter the content niche.", "error");
+            addToast("Enter the content niche.", "warning");
             return;
         }
 
         const showCollege = isCollegeNiche(form.categories);
         if (showCollege && !form.collegeName?.trim()) {
             goToSection('niche');
-            addToast("Please enter the college or university name.", "error");
+            addToast("Enter the college or university name.", "warning");
             return;
         }
 
@@ -436,7 +436,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
             const val = form[field]?.trim();
             if (val && hasDisallowedLink(val)) {
                 goToSection(field === 'instagram' ? 'socials' : 'platforms');
-                addToast(`Please enter just the ${field} username, not a link.`, 'error');
+                addToast(`Enter just the ${({ instagram: 'Instagram', linkedin: 'LinkedIn', youtube: 'YouTube', twitter: 'X' })[field] || field} username, not a link.`, 'warning');
                 return;
             }
         }
@@ -448,7 +448,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
                 const existing = creators.find(c => normalizePhoneNumber(c.phone) === normPhone);
                 if (existing) {
                     goToSection('contact');
-                    addToast(`This phone number already belongs to ${existing.name || existing.displayName} (${existing.email || 'existing creator'}).`, 'error');
+                    addToast(`It belongs to ${existing.name || existing.displayName || 'another creator'}.`, 'warning', { title: 'Phone number already added', hint: existing.email ? `Their email is ${existing.email}.` : null });
                     return;
                 }
             }
@@ -459,7 +459,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
             const existing = (creators || []).find(c => c.email && c.email.trim().toLowerCase() === normEmail);
             if (existing) {
                 goToSection('contact');
-                addToast(`This email already belongs to ${existing.name || existing.displayName}.`, 'error');
+                addToast(`It belongs to ${existing.name || existing.displayName || 'another creator'}.`, 'warning', { title: 'Email already added' });
                 return;
             }
         }
@@ -469,21 +469,21 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
             const existing = (creators || []).find(c => c.instagram && c.instagram.trim().replace(/^@/, '').toLowerCase() === cleanInsta);
             if (existing) {
                 goToSection('socials');
-                addToast(`Instagram @${cleanInsta} already belongs to ${existing.name || existing.displayName}.`, 'error');
+                addToast(`@${cleanInsta} belongs to ${existing.name || existing.displayName || 'another creator'}.`, 'warning', { title: 'Instagram already added' });
                 return;
             }
 
             const isVerified = Boolean(instagramVerifiedData && instagramVerifiedData.handle === cleanInsta);
             if (!isVerified && !form.instagramFollowers?.trim() && !isManualFollowerEntry) {
                 goToSection('socials');
-                addToast("Please verify the Instagram handle or enter the follower count.", 'warning');
+                addToast("Verify the Instagram handle or enter the follower count.", 'warning');
                 return;
             }
         }
 
         if (sendWelcomeMail && !form.email?.trim()) {
             goToSection('contact');
-            addToast("Add an email address so we can send the welcome email.", 'error');
+            addToast("Add an email address so we can send the welcome email.", 'warning');
             return;
         }
 
@@ -552,12 +552,12 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
             };
 
             const result = await addCreator(payload, sendWelcomeMail);
-            addToast(`Creator "${form.name.trim()}" added.`, 'success');
+            addToast(`${form.name.trim()} added.`, 'success');
             onCreated?.(result);
             onClose?.();
         } catch (err) {
             console.error("Error adding creator profile:", err);
-            addToast(err.message || "Couldn't add the creator. Please try again.", 'error');
+            addToast(err?.message || 'Please try again.', 'error', { title: 'Creator not added' });
         } finally {
             setIsSaving(false);
         }
@@ -1046,7 +1046,7 @@ const AddCreatorModal = ({ onClose, onCreated }) => {
                             onChange={(v) => {
                                 if (v && !hasEmail) {
                                     goToSection('contact');
-                                    addToast('Add an email address first.', 'info');
+                                    addToast('Add an email address first.', 'warning');
                                     return;
                                 }
                                 setSendWelcomeMail(v);

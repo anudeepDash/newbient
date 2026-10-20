@@ -48,7 +48,7 @@ const ContractDetailPanel = ({ contractId, onClose, canManage, onEdit, onEmail, 
             if (message) addToast(message, 'success');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't update the contract. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Contract not updated', action: { label: 'Try again', onClick: () => update(updates, message) } });
         }
     };
 

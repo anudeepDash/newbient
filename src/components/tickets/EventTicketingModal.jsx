@@ -367,7 +367,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
             setAppliedCoupon(coupon);
             useStore.getState().addToast("Coupon applied.", 'success');
         } catch (error) {
-            useStore.getState().addToast(error.message || "Couldn't apply that coupon. Please check the code and try again.", 'error', 'TKT-CPN-01');
+            useStore.getState().addToast(error.message || "Check the code and try again.", 'error', { title: "Coupon not applied", code: 'TKT-CPN-01' });
             setAppliedCoupon(null);
         } finally {
             setIsValidatingCoupon(false);
@@ -411,7 +411,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
 
     const handleSendOTP = async () => {
         if (!formData.phone || formData.phone.length < 10) {
-            return useStore.getState().addToast("Please enter a valid 10-digit phone number.", 'error', 'TKT-VAL-01');
+            return useStore.getState().addToast("Enter your 10-digit phone number first.", 'warning', 'TKT-VAL-01');
         }
 
         setLoading(true);
@@ -419,7 +419,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             if (isLocal) {
                 setOtpSent(true);
-                useStore.getState().addToast("Test mode: enter any 6-digit code to verify.", 'info');
+                useStore.getState().addToast("Enter any 6-digit code to verify.", 'info', { title: 'Test mode' });
                 setLoading(false);
                 return;
             }
@@ -445,7 +445,11 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
                     window.grecaptcha.reset(widgetId);
                 });
             }
-            useStore.getState().addToast("We couldn't send your verification code. Please check your connection and try again.", 'error', 'TKT-OTP-01');
+            useStore.getState().addToast("Check your connection and try again.", 'error', {
+                title: "Couldn't send your verification code",
+                code: 'TKT-OTP-01',
+                action: { label: 'Try again', onClick: () => handleSendOTP() },
+            });
         } finally {
             setLoading(false);
         }
@@ -454,7 +458,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
     const handleVerifyOTP = async (codeToVerify) => {
         const fullCode = typeof codeToVerify === 'string' ? codeToVerify : otpValues.join('');
         if (fullCode.length !== 6) {
-            return useStore.getState().addToast("Please enter the 6-digit verification code.", 'error');
+            return useStore.getState().addToast("Enter the 6-digit code we texted you.", 'warning');
         }
         
         setVerifying(true);
@@ -495,7 +499,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
             console.error("Verification error:", error);
             if (error.code === 'auth/credential-already-in-use') {
                 setIsPhoneVerified(true);
-                useStore.getState().addToast("Phone number verified. It's also linked to another account.", 'success');
+                useStore.getState().addToast("This number is also linked to another account.", 'success', { title: 'Phone number verified' });
                 
                 if (user?.uid) await savePhoneToProfile(`${countryCode}${formData.phone}`);
 
@@ -515,7 +519,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
                     }
                 }, 1200);
             } else {
-                useStore.getState().addToast("That code didn't work. Please check it and try again.", 'error', 'TKT-OTP-02');
+                useStore.getState().addToast("Check the code and try again.", 'error', { title: "That code didn't work", code: 'TKT-OTP-02' });
             }
         } finally {
             setVerifying(false);
@@ -636,7 +640,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
                 taskSubmission: taskSubmission || null,
             });
             if (!res.ok) {
-                useStore.getState().addToast(res.error || "We couldn't complete your guestlist request. Please try again later.", 'error', 'TKT-GST-01');
+                useStore.getState().addToast(res.error || "Please try again in a few minutes.", 'error', { title: "Guestlist request didn't go through", code: 'TKT-GST-01' });
                 return;
             }
             setBookingRef(res.data.ref);
@@ -644,7 +648,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
             setStep('success');
         } catch (error) {
             console.error("Guestlist error:", error);
-            useStore.getState().addToast("We couldn't complete your guestlist request. Please try again later.", 'error', 'TKT-GST-01');
+            useStore.getState().addToast("Check your connection and try again in a few minutes.", 'error', { title: "Guestlist request didn't go through", code: 'TKT-GST-01' });
         } finally {
             setLoading(false);
         }
@@ -660,7 +664,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
                 couponCode: appliedCoupon?.code || null,
             });
             if (!res.ok && !res.unavailable) {
-                useStore.getState().addToast(res.error || "Those tickets aren't available any more.", 'error', 'TKT-CAP-01');
+                useStore.getState().addToast(res.error || "Those tickets aren't available any more. Pick others and try again.", 'error', { title: "Couldn't continue to payment", code: 'TKT-CAP-01' });
                 refreshAvailability();
                 if (res.code === 'COUPON_INVALID') setAppliedCoupon(null);
                 setStep('selection');
@@ -676,7 +680,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
 
     const submitTickets = async () => {
         if (totalAmount > 0 && !paymentRef.trim()) {
-            return useStore.getState().addToast("Please enter your payment reference (UTR) number.", 'error', 'TKT-VAL-04');
+            return useStore.getState().addToast("Enter the UTR, the payment reference number from your UPI app.", 'warning', 'TKT-VAL-04');
         }
 
         setLoading(true);
@@ -697,13 +701,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
             if (apiRes.ok) {
                 ref = apiRes.data.bookingRef;
             } else if (!apiRes.unavailable) {
-                useStore.getState().addToast(apiRes.error || "We couldn't complete your booking.", 'error', 'TKT-PAY-03');
+                useStore.getState().addToast(apiRes.error || "Please try again.", 'error', { title: "Booking not completed", code: 'TKT-PAY-03' });
                 if (apiRes.code === 'SOLD_OUT') { refreshAvailability(); setStep('selection'); }
                 if (apiRes.code === 'COUPON_INVALID') setAppliedCoupon(null);
                 return;
             } else {
                 // Orders are only saved by the server (it checks seats and the coupon); never from the browser.
-                useStore.getState().addToast("We couldn't reach our booking server. Please try again in a moment; your details are still here.", 'error', 'TKT-PAY-04');
+                useStore.getState().addToast("Please try again in a moment. Your details are still here.", 'error', { title: "Couldn't reach our booking server", code: 'TKT-PAY-04' });
                 return;
             }
 
@@ -714,7 +718,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
             setStep('success');
         } catch (error) {
             console.error("Ticketing error:", error);
-            useStore.getState().addToast("We couldn't complete your booking. If you've already paid, don't worry — contact support.", 'error', 'TKT-PAY-01');
+            useStore.getState().addToast("If you've already paid, don't worry. Contact support and we'll sort it out.", 'error', { title: "Booking not completed", code: 'TKT-PAY-01' });
         } finally {
             setLoading(false);
         }
@@ -751,7 +755,11 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
             link.click();
         } catch (error) {
             console.error("Download error:", error);
-            useStore.getState().addToast("We couldn't download your pass. You can always find it in your profile.", 'error', 'TKT-DL-01');
+            useStore.getState().addToast("You can always find it in your profile.", 'error', {
+                title: "Couldn't download your pass",
+                code: 'TKT-DL-01',
+                action: { label: 'Try again', onClick: () => handleDownloadTicket() },
+            });
         } finally {
             setIsDownloading(false);
         }
@@ -765,12 +773,12 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
 
         if (step === 'map') {
             if (cartTotalCount === 0) {
-                return useStore.getState().addToast("Please select a ticket category on the map first.", 'error', 'TKT-MAP-01');
+                return useStore.getState().addToast("Pick a ticket category on the map first.", 'warning', 'TKT-MAP-01');
             }
             setStep('selection');
         } else if (step === 'selection') {
             if (activeTab === 'tickets' && cartTotalCount === 0 && hasCategories) {
-                return useStore.getState().addToast("Please select at least one ticket to continue.", 'error', 'TKT-VAL-02');
+                return useStore.getState().addToast("Pick at least one ticket to continue.", 'warning', 'TKT-VAL-02');
             }
             setStep('identity-name');
         }
@@ -1269,7 +1277,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
                                         type="button"
                                         onClick={() => {
                                             if (!formData.name.trim()) {
-                                                return useStore.getState().addToast("Please enter your full name.", 'error');
+                                                return useStore.getState().addToast("Enter your full name first.", 'warning');
                                             }
                                             setStep('identity-email');
                                         }}
@@ -1326,7 +1334,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false, chrom
                                         onClick={() => {
                                             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                                             if (!emailRegex.test(formData.email.trim())) {
-                                                return useStore.getState().addToast("Please enter a valid email address.", 'error');
+                                                return useStore.getState().addToast("Enter your email address, like name@example.com.", 'warning');
                                             }
                                             setStep('identity-phone');
                                         }}

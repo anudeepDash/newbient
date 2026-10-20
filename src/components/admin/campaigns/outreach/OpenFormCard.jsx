@@ -83,7 +83,8 @@ const OpenFormCard = ({ form, set, title, targetCity, errors, err }) => {
     const setPerk = (tier, key, value) => set({ perksByTier: { ...form.perksByTier, [tier]: { ...form.perksByTier[tier], [key]: value } } });
     const copy = async () => {
         const ok = await copyToClipboard(url);
-        addToast(ok ? 'Form link copied.' : 'Couldn’t copy. Select the link and copy it.', ok ? 'success' : 'error');
+        if (ok) addToast('Form link copied.', 'success');
+        else addToast('Select the link and copy it yourself.', 'error', { title: 'Couldn’t copy the link' });
     };
 
     return (

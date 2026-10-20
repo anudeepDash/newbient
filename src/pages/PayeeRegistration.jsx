@@ -64,7 +64,7 @@ const PayeeRegistration = () => {
             return;
         }
         if (!name || !email || !phone) {
-            useStore.getState().addToast('Fill in all the required fields to continue.', 'error');
+            useStore.getState().addToast('Add your name, email and phone number to continue.', 'warning');
             return;
         }
 
@@ -72,13 +72,13 @@ const PayeeRegistration = () => {
         let destinationDetails = '';
         if (paymentMode === 'UPI') {
             if (!upiId) {
-                useStore.getState().addToast('Add your UPI ID to continue.', 'error');
+                useStore.getState().addToast('Add your UPI ID to continue.', 'warning');
                 return;
             }
             destinationDetails = `UPI: ${upiId.trim()}`;
         } else if (paymentMode === 'Bank Transfer') {
             if (!bankName || !accountNumber || !ifscCode) {
-                useStore.getState().addToast('Fill in all your bank details to continue.', 'error');
+                useStore.getState().addToast('Add your bank name, account number and IFSC code to continue.', 'warning');
                 return;
             }
             destinationDetails = `Bank: ${bankName.trim()} | A/C: ${accountNumber.trim()} | IFSC: ${ifscCode.trim()}`;
@@ -113,11 +113,11 @@ const PayeeRegistration = () => {
                 createdAt: new Date().toISOString()
             });
             await notifyEvent('payee-registered', { payeeId: saved?.id || undefined });
-            useStore.getState().addToast("Your payment details were sent. Our team will review them.", 'success');
+            useStore.getState().addToast('Our team will review them.', 'success', { title: 'Payment details sent' });
             setIsSubmitted(true);
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast("Couldn't submit your details. Please try again.", 'error');
+            useStore.getState().addToast('Check your connection and try again.', 'error', { title: 'Details not sent' });
         } finally {
             setLoading(false);
         }

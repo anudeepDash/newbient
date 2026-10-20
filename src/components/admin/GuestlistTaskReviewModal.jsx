@@ -70,7 +70,7 @@ export const GuestlistTaskReviewModal = ({
         setActionError('');
         try {
             await onStatusChange(entry.id, 'approved');
-            useStore.getState().addToast(`Guestlist application from ${entry.customerName || entry.name} approved.`, 'success');
+            useStore.getState().addToast(`${entry.customerName || entry.name || 'The guest'} is on the guestlist.`, 'success');
             onClose();
         } catch (error) {
             console.error('Error approving entry:', error);
@@ -90,7 +90,7 @@ export const GuestlistTaskReviewModal = ({
         setActionError('');
         try {
             await onStatusChange(entry.id, 'rejected');
-            useStore.getState().addToast(`Application from ${entry.customerName || entry.name} declined.`, 'info');
+            useStore.getState().addToast(`${entry.customerName || entry.name || 'The guest'}’s application was declined.`, 'info');
             onClose();
         } catch (error) {
             console.error('Error rejecting entry:', error);
@@ -138,7 +138,7 @@ export const GuestlistTaskReviewModal = ({
             setTimeout(() => setCopiedRef(false), 2000);
             useStore.getState().addToast('Booking reference copied.', 'success');
         } catch {
-            useStore.getState().addToast("Couldn't copy. Please copy it by hand.", 'error');
+            useStore.getState().addToast('Select it and copy it yourself.', 'error', { title: "Couldn't copy the reference" });
         }
     };
 

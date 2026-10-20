@@ -42,7 +42,7 @@ function ShareRow({ post }) {
             count();
             useStore.getState().addToast?.('Link copied.', 'success');
         } catch {
-            useStore.getState().addToast?.('Could not copy the link.', 'error');
+            useStore.getState().addToast?.('Copy it from the address bar instead.', 'warning', { title: 'Couldn’t copy the link' });
         }
     };
 

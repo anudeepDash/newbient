@@ -239,7 +239,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
         e.target.value = '';
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
-            addToast("Please choose an image under 10MB.", "error");
+            addToast("Choose an image under 10 MB.", "warning", { title: 'This image is too large' });
             return;
         }
         const localPreview = URL.createObjectURL(file);
@@ -266,7 +266,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
 
     const handleSendOTP = async () => {
         if (!form.phone) {
-            addToast("Enter your mobile number to get a verification code.", "error");
+            addToast("Enter your mobile number to get a verification code.", "warning");
             return;
         }
         const normPhone = normalizePhoneNumber(form.phone);
@@ -276,7 +276,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
                 normalizePhoneNumber(c.phone) === normPhone
             );
             if (conflict) {
-                addToast(`This number is already linked to another creator account. Please use a different one.`, "error");
+                addToast("It's linked to another creator account. Use a different number.", "warning", { title: 'Number already in use' });
                 return;
             }
         }
@@ -285,7 +285,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             if (isLocal) {
                 setOtpSent(true);
-                addToast("Test mode: enter any 6-digit code to verify.", "info");
+                addToast("Enter any 6-digit code to verify.", "info", { title: 'Test mode' });
                 setIsSendingOtp(false);
                 return;
             }
@@ -299,7 +299,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
                 size: 'invisible',
                 callback: () => {},
                 'expired-callback': () => {
-                    addToast("The security check timed out. Please try again.", 'error');
+                    addToast("Ask for a new code and try again.", 'error', { title: 'The security check timed out' });
                     cleanupRecaptcha();
                 }
             });
@@ -318,7 +318,10 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
             addToast("Verification code sent by SMS.", "success");
         } catch (err) {
             console.error("OTP send error:", err);
-            addToast("Couldn't send the verification code. Please check the number and try again.", "error");
+            addToast("Check the number and try again.", "error", {
+                title: "Couldn't send the code",
+                action: { label: 'Try again', onClick: () => handleSendOTP() },
+            });
             cleanupRecaptcha();
         } finally {
             setIsSendingOtp(false);
@@ -328,7 +331,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
     const handleVerifyOTP = async (codeToVerify) => {
         const fullCode = typeof codeToVerify === 'string' ? codeToVerify : otpValues.join('');
         if (fullCode.length !== 6) {
-            addToast("Please enter the complete 6-digit code.", "error");
+            addToast("Enter all 6 digits of the code.", "warning");
             return;
         }
         setIsVerifyingOtp(true);
@@ -358,7 +361,7 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
             }
         } catch (err) {
             console.error("OTP verification error:", err);
-            addToast("That code didn't work. Please check it and try again.", "error");
+            addToast("Check the code and try again, or ask for a new one.", "error", { title: "That code didn't work" });
         } finally {
             setIsVerifyingOtp(false);
         }
@@ -384,39 +387,39 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
 
         if (!form.name?.trim()) {
             goToSection('identity');
-            addToast("Enter your creator name.", "error");
+            addToast("Enter your creator name.", "warning");
             return;
         }
         if (!form.city) {
             goToSection('city');
-            addToast("Choose the city you work in.", "error");
+            addToast("Choose the city you work in.", "warning");
             return;
         }
         if (form.city === 'Others' && !form.customCity?.trim()) {
             goToSection('city');
-            addToast("Enter your city name.", "error");
+            addToast("Enter your city name.", "warning");
             return;
         }
         if (!form.categories) {
             goToSection('niche');
-            addToast("Choose your main niche.", "error");
+            addToast("Choose your main niche.", "warning");
             return;
         }
         if (form.categories === 'Others' && !form.customNiche?.trim()) {
             goToSection('niche');
-            addToast("Enter your niche.", "error");
+            addToast("Enter your niche.", "warning");
             return;
         }
         if (isCollegeNiche(form.categories) && !form.collegeName?.trim()) {
             goToSection('niche');
-            addToast("Please enter your college or university name", "error");
+            addToast("Enter your college or university name.", "warning");
             return;
         }
 
         for (const field of ['instagram', 'linkedin', 'youtube', 'twitter']) {
             if (form[field] && hasDisallowedLink(form[field])) {
                 goToSection('socials');
-                addToast(`Please enter just your ${field} username, not a link.`, "error");
+                addToast(`Enter just your ${({ instagram: 'Instagram', linkedin: 'LinkedIn', youtube: 'YouTube', twitter: 'X' })[field] || field} username, not a link.`, "warning");
                 return;
             }
         }
@@ -480,7 +483,10 @@ const EditCreatorModal = ({ isOpen, onClose, profile: profileProp, creator, onUp
             onClose();
         } catch (err) {
             console.error("Failed to update creator profile:", err);
-            addToast("Couldn't save your creator details. Please try again.", "error");
+            addToast("Check your connection and try again.", "error", {
+                title: "Couldn't save your details",
+                action: { label: 'Try again', onClick: () => handleSubmit() },
+            });
         } finally {
             setIsSaving(false);
         }

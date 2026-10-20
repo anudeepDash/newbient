@@ -73,7 +73,10 @@ const SetupPanel = ({ campaign, settings, api, sampleApplication, onSaved }) => 
         setSaving(false);
         if (!r.ok) {
             setErrors(r.field ? { [r.field]: r.error } : {});
-            addToast(r.error, 'error');
+            addToast(r.error || 'Please try again.', 'error', {
+                title: 'Message setup not saved',
+                action: r.field ? undefined : { label: 'Try again', onClick: () => save() },
+            });
             return;
         }
         setErrors({});

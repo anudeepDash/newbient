@@ -88,11 +88,11 @@ export const useImageField = (value, onChange) => {
     const upload = async (file) => {
         if (!file) return;
         if (!file.type?.startsWith('image/')) {
-            useStore.getState().addToast('Please choose an image file.', 'error');
+            useStore.getState().addToast('Pick an image file, like a JPG or PNG.', 'warning');
             return;
         }
         if (file.size > 15 * 1024 * 1024) {
-            useStore.getState().addToast('That image is over 15 MB. Please use a smaller one.', 'error');
+            useStore.getState().addToast('Use an image under 15 MB.', 'warning', { title: 'That image is too big' });
             return;
         }
         setUploading(true);
@@ -102,7 +102,7 @@ export const useImageField = (value, onChange) => {
             onChange(url);
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast("Couldn't upload the image. Please try again.", 'error');
+            useStore.getState().addToast('Check your connection and try again.', 'error', { title: "Couldn't upload the image", action: { label: 'Try again', onClick: () => upload(file) } });
         } finally {
             setUploading(false);
         }

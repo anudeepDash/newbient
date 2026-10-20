@@ -111,9 +111,18 @@ const CampaignTickets = ({ campaign, applicants, passes, loaded, error, onSend }
         setBusy(key);
         const res = await passesPost('resend', { campaignId: campaign.id, ...body }, { timeoutMs: 60000 });
         setBusy('');
-        if (!res.ok) { addToast(res.error, 'error'); return; }
+        if (!res.ok) {
+            addToast(res.error || 'Please try again.', 'error', {
+                title: "Couldn't resend",
+                action: { label: 'Try again', onClick: () => resend(body, key) },
+            });
+            return;
+        }
         const failed = res.data.results.filter(r => r.outcome === 'failed').length;
-        addToast(res.data.results.length === 0 ? 'Nothing to resend.' : failed ? `Resent; ${failed} still failing.` : 'Resent.', failed ? 'warning' : 'success');
+        const total = res.data.results.length;
+        if (!total) addToast('Nothing to resend.', 'info');
+        else if (failed) addToast(`${failed} still didn't go through. Try those again in a bit.`, 'warning', { title: `Resent ${total - failed} of ${total}` });
+        else addToast('Resent.', 'success');
     };
 
     // Upgrade (or move) a pass to another category; same code, the creator is told on every channel.
@@ -122,15 +131,28 @@ const CampaignTickets = ({ campaign, applicants, passes, loaded, error, onSend }
         setBusy(`retier:${retier.pass.ref}`);
         const res = await passesPost('retier', { ref: retier.pass.ref, tier: retier.tier.trim(), qty: retier.qty || undefined });
         setBusy('');
-        if (!res.ok) { addToast(res.error, 'error'); return; }
-        addToast(res.data.outcome === 'unchanged' ? 'Nothing changed.' : `Moved to ${retier.tier.trim()}. They've been told.`, 'success');
+        if (!res.ok) {
+            addToast(res.error || 'Please try again.', 'error', {
+                title: 'Ticket not moved',
+                action: { label: 'Try again', onClick: () => doRetier() },
+            });
+            return;
+        }
+        if (res.data.outcome === 'unchanged') addToast('Nothing changed.', 'info');
+        else addToast("They've been told about the change.", 'success', { title: `Moved to ${retier.tier.trim()}` });
         setRetier(null);
     };
 
     const doRevoke = async () => {
         const res = await passesPost('revoke', { ref: revoke.ref });
-        if (!res.ok) { addToast(res.error, 'error'); return; }
-        addToast('Ticket revoked. You can send a new one.', 'success');
+        if (!res.ok) {
+            addToast(res.error || 'Please try again.', 'error', {
+                title: 'Ticket not revoked',
+                action: { label: 'Try again', onClick: () => doRevoke() },
+            });
+            return;
+        }
+        addToast('You can send them a new one now.', 'success', { title: 'Ticket revoked' });
         setRevoke(null);
     };
 

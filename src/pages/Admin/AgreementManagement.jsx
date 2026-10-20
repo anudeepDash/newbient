@@ -156,7 +156,7 @@ const AgreementManagement = () => {
 
     const copyLink = async (a) => {
         const ok = await copyToClipboard(urlFor(a, 'link'));
-        addToast(ok ? 'Contract link copied.' : "Couldn't copy the link.", ok ? 'success' : 'error');
+        addToast(ok ? 'Contract link copied.' : 'Please try again.', ok ? 'success' : 'error', ok ? undefined : { title: "Couldn't copy the link" });
         if (ok) markShared(a, 'link');
     };
     const share = async (a) => {
@@ -190,7 +190,7 @@ const AgreementManagement = () => {
             if (id) setParam('contract', id, true);
         } catch (err) {
             console.error(err);
-            addToast("Couldn't duplicate the contract.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Contract not copied', action: { label: 'Try again', onClick: () => duplicate(a) } });
         }
     };
     const remove = async (a) => {
@@ -203,7 +203,7 @@ const AgreementManagement = () => {
             addToast('Contract deleted.', 'success');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't delete the contract.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Contract not deleted', action: { label: 'Try again', onClick: () => remove(a) } });
         }
     };
     const sendEmail = async (payload) => {

@@ -47,7 +47,8 @@ const PasteSheet = ({ open, onClose, applications, onShortlist, onMark, mode = '
     };
     const copyUnmatched = async () => {
         const ok = await copyToClipboard(result.unmatched.map(m.show).join('\n'));
-        addToast(ok ? 'Unmatched copied.' : 'Couldn’t copy.', ok ? 'success' : 'error');
+        if (ok) addToast('Unmatched entries copied.', 'success');
+        else addToast('Select the list and copy it yourself.', 'error', { title: 'Couldn’t copy the list' });
     };
 
     return (

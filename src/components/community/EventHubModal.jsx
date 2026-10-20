@@ -80,7 +80,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
     
     const handleInternalAction = () => {
         if (event.isTicketed && maintenanceState.features?.tickets) {
-            useStore.getState().addToast("Ticket sales are paused for maintenance. Please check back soon.", 'warning');
+            useStore.getState().addToast("We're doing some quick maintenance. Please check back soon.", 'warning', { title: 'Ticket sales are paused' });
             return;
         }
         if (event.isGuestlistEnabled && !event.isTicketed && !user) {

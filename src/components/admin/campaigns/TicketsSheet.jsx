@@ -209,7 +209,8 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
         setResults(all);
         setPhase('done');
         const failed = all.filter(r => r.outcome === 'failed').length;
-        addToast(failed ? `${all.length - failed} sent, ${failed} failed.` : passKind === 'confirmation' ? 'Confirmations sent.' : 'Passes sent.', failed ? 'warning' : 'success');
+        if (failed) addToast(`${failed} couldn't be sent. Check the list below and try those again.`, 'warning', { title: `Sent ${all.length - failed} of ${all.length}` });
+        else addToast(passKind === 'confirmation' ? 'Confirmations sent.' : 'Passes sent.', 'success');
     };
 
     // Switching QR ↔ confirmation drops anyone who can't get that kind.
@@ -259,7 +260,8 @@ const TicketsSheet = ({ open, onClose, campaign, applicants, preselected, passes
         setResults(all);
         setPhase('done');
         const n = all.filter(r => r.outcome === 'failed').length;
-        addToast(n ? `${all.length - n} sent, ${n} failed.` : 'Tickets sent.', n ? 'warning' : 'success');
+        if (n) addToast(`${n} couldn't be sent. Check the list below and try those again.`, 'warning', { title: `Sent ${all.length - n} of ${all.length}` });
+        else addToast('Tickets sent.', 'success');
     };
 
     const sending = phase === 'sending';

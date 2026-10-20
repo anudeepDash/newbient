@@ -69,7 +69,7 @@ const TicketSaleEditor = ({ open, onClose, event, onSaved }) => {
     const setTier = (i, patch) => setForm(f => ({ ...f, tiers: f.tiers.map((t, j) => (j === i ? { ...t, ...patch } : t)) }));
 
     const upload = async (file) => {
-        if (!file?.type?.startsWith('image/')) { addToast('Choose an image file.', 'error'); return; }
+        if (!file?.type?.startsWith('image/')) { addToast('Pick an image file, like a JPG or PNG.', 'warning'); return; }
         setUploading(true);
         try {
             const url = await useStore.getState().uploadToCloudinary(file);
@@ -77,7 +77,10 @@ const TicketSaleEditor = ({ open, onClose, event, onSaved }) => {
             set({ image: url });
         } catch (err) {
             console.error(err);
-            addToast("Couldn't upload the image. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: 'Image not uploaded',
+                action: { label: 'Try again', onClick: () => upload(file) },
+            });
         } finally {
             setUploading(false);
         }
@@ -138,7 +141,7 @@ const TicketSaleEditor = ({ open, onClose, event, onSaved }) => {
                     createdAt: new Date().toISOString(),
                 }, false);
             }
-            addToast(editing ? 'Ticket sale saved.' : 'Ticket sale created. Add payment details in Settings.', 'success');
+            addToast(editing ? 'Ticket sale saved.' : 'Add the payment details in Settings next.', 'success', editing ? undefined : { title: 'Ticket sale created' });
             onSaved?.(id, { created: !editing });
             onClose();
         } catch (err) {

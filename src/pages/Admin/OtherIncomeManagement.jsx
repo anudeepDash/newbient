@@ -263,7 +263,7 @@ const OtherIncomeManagement = () => {
             setUrl(url);
             useStore.getState().addToast('Attachment uploaded.', 'success');
         } catch (err) {
-            useStore.getState().addToast("Couldn't upload the attachment. Please try again.", 'error');
+            useStore.getState().addToast('Check your connection and try again.', 'error', { title: 'Attachment not uploaded' });
         } finally {
             setUploadingAttachment(false);
         }
@@ -272,7 +272,7 @@ const OtherIncomeManagement = () => {
     const handleCreateIncome = async (e) => {
         e.preventDefault();
         if (!sourceName || !amount || !date) {
-            useStore.getState().addToast('Fill in all the required fields before saving.', 'error');
+            useStore.getState().addToast('Add the source, amount and date first.', 'warning');
             return;
         }
         if (savingIncome) return;
@@ -298,7 +298,7 @@ const OtherIncomeManagement = () => {
             setShowAddModal(false);
             resetForm();
         } catch (err) {
-            useStore.getState().addToast("Couldn't save the income entry. Please try again.", 'error');
+            useStore.getState().addToast('Check your connection and try again.', 'error', { title: 'Income entry not saved', action: { label: 'Try again', onClick: () => handleCreateIncome(e) } });
         } finally {
             setSavingIncome(false);
         }
@@ -307,7 +307,7 @@ const OtherIncomeManagement = () => {
     const handleUpdateIncome = async (e) => {
         e.preventDefault();
         if (!sourceName || !amount || !date) {
-            useStore.getState().addToast('Fill in all the required fields before saving.', 'error');
+            useStore.getState().addToast('Add the source, amount and date first.', 'warning');
             return;
         }
         if (savingIncome) return;
@@ -332,7 +332,7 @@ const OtherIncomeManagement = () => {
             setShowEditModal(null);
             resetForm();
         } catch (err) {
-            useStore.getState().addToast("Couldn't update the income entry. Please try again.", 'error');
+            useStore.getState().addToast('Check your connection and try again.', 'error', { title: 'Changes not saved', action: { label: 'Try again', onClick: () => handleUpdateIncome(e) } });
         } finally {
             setSavingIncome(false);
         }
@@ -356,9 +356,9 @@ const OtherIncomeManagement = () => {
         try {
             const newStatus = isIncomeReceived(income) ? 'Pending' : 'Paid';
             await updateOtherIncome(income.id, { status: newStatus });
-            useStore.getState().addToast(`Income marked as ${newStatus}.`, 'success');
+            useStore.getState().addToast(`Income marked as ${newStatus.toLowerCase()}.`, 'success');
         } catch (err) {
-            useStore.getState().addToast("Couldn't update the status. Please try again.", 'error');
+            useStore.getState().addToast('Check your connection and try again.', 'error', { title: 'Status not changed', action: { label: 'Try again', onClick: () => handleToggleStatus(income) } });
         }
     };
 

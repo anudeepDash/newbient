@@ -176,7 +176,7 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
                 addToast('Proposal updated.', 'success');
             } else {
                 id = await addProposal(data);
-                addToast('Proposal added. Share the link from its details.', 'success');
+                addToast('Share the link from its details.', 'success', { title: 'Proposal added' });
             }
             onSuccess?.(id);
             onClose();

@@ -148,7 +148,7 @@ const VolunteerGigManager = () => {
             if (success) addToast(success, 'success');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't save. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Change not saved' });
         } finally {
             setBusyId(null);
         }
@@ -446,7 +446,7 @@ const VolunteerGigManager = () => {
                         addToast('Applications closed.', 'success');
                     } catch (err) {
                         console.error(err);
-                        addToast("Couldn't close applications. Please try again.", 'error');
+                        addToast('Check your connection and try again.', 'error', { title: "Couldn't close applications" });
                     }
                 } : undefined}
             />

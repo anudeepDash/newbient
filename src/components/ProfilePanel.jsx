@@ -1562,7 +1562,7 @@ const CreatorProfileManager = ({
         const file = e.target.files?.[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
-            if (addToast) addToast("That image is too large. Please choose one under 10MB.", "error");
+            if (addToast) addToast("Choose an image under 10 MB.", "warning", { title: "Photo too large" });
             return;
         }
         const localPreview = URL.createObjectURL(file);
@@ -1589,14 +1589,14 @@ const CreatorProfileManager = ({
 
     const handleSendOTP = async () => {
         if (!form.phone) {
-            if (addToast) addToast("Enter your phone number first.", "error");
+            if (addToast) addToast("Enter your phone number first.", "warning");
             return;
         }
         const normPhone = normalizePhoneNumber(form.phone);
         if (normPhone) {
             const existing = creators.find(c => c.uid !== creatorProfile.uid && normalizePhoneNumber(c.phone) === normPhone);
             if (existing) {
-                if (addToast) addToast(`This number is already linked to another account (${existing.email || 'existing creator'}). Try a different one.`, "error");
+                if (addToast) addToast(`It's linked to ${existing.email || 'another account'}. Try a different number.`, "warning", { title: "Number already in use" });
                 return;
             }
         }
@@ -1605,7 +1605,7 @@ const CreatorProfileManager = ({
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             if (isLocal) {
                 setOtpSent(true);
-                if (addToast) addToast("Local test mode: enter any 6-digit code to verify.", "info");
+                if (addToast) addToast("Enter any 6-digit code to verify.", "info", { title: "Local test mode" });
                 setIsSendingOtp(false);
                 return;
             }
@@ -1623,7 +1623,7 @@ const CreatorProfileManager = ({
                 size: 'invisible',
                 callback: () => {},
                 'expired-callback': () => {
-                    if (addToast) addToast("The security check timed out. Please try again.", 'error');
+                    if (addToast) addToast("Please try again.", 'error', { title: "Security check timed out" });
                     cleanupRecaptcha();
                 }
             });
@@ -1642,7 +1642,7 @@ const CreatorProfileManager = ({
             if (addToast) addToast("Verification code sent to your phone.", "success");
         } catch (err) {
             console.error("OTP send error:", err);
-            if (addToast) addToast("Couldn't send the verification code. Please try again.", "error");
+            if (addToast) addToast("Check the number and try again.", "error", { title: "Couldn't send the code", action: { label: "Try again", onClick: () => handleSendOTP() } });
             cleanupRecaptcha();
         } finally {
             setIsSendingOtp(false);
@@ -1652,7 +1652,7 @@ const CreatorProfileManager = ({
     const handleVerifyOTP = async (codeToVerify) => {
         const fullCode = typeof codeToVerify === 'string' ? codeToVerify : otpValues.join('');
         if (fullCode.length !== 6) {
-            if (addToast) addToast("Enter all 6 digits of the code.", "error");
+            if (addToast) addToast("Enter all 6 digits of the code.", "warning");
             return;
         }
         setIsVerifyingOtp(true);
@@ -1678,7 +1678,7 @@ const CreatorProfileManager = ({
             });
         } catch (err) {
             console.error("OTP verification error:", err);
-            if (addToast) addToast("Couldn't verify that code. Please check it and try again.", "error");
+            if (addToast) addToast("Check the code and try again.", "error", { title: "Couldn't verify the code" });
         } finally {
             setIsVerifyingOtp(false);
         }
@@ -1702,33 +1702,33 @@ const CreatorProfileManager = ({
     const handleSaveCreatorSettings = async (e) => {
         if (e) e.preventDefault();
         if (!form.name?.trim()) {
-            if (addToast) addToast("Add your creator name.", "error");
+            if (addToast) addToast("Add your creator name.", "warning");
             return;
         }
         if (!form.city) {
-            if (addToast) addToast("Select your city.", "error");
+            if (addToast) addToast("Select your city.", "warning");
             return;
         }
         if (form.city === 'Others' && !form.customCity?.trim()) {
-            if (addToast) addToast("Type in your city name.", "error");
+            if (addToast) addToast("Type in your city name.", "warning");
             return;
         }
         if (!form.categories) {
-            if (addToast) addToast("Select your main niche.", "error");
+            if (addToast) addToast("Select your main niche.", "warning");
             return;
         }
         if (form.categories === 'Others' && !form.customNiche?.trim()) {
-            if (addToast) addToast("Type in your niche.", "error");
+            if (addToast) addToast("Type in your niche.", "warning");
             return;
         }
         if (isCollegeNiche(form.categories) && !form.collegeName?.trim()) {
-            if (addToast) addToast("Please enter your college or university name", "error");
+            if (addToast) addToast("Add your college or university name.", "warning");
             return;
         }
 
         for (const field of ['instagram', 'linkedin', 'youtube', 'twitter']) {
             if (form[field] && hasDisallowedLink(form[field])) {
-                if (addToast) addToast(`Enter just your ${field} username, without a link.`, "error");
+                if (addToast) addToast(`Enter just your ${field} username, without a link.`, "warning");
                 return;
             }
         }
@@ -1781,7 +1781,7 @@ const CreatorProfileManager = ({
             setSubTab('overview');
         } catch (err) {
             console.error("Failed to update creator profile:", err);
-            if (addToast) addToast(err.message || "Couldn't update your creator profile. Please try again.", "error");
+            if (addToast) addToast(err?.message || "Please try again.", "error", { title: "Creator profile not saved" });
         } finally {
             setIsSaving(false);
         }

@@ -56,7 +56,7 @@ const ReviewSection = ({ id, formData, live, totals, checks, onGoto, ensureSaved
 
     // Save first, then hand over the saved proposal's id.
     const withSaved = async (key, fn) => {
-        if (blocked) { addToast(checks.blockers[0].text, 'error'); return; }
+        if (blocked) { addToast(checks.blockers[0].text, 'warning', { title: 'Not ready to share yet' }); return; }
         setBusy(key);
         try {
             const pid = await ensureSaved();
@@ -68,7 +68,8 @@ const ReviewSection = ({ id, formData, live, totals, checks, onGoto, ensureSaved
 
     const copyLink = () => withSaved('copy', async (pid) => {
         const ok = await copyToClipboard(urlFor(pid, 'link'));
-        addToast(ok ? 'Link copied. Paste it anywhere to share.' : "Couldn't copy the link.", ok ? 'success' : 'error');
+        if (ok) addToast('Paste it anywhere to share.', 'success', { title: 'Link copied' });
+        else addToast('Your browser blocked it. Try again.', 'error', { title: "Couldn't copy the link", action: { label: 'Try again', onClick: () => copyLink() } });
         if (ok) markShared(pid, 'link');
     });
     const whatsapp = () => withSaved('wa', async (pid) => {
@@ -85,7 +86,7 @@ const ReviewSection = ({ id, formData, live, totals, checks, onGoto, ensureSaved
             await navigator.share({ title: `Proposal for ${formData.clientName || 'you'}`, text: 'Your proposal from Newbi Entertainment.', url: urlFor(pid, 'share') });
             markShared(pid, 'share');
         } catch (err) {
-            if (err?.name !== 'AbortError') addToast("Couldn't open sharing.", 'error');
+            if (err?.name !== 'AbortError') addToast('Use Copy link instead.', 'error', { title: "Couldn't open sharing" });
         }
     });
     const email = () => withSaved('email', async (pid) => setEmailFor({ ...formData, id: pid }));
@@ -107,7 +108,7 @@ const ReviewSection = ({ id, formData, live, totals, checks, onGoto, ensureSaved
             navigate(`/admin/edit-invoice/${invoiceId}`);
         } catch (err) {
             console.error(err);
-            addToast("Couldn't create the invoice. Please try again.", 'error');
+            addToast('Please try again.', 'error', { title: "Couldn't create the invoice", action: { label: 'Try again', onClick: () => convert() } });
         } finally {
             setBusy('');
         }

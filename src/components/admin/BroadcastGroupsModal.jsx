@@ -117,7 +117,7 @@ const BroadcastGroupsModal = ({ onClose, preselectedCity = 'All' }) => {
     const handleSend = async () => {
         setProblem('');
         if (targetRecipients.length === 0) {
-            useStore.getState().addToast('No creators to email in the selected city. Try a different city.', 'error');
+            useStore.getState().addToast('Pick a different city.', 'warning', { title: 'No one to email in this city' });
             return;
         }
         if (!emailSubject.trim()) {
@@ -149,14 +149,17 @@ const BroadcastGroupsModal = ({ onClose, preselectedCity = 'All' }) => {
             if (result && (result.success || sent > 0)) {
                 const sentCount = result.success && !sent ? targetRecipients.length : sent;
                 setSendStats({ sent: sentCount, failed });
-                useStore.getState().addToast(`Queued for ${sentCount} creators. Our server sends it in the background.`, failed ? 'warning' : 'success');
+                useStore.getState().addToast('Our server sends it in the background.', failed ? 'warning' : 'success', {
+                    title: `Broadcast queued for ${sentCount} creator${sentCount === 1 ? '' : 's'}`,
+                    hint: failed ? `${failed} couldn't be queued.` : null,
+                });
             } else {
                 throw new Error(result?.error || 'Email dispatch failed.');
             }
         } catch (err) {
             console.error('Broadcast error:', err);
             setProblem("Couldn't send the broadcast. Please try again.");
-            useStore.getState().addToast("Couldn't send the broadcast. Please try again.", 'error');
+            useStore.getState().addToast('Check your connection and try again.', 'error', { title: "Couldn't send the broadcast" });
         } finally {
             setIsSending(false);
         }

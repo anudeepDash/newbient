@@ -104,7 +104,9 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
     const approve = (entry) => {
         const go = () => run(entry.id, 'approve', async () => {
             await setStatus(entry, 'approved');
-            addToast(`${personName(entry)} approved${guestCount(entry) > 1 ? ` (${guestCount(entry)} people)` : ''}. They'll get an email.`, 'success');
+            addToast("They'll get a confirmation email.", 'success', {
+                title: guestCount(entry) > 1 ? `${personName(entry)} approved for ${guestCount(entry)} people` : `${personName(entry)} approved`,
+            });
         });
         const over = guestStatus(entry) === 'approved' ? 0 : overBy(guestCount(entry));
         if (over) {
@@ -133,7 +135,7 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
         action: async () => {
             await deleteGuestlistEntry(glOf(entry), entry.id);
             setSelected(prev => { const n = new Set(prev); n.delete(entry.id); return n; });
-            addToast('Entry removed.', 'success');
+            addToast('Sign-up removed.', 'success');
         },
     });
 
@@ -159,7 +161,11 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
             confirmLabel: over ? 'Approve anyway' : 'Approve all',
             action: async () => {
                 const failed = await runBulk('Approving', list, 'approved');
-                addToast(failed ? `${list.length - failed} approved, ${failed} failed. Try those again.` : `${list.length} approved.`, failed ? 'error' : 'success');
+                addToast(
+                    failed ? `${failed} couldn't be approved. Try those again.` : `${list.length} ${list.length === 1 ? 'request' : 'requests'} approved.`,
+                    failed ? 'warning' : 'success',
+                    failed ? { title: `Approved ${list.length - failed} of ${list.length}` } : undefined,
+                );
             },
         });
     };
@@ -173,7 +179,11 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
             danger: true,
             action: async () => {
                 const failed = await runBulk('Declining', list, 'rejected');
-                addToast(failed ? `${list.length - failed} declined, ${failed} failed.` : `${list.length} declined.`, failed ? 'error' : 'info');
+                addToast(
+                    failed ? `${failed} couldn't be declined. Try those again.` : `${list.length} ${list.length === 1 ? 'request' : 'requests'} declined.`,
+                    failed ? 'warning' : 'info',
+                    failed ? { title: `Declined ${list.length - failed} of ${list.length}` } : undefined,
+                );
             },
         });
     };

@@ -157,7 +157,7 @@ const InvoiceManagement = () => {
 
     const copyLink = async (inv) => {
         const ok = await copyToClipboard(shareUrl(inv, 'link'));
-        addToast(ok ? 'Invoice link copied.' : "Couldn't copy the link.", ok ? 'success' : 'error');
+        addToast(ok ? 'Invoice link copied.' : 'Please try again.', ok ? 'success' : 'error', ok ? undefined : { title: "Couldn't copy the link" });
     };
 
     const share = async (inv) => {
@@ -195,7 +195,7 @@ const InvoiceManagement = () => {
             if (ref?.id && inv.type !== 'upload') navigate(`/admin/edit-invoice/${ref.id}`);
         } catch (err) {
             console.error(err);
-            addToast("Couldn't duplicate the invoice.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Invoice not copied', action: { label: 'Try again', onClick: () => duplicate(inv) } });
         }
     };
 
@@ -209,7 +209,7 @@ const InvoiceManagement = () => {
             addToast('Invoice deleted.', 'success');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't delete the invoice.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Invoice not deleted', action: { label: 'Try again', onClick: () => remove(inv) } });
         }
     };
 
@@ -218,7 +218,7 @@ const InvoiceManagement = () => {
         try {
             await sendComposedEmail({ ...payload, fromName: 'Newbi Finance', fromEmail: 'partnership@newbi.live' });
         } catch (err) {
-            addToast("Couldn't send the email. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Invoice email not sent' });
             throw err;
         }
         addToast('Invoice email sent.', 'success');

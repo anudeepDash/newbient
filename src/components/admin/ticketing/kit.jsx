@@ -77,7 +77,7 @@ export const CopyChip = ({ text, label, prefix, className }) => {
     const copy = async (e) => {
         e.stopPropagation();
         const ok = await copyToClipboard(text);
-        useStore.getState().addToast(ok ? `${label || 'Code'} copied.` : "Couldn't copy. Please copy it by hand.", ok ? 'success' : 'error');
+        useStore.getState().addToast(ok ? `${label || 'Code'} copied.` : 'Select it and copy it by hand.', ok ? 'success' : 'error', ok ? undefined : { title: "Couldn't copy" });
         if (ok) { setDone(true); setTimeout(() => setDone(false), 1500); }
     };
     return (
@@ -165,7 +165,7 @@ export const useConfirm = () => {
 export const useBusy = () => {
     const [busy, setBusy] = useState({});
     const running = useRef(new Set());
-    const run = useCallback(async (id, label, fn, { errorMessage } = {}) => {
+    const run = useCallback(async (id, label, fn, { errorMessage, errorTitle } = {}) => {
         if (running.current.has(id)) return undefined;
         running.current.add(id);
         setBusy(b => ({ ...b, [id]: label }));
@@ -173,7 +173,7 @@ export const useBusy = () => {
             return await fn();
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast(errorMessage || friendlyError(err), 'error');
+            useStore.getState().addToast(errorMessage || friendlyError(err), 'error', errorTitle ? { title: errorTitle } : undefined);
             return undefined;
         } finally {
             running.current.delete(id);

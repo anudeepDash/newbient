@@ -322,7 +322,7 @@ const ProposalGenerator = () => {
         } catch (err) {
             console.error(err);
             setAutosaveStatus('error');
-            addToast(err?.code === 'CLOSED' ? 'The client already answered this proposal, so it can no longer be changed.' : "Couldn't save the proposal. Please try again.", 'error');
+            addToast(err?.code === 'CLOSED' ? 'The client already answered it, so it can no longer be changed.' : 'Check your connection and try again.', 'error', { title: 'Proposal not saved' });
             return null;
         } finally {
             setSaving(false);
@@ -382,7 +382,7 @@ const ProposalGenerator = () => {
             await exportProposalPdf(formData, items);
         } catch (err) {
             console.error(err);
-            addToast("Couldn't create the PDF. Please try again.", 'error');
+            addToast('Please try again.', 'error', { title: "Couldn't create the PDF", action: { label: 'Try again', onClick: () => download() } });
         } finally {
             setDownloading(false);
         }
@@ -399,7 +399,7 @@ const ProposalGenerator = () => {
             navigate(`/admin/edit-proposal/${newId}`);
         } catch (err) {
             console.error(err);
-            addToast("Couldn't copy the proposal.", 'error');
+            addToast('Please try again.', 'error', { title: "Couldn't copy the proposal" });
         } finally {
             setCopying(false);
         }
