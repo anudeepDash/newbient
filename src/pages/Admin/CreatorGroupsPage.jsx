@@ -34,7 +34,7 @@ const EMPTY_FORM = { city: 'Bengaluru', customCity: '', platform: 'WhatsApp', ti
 
 const normaliseCity = (c) => String(c || '').trim().toLowerCase().replace(/^bangalore$/, 'bengaluru');
 
-const GroupForm = ({ open, onClose, editing }) => {
+const GroupForm = ({ open, onClose, editing, initialCity }) => {
     const addToast = useStore(s => s.addToast);
     const [form, setForm] = useState(EMPTY_FORM);
     const [saving, setSaving] = useState(false);
@@ -54,10 +54,15 @@ const GroupForm = ({ open, onClose, editing }) => {
                 description: editing.description || '',
                 isActive: editing.isActive !== false,
             });
+        } else if (initialCity) {
+            // From a "no group yet" city: fill the city in, so only the link is left.
+            const known = PREDEFINED_CITIES.find(c => c.toLowerCase() === initialCity.toLowerCase());
+            const name = initialCity.replace(/\b\w/g, ch => ch.toUpperCase());
+            setForm({ ...EMPTY_FORM, city: known || 'Others', customCity: known ? '' : name });
         } else {
             setForm(EMPTY_FORM);
         }
-    }, [open, editing]);
+    }, [open, editing, initialCity]);
 
     const submit = async (e) => {
         e.preventDefault();
@@ -93,7 +98,7 @@ const GroupForm = ({ open, onClose, editing }) => {
             onClose={onClose}
             variant="dialog"
             size="sm"
-            title={editing ? `Edit ${editing.city} group` : 'Add a city group'}
+            title={editing ? `Edit ${editing.city} group` : initialCity ? `Add the ${initialCity.replace(/\b\w/g, ch => ch.toUpperCase())} group` : 'Add a city group'}
             footer={(
                 <div className="flex gap-2">
                     <Button variant="ghost" onClick={onClose} className="flex-1 sm:flex-none">Cancel</Button>
@@ -125,7 +130,7 @@ const GroupForm = ({ open, onClose, editing }) => {
                 )}
                 <label className="block">
                     <span className="mb-1 block text-[12px] font-bold text-gray-500">Invite link</span>
-                    <input className={field} type="url" inputMode="url" value={form.groupUrl} onChange={e => setForm({ ...form, groupUrl: e.target.value })} placeholder="https://chat.whatsapp.com/…" autoCapitalize="off" />
+                    <input className={field} type="url" inputMode="url" autoFocus={Boolean(initialCity)} value={form.groupUrl} onChange={e => setForm({ ...form, groupUrl: e.target.value })} placeholder="https://chat.whatsapp.com/…" autoCapitalize="off" />
                 </label>
                 <label className="block">
                     <span className="mb-1 block text-[12px] font-bold text-gray-500">Group name <span className="font-medium">(optional)</span></span>
@@ -154,6 +159,7 @@ const CreatorGroupsPage = () => {
     const [search, setSearch] = useState('');
     const [formOpen, setFormOpen] = useState(false);
     const [editing, setEditing] = useState(null);
+    const [newCity, setNewCity] = useState(null);
     const [inviteCity, setInviteCity] = useState(null);
     const [broadcastCity, setBroadcastCity] = useState(null);
     const [seeding, setSeeding] = useState(false);
@@ -231,7 +237,7 @@ const CreatorGroupsPage = () => {
                 <div className="flex flex-1 flex-wrap items-center gap-2 lg:justify-end">
                     <Button variant="secondary" onClick={() => setInviteCity('Bengaluru')}><UserPlus size={14} /> Invite creators</Button>
                     <Button variant="secondary" onClick={() => setBroadcastCity('All')}><Mail size={14} /> Email groups</Button>
-                    <Button variant="primary" onClick={() => { setEditing(null); setFormOpen(true); }}><Plus size={14} /> Add group</Button>
+                    <Button variant="primary" onClick={() => { setEditing(null); setNewCity(null); setFormOpen(true); }}><Plus size={14} /> Add group</Button>
                     <Menu trigger={({ toggle }) => <Button variant="ghost" onClick={toggle} aria-label="More" className="w-10 px-0"><MoreHorizontal size={16} /></Button>}>
                         <MenuItem icon={RefreshCw} onClick={seed} disabled={seeding} hint="Adds the 8 official WhatsApp hubs">Add official groups</MenuItem>
                     </Menu>
@@ -241,10 +247,11 @@ const CreatorGroupsPage = () => {
             {citiesWithoutGroup.length > 0 && (
                 <Card className="rounded-2xl border-amber-500/25 bg-amber-500/[0.05] p-4 dark:border-amber-500/25 dark:bg-amber-500/[0.05]">
                     <p className="text-sm font-bold">Cities with verified creators but no group</p>
+                    <p className="mt-0.5 text-[12px] text-gray-500">Tap a city to add its WhatsApp invite link. It shows on the app’s Community page and creator dashboard within a few minutes.</p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                         {citiesWithoutGroup.map(([city, n]) => (
-                            <button key={city} type="button" onClick={() => { setEditing(null); setFormOpen(true); }} className="rounded-lg border border-black/10 px-2.5 py-1 text-[12px] font-semibold capitalize dark:border-white/10">
-                                {city} · {n}
+                            <button key={city} type="button" onClick={() => { setEditing(null); setNewCity(city === 'others' ? null : city); setFormOpen(true); }} className="flex items-center gap-1 rounded-lg border border-black/10 px-2.5 py-1 text-[12px] font-semibold capitalize hover:border-neon-green/60 hover:bg-neon-green/10 dark:border-white/10">
+                                <Plus size={12} /> {city} · {n}
                             </button>
                         ))}
                     </div>
@@ -270,7 +277,7 @@ const CreatorGroupsPage = () => {
                                         {hidden && <Badge tone="gray">Hidden</Badge>}
                                     </div>
                                     <Menu trigger={({ toggle }) => <Button size="sm" variant="ghost" onClick={toggle} aria-label="Group actions" className="w-9 px-0"><MoreHorizontal size={15} /></Button>}>
-                                        <MenuItem icon={Pencil} onClick={() => { setEditing(g); setFormOpen(true); }}>Edit</MenuItem>
+                                        <MenuItem icon={Pencil} onClick={() => { setEditing(g); setNewCity(null); setFormOpen(true); }}>Edit</MenuItem>
                                         <MenuItem icon={Mail} onClick={() => setBroadcastCity(g.city)}>Email this group</MenuItem>
                                         <MenuItem onClick={() => toggleActive(g)}>{hidden ? 'Show to creators' : 'Hide from creators'}</MenuItem>
                                         <MenuItem icon={Trash2} danger onClick={() => remove(g)}>Delete</MenuItem>
@@ -290,7 +297,7 @@ const CreatorGroupsPage = () => {
                 </div>
             )}
 
-            <GroupForm open={formOpen} onClose={() => setFormOpen(false)} editing={editing} />
+            <GroupForm open={formOpen} onClose={() => setFormOpen(false)} editing={editing} initialCity={newCity} />
             {inviteCity && <AddCityCreatorsModal isOpen initialCity={inviteCity} onClose={() => setInviteCity(null)} />}
             {broadcastCity && <BroadcastGroupsModal preselectedCity={broadcastCity} onClose={() => setBroadcastCity(null)} />}
         </div>

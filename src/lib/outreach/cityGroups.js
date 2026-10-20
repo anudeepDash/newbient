@@ -16,3 +16,13 @@ export const cityGroupFor = (groups, city, { withDefaults = false } = {}) => {
     const g = list.find(x => normalizeCity(x.city) === key);
     return g ? { city: g.city, title: g.title || `${g.city} Creators Community`, url: g.groupUrl } : null;
 };
+
+/* Every active city group, one per city: the admin's first, then the built-in ones. */
+export const allCityGroups = (groups) => {
+    const seen = new Set();
+    return [...(Array.isArray(groups) ? groups : []), ...DEFAULT_CREATOR_GROUPS]
+        .filter(g => g && g.isActive !== false && g.groupUrl && normalizeCity(g.city))
+        .filter(g => { const k = normalizeCity(g.city); if (seen.has(k)) return false; seen.add(k); return true; })
+        .map(g => ({ city: g.city, title: g.title || `${g.city} Creators Community`, url: g.groupUrl }))
+        .sort((a, b) => a.city.localeCompare(b.city));
+};
