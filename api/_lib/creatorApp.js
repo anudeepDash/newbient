@@ -36,6 +36,7 @@ import { isCampaignCityMatch } from '../../src/lib/constants.js';
 import { findMatches, readProof, checkMergeable, describeAccount, mergeAccounts, MergeError } from './accountMerge.js';
 import { isStaffCaller, staffRoleOf } from './mailing.js';
 import { isTesterRole } from '../../src/constants/roles.js';
+import { sendShortlistWelcome } from './mail/events.js';
 import { FieldPath } from 'firebase-admin/firestore';
 
 /* The app's own origin (links in emails, the OAuth fallback). PUBLIC_APP_URL overrides it on previews. */
@@ -680,6 +681,33 @@ const notifyReferrer = async (db, referredBy, creator) => {
 // 'live' means the event is on: applications are closed (see src/lib/outreach/application.js).
 const OPEN_STATUSES = new Set(['open', 'active', 'published']);
 
+/*
+ * Auto-shortlist (campaign editor → "Shortlist creators who meet the criteria", off by default).
+ * When it's on, an applicant goes straight onto the shortlist, and gets the shortlist welcome,
+ * if their creator profile is approved, their Instagram followers were read automatically (not
+ * typed in), they meet the follower minimum, city and college, and the shortlist has room
+ * (totalSpots). Everyone else waits for the team as usual. Checked here, never by the browser.
+ */
+export const autoShortlist = async (db, { campaignId, campaign: c, creatorSnap, creator, city, colleges }) => {
+    if (c.autoShortlistEligible !== true) return false;
+    if (creator.profileStatus !== 'approved' || creator.instagramVerified !== true || creator.manualFollowerEntry === true) return false;
+    const min = Number(c.minInstagramFollowers) || 0;
+    if (min > 0 && (Number(creator.instagramFollowers) || 0) < min) return false;
+    if (!isCampaignCityMatch(c.targetCity, city)) return false;
+    const college = String(c.targetCollege || '').trim().toLowerCase();
+    if (college && college !== 'any' && !colleges.some(mine => mine.includes(college))) return false;
+    const total = Number(c.totalSpots) || 0;
+    if (total > 0) {
+        const selected = await db.collection('creators').where('shortlistedCampaigns', 'array-contains', campaignId).count().get().then(s => s.data().count).catch(() => total);
+        if (selected >= total) return false;
+    }
+    await creatorSnap.ref.update({ shortlistedCampaigns: FieldValue.arrayUnion(campaignId), updatedAt: nowIso() });
+    await creatorSnap.ref.set({ campaignStages: { [campaignId]: FieldValue.delete() }, campaignAutoShortlisted: { [campaignId]: nowIso() } }, { merge: true }).catch(() => {});
+    // The welcome (email, WhatsApp, push, in-app) with the group link, as when the team shortlists.
+    await sendShortlistWelcome(campaignId, [creatorSnap.id]).catch(e => console.warn('[creator-app] auto-shortlist welcome:', e.message));
+    return true;
+};
+
 export const handleCampaignApply = async (req, res, { db, token }) => {
     if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
     const campaignId = str(req.body?.campaignId, 120);
@@ -743,7 +771,9 @@ export const handleCampaignApply = async (req, res, { db, token }) => {
     });
     // How they applied, per campaign (a nested map, so set+merge rather than a dotted path).
     await creatorSnap.ref.set({ campaignApplyVia: { [campaignId]: { via, at: nowIso(), ...(tester ? { test: true } : {}) } } }, { merge: true }).catch(() => {});
-    return send(res, 200, { success: true, shortlisted: false, via, ...(tester ? { test: true } : {}) });
+
+    const shortlisted = await autoShortlist(db, { campaignId, campaign: c, creatorSnap, creator, city, colleges });
+    return send(res, 200, { success: true, shortlisted, via, ...(tester ? { test: true } : {}) });
 };
 
 /* ── campaign-submit ──────────────────────────────────────────────────── */

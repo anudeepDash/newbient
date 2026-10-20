@@ -148,7 +148,8 @@ const toPayload = (f) => ({
     applyMethod: f.applyFormUrl.trim() ? f.applyMethod : 'newbi',
     applyFormUrl: f.applyFormUrl.trim(),
     applyFormNeedsSignIn: Boolean(f.applyFormUrl.trim() && f.applyFormNeedsSignIn),
-    autoShortlistEligible: false, // retired: applying never shortlists
+    // Off unless switched on: eligible applicants go straight onto the shortlist (checked by the server).
+    autoShortlistEligible: Boolean(f.websiteApplyEnabled && f.autoShortlistEligible),
     isPinned: f.isPinned,
     status: f.status,
     // The open application form (outreach): public fields only; the group link and template are private.
@@ -730,6 +731,12 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                                             {err('applyFormUrl')}
                                         </Field>
                                     )}
+                                    <Toggle
+                                        label="Shortlist creators who meet the criteria"
+                                        hint={`Applicants with an approved creator profile and automatically read Instagram followers go straight onto the shortlist and get the welcome${num(form.minInstagramFollowers) ? `, if they have ${num(form.minInstagramFollowers).toLocaleString('en-IN')}+ followers` : ''}${form.targetCity && form.targetCity !== 'Any' ? ` in ${form.targetCity}` : ''}${num(form.totalSpots) ? `, until all ${num(form.totalSpots)} spots are taken` : ''}. Everyone else waits for you.`}
+                                        checked={form.autoShortlistEligible}
+                                        onChange={(v) => set({ autoShortlistEligible: v })}
+                                    />
                                     {form.applyMethod !== 'newbi' && (
                                         <Toggle
                                             label="The form asks for a Google sign-in"
