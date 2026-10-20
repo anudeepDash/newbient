@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+/* Inter and Outfit load from index.html, not an @import here: an @import makes every
+   page wait on fonts.googleapis.com before any script runs. */
 
 @tailwind base;
 @tailwind components;
