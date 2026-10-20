@@ -17,7 +17,7 @@ import { AuthResumer } from './auth/AuthGate';
 import NotificationsSheet from './NotificationsSheet';
 import SignInSheet from './auth/SignInSheet';
 import NewbiLogo from '../components/brand/NewbiLogo';
-import NLoader from '../components/ui/NLoader';
+import SplashHold from '../components/ui/SplashHold';
 import LangToggle from '../i18n/LangToggle';
 import { useT } from '../i18n';
 
@@ -55,11 +55,8 @@ const BellButton = ({ count, onClick, className }) => {
     );
 };
 
-const PageFallback = () => (
-    <div className="flex min-h-[60dvh] items-center justify-center">
-        <NLoader size={64} color="#3DF03D" />
-    </div>
-);
+// A page still downloading: the N. splash, played to the end of a cycle before the page shows.
+const PageFallback = () => <SplashHold color="#39FF14" />;
 
 const AppLayout = () => {
     const t = useT();

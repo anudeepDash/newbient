@@ -7,6 +7,7 @@ import { auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { requestNotificationPermission, initForegroundMessaging } from './lib/notifications';
 import GlobalLoader from './components/ui/GlobalLoader';
+import { releaseBootSplash } from './lib/splash';
 import { isAppHost, isAdminHost, adminUrl, landingAppBase, LANDING_ORIGIN } from './app/host';
 import { withHandoff, hasHandoffCode, redeemHandoff } from './app/adminHandoff';
 
@@ -171,6 +172,10 @@ function ToSite() {
 function AppContent() {
   const { user, subscribeToData, subscribeToNotifications, checkUserRole, loading, authInitialized } = useStore();
   const location = useLocation();
+
+  // The N. splash has been up since the first paint: let it go once the app has rendered.
+  // Anything still loading (a page chunk, a sign-in check) holds it until it's done.
+  useEffect(() => { releaseBootSplash(); }, []);
 
   const getColorByPath = (path) => {
     if (path.startsWith('/admin')) return '#00F0FF'; // Neon Blue
