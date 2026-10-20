@@ -54,7 +54,7 @@ const InvoiceDetailPanel = ({ invoiceId, onClose, canManage, onRecordPayment, on
             await useStore.getState().voidInvoicePayment(invoice.id, index);
             addToast('Payment voided.', 'success');
         } catch {
-            addToast("Couldn't void the payment.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't void the payment", action: { label: 'Try again', onClick: () => voidPayment(index) } });
         }
     };
 
@@ -105,12 +105,12 @@ const InvoiceDetailPanel = ({ invoiceId, onClose, canManage, onRecordPayment, on
                             onApprove={async () => {
                                 await useStore.getState().approveInvoiceClaim(invoice.id);
                                 if (invoice.paymentClaim?.email) await notifyEvent('payment-approved', { invoiceId: invoice.id });
-                                addToast('Payment confirmed. The invoice is marked paid.', 'success');
+                                addToast('The invoice is now marked as paid.', 'success', { title: 'Payment confirmed' });
                             }}
                             onDecline={async () => {
                                 await useStore.getState().declineInvoiceClaim(invoice.id);
                                 if (invoice.paymentClaim?.email) await notifyEvent('payment-declined', { invoiceId: invoice.id });
-                                addToast('Claim declined. The invoice is back to unpaid.', 'info');
+                                addToast('The invoice is back to unpaid.', 'info', { title: 'Payment claim declined' });
                             }}
                         />
                     )}

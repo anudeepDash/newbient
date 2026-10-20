@@ -252,7 +252,7 @@ export const AttachmentsSection = ({ formData, setFormData }) => {
 
     const upload = async (file) => {
         if (!file || progress !== null) return;
-        if (file.size > 35 * 1024 * 1024) { addToast(`That file is ${formatBytes(file.size)}. The limit is 35 MB.`, 'error'); return; }
+        if (file.size > 35 * 1024 * 1024) { addToast(`That file is ${formatBytes(file.size)}. The limit is 35 MB.`, 'warning', { title: 'File too large' }); return; }
         setProgress(0);
         try {
             const res = await useStore.getState().uploadProposalFile(file, (p) => setProgress(p));
@@ -261,7 +261,7 @@ export const AttachmentsSection = ({ formData, setFormData }) => {
             addToast('File attached.', 'success');
         } catch (err) {
             console.error('Attachment upload failed', err);
-            addToast(err?.message?.includes('large') ? err.message : "Couldn't upload the file. Please try again.", 'error');
+            addToast(err?.message?.includes('large') ? err.message : 'Check your connection and try again.', 'error', { title: 'File not attached', action: { label: 'Try again', onClick: () => upload(file) } });
         } finally {
             setProgress(null);
         }

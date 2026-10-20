@@ -275,7 +275,10 @@ const toggleVoid = async (rc) => {
         await updateCreator(creatorKey(rc), { referralVoid: voiding, referralVoidAt: voiding ? new Date().toISOString() : null });
         addToast?.(voiding ? `${rc.name || 'Referral'} no longer counts for the referrer.` : `${rc.name || 'Referral'} counts again.`, 'success');
     } catch (error) {
-        addToast?.(error?.message || "Couldn't update the referral. Please try again.", 'error');
+        addToast?.(error?.message || 'Please try again.', 'error', {
+            title: 'Referral not updated',
+            action: { label: 'Try again', onClick: () => toggleVoid(rc) },
+        });
     }
 };
 

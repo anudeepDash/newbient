@@ -312,8 +312,8 @@ const AdminManager = ({ view = 'team' }) => {
         }
         await fetchAdmins();
         const mail = await sendStaffAuthorizedEmail(email, newRole).catch(() => ({ success: false }));
-        if (mail?.success) addToast(`${email} added as ${roleInfo(newRole).label}. We've emailed them.`, 'success');
-        else addToast(`${email} added as ${roleInfo(newRole).label}. The email didn't go through, so let them know yourself.`, 'warning');
+        if (mail?.success) addToast(`We've emailed ${email}.`, 'success', { title: `Added as ${roleInfo(newRole).label}` });
+        else addToast(`The email to ${email} didn't go through, so let them know yourself.`, 'warning', { title: `Added as ${roleInfo(newRole).label}` });
     };
 
     const handleRoleSave = async (admin, newRole, mode) => {
@@ -330,7 +330,8 @@ const AdminManager = ({ view = 'team' }) => {
         const name = admin.displayName || admin.email;
         if (mode === 'approve') {
             const mail = admin.email ? await sendStaffAuthorizedEmail(admin.email, newRole).catch(() => ({ success: false })) : { success: false };
-            addToast(mail?.success ? `${name} approved as ${roleInfo(newRole).label}. We've emailed them.` : `${name} approved as ${roleInfo(newRole).label}.`, 'success');
+            if (mail?.success) addToast("We've emailed them.", 'success', { title: `${name} approved as ${roleInfo(newRole).label}` });
+            else addToast(`${name} approved as ${roleInfo(newRole).label}.`, 'success');
         } else {
             addToast(`${name} is now ${roleInfo(newRole).label}.`, 'success');
         }
@@ -397,9 +398,10 @@ const AdminManager = ({ view = 'team' }) => {
                 setTeamSheet(s => ({ ...s, open: false }));
                 let note = '';
                 if (signOutTooRef.current) {
-                    try { await useStore.getState().revokeSessions(admin.authUid, admin.email); } catch (err) { console.error(err); note = " Couldn't sign them out of their devices, but they won't be able to open the admin after a reload."; }
+                    try { await useStore.getState().revokeSessions(admin.authUid, admin.email); } catch (err) { console.error(err); note = "Couldn't sign them out of their devices, but they won't be able to open the admin after a reload."; }
                 }
-                addToast(`${admin.displayName || admin.email} removed from the team.${note}`, note ? 'warning' : 'success');
+                if (note) addToast(note, 'warning', { title: `${admin.displayName || admin.email} removed from the team` });
+                else addToast(`${admin.displayName || admin.email} removed from the team.`, 'success');
             },
         });
     };
@@ -447,7 +449,7 @@ const AdminManager = ({ view = 'team' }) => {
             addToast(`Access restored for ${m.displayName || m.email}.`, 'success');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't restore their access. Please try again.", 'error');
+            addToast('Please try again.', 'error', { title: "Couldn't restore their access", action: { label: 'Try again', onClick: () => reinstate(m) } });
         }
     };
 

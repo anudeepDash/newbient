@@ -509,7 +509,7 @@ const Dashboard = () => {
             await saveDashboardWidgets(keys);
             addToast('Dashboard updated.', 'success');
         } catch {
-            addToast("Couldn't save your metrics. Please try again.", 'error');
+            addToast('Please try again.', 'error', { title: 'Dashboard not saved' });
             throw new Error('save failed');
         }
     };

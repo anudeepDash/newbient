@@ -196,7 +196,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
     const [bulkProgress, setBulkProgress] = useState(null); // { label, done, total }
     const [filtersOpen, setFiltersOpen] = useState(false); // phones only
 
-    const toast = (msg, type = 'success') => useStore.getState().addToast(msg, type);
+    const toast = (msg, type = 'success', options) => useStore.getState().addToast(msg, type, options);
 
     // ── Derived data ────────────────────────────────────────────────────────
     const counts = useMemo(() => {
@@ -360,10 +360,13 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
         markBusy([key], true);
         try {
             await useStore.getState().updateCreator(key, { profileStatus: newStatus });
-            toast(`${STATUS_WORDS[newStatus]?.done || 'Updated'}: ${c.name || 'creator'}.`);
+            toast(`${c.name || 'Creator'} ${(STATUS_WORDS[newStatus]?.done || 'Updated').toLowerCase()}.`);
         } catch (error) {
             console.error('Error updating creator status:', error);
-            toast(error?.message || "Couldn't update the status. Please try again.", 'error');
+            toast(error?.message || 'Please try again.', 'error', {
+                title: 'Status not changed',
+                action: { label: 'Try again', onClick: () => applyStatus(c, newStatus) },
+            });
         } finally {
             markBusy([key], false);
         }
@@ -416,7 +419,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                     setConfirm(null);
                 } catch (error) {
                     console.error('Error deleting creator:', error);
-                    toast(error?.message || "Couldn't delete the creator. Please try again.", 'error');
+                    toast(error?.message || 'Please try again.', 'error', { title: `${c.name || 'Creator'} not deleted` });
                 } finally {
                     markBusy([key], false);
                 }
@@ -454,10 +457,10 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
         const ok = targets.length - failed.length;
         const doneWord = kind === 'delete' ? 'Deleted' : STATUS_WORDS[kind].done;
         if (failed.length) {
-            const verb = kind === 'delete' ? 'delete' : STATUS_WORDS[kind].verb.toLowerCase();
-            toast(ok
-                ? `${doneWord} ${ok}. ${plural(failed.length, 'creator')} couldn't be updated and ${failed.length === 1 ? 'is' : 'are'} still selected.`
-                : `Couldn't ${verb} ${failed.length === 1 ? 'that creator' : `those ${failed.length} creators`}. They're still selected, so you can try again.`, ok ? 'warning' : 'error');
+            toast(`${plural(failed.length, 'creator')} couldn't be ${kind === 'delete' ? 'deleted' : 'updated'}.`, ok ? 'warning' : 'error', {
+                title: `${doneWord} ${ok} of ${targets.length}`,
+                hint: `${failed.length === 1 ? "It's" : "They're"} still selected, so you can try again.`,
+            });
             setSelected(new Set(failed.map(creatorKey)));
         } else {
             toast(`${doneWord} ${plural(ok, 'creator')}.`);
@@ -483,10 +486,10 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
         else if (action === 'email') setEmailRecipients({ list: [c], fromSelection: false });
         else if (action === 'copy-phone') {
             const ok = await copyToClipboard(c.phone || '');
-            toast(ok ? 'Phone number copied.' : "Couldn't copy.", ok ? 'success' : 'error');
+            toast(ok ? 'Phone number copied.' : "Couldn't copy the phone number. Try again.", ok ? 'success' : 'error');
         } else if (action === 'copy-link') {
             const ok = await copyToClipboard(`${window.location.origin}/admin/creators/${encodeURIComponent(creatorKey(c))}`);
-            toast(ok ? 'Link copied.' : "Couldn't copy.", ok ? 'success' : 'error');
+            toast(ok ? 'Link copied.' : "Couldn't copy the link. Try again.", ok ? 'success' : 'error');
         }
     };
 
@@ -494,11 +497,15 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
         try {
             const res = await useStore.getState().mergeBangaloreCreatorsToBengaluru();
             const failedCount = (res?.totalFound || 0) - (res?.updatedCount || 0);
-            toast(`Moved ${plural(res?.updatedCount || 0, 'creator')} to Bengaluru${failedCount ? `, ${failedCount} failed` : ''}.`, failedCount ? 'warning' : 'success');
+            toast(failedCount ? `${plural(failedCount, 'creator')} couldn't be moved. Try again.` : `Moved ${plural(res?.updatedCount || 0, 'creator')} to Bengaluru.`, failedCount ? 'warning' : 'success',
+                failedCount ? { title: `Moved ${res?.updatedCount || 0} of ${res?.totalFound || 0} to Bengaluru` } : undefined);
             setConfirm(null);
         } catch (err) {
             console.error('Error merging Bangalore creators:', err);
-            toast("Couldn't move Bangalore creators to Bengaluru. Please try again.", 'error');
+            toast('Check your connection and try again.', 'error', {
+                title: "Couldn't move creators to Bengaluru",
+                action: { label: 'Try again', onClick: () => handleMergeBangalore() },
+            });
         }
     };
 

@@ -33,7 +33,7 @@ const PartnerBrandsCard = ({ visible }) => {
             return true;
         } catch (err) {
             console.error(err);
-            addToast(failMsg, 'error');
+            addToast('Check your connection and try again.', 'error', { title: failMsg });
             return false;
         } finally {
             lock.current = false;
@@ -47,7 +47,7 @@ const PartnerBrandsCard = ({ visible }) => {
         const ok = await run(
             () => editor.id ? updatePastClient(editor.id, { name, logoUrl: editor.logoUrl || '' }) : addPastClient({ name, logoUrl: editor.logoUrl || '' }),
             editor.id ? 'Brand updated.' : 'Brand added.',
-            "Couldn't save the brand. Please try again."
+            "Couldn't save the brand"
         );
         if (ok) setEditor(null);
     };
@@ -57,7 +57,7 @@ const PartnerBrandsCard = ({ visible }) => {
         const j = index + dir;
         if (j < 0 || j >= list.length) return;
         [list[index], list[j]] = [list[j], list[index]];
-        run(() => reorderPastClients(list), null, "Couldn't save the new order. Please try again.");
+        run(() => reorderPastClients(list), null, "Couldn't save the new order");
     };
 
     return (
@@ -110,7 +110,7 @@ const PartnerBrandsCard = ({ visible }) => {
             </Sheet>
 
             <ConfirmSheet open={Boolean(removing)} onClose={() => setRemoving(null)} title="Remove this brand?" confirmLabel="Remove" busy={busy}
-                onConfirm={async () => { const ok = await run(() => deletePastClient(removing.id), 'Brand removed.', "Couldn't remove the brand. Please try again."); if (ok) setRemoving(null); }}>
+                onConfirm={async () => { const ok = await run(() => deletePastClient(removing.id), 'Brand removed.', "Couldn't remove the brand"); if (ok) setRemoving(null); }}>
                 <p><span className="font-semibold text-gray-900 dark:text-white">{removing?.name}</span> will disappear from the logo strip.{pastClients.length === 1 ? ' With no brands left, the site goes back to its default list of names.' : ''}</p>
             </ConfirmSheet>
         </BuilderCard>

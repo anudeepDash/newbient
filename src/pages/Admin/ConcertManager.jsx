@@ -86,7 +86,7 @@ const ConcertManager = () => {
         if (j < 0 || j >= list.length) return;
         [list[i], list[j]] = [list[j], list[i]];
         try { await updatePortfolioOrder(list); }
-        catch (err) { console.error(err); addToast("Couldn't save the new order. Please try again.", 'error'); }
+        catch (err) { console.error(err); addToast('Check your connection and try again.', 'error', { title: 'New order not saved', action: { label: 'Try again', onClick: () => move(item, dir) } }); }
     });
     const toTop = (item) => guard(async () => {
         const rest = portfolio.filter(x => x.id !== item.id);
@@ -94,7 +94,7 @@ const ConcertManager = () => {
         const at = firstOfGroup === -1 ? rest.length : firstOfGroup;
         const list = [...rest.slice(0, at), item, ...rest.slice(at)];
         try { await updatePortfolioOrder(list); addToast('Moved to the top.', 'success'); }
-        catch (err) { console.error(err); addToast("Couldn't save the new order. Please try again.", 'error'); }
+        catch (err) { console.error(err); addToast('Check your connection and try again.', 'error', { title: 'New order not saved', action: { label: 'Try again', onClick: () => toTop(item) } }); }
     });
 
     const remove = () => guard(async () => {
@@ -104,7 +104,10 @@ const ConcertManager = () => {
             setRemoving(null);
         } catch (err) {
             console.error(err);
-            addToast("Couldn't delete the project. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: 'Project not deleted',
+                action: { label: 'Try again', onClick: () => remove() },
+            });
         }
     });
 

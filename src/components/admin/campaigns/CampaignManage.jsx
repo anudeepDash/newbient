@@ -191,7 +191,7 @@ const CampaignManage = ({
 
     const reportPartial = (result, okText) => {
         const failed = result?.failed?.length || 0;
-        if (failed) addToast(`${okText} ${failed} couldn't be saved. Please try those again.`, 'warning');
+        if (failed) addToast(`${failed} couldn't be saved. Try those again.`, 'warning', { title: okText.replace(/\.$/, '') });
         else addToast(okText, 'success');
     };
 
@@ -206,14 +206,27 @@ const CampaignManage = ({
         if (!ids.length) return;
         const res = await notifyEvent('campaign-shortlisted', { campaignId: campaign.id, creatorIds: ids, again });
         if (!res?.success) {
-            addToast(`The welcome wasn't sent: ${res?.error || 'try again'}. Use “Send the welcome again”.`, 'warning');
+            addToast(res?.error || 'Something went wrong on our side.', 'error', {
+                title: 'Welcome message not sent',
+                action: { label: 'Try again', onClick: () => sendWelcome(entries, again) },
+            });
             return;
         }
         const sent = (res.results || []).filter(r => r.delivery);
         const wa = sent.filter(r => r.delivery.whatsapp === 'sent').length;
         const mail = sent.filter(r => ['sent', 'queued', 'duplicate'].includes(r.delivery.email)).length;
-        if (!sent.length) { addToast(again ? 'Nobody to send it to.' : 'They already had the welcome.', 'info'); return; }
-        addToast(`Welcome sent to ${sent.length}: ${mail} by email, ${wa} on WhatsApp${wa < sent.length ? ' (the rest have no verified number, or the template isn’t live yet)' : ''}.`, 'success');
+        if (!sent.length) {
+            addToast(again ? 'No one is waiting for the welcome message.' : 'Everyone here already got the welcome message.', 'info');
+            return;
+        }
+        const people = n => `${n} ${n === 1 ? 'creator' : 'creators'}`;
+        const missedWa = sent.length - wa;
+        addToast(`Email: ${mail} · WhatsApp: ${wa}`, 'success', {
+            title: `Welcome message sent to ${people(sent.length)}`,
+            hint: missedWa
+                ? `${people(missedWa)} didn’t get it on WhatsApp — no verified number yet, or the WhatsApp template is still waiting for approval.`
+                : null,
+        });
     };
 
     const selectEntries = (entries, notify = true) => guard(async () => {
@@ -225,7 +238,10 @@ const CampaignManage = ({
             const done = entries.filter(e => result.done.includes(e.key));
             if (notify) await sendWelcome(done);
         } catch {
-            addToast("Couldn't shortlist those creators. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: "Couldn't shortlist those creators",
+                action: { label: 'Try again', onClick: () => selectEntries(entries, notify) },
+            });
         }
     });
 
@@ -237,7 +253,10 @@ const CampaignManage = ({
             reportPartial(result, entries.length === 1 ? 'Removed from the campaign.' : `${result.done.length} removed from the campaign.`);
             setChecked(new Set());
         } catch {
-            addToast("Couldn't remove them. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: "Couldn't remove them from the campaign",
+                action: { label: 'Try again', onClick: () => unselectEntries(entries) },
+            });
         }
     });
 
@@ -253,7 +272,7 @@ const CampaignManage = ({
             reportPartial(result, label);
             setChecked(new Set());
         } catch {
-            addToast("Couldn't save that. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't change their status" });
         }
     });
 
@@ -269,7 +288,7 @@ const CampaignManage = ({
             reportPartial(result, entries.length === 1 ? 'Marked as paid.' : `${result.done.length} marked as paid.`);
             setChecked(new Set());
         } catch {
-            addToast("Couldn't save the payment. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Payment not saved' });
             throw new Error('payout failed');
         }
     };
@@ -277,9 +296,12 @@ const CampaignManage = ({
     const unpay = (entry) => guard(async () => {
         try {
             await useStore.getState().setCampaignApplicantMeta(campaign.id, [entry.key], { payout: null });
-            addToast('Payment record removed.', 'success');
+            addToast('Payment undone.', 'success');
         } catch {
-            addToast("Couldn't undo the payment. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: "Couldn't undo the payment",
+                action: { label: 'Try again', onClick: () => unpay(entry) },
+            });
         }
     });
 
@@ -308,7 +330,7 @@ const CampaignManage = ({
             }
             addToast(statusValue === 'approved' ? (items.length === 1 ? 'Approved.' : `${items.length} submissions approved.`) : 'Feedback sent.', 'success');
         } catch {
-            addToast("Couldn't save your review. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Review not saved' });
             throw new Error('review failed');
         }
     };
@@ -396,7 +418,10 @@ const CampaignManage = ({
             await useStore.getState().deleteTaskSubmissions(campaign.id, [{ taskId: task.id, keys: [...creatorKeys(entry.creator), entry.key] }]);
             addToast('Submission deleted.', 'success');
         } catch {
-            addToast("Couldn't delete it. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: "Couldn't delete the submission",
+                action: { label: 'Try again', onClick: () => removeSubmission(entry, task) },
+            });
         }
     });
 

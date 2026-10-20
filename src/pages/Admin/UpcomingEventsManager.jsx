@@ -86,7 +86,10 @@ const UpcomingEventsManager = () => {
             useStore.getState().addToast('Event deleted.', 'success');
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast("Couldn't delete the event. Please try again.", 'error');
+            useStore.getState().addToast("Check your connection and try again.", 'error', {
+                title: 'Event not deleted',
+                action: { label: 'Try again', onClick: () => handleDelete(item) },
+            });
         }
     };
 
@@ -95,10 +98,13 @@ const UpcomingEventsManager = () => {
         const { id, createdAt, updatedAt, order, isPinned, ...rest } = item;
         try {
             await addUpcomingEvent({ ...rest, title: `${item.title || 'Event'} (copy)`, isPinned: false, createdAt: new Date().toISOString() }, false);
-            useStore.getState().addToast('Event duplicated. Edit the copy to change its date.', 'success');
+            useStore.getState().addToast('Edit the copy to change its date.', 'success', { title: 'Event duplicated' });
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast("Couldn't duplicate the event.", 'error');
+            useStore.getState().addToast("Please try again.", 'error', {
+                title: "Couldn't duplicate the event",
+                action: { label: 'Try again', onClick: () => handleDuplicate(item) },
+            });
         }
     };
 
@@ -365,7 +371,7 @@ const UpcomingEventsManager = () => {
     const handleVideoUpload = async (file) => {
         if (!file) return;
         if (file.size > 100 * 1024 * 1024) {
-            useStore.getState().addToast("This video is over 100MB. Please choose a smaller file.", 'error');
+            useStore.getState().addToast("Pick a video under 100MB.", 'warning', { title: 'This video is too big' });
             return;
         }
         setIsUploadingVideo(true);
@@ -381,7 +387,10 @@ const UpcomingEventsManager = () => {
             }
         } catch (error) {
             console.error("Video upload failed:", error);
-            useStore.getState().addToast("Couldn't upload the video. Please try again.", 'error');
+            useStore.getState().addToast("Check your connection and try again.", 'error', {
+                title: 'Video not uploaded',
+                action: { label: 'Try again', onClick: () => handleVideoUpload(file) },
+            });
         } finally {
             setIsUploadingVideo(false);
             setVideoUploadProgress(0);
@@ -433,13 +442,16 @@ const UpcomingEventsManager = () => {
                     );
                 } catch (notifyError) {
                     console.error("Event saved, but notifying users failed:", notifyError);
-                    useStore.getState().addToast("Event saved, but we couldn't notify subscribers.", 'info');
+                    useStore.getState().addToast("We couldn't send the new-event notification.", 'warning', {
+                        title: 'Event saved',
+                        hint: "Use Resend notification in the event's menu to try again.",
+                    });
                 }
             }
             resetForm();
         } catch (error) {
             console.error("Save failed:", error);
-            useStore.getState().addToast("Couldn't save the event. Please check the details and try again.", 'error', 'EVT-01');
+            useStore.getState().addToast("Check the details and your connection, then try again.", 'error', { title: 'Event not saved', code: 'EVT-01' });
         } finally {
             setUploading(false);
         }
@@ -967,7 +979,7 @@ const UpcomingEventsManager = () => {
                                                                     await notifyAllUsers(`New event: ${item.title}`, `Join us on ${item.date} at ${item.location}.`, '/events', item.image);
                                                                     useStore.getState().addToast('Notification sent.', 'success');
                                                                 } catch {
-                                                                    useStore.getState().addToast("Couldn't send the notification.", 'error');
+                                                                    useStore.getState().addToast("Please try again.", 'error', { title: 'Notification not sent' });
                                                                 }
                                                             }}>Resend notification</MenuItem>
                                                             <MenuItem icon={Trash2} danger onClick={() => handleDelete(item)}>Delete</MenuItem>

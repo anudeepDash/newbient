@@ -160,7 +160,7 @@ const CouponsPanel = ({ eventId, coupons, orders, canSeeMoney = true }) => {
     const toggle = (c) => run(c.id, 'toggle', async () => {
         await useStore.getState().updateCoupon(c.id, { isActive: c.isActive === false });
         addToast(c.isActive === false ? `${c.code} is live again.` : `${c.code} paused.`, 'success');
-    }, { errorMessage: "Couldn't update the coupon." });
+    }, { errorTitle: "Couldn't update the coupon" });
 
     const remove = (c) => {
         const used = usage[c.code]?.orders || 0;
@@ -180,7 +180,7 @@ const CouponsPanel = ({ eventId, coupons, orders, canSeeMoney = true }) => {
 
     const copy = async (code) => {
         const ok = await copyToClipboard(code);
-        addToast(ok ? 'Code copied.' : "Couldn't copy.", ok ? 'success' : 'error');
+        addToast(ok ? 'Code copied.' : 'Select the code and copy it by hand.', ok ? 'success' : 'error', ok ? undefined : { title: "Couldn't copy the code" });
     };
 
     return (

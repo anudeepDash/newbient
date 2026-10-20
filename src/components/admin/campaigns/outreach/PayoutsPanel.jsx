@@ -47,8 +47,14 @@ const PaySheet = ({ campaign, app, onClose, onDone }) => {
         setSaving(true);
         const r = await callOutreach('outreach-payout', { campaignId: campaign.id, appId: app.id, action: 'paid', ...form, override: form.override });
         setSaving(false);
-        if (!r.ok) { addToast(r.error, 'error'); return; }
-        addToast(`Payout recorded and added to Spends.${r.data.notice === 'sent' ? ' They’ve been told on WhatsApp.' : ''}`, 'success');
+        if (!r.ok) {
+            addToast(r.error || 'Please try again.', 'error', {
+                title: 'Payout not recorded',
+                action: { label: 'Try again', onClick: () => save() },
+            });
+            return;
+        }
+        addToast(r.data.notice === 'sent' ? 'Added to Spends. They’ve been told on WhatsApp.' : 'Added to Spends.', 'success', { title: 'Payout recorded' });
         onDone();
     };
     return (
@@ -111,21 +117,39 @@ const PayoutsPanel = ({ campaign, applications, onChanged }) => {
         setBusy(true);
         const r = await callOutreach('outreach-ticket', { campaignId: campaign.id, appIds: ids, action, reason });
         setBusy(false);
-        if (!r.ok) { addToast(r.error, 'error'); return; }
+        const verb = action === 'release' ? 'sent' : 'revoked';
+        if (!r.ok) {
+            addToast(r.error || 'Please try again.', 'error', {
+                title: action === 'release' ? 'Tickets not sent' : 'Tickets not revoked',
+                action: { label: 'Try again', onClick: () => ticket(ids, action, reason) },
+            });
+            return;
+        }
         const ok = r.data.results.filter(x => ['released', 'revoked'].includes(x.outcome)).length;
         const problems = r.data.results.filter(x => !['released', 'revoked', 'already'].includes(x.outcome));
-        addToast(problems.length ? `${ok} done. ${problems[0].outcome}` : `${ok} ticket${ok === 1 ? '' : 's'} ${action === 'release' ? 'sent' : 'revoked'}.`, problems.length ? 'error' : 'success');
+        const tickets = n => `${n} ticket${n === 1 ? '' : 's'}`;
+        const why = o => ({ 'Not released': 'They don’t have a ticket to revoke.', 'Not found': 'That person is no longer on the list.' }[o] || o);
+        if (problems.length) {
+            addToast(why(problems[0].outcome), ok ? 'warning' : 'error', {
+                title: ok ? `${tickets(ok)} ${verb}, ${problems.length} didn’t go through` : `${tickets(problems.length)} not ${verb}`,
+            });
+        } else addToast(`${tickets(ok)} ${verb}.`, 'success');
         onChanged();
     };
     const cancelPayout = async () => {
         const r = await callOutreach('outreach-payout', { campaignId: campaign.id, appId: cancelFor.id, action: 'cancel', reason: 'Cancelled in outreach' });
-        addToast(r.ok ? 'Payout cancelled. The Spend is marked Cancelled.' : r.error, r.ok ? 'success' : 'error');
+        if (r.ok) addToast('Its entry in Spends is marked Cancelled.', 'success', { title: 'Payout cancelled' });
+        else addToast(r.error || 'Please try again.', 'error', { title: 'Payout not cancelled' });
         setCancelFor(null);
         onChanged();
     };
     const resendLink = async (app) => {
         const r = await callOutreach('outreach-resend-link', { campaignId: campaign.id, appIds: [app.id] });
-        addToast(r.ok ? 'Their personal link is on its way.' : r.error, r.ok ? 'success' : 'error');
+        if (r.ok) addToast('Their personal link is on its way.', 'success');
+        else addToast(r.error || 'Please try again.', 'error', {
+            title: 'Link not sent',
+            action: { label: 'Try again', onClick: () => resendLink(app) },
+        });
     };
 
     const due = rows.filter(r => r.summary.allRequiredApproved && r.app.payout?.status !== 'paid');

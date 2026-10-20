@@ -176,7 +176,8 @@ const ProposalManagement = () => {
 
     const copyLink = async (p) => {
         const ok = await copyToClipboard(urlFor(p, 'link'));
-        addToast(ok ? 'Proposal link copied.' : "Couldn't copy the link.", ok ? 'success' : 'error');
+        if (ok) addToast('Proposal link copied.', 'success');
+        else addToast('Your browser blocked it. Try again.', 'error', { title: "Couldn't copy the link", action: { label: 'Try again', onClick: () => copyLink(p) } });
         if (ok) markShared(p, 'link');
     };
     const share = async (p) => {
@@ -208,7 +209,7 @@ const ProposalManagement = () => {
             if (newId) setParam('proposal', newId, true);
         } catch (err) {
             console.error(err);
-            addToast("Couldn't duplicate the proposal.", 'error');
+            addToast('Please try again.', 'error', { title: "Couldn't copy the proposal", action: { label: 'Try again', onClick: () => duplicate(p) } });
         }
     };
     const remove = async (p) => {
@@ -221,7 +222,7 @@ const ProposalManagement = () => {
             addToast('Proposal deleted.', 'success');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't delete the proposal.", 'error');
+            addToast('Please try again.', 'error', { title: "Couldn't delete the proposal", action: { label: 'Try again', onClick: () => remove(p) } });
         }
     };
     const convert = async (p) => {
@@ -233,7 +234,7 @@ const ProposalManagement = () => {
             navigate(`/admin/edit-invoice/${invoiceId}`);
         } catch (err) {
             console.error(err);
-            addToast("Couldn't create the invoice.", 'error');
+            addToast('Please try again.', 'error', { title: "Couldn't create the invoice", action: { label: 'Try again', onClick: () => convert(p) } });
         }
     };
     const sendEmail = async (payload) => {

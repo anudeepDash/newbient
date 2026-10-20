@@ -155,7 +155,7 @@ export function AuthResumer() {
     useEffect(() => {
         finishRedirectSignIn().catch((err) => {
             console.warn('[auth] redirect sign-in failed:', err?.code || err);
-            useLegacyStore.getState().addToast?.(tNow('Sign-in didn’t finish. Please try again.'), 'error');
+            useLegacyStore.getState().addToast?.(tNow('Please try again.'), 'error', { title: tNow('Sign-in didn’t finish') });
         });
     }, [finishRedirectSignIn]);
 

@@ -204,7 +204,7 @@ const MailingManager = () => {
     const uploadToCloudinary = useStore(s => s.uploadToCloudinary);
     const [heroUploading, setHeroUploading] = useState(false);
     const onHeroFile = async (file) => {
-        if (!file?.type?.startsWith('image/')) { addToast('Choose an image file.', 'error'); return; }
+        if (!file?.type?.startsWith('image/')) { addToast('Pick an image file, like a JPG or PNG.', 'warning'); return; }
         setHeroUploading(true);
         try {
             const url = await uploadToCloudinary(file);
@@ -212,7 +212,7 @@ const MailingManager = () => {
             patch({ heroImage: url });
         } catch (err) {
             console.error('Hero upload failed:', err);
-            addToast("Couldn't upload the image. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't upload the image", action: { label: 'Try again', onClick: () => onHeroFile(file) } });
         } finally {
             setHeroUploading(false);
         }
@@ -235,8 +235,8 @@ const MailingManager = () => {
     const myEmail = normalizeEmail(user?.email);
     const [testedAt, setTestedAt] = useState(null);
     const sendTest = async () => {
-        if (!myEmail) { addToast("Your account has no email address to send a test to.", 'error'); return; }
-        if (!mail.subject.trim()) { addToast('Add a subject first.', 'error'); return; }
+        if (!myEmail) { addToast('Add an email address to your account to get test emails.', 'warning', { title: 'No email to send the test to' }); return; }
+        if (!mail.subject.trim()) { addToast('Add a subject first.', 'warning'); return; }
         setTesting(true);
         try {
             const ready = await hostInlineImages();
@@ -246,7 +246,10 @@ const MailingManager = () => {
             addToast(`Test sent to ${sent.to || myEmail}.`, 'success');
         } catch (err) {
             console.error('Test send failed:', err);
-            addToast(/upload/i.test(err?.message || '') ? "Couldn't upload the images in your message. Please try again." : "Couldn't send the test. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: /upload/i.test(err?.message || '') ? "Couldn't upload the images in your message" : "Couldn't send the test",
+                action: { label: 'Try again', onClick: () => sendTest() },
+            });
         } finally {
             setTesting(false);
         }
@@ -256,7 +259,7 @@ const MailingManager = () => {
 
     const [sendJob, setSendJob] = useState(null);
     const openReview = () => {
-        if (problems.length) { addToast(problems[0], 'error'); return; }
+        if (problems.length) { addToast(problems[0], 'warning'); return; }
         const stats = audienceResult.stats;
         const recipients = audienceResult.recipients;
         const audienceLabel = describeAudience(audience);
@@ -342,7 +345,7 @@ const MailingManager = () => {
     const activeTemplate = (emailTemplates || []).find(t => t.id === templateId) || null;
 
     const saveTemplate = async (asNew) => {
-        if (!mail.subject.trim()) { addToast('Add a subject before saving a template.', 'error'); return; }
+        if (!mail.subject.trim()) { addToast('Add a subject before saving a template.', 'warning'); return; }
         if (savingTemplate) return;
         setSavingTemplate(true);
         try {
@@ -361,10 +364,11 @@ const MailingManager = () => {
                 theme: mail.theme || 'light',
             });
             setTemplateId(id);
-            addToast(String(id).startsWith('tpl_local_') ? 'Saved on this device only. Other admins won\'t see it until it saves online.' : (!asNew && templateId ? 'Template updated.' : 'Template saved.'), String(id).startsWith('tpl_local_') ? 'warning' : 'success');
+            if (String(id).startsWith('tpl_local_')) addToast("Other admins won't see it until it saves online.", 'warning', { title: 'Template saved on this device only' });
+            else addToast(!asNew && templateId ? 'Template updated.' : 'Template saved.', 'success');
         } catch (err) {
-            if (err?.message?.startsWith('SAVED_LOCALLY')) addToast(err.message.replace('SAVED_LOCALLY: ', ''), 'warning');
-            else addToast("Couldn't save the template. Please try again.", 'error');
+            if (err?.message?.startsWith('SAVED_LOCALLY')) addToast("Other admins won't see it until it saves online.", 'warning', { title: 'Template saved on this device only' });
+            else addToast('Check your connection and try again.', 'error', { title: "Couldn't save the template", action: { label: 'Try again', onClick: () => saveTemplate(asNew) } });
         } finally {
             setSavingTemplate(false);
         }
@@ -418,7 +422,7 @@ const MailingManager = () => {
             } else if (confirm.kind === 'campaign') {
                 await deleteEmailCampaign(confirm.item.id);
                 if (openCampaignId === confirm.item.id) setParams({ campaign: null });
-                addToast('Campaign record deleted.', 'success');
+                addToast('Campaign removed from the history.', 'success');
             } else if (confirm.kind === 'allow') {
                 await allowEmailAgain(confirm.item.email);
                 suppression.setEntries(list => list.filter(e => e.email !== confirm.item.email));
@@ -432,7 +436,10 @@ const MailingManager = () => {
             setConfirm(null);
         } catch (err) {
             console.error('Action failed:', err);
-            addToast("That didn't work. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: ({ template: "Couldn't delete the template", campaign: "Couldn't delete the campaign", allow: "Couldn't turn their emails back on" })[confirm.kind] || "That didn't work",
+                action: { label: 'Try again', onClick: () => runConfirm() },
+            });
         } finally {
             setConfirmBusy(false);
         }

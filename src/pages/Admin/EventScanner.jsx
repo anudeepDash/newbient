@@ -514,7 +514,7 @@ const ScanScreen = ({ eventId, event, onChangeEvent, onBack, canOpenDesk, onOpen
             const added = latest.filter(x => !queue.some(q => q.code === x.code));
             saveQueue([...rest, ...added]);
             syncing.current = false;
-            if (done) addToast(`${done} offline ${done === 1 ? 'scan' : 'scans'} sent. Check Recent for the results.`, 'success');
+            if (done) addToast('Check Recent for the results.', 'success', { title: `${done} offline ${done === 1 ? 'scan' : 'scans'} sent` });
         })();
     }, [online, queue.length]); // eslint-disable-line react-hooks/exhaustive-deps
 

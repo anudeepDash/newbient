@@ -3,11 +3,14 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { X, ChevronRight } from 'lucide-react';
 import { useStore } from '../../lib/store';
-import { TOAST_LABELS } from '../../lib/toastCopy';
+import { TOAST_LABELS, TOAST_EYEBROWS } from '../../lib/toastCopy';
+import { useT } from '../../i18n';
+import newbiIcon from '../../assets/logo/newbi-icon.svg';
 import { cn } from '../../lib/utils';
-import { StatusIcon, NotificationIcon } from './NotificationIcon';
+import { NotificationIcon } from './NotificationIcon';
 
-// Liquid-glass banners in the style of iOS / Dynamic Island alerts.
+// Banners in the app's "N." card style: a solid card with the brand's glowing dot,
+// a mono eyebrow label, a soft corner glow and dot grid tinted by the tone.
 // Every banner in the app (action feedback and incoming notifications) drops in at the top centre
 // of the screen. Short messages render as a compact pill; longer ones as a full card.
 // Several banners collapse into a stack; hover (desktop) or tap (mobile) fans them out.
@@ -21,6 +24,77 @@ const SPRING = { type: 'spring', stiffness: 420, damping: 30, mass: 0.9 };
 // Only notifications created in the last couple of minutes pop up; older unread ones wait in the bell.
 const FRESH_WINDOW_MS = 2 * 60 * 1000;
 const MAX_INDIVIDUAL_NOTIFICATIONS = 2;
+
+// Per tone: the dot, the eyebrow colour and the corner glow (light, dark).
+const TONE_STYLES = {
+    success: {
+        dot: 'bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.16),0_0_10px_rgba(16,185,129,0.55)] dark:bg-neon-green dark:shadow-[0_0_0_3px_rgba(57,255,20,0.14),0_0_12px_rgba(57,255,20,0.7)]',
+        ping: 'bg-emerald-500 dark:bg-neon-green',
+        label: 'text-emerald-700 dark:text-neon-green',
+        glow: ['rgba(57,255,20,0.22)', 'rgba(57,255,20,0.16)'],
+    },
+    error: {
+        dot: 'bg-red-500 shadow-[0_0_0_3px_rgba(239,68,68,0.16),0_0_10px_rgba(239,68,68,0.6)]',
+        ping: 'bg-red-500',
+        label: 'text-red-600 dark:text-red-400',
+        glow: ['rgba(239,68,68,0.16)', 'rgba(239,68,68,0.18)'],
+    },
+    warning: {
+        dot: 'bg-amber-400 shadow-[0_0_0_3px_rgba(251,191,36,0.18),0_0_10px_rgba(251,191,36,0.6)]',
+        ping: 'bg-amber-400',
+        label: 'text-amber-700 dark:text-amber-300',
+        glow: ['rgba(251,191,36,0.20)', 'rgba(251,191,36,0.15)'],
+    },
+    info: {
+        dot: 'bg-sky-500 shadow-[0_0_0_3px_rgba(14,165,233,0.16),0_0_10px_rgba(14,165,233,0.55)] dark:bg-sky-400',
+        ping: 'bg-sky-500 dark:bg-sky-400',
+        label: 'text-sky-700 dark:text-sky-300',
+        glow: ['rgba(14,165,233,0.16)', 'rgba(56,189,248,0.15)'],
+    },
+};
+
+const DOTS = 'radial-gradient(currentColor 1px, transparent 1.2px)';
+const FADE = 'linear-gradient(to left, black 0%, transparent 70%)';
+const glowFrom = (c) => `radial-gradient(90% 120% at 100% 0%, ${c} 0%, transparent 65%)`;
+
+// The brand dot: it pings once when the banner lands.
+const Dot = ({ tone }) => {
+    const reduceMotion = useReducedMotion();
+    const s = TONE_STYLES[tone];
+    return (
+        <span aria-hidden="true" className="relative inline-flex h-2 w-2 shrink-0">
+            {!reduceMotion && (
+                <motion.span
+                    className={cn('absolute inset-0 rounded-full', s.ping)}
+                    initial={{ scale: 1, opacity: 0.7 }}
+                    animate={{ scale: 3, opacity: 0 }}
+                    transition={{ delay: 0.15, duration: 0.9, ease: 'easeOut' }}
+                />
+            )}
+            <span className={cn('relative h-2 w-2 rounded-full', s.dot)} />
+        </span>
+    );
+};
+
+const Count = ({ n }) => (
+    <span className="shrink-0 rounded-full bg-black/[0.06] px-1.5 py-px font-mono text-[10.5px] font-bold tabular-nums text-gray-600 dark:bg-white/10 dark:text-zinc-300">×{n}</span>
+);
+
+// Background: tinted corner glow, a faint dot grid and the small faded N. mark, as on the app's notice cards.
+const ToastLayers = ({ tone }) => {
+    const [light, dark] = TONE_STYLES[tone].glow;
+    return (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[inherit]">
+            <div className="absolute inset-0 dark:hidden" style={{ background: glowFrom(light) }} />
+            <div className="absolute inset-0 hidden dark:block" style={{ background: glowFrom(dark) }} />
+            <div
+                className="absolute inset-0 text-emerald-900/[0.10] dark:text-white/[0.06]"
+                style={{ backgroundImage: DOTS, backgroundSize: '14px 14px', WebkitMaskImage: FADE, maskImage: FADE }}
+            />
+            <img src={newbiIcon} alt="" className="absolute -bottom-5 -right-3 w-20 rotate-[-8deg] opacity-[0.06] dark:opacity-[0.08]" />
+        </div>
+    );
+};
 
 const useIncomingNotificationToasts = () => {
     const notifications = useStore(state => state.notifications);
@@ -70,6 +144,7 @@ const useAutoDismiss = (toast, paused, onDismiss) => {
 
 const ToastCard = ({ toast, index, total, expanded, offset, frontSize, paused, onDismiss, onSize, onExpand }) => {
     const navigate = useNavigate();
+    const t = useT();
     const reduceMotion = useReducedMotion();
     const markNotificationRead = useStore(state => state.markNotificationRead);
     const contentRef = useRef(null);
@@ -95,6 +170,7 @@ const ToastCard = ({ toast, index, total, expanded, offset, frontSize, paused, o
     // Short, single-line feedback becomes a compact pill.
     const isPill = !isNotification && !toast.title && !toast.hint && !toast.action && String(toast.message || '').length <= 46;
     const hasLink = isNotification && toast.link && toast.link.trim() !== '';
+    const tone = isNotification ? 'success' : (TONE_STYLES[toast.type] ? toast.type : 'info');
     const isFront = index === 0;
     const collapsedBehind = !expanded && !isFront;
     const hiddenInStack = !expanded && index >= MAX_STACKED;
@@ -158,89 +234,89 @@ const ToastCard = ({ toast, index, total, expanded, offset, frontSize, paused, o
                 onClick={handleTap}
                 whileTap={reduceMotion ? undefined : { scale: 0.985 }}
                 className={cn(
-                    'liquid-glass group overflow-hidden touch-none select-none cursor-pointer',
+                    'group relative isolate overflow-hidden touch-none select-none cursor-pointer ring-1 ring-inset backdrop-blur-xl backdrop-saturate-150',
+                    'bg-white/[0.92] text-gray-900 ring-black/[0.07] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_18px_44px_-18px_rgba(15,23,42,0.35)]',
+                    'dark:bg-[#0c0e11]/[0.92] dark:text-white dark:ring-white/[0.1] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_22px_50px_-18px_rgba(0,0,0,0.9)]',
                     hiddenInStack ? 'pointer-events-none' : 'pointer-events-auto',
-                    isPill ? 'w-fit max-w-full rounded-full' : 'w-full rounded-[24px] md:rounded-[22px]'
+                    isPill ? 'w-fit max-w-full rounded-full' : 'w-full rounded-[22px]'
                 )}
                 ref={cardRef}
                 style={collapsedBehind && frontSize ? { height: frontSize.h, width: frontSize.w } : undefined}
             >
-                <div
-                    ref={contentRef}
-                    className={cn(
-                        'relative z-[2] flex transition-opacity duration-200',
-                        isPill ? 'items-center gap-2.5 pl-2 pr-5 py-2' : 'items-start gap-3 px-3.5 py-3 md:pr-2.5',
-                        collapsedBehind && 'opacity-0'
-                    )}
-                >
-                    {isNotification
-                        ? <NotificationIcon notification={{ type: toast.category, title: toast.title, image: toast.image }} size={36} />
-                        : <StatusIcon type={toast.type} size={isPill ? 30 : 36} />}
+                {!isPill && <ToastLayers tone={tone} />}
 
-                    <div className={cn('min-w-0 flex flex-col justify-center', isPill ? 'flex-initial' : 'flex-1 min-h-[36px]')}>
-                        <span className="sr-only">{isNotification ? 'New notification: ' : `${TOAST_LABELS[toast.type]}: `}</span>
+                {isPill ? (
+                    <div ref={contentRef} className={cn('flex items-center gap-2.5 py-2.5 pl-4 pr-5 transition-opacity duration-200', collapsedBehind && 'opacity-0')}>
+                        <span className="sr-only">{`${TOAST_LABELS[toast.type]}: `}</span>
+                        <Dot tone={tone} />
+                        <p className="min-w-0 truncate text-[14px] font-bold leading-tight tracking-[-0.01em]">{toast.message}</p>
+                        {toast.count > 1 && <Count n={toast.count} />}
+                    </div>
+                ) : (
+                    <div ref={contentRef} className={cn('flex items-start gap-3 px-4 pb-3.5 pt-3 transition-opacity duration-200', collapsedBehind && 'opacity-0')}>
+                        {isNotification && (
+                            <NotificationIcon notification={{ type: toast.category, title: toast.title, image: toast.image }} size={38} />
+                        )}
 
-                        <div className="flex items-baseline gap-2">
+                        <div className="min-w-0 flex-1">
+                            <span className="sr-only">{isNotification ? 'New notification: ' : `${TOAST_LABELS[toast.type]}: `}</span>
+
+                            {/* Eyebrow: the brand dot and a short label, like the app's section headers */}
+                            <div className="flex h-6 items-center gap-2">
+                                <Dot tone={tone} />
+                                <span aria-hidden="true" className={cn('font-mono text-[10.5px] font-bold uppercase tracking-[0.2em]', TONE_STYLES[tone].label)}>
+                                    {isNotification ? t('New') : TOAST_EYEBROWS[toast.type]}
+                                </span>
+                                {isNotification && <span className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-gray-400 dark:text-zinc-500">· {t('now')}</span>}
+                                {toast.count > 1 && <Count n={toast.count} />}
+                                {/* Close: desktop only — on phones banners are tapped or swiped away */}
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); onDismiss(); }}
+                                    className="ml-auto -mr-1.5 hidden h-6 w-6 shrink-0 items-center justify-center rounded-full text-gray-400 opacity-0 transition-opacity hover:bg-black/[0.06] hover:text-gray-900 focus-visible:opacity-100 group-hover:opacity-100 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-white md:flex"
+                                    aria-label="Dismiss"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+
                             <p className={cn(
-                                'min-w-0 text-[15px] md:text-[14px] leading-[1.3] font-semibold text-gray-950 dark:text-white tracking-[-0.01em]',
-                                isPill ? 'truncate' : 'flex-1',
-                                !isPill && (toast.title ? 'line-clamp-1' : 'line-clamp-3')
+                                'mt-1 text-[15px] font-bold leading-snug tracking-[-0.01em] text-gray-950 dark:text-white break-words',
+                                toast.title ? 'line-clamp-2' : 'line-clamp-3'
                             )}>
                                 {toast.title || toast.message}
                             </p>
-                            {toast.count > 1 && (
-                                <span className="shrink-0 px-1.5 py-px rounded-full bg-black/[0.07] dark:bg-white/15 text-[11px] font-semibold text-gray-600 dark:text-white/70 tabular-nums">
-                                    ×{toast.count}
-                                </span>
+
+                            {toast.title && toast.message && (
+                                <p className="mt-0.5 text-[14px] leading-snug text-gray-600 dark:text-zinc-300 line-clamp-3 break-words">
+                                    {toast.message}
+                                </p>
                             )}
-                            {isNotification && (
-                                <span className="shrink-0 text-[12px] text-gray-500 dark:text-white/50">now</span>
+
+                            {toast.hint && (
+                                <p className="mt-1.5 text-[12.5px] leading-snug text-gray-500 dark:text-zinc-400 break-words">{toast.hint}</p>
+                            )}
+
+                            {(toast.action || hasLink) && (
+                                <div className="mt-3">
+                                    {toast.action ? (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); handleAction(); }}
+                                            className="inline-flex h-8 items-center rounded-full bg-gray-900 px-4 text-[13px] font-bold text-white transition-transform active:scale-95 dark:bg-white dark:text-black"
+                                        >
+                                            {toast.action.label}
+                                        </button>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-0.5 text-[13px] font-bold text-emerald-700 dark:text-neon-green">
+                                            {t('Open')} <ChevronRight size={14} aria-hidden="true" />
+                                        </span>
+                                    )}
+                                </div>
                             )}
                         </div>
-
-                        {toast.title && toast.message && (
-                            <p className="mt-0.5 text-[14px] md:text-[13px] leading-[1.35] text-gray-700 dark:text-white/75 line-clamp-3 break-words">
-                                {toast.message}
-                            </p>
-                        )}
-
-                        {toast.hint && (
-                            <p className="mt-1 text-[12.5px] md:text-[12px] text-gray-500 dark:text-white/55">{toast.hint}</p>
-                        )}
-
-                        {(toast.action || hasLink) && (
-                            <div className="mt-2.5">
-                                {toast.action ? (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => { e.stopPropagation(); handleAction(); }}
-                                        className="inline-flex items-center h-8 px-3.5 rounded-full bg-white/60 dark:bg-white/[0.12] border border-white/70 dark:border-white/15 text-[13px] font-semibold text-gray-900 dark:text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] active:scale-95 transition-transform"
-                                    >
-                                        {toast.action.label}
-                                    </button>
-                                ) : (
-                                    <span className="inline-flex items-center gap-0.5 text-[13px] font-semibold text-blue-600 dark:text-sky-300">
-                                        Open <ChevronRight size={14} aria-hidden="true" />
-                                    </span>
-                                )}
-                            </div>
-                        )}
                     </div>
-
-                    {/* Close: desktop cards only — pills and phone banners are tapped or swiped away */}
-                    <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); onDismiss(); }}
-                        className={cn(
-                            'hidden shrink-0 w-7 h-7 -mt-0.5 rounded-full items-center justify-center text-gray-500 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-black/[0.06] dark:hover:bg-white/10 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity',
-                            !isPill && 'md:flex'
-                        )}
-                        aria-label="Dismiss"
-                    >
-                        <X size={15} />
-                    </button>
-                </div>
-
+                )}
             </motion.div>
         </motion.li>
     );

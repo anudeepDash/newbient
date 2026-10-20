@@ -26,7 +26,7 @@ import {
 } from './money';
 import ThemedSelect from '../ThemedSelect';
 
-const toast = (msg, type = 'success') => useStore.getState().addToast?.(msg, type);
+const toast = (msg, type = 'success', options) => useStore.getState().addToast?.(msg, type, options);
 
 export const copyText = async (text, label = 'Details') => {
     if (!text) return;
@@ -34,7 +34,7 @@ export const copyText = async (text, label = 'Details') => {
         await navigator.clipboard.writeText(text);
         toast(`${label} copied.`);
     } catch {
-        toast("Couldn't copy. Please copy it by hand.", 'error');
+        toast('Select the text and copy it by hand.', 'error', { title: "Couldn't copy" });
     }
 };
 
@@ -99,10 +99,10 @@ export const PayeeEditorSheet = ({ open, onClose, payee, payees, onSaved, onOpen
     const save = async (e) => {
         e?.preventDefault();
         if (saving) return;
-        if (!form.name.trim()) { toast('Add a name first.', 'error'); return; }
-        if (form.paymentMode === 'UPI' && form.upiId.trim() && !form.upiId.includes('@')) { toast('That UPI ID looks incomplete. It should have an @ in it.', 'error'); return; }
+        if (!form.name.trim()) { toast('Add a name first.', 'warning'); return; }
+        if (form.paymentMode === 'UPI' && form.upiId.trim() && !form.upiId.includes('@')) { toast('A UPI ID has an @ in it, like name@okhdfc.', 'warning', { title: 'Check the UPI ID' }); return; }
         if (form.paymentMode === 'Bank Transfer' && form.ifscCode.trim() && !/^[A-Za-z]{4}0[A-Za-z0-9]{6}$/.test(form.ifscCode.trim())) {
-            toast('That IFSC code looks wrong. It is 11 characters, like HDFC0001234.', 'error'); return;
+            toast('It has 11 characters, like HDFC0001234.', 'warning', { title: 'Check the IFSC code' }); return;
         }
         const data = {
             name: form.name.trim(),
@@ -132,7 +132,7 @@ export const PayeeEditorSheet = ({ open, onClose, payee, payees, onSaved, onOpen
             onClose();
         } catch (err) {
             console.error(err);
-            toast("Couldn't save the payee. Please try again.", 'error');
+            toast('Check your connection and try again.', 'error', { title: 'Payee not saved', action: { label: 'Try again', onClick: () => save() } });
         } finally {
             setSaving(false);
         }
@@ -295,7 +295,7 @@ export const PayeeDetailSheet = ({ payee, open, onClose, payees, spends, canDele
         }
         await updateFinancePayee(payee.id, updates);
         for (const x of twins) await deleteFinancePayee(x.id);
-        toast(`Merged ${twins.length} into ${payee.name}.`);
+        toast(`Merged ${twins.length} ${twins.length === 1 ? 'duplicate' : 'duplicates'} into ${payee.name}.`);
     };
 
     return (
@@ -478,7 +478,7 @@ export const RegistrationLinkSheet = ({ open, onClose, events = [] }) => {
                     toast(`Added "${gig}" to events.`);
                 } catch (err) {
                     console.error(err);
-                    toast("Couldn't add the event, but the link still works.", 'error');
+                    toast('The link was still created and works.', 'warning', { title: `"${gig}" not added to events` });
                 }
             }
             const text = url.toString();

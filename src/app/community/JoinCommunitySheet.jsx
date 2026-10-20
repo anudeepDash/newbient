@@ -83,7 +83,7 @@ const JoinCommunitySheet = ({ open, onClose, onJoined, mode = 'join' }) => {
                 useLegacyStore.getState().addToast?.(t('Profile saved.'), 'success');
             } else {
                 await joinCommunity();
-                useLegacyStore.getState().addToast?.(t('You’re in. Guestlists, gigs and giveaways are open to you.'), 'success');
+                useLegacyStore.getState().addToast?.(t('Guestlists, gigs and giveaways are open to you.'), 'success', { title: t('You’re in') });
                 onJoined?.();
             }
             onClose?.();

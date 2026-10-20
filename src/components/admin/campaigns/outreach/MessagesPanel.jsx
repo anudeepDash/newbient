@@ -50,7 +50,8 @@ const MessageCard = ({ app, text, canSend: canSendIn, capReached, onQueue, onMar
     const canSend = canSendIn && !blockedNote;
     const copy = async () => {
         const ok = await copyToClipboard(text);
-        addToast(ok ? 'Message copied. Paste it in WhatsApp.' : 'Couldn’t copy. Select the text and copy it.', ok ? 'success' : 'error');
+        if (ok) addToast('Paste it in WhatsApp.', 'success', { title: 'Message copied' });
+        else addToast('Select the text and copy it yourself.', 'error', { title: 'Couldn’t copy the message' });
         if (ok && app.status === 'shortlisted') onQueue(app);
     };
     const later = (TRANSITIONS[app.status] || []).filter(s => !['message_queued', 'message_sent', 'shortlisted'].includes(s));

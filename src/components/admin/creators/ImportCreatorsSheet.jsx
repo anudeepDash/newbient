@@ -113,17 +113,18 @@ const ImportCreatorsSheet = ({ open, onClose, creators }) => {
         failed.sort((a, b) => a.line - b.line);
         setRunning(false);
         setResult({ imported, failed });
-        if (imported) addToast(`Imported ${imported} creator${imported === 1 ? '' : 's'}${failed.length ? `, ${failed.length} failed` : ''}.`, failed.length ? 'warning' : 'success');
-        else addToast("Couldn't import any creators. See the reasons in the list.", 'error');
+        if (imported) addToast(failed.length ? `${failed.length} couldn't be imported. See the reasons in the list.` : `Imported ${imported} creator${imported === 1 ? '' : 's'}.`, failed.length ? 'warning' : 'success',
+            failed.length ? { title: `Imported ${imported} of ${imported + failed.length}` } : undefined);
+        else addToast('See the reasons in the list.', 'error', { title: 'No creators imported' });
     };
 
     const copyFailures = async () => {
         const text = result.failed.map(f => `Row ${f.line} · ${f.name}: ${f.error}`).join('\n');
         try {
             await navigator.clipboard.writeText(text);
-            addToast('Copied.', 'success');
+            addToast('Failed rows copied.', 'success');
         } catch {
-            addToast("Couldn't copy.", 'error');
+            addToast("Couldn't copy the failed rows. Try again.", 'error');
         }
     };
 

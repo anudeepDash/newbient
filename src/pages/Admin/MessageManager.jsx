@@ -115,7 +115,7 @@ const MessageManager = () => {
             if (ok) addToast(ok, 'success');
         } catch (err) {
             console.error(err);
-            addToast(fail || "Couldn't update the message. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: fail || "Couldn't update the message" });
         }
     };
 
@@ -150,7 +150,7 @@ const MessageManager = () => {
         const results = await Promise.allSettled(unread.map(m => markMessageRead(m.id, 'read')));
         setMarkingAll(false);
         const failed = results.filter(r => r.status === 'rejected').length;
-        if (failed) addToast(`Marked ${unread.length - failed} as read. ${failed} couldn't be updated; try again.`, 'error');
+        if (failed) addToast(`${failed} couldn't be updated. Try those again.`, 'warning', { title: `Marked ${unread.length - failed} of ${unread.length} as read`, action: { label: 'Try again', onClick: () => markAllRead() } });
         else addToast(`All ${unread.length} marked as read.`, 'success');
     };
 

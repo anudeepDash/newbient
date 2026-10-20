@@ -124,7 +124,7 @@ const AnnouncementsManager = () => {
             addToast(a.isPinned ? 'Removed from the website banner.' : 'Pinned to the website banner.', 'success');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't update the banner. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't update the website banner", action: { label: 'Try again', onClick: () => togglePin(a) } });
         }
     });
 
@@ -140,7 +140,7 @@ const AnnouncementsManager = () => {
             await reorderAnnouncements(list);
         } catch (err) {
             console.error(err);
-            addToast("Couldn't save the new order. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't save the new order", action: { label: 'Try again', onClick: () => move(a, dir) } });
         }
     });
 
@@ -148,20 +148,20 @@ const AnnouncementsManager = () => {
         try {
             const { start } = announcementWindow(a);
             await updateAnnouncement(a.id, { endsAt: new Date().toISOString(), startsAt: start ? start.toISOString() : '', updatedAt: new Date().toISOString() });
-            addToast('Ended. It no longer shows on the site.', 'success');
+            addToast('It no longer shows on the site.', 'success', { title: 'Announcement ended' });
         } catch (err) {
             console.error(err);
-            addToast("Couldn't end it. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't end the announcement", action: { label: 'Try again', onClick: () => endNow(a) } });
         }
     });
 
     const showAgain = (a) => guard(async () => {
         try {
             await updateAnnouncement(a.id, { endsAt: '', startsAt: '', updatedAt: new Date().toISOString() });
-            addToast('Live again.', 'success');
+            addToast('The announcement is live again.', 'success');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't update it. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't put it back on the site", action: { label: 'Try again', onClick: () => showAgain(a) } });
         }
     });
 
@@ -174,16 +174,20 @@ const AnnouncementsManager = () => {
                 addToast('Announcement deleted.', 'success');
             } else if (kind === 'notify') {
                 const claimed = await useStore.getState().claimContentNotification('announcements', item.id, { force: !!item.notifiedAt });
-                if (!claimed) { addToast('It was already sent a moment ago.', 'info'); }
+                if (!claimed) { addToast('This notification already went out a moment ago.', 'info'); }
                 else {
                     await sendAnnouncementNotification(item, !!confirm.email);
-                    addToast(confirm.email ? 'Notification sent. Opening Mailing for the email…' : 'Notification sent to everyone.', 'success');
+                    if (confirm.email) addToast('Opening Mailing so you can send the email.', 'success', { title: 'Notification sent' });
+                    else addToast('Notification sent to everyone.', 'success');
                 }
             }
             setConfirm(null);
         } catch (err) {
             console.error(err);
-            addToast(kind === 'delete' ? "Couldn't delete it. Please try again." : "Couldn't send the notification. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: kind === 'delete' ? "Couldn't delete the announcement" : "Couldn't send the notification",
+                action: kind === 'delete' ? { label: 'Try again', onClick: () => runConfirm() } : undefined,
+            });
         }
     });
 

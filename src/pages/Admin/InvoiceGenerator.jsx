@@ -563,7 +563,7 @@ const InvoiceGenerator = () => {
             navigate(savedId ? `/admin/invoices?invoice=${savedId}` : '/admin/invoices');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't save the invoice. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Invoice not saved', action: { label: 'Try again', onClick: () => saveAndClose(force) } });
         } finally {
             setBusy(null);
         }
@@ -574,7 +574,7 @@ const InvoiceGenerator = () => {
         if (errors.length) { setDialog({ kind: 'issues', purpose: 'share' }); return null; }
         setBusy('share');
         try { return await persist(); } catch {
-            addToast("Couldn't save the invoice. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Invoice not saved' });
             return null;
         } finally { setBusy(null); }
     };
@@ -585,7 +585,7 @@ const InvoiceGenerator = () => {
         if (!savedId) return;
         if (how === 'link') {
             const ok = await copyToClipboard(shareUrl(savedId, 'link'));
-            addToast(ok ? 'Invoice link copied.' : "Couldn't copy the link.", ok ? 'success' : 'error');
+            addToast(ok ? 'Invoice link copied.' : 'Please try again.', ok ? 'success' : 'error', ok ? undefined : { title: "Couldn't copy the link" });
         } else if (how === 'whatsapp') {
             const text = `Hi${formData.clientName ? ` ${formData.clientName}` : ''}, here is invoice ${formData.invoiceNumber || ''} from Newbi Entertainment for ${rupees(balanceDue)}: ${shareUrl(savedId, 'whatsapp')}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
@@ -618,22 +618,22 @@ const InvoiceGenerator = () => {
             pdf.save(`Newbi-Invoice-${formData.invoiceNumber || 'draft'}.pdf`);
         } catch (error) {
             console.error(error);
-            addToast("Couldn't create the PDF. Please try again.", 'error');
+            addToast('Please try again.', 'error', { title: "Couldn't create the PDF", action: { label: 'Try again', onClick: () => downloadPdf(force) } });
         } finally {
             setCapturing(false);
             setBusy(null);
         }
     };
 
-    const saveDefaults = async (part, message = 'Saved. New invoices will start with these details.') => {
+    const saveDefaults = async (part, message = 'New invoices will start with these details.') => {
         try {
             await useStore.getState().updateGeneralSettings({
                 invoiceDefaults: { ...(siteSettings?.invoiceDefaults || {}), ...part, updatedAt: new Date().toISOString(), updatedBy: user?.email || null },
             });
-            addToast(message, 'success');
+            addToast(message, 'success', { title: 'Saved as default' });
         } catch (err) {
             console.error(err);
-            addToast("Couldn't save the defaults. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Default not saved', action: { label: 'Try again', onClick: () => saveDefaults(part, message) } });
         }
     };
 
@@ -699,17 +699,17 @@ const InvoiceGenerator = () => {
     // ── Images kept inside the invoice record ──
     const readImage = (file, onDone) => {
         if (!file) return;
-        if (!file.type.startsWith('image/')) { addToast('Choose an image file.', 'error'); return; }
+        if (!file.type.startsWith('image/')) { addToast('Choose an image file, like a PNG or JPG.', 'warning'); return; }
         const reader = new FileReader();
         reader.onload = (ev) => {
             const data = String(ev.target.result || '');
-            if (data.length > MAX_INLINE_IMAGE) { addToast('That image is too large. Use one under 500 KB.', 'error'); return; }
+            if (data.length > MAX_INLINE_IMAGE) { addToast('Use an image under 500 KB.', 'warning', { title: 'That image is too large' }); return; }
             onDone(data);
         };
         reader.readAsDataURL(file);
     };
     const setSignature = (data) => {
-        if (data && String(data).length > MAX_INLINE_IMAGE) { addToast('That signature image is too large. Draw it, or use a smaller image.', 'error'); return; }
+        if (data && String(data).length > MAX_INLINE_IMAGE) { addToast('Draw the signature instead, or use a smaller image.', 'warning', { title: 'That signature image is too large' }); return; }
         set({ providerSignature: data || '' });
     };
 
@@ -717,7 +717,7 @@ const InvoiceGenerator = () => {
     const attachments = formData.attachments || [];
     const addAttachmentFile = async (file) => {
         if (!file) return;
-        if (file.size > 35 * 1024 * 1024) { addToast(`That file is ${formatBytes(file.size)}. The limit is 35 MB.`, 'error'); return; }
+        if (file.size > 35 * 1024 * 1024) { addToast(`That file is ${formatBytes(file.size)}. The limit is 35 MB.`, 'warning', { title: 'File too large' }); return; }
         setUpload({ name: file.name, percent: 0 });
         try {
             const res = await useStore.getState().uploadProposalFile(file, (p) => setUpload(u => (u ? { ...u, percent: p } : u)));
@@ -726,14 +726,14 @@ const InvoiceGenerator = () => {
             setFormData(prev => ({ ...prev, attachments: [...(prev.attachments || []), { id: `att_${Date.now()}`, name: file.name, type: 'file', url: res.url, fileType, size: file.size }] }));
             addToast('File attached.', 'success');
         } catch (err) {
-            addToast(err?.message || "Couldn't upload the file. Please try again.", 'error');
+            addToast(err?.message || 'Check your connection and try again.', 'error', { title: 'File not attached' });
         } finally {
             setUpload(null);
         }
     };
     const addAttachmentLink = () => {
         const url = linkDraft.url.trim();
-        if (!isHttpsUrl(url)) { addToast('Add a full link, starting with https://', 'error'); return; }
+        if (!isHttpsUrl(url)) { addToast('Add a full link, starting with https://', 'warning'); return; }
         let name = linkDraft.name.trim();
         if (!name) { try { name = new URL(url).hostname; } catch { name = 'Link'; } }
         setFormData(prev => ({ ...prev, attachments: [...(prev.attachments || []), { id: `att_${Date.now()}`, name, type: 'link', url, fileType: 'link' }] }));
@@ -1150,7 +1150,7 @@ const InvoiceGenerator = () => {
                                                 {bank ? (
                                                     <button type="button" onClick={() => setBankAsText(true)} className="h-10 px-2 text-[12.5px] font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white">Write it as text instead</button>
                                                 ) : (
-                                                    <button type="button" onClick={() => { if (parseBankDetails(formData.paymentDetails)) setBankAsText(false); else addToast("This text has lines the form can't read. Keep it as text, or clear it to use the form.", 'info'); }} className="h-10 px-2 text-[12.5px] font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white">Use the form</button>
+                                                    <button type="button" onClick={() => { if (parseBankDetails(formData.paymentDetails)) setBankAsText(false); else addToast('Keep it as text, or clear it to use the form.', 'info', { title: "The form can't read some of these lines" }); }} className="h-10 px-2 text-[12.5px] font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white">Use the form</button>
                                                 )}
                                                 <SaveDefaultButton onClick={() => saveDefaults({ paymentDetails: formData.paymentDetails, upiId: formData.upiId })} />
                                             </div>
@@ -1203,7 +1203,7 @@ const InvoiceGenerator = () => {
                                                     {TERMS.map(t => <Chip key={t} onClick={() => appendTerm(t)} className="h-auto min-h-9 whitespace-normal py-1.5 text-left">+ {t}</Chip>)}
                                                 </div>
                                             </div>
-                                            <SaveDefaultButton onClick={() => saveDefaults({ terms: formData.note }, 'Saved. New invoices will start with these terms.')}>Use as default terms</SaveDefaultButton>
+                                            <SaveDefaultButton onClick={() => saveDefaults({ terms: formData.note }, 'New invoices will start with these terms.')}>Use as default terms</SaveDefaultButton>
                                         </div>
                                     )}
                                 </BuilderCard>

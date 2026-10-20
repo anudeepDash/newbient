@@ -117,7 +117,10 @@ const GiveawayManager = () => {
             if (success) addToast(success, 'success');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't save. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: 'Change not saved',
+                action: { label: 'Try again', onClick: () => run(id, fn, success) },
+            });
         } finally {
             setBusyId(null);
         }
@@ -140,7 +143,7 @@ const GiveawayManager = () => {
     };
     const reopen = (e) => {
         if (e.end && e.end < new Date()) {
-            addToast('Its end date has passed. Set a new one in the editor to reopen it.', 'info');
+            addToast('Set a new end date in the editor to reopen it.', 'warning', { title: 'Its end date has passed' });
             setParam({ edit: e.g.id });
             return;
         }

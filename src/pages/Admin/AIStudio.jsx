@@ -326,7 +326,7 @@ const AIStudio = () => {
             addToast(res.created ? `Saved as a draft in ${links.name}.` : 'Changes saved.', 'success');
         } catch (e) {
             console.error('[AI studio] save failed', e);
-            addToast(e?.friendly ? e.message : "Couldn't save. Please try again.", 'error');
+            addToast(e?.friendly ? e.message : 'Check your connection and try again.', 'error', { title: "Couldn't save your changes", action: { label: 'Try again', onClick: () => save() } });
         } finally {
             saveRef.current = null;
             setSaving(false);
@@ -347,7 +347,7 @@ const AIStudio = () => {
                 await exportPaperPdf(exportRef.current, name);
             } catch (e) {
                 console.error('[AI studio] PDF failed', e);
-                if (alive) addToast("Couldn't create the PDF. Please try again.", 'error');
+                if (alive) addToast('Please try again.', 'error', { title: "Couldn't create the PDF" });
             } finally {
                 if (alive) setExporting(false);
             }

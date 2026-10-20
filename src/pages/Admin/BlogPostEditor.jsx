@@ -207,14 +207,15 @@ const BlogPostEditor = () => {
             addToast(
                 status === 'Draft' ? 'Draft saved.'
                     : status === 'Scheduled' ? `Scheduled for ${formatDayTime(scheduledAt)}.`
-                        : becomingLive ? (notify ? 'Published and everyone was notified.' : 'Published. It is live on the blog.')
+                        : becomingLive ? (notify ? "It's live on the blog and everyone was notified." : "It's live on the blog.")
                             : 'Changes saved.',
-                'success'
+                'success',
+                { title: status !== 'Draft' && status !== 'Scheduled' && becomingLive ? 'Post published' : undefined }
             );
             navigate('/admin/blog');
         } catch (err) {
             console.error('Post save failed:', err);
-            addToast("Couldn't save the post. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't save the post" });
         } finally {
             lock.current = false;
             setSaving(false);
@@ -228,7 +229,7 @@ const BlogPostEditor = () => {
             const first = keys[0];
             const where = ['title', 'slug'].includes(first) ? 'story' : first === 'content' ? 'body' : first === 'schedule' ? 'publish' : 'extras';
             document.getElementById(`post-${where}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            addToast(problems[first], 'error');
+            addToast(problems[first], 'warning');
             return;
         }
         if (slugChangedLive) { setConfirm('slug'); return; }

@@ -208,7 +208,7 @@ const Invoice = () => {
             const pageElements = document.querySelectorAll('.invoice-page-render');
             
             if (!pageElements.length) {
-                useStore.getState().addToast("The invoice is still loading. Try downloading again in a moment.", 'warning');
+                useStore.getState().addToast('Try downloading again in a moment.', 'warning', { title: 'The invoice is still loading' });
                 return;
             }
 
@@ -245,7 +245,7 @@ const Invoice = () => {
             pdf.save(`Invoice-${displayInvoice.invoiceNumber || displayInvoice.id}.pdf`);
         } catch (error) {
             console.error("PDF generation failed:", error);
-            useStore.getState().addToast("Couldn't create the PDF. Please try again.", 'error');
+            useStore.getState().addToast('Please try again.', 'error', { title: "Couldn't create the PDF", action: { label: 'Try again', onClick: () => handleDownloadPDF() } });
         } finally {
             setScale(originalScale);
             setIsExporting(false);
@@ -338,7 +338,7 @@ const Invoice = () => {
             };
         } catch (error) {
             console.error("Print failed:", error);
-            useStore.getState().addToast("Couldn't prepare for printing. Please try again.", 'error');
+            useStore.getState().addToast('Please try again.', 'error', { title: "Couldn't open the print view", action: { label: 'Try again', onClick: () => handlePrint() } });
         }
     };
 
@@ -352,7 +352,7 @@ const Invoice = () => {
             setConfirmPaid(false);
         } catch (err) {
             console.error('Mark paid failed:', err);
-            useStore.getState().addToast?.("Couldn't update the invoice. Try again.", 'error');
+            useStore.getState().addToast?.('Check your connection and try again.', 'error', { title: 'Invoice not marked as paid', action: { label: 'Try again', onClick: () => confirmMarkPaid() } });
         } finally {
             setMarkingPaid(false);
         }

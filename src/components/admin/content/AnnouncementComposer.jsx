@@ -142,13 +142,14 @@ const AnnouncementComposer = ({ open, onClose, record, onSaved }) => {
                     ...(notify ? { notifiedAt: now, notifyCount: 1 } : {}),
                 });
                 if (notify) await sendAnnouncementNotification(payload, form.notifyEmail);
-                addToast(scheduled ? `Scheduled for ${formatDayTime(startsAt)}.` : notify ? 'Published and everyone was notified.' : 'Announcement published.', 'success');
+                if (!scheduled && notify) addToast('Everyone was notified.', 'success', { title: 'Announcement published' });
+                else addToast(scheduled ? `Scheduled for ${formatDayTime(startsAt)}.` : 'Announcement published.', 'success');
             }
             onSaved?.();
             onClose();
         } catch (err) {
             console.error('Announcement save failed:', err);
-            addToast("Couldn't save the announcement. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't save the announcement" });
         } finally {
             lock.current = false;
             setSaving(false);

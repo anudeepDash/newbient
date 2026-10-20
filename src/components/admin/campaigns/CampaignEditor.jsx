@@ -231,14 +231,17 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
 
     const upload = async (key, file, apply) => {
         if (!file) return;
-        if (!file.type?.startsWith('image/')) { addToast('Please choose an image file.', 'error'); return; }
+        if (!file.type?.startsWith('image/')) { addToast('Choose an image file, like a JPG or PNG.', 'warning'); return; }
         setUploading(u => ({ ...u, [key]: true }));
         try {
             const url = await useStore.getState().uploadToCloudinary(file);
             if (!url) throw new Error('No URL');
             apply(url);
         } catch {
-            addToast("Couldn't upload the image. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: 'Image not uploaded',
+                action: { label: 'Try again', onClick: () => upload(key, file, apply) },
+            });
         } finally {
             setUploading(u => ({ ...u, [key]: false }));
         }
@@ -304,7 +307,7 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
         if (Object.keys(blocking).length) {
             const firstKey = Object.keys(blocking)[0];
             document.getElementById(`cm-field-${firstKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            addToast('A few things need fixing before saving.', 'error');
+            addToast('Fix the highlighted fields, then save again.', 'warning', { title: 'Campaign not saved yet' });
             return;
         }
         setSaving(true);
@@ -316,7 +319,7 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
                 if (taken.docs.some(d => d.id !== campaign?.id)) {
                     setErrors({ slug: 'Another campaign already uses this link name.' });
                     document.getElementById('cm-field-slug')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    addToast('Pick another link name for the open form.', 'error');
+                    addToast('Another campaign already uses this link name. Pick a different one.', 'warning', { title: 'Link name taken' });
                     return;
                 }
             }
@@ -327,7 +330,11 @@ const CampaignEditor = ({ campaign, source, isEdit, loaded, creators, onSave, on
             baseline.current = JSON.stringify(next);
         } catch (err) {
             console.error('Failed to save campaign:', err);
-            addToast(err?.message?.includes('no longer exists') ? 'This campaign was deleted, so it can’t be saved.' : "Couldn't save the campaign. Please try again.", 'error');
+            if (err?.message?.includes('no longer exists')) addToast('Someone deleted this campaign, so your changes can’t be saved.', 'error', { title: 'Campaign not saved' });
+            else addToast('Check your connection and try again.', 'error', {
+                title: 'Campaign not saved',
+                action: { label: 'Try again', onClick: () => save(statusOverride) },
+            });
         } finally {
             setSaving(false);
         }

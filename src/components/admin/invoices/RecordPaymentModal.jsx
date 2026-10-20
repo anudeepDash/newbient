@@ -38,7 +38,7 @@ const RecordPaymentModal = ({ invoice, open, onClose }) => {
             const left = await useStore.getState().recordInvoicePayment(invoice.id, {
                 amount, method: form.method, reference: form.reference.trim(), date: form.date, note: form.note.trim(),
             });
-            addToast(left > 0 ? `Payment recorded. ${inr(left)} still due.` : 'Payment recorded. Invoice is paid in full.', 'success');
+            addToast(left > 0 ? `${inr(left)} is still due on this invoice.` : 'The invoice is now paid in full.', 'success', { title: 'Payment recorded' });
             onClose();
         } catch (err) {
             console.error(err);

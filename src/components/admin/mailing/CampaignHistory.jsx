@@ -15,6 +15,7 @@ import Inbox from 'lucide-react/dist/esm/icons/inbox';
 import Activity from 'lucide-react/dist/esm/icons/activity';
 import CircleStop from 'lucide-react/dist/esm/icons/circle-stop';
 import { cancelQueuedCampaign } from '../../../lib/mailApi';
+import { useStore } from '../../../lib/store';
 import { db } from '../../../lib/firebase';
 import { cn } from '../../../lib/utils';
 import { accent } from '../theme';
@@ -134,7 +135,7 @@ const CampaignReport = ({ campaign, onClose, onReuse, onRetry, onDelete }) => {
     const inQueue = campaign.queue && ['scheduled', 'queued', 'sending', 'paused'].includes(state);
     const stopQueued = async () => {
         if (!window.confirm(state === 'scheduled' ? 'Cancel this scheduled email? Nobody will get it.' : 'Stop sending? People who haven\'t got it yet won\'t get it.')) return;
-        try { await cancelQueuedCampaign(campaign.id); } catch (err) { window.alert(err.message || "Couldn't stop it."); }
+        try { await cancelQueuedCampaign(campaign.id); } catch (err) { useStore.getState().addToast(err?.message || 'Check your connection and try again.', 'error', { title: "Couldn't stop the send" }); }
     };
 
     return (

@@ -59,7 +59,7 @@ const ActionHandler = () => {
     const handlePasswordSubmit = async (e) => {
         e.preventDefault();
         if (newPassword !== confirmPassword) {
-            useStore.getState().addToast("Your passwords don't match. Please try again.", 'error');
+            useStore.getState().addToast("Type the same password in both boxes.", 'warning', { title: "Passwords don't match" });
             return;
         }
 

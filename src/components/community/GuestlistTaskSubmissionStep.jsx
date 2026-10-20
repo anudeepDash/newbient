@@ -63,7 +63,7 @@ export const GuestlistTaskSubmissionStep = ({
 
         // Size check (max 50MB)
         if (selectedFile.size > 50 * 1024 * 1024) {
-            addToast('This file is over 50MB. Please upload a smaller file or share a link instead.', 'error');
+            addToast('Upload a smaller file, or paste a link instead.', 'warning', { title: 'This file is over 50MB' });
             return;
         }
 
@@ -81,7 +81,10 @@ export const GuestlistTaskSubmissionStep = ({
             addToast('Attachment uploaded.', 'success');
         } catch (err) {
             console.error('File upload failed:', err);
-            addToast("Couldn't upload your file. Please try again or paste a link.", 'error');
+            addToast('Check your connection and try again, or paste a link instead.', 'error', {
+                title: "Your file didn't upload",
+                action: { label: 'Try again', onClick: () => handleFileSelected(selectedFile) },
+            });
             setFile(null);
             setFileUrl('');
         } finally {
@@ -119,30 +122,30 @@ export const GuestlistTaskSubmissionStep = ({
         setError(null);
 
         if (isUploadingFile) {
-            return addToast('Your file is still uploading — hang tight a moment.', 'info');
+            return addToast('Your file is still uploading. Give it a moment.', 'info');
         }
 
         // Validations
         if (config.allowFileUpload && config.requireFileUpload && !fileUrl) {
             setError('Please upload the required file to proceed.');
-            return addToast('Please upload the file this task asks for.', 'error');
+            return addToast('Upload the file this task asks for first.', 'warning');
         }
 
         if (config.allowLink && config.requireLink && !link.trim()) {
             setError('Please enter the required link to proceed.');
-            return addToast('Please add the link this task asks for.', 'error');
+            return addToast('Add the link this task asks for first.', 'warning');
         }
 
         if (config.allowText && config.requireText && !text.trim()) {
             setError('Please provide the requested statement/response.');
-            return addToast('Please write your response before submitting.', 'error');
+            return addToast('Write your response first.', 'warning');
         }
 
         // At least one submission item if none are strictly marked required
         const hasAnyContent = !!fileUrl || !!link.trim() || !!text.trim();
         if (!hasAnyContent) {
             setError('Please provide at least one submission item (file, link, or response).');
-            return addToast('Please complete the task before submitting.', 'error');
+            return addToast('Add a file, link or response first.', 'warning');
         }
 
         onSubmit({

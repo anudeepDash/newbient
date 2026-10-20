@@ -148,7 +148,7 @@ const CampaignDetailModal = ({
             }
         } catch (err) {
             console.error("Fast track login error:", err);
-            useStore.getState().addToast("Couldn't sign you in with Google. You can fill in the fields below instead.", 'info');
+            useStore.getState().addToast("You can fill in the fields below instead.", 'info', { title: "Couldn't sign you in with Google" });
         } finally {
             setIsLoggingInWithGoogle(false);
         }
@@ -362,7 +362,7 @@ const CampaignDetailModal = ({
         const cleanHandle = extractSocialUsername(raw || '', 'instagram');
         if (!cleanHandle) {
             setInstagramVerificationError('Please enter your Instagram username (links are not allowed).');
-            return useStore.getState().addToast("Enter just your Instagram username, without a link.", 'error');
+            return useStore.getState().addToast("Enter just your Instagram username, without a link.", 'warning');
         }
         setIsVerifying(true);
         setVerificationStep('verifying');
@@ -427,7 +427,7 @@ const CampaignDetailModal = ({
                     }));
                     setIsVerifying(false);
                     setVerificationStep('success');
-                    useStore.getState().addToast(`Local test mode: Instagram check passed (${mockFollowers.toLocaleString()} followers).`, 'info');
+                    useStore.getState().addToast(`Instagram check passed with ${mockFollowers.toLocaleString()} followers.`, 'info', { title: 'Test mode' });
                     return;
                 }
                 // Seamlessly allow follower count input without dead-ending
@@ -435,7 +435,7 @@ const CampaignDetailModal = ({
                 setVerificationStep('idle');
                 setIsManualFollowerEntry(true);
                 setInstagramVerificationError('');
-                useStore.getState().addToast(`We couldn't fetch your Instagram followers automatically. Please enter the count below.`, 'info');
+                useStore.getState().addToast("Enter your follower count below instead.", 'info', { title: "Couldn't check your followers" });
                 return;
             }
 
@@ -473,7 +473,7 @@ const CampaignDetailModal = ({
             setVerificationStep('idle');
             setIsManualFollowerEntry(true);
             setInstagramVerificationError('');
-            useStore.getState().addToast(`We couldn't fetch your Instagram followers automatically. Please enter the count below.`, 'info');
+            useStore.getState().addToast("Enter your follower count below instead.", 'info', { title: "Couldn't check your followers" });
         }
     };
 
@@ -484,12 +484,12 @@ const CampaignDetailModal = ({
         if (isWebsiteApplyDisabled) return;
 
         if (spotsInfo.hasSpots && spotsInfo.isFull) {
-            return useStore.getState().addToast("Sorry, this campaign is full. There are no spots left.", 'warning');
+            return useStore.getState().addToast("This campaign is full. No spots are left.", 'warning');
         }
 
         const cleanInsta = extractSocialUsername(form.instagram || profile?.instagram || '', 'instagram');
         if (!cleanInsta) {
-            return useStore.getState().addToast("Add your Instagram handle to apply.", 'error');
+            return useStore.getState().addToast("Add your Instagram handle to apply.", 'warning');
         }
 
         const rawFollowers = form.followers || profile?.instagramFollowers || (instagramVerifiedData?.followers ?? 0);
@@ -498,23 +498,23 @@ const CampaignDetailModal = ({
         // If minFollowers is required and no follower count was entered or verified, prompt user
         if (minFollowers > 0 && !parsedFollowers && !profile) {
             setIsManualFollowerEntry(true);
-            return useStore.getState().addToast(`Enter your follower count to apply. You need at least ${minFollowers.toLocaleString()}.`, 'warning');
+            return useStore.getState().addToast("Enter your follower count to apply.", 'warning', { hint: `This campaign needs at least ${minFollowers.toLocaleString()} followers.` });
         }
 
         if (minFollowers > 0 && parsedFollowers < minFollowers && !profile) {
-            return useStore.getState().addToast(`This campaign needs at least ${minFollowers.toLocaleString()} followers to apply.`, 'error');
+            return useStore.getState().addToast(`This campaign needs at least ${minFollowers.toLocaleString()} followers.`, 'warning', { title: 'Not enough followers yet' });
         }
 
         // Validate contact details for guests or non-profile users
         if (!profile) {
             if (!form.name?.trim()) {
-                return useStore.getState().addToast("Add your full name to apply.", 'error');
+                return useStore.getState().addToast("Add your full name to apply.", 'warning');
             }
             if (!form.phone?.trim()) {
-                return useStore.getState().addToast("Add your WhatsApp or mobile number to apply.", 'error');
+                return useStore.getState().addToast("Add your WhatsApp or mobile number to apply.", 'warning');
             }
             if (!form.email?.trim()) {
-                return useStore.getState().addToast("Add your email address to apply.", 'error');
+                return useStore.getState().addToast("Add your email address to apply.", 'warning');
             }
         }
 
@@ -523,7 +523,7 @@ const CampaignDetailModal = ({
         if (normPhone && creators) {
             const existing = creators.find(c => c.uid !== (user?.uid || null) && normalizePhoneNumber(c.phone) === normPhone);
             if (existing) {
-                return useStore.getState().addToast(`${phoneToValidate} is already linked to another creator account (${existing.email || 'existing account'}). Try a different number.`, 'error');
+                return useStore.getState().addToast(`${phoneToValidate} is linked to another creator account. Use a different number.`, 'warning', { title: 'Number already in use' });
             }
         }
 
@@ -533,10 +533,10 @@ const CampaignDetailModal = ({
 
         if (isSpecificCity) {
             if (!creatorCity) {
-                return useStore.getState().addToast(`Select your city to apply. This campaign is only open to creators in ${campCity}.`, 'warning');
+                return useStore.getState().addToast("Select your city to apply.", 'warning', { hint: `This campaign is only open to creators in ${campCity}.` });
             }
             if (!isCampaignCityMatch(campCity, creatorCity)) {
-                return useStore.getState().addToast(`Sorry, this campaign is only open to creators in ${campCity}.`, 'error');
+                return useStore.getState().addToast(`This campaign is only open to creators in ${campCity}.`, 'warning', { title: 'Not open in your city' });
             }
         }
 
@@ -591,10 +591,13 @@ const CampaignDetailModal = ({
             }
 
             setJoinSuccess(true);
-            useStore.getState().addToast("Application sent! Welcome to the campaign.", 'success');
+            useStore.getState().addToast("Application sent. Welcome to the campaign.", 'success');
         } catch (error) {
             console.error("Apply error:", error);
-            useStore.getState().addToast(error.message || "Couldn't submit your application. Please try again.", 'error');
+            useStore.getState().addToast(error?.message || 'Please try again.', 'error', {
+                title: 'Application not sent',
+                action: { label: 'Try again', onClick: () => handleJoin() },
+            });
         } finally {
             setIsJoining(false);
         }
@@ -604,7 +607,7 @@ const CampaignDetailModal = ({
     const handleTaskSubmit = async (taskId, contentLink, proofFile) => {
         const creatorUid = user?.uid || profile?.uid || profile?.id || profile?.creatorId;
         if (!creatorUid) {
-            useStore.getState().addToast("Apply to the campaign below first, then you can submit your work.", 'info');
+            useStore.getState().addToast("Apply to the campaign below, then you can submit your work.", 'info', { title: 'Apply first' });
             const applyEl = document.getElementById('campaign-apply-section');
             if (applyEl) {
                 applyEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -612,7 +615,7 @@ const CampaignDetailModal = ({
             return;
         }
         if (!contentLink && !proofFile) {
-            useStore.getState().addToast("Add a content link, a confirmation, or upload proof before submitting.", 'error');
+            useStore.getState().addToast("Add a content link, a confirmation or a proof file first.", 'warning');
             return;
         }
         setIsSubmitting(true);
@@ -623,7 +626,7 @@ const CampaignDetailModal = ({
                 if (typeof proofFile === 'string') {
                     proofUrl = proofFile;
                 } else {
-                    useStore.getState().addToast("Uploading your proof file. Hang tight a moment.", 'info');
+                    useStore.getState().addToast("Uploading your proof file.", 'info');
                     if (typeof useStore.getState().uploadTaskProof === 'function') {
                         proofUrl = await useStore.getState().uploadTaskProof(proofFile, creatorUid, campaign.id, taskId);
                     } else if (typeof useStore.getState().uploadToCloudinary === 'function') {
@@ -655,7 +658,10 @@ const CampaignDetailModal = ({
             setExpandedTaskId(null);
         } catch (error) {
             console.error("Task submission error:", error);
-            useStore.getState().addToast("Couldn't submit your task. Please try again.", 'error');
+            useStore.getState().addToast("Check your connection and try again.", 'error', {
+                title: 'Task not submitted',
+                action: { label: 'Try again', onClick: () => handleTaskSubmit(taskId, contentLink, proofFile) },
+            });
         } finally {
             setIsSubmitting(false);
             setSubmittingTaskId(null);
@@ -665,7 +671,7 @@ const CampaignDetailModal = ({
     const handleMarkTaskSubmitted = async (task, customLink = null, customProofFile = null) => {
         const creatorUid = user?.uid || profile?.uid || profile?.id || profile?.creatorId;
         if (!creatorUid) {
-            useStore.getState().addToast("Apply to the campaign below first, then you can submit your work.", 'info');
+            useStore.getState().addToast("Apply to the campaign below, then you can submit your work.", 'info', { title: 'Apply first' });
             const applyEl = document.getElementById('campaign-apply-section');
             if (applyEl) {
                 applyEl.scrollIntoView({ behavior: 'smooth', block: 'start' });

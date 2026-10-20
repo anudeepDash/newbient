@@ -74,15 +74,27 @@ const OutreachTab = ({ campaign }) => {
 
     const sendWithApi = async (ids) => {
         const r = await callOutreach('outreach-send', { campaignId: campaign.id, appIds: ids });
-        if (!r.ok) { addToast(r.error, 'error'); return; }
-        const skipped = r.data.skipped.length ? ` ${r.data.skipped.length} skipped (${[...new Set(r.data.skipped.map(s => SKIP_REASON[s.reason] || s.reason))].join(', ')}).` : '';
-        addToast(`${r.data.queued.length} queued to send.${skipped}`, r.data.queued.length ? 'success' : 'info');
+        if (!r.ok) {
+            addToast(r.error || 'Please try again.', 'error', {
+                title: 'Messages not queued',
+                action: { label: 'Try again', onClick: () => sendWithApi(ids) },
+            });
+            return;
+        }
+        const queued = r.data.queued.length;
+        const skipped = r.data.skipped.length ? `${r.data.skipped.length} skipped: ${[...new Set(r.data.skipped.map(s => SKIP_REASON[s.reason] || s.reason))].join(', ')}.` : '';
+        if (!skipped) addToast(`${queued} queued to send.`, queued ? 'success' : 'info');
+        else addToast(skipped, queued ? 'warning' : 'info', { title: queued ? `${queued} queued to send` : 'Nothing queued' });
         setRefreshKey(k => k + 1);
         load();
     };
     const stopApi = async () => {
         const r = await callOutreach('outreach-cancel', { campaignId: campaign.id });
-        addToast(r.ok ? `Stopped. ${r.data.cancelled} won’t be sent.` : r.error, r.ok ? 'success' : 'error');
+        if (r.ok) addToast(`${r.data.cancelled} won’t be sent.`, 'success', { title: 'Sending stopped' });
+        else addToast(r.error || 'Please try again.', 'error', {
+            title: 'Couldn’t stop sending',
+            action: { label: 'Try again', onClick: () => stopApi() },
+        });
         load();
     };
 
@@ -100,7 +112,7 @@ const OutreachTab = ({ campaign }) => {
     const changeStatus = useCallback(async (ids, to, { source, messageText, note, quiet } = {}) => {
         const r = await callOutreach('outreach-status', { campaignId: campaign.id, appIds: ids, to, source, messageText, note });
         if (!r.ok) {
-            addToast(r.error, 'error');
+            addToast(r.error || 'Please try again.', 'error', { title: 'Status not changed' });
             if (r.status === 429) setData(d => ({ ...d, wame: d.wame ? { ...d.wame, usedToday: d.wame.cap } : d.wame }));
             return false;
         }
@@ -115,10 +127,13 @@ const OutreachTab = ({ campaign }) => {
         setSelected(new Set());
         setRefreshKey(k => k + 1);
         if (!quiet || r.data.skipped.length) {
+            const updated = r.data.updated.length;
+            const moved = `${updated} moved to ${STATUS_META[to].label}`;
             const skipped = r.data.skipped.length
-                ? ` ${r.data.skipped.length} skipped (${[...new Set(r.data.skipped.map(s => SKIP_REASON[s.reason] || s.reason))].join(', ')}).`
+                ? `${r.data.skipped.length} skipped: ${[...new Set(r.data.skipped.map(s => SKIP_REASON[s.reason] || s.reason))].join(', ')}.`
                 : '';
-            addToast(`${r.data.updated.length ? `${STATUS_META[to].label}: ${r.data.updated.length}.` : 'Nothing changed.'}${skipped}`, r.data.updated.length ? 'success' : 'info');
+            if (!skipped) addToast(updated ? `${moved}.` : 'Nothing changed.', updated ? 'success' : 'info');
+            else addToast(skipped, updated ? 'warning' : 'info', { title: updated ? moved : 'Nothing changed' });
         }
         return true;
     }, [campaign.id, addToast]);
@@ -134,7 +149,8 @@ const OutreachTab = ({ campaign }) => {
     const formUrl = campaign.slug ? applyUrlFor(campaign.slug) : '';
     const copyForm = async () => {
         const ok = await copyToClipboard(formUrl);
-        addToast(ok ? 'Form link copied.' : 'Couldn’t copy.', ok ? 'success' : 'error');
+        if (ok) addToast('Form link copied.', 'success');
+        else addToast('Select the link and copy it yourself.', 'error', { title: 'Couldn’t copy the link' });
     };
 
     if (data.loading) return <Card className="flex justify-center py-16 text-gray-400"><Spinner className="h-6 w-6" /></Card>;

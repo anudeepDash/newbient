@@ -95,7 +95,7 @@ const NewsletterStudio = () => {
 
     const toggleStory = (post) => {
         if (selectedIds.includes(post.id)) { setSelectedIds(ids => ids.filter(id => id !== post.id)); return; }
-        if (selectedIds.length >= MAX_STORIES) { addToast(`Newsletters read best with ${MAX_STORIES} stories or fewer. Remove one first.`, 'info'); return; }
+        if (selectedIds.length >= MAX_STORIES) { addToast('Remove one before adding another. Newsletters read best when they stay short.', 'warning', { title: `${MAX_STORIES} stories is the limit` }); return; }
         setSelectedIds(ids => [...ids, post.id]);
     };
     const move = (id, dir) => setSelectedIds(ids => {
@@ -144,16 +144,16 @@ const NewsletterStudio = () => {
 
     const writeBriefing = async () => {
         setConfirmAi(false);
-        if (!selectedPosts.length) { addToast('Pick at least one story first.', 'info'); return; }
+        if (!selectedPosts.length) { addToast('Pick at least one story first.', 'warning'); return; }
         setGeneratingAI(true);
         try {
             const html = await generateNewsletterBriefing(selectedPosts, aiGuidance);
             if (!html || !stripHtml(html)) throw new Error('Empty briefing');
             setEditorialText(html);
-            addToast('Briefing drafted. Read it through before sending.', 'success');
+            addToast('Read it through before sending.', 'success', { title: 'Briefing drafted' });
         } catch (err) {
             console.error('AI briefing failed:', err);
-            addToast("Couldn't write the briefing. Please try again.", 'error');
+            addToast('Please try again in a moment.', 'error', { title: "Couldn't write the briefing", action: { label: 'Try again', onClick: () => writeBriefing() } });
         } finally {
             setGeneratingAI(false);
         }
@@ -163,8 +163,8 @@ const NewsletterStudio = () => {
 
     const myEmail = normalizeEmail(user?.email);
     const sendTest = async () => {
-        if (!myEmail) { addToast('Your account has no email address to send a test to.', 'error'); return; }
-        if (!selectedPosts.length) { addToast('Pick at least one story first.', 'error'); return; }
+        if (!myEmail) { addToast('Add an email address to your account to get test emails.', 'warning', { title: 'No email to send the test to' }); return; }
+        if (!selectedPosts.length) { addToast('Pick at least one story first.', 'warning'); return; }
         setTesting(true);
         try {
             const sent = await sendCampaignTest({ subject: finalSubject, html: htmlFor(false), accountType: 'weekly' });
@@ -172,14 +172,14 @@ const NewsletterStudio = () => {
             addToast(`Test sent to ${sent.to || myEmail}.`, 'success');
         } catch (err) {
             console.error('Newsletter test failed:', err);
-            addToast("Couldn't send the test. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't send the test", action: { label: 'Try again', onClick: () => sendTest() } });
         } finally {
             setTesting(false);
         }
     };
 
     const openReview = () => {
-        if (problems.length) { addToast(problems[0], 'error'); return; }
+        if (problems.length) { addToast(problems[0], 'warning'); return; }
         const recipients = audienceResult.recipients;
         const stats = audienceResult.stats;
         const label = describeAudience({ ...audience, segments: audience.segments.filter(s => NEWSLETTER_SEGMENTS.includes(s)) });

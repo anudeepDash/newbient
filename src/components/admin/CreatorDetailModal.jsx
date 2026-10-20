@@ -155,7 +155,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
     const copy = async (text, label) => {
         if (!text) return;
         const ok = await copyToClipboard(String(text));
-        addToast(ok ? `${label} copied.` : "Couldn't copy.", ok ? 'success' : 'error');
+        addToast(ok ? `${label} copied.` : "Couldn't copy that. Try again.", ok ? 'success' : 'error');
     };
 
     const saveCreator = async (updates, message, rollback) => {
@@ -167,7 +167,10 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
         } catch (err) {
             console.error(err);
             rollback?.();
-            addToast("Couldn't save that. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: 'Change not saved',
+                action: { label: 'Try again', onClick: () => saveCreator(updates, message, rollback) },
+            });
             return false;
         }
     };
@@ -227,15 +230,18 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
 
     const sendEmail = async (e) => {
         e.preventDefault();
-        if (!creatorData.email) { addToast('This creator has no email address.', 'error'); return; }
-        if (!emailSubject.trim() || !emailBody.replace(/<[^>]*>/g, '').trim()) { addToast('Add a subject and a message first.', 'error'); return; }
+        if (!creatorData.email) { addToast('Add an email address to their profile first.', 'warning', { title: 'No email address' }); return; }
+        if (!emailSubject.trim() || !emailBody.replace(/<[^>]*>/g, '').trim()) { addToast('Add a subject and a message first.', 'warning'); return; }
         setSendingEmail(true);
         try {
             await sendTemplateEmail({ template: 'creator-message', to: creatorData.email, data: { name: creatorData.name || 'Creator', subject: emailSubject.trim(), messageHtml: emailBody } });
             addToast(`Email sent to ${creatorData.name}.`, 'success');
             setEmailBody('');
         } catch {
-            addToast("Couldn't send the email. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: "Couldn't send the email",
+                action: { label: 'Try again', onClick: () => sendEmail({ preventDefault: () => {} }) },
+            });
         } finally {
             setSendingEmail(false);
         }
@@ -250,7 +256,10 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
             addToast('Message sent to their app inbox.', 'success');
             setMessageText('');
         } catch {
-            addToast("Couldn't send the message. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: "Couldn't send the message",
+                action: { label: 'Try again', onClick: () => sendNotification({ preventDefault: () => {} }) },
+            });
         } finally {
             setSendingMsg(false);
         }

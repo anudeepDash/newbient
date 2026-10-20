@@ -186,7 +186,7 @@ const ArtistAnt = () => {
             }
             addToast("Profile picture uploaded.", 'success');
         } catch (error) {
-            addToast("Couldn't upload your photo. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't upload your photo" });
         } finally {
             setIsSubmitting(false);
         }
@@ -211,7 +211,7 @@ const ArtistAnt = () => {
             });
             setView('dashboard');
         } catch (error) {
-            useStore.getState().addToast("Something went wrong while submitting. Please try again.", 'error');
+            useStore.getState().addToast('Check your connection and try again.', 'error', { title: "Couldn't send your application" });
         } finally {
             setIsSubmitting(false);
         }
@@ -229,7 +229,7 @@ const ArtistAnt = () => {
             });
             setView('dashboard');
         } catch (error) {
-            useStore.getState().addToast("Couldn't save your changes. Please try again.", 'error');
+            useStore.getState().addToast('Check your connection and try again.', 'error', { title: "Couldn't save your changes" });
         } finally {
             setIsSubmitting(false);
         }
@@ -253,7 +253,7 @@ const ArtistAnt = () => {
             setStep(1);
             setClientData({ name: '', org: '', email: '', phone: '', city: '', category: '', budget: '', date: '', requirement: '' });
         } catch (error) {
-            useStore.getState().addToast("Something went wrong. Please try again.", 'error');
+            useStore.getState().addToast('Check your connection and try again.', 'error', { title: "Couldn't send your request" });
         } finally {
             setIsSubmitting(false);
         }
@@ -268,7 +268,7 @@ const ArtistAnt = () => {
             setView('gateway');
             setShowDeleteConfirm(false);
         } catch (error) {
-            useStore.getState().addToast("Couldn't delete your profile. Please try again.", 'error');
+            useStore.getState().addToast('Check your connection and try again.', 'error', { title: "Couldn't delete your profile", action: { label: 'Try again', onClick: () => handleDeleteProfile() } });
         } finally {
             setIsSubmitting(false);
         }

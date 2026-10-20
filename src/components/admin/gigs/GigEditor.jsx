@@ -116,7 +116,7 @@ const GigEditor = ({ gig, forms, onDone }) => {
         if (saving) return;
         setTried(true);
         const first = Object.values(problems)[0];
-        if (first) { addToast(first, 'error'); return; }
+        if (first) { addToast(first, 'warning'); return; }
         const pastOnly = data.dates.length && data.dates.every(d => d < todayKey());
         if (pastOnly && !(await confirm({
             title: 'All dates are in the past',
@@ -170,7 +170,7 @@ const GigEditor = ({ gig, forms, onDone }) => {
                         relatedVolunteerGigId: ref.id,
                         gigId: ref.id,
                         isVolunteerGig: true,
-                    }).catch(err => { console.warn(err); addToast("Saved, but couldn't add it to the home page.", 'warning'); });
+                    }).catch(err => { console.warn(err); addToast("We couldn't add it to the home page.", 'warning', { title: 'Gig saved' }); });
                 }
                 if (notify) {
                     notifyAllUsers('New volunteer opportunity', `${payload.title} is looking for volunteers. Apply now in the community tab.`, '/community', payload.image || '')
@@ -182,7 +182,10 @@ const GigEditor = ({ gig, forms, onDone }) => {
             onDone(true);
         } catch (err) {
             console.error(err);
-            addToast("Couldn't save the gig. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: 'Gig not saved',
+                action: { label: 'Try again', onClick: () => save() },
+            });
         } finally {
             setSaving(false);
         }

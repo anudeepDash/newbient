@@ -1284,7 +1284,7 @@ export const useStore = create((set, get) => ({
     // Toast System
     // addToast(message, type, codeOrOptions)
     //   type: 'success' | 'error' | 'warning' | 'info'
-    //   codeOrOptions: an error code string (legacy) or { title, code, duration, action: { label, onClick } }
+    //   codeOrOptions: an error code string (legacy) or { title, hint, code, duration, action: { label, onClick } }
     addToast: (message, type = 'error', codeOrOptions = null) => {
         const options = codeOrOptions && typeof codeOrOptions === 'object' ? codeOrOptions : { code: codeOrOptions };
         const kind = TOAST_TYPES.includes(type) ? type : 'info';
@@ -1310,7 +1310,7 @@ export const useStore = create((set, get) => ({
             type: kind,
             title: options.title || null,
             message: text,
-            hint: getSupportHint(text, kind, options.code),
+            hint: options.hint || getSupportHint(text, kind, options.code),
             code: options.code || null,
             action: options.action || null,
             duration: options.duration ?? getToastDuration(kind, text),
@@ -4882,7 +4882,7 @@ export const useStore = create((set, get) => ({
                     const { getAuth } = await import('firebase/auth');
                     const auth = getAuth();
                     await auth.signOut();
-                    useStore.getState().addToast("Your account has been suspended. Contact support@newbi.live if you think this is a mistake.", 'error');
+                    useStore.getState().addToast("Contact support@newbi.live if you think this is a mistake.", 'error', { title: "Your account is suspended" });
                     return;
                 }
 
@@ -4896,7 +4896,7 @@ export const useStore = create((set, get) => ({
                         const { getAuth } = await import('firebase/auth');
                         const auth = getAuth();
                         await auth.signOut();
-                        useStore.getState().addToast("You've been signed out for your security. Please sign in again.", 'warning');
+                        useStore.getState().addToast("Please sign in again.", 'warning', { title: "Signed out for your security" });
                         return;
                     }
                 }
@@ -5109,13 +5109,13 @@ export const useStore = create((set, get) => ({
             
             // Clean up state
             get().logout();
-            get().addToast("Your account has been deleted. Sorry to see you go.", "success");
+            get().addToast("Sorry to see you go.", "success", { title: "Account deleted" });
         } catch (error) {
             console.error("Error deleting account:", error);
             if (error.code === 'auth/requires-recent-login') {
-                get().addToast("For your security, please sign out and sign back in, then try deleting your account again.", "warning");
+                get().addToast("For your security, sign out and back in, then try deleting your account again.", "warning", { title: "Sign in again first" });
             } else {
-                get().addToast("Couldn't delete your account. Please contact support@newbi.live.", "error");
+                get().addToast("Please contact support@newbi.live and we'll sort it out.", "error", { title: "Couldn't delete your account" });
             }
         }
     },
@@ -5136,7 +5136,7 @@ export const useStore = create((set, get) => ({
                 if (userData.isBlocked) {
                     console.warn("User is blocked. Revoking local session.");
                     get().logout();
-                    get().addToast("Your account has been suspended. Contact support@newbi.live if you think this is a mistake.", 'error');
+                    get().addToast("Contact support@newbi.live if you think this is a mistake.", 'error', { title: "Your account is suspended" });
                     return;
                 }
 
@@ -5147,7 +5147,7 @@ export const useStore = create((set, get) => ({
                     if (sessionTimestamp < forceLogoutTime) {
                         console.warn("User session has been revoked. Revoking local session.");
                         get().logout();
-                        get().addToast("You've been signed out for your security. Please sign in again.", 'warning');
+                        get().addToast("Please sign in again.", 'warning', { title: "Signed out for your security" });
                         return;
                     }
                 }
@@ -5290,7 +5290,7 @@ export const useStore = create((set, get) => ({
             } catch (e) {}
 
             if (!silent) {
-                useStore.getState().addToast(data.message || `${data.syncedCount || 0} members updated.`, 'success');
+                useStore.getState().addToast(data.message || `${data.syncedCount || 0} ${data.syncedCount === 1 ? 'member' : 'members'} updated.`, 'success');
             }
 
             return data;
@@ -5298,7 +5298,7 @@ export const useStore = create((set, get) => ({
             console.error('[Store] syncAuthUsers error:', error);
             set({ isSyncingUsers: false, authSyncError: error.message });
             if (!silent) {
-                useStore.getState().addToast(error.message || "Couldn't update the member list. Please try again.", 'error');
+                useStore.getState().addToast(error.message || "Please try again.", 'error', { title: "Couldn't update the member list" });
                 throw error;
             }
         }

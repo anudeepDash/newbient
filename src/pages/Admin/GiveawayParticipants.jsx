@@ -150,7 +150,10 @@ const GiveawayParticipants = () => {
             return true;
         } catch (err) {
             console.error(err);
-            addToast(err?.message && !/firestore|permission|network/i.test(err.message) ? err.message : "Couldn't save. Please try again.", 'error');
+            addToast(err?.message && !/firestore|permission|network/i.test(err.message) ? err.message : 'Check your connection and try again.', 'error', {
+                title: 'Change not saved',
+                action: { label: 'Try again', onClick: () => guard(fn, success) },
+            });
             return false;
         } finally {
             setBusy(false);
@@ -160,7 +163,7 @@ const GiveawayParticipants = () => {
     const setDisqualified = async (ids, on) => {
         const list = entries.filter(e => ids.includes(e.id) && Boolean(e.disqualified) !== on);
         if (!list.length) return;
-        if (on && list.some(e => e.isWinner)) { addToast('Revoke the winner first, then disqualify.', 'info'); return; }
+        if (on && list.some(e => e.isWinner)) { addToast('Revoke their win first, then disqualify them.', 'warning'); return; }
         if (on && !(await confirm({
             title: list.length === 1 ? `Disqualify ${list[0].name || 'this entry'}?` : `Disqualify ${list.length} entries?`,
             body: "They stay in the list but can't be drawn as winners. You can undo this.",
@@ -172,7 +175,7 @@ const GiveawayParticipants = () => {
     const removeEntries = async (ids) => {
         const list = entries.filter(e => ids.includes(e.id));
         if (!list.length) return;
-        if (list.some(e => e.isWinner)) { addToast('Revoke the winner first, then remove the entry.', 'info'); return; }
+        if (list.some(e => e.isWinner)) { addToast('Revoke their win first, then remove the entry.', 'warning'); return; }
         if (!(await confirm({
             title: list.length === 1 ? `Remove ${list[0].name || 'this entry'}?` : `Remove ${list.length} entries?`,
             body: "Their points and referrals are deleted and they could enter again. To keep the record, disqualify instead. This can't be undone.",
@@ -183,7 +186,7 @@ const GiveawayParticipants = () => {
     };
 
     const makeWinner = async (entry) => {
-        if (entry.disqualified) { addToast('This entry is disqualified. Restore it first.', 'info'); return; }
+        if (entry.disqualified) { addToast('Restore this entry first. It’s disqualified.', 'warning'); return; }
         if (!(await confirm({
             title: `Make ${entry.name || 'this person'} a winner?`,
             body: 'Picked by hand, not drawn. It is logged on the giveaway. To keep it fair, prefer Draw winners.',
@@ -237,7 +240,7 @@ const GiveawayParticipants = () => {
     const openMailing = (people, winner = false) => {
         const { url, fitted, count } = mailingUrl(people, winner);
         if (people.length && !count) { addToast('None of these entries have an email address.', 'info'); return; }
-        if (!fitted) addToast(`${count} addresses are too many to pass along. Pick the audience in Mailing.`, 'info');
+        if (!fitted) addToast(`${count} email addresses are too many to fill in for you.`, 'info', { title: 'Pick the audience in Mailing' });
         navigate(url);
     };
 

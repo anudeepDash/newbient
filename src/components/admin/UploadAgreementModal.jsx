@@ -194,7 +194,7 @@ const UploadAgreementModal = ({ isOpen, onClose, editingAgreement = null, onSucc
                 addToast('Contract updated.', 'success');
             } else {
                 id = await addAgreement(data);
-                addToast('Contract added. Share the signing link from its details.', 'success');
+                addToast('Share the signing link from its details.', 'success', { title: 'Contract added' });
             }
             onSuccess?.(id);
             onClose();

@@ -48,7 +48,7 @@ const PaymentSettingsPanel = ({ event }) => {
         const file = e.target.files?.[0];
         e.target.value = '';
         if (!file) return;
-        if (!file.type.startsWith('image/')) { addToast('Choose an image file.', 'error'); return; }
+        if (!file.type.startsWith('image/')) { addToast('Pick an image file, like a JPG or PNG.', 'warning'); return; }
         setUploading(true);
         try {
             const url = await useStore.getState().uploadToCloudinary(file);
@@ -58,7 +58,7 @@ const PaymentSettingsPanel = ({ event }) => {
             addToast('QR code uploaded and saved.', 'success');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't upload the QR code. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'QR code not uploaded' });
         } finally {
             setUploading(false);
         }

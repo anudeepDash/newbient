@@ -522,7 +522,7 @@ const Proposal = () => {
             pdf.save(`Newbi-Strategic-Memorandum-${displayProposal.clientName}.pdf`);
         } catch (err) {
             console.error("PDF generation failed:", err);
-            useStore.getState().addToast("Couldn't create the PDF. Please try again.", 'error');
+            useStore.getState().addToast('Please try again.', 'error', { title: "Couldn't create the PDF", action: { label: 'Try again', onClick: () => handleDownloadPDF(blobUrl) } });
         } finally {
             setScale(originalScale);
             setIsExporting(false);
@@ -533,11 +533,11 @@ const Proposal = () => {
     const handleApproveProposal = async () => {
         if (displayProposal.status === 'Accepted' || displayProposal.status === 'Rejected') return;
         if (proposalExpired) {
-            useStore.getState().addToast('This proposal has expired. Please ask us for an updated one.', 'error');
+            useStore.getState().addToast("Ask us for an updated one and we'll send it over.", 'warning', { title: 'This proposal has expired' });
             return;
         }
         if (!signatureName.trim()) {
-            useStore.getState().addToast('Enter your full name to sign this quotation.', 'error');
+            useStore.getState().addToast('Enter your full name to sign this quotation.', 'warning');
             return;
         }
 
@@ -614,7 +614,7 @@ const Proposal = () => {
             useStore.getState().addToast('Proposal signed and accepted.', 'success');
         } catch (error) {
             console.error('Error approving proposal:', error);
-            useStore.getState().addToast(error?.code ? error.message : "Couldn't sign the proposal. Please try again or contact support.", 'error');
+            useStore.getState().addToast(error?.code ? (error.message || 'Please try again.') : 'Please try again. If it keeps happening, contact us.', 'error', { title: "Couldn't sign the proposal", action: { label: 'Try again', onClick: () => handleApproveProposal() } });
         } finally {
             setIsSubmitting(false);
         }
@@ -637,10 +637,10 @@ const Proposal = () => {
             await useStore.getState().respondToProposal(id, 'Rejected', { rejectionMetadata });
             setLocalProposal(prev => ({ ...(prev || displayProposal), status: 'Rejected', rejectionMetadata }));
             setDeclineOpen(false);
-            useStore.getState().addToast('Thanks for letting us know. The proposal has been declined.', 'success');
+            useStore.getState().addToast('Thanks for letting us know.', 'success', { title: 'Proposal declined' });
         } catch (error) {
             console.error('Error refusing proposal:', error);
-            useStore.getState().addToast(error?.code ? error.message : "Couldn't update the status. Please try again.", 'error');
+            useStore.getState().addToast(error?.code ? (error.message || 'Please try again.') : 'Please try again.', 'error', { title: "Couldn't decline the proposal", action: { label: 'Try again', onClick: () => confirmDecline() } });
         } finally {
             setIsSubmitting(false);
         }

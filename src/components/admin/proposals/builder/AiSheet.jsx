@@ -187,7 +187,7 @@ const SeveralPanel = ({ tone, onDone }) => {
     };
 
     const download = async (d) => {
-        try { await exportProposalPdf(d.data, []); } catch (err) { console.error(err); addToast("Couldn't create the PDF.", 'error'); }
+        try { await exportProposalPdf(d.data, []); } catch (err) { console.error(err); addToast('Please try again.', 'error', { title: "Couldn't create the PDF", action: { label: 'Try again', onClick: () => download(d) } }); }
     };
 
     return (

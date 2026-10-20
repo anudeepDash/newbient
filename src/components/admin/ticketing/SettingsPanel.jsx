@@ -41,7 +41,7 @@ const StandaloneGuestlist = ({ gl, onEdit, onDeleted }) => {
 
     const toggleOpen = () => run('status', 'status', async () => {
         await useStore.getState().updateGuestlist(gl.id, { status: closed ? 'Open' : 'Closed' });
-        addToast(closed ? 'Guestlist is open for sign-ups.' : 'Guestlist closed. No new sign-ups.', 'success');
+        addToast(closed ? 'Guestlist is open for sign-ups.' : 'No one new can sign up.', 'success', closed ? undefined : { title: 'Guestlist closed' });
     });
 
     const toggleHome = () => {

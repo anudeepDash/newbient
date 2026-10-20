@@ -101,7 +101,8 @@ const FormManager = () => {
     const linkOf = (f) => `${window.location.origin}/forms/${f.id}`;
     const copyLink = async (f) => {
         const ok = await copyToClipboard(linkOf(f));
-        addToast(ok ? 'Form link copied.' : "Couldn't copy the link.", ok ? 'success' : 'error');
+        if (ok) addToast('Form link copied.', 'success');
+        else addToast('Open the form and copy the link from the address bar.', 'error', { title: "Couldn't copy the link" });
     };
     const whatsapp = (f) => window.open(`https://wa.me/?text=${encodeURIComponent(`${f.title}: ${linkOf(f)}`)}`, '_blank', 'noopener');
 
@@ -113,7 +114,7 @@ const FormManager = () => {
             if (success) addToast(success, 'success');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't save. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't save the change", action: { label: 'Try again', onClick: () => run(f, fn, success) } });
         } finally {
             setBusyId(null);
         }
@@ -122,7 +123,7 @@ const FormManager = () => {
     const toggleOpen = (e) => {
         const closing = e.state !== 'closed';
         if (!closing && e.f.activeLabel !== 'Closed') {
-            addToast(e.f.closesAt && toDate(e.f.closesAt) < new Date() ? 'Its closing date has passed. Change it in the editor to reopen.' : 'It has reached its response limit. Raise it in the editor to reopen.', 'info');
+            addToast(e.f.closesAt && toDate(e.f.closesAt) < new Date() ? 'Its closing date has passed. Change the date in the editor to reopen it.' : 'It has reached its response limit. Raise the limit in the editor to reopen it.', 'warning', { title: "Can't reopen this form yet" });
             return;
         }
         run(e.f, () => useStore.getState().updateForm(e.f.id, { activeLabel: closing ? 'Closed' : 'Live' }), closing ? 'Form closed.' : 'Form reopened.');

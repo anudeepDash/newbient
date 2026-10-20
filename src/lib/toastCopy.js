@@ -13,6 +13,14 @@ export const TOAST_LABELS = {
     get info() { return t('Good to know'); },
 };
 
+// The short label above each banner's text, next to the dot.
+export const TOAST_EYEBROWS = {
+    get success() { return t('Done'); },
+    get error() { return t('Didn’t work'); },
+    get warning() { return t('Heads up'); },
+    get info() { return t('Note'); },
+};
+
 const SUPPORT_EMAIL = 'support@newbi.live';
 
 // Raw technical errors (mostly Firebase) translated into plain language.

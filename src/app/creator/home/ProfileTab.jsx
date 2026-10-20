@@ -127,7 +127,7 @@ const DeleteCreatorProfile = () => {
         setBusy(false);
         if (!res.ok) return setError(res.error);
         setOpen(false);
-        useLegacyStore.getState().addToast?.(t('Your creator profile is deleted. Your account and passes are still here.'), 'success');
+        useLegacyStore.getState().addToast?.(t('Your account and passes are still here.'), 'success', { title: t('Creator profile deleted') });
         navigate(appPath('/profile'), { replace: true });
         return undefined;
     };

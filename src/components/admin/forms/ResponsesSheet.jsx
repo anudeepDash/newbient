@@ -176,7 +176,9 @@ const ResponsesSheet = ({ open, onClose, form, mode = 'form', gig, onCloseGig })
                 const [title, body] = NOTIFY_COPY[next](gig);
                 await Promise.all(targets.filter(x => x.r.userId).map(x => notifySpecificUser(x.r.userId, title, body, '/community', 'gig').then(() => { notified += 1; }).catch(() => {})));
             }
-            addToast(`${targets.length === 1 ? (targets[0].who.name || 'Applicant') : `${targets.length} people`} marked ${VOLUNTEER_STATUS[next].label.toLowerCase()}.${notified ? ` ${notified} notified.` : ''}`, 'success');
+            const marked = `${targets.length === 1 ? (targets[0].who.name || 'Applicant') : `${targets.length} people`} marked ${VOLUNTEER_STATUS[next].label.toLowerCase()}`;
+            if (notified) addToast(`${notified === 1 ? '1 person' : `${notified} people`} got a notification.`, 'success', { title: marked });
+            else addToast(`${marked}.`, 'success');
             setSelected(new Set());
             const confirmedAfter = counts.confirmed + (next === 'confirmed' ? targets.length : -targets.filter(x => x.status === 'confirmed').length);
             if (next === 'confirmed' && slots && confirmedAfter >= slots && gig && String(gig.status || '').toLowerCase() !== 'closed' && onCloseGig) {
@@ -190,7 +192,7 @@ const ResponsesSheet = ({ open, onClose, form, mode = 'form', gig, onCloseGig })
             }
         } catch (err) {
             console.error(err);
-            addToast("Couldn't update. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't update the status" });
         } finally {
             setBusy(false);
         }
@@ -212,7 +214,7 @@ const ResponsesSheet = ({ open, onClose, form, mode = 'form', gig, onCloseGig })
             if (ids.includes(detailId)) setDetailId(null);
         } catch (err) {
             console.error(err);
-            addToast("Couldn't delete. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: ids.length === 1 ? "Couldn't delete the response" : "Couldn't delete the responses" });
         } finally {
             setBusy(false);
         }

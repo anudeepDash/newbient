@@ -111,7 +111,10 @@ const CreatorProgramSettingsManager = () => {
             addToast('Creator program settings saved.', 'success');
         } catch (err) {
             console.error('Save settings error:', err);
-            addToast("Couldn't save the settings. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: 'Settings not saved',
+                action: { label: 'Try again', onClick: () => save() },
+            });
         } finally {
             setSaving(false);
         }
@@ -119,7 +122,7 @@ const CreatorProgramSettingsManager = () => {
 
     const copyLink = async (path) => {
         const ok = await copyToClipboard(absolute(path));
-        addToast(ok ? 'Link copied.' : "Couldn't copy.", ok ? 'success' : 'error');
+        addToast(ok ? 'Link copied.' : "Couldn't copy the link. Try again.", ok ? 'success' : 'error');
     };
 
     const minFollowers = whole(form.minInstagramFollowersToJoin) ?? 0;

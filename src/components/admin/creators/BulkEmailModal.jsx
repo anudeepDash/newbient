@@ -58,7 +58,13 @@ const BulkEmailModal = ({ recipients, onClose }) => {
             }
         }
         setIsSending(false);
-        useStore.getState().addToast(`Emails sent: ${sent}${failed ? `, failed: ${failed}` : ''}.`, failed ? 'warning' : 'success');
+        useStore.getState().addToast(
+            !failed ? `Email sent to ${sent} creator${sent === 1 ? '' : 's'}.`
+                : sent ? `${failed} couldn't be sent. Try those again.`
+                : 'None of the emails went out. Check your connection and try again.',
+            !failed ? 'success' : sent ? 'warning' : 'error',
+            failed ? { title: sent ? `Sent ${sent} of ${sent + failed}` : 'Emails not sent' } : undefined,
+        );
         if (sent === 0 && failed > 0) {
             // Nothing went out: keep the draft and the selection so it can be retried.
             setProblem("Couldn't send any of the emails. Please try again.");

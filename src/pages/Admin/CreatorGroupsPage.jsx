@@ -183,14 +183,17 @@ const CreatorGroupsPage = () => {
 
     const copy = async (url) => {
         const ok = await copyToClipboard(url);
-        addToast(ok ? 'Invite link copied.' : "Couldn't copy.", ok ? 'success' : 'error');
+        addToast(ok ? 'Invite link copied.' : "Couldn't copy the invite link. Try again.", ok ? 'success' : 'error');
     };
     const toggleActive = async (g) => {
         try {
             await useStore.getState().updateCreatorGroup(g.id, { isActive: g.isActive === false });
             addToast(g.isActive === false ? `${g.city} group is visible again.` : `${g.city} group hidden from creators.`, 'success');
         } catch {
-            addToast("Couldn't update the group.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: g.isActive === false ? `Couldn't show the ${g.city} group` : `Couldn't hide the ${g.city} group`,
+                action: { label: 'Try again', onClick: () => toggleActive(g) },
+            });
         }
     };
     const remove = async (g) => {
@@ -199,7 +202,10 @@ const CreatorGroupsPage = () => {
             await useStore.getState().deleteCreatorGroup(g.id);
             addToast('Group deleted.', 'success');
         } catch {
-            addToast("Couldn't delete the group.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: `${g.city} group not deleted`,
+                action: { label: 'Try again', onClick: () => remove(g) },
+            });
         }
     };
     const seed = async () => {
@@ -209,7 +215,10 @@ const CreatorGroupsPage = () => {
             await useStore.getState().seedDefaultCreatorGroups?.();
             addToast('Official city groups added.', 'success');
         } catch {
-            addToast("Couldn't add the official groups.", 'error');
+            addToast('Check your connection and try again.', 'error', {
+                title: "Couldn't add the official groups",
+                action: { label: 'Try again', onClick: () => seed() },
+            });
         } finally {
             setSeeding(false);
         }

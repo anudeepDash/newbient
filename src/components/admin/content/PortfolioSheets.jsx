@@ -74,7 +74,7 @@ export const PortfolioEditorSheet = ({ open, onClose, item, categories, onManage
             onClose();
         } catch (err) {
             console.error('Portfolio save failed:', err);
-            addToast("Couldn't save the project. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't save the project", action: { label: 'Try again', onClick: () => save() } });
         } finally {
             lock.current = false;
             setSaving(false);
@@ -172,7 +172,7 @@ export const PortfolioCategoriesSheet = ({ open, onClose, categories, portfolio 
             addToast('Category added.', 'success');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't add the category. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't add the category", action: { label: 'Try again', onClick: () => add() } });
         } finally {
             setBusy(false);
         }
@@ -187,11 +187,12 @@ export const PortfolioCategoriesSheet = ({ open, onClose, categories, portfolio 
                 await Promise.all(affected.map(p => updatePortfolioItem(p.id, { category: moveTo })));
             }
             await deleteCategory(removing.id);
-            addToast(affected.length && moveTo ? `Category deleted and ${affected.length} project${affected.length === 1 ? '' : 's'} moved.` : 'Category deleted.', 'success');
+            if (affected.length && moveTo) addToast(`${affected.length} project${affected.length === 1 ? '' : 's'} moved to the category you picked.`, 'success', { title: 'Category deleted' });
+            else addToast('Category deleted.', 'success');
             setRemoving(null);
         } catch (err) {
             console.error(err);
-            addToast("Couldn't delete the category. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't delete the category", action: { label: 'Try again', onClick: () => remove() } });
         } finally {
             setBusy(false);
         }

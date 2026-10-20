@@ -143,7 +143,7 @@ const SiteContentManager = ({ view = 'site' }) => {
             addToast('Site details saved.', 'success');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't save the site details. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't save the site details", action: { label: 'Try again', onClick: () => saveDetails() } });
         } finally {
             saveLock.current = false;
             setSaving(false);
@@ -156,10 +156,10 @@ const SiteContentManager = ({ view = 'site' }) => {
         setSettingKey(key);
         try {
             await updateGeneralSettings({ [key]: value });
-            addToast(`${label} ${value ? 'on' : 'off'}.`, 'success');
+            addToast(`${label} turned ${value ? 'on' : 'off'}.`, 'success');
         } catch (err) {
             console.error(err);
-            addToast("Couldn't change that setting. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't change that setting", action: { label: 'Try again', onClick: () => setSetting(key, value, label) } });
         } finally {
             setSettingKey(null);
         }
@@ -251,7 +251,7 @@ const SiteContentManager = ({ view = 'site' }) => {
                                 stats={siteSettings.stats}
                                 onSave={async (stats) => {
                                     try { await updateGeneralSettings({ stats }); addToast(stats.length ? 'Home page numbers saved.' : 'Home page numbers removed.', 'success'); }
-                                    catch (err) { console.error(err); addToast("Couldn't save the numbers. Please try again.", 'error'); }
+                                    catch (err) { console.error(err); addToast('Check your connection and try again.', 'error', { title: "Couldn't save the home page numbers" }); }
                                 }}
                             />
 

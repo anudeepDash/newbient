@@ -29,9 +29,16 @@ const ReviewItem = ({ campaignId, app, item, onDone }) => {
         setBusy(true);
         const r = await callOutreach('outreach-review', { campaignId, appId: app.id, taskId: task.id, decision, reason });
         setBusy(false);
-        if (!r.ok) { addToast(r.error, 'error'); return; }
-        const extra = [r.data.movedTo === 'posted' && 'moved to Posted', r.data.ticket === 'released' && 'ticket sent'].filter(Boolean).join(', ');
-        addToast(decision === 'approve' ? `Approved${extra ? `: ${extra}` : ''}.` : 'Changes asked. They’ll get it on WhatsApp.', 'success');
+        if (!r.ok) {
+            addToast(r.error || 'Please try again.', 'error', {
+                title: decision === 'approve' ? 'Approval not saved' : 'Change request not sent',
+                action: { label: 'Try again', onClick: () => review(decision) },
+            });
+            return;
+        }
+        const extra = [r.data.movedTo === 'posted' && 'Moved to Posted', r.data.ticket === 'released' && 'Ticket sent'].filter(Boolean).join(' · ');
+        if (decision === 'approve') addToast(extra || 'Approved.', 'success', extra ? { title: 'Approved' } : undefined);
+        else addToast('They’ll get your note on WhatsApp.', 'success', { title: 'Changes requested' });
         setAsking(false);
         setReason('');
         onDone();

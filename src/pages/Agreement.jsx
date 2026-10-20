@@ -278,9 +278,9 @@ const Agreement = () => {
 
     const handleApprove = async () => {
         if (displayAgreement.status === 'Executed') return;
-        if (!signatureName.trim()) { useStore.getState().addToast('Enter your full name to sign.', 'error'); return; }
-        if (displayAgreement.showSignatures && !clientSignature) { setIsVerifying(false); useStore.getState().addToast('Add your signature first.', 'error'); return; }
-        if (!verificationEmail.trim() || !verificationEmail.includes('@')) { useStore.getState().addToast('Enter a valid email address to sign.', 'error'); return; }
+        if (!signatureName.trim()) { useStore.getState().addToast('Enter your full name to sign.', 'warning'); return; }
+        if (displayAgreement.showSignatures && !clientSignature) { setIsVerifying(false); useStore.getState().addToast('Add your signature first.', 'warning'); return; }
+        if (!verificationEmail.trim() || !verificationEmail.includes('@')) { useStore.getState().addToast('Enter your full email address to sign.', 'warning'); return; }
         
         setIsSubmitting(true);
         try {
@@ -301,10 +301,10 @@ const Agreement = () => {
                 clientSignature: saved?.clientSignature || clientSignature || null
             }));
             setIsVerifying(false);
-            useStore.getState().addToast('Agreement signed. Thank you!', 'success');
+            useStore.getState().addToast('Agreement signed. Thank you.', 'success');
         } catch (error) {
             console.error(error);
-            useStore.getState().addToast(error?.code ? error.message : "Couldn't sign the agreement. Please try again or contact support.", 'error');
+            useStore.getState().addToast(error?.code ? error.message : 'Please try again. If it keeps happening, contact support.', 'error', { title: 'Agreement not signed', action: { label: 'Try again', onClick: () => handleApprove() } });
         } finally { setIsSubmitting(false); }
     };
 

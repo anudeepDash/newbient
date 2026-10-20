@@ -69,11 +69,11 @@ export const MessageSheet = ({ open, onClose, campaign, entries }) => {
                     setProgress(Math.round(((i + 1) / withEmail.length) * 100));
                 }
             }
-            if (mailFailed) addToast(`Message sent in the app. ${mailFailed} email${mailFailed === 1 ? '' : 's'} didn't go through.`, 'warning');
+            if (mailFailed) addToast(`${mailFailed} email${mailFailed === 1 ? '' : 's'} didn't go through.`, 'warning', { title: 'Message sent in the app' });
             else addToast(entries.length === 1 ? 'Message sent.' : `Message sent to ${entries.length} creators.`, 'success');
             onClose();
         } catch {
-            addToast("Couldn't send the message. Please try again.", 'error');
+            addToast('Check your connection and try again.', 'error', { title: 'Message not sent' });
         } finally {
             setSending(false);
         }
