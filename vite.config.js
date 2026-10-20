@@ -119,7 +119,7 @@ export default defineConfig(({ mode }) => {
             if (!req.url.startsWith('/api/forms')) return next();
             const url = new URL(req.url, 'http://localhost');
             const type = url.searchParams.get('type');
-            if (type !== 'public-feed' && type !== 'public-archive' && type !== 'enquiry') return next();
+            if (type !== 'public-feed' && type !== 'public-archive' && type !== 'app-feed' && type !== 'enquiry') return next();
             res.status = (c) => { res.statusCode = c; return res; };
             res.json = (d) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(d)); return res; };
             try {
@@ -128,6 +128,12 @@ export default defineConfig(({ mode }) => {
                 const { firestoreRest } = await import('./scripts/dev/firestoreRest.mjs');
                 const archive = await getPublicArchive(firestoreRest(env.VITE_FIREBASE_PROJECT_ID || 'newbi-ent-v2'));
                 return res.status(200).json({ success: true, ...archive });
+              }
+              if (type === 'app-feed') {
+                const { getAppFeed } = await import('./api/_lib/publicFeed.js');
+                const { firestoreRest } = await import('./scripts/dev/firestoreRest.mjs');
+                const feed = await getAppFeed(firestoreRest(env.VITE_FIREBASE_PROJECT_ID || 'newbi-ent-v2'));
+                return res.status(200).json({ success: true, ...feed });
               }
               if (type === 'public-feed') {
                 const { getPublicFeed } = await import('./api/_lib/publicFeed.js');
