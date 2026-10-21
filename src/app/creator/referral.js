@@ -1,11 +1,14 @@
 import { appUrl, APP_ORIGIN } from '../host';
 import { t } from '../../i18n';
+import { OG_CARD_VERSION } from '../seo';
 
 /* Invite links and share messages for the referral tab and the refer banner. */
 
+// `v` is the share-card version: WhatsApp caches a link's preview by its exact
+// URL, so a new card needs a new link for chats to fetch it. The page ignores it.
 export const inviteUrl = (code) => {
     if (!code) return null;
-    const path = `/creator/apply?ref=${encodeURIComponent(code)}`;
+    const path = `/creator/apply?ref=${encodeURIComponent(code)}&v=${OG_CARD_VERSION}`;
     const url = appUrl(path);
     return /^https?:/.test(url) ? url : `${typeof window !== 'undefined' ? window.location.origin : APP_ORIGIN}${url}`;
 };

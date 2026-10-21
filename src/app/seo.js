@@ -16,7 +16,7 @@ export const DEFAULT_DESCRIPTION = 'Concerts, college fests, brand activations a
 // Share cards (1200×630 JPEG) in public/og/, one per part of the site, drawn in
 // scripts/og/cards.html and rendered by scripts/og/render.mjs. Chats cache a
 // preview by its image URL, so after changing a card bump OG_CARD_VERSION and
-// render again: the new files get new names.
+// render again: the new files get new names (creator invite links carry it too).
 export const OG_CARD_VERSION = 1;
 const ogCard = (name, alt) => ({
     path: `/og/${name}-v${OG_CARD_VERSION}.jpg`,
