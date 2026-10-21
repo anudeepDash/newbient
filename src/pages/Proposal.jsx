@@ -1330,7 +1330,7 @@ const Proposal = () => {
                                                          <span className="flex items-center gap-3"><ShieldCheck className="text-neon-green" /> Document Locked & Authorized</span>
                                                      ) : (
                                                          <>
-                                                             <span className="relative z-10 flex items-center justify-center gap-2">{isSubmitting ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} className="text-neon-green" />} Authorize Strategic Memorandum</span>
+                                                             <span className="relative z-10 flex items-center justify-center gap-2">{isSubmitting ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} className="text-neon-green" />} Accept proposal</span>
                                                              <div className="absolute inset-0 bg-gradient-to-r from-neon-green/20 via-transparent to-neon-green/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 rounded-2xl" />
                                                          </>
                                                      )}
@@ -1628,7 +1628,7 @@ const Proposal = () => {
                                                                     className="w-full h-14 bg-neon-green text-black font-black uppercase tracking-widest text-[11px] rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_30px_rgba(57,255,20,0.2)] mt-6"
                                                                 >
                                                                     {isSubmitting ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
-                                                                    Authorize Strategic Memorandum
+                                                                    Accept proposal
                                                                 </Button>
                                                             )}
                                                             

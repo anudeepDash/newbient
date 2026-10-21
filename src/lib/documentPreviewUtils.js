@@ -102,14 +102,14 @@ export const getDocumentShareMeta = (rawDocument, type = 'proposal') => {
     }
 
     // Default: Proposal
-    const title = `Strategic Proposal · ${clientName} (${docNumber})`;
-    const description = `Official Strategic Proposal prepared for ${clientName}${campaignName ? ` · ${campaignName}` : ''}${formattedAmount ? ` · Commercial Value: ${formattedAmount}` : ''}. Review and authorize online.`;
-    const shareMessage = `📋 *Strategic Proposal · ${clientName}*\n` +
-        `*Quote Ref:* ${docNumber}\n` +
+    const title = `Proposal · ${clientName} (${docNumber})`;
+    const description = `Proposal prepared for ${clientName}${campaignName ? ` · ${campaignName}` : ''}${formattedAmount ? ` · Commercial Value: ${formattedAmount}` : ''}. Review and authorize online.`;
+    const shareMessage = `📋 *Proposal · ${clientName}*\n` +
+        `*Proposal no:* ${docNumber}\n` +
         (campaignName ? `*Project:* ${campaignName}\n` : '') +
         (formattedAmount ? `*Commercial Value:* ${formattedAmount}\n` : '') +
-        `*Status:* ${documentData.status || 'Official Quotation'}\n\n` +
-        `📄 View Strategic Memorandum & authorize online:`;
+        (documentData.status ? `*Status:* ${documentData.status}\n` : '') + '\n' +
+        `📄 View the proposal and accept it online:`;
 
     return {
         title,
@@ -119,9 +119,9 @@ export const getDocumentShareMeta = (rawDocument, type = 'proposal') => {
         clientName,
         campaignName,
         formattedAmount,
-        badge: 'STRATEGIC PROPOSAL',
+        badge: 'PROPOSAL',
         shareMessage,
-        emailSubject: `Strategic Proposal: ${clientName} (${docNumber})`,
-        emailBody: `Dear ${clientName},\n\nPlease find our Strategic Memorandum and Quotation (${docNumber})${campaignName ? ` for ${campaignName}` : ''}${formattedAmount ? ` with commercial value ${formattedAmount}` : ''} prepared for your review.\n\nYou can inspect and digitally authorize the proposal here:\n`
+        emailSubject: `Proposal: ${clientName} (${docNumber})`,
+        emailBody: `Dear ${clientName},\n\nPlease find our proposal (${docNumber})${campaignName ? ` for ${campaignName}` : ''}${formattedAmount ? ` with commercial value ${formattedAmount}` : ''} prepared for your review.\n\nYou can read it and accept it online here:\n`
     };
 };
