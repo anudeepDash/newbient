@@ -216,6 +216,16 @@ describe('admin actions', () => {
         expect(changes[0].source).toBe('bulk_paste');
     });
 
+    it('never shortlists anyone under the Nano "from" count', async () => {
+        const [a, b] = apps().map(x => x.id);
+        db.store.set('campaigns/c1', { ...CAMPAIGN, perksByTier: { nano: { minFollowers: 5000 } } });
+        db.store.get(`campaigns/c1/applications/${b}`).followerCount = 4999;
+        const res = await call('outreach-status', { campaignId: 'c1', appIds: [a, b], to: 'shortlisted', source: 'bulk_paste' }, { token: ADMIN });
+        expect(res.body.updated.map(u => u.id)).toEqual([a]);
+        expect(res.body.skipped).toEqual([{ id: b, from: 'applied', reason: 'below_min' }]);
+        expect(apps().find(x => x.id === b).status).toBe('applied');
+    });
+
     it('tells shortlisted people in the app, and leaves people without an account for the fallback', async () => {
         const [a, b] = apps().map(x => x.id);
         db.store.set('campaigns/c1/private/outreach', { whatsappGroupLink: 'https://chat.whatsapp.com/AbCdEf1234567' });

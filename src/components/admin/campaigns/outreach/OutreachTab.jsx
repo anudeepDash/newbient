@@ -13,7 +13,7 @@ import { copyToClipboard } from '../../../../lib/clipboard';
 import { Button, Card, EmptyState, SearchInput, Select, SegmentedTabs, StatTile, Badge } from '../../ui';
 import ExportMenu from '../../ExportMenu';
 import { Spinner, ConfirmSheet } from '../parts';
-import { filterApplications, CATEGORIES, campaignCities } from '../../../../lib/outreach/application';
+import { filterApplications, CATEGORIES, campaignCities, isBelowMinimum } from '../../../../lib/outreach/application';
 import { STATUSES, STATUS_META, canTransition, isOnShortlist } from '../../../../lib/outreach/status';
 import { exportSpecFor } from '../../../../lib/outreach/export';
 import { callOutreach, applyUrlFor } from './outreachApi';
@@ -140,7 +140,7 @@ const OutreachTab = ({ campaign }) => {
 
     const addToShortlist = (ids, source) => changeStatus(ids, 'shortlisted', { source });
     const selectedApps = [...selected].map(id => byId.get(id)).filter(Boolean);
-    const canShortlist = selectedApps.filter(a => canTransition(a.status || 'applied', 'shortlisted'));
+    const canShortlist = selectedApps.filter(a => canTransition(a.status || 'applied', 'shortlisted') && !isBelowMinimum(a, campaign));
     const canRemove = selectedApps.filter(a => canTransition(a.status || 'applied', 'removed'));
     const allChecked = visible.length > 0 && visible.every(a => selected.has(a.id));
     const toggle = (id) => setSelected(s => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });

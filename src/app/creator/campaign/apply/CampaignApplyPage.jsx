@@ -14,7 +14,7 @@ import { PageBody } from '../../../pages/PageHeader';
 import { PanelLabel } from '../../../pages/DetailLayout';
 import { ChoiceChip, FormBlock, Notice } from '../../ui';
 import { callCreatorApi } from '../../api';
-import { validateApplication, CATEGORIES, REFERRAL_SOURCES, CONSENT_TEXT, TIERS } from '../../../../lib/outreach/application';
+import { validateApplication, CATEGORIES, REFERRAL_SOURCES, CONSENT_TEXT, TIERS, minFollowersFor } from '../../../../lib/outreach/application';
 import { formatDeadline } from '../../../../lib/outreach/template';
 import { useT } from '../../../../i18n';
 
@@ -162,6 +162,7 @@ const CampaignApplyPage = () => {
 
     const perks = TIERS.map(tier => ({ tier, text: perkText(campaign.perksByTier?.[tier]) })).filter(p => p.text);
     const err = (k) => (errors[k] ? t(errors[k]) : null);
+    const minFollowers = minFollowersFor(campaign);
 
     const header = (
         <header className="space-y-4 lg:sticky lg:top-24 lg:self-start">
@@ -247,7 +248,7 @@ const CampaignApplyPage = () => {
                         <div data-field="phone"><TextInput label={t('WhatsApp number')} type="tel" inputMode="tel" value={form.phone} onChange={set('phone')} autoComplete="tel" placeholder="98765 43210" hint={t('Indian numbers don’t need +91.')} error={err('phone')} /></div>
                         <div data-field="email"><TextInput label={t('Email')} type="email" inputMode="email" value={form.email} onChange={set('email')} autoComplete="email" autoCapitalize="none" error={err('email')} /></div>
                         <div data-field="instagram"><TextInput label={t('Instagram')} value={form.instagram} onChange={set('instagram')} autoCapitalize="none" autoCorrect="off" placeholder={t('@yourhandle or profile link')} error={err('instagram')} /></div>
-                        <div data-field="followerCount"><TextInput label={t('Instagram followers')} inputMode="numeric" value={form.followerCount} onChange={set('followerCount')} placeholder="12500" error={err('followerCount')} /></div>
+                        <div data-field="followerCount"><TextInput label={t('Instagram followers')} inputMode="numeric" value={form.followerCount} onChange={set('followerCount')} placeholder="12500" hint={minFollowers ? t('This campaign needs at least {count} followers.', { count: minFollowers.toLocaleString('en-IN') }) : undefined} error={err('followerCount')} /></div>
 
                         <div data-field="city">
                             {campaign.cities.length > 1 ? (

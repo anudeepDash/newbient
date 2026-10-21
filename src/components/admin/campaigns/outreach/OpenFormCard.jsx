@@ -141,6 +141,7 @@ const OpenFormCard = ({ form, set, title, targetCity, errors, err }) => {
                 </Field>
                 <div id="cm-field-perksByTier" className="space-y-2">
                     <p className="text-[12px] font-bold text-gray-500">Perks by tier</p>
+                    <p className="text-[12px] text-gray-500">Nano’s “from” count is the campaign’s minimum: anyone under it can’t apply or be shortlisted. Leave it empty to take anyone.</p>
                     {TIERS.map(t => (
                         <div key={t} className="grid grid-cols-[72px_minmax(0,1fr)_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[80px_140px_120px_minmax(0,1fr)]">
                             <span className="text-[13px] font-bold capitalize">{t}</span>

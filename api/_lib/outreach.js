@@ -36,9 +36,9 @@
 import { createHash } from 'node:crypto';
 import { getDb, nowIso, istDate } from './db.js';
 import {
-    validateApplication, mergeApplication, resolveDuplicate, applicationsOpen, campaignCities, CONSENT_TEXT,
+    validateApplication, mergeApplication, resolveDuplicate, applicationsOpen, campaignCities, CONSENT_TEXT, isBelowMinimum,
 } from '../../src/lib/outreach/application.js';
-import { canTransition, isStatus } from '../../src/lib/outreach/status.js';
+import { canTransition, isStatus, isOnShortlist } from '../../src/lib/outreach/status.js';
 import { maskPhone, normalizePhone } from '../../src/lib/outreach/normalize.js';
 import { unknownPlaceholders, DEFAULT_TEMPLATE } from '../../src/lib/outreach/template.js';
 import {
@@ -376,7 +376,8 @@ export const handleStatus = async (req, res, { db, token, now = nowIso() }) => {
     }
     const result = await db.runTransaction(async (tx) => {
         const refs = ids.map(id => campRef.collection('applications').doc(id));
-        const snaps = await Promise.all(refs.map(r => tx.get(r)));
+        const [campSnap, ...snaps] = await Promise.all([tx.get(campRef), ...refs.map(r => tx.get(r))]);
+        const campaign = campSnap.exists ? campSnap.data() : {};
         const updated = [];
         const skipped = [];
         snaps.forEach((snap, i) => {
@@ -384,6 +385,8 @@ export const handleStatus = async (req, res, { db, token, now = nowIso() }) => {
             const from = snap.data().status || 'applied';
             if (from === to) { skipped.push({ id: ids[i], from, reason: 'already' }); return; }
             if (!canTransition(from, to)) { skipped.push({ id: ids[i], from, reason: 'not_allowed' }); return; }
+            // The Nano tier's "from" count is the campaign's minimum: no one under it goes onto the shortlist.
+            if (to === 'shortlisted' && !isOnShortlist(from) && isBelowMinimum(snap.data(), campaign)) { skipped.push({ id: ids[i], from, reason: 'below_min' }); return; }
             const stamp = STAMPS[to];
             const patch = { status: to, statusUpdatedAt: now, statusUpdatedBy: actorEmail, updatedAt: now, [`${stamp}At`]: now, [`${stamp}By`]: actorEmail };
             if (to === 'message_sent' && messageText) patch.lastMessageText = messageText;

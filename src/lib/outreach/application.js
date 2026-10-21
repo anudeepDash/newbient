@@ -37,6 +37,15 @@ export const tierFor = (followers, perksByTier) => {
     return 'nano';
 };
 
+/** The fewest followers the campaign takes: the Nano tier's "from" count (0 = anyone). */
+export const minFollowersFor = (campaign) => {
+    const v = Number(campaign?.perksByTier?.nano?.minFollowers);
+    return Number.isFinite(v) && v > 0 ? Math.round(v) : 0;
+};
+
+/** Whether an application is under the campaign's follower minimum, so it can't be shortlisted. */
+export const isBelowMinimum = (app, campaign) => (Number(app?.followerCount) || 0) < minFollowersFor(campaign);
+
 /* ── Campaign rules the form needs ────────────────────────────────────── */
 
 /** The cities this campaign takes applications from (falls back to the older single targetCity). */
@@ -109,6 +118,7 @@ export const validateApplication = (input = {}, campaign = {}) => {
         errors.followerCount = 'Enter your follower count as a number, like 12500.';
     } else {
         value.followerCount = followers;
+        if (followers < minFollowersFor(campaign)) errors.followerCount = 'You need more followers for this campaign.';
     }
 
     value.collegeOrEmployer = str(input.collegeOrEmployer, 120);

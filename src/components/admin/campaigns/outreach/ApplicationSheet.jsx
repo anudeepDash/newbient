@@ -2,7 +2,8 @@ import React from 'react';
 import TriangleAlert from 'lucide-react/dist/esm/icons/triangle-alert';
 import Sheet from '../../Sheet';
 import { Button } from '../../ui';
-import { TRANSITIONS } from '../../../../lib/outreach/status';
+import { TRANSITIONS, isOnShortlist } from '../../../../lib/outreach/status';
+import { isBelowMinimum, minFollowersFor } from '../../../../lib/outreach/application';
 import { formatCount } from '../campaignModel';
 import { deliverableSummary, DELIVERABLE_STATUS, TICKET_STATUS } from '../../../../lib/outreach/deliverables';
 import ActivityList from './ActivityList';
@@ -19,7 +20,9 @@ const Row = ({ label, children }) => (children === null || children === undefine
 
 const ApplicationSheet = ({ app, campaign, campaignId, onClose, onStatus, nameOf, refreshKey }) => {
     const summary = app && campaign ? deliverableSummary(campaign, app) : null;
-    const next = app ? TRANSITIONS[app.status || 'applied'] || [] : [];
+    // Under the campaign's follower minimum (the Nano "from" count): can't go onto the shortlist.
+    const belowMin = Boolean(app && campaign && !isOnShortlist(app.status) && isBelowMinimum(app, campaign));
+    const next = app ? (TRANSITIONS[app.status || 'applied'] || []).filter(s => !(belowMin && s === 'shortlisted')) : [];
     return (
         <Sheet open={Boolean(app)} onClose={onClose} title={app?.fullName || ''} subtitle={app ? `Applied ${when(app.firstSubmittedAt)}` : ''} size="md">
             {app && (
@@ -32,6 +35,12 @@ const ApplicationSheet = ({ app, campaign, campaignId, onClose, onStatus, nameOf
                             </Button>
                         ))}
                     </div>
+                    {belowMin && (
+                        <p className="flex items-start gap-2 rounded-2xl bg-amber-500/10 p-3 text-[13px]">
+                            <TriangleAlert size={15} className="mt-0.5 shrink-0 text-amber-600" />
+                            <span>{formatCount(app.followerCount)} followers is under this campaign’s minimum of {formatCount(minFollowersFor(campaign))}, so they can’t be shortlisted.</span>
+                        </p>
+                    )}
                     {app.possibleDuplicateOf && (
                         <p className="flex items-start gap-2 rounded-2xl bg-amber-500/10 p-3 text-[13px]">
                             <TriangleAlert size={15} className="mt-0.5 shrink-0 text-amber-600" />
