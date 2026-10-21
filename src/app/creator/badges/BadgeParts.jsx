@@ -193,21 +193,21 @@ export const BadgeShelf = ({ badges, className }) => {
         <Link
             to={appPath('/creator/badges')}
             className={cn(
-                'group flex w-full items-center gap-3 rounded-2xl border border-black/[0.05] bg-white/75 py-2 pl-2.5 pr-3 transition-colors hover:bg-white dark:border-white/[0.07] dark:bg-white/[0.04] dark:hover:bg-white/[0.07]',
+                'group flex h-12 items-center gap-2.5 rounded-2xl border border-black/[0.05] bg-white/75 pl-2 pr-2.5 transition-colors hover:bg-white dark:border-white/[0.07] dark:bg-white/[0.04] dark:hover:bg-white/[0.07]',
                 className
             )}
             aria-label={t('{n} badges collected', { n: earned.length })}
         >
             <span className="flex -space-x-1.5">
                 {shown.map((b, i) => (
-                    <span key={b.id} className="relative" style={{ zIndex: shown.length - i }}>
-                        <BadgeMedal badge={b} size={30} compact animate={false} className="drop-shadow-[0_2px_3px_rgba(0,0,0,0.3)]" />
+                    <span key={b.id} className={cn('relative', i >= 3 && 'hidden sm:block')} style={{ zIndex: shown.length - i }}>
+                        <BadgeMedal badge={b} size={28} compact animate={false} className="drop-shadow-[0_2px_3px_rgba(0,0,0,0.3)]" />
                     </span>
                 ))}
             </span>
-            <span className="flex min-w-0 flex-1 flex-col">
-                <span className="font-heading text-[18px] font-extrabold leading-none tracking-[-0.03em] tabular-nums text-gray-900 dark:text-white">{earned.length}</span>
-                <span className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-zinc-400">{earned.length === 1 ? t('Badge') : t('Badges')}</span>
+            <span className="flex flex-col">
+                <span className="font-heading text-[17px] font-extrabold leading-none tracking-[-0.03em] tabular-nums text-gray-900 dark:text-white">{earned.length}</span>
+                <span className="mt-1 text-[9.5px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-zinc-400">{earned.length === 1 ? t('Badge') : t('Badges')}</span>
             </span>
             <ChevronRight size={16} className="shrink-0 text-gray-400 transition-transform group-hover:translate-x-0.5" />
         </Link>
