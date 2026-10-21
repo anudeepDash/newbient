@@ -12,7 +12,8 @@ import { deadlineLineFor } from './template.js';
  * deadline as "Details are in the group."
  */
 
-export const JOIN_BUTTON = 'Joined ✅';
+// As approved in Meta: WhatsApp Manager strips emoji from button labels.
+export const JOIN_BUTTON = 'Joined';
 export const STOP_BUTTON = 'Stop updates';
 /* The quick-reply payload of "Stop updates" (and texts like STOP) opts the number out of every template. */
 export const STOP_PAYLOAD = 'stop';
@@ -20,36 +21,36 @@ export const STOP_PAYLOAD = 'stop';
 export const WA_TEMPLATES = {
     invite: {
         name: 'campaign_shortlist',
-        body: "Hey {{1}}! You're shortlisted for {{2}} with Newbi. Join the creators group for the brief, passes and next steps: {{3}} {{4}}",
+        body: "✅ *You're shortlisted, {{1}}!*\n\n*Campaign:* {{2}} with Newbi\n\nJoin the creators group for the brief, passes and next steps:\n{{3}}\n\n{{4}}\n\nTap *Joined ✅* once you're in.",
         placeholders: ['first_name', 'campaign_title', 'group_link', 'deadline_line'],
     },
     reminder: {
         name: 'campaign_join_reminder',
-        body: 'Hey {{1}}, a reminder to join the {{2}} creators group: {{3}}',
+        body: "⏰ *Quick reminder, {{1}}*\n\nYou haven't joined the *{{2}}* creators group yet. Here's the link:\n{{3}}\n\nTap *Joined ✅* once you're in.",
         placeholders: ['first_name', 'campaign_title', 'group_link'],
     },
     // Phase 3. The first two have a URL button: https://app.newbi.live/d/{{1}} (their signed link).
     deliverables: {
         name: 'campaign_deliverables',
-        body: "Hey {{1}}! Here's your personal link to send your {{2}} posts to Newbi. Tap the button once they're live.",
+        body: "📸 *Time to send your posts, {{1}}*\n\nHere's your personal link to send your *{{2}}* posts to Newbi. Tap *Send my posts* once they're live.",
         placeholders: ['first_name', 'campaign_title'],
         button: 'Send my posts',
     },
     changes: {
         name: 'campaign_deliverable_changes',
-        body: 'Hey {{1}}, a quick change on "{{2}}": {{3}} Tap the button to send it again.',
+        body: "✏️ *A quick change, {{1}}*\n\n*Post:* {{2}}\n*What to fix:* {{3}}\n\nTap *Send it again* once it's updated.",
         placeholders: ['first_name', 'task_title', 'reason'],
         button: 'Send it again',
     },
     // Sent when someone applies (the city creator community). Quick reply: Stop updates.
     city_group: {
         name: 'creator_city_group',
-        body: 'Hey {{1}}! Thanks for applying to {{2}}. Join the Newbi {{3}} creators community on WhatsApp for gigs, passes and meetups: {{4}}',
+        body: '👋 *Thanks for applying to {{2}}, {{1}}!*\n\nJoin the Newbi *{{3}}* creators community on WhatsApp for gigs, guestlist passes and meetups:\n{{4}}\n\nSee you in there.',
         placeholders: ['first_name', 'campaign_title', 'city', 'city_group_link'],
     },
     payout: {
         name: 'campaign_payout_sent',
-        body: "Hey {{1}}, we've sent ₹{{2}} for {{3}}. Reference: {{4}}. Thanks for creating with Newbi!",
+        body: '💸 *Payout sent, {{1}}*\n\n*Amount:* ₹{{2}}\n*Campaign:* {{3}}\n*Reference:* {{4}}\n\nThanks for creating with Newbi!',
         placeholders: ['first_name', 'amount', 'campaign_title', 'reference'],
     },
 };

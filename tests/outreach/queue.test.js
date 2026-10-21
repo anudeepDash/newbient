@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { FakeFirestore, fakeReq, fakeRes } from '../helpers/fakeFirestore.js';
 import { setDbForTests } from '../../api/_lib/db.js';
-import { setWhatsAppFetchForTests, buildComponents } from '../../api/_lib/whatsapp.js';
+import { setWhatsAppFetchForTests, buildComponents, imageHeaderFor } from '../../api/_lib/whatsapp.js';
 import {
     enqueueInvites, runQueue, cancelQueued, onOutreachInbound, onOutreachStatus, joinPayload, readJoinPayload, contactIdFor,
 } from '../../api/_lib/outreachQueue.js';
@@ -80,7 +80,17 @@ describe('template variables', () => {
             .toEqual(['there', 'X', 'L', 'Details are in the group.']);
         expect(templateParamsFor('reminder', { application: { fullName: 'Riya' }, campaign, groupLink: 'L' })).toEqual(['Riya', 'Arijit Singh Live', 'L']);
         expect(renderTemplatePreview('reminder', { application: { fullName: 'Riya' }, campaign, groupLink: 'L' }))
-            .toBe('Hey Riya, a reminder to join the Arijit Singh Live creators group: L');
+            .toBe("⏰ *Quick reminder, Riya*\n\nYou haven't joined the *Arijit Singh Live* creators group yet. Here's the link:\nL\n\nTap *Joined ✅* once you're in.");
+    });
+
+    it('give each image template its own card, and none to text-only ones', () => {
+        expect(imageHeaderFor('pass_confirmed')).toEqual({ type: 'image', link: 'https://app.newbi.live/og/wa-pass-v1.jpg' });
+        expect(imageHeaderFor('creator_city_group').link).toBe('https://app.newbi.live/og/wa-city-v1.jpg');
+        const links = ['pass_confirmed', 'campaign_ticket_link', 'creator_approved', 'campaign_invite', 'campaign_shortlisted', 'campaign_shortlist',
+            'campaign_join_reminder', 'campaign_deliverables', 'campaign_deliverable_changes', 'campaign_payout_sent', 'creator_city_group'].map(t => imageHeaderFor(t).link);
+        expect(new Set(links).size).toBe(links.length);
+        expect(imageHeaderFor('creator_verification')).toBeNull();
+        expect(imageHeaderFor('campaign_ticket')).toBeNull();
     });
 
     it('build a quick-reply button with our payload', () => {
@@ -131,10 +141,11 @@ describe('the worker', () => {
         const first = sent[0];
         expect(first.to).toBe('919876500001');
         expect(first.template.name).toBe('campaign_shortlist');
-        const [body, button] = first.template.components;
+        const [header, body, button] = first.template.components;
+        expect(header).toEqual({ type: 'header', parameters: [{ type: 'image', image: { link: 'https://app.newbi.live/og/wa-shortlist-v1.jpg' } }] });
         expect(body.parameters.map(p => p.text)).toEqual(['Riya', 'Arijit Singh Live', 'https://chat.whatsapp.com/AbCdEf1234567', 'Please post by Monday, 2 November.']);
         expect(readJoinPayload(button.parameters[0].payload)).toEqual({ campaignId: 'c1', appId: 'a1' });
-        expect(sent.find(s => s.to === '919876500003').template.components[0].parameters[0].text).toBe('there');
+        expect(sent.find(s => s.to === '919876500003').template.components.find(c => c.type === 'body').parameters[0].text).toBe('there');
 
         expect(app('a1')).toMatchObject({ status: 'message_sent', messageSentBy: 'WhatsApp API', lastMessageId: 'wamid.1' });
         expect(app('a1').delivery.whatsapp.status).toBe('sent');

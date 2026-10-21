@@ -37,6 +37,13 @@ export const OG_IMAGES = {
     docs: ogCard('docs', 'Newbi Entertainment & Marketing'),
 };
 
+// Image headers for the WhatsApp templates (api/_lib/whatsapp.js), one per message, drawn in the
+// same sheet. Not link previews: they're only ever sent inside a WhatsApp message.
+export const WA_CARDS = Object.fromEntries(
+    ['pass', 'ticket', 'approved', 'invite', 'shortlisted', 'shortlist', 'reminder', 'deliverables', 'changes', 'payout', 'city']
+        .map((name) => [`wa-${name}`, ogCard(`wa-${name}`, `Newbi on WhatsApp: ${name}`)]),
+);
+
 // The share image for any Newbi page that has no card of its own.
 export const DEFAULT_IMAGE = OG_IMAGES.home;
 
