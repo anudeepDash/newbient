@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    RecaptchaVerifier, PhoneAuthProvider, signInWithPhoneNumber, linkWithCredential, updatePhoneNumber,
+    RecaptchaVerifier, PhoneAuthProvider, signInWithPhoneNumber, signInWithCustomToken, linkWithCredential, updatePhoneNumber,
 } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { toE164 } from '../../lib/store/profile';
-import { proveWithCredential, previewMerge } from './accountMerge';
+import { callCreatorApi } from '../creator/api';
+import { proveWithCredential, proveWithCustomToken, previewMerge } from './accountMerge';
 import { t } from '../../i18n';
 
 /*
@@ -25,6 +26,12 @@ import { t } from '../../i18n';
  *            `conflict` = { proof, preview } so the caller offers to merge it
  *            (MergeConfirm). After merging, call completeMerge(result).
  *   'signIn' (default when signed out) signs in with the number.
+ *
+ * channel
+ *   The code goes on WhatsApp first (api/_lib/phoneOtp.js, otp-send /
+ *   otp-verify). When WhatsApp isn't set up or the number isn't on it, the
+ *   same send() falls back to an SMS through Firebase. `channel` says which
+ *   one carried the code, and sendViaSms() switches to SMS on request.
  *
  * The invisible reCAPTCHA lives in one off-screen container per hook that is
  * never removed mid-flow (iOS Safari loses the token if it is), and is torn
@@ -54,6 +61,10 @@ const friendlyError = (err) => {
     return t('We couldn’t verify your number right now. Please try again.');
 };
 
+// otp-send answers an SMS wouldn't fix (shown as they are). Anything else, WhatsApp not set up, the number
+// not on WhatsApp, a server or network error, falls back to an SMS code.
+const NO_SMS_FALLBACK = new Set(['rate_limited', 'cooldown', 'invalid_phone']);
+
 const isTestMode = () => import.meta.env.DEV && import.meta.env.VITE_PHONE_TEST_MODE === 'true';
 
 export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified } = {}) {
@@ -62,6 +73,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
     const [cooldown, setCooldown] = useState(0);
     const [phone, setPhone] = useState(null); // E.164 of the number in flight or verified
     const [conflict, setConflict] = useState(null); // { proof, preview }: the number signs in to another account
+    const [channel, setChannel] = useState(null); // 'whatsapp' | 'sms': what carried the code in flight
 
     const verifierRef = useRef(null);
     const containerRef = useRef(null);
@@ -113,15 +125,16 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         await onVerifiedRef.current?.(e164, result);
     }, []);
 
-    /* Sends the code. `input` can be local ('98765 43210') or international. */
-    const send = useCallback(async (input) => {
+    /* Sends the code, on WhatsApp unless `via: 'sms'`. `input` can be local ('98765 43210') or international. */
+    const send = useCallback(async (input, { via } = {}) => {
         const e164 = toE164(input, defaultCountry);
         const digits = (e164 || '').replace(/\D/g, '');
         if (!e164 || digits.length < 10 || digits.length > 15) {
             setError(t('Enter a valid mobile number.'));
             return false;
         }
-        if (cooldown > 0 && e164 === phone) return false;
+        const switchingToSms = via === 'sms' && channel !== 'sms';
+        if (cooldown > 0 && e164 === phone && !switchingToSms) return false;
         setPhone(e164);
         setError('');
 
@@ -133,6 +146,22 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         }
 
         setStatus('sending');
+        if (via !== 'sms') {
+            const purpose = signingIn ? 'login' : 'verify';
+            const sent = await callCreatorApi('otp-send', { phone: e164, purpose });
+            if (sent.ok) {
+                confirmationRef.current = { whatsapp: true, purpose };
+                setChannel('whatsapp');
+                setStatus('sent');
+                setCooldown(Number(sent.data?.resendIn) || COOLDOWN_SECONDS);
+                return true;
+            }
+            if (NO_SMS_FALLBACK.has(sent.code)) {
+                setStatus('idle');
+                setError(sent.error);
+                return false;
+            }
+        }
         try {
             const verifier = await ensureVerifier();
             if (!signingIn) {
@@ -142,6 +171,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
             } else {
                 confirmationRef.current = await signInWithPhoneNumber(auth, e164, verifier);
             }
+            setChannel('sms');
             setStatus('sent');
             setCooldown(COOLDOWN_SECONDS);
             return true;
@@ -152,7 +182,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
             setError(friendlyError(err));
             return false;
         }
-    }, [cooldown, phone, mode, defaultCountry, ensureVerifier, resetVerifier, finish]);
+    }, [cooldown, phone, channel, mode, defaultCountry, ensureVerifier, resetVerifier, finish]);
 
     /* Checks the 6-digit code. */
     const verify = useCallback(async (code) => {
@@ -169,6 +199,38 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         setStatus('verifying');
         setError('');
         try {
+            if (pending.whatsapp) {
+                const checked = await callCreatorApi('otp-verify', { phone, code: clean, purpose: pending.purpose });
+                if (!checked.ok) {
+                    setStatus(checked.code === 'code_expired' || checked.code === 'too_many_attempts' ? 'idle' : 'sent');
+                    if (checked.code === 'code_expired' || checked.code === 'too_many_attempts') confirmationRef.current = null;
+                    setError(checked.error);
+                    return false;
+                }
+                confirmationRef.current = null;
+                if (pending.purpose === 'login') {
+                    const result = await signInWithCustomToken(auth, checked.data.token);
+                    await finish(phone, { user: result.user });
+                    return true;
+                }
+                if (checked.data.conflict) {
+                    // Same as an SMS code for a number on another account: sign in there (throwaway session) and offer to merge.
+                    try {
+                        const proof = await proveWithCustomToken(checked.data.proofToken);
+                        setConflict({ proof, preview: await previewMerge(proof) });
+                        setStatus('conflict');
+                    } catch (err) {
+                        setStatus('idle');
+                        setError(err?.friendly || t('This number is on another Newbi account that can’t be merged from here.'));
+                    }
+                    return false;
+                }
+                // The server put the number on this account; refresh so the ID token carries it.
+                await auth.currentUser?.reload();
+                await auth.currentUser?.getIdToken(true);
+                await finish(phone, { linked: true });
+                return true;
+            }
             if (typeof pending === 'string') {
                 const credential = PhoneAuthProvider.credential(pending, clean);
                 const inUse = (err) => err?.code === 'auth/credential-already-in-use' || err?.code === 'auth/account-exists-with-different-credential';
@@ -222,13 +284,18 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         setError('');
         setPhone(null);
         setConflict(null);
+        setChannel(null);
     }, []);
+
+    /* "Get the code by SMS instead". */
+    const sendViaSms = useCallback(() => send(phone, { via: 'sms' }), [send, phone]);
 
     return {
         status,
         error,
         phone,
         cooldown,
+        channel,
         isSending: status === 'sending',
         isVerifying: status === 'verifying',
         codeSent: status === 'sent' || status === 'verifying',
@@ -236,6 +303,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         conflict: status === 'conflict' ? conflict : null,
         testMode: isTestMode() && (mode || (auth?.currentUser ? 'link' : 'signIn')) !== 'signIn',
         send,
+        sendViaSms,
         verify,
         reset,
         completeMerge,

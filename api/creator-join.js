@@ -11,6 +11,7 @@ import { verifyIdTokenSafe } from './_lib/auth.js';
 import { buildCreatorReferrals } from './_lib/referrals.js';
 import { OUTREACH_ACTIONS, handleOutreachAction } from './_lib/outreach.js';
 import { HANDOFF_ACTIONS, handleHandoffAction } from './_lib/adminHandoff.js';
+import { OTP_ACTIONS, handleOtpAction } from './_lib/phoneOtp.js';
 
 export const maxDuration = 60;
 
@@ -479,6 +480,11 @@ export default async function handler(req, res) {
     // Staff sign-in carried over to admin.newbi.live (api/_lib/adminHandoff.js).
     if (HANDOFF_ACTIONS.has(action)) {
         return handleHandoffAction(action, req, res, { decodedToken, db: adminDb, adminAuth });
+    }
+
+    // Phone codes on WhatsApp: verifying a number and signing in with it (api/_lib/phoneOtp.js).
+    if (OTP_ACTIONS.has(action)) {
+        return handleOtpAction(action, req, res, { decodedToken, db: adminDb, adminAuth });
     }
 
     if (!PUBLIC_ACTIONS.has(action) && !decodedToken) {

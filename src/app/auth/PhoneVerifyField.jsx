@@ -7,7 +7,9 @@ import { useT } from '../../i18n';
 
 /*
  * Phone number + OTP in one block, on top of usePhoneVerification.
- * The code field uses one-time-code autofill, so iOS offers the SMS code.
+ * The code goes on WhatsApp first (with a "Copy code" button), SMS when
+ * WhatsApp can't carry it or the person asks. The code field uses
+ * one-time-code autofill, so iOS offers an SMS code.
  * A number that already has its own Newbi account is merged into this one
  * (MergeConfirm), so one number never means two accounts.
  */
@@ -62,7 +64,9 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
             {phone.codeSent && (
                 <div className="space-y-3">
                     <TextInput
-                        label={t('Code sent to {phone}', { phone: phone.phone })}
+                        label={phone.channel === 'whatsapp'
+                            ? t('Code sent on WhatsApp to {phone}', { phone: phone.phone })
+                            : t('Code sent to {phone}', { phone: phone.phone })}
                         inputMode="numeric"
                         autoComplete="one-time-code"
                         pattern="[0-9]*"
@@ -96,6 +100,16 @@ const PhoneVerifyField = ({ initialPhone = '', onVerified, label = 'Mobile numbe
                     >
                         {phone.cooldown > 0 ? t('Resend code in {seconds}s', { seconds: phone.cooldown }) : t('Resend code')}
                     </button>
+                    {phone.channel === 'whatsapp' && (
+                        <button
+                            type="button"
+                            disabled={phone.isSending}
+                            onClick={() => { setCode(''); phone.sendViaSms(); }}
+                            className="block text-[13px] font-semibold text-gray-500 underline-offset-2 hover:underline disabled:opacity-60 dark:text-zinc-400"
+                        >
+                            {t('No WhatsApp? Get the code by SMS')}
+                        </button>
+                    )}
                 </div>
             )}
 
