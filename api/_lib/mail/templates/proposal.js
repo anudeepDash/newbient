@@ -1,4 +1,4 @@
-/** data: { company (entertainment|media|marketing), subject, headerText, messageBody, proposalNumber, clientName, projectName, proposalUrl } */
+/** data: { company (entertainment|media|marketing), subject, headerText, messageBody, proposalNumber, clientName, projectName, validUntil, amount, proposalUrl } */
 export default (data = {}) => ({
     sender: 'partnerships',
     kind: 'transactional',
@@ -8,7 +8,8 @@ export default (data = {}) => ({
     title: data.headerText || 'Your proposal is ready',
     blocks: [
         { html: data.messageBody },
-        { document: { kind: 'PROPOSAL', name: `${data.projectName || 'Proposal'}${data.proposalNumber ? ` · ${data.proposalNumber}` : ''}.pdf`, meta: [data.clientName ? `For ${data.clientName}` : '', 'Proposal'], url: data.proposalUrl, label: 'Open proposal' } },
+        { document: { kind: 'PROPOSAL', name: `${data.projectName || 'Proposal'}${data.proposalNumber ? ` · ${data.proposalNumber}` : ''}.pdf`, meta: [data.amount ? `₹${data.amount}` : '', data.validUntil ? `Valid until ${data.validUntil}` : ''], url: data.proposalUrl, label: 'Open proposal' } },
+        { stats: [['Prepared for', data.clientName], ['Valid until', data.validUntil], ['Value', data.amount ? `₹${data.amount}` : '']] },
     ],
     cta: data.proposalUrl ? { label: 'Review proposal', url: data.proposalUrl } : null,
     reason: 'Sent by newbi.live.',

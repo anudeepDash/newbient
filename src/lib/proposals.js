@@ -85,3 +85,87 @@ export const PROPOSAL_NON_COPYABLE_FIELDS = [
     'accessLogs', 'lastOpened', 'approvalMetadata', 'rejectionMetadata', 'clientSignature',
     'statusHistory', 'convertedInvoiceId', 'sentAt',
 ];
+
+// ── What goes out with a proposal link ──
+// Signed by the company, never a person.
+
+const firstName = (name) => String(name || '').trim().split(/\s+/)[0] || '';
+const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/** "18 December 2026" (long) or "18 Dec 2026", for the proposal's valid-until date; '' when it has none. */
+export const proposalValidUntil = (p, month = 'long') => {
+    const expiry = proposalExpiry(p);
+    return expiry ? expiry.toLocaleDateString('en-IN', { day: 'numeric', month, year: 'numeric' }) : '';
+};
+
+/** Who the message greets and what the proposal is for. */
+const proposalNote = (p) => {
+    const contact = firstName(p?.clientContactName);
+    const company = String(p?.clientName || '').trim();
+    return {
+        greet: contact || company,
+        project: String(p?.campaignName || p?.proposalTitle || '').trim(),
+        // Named in the message only when the greeting is a person.
+        company: contact && company ? company : '',
+        number: String(p?.proposalNumber || '').trim(),
+        validUntil: proposalValidUntil(p),
+    };
+};
+
+/** "Here's our proposal for Pinnaca 2026 (ref NBQ-1637), prepared for Astrohm Private Limited." */
+const introLine = (n, strong = (t) => t, esc = (t) => t) => `Here's our proposal${n.project ? ` for ${strong(n.project)}` : ''}${n.number ? ` (ref ${esc(n.number)})` : ''}${n.company ? `, prepared for ${esc(n.company)}` : ''}.`;
+
+/** The WhatsApp message, link included (WhatsApp shows *text* in bold). */
+export const proposalWhatsAppText = (p, link) => {
+    const n = proposalNote(p);
+    return [
+        `Hi${n.greet ? ` ${n.greet}` : ''},`,
+        '',
+        introLine(n, (t) => `*${t}*`),
+        '',
+        'You can read it in full and accept it online here:',
+        link,
+        '',
+        `${n.validUntil ? `The quote is valid until ${n.validUntil}. ` : ''}If you'd like anything changed, just reply here and we'll update it.`,
+        '',
+        'Thanks,',
+        'Team Newbi Entertainment',
+    ].join('\n');
+};
+
+/**
+ * The email's subject, heading and message. The proposal template
+ * (api/_lib/mail/templates/proposal.js) adds the document card, the facts
+ * (client, valid until, value) and the button, so the message stays short.
+ */
+export const proposalEmail = (p) => {
+    const n = proposalNote(p);
+    return {
+        subject: [`Proposal${n.project ? ` for ${n.project}` : ''}`, n.number].filter(Boolean).join(' · '),
+        headerText: 'Your proposal is ready',
+        messageBody: [
+            `<p>Hi${n.greet ? ` <strong>${escapeHtml(n.greet)}</strong>` : ''},</p>`,
+            `<p>${introLine(n, (t) => `<strong>${escapeHtml(t)}</strong>`, escapeHtml)}</p>`,
+            `<p>You can read it in full and accept it online using the button below. If you'd like anything changed, just reply to this email.</p>`,
+            `<p>Best regards,<br/>Newbi Entertainment</p>`,
+        ].join('\n'),
+    };
+};
+
+/** The same email as plain text, for a mailto: link. */
+export const proposalEmailText = (p, link) => {
+    const n = proposalNote(p);
+    return [
+        `Hi${n.greet ? ` ${n.greet}` : ''},`,
+        '',
+        introLine(n),
+        '',
+        'You can read it in full and accept it online here:',
+        link,
+        '',
+        `${n.validUntil ? `The quote is valid until ${n.validUntil}. ` : ''}If you'd like anything changed, just reply to this email.`,
+        '',
+        'Best regards,',
+        'Newbi Entertainment',
+    ].join('\n');
+};

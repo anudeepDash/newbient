@@ -52,7 +52,7 @@ import { getV2PaginatedPages, normalizeProposalData } from '../lib/proposalTempl
 import ProposalDocumentRenderer from '../components/ui/ProposalDocumentRenderer';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
-import { syncShareCard } from '../lib/docShareCard';
+import { CARD_MESSAGE, canSaveShareCard, renderPdfFirstPage, syncShareCard } from '../lib/docShareCard';
 
 const isHtmlEmpty = (html) => {
     if (!html) return true;
@@ -406,9 +406,11 @@ const Proposal = () => {
     }, [user, verificationEmail]);
 
     const location = useLocation();
+    // ?card=1: the admin loading this page out of sight to make the link preview (see below).
+    const cardOnly = new URLSearchParams(location.search).get('card') === '1';
 
     useEffect(() => {
-        if (isAdmin || !proposal) return;
+        if (isAdmin || cardOnly || !proposal) return;
         // Log once per visit; live snapshot updates must not trigger more writes.
         const visitKey = `${id}${location.search}`;
         if (loggedVisitRef.current === visitKey) return;
@@ -433,45 +435,36 @@ const Proposal = () => {
         logVisit();
     }, [id, isAdmin, proposal, location.search]);
 
-    // Staff views keep the link's chat card in step with the document: its first
-    // pages, drawn from the hidden export copy (or the uploaded PDF's first page).
-    // The first render of each uploaded file only; zooming re-renders it at other sizes.
-    const [firstPageShot, setFirstPageShot] = useState(null);
-    const fileUrl = proposal?.fileUrl;
-    const keepFirstPage = (page) => setFirstPageShot(prev => (prev && prev.fileUrl === fileUrl ? prev : { fileUrl, page }));
-    const uploadedFirstPage = firstPageShot && firstPageShot.fileUrl === fileUrl ? firstPageShot.page : null;
+    // Staff views keep the link's chat card in step with the document: the top of
+    // its first page. With ?card=1 it reports back to the admin and logs no visit.
     const shareCardSig = proposal
         ? JSON.stringify({ ...proposal, previewImage: null, previewKey: null, accessLogs: null, lastOpened: null })
         : '';
     const shareCardRan = useRef('');
+    const isStaffViewer = canSaveShareCard(user);
     useEffect(() => {
-        if (!isAdmin || !proposal || !shareCardSig) return;
-        const uploaded = Boolean(proposal.isUploaded && proposal.fileUrl);
-        if (uploaded && !uploadedFirstPage) return;
+        if (!isStaffViewer || !proposal || !shareCardSig) return;
         if (shareCardRan.current === shareCardSig) return;
+        shareCardRan.current = shareCardSig;
 
-        // Once started it runs to the end; a newer snapshot only resets the wait.
-        const timer = setTimeout(async () => {
-            shareCardRan.current = shareCardSig;
-            try {
-                let pages;
-                if (uploaded) {
-                    pages = [uploadedFirstPage];
-                } else {
-                    await document.fonts?.ready;
-                    const nodes = Array.from(document.querySelectorAll('.pdf-export-only .proposal-page-render')).slice(0, 2);
-                    pages = [];
-                    for (const node of nodes) {
-                        pages.push(await html2canvas(node, { scale: 1, useCORS: true, backgroundColor: '#FFFFFF', logging: false }));
-                    }
-                }
-                await syncShareCard('proposals', id, proposal, pages);
-            } catch (err) {
-                console.warn('Could not update the share card:', err);
-            }
-        }, 2500);
-        return () => clearTimeout(timer);
-    }, [isAdmin, id, proposal, shareCardSig, uploadedFirstPage]);
+        const getPages = async () => {
+            if (proposal.isUploaded && proposal.fileUrl) return [await renderPdfFirstPage(proposal.fileUrl)];
+            // Give the page a moment to lay out and load its fonts.
+            await new Promise(resolve => setTimeout(resolve, 1200));
+            await document.fonts?.ready;
+            const first = document.querySelector('.pdf-export-only .proposal-page-render');
+            return first ? [await html2canvas(first, { scale: 1.5, useCORS: true, backgroundColor: '#FFFFFF', logging: false })] : [];
+        };
+        const report = (message) => {
+            if (cardOnly && window.parent !== window) window.parent.postMessage({ type: CARD_MESSAGE, id, ...message }, window.location.origin);
+        };
+        syncShareCard('proposals', id, proposal, getPages)
+            .then(result => report({ result }))
+            .catch(err => {
+                report({ error: err?.message || 'Could not make the preview.' });
+                if (!cardOnly) useStore.getState().addToast(err?.message || 'Please reload the page.', 'warning', { title: "Couldn't make the WhatsApp preview" });
+            });
+    }, [isStaffViewer, id, proposal, shareCardSig, cardOnly]);
 
     const proposalShareMeta = getDocumentShareMeta(displayProposal, 'proposal');
     useDynamicMeta({
@@ -1187,7 +1180,6 @@ const Proposal = () => {
                 actionPanel={actionPanel}
                 actionLabel="Review and accept"
                 onStageWidth={fitToStage}
-                onFirstPageRendered={keepFirstPage}
                 banner={proposalExpired && !isAdmin ? (
                     <div role="status" className="border-b border-amber-500/20 bg-amber-400/90 px-4 py-2.5 text-center text-[13px] font-semibold text-black">
                         This proposal expired on {expiryLabel}. Contact us for an updated one.

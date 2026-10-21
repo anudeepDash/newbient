@@ -1,20 +1,14 @@
 import React, { useCallback, useMemo } from 'react';
 import EmailComposer from './EmailComposer';
+import { proposalEmail, proposalValidUntil, proposalValue } from '../../lib/proposals';
 
 /** Email a proposal link. Each recipient gets their own tracked link. */
 const ProposalEmailModal = ({ isOpen, onClose, proposal, onSend }) => {
-    const title = proposal?.campaignName || proposal?.proposalTitle || 'Proposal';
-
     const initial = useMemo(() => proposal && ({
         to: proposal.clientEmail || '',
-        subject: `Proposal: ${title}`,
-        headerText: 'Your proposal is ready',
-        messageBody: `<p>Hi${proposal.clientName ? ` <strong>${proposal.clientName}</strong>` : ''},</p>
-<p>Here's our proposal for <strong>${title}</strong>.</p>
-<p>You can read it, and accept it online, using the button below.</p>
-<p>Best regards,<br/>Newbi Entertainment</p>`,
+        ...proposalEmail(proposal),
         theme: 'light',
-    }), [proposal, title]);
+    }), [proposal]);
 
     const buildData = useCallback(({ headerText, messageBody, recipient }) => {
         const query = new URLSearchParams({ via: 'email', email: recipient || '', name: proposal?.clientName || '' }).toString();
@@ -24,6 +18,8 @@ const ProposalEmailModal = ({ isOpen, onClose, proposal, onSend }) => {
             proposalNumber: proposal?.proposalNumber || '',
             clientName: proposal?.clientName || '',
             projectName: proposal?.campaignName || '',
+            validUntil: proposalValidUntil(proposal, 'short'),
+            amount: proposalValue(proposal) ? proposalValue(proposal).toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '',
             proposalUrl: `${window.location.origin}/proposal/${proposal?.id}?${query}`,
             company: proposal?.selectedLogo || 'entertainment',
         };

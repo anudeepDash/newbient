@@ -12,7 +12,8 @@ import { cn } from '../../lib/utils';
 import { getDocumentShareMeta, getPdfPreviewImageUrl } from '../../lib/documentPreviewUtils';
 import { docTheme } from './docviewer/DocKit';
 import { DEFAULT_IMAGE } from '../../app/seo';
-import { shareLinkWithCard } from '../../lib/docShareCard';
+import { shareLinkWithCard, whenShareCard } from '../../lib/docShareCard';
+import { proposalEmail, proposalEmailText, proposalWhatsAppText } from '../../lib/proposals';
 
 /*
  * Share a document link: copy, WhatsApp, email, the phone's own share sheet,
@@ -30,19 +31,39 @@ export default function DocumentShareModal({
     const [showQr, setShowQr] = useState(false);
     const [qr, setQr] = useState('');
     const [canNativeShare, setCanNativeShare] = useState(false);
+    // A card still being made for this document: hold the link until it's saved,
+    // or chats would cache the link without it.
+    const [fresh, setFresh] = useState(null);
+    const [preparing, setPreparing] = useState(false);
+    const docId = documentData?.id;
+    useEffect(() => {
+        if (!isOpen || !docId) return;
+        const pending = whenShareCard(`${type}s`, docId);
+        if (!pending) return;
+        let live = true;
+        setPreparing(true);
+        const giveUp = new Promise(resolve => setTimeout(resolve, 15000, null));
+        Promise.race([pending.catch(() => null), giveUp]).then(result => {
+            if (!live) return;
+            if (result) setFresh(result);
+            setPreparing(false);
+        });
+        return () => { live = false; };
+    }, [isOpen, docId, type]);
 
     const shareUrl = typeof window !== 'undefined'
-        ? shareLinkWithCard(window.location.href.split('#')[0], documentData?.previewKey)
+        ? shareLinkWithCard(window.location.href.split('#')[0], fresh?.key || documentData?.previewKey)
         : 'https://www.newbi.live/';
     const meta = getDocumentShareMeta(documentData, type);
     // The saved card (the document's first pages) is exactly what chats show.
-    const card = documentData?.previewImage || null;
+    const card = fresh?.url || documentData?.previewImage || null;
     const preview = pdfPagePreview || getPdfPreviewImageUrl(documentData?.fileUrl, { width: 800, height: 1100 }) || meta.previewImage;
     const hasRealPreview = preview && !preview.endsWith('/og-image.png') && !preview.endsWith(DEFAULT_IMAGE.path);
 
     useEffect(() => { setCanNativeShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function'); }, []);
     useEffect(() => { if (!isOpen) { setShowQr(false); setCopied(false); } }, [isOpen]);
 
+    useEffect(() => { setQr(''); }, [shareUrl]);
     useEffect(() => {
         if (!showQr || qr) return;
         QRCode.toDataURL(shareUrl, { width: 320, margin: 2, color: { dark: '#000000', light: '#FFFFFF' } })
@@ -69,10 +90,14 @@ export default function DocumentShareModal({
         setTimeout(() => setCopied(false), 2200);
     };
 
-    const whatsapp = () => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`${meta.shareMessage}\n${shareUrl}`)}`, '_blank', 'noopener,noreferrer');
+    // Proposals use the same wording as the admin's WhatsApp and email.
+    const isProposal = type === 'proposal';
+    const whatsappText = isProposal ? proposalWhatsAppText(documentData, shareUrl) : `${meta.shareMessage}\n${shareUrl}`;
+    const whatsapp = () => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappText)}`, '_blank', 'noopener,noreferrer');
     const email = () => {
-        const body = `${meta.emailBody}${shareUrl}\n\nBest regards,\nNewbi Entertainment & Marketing LLP`;
-        window.location.href = `mailto:?subject=${encodeURIComponent(meta.emailSubject)}&body=${encodeURIComponent(body)}`;
+        const subject = isProposal ? proposalEmail(documentData).subject : meta.emailSubject;
+        const body = isProposal ? proposalEmailText(documentData, shareUrl) : `${meta.emailBody}${shareUrl}\n\nBest regards,\nNewbi Entertainment & Marketing LLP`;
+        window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     };
     const nativeShare = async () => {
         try {
@@ -123,17 +148,20 @@ export default function DocumentShareModal({
                 <div className="flex items-center gap-2 rounded-2xl border border-black/10 bg-gray-50 p-1.5 pl-3.5 dark:border-white/10 dark:bg-white/[0.04]">
                     <input readOnly value={shareUrl} onFocus={(e) => e.target.select()} aria-label="Document link"
                         className="min-w-0 flex-1 bg-transparent text-[13px] text-gray-700 outline-none dark:text-zinc-300" />
-                    <button type="button" onClick={copy}
-                        className={cn('flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-semibold transition-colors',
+                    <button type="button" onClick={copy} disabled={preparing}
+                        className={cn('flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-semibold transition-colors disabled:opacity-40',
                             copied ? 'bg-emerald-500 text-white' : 'bg-gray-900 text-white dark:bg-white dark:text-black')}>
                         {copied ? <Check size={15} /> : <Copy size={15} />} {copied ? 'Copied' : 'Copy'}
                     </button>
                 </div>
+                {preparing && (
+                    <p role="status" className="-mt-2 text-center text-[12.5px] text-gray-500 dark:text-zinc-400">Preparing the WhatsApp preview…</p>
+                )}
 
                 <div className={cn('grid gap-2', actions.length === 4 ? 'grid-cols-4' : 'grid-cols-3')}>
                     {actions.map(a => (
-                        <button key={a.id} type="button" onClick={a.onClick}
-                            className={cn('flex flex-col items-center gap-1.5 rounded-2xl border px-1 py-3 text-[12px] font-semibold transition-colors',
+                        <button key={a.id} type="button" onClick={a.onClick} disabled={preparing}
+                            className={cn('flex flex-col items-center gap-1.5 rounded-2xl border px-1 py-3 text-[12px] font-semibold transition-colors disabled:opacity-40',
                                 a.active ? 'border-black/20 bg-black/[0.03] dark:border-white/25 dark:bg-white/[0.06]' : 'border-black/[0.07] hover:bg-black/[0.03] dark:border-white/[0.08] dark:hover:bg-white/[0.05]',
                                 'text-gray-700 dark:text-zinc-200')}>
                             <span className={cn('flex h-10 w-10 items-center justify-center rounded-full', a.cls)}><a.icon size={18} /></span>
