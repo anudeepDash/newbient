@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { readWaCard, renderWaCard } from './_lib/waCard.js';
 
 export default async function handler(req, res) {
     const allowedOrigins = ['https://www.newbi.live', 'https://newbi.live', 'https://app.newbi.live', 'https://newbi-ent.vercel.app', 'http://localhost:5173'];
@@ -15,6 +16,21 @@ export default async function handler(req, res) {
 
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    // WhatsApp template image headers (api/_lib/waCard.js), drawn per message from a signed URL.
+    if (req.query.wa) {
+        const card = readWaCard(req.query.wa, req.query.sig);
+        if (!card) return res.status(404).json({ error: 'Unknown card' });
+        try {
+            const png = await renderWaCard(card);
+            res.setHeader('Content-Type', 'image/png');
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+            return res.send(png);
+        } catch (error) {
+            console.error('[QR] WhatsApp card failed:', error.message);
+            return res.status(500).json({ error: 'Failed to draw the card' });
+        }
     }
 
     const { text, size = 300, margin = 2 } = req.query;
