@@ -16,6 +16,8 @@ import { useT } from '../../../i18n';
 import { useLocalizedCampaigns } from '../../../i18n/useHinglish';
 import PageHeader, { PageBody } from '../../pages/PageHeader';
 import { CardGrid, CardSkeleton, EmptyState, HeroPanel, SectionHeader } from '../../pages/parts';
+import BrandLayers, { BRAND_GLASS } from '../../../components/app/BrandLayers';
+import { cn } from '../../../lib/utils';
 import { compactCount, creatorPassId, creatorPhoto, handleOf } from '../format';
 import { Notice, StatusChip, SubTabs } from '../ui';
 import { useMyCampaigns, useReferrals } from '../useCreatorData';
@@ -42,39 +44,40 @@ import { useBadges } from '../badges/useBadges';
 const SECTIONS = ['', 'deliverables', 'referrals', 'badges', 'profile'];
 
 /*
- * The hero's numbers: equal tiles on a grid (two across on phones, four on
- * wider screens), so their edges line up and a lone tile never stretches
- * across the hero. Points get the coin and the green accent.
+ * The hero's numbers and the badge shelf: one row of same-height pills that
+ * wraps on phones. Points get the coin and the green accent.
  */
-const HeroStats = ({ stats }) => {
+const HeroStats = ({ stats, badges }) => {
     const t = useT();
     const shown = stats.filter(s => s.value !== null && s.value !== undefined && s.value !== '' && s.value !== 0);
-    if (!shown.length) return null;
+    const earned = badges.some(b => b.earned);
+    if (!shown.length && !earned) return null;
     return (
-        <div className="grid grid-cols-2 gap-2 pt-2 sm:grid-cols-4">
+        <div className="flex flex-wrap gap-2">
             {shown.map(s => {
                 const points = s.kind === 'points';
                 return (
                     <div
                         key={s.label}
                         className={points
-                            ? 'flex min-w-0 items-center gap-3 rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-white/90 to-emerald-50/80 py-2.5 pl-2.5 pr-4 shadow-[0_6px_20px_-12px_rgba(16,185,129,0.45)] dark:border-neon-green/15 dark:from-white/[0.06] dark:to-neon-green/[0.06]'
-                            : 'flex min-w-0 flex-col rounded-2xl border border-black/[0.05] bg-white/75 px-4 py-2.5 dark:border-white/[0.07] dark:bg-white/[0.04]'}
+                            ? 'flex h-12 items-center gap-2.5 rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-white/90 to-emerald-50/80 pl-1.5 pr-3.5 dark:border-neon-green/15 dark:from-white/[0.06] dark:to-neon-green/[0.06]'
+                            : 'flex h-12 flex-col justify-center rounded-2xl border border-black/[0.05] bg-white/75 px-3.5 dark:border-white/[0.07] dark:bg-white/[0.04]'}
                     >
                         {points && (
-                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neon-green text-black shadow-[0_0_14px_rgba(57,255,20,0.45)]" aria-hidden="true">
-                                <Coins size={17} strokeWidth={2.2} />
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neon-green text-black shadow-[0_0_12px_rgba(57,255,20,0.4)]" aria-hidden="true">
+                                <Coins size={16} strokeWidth={2.2} />
                             </span>
                         )}
-                        <div className="flex min-w-0 flex-col">
-                            <span className={'font-heading text-[22px] font-extrabold leading-none tracking-[-0.03em] tabular-nums ' + (s.tone === 'accent' ? 'text-emerald-600 dark:text-neon-green' : 'text-gray-900 dark:text-white')}>
+                        <div className="flex flex-col">
+                            <span className={'font-heading text-[17px] font-extrabold leading-none tracking-[-0.03em] tabular-nums ' + (s.tone === 'accent' ? 'text-emerald-600 dark:text-neon-green' : 'text-gray-900 dark:text-white')}>
                                 {s.value}
                             </span>
-                            <span className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-zinc-400">{t(s.label)}</span>
+                            <span className="mt-1 text-[9.5px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-zinc-400">{t(s.label)}</span>
                         </div>
                     </div>
                 );
             })}
+            <BadgeShelf badges={badges} />
         </div>
     );
 };
@@ -88,34 +91,49 @@ const CreatorHeader = ({ creator, profile, stats, badges }) => {
     const addToast = useLegacyStore(s => s.addToast);
     const t = useT();
     return (
-        <HeroPanel eyebrow={t('Creator')} title={name || t('Your creator profile')}>
-            <div className="flex flex-wrap items-center gap-2">
-                {photo && <img src={photo} alt="" referrerPolicy="no-referrer" className="h-9 w-9 rounded-full object-cover ring-2 ring-white/70 dark:ring-white/10" />}
-                <StatusChip status={creator.profileStatus} />
-                {handle && (
-                    <a
-                        href={`https://instagram.com/${handle}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex h-7 items-center gap-1.5 rounded-full bg-black/[0.04] px-3 text-[13px] font-semibold text-gray-700 dark:bg-white/[0.07] dark:text-zinc-300"
-                    >
-                        <Instagram size={13} /> @{handle}{followers ? ` · ${followers}` : ''}
-                    </a>
-                )}
-                {passId && (
-                    <button
-                        type="button"
-                        onClick={async () => { if (await copyToClipboard(passId)) addToast?.(t('Creator ID copied'), 'success'); }}
-                        className="flex h-7 items-center gap-1.5 rounded-full bg-black/[0.04] px-3 font-mono text-[12px] font-bold text-gray-600 dark:bg-white/[0.07] dark:text-zinc-400"
-                        aria-label={t('Copy creator ID {id}', { id: passId })}
-                    >
-                        #{passId} <Copy size={12} />
-                    </button>
-                )}
+        <section className={cn('rounded-[1.75rem] p-4 sm:p-5 lg:p-6', BRAND_GLASS)}>
+            <BrandLayers mark="small" />
+            <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex min-w-0 items-center gap-3.5 sm:gap-4">
+                    {photo ? (
+                        <img src={photo} alt="" referrerPolicy="no-referrer" className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-neon-green/60 ring-offset-2 ring-offset-white dark:ring-offset-black sm:h-16 sm:w-16" />
+                    ) : (
+                        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-neon-green font-heading text-[22px] font-extrabold text-black sm:h-16 sm:w-16" aria-hidden="true">
+                            {(name || '?').trim().charAt(0).toUpperCase()}
+                        </span>
+                    )}
+                    <div className="min-w-0 space-y-1.5">
+                        <div className="flex min-w-0 items-center gap-2">
+                            <h2 className="truncate font-heading text-[22px] font-extrabold leading-none tracking-[-0.035em] sm:text-[26px]">{name || t('Your creator profile')}</h2>
+                            <StatusChip status={creator.profileStatus} />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            {handle && (
+                                <a
+                                    href={`https://instagram.com/${handle}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex h-7 items-center gap-1.5 rounded-full bg-black/[0.04] px-2.5 text-[12.5px] font-semibold text-gray-700 dark:bg-white/[0.07] dark:text-zinc-300"
+                                >
+                                    <Instagram size={13} /> @{handle}{followers ? ` · ${followers}` : ''}
+                                </a>
+                            )}
+                            {passId && (
+                                <button
+                                    type="button"
+                                    onClick={async () => { if (await copyToClipboard(passId)) addToast?.(t('Creator ID copied'), 'success'); }}
+                                    className="flex h-7 items-center gap-1.5 rounded-full bg-black/[0.04] px-2.5 font-mono text-[11.5px] font-bold text-gray-600 dark:bg-white/[0.07] dark:text-zinc-400"
+                                    aria-label={t('Copy creator ID {id}', { id: passId })}
+                                >
+                                    #{passId} <Copy size={12} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                <HeroStats stats={stats} badges={badges} />
             </div>
-            <HeroStats stats={stats} />
-            <BadgeShelf badges={badges} className="!mt-2" />
-        </HeroPanel>
+        </section>
     );
 };
 
@@ -281,12 +299,13 @@ const CreatorHome = () => {
                 <>
                     <CreatorHeader creator={creator} profile={profile} stats={stats} badges={badges} />
                     <StatusNotice creator={creator} settings={settings} />
-                    <CityGroupBanner creator={creator} profile={profile} />
                     <div ref={tabsRef} className="scroll-mt-[calc(4.25rem+env(safe-area-inset-top))] lg:scroll-mt-[5.5rem]">
                         <SubTabs tabs={tabs} />
                     </div>
-                    {section === '' && <ReferBanner creator={creator} referrals={referrals} />}
+                    {/* Openings first; the community and referral prompts sit under them. */}
                     {section === '' && <OpeningsTab creator={creator} />}
+                    {section === '' && <CityGroupBanner creator={creator} profile={profile} />}
+                    {section === '' && <ReferBanner creator={creator} referrals={referrals} />}
                     {section === 'deliverables' && <DeliverablesTab mine={mine} />}
                     {section === 'referrals' && <ReferralsTab creator={creator} referrals={referrals} />}
                     {section === 'badges' && <BadgesTab badges={badges} />}
