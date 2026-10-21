@@ -63,21 +63,33 @@ const TRANSPARENT_1PX_GIF = Buffer.from(
     'base64'
 );
 
+/*
+ * The request body as raw bytes (Meta's webhook signature is computed over them).
+ * The stream is read before req.body is touched: Vercel parses req.body lazily on
+ * first access, and that parse consumes the stream, so reading req.body first
+ * would leave no bytes to check. Only when the stream is already gone (another
+ * runtime parsed it, or a test passes a plain object) does req.body stand in;
+ * a parsed object means the raw bytes are lost, so that returns null.
+ */
+const bodyOf = (req) => { try { return req.body; } catch { return undefined; } };
+
 const readRawBody = async (req) => {
-    let parsed;
-    try { parsed = req.body; } catch { parsed = undefined; }
+    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return Buffer.alloc(0);
+    if (typeof req[Symbol.asyncIterator] === 'function' && !req.readableEnded) {
+        const chunks = [];
+        let size = 0;
+        for await (const chunk of req) {
+            size += chunk.length;
+            if (size > 1024 * 1024) break; // nothing we accept is this big
+            chunks.push(chunk);
+        }
+        if (chunks.length) return Buffer.concat(chunks);
+    }
+    const parsed = bodyOf(req);
     if (Buffer.isBuffer(parsed)) return parsed;
     if (typeof parsed === 'string') return Buffer.from(parsed);
-    if (parsed && typeof parsed === 'object') return null; // already parsed by the runtime: raw bytes are gone
-    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return Buffer.alloc(0);
-    const chunks = [];
-    let size = 0;
-    for await (const chunk of req) {
-        size += chunk.length;
-        if (size > 1024 * 1024) break; // nothing we accept is this big
-        chunks.push(chunk);
-    }
-    return Buffer.concat(chunks);
+    if (parsed && typeof parsed === 'object') return null;
+    return Buffer.alloc(0);
 };
 
 const parseBody = (raw, contentType = '', fallback = {}) => {
@@ -164,10 +176,8 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    let parsedFallback;
-    try { parsedFallback = req.body; } catch { parsedFallback = undefined; }
     const rawBody = await readRawBody(req);
-    req.body = parseBody(rawBody, req.headers['content-type'] || '', parsedFallback);
+    req.body = parseBody(rawBody, req.headers['content-type'] || '', rawBody ? undefined : bodyOf(req));
 
     if (req.query?.type === 'whatsapp') {
         return handleWhatsAppWebhook(req, res, rawBody, req.body || {});
