@@ -33,6 +33,7 @@ import BadgesTab from '../badges/BadgesTab';
 import BadgeUnlock from '../badges/BadgeUnlock';
 import { BadgeShelf } from '../badges/BadgeParts';
 import { useBadges } from '../badges/useBadges';
+import { useConnectReady } from '../useInstagramConnect';
 
 /*
  * /creator: creator home. Openings, Deliverables, Referrals, Badges and
@@ -150,11 +151,12 @@ const CreatorHeader = ({ creator, profile, stats, badges }) => {
 
 const StatusNotice = ({ creator, settings }) => {
     const t = useT();
+    const canConnect = useConnectReady();
     const status = creator.profileStatus;
     if (status === 'pending_verification') {
         return <Notice tone="info" title={t('Checking your Instagram')}>{t('We’ll confirm your followers with Instagram shortly. You can browse campaigns meanwhile.')}</Notice>;
     }
-    if (status === 'pending' && settings?.metaVerification && creator.instagramVerifiedVia !== 'oauth') {
+    if (status === 'pending' && canConnect && creator.instagramVerifiedVia !== 'oauth') {
         return (
             <Notice
                 tone="info"
@@ -319,8 +321,8 @@ const CreatorHome = () => {
                     {section === '' && <ReferBanner creator={creator} referrals={referrals} />}
                     {section === 'deliverables' && <DeliverablesTab mine={mine} />}
                     {section === 'referrals' && <ReferralsTab creator={creator} referrals={referrals} />}
-                    {section === 'badges' && <BadgesTab badges={badges} creator={creator} settings={settings} />}
-                    {section === 'profile' && <ProfileTab creator={creator} profile={profile} settings={settings} />}
+                    {section === 'badges' && <BadgesTab badges={badges} creator={creator} />}
+                    {section === 'profile' && <ProfileTab creator={creator} profile={profile} />}
                     <BadgeUnlock uid={authUser?.uid || creator.uid} badges={badges} ready={Boolean(referrals)} />
                 </>
             )}

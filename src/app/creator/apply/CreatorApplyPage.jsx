@@ -25,13 +25,12 @@ import { useT } from '../../../i18n';
 /*
  * /creator/apply: one screen, about 30 seconds.
  *
- *   With Instagram Login switched on, it starts with "Connect with Instagram":
- *   sign in, Instagram login, back here with the account filled in and
- *   verified; the server approves on Apply (or right away, if the rest was
- *   already filled in). Otherwise:
- *   Instagram username → the live creator pass fills in from Instagram
+ *   Instagram, either way: "Connect with Instagram" (when this account can use
+ *   Instagram Login: sign in, Instagram login, back here with the account
+ *   filled in and verified, and applied right away if the rest was filled in),
+ *   or type the username → the live creator pass fills in from Instagram
  *   City (one tap) → Niches (up to 3) → College only for campus niches
- *   Sticky "Apply" (or "Connect Instagram & apply" when Meta can prove it)
+ *   Sticky "Apply"
  *
  * Opened from a card or button (link state { backgroundLocation }) it's a
  * sheet over the current page, with Apply in the sheet's footer; opened by
@@ -96,13 +95,53 @@ const ManualFollowers = ({ app }) => {
     );
 };
 
+/* Type the username: looked up while typing, and the creator pass fills in from it. */
+const HandleInput = ({ app, belowMin, oauthError }) => {
+    const t = useT();
+    const { lookup, found, check, handle } = app;
+    return (
+        <div className="space-y-3">
+            <label className={cn('relative flex h-16 items-center rounded-[1.25rem] pl-4 pr-3', GLASS, lookup.state === 'invalid' || lookup.state === 'not_found' ? 'ring-red-500/60 dark:ring-red-500/60' : 'focus-within:ring-2 focus-within:ring-neon-green/70')}>
+                <span className="sr-only">{t('Instagram username')}</span>
+                <Instagram size={20} className="mr-2 shrink-0 text-gray-500 dark:text-zinc-400" />
+                <span className="text-[18px] font-bold text-gray-400 dark:text-zinc-500">@</span>
+                <input
+                    value={handle}
+                    onChange={(e) => app.setHandle(e.target.value)}
+                    placeholder={t('yourhandle')}
+                    autoComplete="off"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    enterKeyHint="next"
+                    className="h-full min-w-0 flex-1 bg-transparent pl-0.5 text-[18px] font-bold text-gray-900 outline-none placeholder:font-medium placeholder:text-gray-400 dark:text-white dark:placeholder:text-zinc-600"
+                />
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center">
+                    {lookup.state === 'checking' ? <Loader2 size={18} className="animate-spin text-gray-400" />
+                        : found && !found.alreadyRegistered && !belowMin ? <span className="flex h-8 w-8 items-center justify-center rounded-full bg-neon-green text-black"><Check size={16} strokeWidth={3} /></span>
+                            : null}
+                </span>
+            </label>
+            {lookup.state === 'checking' && <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-400">{t('Reading your public profile. This can take up to a minute.')}</p>}
+            {lookup.state === 'invalid' && <p className="px-1 text-[13px] font-medium text-red-600 dark:text-red-400">{t('Use letters, numbers, dots and underscores. No links.')}</p>}
+            {lookup.state === 'not_found' && <p className="px-1 text-[13px] font-medium text-red-600 dark:text-red-400">{t('We couldn’t find @{handle} on Instagram. Check the spelling, or add your followers below.', { handle: lookup.handle })}</p>}
+            {app.manualAllowed && <ManualFollowers app={app} />}
+            {lookup.state === 'not_professional' && <SwitchGuide onRetry={() => check(handle)} checking={false} />}
+            {found?.alreadyRegistered && <Notice tone="error">{t('This Instagram account is already linked to another Newbi creator profile.')}</Notice>}
+            {belowMin && !found.alreadyRegistered && (
+                <Notice tone="warn" title={t('Newbi Creators starts at {count} followers', { count: (found.minFollowers || 0).toLocaleString('en-IN') })}>{t('Keep growing and apply again when you get there.')}</Notice>
+            )}
+            {oauthError && <Notice tone="error">{oauthError.text}</Notice>}
+        </div>
+    );
+};
+
 const INSTAGRAM_GRADIENT = 'bg-[linear-gradient(45deg,#f09433_0%,#e6683c_25%,#dc2743_50%,#cc2366_75%,#bc1888_100%)]';
 
-/* Instagram Login is on: connect the account (no typing), then it shows as verified. */
+/* Instagram Login: connect the account (no typing), then it shows as verified. */
 const ConnectInstagram = ({ app, belowMin, oauthError, onConnect }) => {
     const t = useT();
-    const { found, lookup } = app;
-    const checking = lookup.state === 'checking';
+    const { found } = app;
     const account = app.connected ? found.profile : null;
     return (
         <div className="space-y-3">
@@ -116,14 +155,6 @@ const ConnectInstagram = ({ app, belowMin, oauthError, onConnect }) => {
                         </p>
                     </div>
                     <button type="button" onClick={() => onConnect({ switchAccount: true })} disabled={app.connecting} className="min-h-[44px] shrink-0 px-2 text-[13px] font-bold text-gray-600 underline underline-offset-2 dark:text-zinc-400">{t('Switch')}</button>
-                </div>
-            ) : checking ? (
-                <div className={cn('flex min-h-16 items-center gap-3 rounded-[1.25rem] px-4 py-3 text-[15px] font-semibold text-gray-600 dark:text-zinc-400', GLASS)}>
-                    <Loader2 size={18} className="shrink-0 animate-spin" />
-                    <span>
-                        {t('Checking your Instagram…')}
-                        <span className="block text-[13px] font-normal text-gray-500 dark:text-zinc-500">{t('Reading your public profile. This can take up to a minute.')}</span>
-                    </span>
                 </div>
             ) : (
                 <div className="space-y-2">
@@ -139,8 +170,8 @@ const ConnectInstagram = ({ app, belowMin, oauthError, onConnect }) => {
                     <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-400">{t('For Creator or Business accounts. We read your followers from Instagram, so you’re verified straight away.')}</p>
                 </div>
             )}
-            {found?.alreadyRegistered && <Notice tone="error">{t('This Instagram account is already linked to another Newbi creator profile.')}</Notice>}
-            {belowMin && !found?.alreadyRegistered && (
+            {account && found.alreadyRegistered && <Notice tone="error">{t('This Instagram account is already linked to another Newbi creator profile.')}</Notice>}
+            {account && belowMin && !found.alreadyRegistered && (
                 <Notice tone="warn" title={t('Newbi Creators starts at {count} followers', { count: (found.minFollowers || 0).toLocaleString('en-IN') })}>{t('Keep growing and apply again when you get there.')}</Notice>
             )}
             {oauthError?.reason === 'personal' ? (
@@ -267,8 +298,8 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
         return () => clearTimeout(timer);
     }, [handle, check]);
 
-    const canApply = app.ready || (app.needsConnect && app.readyButInstagram);
-    const go = () => (app.needsConnect ? app.connect({ auto: app.readyButInstagram }) : app.submit());
+    const canApply = app.ready;
+    const go = () => app.submit();
     // One account sheet: sign in, then any missing name, email or verified phone, then send.
     const ACCOUNT_FIELDS = ['name', 'email', 'phoneVerified'];
     const apply = () => {
@@ -326,12 +357,11 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
             <Button
                 className="w-full"
                 size="lg"
-                icon={app.needsConnect && canApply ? Instagram : undefined}
-                disabled={!canApply || (!app.oauthReady && !isValidHandle(app.handle)) || belowMin || found?.alreadyRegistered}
+                disabled={!canApply || !isValidHandle(app.handle) || belowMin || found?.alreadyRegistered}
                 loading={app.submitting || app.connecting}
                 onClick={apply}
             >
-                {app.needsConnect && canApply ? (app.oauthReady ? t('Connect Instagram & apply') : t('Verify & apply')) : app.ready ? t('Apply') : t('Apply · {done} of 3', { done: doneCount })}
+                {app.ready ? t('Apply') : t('Apply · {done} of 3', { done: doneCount })}
             </Button>
         </div>
     );
@@ -346,53 +376,31 @@ const ApplyFlow = ({ Frame = PageFrame, onClose }) => {
                     </p>
                     <h1 className="font-heading text-[34px] font-extrabold leading-[1.02] tracking-[-0.035em] sm:text-[40px]">{t('Apply in')} <Sticker subtle>{t('30 seconds.')}</Sticker></h1>
                     <p className="mt-2 text-[15px] text-gray-600 dark:text-zinc-400">
-                        {app.oauthReady ? t('Connect your Instagram and you’re verified straight away.') : t('Type your Instagram. We fill in your profile from it.')}
+                        {app.oauthReady ? t('Connect your Instagram, or type your username. We fill in your profile from it.') : t('Type your Instagram. We fill in your profile from it.')}
                     </p>
                 </header>
 
                 {settings?.announcement && <Notice tone="info">{settings.announcement}</Notice>}
 
-                {/* Instagram: big, first, and it does the work */}
+                {/* Instagram: big, first, and it does the work. Connect it, or type the username. */}
                 {!app.igStatus.loaded ? (
                     <div className={cn('h-16 animate-pulse rounded-[1.25rem]', GLASS)} aria-hidden="true" />
                 ) : app.oauthReady ? (
-                    <ConnectInstagram app={app} belowMin={belowMin} oauthError={oauthError} onConnect={connectInstagram} />
+                    <div className="space-y-3">
+                        <ConnectInstagram app={app} belowMin={belowMin} oauthError={oauthError} onConnect={connectInstagram} />
+                        {!app.connected && (
+                            <>
+                                <p className="flex items-center gap-3 px-1 text-[12px] font-bold uppercase tracking-[0.16em] text-gray-500 dark:text-zinc-500">
+                                    <span className="h-px flex-1 bg-black/10 dark:bg-white/10" aria-hidden="true" />
+                                    {t('or type your username')}
+                                    <span className="h-px flex-1 bg-black/10 dark:bg-white/10" aria-hidden="true" />
+                                </p>
+                                <HandleInput app={app} belowMin={belowMin} />
+                            </>
+                        )}
+                    </div>
                 ) : (
-                <div className="space-y-3">
-                    <label className={cn('relative flex h-16 items-center rounded-[1.25rem] pl-4 pr-3', GLASS, lookup.state === 'invalid' || lookup.state === 'not_found' ? 'ring-red-500/60 dark:ring-red-500/60' : 'focus-within:ring-2 focus-within:ring-neon-green/70')}>
-                        <span className="sr-only">{t('Instagram username')}</span>
-                        <Instagram size={20} className="mr-2 shrink-0 text-gray-500 dark:text-zinc-400" />
-                        <span className="text-[18px] font-bold text-gray-400 dark:text-zinc-500">@</span>
-                        <input
-                            value={app.handle}
-                            onChange={(e) => app.setHandle(e.target.value)}
-                            placeholder={t('yourhandle')}
-                            autoComplete="off"
-                            autoCapitalize="none"
-                            autoCorrect="off"
-                            spellCheck={false}
-                            enterKeyHint="next"
-                            className="h-full min-w-0 flex-1 bg-transparent pl-0.5 text-[18px] font-bold text-gray-900 outline-none placeholder:font-medium placeholder:text-gray-400 dark:text-white dark:placeholder:text-zinc-600"
-                        />
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center">
-                            {lookup.state === 'checking' ? <Loader2 size={18} className="animate-spin text-gray-400" />
-                                : found && !found.alreadyRegistered && !belowMin ? <span className="flex h-8 w-8 items-center justify-center rounded-full bg-neon-green text-black"><Check size={16} strokeWidth={3} /></span>
-                                    : null}
-                        </span>
-                    </label>
-                    {lookup.state === 'invalid' && <p className="px-1 text-[13px] font-medium text-red-600 dark:text-red-400">{t('Use letters, numbers, dots and underscores. No links.')}</p>}
-                    {lookup.state === 'not_found' && <p className="px-1 text-[13px] font-medium text-red-600 dark:text-red-400">{t('We couldn’t find @{handle} on Instagram. Check the spelling, or add your followers below.', { handle: lookup.handle })}</p>}
-                    {app.manualAllowed && <ManualFollowers app={app} />}
-                    {lookup.state === 'not_professional' && <SwitchGuide onRetry={() => check(handle)} checking={false} />}
-                    {found?.alreadyRegistered && <Notice tone="error">{t('This Instagram account is already linked to another Newbi creator profile.')}</Notice>}
-                    {belowMin && !found.alreadyRegistered && (
-                        <Notice tone="warn" title={t('Newbi Creators starts at {count} followers', { count: (found.minFollowers || 0).toLocaleString('en-IN') })}>{t('Keep growing and apply again when you get there.')}</Notice>
-                    )}
-                    {app.needsConnect && !belowMin && !found.alreadyRegistered && (
-                        <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-400">{t('When you apply, you’ll confirm it’s yours on Instagram and come straight back.')}</p>
-                    )}
-                    {oauthError && <Notice tone="error">{oauthError.text}</Notice>}
-                </div>
+                    <HandleInput app={app} belowMin={belowMin} oauthError={oauthError} />
                 )}
 
                 {!twoColumns && pass}

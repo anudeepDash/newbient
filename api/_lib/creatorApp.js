@@ -16,11 +16,15 @@
  *   ?action=profile-phone    POST { phone }   saves the account's phone; verified only if it's the number on the sign-in account
  *   ?action=account-matches  POST { email? }  other accounts with your phone or email (api/_lib/accountMerge.js)
  *   ?action=account-merge    POST { proofToken, confirm? } merges one of them into this account
+ *   ?action=ig-connect-access POST { emails? } (staff) the accounts that can connect Instagram while the switch is off
  *
  * Instagram verification is behind site_settings/general.instagramMetaVerification.
- * On: Instagram Login (OAuth) proves the account. Off: followers are read from
- * the public profile. Either way a count read automatically is approved when
- * it's over the minimum; a count the creator typed in goes to admin review.
+ * Creators either connect Instagram (Instagram Login proves the account) or type
+ * their username (followers read with Business Discovery when the switch is on,
+ * else from the public profile). Connecting is offered to everyone when the
+ * switch is on, and before that only to the accounts in private/instagram_connect
+ * (App Review). Either way a count read automatically is approved when it's
+ * over the minimum; a count the creator typed in goes to admin review.
  */
 import { getDb, nowIso, FieldValue } from './db.js';
 import { hasAdminCredentials, auth as defaultAdminAuth, verifyIdTokenSafe } from './auth.js';
@@ -30,6 +34,7 @@ import { notify } from './notify.js';
 import {
     cleanHandle, readCreatorSettings, lookupInstagram, isOauthConfigured, oauthAuthorizeUrl, exchangeCode,
     fetchMe, refreshToken, tokenRef, ownerRef, otherOwnerOf, logIntegration, PROFESSIONAL_ACCOUNT_TYPES,
+    canConnectInstagram, connectAccessRef, readConnectAccess, cleanAccessEmails,
 } from './instagram.js';
 import { NICHE_IDS, COLLAB_IDS, BIO_MAX, isCollegeNiche } from '../../src/lib/creator/options.js';
 import { isCampaignCityMatch } from '../../src/lib/constants.js';
@@ -46,7 +51,7 @@ const APP_URL = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace
 export const CREATOR_APP_ACTIONS = new Set([
     'ig-lookup', 'ig-connect', 'ig-callback', 'instagram-cron', 'creator-apply', 'campaign-apply', 'campaign-submit',
     'creator-self-delete', 'creator-sync-profile', 'account-matches', 'account-merge', 'profile-phone',
-    'my-submission', 'submissions-list', 'submissions-review', 'submissions-delete',
+    'my-submission', 'submissions-list', 'submissions-review', 'submissions-delete', 'ig-connect-access',
 ]);
 /* Actions that don't take a Firebase ID token (they carry their own proof). */
 export const CREATOR_APP_PUBLIC = new Set(['ig-callback', 'instagram-cron']);
@@ -129,11 +134,11 @@ const connectedProfile = (t) => ({
  */
 export const handleLookup = async (req, res, { db, token }) => {
     const settings = await readCreatorSettings(db);
-    const oauthReady = settings.metaVerification && isOauthConfigured();
+    const oauthReady = await canConnectInstagram(settings, token, db);
     const base = { success: true, enabled: true, metaVerification: settings.metaVerification, oauthReady, minFollowers: settings.minFollowers };
     const meetsMinimum = (followers) => !settings.requireVerification || settings.minFollowers <= 0 || followers >= settings.minFollowers;
 
-    const tokenSnap = token && settings.metaVerification ? await tokenRef(token.uid, db).get().catch(() => null) : null;
+    const tokenSnap = token ? await tokenRef(token.uid, db).get().catch(() => null) : null;
     const t = tokenSnap?.exists ? tokenSnap.data() : null;
     const account = t?.igUserId && !t.expired ? connectedProfile(t) : null;
     const handle = cleanHandle(req.body?.handle || req.query?.handle);
@@ -174,9 +179,9 @@ const safeOrigin = (candidate) => {
 };
 const safeReturnPath = (p) => (typeof p === 'string' && p.startsWith('/') && !p.startsWith('//') && !p.includes('\\') ? p.slice(0, 300) : '/creator/apply');
 
-const handleConnect = async (req, res, { db, token }) => {
+export const handleConnect = async (req, res, { db, token }) => {
     const settings = await readCreatorSettings(db);
-    if (!settings.metaVerification || !isOauthConfigured()) {
+    if (!(await canConnectInstagram(settings, token, db))) {
         return send(res, 409, { success: false, error: 'Connecting Instagram is not switched on yet.' });
     }
     const handle = cleanHandle(req.body?.handle);
@@ -454,7 +459,7 @@ export const handleApply = async (req, res, { db, token }) => {
         ig = { ...ig, ownershipVerified: existing.instagramVerifiedVia === 'oauth', autoChecked: AUTO_SOURCES.has(existing.instagramVerifiedVia), via: existing.instagramVerifiedVia || null };
     } else {
         if (!handle) return send(res, 400, { success: false, field: 'handle', error: 'Add your Instagram username.' });
-        const tokenSnap = settings.metaVerification ? await tokenRef(uid, db).get().catch(() => null) : null;
+        const tokenSnap = await tokenRef(uid, db).get().catch(() => null);
         const t = tokenSnap?.exists ? tokenSnap.data() : null;
         if (t?.igUserId && handle === t.username) {
             let followers = Number(t.followers) || 0;
@@ -468,12 +473,10 @@ export const handleApply = async (req, res, { db, token }) => {
             }
             ig = { handle: t.username, igUserId: t.igUserId, followers, ownershipVerified: true, via: 'oauth', pending: false, profilePic: t.profilePic || '', name: t.name || '' };
         } else if (settings.metaVerification) {
+            // A typed username (connecting is optional): followers read with Business Discovery,
+            // so approved if over the minimum.
             const lookup = await lookupInstagram(handle, { db });
-            if (lookup.ok && isOauthConfigured()) {
-                return send(res, 409, { success: false, code: 'connect_required', error: 'Connect your Instagram account to finish.' });
-            }
             if (lookup.ok) {
-                // Instagram Login isn't set up, but the followers were read automatically: approved if over the minimum.
                 ig = fromLookup(lookup.profile);
             } else if (lookup.reason === 'not_professional' || lookup.reason === 'invalid') {
                 return send(res, 400, { success: false, code: lookup.reason, field: 'handle', error: lookup.message });
@@ -930,7 +933,7 @@ export const handleCron = async (req, res, { db }) => {
             report.pending.settled += 1;
             continue;
         }
-        const t = settings.metaVerification ? await tokenRef(uid, db).get().catch(() => null) : null;
+        const t = await tokenRef(uid, db).get().catch(() => null);
         if (t?.exists) {
             const fresh = await fetchMe(t.data().token);
             if (fresh.ok) {
@@ -960,7 +963,7 @@ export const handleCron = async (req, res, { db }) => {
         }
     }
 
-    if (!settings.metaVerification) return send(res, 200, { success: true, ...report, tokens: 'skipped: instagramMetaVerification is off' });
+    if (!isOauthConfigured()) return send(res, 200, { success: true, ...report, tokens: 'skipped: Instagram Login is not set up' });
 
     // 2. Stored tokens: refresh before the 60-day expiry, and refresh follower counts daily.
     const tokens = await db.collection('private').doc('instagram_tokens').collection('users')
@@ -1152,6 +1155,17 @@ export const handleSelfDelete = async (req, res, { db, token }) => {
     return send(res, 200, { success: true, deleted: docs.length });
 };
 
+/* Staff: read ({}) or replace ({ emails }) the accounts that can connect Instagram while the Meta switch is off. */
+export const handleConnectAccess = async (req, res, { db, token }) => {
+    if (!(await isStaffCaller(token, db))) return send(res, 403, { success: false, error: 'Only the Newbi team can do this.' });
+    if (has(req.body || {}, 'emails')) {
+        const emails = cleanAccessEmails(req.body.emails);
+        await connectAccessRef(db).set({ emails, updatedAt: nowIso(), updatedBy: token.email || token.uid }, { merge: true });
+        return send(res, 200, { success: true, emails });
+    }
+    return send(res, 200, { success: true, emails: await readConnectAccess(db) });
+};
+
 export const handleCreatorAppAction = async (action, req, res, { decodedToken }) => {
     const db = getDb();
     try {
@@ -1182,6 +1196,7 @@ export const handleCreatorAppAction = async (action, req, res, { decodedToken })
         if (action === 'submissions-list') return await handleSubmissionsList(req, res, ctx);
         if (action === 'submissions-review') return await handleSubmissionsReview(req, res, ctx);
         if (action === 'submissions-delete') return await handleSubmissionsDelete(req, res, ctx);
+        if (action === 'ig-connect-access') return await handleConnectAccess(req, res, ctx);
         return send(res, 400, { success: false, error: 'Unknown action.' });
     } catch (err) {
         console.error(`[creatorApp] ${action}:`, err);

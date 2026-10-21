@@ -145,10 +145,10 @@ const TrophyCase = ({ badges, onOpen, actionFor }) => {
     );
 };
 
-const BadgesTab = ({ badges, creator, settings }) => {
+const BadgesTab = ({ badges, creator }) => {
     const t = useT();
     const [open, setOpen] = useState(null);
-    const ig = useInstagramConnect({ creator, settings, returnPath: '/creator/badges' });
+    const ig = useInstagramConnect({ creator, returnPath: '/creator/badges' });
     const actionFor = useBadgeActions({ badges, ig, onGo: () => setOpen(null) });
     if (!badges.length) return null;
     return (
