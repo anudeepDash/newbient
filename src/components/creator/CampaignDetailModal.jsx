@@ -716,7 +716,7 @@ const CampaignDetailModal = ({
             {/* Ambient Color Glow Behind Modal (Dynamic ambient backlight sampled from campaign thumbnail) */}
             {campaign.thumbnail ? (
                 <div 
-                    className="hidden sm:block absolute w-[1000px] h-[700px] -top-20 left-1/2 -translate-x-1/2 bg-cover bg-center filter blur-[160px] opacity-30 dark:opacity-60 pointer-events-none rounded-full transform-gpu"
+                    className="hidden sm:block absolute w-[1000px] h-[700px] -top-20 left-1/2 -translate-x-1/2 bg-cover bg-center filter blur-[160px] opacity-20 dark:opacity-40 pointer-events-none rounded-full transform-gpu"
                     style={{ backgroundImage: `url(${campaign.thumbnail})` }}
                 />
             ) : (
@@ -775,7 +775,7 @@ const CampaignDetailModal = ({
                     {/* Ambient Image Color Spill into Modal Content (Image's authentic hues bleed down into the body) */}
                     {campaign.thumbnail && (
                         <div 
-                            className="hidden sm:block absolute top-0 inset-x-0 h-[650px] bg-cover bg-center filter blur-[70px] opacity-25 dark:opacity-55 pointer-events-none transform-gpu -z-0"
+                            className="hidden sm:block absolute top-0 inset-x-0 h-[650px] bg-cover bg-center filter blur-[70px] opacity-15 dark:opacity-35 pointer-events-none transform-gpu -z-0"
                             style={{ 
                                 backgroundImage: `url(${campaign.thumbnail})`,
                                 WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 35%, rgba(0,0,0,0.5) 75%, rgba(0,0,0,0) 100%)',
