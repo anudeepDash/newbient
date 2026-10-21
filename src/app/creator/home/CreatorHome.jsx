@@ -319,7 +319,7 @@ const CreatorHome = () => {
                     {section === '' && <ReferBanner creator={creator} referrals={referrals} />}
                     {section === 'deliverables' && <DeliverablesTab mine={mine} />}
                     {section === 'referrals' && <ReferralsTab creator={creator} referrals={referrals} />}
-                    {section === 'badges' && <BadgesTab badges={badges} />}
+                    {section === 'badges' && <BadgesTab badges={badges} creator={creator} settings={settings} />}
                     {section === 'profile' && <ProfileTab creator={creator} profile={profile} settings={settings} />}
                     <BadgeUnlock uid={authUser?.uid || creator.uid} badges={badges} ready={Boolean(referrals)} />
                 </>
