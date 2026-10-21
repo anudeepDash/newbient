@@ -5,9 +5,6 @@
         },
         "api/forms.js": {
             "includeFiles": "dist/**"
-        },
-        "api/qr.js": {
-            "includeFiles": "{src/assets/logo/newbi-logo.svg,node_modules/@fontsource/manrope/files/manrope-latin-800-normal.woff,node_modules/@fontsource/inter/files/inter-latin-500-normal.woff,node_modules/@fontsource/inter/files/inter-latin-700-normal.woff}"
         }
     },
     "crons": [

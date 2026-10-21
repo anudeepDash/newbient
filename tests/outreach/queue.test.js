@@ -84,16 +84,8 @@ describe('template variables', () => {
     });
 
     it('give each image template its own card, and none to text-only ones', () => {
-        const keys = ['LINK_SIGNING_SECRET', 'FIREBASE_PRIVATE_KEY'];
-        const kept = keys.map(k => process.env[k]);
-        keys.forEach(k => { delete process.env[k]; });
-        // Without a signing key: the fixed card per template.
         expect(imageHeaderFor('pass_confirmed')).toEqual({ type: 'image', link: 'https://app.newbi.live/og/wa-pass-v1.jpg' });
         expect(imageHeaderFor('creator_city_group').link).toBe('https://app.newbi.live/og/wa-city-v1.jpg');
-        // With one: a card drawn for the message.
-        process.env.LINK_SIGNING_SECRET = 'test-secret';
-        expect(imageHeaderFor('pass_confirmed', ['Riya', 'Sunburn', 'Sat, 14 Nov']).link).toMatch(/^https:\/\/app\.newbi\.live\/api\/qr\?wa=[\w-]+&sig=[\w-]+$/);
-        keys.forEach((k, i) => { if (kept[i] === undefined) delete process.env[k]; else process.env[k] = kept[i]; });
         const links = ['pass_confirmed', 'campaign_ticket_link', 'creator_approved', 'campaign_invite', 'campaign_shortlisted', 'campaign_shortlist',
             'campaign_join_reminder', 'campaign_deliverables', 'campaign_deliverable_changes', 'campaign_payout_sent', 'creator_city_group'].map(t => imageHeaderFor(t).link);
         expect(new Set(links).size).toBe(links.length);
@@ -150,8 +142,7 @@ describe('the worker', () => {
         expect(first.to).toBe('919876500001');
         expect(first.template.name).toBe('campaign_shortlist');
         const [header, body, button] = first.template.components;
-        // Its own card (signed /api/qr?wa= link), or the fixed shortlist card when links can't be signed.
-        expect(header.parameters[0].image.link).toMatch(/^https:\/\/app\.newbi\.live\/(api\/qr\?wa=|og\/wa-shortlist-v1\.jpg$)/);
+        expect(header).toEqual({ type: 'header', parameters: [{ type: 'image', image: { link: 'https://app.newbi.live/og/wa-shortlist-v1.jpg' } }] });
         expect(body.parameters.map(p => p.text)).toEqual(['Riya', 'Arijit Singh Live', 'https://chat.whatsapp.com/AbCdEf1234567', 'Please post by Monday, 2 November.']);
         expect(readJoinPayload(button.parameters[0].payload)).toEqual({ campaignId: 'c1', appId: 'a1' });
         expect(sent.find(s => s.to === '919876500003').template.components.find(c => c.type === 'body').parameters[0].text).toBe('there');

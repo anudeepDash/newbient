@@ -18,11 +18,8 @@
   "dependencies": {
     "@azure/msal-browser": "^5.2.0",
     "@azure/msal-react": "^5.0.4",
-    "@fontsource/inter": "^5.1.1",
-    "@fontsource/manrope": "^5.1.1",
     "@google/genai": "^1.50.1",
     "@vercel/analytics": "^1.6.1",
-    "@vercel/og": "^0.6.8",
     "autoprefixer": "^10.4.22",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
