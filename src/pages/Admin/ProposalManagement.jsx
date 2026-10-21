@@ -27,6 +27,8 @@ import { AnimatePresence } from 'framer-motion';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { copyToClipboard } from '../../lib/clipboard';
+import { proposalShareLink } from '../../lib/docShareCard';
+import { proposalWhatsAppText } from '../../lib/proposals';
 import { cn } from '../../lib/utils';
 import { exportSubtitle, fileDate } from '../../lib/xlsx';
 import ExportMenu from '../../components/admin/ExportMenu';
@@ -171,11 +173,19 @@ const ProposalManagement = () => {
     }, [enriched, filter, search, sort]);
 
     // ── actions ──
-    const urlFor = (p, via) => `${window.location.origin}/proposal/${p.id}?via=${via}`;
     const markShared = (p, via) => useStore.getState().markProposalShared(p.id, via).catch(err => console.warn('Share status not saved', err));
+    // Links carry the proposal's chat preview; making a missing one takes a few seconds.
+    const linkFor = async (p, via) => {
+        const waiting = p.previewKey ? null : addToast('Getting the WhatsApp preview ready…', 'info', { duration: 30000 });
+        try {
+            return await proposalShareLink(p, via);
+        } finally {
+            if (waiting) useStore.getState().removeToast(waiting);
+        }
+    };
 
     const copyLink = async (p) => {
-        const ok = await copyToClipboard(urlFor(p, 'link'));
+        const ok = await copyToClipboard(await linkFor(p, 'link'));
         if (ok) addToast('Proposal link copied.', 'success');
         else addToast('Your browser blocked it. Try again.', 'error', { title: "Couldn't copy the link", action: { label: 'Try again', onClick: () => copyLink(p) } });
         if (ok) markShared(p, 'link');
@@ -183,7 +193,7 @@ const ProposalManagement = () => {
     const share = async (p) => {
         if (navigator.share) {
             try {
-                await navigator.share({ title: `Proposal for ${p.clientName || 'you'}`, text: 'Your proposal from Newbi Entertainment.', url: urlFor(p, 'share') });
+                await navigator.share({ title: `Proposal for ${p.clientName || 'you'}`, text: 'Your proposal from Newbi Entertainment.', url: await linkFor(p, 'share') });
                 markShared(p, 'share');
                 return;
             } catch (err) {
@@ -192,9 +202,14 @@ const ProposalManagement = () => {
         }
         copyLink(p);
     };
-    const whatsapp = (p) => {
-        const text = `Hi${p.clientName ? ` ${p.clientName}` : ''}, here is your proposal from Newbi Entertainment: ${urlFor(p, 'whatsapp')}`;
-        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+    const whatsapp = async (p) => {
+        // Opened now, while the tap still counts, then pointed at WhatsApp once the link is ready.
+        const tab = window.open('', '_blank');
+        if (tab) tab.document.title = 'Opening WhatsApp…';
+        const text = proposalWhatsAppText(p, await linkFor(p, 'whatsapp'));
+        const target = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        if (tab && !tab.closed) { tab.opener = null; tab.location.href = target; }
+        else window.open(target, '_blank', 'noopener');
         markShared(p, 'whatsapp');
     };
     const edit = (p) => {

@@ -15,6 +15,8 @@ import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import { cn } from '../../../../lib/utils';
 import { useStore } from '../../../../lib/store';
 import { copyToClipboard } from '../../../../lib/clipboard';
+import { proposalShareLink } from '../../../../lib/docShareCard';
+import { proposalWhatsAppText } from '../../../../lib/proposals';
 import { proposalState, PROPOSAL_STATE_LABEL, proposalViews, lastViewedAt } from '../../../../lib/proposals';
 import { accent } from '../../theme';
 import { Badge, Button } from '../../ui';
@@ -51,7 +53,8 @@ const ReviewSection = ({ id, formData, live, totals, checks, onGoto, ensureSaved
     // A closed proposal can still be shared again (it just can't change).
     const blocked = !locked && checks.blockers.length > 0;
 
-    const urlFor = (pid, via) => `${window.location.origin}/proposal/${pid}?via=${via}`;
+    // Just saved, so the chat preview is made again before the link goes out.
+    const urlFor = (pid, via) => proposalShareLink({ ...formData, id: pid, isUploaded: false }, via, { fresh: true });
     const markShared = (pid, via) => useStore.getState().markProposalShared(pid, via).catch(err => console.warn('Share status not saved', err));
 
     // Save first, then hand over the saved proposal's id.
@@ -67,23 +70,30 @@ const ReviewSection = ({ id, formData, live, totals, checks, onGoto, ensureSaved
     };
 
     const copyLink = () => withSaved('copy', async (pid) => {
-        const ok = await copyToClipboard(urlFor(pid, 'link'));
+        const ok = await copyToClipboard(await urlFor(pid, 'link'));
         if (ok) addToast('Paste it anywhere to share.', 'success', { title: 'Link copied' });
         else addToast('Your browser blocked it. Try again.', 'error', { title: "Couldn't copy the link", action: { label: 'Try again', onClick: () => copyLink() } });
         if (ok) markShared(pid, 'link');
     });
-    const whatsapp = () => withSaved('wa', async (pid) => {
-        const who = formData.clientContactName || formData.clientName;
-        const text = `Hi${who ? ` ${who}` : ''}, here is our proposal${formData.campaignName ? ` for ${formData.campaignName}` : ''}: ${urlFor(pid, 'whatsapp')}`;
-        const digits = String(formData.clientPhone || '').replace(/\D/g, '');
-        const phone = digits.length === 10 ? `91${digits}` : digits;
-        window.open(`https://wa.me/${phone.length >= 11 ? phone : ''}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
-        markShared(pid, 'whatsapp');
-    });
+    const whatsapp = () => {
+        // Opened now, while the tap still counts, then pointed at WhatsApp once the link is ready.
+        const tab = blocked ? null : window.open('', '_blank');
+        if (tab) tab.document.title = 'Opening WhatsApp…';
+        let sent = false;
+        return withSaved('wa', async (pid) => {
+            const text = proposalWhatsAppText(formData, await urlFor(pid, 'whatsapp'));
+            const digits = String(formData.clientPhone || '').replace(/\D/g, '');
+            const phone = digits.length === 10 ? `91${digits}` : digits;
+            const target = `https://wa.me/${phone.length >= 11 ? phone : ''}?text=${encodeURIComponent(text)}`;
+            if (tab && !tab.closed) { tab.opener = null; tab.location.href = target; } else window.open(target, '_blank', 'noopener');
+            sent = true;
+            markShared(pid, 'whatsapp');
+        }).finally(() => { if (tab && !sent && !tab.closed) tab.close(); });
+    };
     const nativeShare = () => withSaved('share', async (pid) => {
-        if (!navigator.share) { await copyToClipboard(urlFor(pid, 'link')); addToast('Link copied.', 'success'); markShared(pid, 'link'); return; }
+        if (!navigator.share) { await copyToClipboard(await urlFor(pid, 'link')); addToast('Link copied.', 'success'); markShared(pid, 'link'); return; }
         try {
-            await navigator.share({ title: `Proposal for ${formData.clientName || 'you'}`, text: 'Your proposal from Newbi Entertainment.', url: urlFor(pid, 'share') });
+            await navigator.share({ title: `Proposal for ${formData.clientName || 'you'}`, text: 'Your proposal from Newbi Entertainment.', url: await urlFor(pid, 'share') });
             markShared(pid, 'share');
         } catch (err) {
             if (err?.name !== 'AbortError') addToast('Use Copy link instead.', 'error', { title: "Couldn't open sharing" });
