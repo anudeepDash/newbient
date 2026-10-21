@@ -12,7 +12,7 @@ import { useAppStore } from '../../lib/store/appStore';
 import { guestlistPasses } from '../../lib/store/passes';
 import { communityPost } from '../../lib/passesApi';
 import { isPresent } from '../../lib/present';
-import { Card, Button, Field, Sheet, WhatsAppLogo, WhatsAppBadge } from '../../components/app';
+import { Card, Button, Field, Sheet, WhatsAppLogo } from '../../components/app';
 import { useAuthGate, useResumeIntent, INTENTS } from '../auth/AuthGate';
 import { useAppContent } from '../useAppContent';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
@@ -23,11 +23,8 @@ import { isUpcomingPass, passCard } from '../passes/passCards';
 import PageHeader, { PageBody } from './PageHeader';
 import { requirementsFor } from '../profile/requirements';
 import JoinCommunitySheet from '../community/JoinCommunitySheet';
-import { usePublicContact, usePublicFeed } from '../usePublicFeed';
+import { usePublicFeed } from '../usePublicFeed';
 import WhatsAppGroupCard, { useJoinedGroups } from '../community/WhatsAppGroupCard';
-import { cityGroupFor, allCityGroups } from '../../lib/outreach/cityGroups';
-import { normalizeCity } from '../../lib/constants';
-import { creatorCity } from '../creator/useCreatorData';
 import { CardGrid, CardSkeleton, EmptyState, SectionHeader, Rail, GLASS } from './parts';
 import { useT } from '../../i18n';
 import { useLocalizedFeed } from '../../i18n/useHinglish';
@@ -103,7 +100,6 @@ const JoinPanel = () => {
     const t = useT();
     const authUser = useAppStore(s => s.authUser);
     const profile = useAppStore(s => s.profile);
-    const whatsappCommunity = usePublicContact().whatsappCommunity;
     const gate = useAuthGate();
     const [joinOpen, setJoinOpen] = useState(false);
     const member = Boolean(profile?.capabilities?.member);
@@ -112,17 +108,8 @@ const JoinPanel = () => {
     const join = () => setJoinOpen(true);
     useResumeIntent(INTENTS.joinCommunity, join);
 
-    if (authUser && !profile) return null;
-    if (member) {
-        if (!isPresent(whatsappCommunity)) return null;
-        return (
-            <div className={`flex flex-wrap items-center gap-3 rounded-3xl px-5 py-4 ${GLASS}`}>
-                <CircleCheck size={20} className="shrink-0 text-emerald-700 dark:text-neon-green" />
-                <p className="min-w-0 flex-1 text-[15px] font-semibold">{t('You’re in the Newbi community.')}</p>
-                <Button size="sm" variant="secondary" icon={WhatsAppLogo} href={whatsappCommunity} target="_blank" rel="noopener noreferrer">{t('WhatsApp group')}</Button>
-            </div>
-        );
-    }
+    // Members get nothing here: the WhatsApp section below already links the group.
+    if ((authUser && !profile) || member) return null;
     return (
         <div className={`flex flex-col gap-3 rounded-3xl px-5 py-5 sm:flex-row sm:items-center ${GLASS}`}>
             <div className="min-w-0 flex-1">
@@ -135,86 +122,24 @@ const JoinPanel = () => {
     );
 };
 
-/* One city's creator group in the "Every city" grid. */
-const CityGroupTile = ({ group, joined }) => {
-    const t = useT();
-    return (
-        <a
-            href={group.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn('group flex items-center gap-3.5 rounded-[1.5rem] p-4 transition-colors', GLASS, 'hover:ring-[#25D366]/40 dark:hover:ring-[#25D366]/40')}
-        >
-            <WhatsAppBadge size={48} />
-            <span className="min-w-0 flex-1">
-                <span className="block truncate font-heading text-[17px] font-extrabold tracking-[-0.02em]">{group.city}</span>
-                <span className="block truncate text-[13px] text-gray-600 dark:text-zinc-400">{t('Creators community')}</span>
-            </span>
-            {joined ? (
-                <span className="flex h-9 shrink-0 items-center gap-1 rounded-full bg-[#25D366]/15 px-3 text-[13px] font-bold text-[#128C7E] dark:text-[#25D366]"><CircleCheck size={14} /> {t('Joined')}</span>
-            ) : (
-                <span className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#25D366] px-3.5 text-[13px] font-bold text-black"><WhatsAppLogo size={14} /> {t('Join')}</span>
-            )}
-        </a>
-    );
-};
-
-const CITY_PREVIEW = 6;
-
-/* The WhatsApp groups: the Newbi community, a creator's own city group, then every city's group. */
+/* The Newbi WhatsApp community. City creator groups live on the creator dashboard, not here. */
 const WhatsAppSection = () => {
     const t = useT();
     const feed = usePublicFeed();
-    const profile = useAppStore(s => s.profile);
-    const creator = useAppStore(s => s.creatorProfile);
     const { isJoined, markJoined } = useJoinedGroups();
-    const [showAll, setShowAll] = useState(false);
     if (!feed) return null;
     const community = feed.contact?.whatsappCommunity;
-    const active = creator && creator.profileStatus !== 'rejected' && creator.profileStatus !== 'suspended';
-    const cityGroup = active ? cityGroupFor(feed.creatorGroups, creatorCity(creator, profile), { withDefaults: true }) : null;
-    const cards = [
-        isPresent(community) && {
-            url: community,
-            eyebrow: t('Newbi on WhatsApp'),
-            title: t('Join the Newbi WhatsApp community'),
-            body: t('First word on guestlists, gigs, giveaways and drops near you. Free to join.'),
-        },
-        cityGroup && {
-            url: cityGroup.url,
-            eyebrow: t('Your city group'),
-            title: t('Join the {city} creators community', { city: cityGroup.city }),
-            body: t('Paid gigs, guestlist passes and meetups in {city} drop there first.', { city: cityGroup.city }),
-        },
-    ].filter(c => c && !isJoined(c.url));
-    const ownKey = cityGroup && normalizeCity(cityGroup.city);
-    const cities = allCityGroups(feed.creatorGroups).filter(g => !(ownKey && normalizeCity(g.city) === ownKey && !isJoined(g.url)));
-    const shownCities = showAll ? cities : cities.slice(0, CITY_PREVIEW);
-    if (!cards.length && !cities.length) return null;
+    if (!isPresent(community) || isJoined(community)) return null;
     return (
         <section className="space-y-4">
             <SectionHeader title={t('WhatsApp community')} />
-            {cards.length > 0 && (
-                <div className={cn('grid gap-4', cards.length > 1 && 'lg:grid-cols-2')}>
-                    {cards.map(c => <WhatsAppGroupCard key={c.url} {...c} onJoined={markJoined} />)}
-                </div>
-            )}
-            {cities.length > 0 && (
-                <div className="space-y-3">
-                    <div>
-                        <h3 className="font-heading text-[18px] font-extrabold tracking-[-0.02em]">{t('City creator groups')}</h3>
-                        <p className="text-[14px] text-gray-600 dark:text-zinc-400">{t('Join the group for your city: brand campaigns, guestlists and meetups near you.')}</p>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {shownCities.map(g => <CityGroupTile key={g.url} group={g} joined={isJoined(g.url)} />)}
-                    </div>
-                    {cities.length > CITY_PREVIEW && (
-                        <Button variant="secondary" onClick={() => setShowAll(v => !v)} className="w-full sm:w-auto">
-                            {showAll ? t('Show fewer cities') : t('Show all {n} cities', { n: cities.length })}
-                        </Button>
-                    )}
-                </div>
-            )}
+            <WhatsAppGroupCard
+                url={community}
+                eyebrow={t('Newbi on WhatsApp')}
+                title={t('Join the Newbi WhatsApp community')}
+                body={t('First word on guestlists, gigs, giveaways and drops near you. Free to join.')}
+                onJoined={markJoined}
+            />
         </section>
     );
 };
