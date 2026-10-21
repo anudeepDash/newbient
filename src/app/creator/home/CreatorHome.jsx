@@ -15,6 +15,7 @@ import { campaignCard } from '../../cards';
 import { useT } from '../../../i18n';
 import { useLocalizedCampaigns } from '../../../i18n/useHinglish';
 import PageHeader, { PageBody } from '../../pages/PageHeader';
+import { greetingFor } from '../../pages/greeting';
 import { CardGrid, CardSkeleton, EmptyState, HeroPanel, SectionHeader } from '../../pages/parts';
 import BrandLayers, { BRAND_GLASS } from '../../../components/app/BrandLayers';
 import { cn } from '../../../lib/utils';
@@ -90,24 +91,34 @@ const CreatorHeader = ({ creator, profile, stats, badges }) => {
     const passId = creatorPassId(creator);
     const addToast = useLegacyStore(s => s.addToast);
     const t = useT();
+    // Home's time-of-day hello, with a line about their own work instead of the shows.
+    const { hello } = greetingFor({ signedIn: true });
+    const firstName = (name || '').trim().split(/\s+/)[0];
+    const todo = stats.find(s => s.label === 'To do')?.value || 0;
+    const line = todo === 1
+        ? t('1 task waiting on you. Let’s get it done.')
+        : todo > 1
+            ? t('{n} tasks waiting on you. Let’s get them done.', { n: todo })
+            : t('Fresh openings below. Pick one and start posting.');
     return (
         <section className={cn('rounded-[1.75rem] p-4 sm:p-5 lg:p-6', BRAND_GLASS)}>
             <BrandLayers mark="small" />
             <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex min-w-0 items-center gap-3.5 sm:gap-4">
+                <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4">
                     {photo ? (
-                        <img src={photo} alt="" referrerPolicy="no-referrer" className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-neon-green/60 ring-offset-2 ring-offset-white dark:ring-offset-black sm:h-16 sm:w-16" />
+                        <img src={photo} alt="" referrerPolicy="no-referrer" className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-neon-green/60 ring-offset-2 ring-offset-white dark:ring-offset-black sm:h-16 sm:w-16" />
                     ) : (
-                        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-neon-green font-heading text-[22px] font-extrabold text-black sm:h-16 sm:w-16" aria-hidden="true">
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-neon-green font-heading text-[20px] font-extrabold text-black sm:h-16 sm:w-16 sm:text-[22px]" aria-hidden="true">
                             {(name || '?').trim().charAt(0).toUpperCase()}
                         </span>
                     )}
                     <div className="min-w-0 space-y-1.5">
-                        <div className="flex min-w-0 items-center gap-2">
-                            <h2 className="truncate font-heading text-[22px] font-extrabold leading-none tracking-[-0.035em] sm:text-[26px]">{name || t('Your creator profile')}</h2>
+                        <h2 className="font-heading text-[21px] font-extrabold leading-tight tracking-[-0.035em] sm:text-[26px]">
+                            {hello}{firstName ? `, ${firstName}` : ''}<span className="text-emerald-600 dark:text-neon-green">.</span>
+                        </h2>
+                        <p className="text-[13.5px] leading-snug text-gray-600 dark:text-zinc-400">{line}</p>
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                             <StatusChip status={creator.profileStatus} />
-                        </div>
-                        <div className="flex flex-wrap items-center gap-1.5">
                             {handle && (
                                 <a
                                     href={`https://instagram.com/${handle}`}
