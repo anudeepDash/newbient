@@ -1,4 +1,4 @@
-import { DEFAULT_IMAGE, LANDING_ORIGIN } from '../app/seo';
+import { OG_IMAGES, LANDING_ORIGIN } from '../app/seo';
 
 /**
  * Utilities for extracting document preview images, Cloudinary PDF thumbnail rendering,
@@ -53,7 +53,7 @@ export const getDocumentShareMeta = (rawDocument, type = 'proposal') => {
     const formattedAmount = rawAmount ? `₹${Number(rawAmount).toLocaleString('en-IN')}` : null;
     const fileUrl = documentData.fileUrl || documentData.pdfUrl;
 
-    const previewImage = documentData.previewImage || getPdfPreviewImageUrl(fileUrl) || documentData.thumbnail || documentData.coverImage || `${LANDING_ORIGIN}${DEFAULT_IMAGE.path}`;
+    const previewImage = documentData.previewImage || getPdfPreviewImageUrl(fileUrl) || documentData.thumbnail || documentData.coverImage || `${LANDING_ORIGIN}${OG_IMAGES.docs.path}`;
 
     if (type === 'invoice') {
         const title = `Tax Invoice ${docNumber} · ${clientName}`;

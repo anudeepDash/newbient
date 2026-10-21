@@ -6,13 +6,15 @@ import {
     brandOf,
     defaultOgImage,
     formatTitle,
+    isShareCard,
+    ogImageOf,
     originFor,
     pageUrl,
     toDescription,
     toOgImage,
 } from '../app/seo';
 
-// Callers used to pass these files as their fallback; they're now one default image.
+// Callers used to pass these files as their fallback; the page's own card replaces them.
 const LEGACY_DEFAULT_IMAGE = /\/(og-image|og-brand)\.(png|jpe?g)(\?.*)?$/i;
 
 const setTag = (attr, key, content) => {
@@ -96,8 +98,8 @@ const restoreMeta = ({ title, canonical, tags }) => {
 /**
  * Sets the page's title, description and share tags while the page is mounted.
  * `page` is a key of PAGES in src/app/seo.js; title/description/url fall back to
- * that entry, and the entry's brand (Newbi or Concert Zone) picks the site name,
- * title suffix and default image. Server-side previews come from api/og.js,
+ * that entry, the entry's brand (Newbi or Concert Zone) picks the site name and
+ * title suffix, and its section's card is the image when the page has none. Server-side previews come from api/og.js,
  * which uses the same table. On unmount the previous tags come back, so closing
  * a sheet gives the page underneath its title again.
  */
@@ -110,8 +112,9 @@ const useDynamicMeta = ({ page, title, description, image, imageAlt, url, type, 
         const pageDesc = toDescription(description) || entry?.description || DEFAULT_DESCRIPTION;
         // Pages with an id in their path (/c/:id…) use the address they're on.
         const pageLink = url || (entry && !entry.path.includes(':') ? pageUrl(page, {}, host) : window.location.href);
-        const fallbackImage = defaultOgImage(originFor('landing', host), brand.image);
-        const resolved = (!LEGACY_DEFAULT_IMAGE.test(image || '') && toOgImage(image, window.location.origin)) || fallbackImage;
+        const fallbackImage = defaultOgImage(originFor('landing', host), ogImageOf(page));
+        const ownImage = image && !LEGACY_DEFAULT_IMAGE.test(image) && !isShareCard(image) ? image : '';
+        const resolved = toOgImage(ownImage, window.location.origin) || fallbackImage;
 
         const previous = snapshotMeta();
         applyMeta({

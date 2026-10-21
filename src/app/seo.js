@@ -13,15 +13,32 @@ export const TWITTER_SITE = '@newbi_live';
 export const DEFAULT_TITLE = 'newbi.live — We build the nights you remember';
 export const DEFAULT_DESCRIPTION = 'Concerts, college fests, brand activations and creator campaigns across India, planned, produced and run end to end by the Newbi crew.';
 
-// public/og-default.jpg: the default share image for every Newbi page (1200×630
-// JPEG, the newbi.live logo on #0B0B0B; source src/assets/logo/newbi-logo-2000w.png).
-export const DEFAULT_IMAGE = {
-    path: '/og-default.jpg',
+// Share cards (1200×630 JPEG) in public/og/, one per part of the site, drawn in
+// scripts/og/cards.html and rendered by scripts/og/render.mjs. Chats cache a
+// preview by its image URL, so after changing a card bump OG_CARD_VERSION and
+// render again: the new files get new names.
+export const OG_CARD_VERSION = 1;
+const ogCard = (name, alt) => ({
+    path: `/og/${name}-v${OG_CARD_VERSION}.jpg`,
     width: 1200,
     height: 630,
     type: 'image/jpeg',
-    alt: 'newbi.live',
+    alt,
+});
+
+export const OG_IMAGES = {
+    home: ogCard('home', 'newbi.live: we make young India show up'),
+    creator: ogCard('creator', 'Newbi Creators: create with brands, get into the shows'),
+    invite: ogCard('invite', "You're invited to Newbi Creators"),
+    community: ogCard('community', 'Newbi Community: get on the list'),
+    app: ogCard('app', 'newbi.app: every show, one app'),
+    campus: ogCard('campus', 'Newbi Campus: bring the show to your campus'),
+    contact: ogCard('contact', "Let's make some noise with Newbi"),
+    docs: ogCard('docs', 'Newbi Entertainment & Marketing'),
 };
+
+// The share image for any Newbi page that has no card of its own.
+export const DEFAULT_IMAGE = OG_IMAGES.home;
 
 // Concert Zone is a separate brand: its pages keep their own name and share image.
 export const CONCERTZONE_IMAGE = {
@@ -46,6 +63,9 @@ export const brandOf = (pageKey) => {
     const page = PAGES[pageKey];
     return BRANDS[page?.brand] || (page?.site === 'app' ? BRANDS.app : BRANDS.newbi);
 };
+
+/** A page's share card when it has no image of its own: its section's card, else its brand's. */
+export const ogImageOf = (pageKey) => OG_IMAGES[PAGES[pageKey]?.image] || brandOf(pageKey).image;
 
 const PRODUCTION_HOSTS = {
     'newbi.live': 'landing',
@@ -95,8 +115,8 @@ export const appUrl = (path, currentOrigin) => {
 /**
  * Every page that gets its own title and description. `site` says which host a
  * page lives on (it decides the canonical URL); `:id` in `path` is filled in by
- * pageUrl(). Dynamic pages (campaign, guestlist…) use their entry as the fallback
- * when the record can't be loaded.
+ * pageUrl(). `image` names its share card in OG_IMAGES. Dynamic pages (campaign,
+ * guestlist…) use their entry as the fallback when the record can't be loaded.
  */
 export const PAGES = {
     // newbi.live (landing)
@@ -106,7 +126,7 @@ export const PAGES = {
         description: DEFAULT_DESCRIPTION,
     },
     creator: {
-        site: 'landing', path: '/creator',
+        site: 'landing', path: '/creator', image: 'creator',
         title: 'Creators — Brand deals, backstage access',
         description: 'Get matched to paid brand campaigns in your city and niche, plus access to the shows we run. Free to join, no agency cut.',
     },
@@ -126,7 +146,7 @@ export const PAGES = {
         description: 'Read this article on Concert Zone.',
     },
     contact: {
-        site: 'landing', path: '/contact',
+        site: 'landing', path: '/contact', image: 'contact',
         title: "Let's make some noise",
         description: 'Planning a college activation, a live show or a creator campaign? Tell us about it. We reply within a working day.',
     },
@@ -151,44 +171,44 @@ export const PAGES = {
         description: 'Fill in this form on Newbi.',
     },
     'verify-creator': {
-        site: 'landing', path: '/verify-creator', noindex: true,
+        site: 'landing', path: '/verify-creator', noindex: true, image: 'creator',
         title: 'Verify your creator profile',
         description: 'Verify and activate your Newbi Creator profile to access brand deals and campaigns.',
     },
     'verify-payout': {
-        site: 'landing', path: '/verify-payout', noindex: true,
+        site: 'landing', path: '/verify-payout', noindex: true, image: 'docs',
         title: 'Verify a payout',
         description: 'Check that a payout receipt was issued by Newbi Entertainment.',
     },
     'register-payment': {
-        site: 'landing', path: '/register-payment', noindex: true,
+        site: 'landing', path: '/register-payment', noindex: true, image: 'docs',
         title: 'Payee registration',
         description: 'Register banking and payee details for vendor and creator payouts.',
     },
     proposal: {
-        site: 'landing', path: '/proposal/:id', noindex: true,
+        site: 'landing', path: '/proposal/:id', noindex: true, image: 'docs',
         title: 'Proposal',
         description: 'A proposal from Newbi Entertainment & Marketing.',
     },
     invoice: {
-        site: 'landing', path: '/invoice/:id', noindex: true,
+        site: 'landing', path: '/invoice/:id', noindex: true, image: 'docs',
         title: 'Tax Invoice',
         description: 'A tax invoice from Newbi Entertainment & Marketing.',
     },
     agreement: {
-        site: 'landing', path: '/agreement/:id', noindex: true,
+        site: 'landing', path: '/agreement/:id', noindex: true, image: 'docs',
         title: 'Agreement',
         description: 'A service agreement from Newbi Entertainment & Marketing.',
     },
     doc: {
-        site: 'landing', path: '/doc/:id', noindex: true,
+        site: 'landing', path: '/doc/:id', noindex: true, image: 'docs',
         title: 'Official Document',
         description: 'An official document issued by Newbi Entertainment & Marketing.',
     },
 
     // admin.newbi.live/admin
     admin: {
-        site: 'admin', path: '/admin', brand: 'admin', noindex: true,
+        site: 'admin', path: '/admin', brand: 'admin', noindex: true, image: 'docs',
         title: 'Admin',
         description: 'The Newbi admin panel.',
     },
@@ -202,73 +222,79 @@ export const PAGES = {
 
     // app.newbi.live
     'app-home': {
-        site: 'app', path: '/',
+        site: 'app', path: '/', image: 'app',
         title: 'newbi.app — Your passes, guestlists & gigs',
         description: 'Your passes, guestlists, gigs, giveaways and creator campaigns from Newbi, in one place.',
     },
     community: {
-        site: 'app', path: '/community',
+        site: 'app', path: '/community', image: 'community',
         title: 'Community — Get on the list',
         description: 'Get on guestlists, sign up for backstage volunteer gigs, enter giveaways and join the Newbi community.',
     },
     // Community deep links that stay on /community (?gig=, ?form=).
     gig: {
-        site: 'app', path: '/community', query: 'gig',
+        site: 'app', path: '/community', query: 'gig', image: 'community',
         title: 'Volunteer gig — Work the show',
         description: 'Volunteer with the Newbi crew: backstage gigs at concerts and events.',
     },
     'community-form': {
-        site: 'app', path: '/community', query: 'form',
+        site: 'app', path: '/community', query: 'form', image: 'community',
         title: 'Forms',
         description: 'Fill in this form on Newbi.',
     },
     guestlist: {
-        site: 'app', path: '/community/g/:id',
+        site: 'app', path: '/community/g/:id', image: 'community',
         title: 'Guestlist',
         description: 'Get on the guestlist for this Newbi event.',
     },
     giveaway: {
-        site: 'app', path: '/community/giveaways/:id',
+        site: 'app', path: '/community/giveaways/:id', image: 'community',
         title: 'Giveaway',
         description: 'Enter this Newbi giveaway.',
     },
     'app-creator': {
-        site: 'app', path: '/creator',
+        site: 'app', path: '/creator', image: 'creator',
         title: 'Creator dashboard',
         description: 'Find open brand campaigns, submit deliverables and track your payouts with the Newbi Creator Network.',
     },
     'creator-apply': {
-        site: 'app', path: '/creator/apply',
+        site: 'app', path: '/creator/apply', image: 'creator',
         title: 'Become a creator — Apply in 45 seconds',
         description: 'Connect with top brands and live events in your city. Fast creator onboarding with zero agency fees.',
     },
+    // /creator/apply?ref=CODE: a creator's invite link.
+    'creator-invite': {
+        site: 'app', path: '/creator/apply', query: 'ref', image: 'invite',
+        title: "You're invited to Newbi Creators",
+        description: 'Brands and shows invite creators to campaigns for passes, products and paid work. Free to join, no agency cut. Apply in 45 seconds.',
+    },
     campaign: {
-        site: 'app', path: '/c/:id',
+        site: 'app', path: '/c/:id', image: 'creator',
         title: 'Brand campaign',
         description: 'See the brief and apply to this brand campaign on the Newbi Creator Network.',
     },
     tickets: {
-        site: 'app', path: '/tickets',
+        site: 'app', path: '/tickets', image: 'app',
         title: 'Tickets',
         description: 'Tickets for the shows Newbi runs: pick your night, pay once and your pass lands in the app.',
     },
     pass: {
-        site: 'app', path: '/p/:id', noindex: true,
+        site: 'app', path: '/p/:id', noindex: true, image: 'app',
         title: 'Your pass',
         description: 'Open this pass on your phone and show the QR code at the entry.',
     },
     campus: {
-        site: 'app', path: '/campus',
+        site: 'app', path: '/campus', image: 'campus',
         title: 'Campus — Fests, creators & college crews',
         description: 'Newbi on campus: college fests, campus creators and student communities.',
     },
     notifications: {
-        site: 'app', path: '/notifications', noindex: true,
+        site: 'app', path: '/notifications', noindex: true, image: 'app',
         title: 'Notifications',
         description: 'Your Newbi updates.',
     },
     profile: {
-        site: 'app', path: '/profile', noindex: true,
+        site: 'app', path: '/profile', noindex: true, image: 'app',
         title: 'Your profile',
         description: 'Your Newbi profile.',
     },
@@ -342,7 +368,14 @@ export const defaultOgImage = (origin = LANDING_ORIGIN, image = DEFAULT_IMAGE) =
     alt: image.alt,
 });
 
-const KNOWN_DEFAULTS = [DEFAULT_IMAGE, CONCERTZONE_IMAGE];
+const KNOWN_DEFAULTS = [...Object.values(OG_IMAGES), CONCERTZONE_IMAGE];
+
+/** True for one of our own share cards (not a page's real photo or poster). */
+export const isShareCard = (input) => {
+    let pathname = '';
+    try { pathname = new URL(String(input || ''), LANDING_ORIGIN).pathname; } catch { return false; }
+    return pathname === '/og-default.jpg' || KNOWN_DEFAULTS.some((img) => img.path === pathname);
+};
 
 /**
  * Turns any stored image reference into something a link-preview crawler can show.

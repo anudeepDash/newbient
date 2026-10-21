@@ -14,6 +14,7 @@ import {
     LANDING_ORIGIN,
     brandOf,
     defaultOgImage,
+    ogImageOf,
     formatTitle,
     originFor,
     pageUrl,
@@ -207,6 +208,8 @@ const resolveRoute = (req, host) => {
         try { pathname = new URL(req.url || '/', 'http://x').pathname; } catch { /* default */ }
         resolved = routeFromPath(host, pathname);
     }
+    // A creator's invite link (/creator/apply?ref=CODE).
+    if (resolved.route === 'creator-apply' && q.ref) return { route: 'creator-invite', id: q.ref };
     // Community deep links carried in the query (?gl=, ?event=, ?gig=, ?form=).
     if (resolved.route === 'community' || resolved.route === 'home' || resolved.route === 'app-home') {
         if (q.gl || q.event) return { route: 'guestlist', id: q.gl || q.event };
@@ -236,6 +239,15 @@ const eventDescription = (data) => {
 };
 
 const loaders = {
+    // The inviter's first name, from their referral code (creators.creatorId).
+    async 'creator-invite'(db, { id }) {
+        const snaps = await db.collection('creators').where('creatorId', '==', id.toUpperCase()).limit(1).get();
+        if (snaps.empty) return null;
+        const data = snaps.docs[0].data();
+        const first = stripHtml(data.displayName || data.name).split(' ')[0].slice(0, 24);
+        return first ? { title: `${first} invited you to Newbi Creators`, params: { id: data.creatorId || id } } : null;
+    },
+
     async campaign(db, { id }) {
         let snap = await db.collection('campaigns').doc(id).get();
         if (!snap.exists) {
@@ -491,7 +503,7 @@ export async function buildPreview({ host, query = {}, url = '/', userAgent = ''
 
     const brand = brandOf(route);
     const title = formatTitle(result?.title || page.title, brand);
-    const image = toOgImage(result?.image, originFor(page.site, host)) || defaultOgImage(originFor('landing', host), brand.image);
+    const image = toOgImage(result?.image, originFor(page.site, host)) || defaultOgImage(originFor('landing', host), ogImageOf(route));
 
     return {
         route,

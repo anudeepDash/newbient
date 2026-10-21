@@ -4,8 +4,7 @@
  * as-is, and later visits load on navigation.
  */
 
-const SITE = 'https://www.newbi.live';
-const DEFAULT_IMAGE = `${SITE}/og-default.jpg`;
+import { LANDING_ORIGIN as SITE, OG_IMAGES } from '../app/seo.js';
 
 function lazyPage(loader) {
     let Component = null;
@@ -48,6 +47,7 @@ export const LANDING_ROUTES = [
         meta: {
             title: 'Creators — Brand deals, backstage access | newbi.live',
             description: 'Join the Newbi creator network: brand campaigns matched to your city, niche and audience, plus access to the shows we run. Free to join.',
+            card: 'creator',
         },
     },
     {
@@ -57,6 +57,7 @@ export const LANDING_ROUTES = [
         meta: {
             title: 'Community — Get on the list | newbi.live',
             description: 'One account for guestlists, volunteer gigs, giveaways and passes at the shows Newbi runs. Sign in once; your QR code does the rest at the gate.',
+            card: 'community',
         },
     },
     {
@@ -66,6 +67,7 @@ export const LANDING_ROUTES = [
         meta: {
             title: "Let's make some noise | newbi.live",
             description: 'Tell us what you are planning: a college activation, a live show or a creator campaign. We reply within a working day.',
+            card: 'contact',
         },
     },
     {
@@ -128,7 +130,9 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').repl
 
 // Static <head> tags for a prerendered page.
 export function headTags(route) {
-    const { title, description, image = DEFAULT_IMAGE } = route.meta;
+    const { title, description, card = 'home' } = route.meta;
+    const image = `${SITE}${OG_IMAGES[card].path}`;
+    const imageAlt = OG_IMAGES[card].alt;
     const url = canonicalUrl(route.path);
     return [
         `<title>${esc(title)}</title>`,
@@ -144,12 +148,14 @@ export function headTags(route) {
         `<meta property="og:image" content="${image}" />`,
         `<meta property="og:image:width" content="1200" />`,
         `<meta property="og:image:height" content="630" />`,
-        `<meta property="og:image:alt" content="Newbi" />`,
+        `<meta property="og:image:type" content="image/jpeg" />`,
+        `<meta property="og:image:alt" content="${esc(imageAlt)}" />`,
         `<meta name="twitter:card" content="summary_large_image" />`,
         `<meta name="twitter:site" content="@newbi_live" />`,
         `<meta name="twitter:title" content="${esc(title)}" />`,
         `<meta name="twitter:description" content="${esc(description)}" />`,
         `<meta name="twitter:image" content="${image}" />`,
+        `<meta name="twitter:image:alt" content="${esc(imageAlt)}" />`,
         `<script type="application/ld+json">${structuredData(route)}</script>`,
     ].join('\n  ');
 }
