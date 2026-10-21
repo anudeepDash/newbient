@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="20 129.5 657 657" width="32" height="32">
+  <title>Newbi</title>
+  <!-- Dark tile on light browsers. On dark browsers the tile goes, so the tab shows a white N
+       instead of a near-black square that Chrome would put a light plate behind. -->
+  <style>
+    .tile { fill: #0B0B0B; }
+    @media (prefers-color-scheme: dark) { .tile { display: none; } }
+  </style>
+  <rect class="tile" x="20" y="129.5" width="657" height="657" rx="150"/>
+  <path d="M77,296 L182,283 L292,490 L270,250 L422,238 L382,645 L287,655 L160,422 L181,670 L80,678 Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="8" stroke-linejoin="round"/>
+  <circle cx="540" cy="594" r="80" fill="#3DF03D"/>
+</svg>
