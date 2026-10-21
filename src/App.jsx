@@ -42,6 +42,7 @@ const PayeeRegistry = lazy(() => import('./pages/Admin/PayeeRegistry'));
 const AnnouncementsManager = lazy(() => import('./pages/Admin/AnnouncementsManager'));
 const ConcertManager = lazy(() => import('./pages/Admin/ConcertManager'));
 const MessageManager = lazy(() => import('./pages/Admin/MessageManager'));
+const WhatsAppCenter = lazy(() => import('./pages/Admin/WhatsAppCenter'));
 const ProposalManagement = lazy(() => import('./pages/Admin/ProposalManagement'));
 const AIStudio = lazy(() => import('./pages/Admin/AIStudio'));
 const ProposalGenerator = lazy(() => import('./pages/Admin/ProposalGenerator'));
@@ -265,6 +266,7 @@ function AppContent() {
       <Route path="admin/announcements" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><AnnouncementsManager /></MaintenanceGuard></AdminGuard>} />
       <Route path="admin/concertzone" element={<AdminGuard><MaintenanceGuard featureId="concerts"><ConcertManager /></MaintenanceGuard></AdminGuard>} />
       <Route path="admin/messages" element={<AdminGuard><MaintenanceGuard featureId="messages"><MessageManager /></MaintenanceGuard></AdminGuard>} />
+      <Route path="admin/whatsapp" element={<AdminGuard><WhatsAppCenter /></AdminGuard>} />
       <Route path="admin/mailing" element={<AdminGuard><MaintenanceGuard featureId="mailing"><MailingManager /></MaintenanceGuard></AdminGuard>} />
       <Route path="admin/proposals" element={<AdminGuard><MaintenanceGuard featureId="docs"><ProposalManagement /></MaintenanceGuard></AdminGuard>} />
       <Route path="admin/create-proposal" element={<AdminGuard><MaintenanceGuard featureId="docs"><ProposalGenerator /></MaintenanceGuard></AdminGuard>} />

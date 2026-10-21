@@ -22,6 +22,7 @@ const getAdminTitle = (pathname) => {
     if (path === '/admin/announcements') return 'Announcements';
     if (path === '/admin/concertzone') return 'Concert Manager';
     if (path === '/admin/messages') return 'Messages';
+    if (path === '/admin/whatsapp') return 'WhatsApp';
     if (path === '/admin/mailing') return 'Mailing Manager';
     if (path === '/admin/proposals') return 'Proposals';
     if (path === '/admin/create-proposal') return 'Create Proposal';

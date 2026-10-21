@@ -13,8 +13,8 @@ import { callOutreach } from './outreachApi';
 import { StatusBadge, when } from './parts';
 
 /*
- * The WhatsApp inbox: every conversation with creators, newest first, for this
- * campaign or all of them. Free text only within 24 hours of their last
+ * The WhatsApp inbox: every conversation, newest first, for this campaign or
+ * all of them (the WhatsApp center passes no campaign and shows all). Free text only within 24 hours of their last
  * message (WhatsApp's rule); after that, send a template instead. Photos and
  * voice notes load through the server when you ask for them.
  */
@@ -63,7 +63,7 @@ const Bubble = ({ m, threadId }) => {
     );
 };
 
-const Conversation = ({ threadId, onBack, onChanged }) => {
+const Conversation = ({ threadId, onBack, onChanged, onCompose }) => {
     const addToast = useStore(s => s.addToast);
     const [data, setData] = useState(null);
     const [text, setText] = useState('');
@@ -152,6 +152,7 @@ const Conversation = ({ threadId, onBack, onChanged }) => {
                         <div className="flex flex-wrap gap-2">
                             <Button size="sm" onClick={() => template('deliverables')} disabled={!thread.lastAppId}>Send their posts link</Button>
                             <Button size="sm" onClick={() => template('reminder')} disabled={!thread.lastAppId}>Send the join reminder</Button>
+                            {onCompose && <Button size="sm" variant="secondary" onClick={() => onCompose({ phone: thread.phone, name: applications[0]?.fullName || thread.name })}>Send another template</Button>}
                         </div>
                     </div>
                 )}
@@ -160,15 +161,15 @@ const Conversation = ({ threadId, onBack, onChanged }) => {
     );
 };
 
-const InboxPanel = ({ campaign, configured }) => {
-    const [scope, setScope] = useState('campaign');
+const InboxPanel = ({ campaign = null, configured, onCompose = null }) => {
+    const [scope, setScope] = useState(campaign ? 'campaign' : 'all');
     const [state, setState] = useState('open');
     const [data, setData] = useState({ loading: true, threads: [] });
     const [openId, setOpenId] = useState(null);
     const load = useCallback(async () => {
-        const r = await callOutreach('inbox-list', { campaignId: scope === 'campaign' ? campaign.id : undefined, state });
+        const r = await callOutreach('inbox-list', { campaignId: scope === 'campaign' && campaign ? campaign.id : undefined, state });
         setData({ loading: false, threads: r.ok ? r.data.threads : [], error: r.ok ? '' : r.error });
-    }, [scope, state, campaign.id]);
+    }, [scope, state, campaign?.id]);
     useEffect(() => {
         load();
         const t = setInterval(() => { if (!document.hidden) load(); }, POLL_MS);
@@ -183,9 +184,11 @@ const InboxPanel = ({ campaign, configured }) => {
         <div className="space-y-3">
             {!configured && <Card className="p-4 text-[13px] text-gray-600 dark:text-zinc-400">The WhatsApp API isn’t set up, so the inbox stays empty until it is (see docs/campaign-outreach.md).</Card>}
             <div className="flex flex-wrap gap-2">
-                {chip('campaign', 'This campaign', scope, setScope)}
-                {chip('all', 'All campaigns', scope, setScope)}
-                <span className="w-2" />
+                {campaign && <>
+                    {chip('campaign', 'This campaign', scope, setScope)}
+                    {chip('all', 'All campaigns', scope, setScope)}
+                    <span className="w-2" />
+                </>}
                 {chip('open', 'Open', state, setState)}
                 {chip('done', 'Done', state, setState)}
                 {chip('all', 'All', state, setState)}
@@ -211,7 +214,7 @@ const InboxPanel = ({ campaign, configured }) => {
                 </ul>
                 <div className={cn('min-h-0', !openId && 'hidden lg:block')}>
                     {openId
-                        ? <Conversation key={openId} threadId={openId} onBack={() => setOpenId(null)} onChanged={load} />
+                        ? <Conversation key={openId} threadId={openId} onBack={() => setOpenId(null)} onChanged={load} onCompose={onCompose} />
                         : <div className="hidden h-full items-center justify-center text-[13px] text-gray-500 lg:flex">Choose a conversation</div>}
                 </div>
             </Card>
