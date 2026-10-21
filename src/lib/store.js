@@ -4291,6 +4291,61 @@ export const useStore = create((set, get) => ({
         return applied + appReviews.length;
     },
 
+    /*
+     * Mark deliverables done from the admin side (a sheet the client sent, or
+     * one person added by hand). A creator who already submitted is approved as
+     * usual; anyone else gets an approved record on the campaign doc, marked
+     * via: 'admin', with the link when we have one.
+     *   items: [{ taskId, creatorUid, keys, link }]
+     */
+    markDeliverablesDone: async (campaignId, items = []) => {
+        if (!items.length) return 0;
+        const existing = (campaign, r) => {
+            const task = (campaign?.tasks || []).find(t => String(t.id) === String(r.taskId));
+            return Array.from(new Set([...(r.keys || []), r.creatorUid].filter(Boolean))).some(k => task?.submissions?.[k]?.status);
+        };
+        const current = (get().campaigns || []).find(c => c.id === campaignId);
+        const toReview = items.filter(r => existing(current, r));
+        const toWrite = items.filter(r => !existing(current, r));
+        if (toReview.length) {
+            await get().reviewTaskSubmissions(campaignId, toReview.map(r => ({ ...r, status: 'approved' })));
+        }
+        if (!toWrite.length) return toReview.length;
+
+        const now = new Date().toISOString();
+        const by = get().user?.email || null;
+        const ref = doc(db, 'campaigns', campaignId);
+        const tasks = await runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw new Error('Campaign not found');
+            const next = (snap.data().tasks || []).map(t => {
+                const mine = toWrite.filter(r => String(r.taskId) === String(t.id));
+                if (!mine.length) return t;
+                const submissions = { ...(t.submissions || {}) };
+                mine.forEach(r => {
+                    const prev = submissions[r.creatorUid];
+                    submissions[r.creatorUid] = prev?.status
+                        ? { ...prev, status: 'approved', rejectionReason: '', reviewedAt: now, reviewedBy: by, contentLink: prev.contentLink || r.link || '' }
+                        : { status: 'approved', contentLink: r.link || '', proofUrl: '', submittedAt: now, reviewedAt: now, reviewedBy: by, rejectionReason: '', via: 'admin' };
+                });
+                const keys = mine.map(r => r.creatorUid);
+                return {
+                    ...t,
+                    submissions,
+                    completedBy: Array.from(new Set([...(t.completedBy || []), ...keys])),
+                    verifiedBy: Array.from(new Set([...(t.verifiedBy || []), ...keys])),
+                };
+            });
+            tx.update(ref, { tasks: next });
+            return next;
+        });
+        if (rawCampaigns) rawCampaigns = rawCampaigns.map(c => (c.id === campaignId ? { ...c, tasks } : c));
+        set(state => ({
+            campaigns: mergeAppSubmissions((state.campaigns || []).map(c => (c.id === campaignId ? { ...c, tasks } : c)), appSubmissionIndex),
+        }));
+        return toReview.length + toWrite.length;
+    },
+
     // Giveaways
     addGiveaway: async (giveaway) => {
         const giveawayData = {
