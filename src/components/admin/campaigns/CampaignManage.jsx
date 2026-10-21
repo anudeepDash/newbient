@@ -54,7 +54,8 @@ import ApplicantSheet from './ApplicantSheet';
 import { MessageSheet, PayoutSheet, ChangesSheet } from './ActionSheets';
 import TicketsSheet from './TicketsSheet';
 import ShortlistUploadSheet from './ShortlistUploadSheet';
-import { clientSheetSpec, newbiIdOf } from './shortlistModel';
+import CompletedWorkSheet from './CompletedWorkSheet';
+import { clientSheetSpec, deliverablesSheetSpec, newbiIdOf } from './shortlistModel';
 import CampaignTickets from './CampaignTickets';
 import { canGetTicket, passFor, passesByCreator, useCampaignPasses } from './ticketModel';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
@@ -116,6 +117,7 @@ const CampaignManage = ({
     const [showBrief, setShowBrief] = useState(false);
     const [ticketsFor, setTicketsFor] = useState(null); // entries for the Send tickets sheet
     const [uploadOpen, setUploadOpen] = useState(false); // the client's shortlist CSV
+    const [doneOpen, setDoneOpen] = useState(false); // work already done: a sheet or one person
     const { passes, loaded: passesLoaded, error: passesError } = useCampaignPasses(campaign?.id);
     const passMap = useMemo(() => passesByCreator(passes), [passes]);
 
@@ -341,6 +343,29 @@ const CampaignManage = ({
     };
     const approve = (entry, task) => guard(() => review([{ entry, task }], 'approved').catch(() => {}));
 
+    // From "Add completed work": add anyone new to the campaign, then mark their deliverables done.
+    const saveCompleted = async ({ adds, items, welcome }) => {
+        try {
+            let added = [];
+            if (adds.length) {
+                const result = await useStore.getState().bulkShortlistCreators(campaign.id, adds.map(e => e.key), true);
+                added = adds.filter(e => result.done.includes(e.key));
+                const failed = new Set(result.failed);
+                items = items.filter(i => !failed.has(i.creatorUid));
+            }
+            if (items.length) await useStore.getState().markDeliverablesDone(campaign.id, items);
+            const people = new Set(items.map(i => i.creatorUid)).size;
+            addToast([
+                added.length && `${added.length} added to the campaign`,
+                items.length && `${items.length} deliverable${items.length === 1 ? '' : 's'} marked done for ${people} creator${people === 1 ? '' : 's'}`,
+            ].filter(Boolean).join(' · ') || 'Nothing to change.', 'success');
+            if (welcome && added.length) await sendWelcome(added);
+        } catch (error) {
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't save the completed work" });
+            throw error;
+        }
+    };
+
     const copyList = (entries, kind) => {
         const list = entries.map(a => (kind === 'handles'
             ? (creatorHandle(a.creator) ? `@${creatorHandle(a.creator)}` : null)
@@ -500,7 +525,19 @@ const CampaignManage = ({
                     { value: 'review', label: 'To review', count: totalToReview, highlight: totalToReview > 0 },
                     { value: 'all', label: 'Everyone' },
                 ]} />
-                <Button variant="secondary" onClick={() => onEdit(campaign)} className="h-11"><Pencil size={14} /> Edit deliverables</Button>
+                <div className="flex flex-wrap items-center gap-2">
+                    {tasks.length > 0 && (
+                        <Button variant="secondary" onClick={() => setDoneOpen(true)} className="h-11"><CheckCheck size={14} /> Add completed work</Button>
+                    )}
+                    {tasks.length > 0 && (
+                        <ExportMenu
+                            getSpec={() => deliverablesSheetSpec(campaign, deliverableEntries, { fileDate, exportSubtitle })}
+                            label="Download sheet"
+                            hint="One row per creator: each deliverable's status, link and date. No phone or email"
+                        />
+                    )}
+                    <Button variant="secondary" onClick={() => onEdit(campaign)} className="h-11"><Pencil size={14} /> Edit deliverables</Button>
+                </div>
             </div>
             {tasks.length === 0 ? (
                 <Card className="rounded-2xl">
@@ -986,6 +1023,14 @@ const CampaignManage = ({
                 campaign={campaign}
                 applicants={applicants}
                 onShortlist={(entries, welcome) => selectEntries(entries, welcome)}
+            />
+            <CompletedWorkSheet
+                open={doneOpen}
+                onClose={() => setDoneOpen(false)}
+                campaign={campaign}
+                creators={creators}
+                applicants={applicants}
+                onSave={saveCompleted}
             />
 
             <MessageSheet open={Boolean(messageTo)} onClose={() => setMessageTo(null)} campaign={campaign} entries={messageTo || []} />
