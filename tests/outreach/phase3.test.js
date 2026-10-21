@@ -170,6 +170,10 @@ describe('review', () => {
         res = await call('outreach-review', { campaignId: 'c1', appId: 'a1', taskId: 't_reel', decision: 'approve' });
         expect(res.body).toMatchObject({ status: 'approved', movedTo: 'posted' });
         expect(app().status).toBe('posted');
+        // One "all approved" WhatsApp for the campaign, only after the last required post (the story approval sent none).
+        const allApproved = sent.filter(m => m.template?.name === 'all_posts_approved');
+        expect(allApproved).toHaveLength(1);
+        expect(allApproved[0].template.components.find(c => c.type === 'body').parameters[1].text).toBe('Arijit Singh Live');
         expect(audit()).toContainEqual(expect.objectContaining({ field: 'status', from: 'message_sent', to: 'posted' }));
         expect(releaseApplicationPass).toHaveBeenCalledTimes(1);
         const view = await call('outreach-deliverables', { token: link() }, { token: null });

@@ -13,7 +13,8 @@
 import { sendTransactional } from './mail/send.js';
 
 export { AUDIENCES, BUDGETS, TIMELINES, validateEnquiry } from './enquiryRules.js';
-import { validateEnquiry, clean } from './enquiryRules.js';
+import { validateEnquiry, clean, AUDIENCES, BUDGETS } from './enquiryRules.js';
+import { sendTeamAlert, LEADS_TEAM } from './teamAlerts.js';
 
 const MIN_FILL_MS = 2500;
 
@@ -117,6 +118,12 @@ export async function handleEnquiry(db, req, res) {
         };
         const ref = await db.collection('messages').add(doc);
         await notifyAdmins(db, data);
+        await sendTeamAlert(db, {
+            roles: LEADS_TEAM,
+            template: 'team_enquiry_alert',
+            bodyParams: [String(data.name || 'Someone').slice(0, 60), String(data.company || AUDIENCES[data.audience] || 'Not given').slice(0, 80), String(BUDGETS[data.budget] || 'Not given').slice(0, 40)],
+            event: 'team-enquiry-alert',
+        });
         const reply = await sendTransactional('enquiry-autoreply', data.email, { name: data.name, message: data.message },
             { ref: { collection: 'messages', id: ref.id }, idempotencyKey: `enquiry_${ref.id}` })
             .catch(err => ({ status: 'failed', error: err.message }));

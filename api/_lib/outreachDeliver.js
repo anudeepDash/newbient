@@ -24,6 +24,7 @@ import { releaseApplicationPass, revokePassForOutreach, ticketLinkFor } from './
 import { enqueueJob, sendSoon, submitUrlFor } from './outreachQueue.js';
 import { canTransition, canSystemTransition, isOnShortlist } from '../../src/lib/outreach/status.js';
 import { firstNameOf } from '../../src/lib/outreach/normalize.js';
+import { approvedSummary } from '../../src/lib/outreach/whatsappTemplate.js';
 import {
     deliverablesFor, validateSubmission, deliverableSummary, preEventApproved, ticketRuleOf, normalizeUpi,
     validatePayout, PAYOUT_METHODS,
@@ -302,8 +303,13 @@ export const handleReview = async (req, res, { db, actor, now = nowIso() }) => {
     }
     if (!result.unchanged && decision === 'approved') {
         const campaign = campSnap.data();
-        if (deliverableSummary(campaign, result.app).allRequiredApproved) {
+        const summary = deliverableSummary(campaign, result.app);
+        if (summary.allRequiredApproved) {
             followUps.movedTo = await systemMove(db, campaignId, appId, 'posted', { source: 'admin', note: 'Every required deliverable approved', actor });
+            // One WhatsApp for the whole campaign, once (a fixed job id), never one per post.
+            const titles = summary.items.filter(i => i.task.required).map(i => i.task.title);
+            const id = await enqueueJob(db, { campaignId, appId, kind: 'all_approved', data: { summary: approvedSummary(titles) }, createdBy: actor.actorEmail });
+            followUps.allApproved = await sendSoon(db, id);
         }
         const settings = await settingsOf(db, campaignId);
         if (ticketRuleOf(settings) === 'deliverables' && preEventApproved(campaign, result.app) && result.app.ticket?.status !== 'released') {

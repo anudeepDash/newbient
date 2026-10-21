@@ -59,7 +59,8 @@ class Query {
             .filter(([p]) => p.startsWith(prefix) && !p.slice(prefix.length).includes('/'))
             .map(([p, d]) => new DocSnap(new DocRef(this.db, p), clone(d)))
             .filter(s => this.filters.every(({ field, op, value }) => {
-                const v = s._data[field];
+                // Dotted fields ('event.date') read nested values, as in Firestore.
+                const v = String(field).split('.').reduce((o, k) => (o == null ? undefined : o[k]), s._data);
                 if (op === '==') return v === value;
                 if (op === 'in') return value.includes(v);
                 if (op === 'array-contains') return Array.isArray(v) && v.includes(value);

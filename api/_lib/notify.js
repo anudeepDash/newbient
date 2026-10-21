@@ -18,7 +18,7 @@
  */
 import { getDb, nowIso, SITE_URL, APP_URL } from './db.js';
 import { sendTransactional } from './mail/send.js';
-import { sendTemplate, toE164 } from './whatsapp.js';
+import { sendTemplate, toE164, isTemplateLive } from './whatsapp.js';
 import { sendPush } from './push.js';
 import { formatDate, firstName } from './mail/layout.js';
 
@@ -42,6 +42,7 @@ const passLink = (d) => d.passUrl || (d.ref ? `${PASS_ORIGIN}/p/${encodeURICompo
 const eventOf = (d) => d.eventName || d.campaignTitle || 'your event';
 const when = (d) => formatDate(d.date).replace(/^\w+,\s*/, '');
 const join = (...parts) => parts.filter(Boolean).join(' · ');
+const rupees = (n) => (Number.isFinite(Number(n)) ? Number(n).toLocaleString('en-IN') : String(n || '-'));
 
 export const EVENTS = {
     'pass-confirmed': {
@@ -82,7 +83,22 @@ export const EVENTS = {
     },
     'order-received': {
         email: 'always',
+        whatsapp: {
+            mode: 'always',
+            template: () => 'order_received',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'your event'), rupees(d.totalAmount), d.paymentRef || 'Not needed'] }),
+        },
         inApp: (d) => ({ title: `Order received: ${d.eventName || 'your tickets'}`, message: "We're checking your payment. Your tickets show up here once it's confirmed, usually within a few hours.", type: 'ticket', link: '' }),
+    },
+    // A ticket order the team couldn't match to a payment (rejected in Ticket sales). No email yet.
+    'order-declined': {
+        whatsapp: {
+            mode: 'always',
+            template: () => 'payment_declined',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'your event'), d.paymentRef || 'Not given'] }),
+        },
+        push: (d) => ({ title: `Payment not confirmed: ${short(d.eventName || 'your order', 26)}`, body: 'We couldn’t find the payment. Check the UTR in your UPI app and send it again.', link: d.eventUrl || '', tag: `order-${d.orderId || ''}` }),
+        inApp: (d) => ({ title: `Payment not confirmed: ${d.eventName || 'your order'}`, message: 'We couldn’t find this payment. Check the UTR in your UPI app and send it again from the event page.', type: 'ticket', link: d.eventUrl || '' }),
     },
     'creator-application-received': { email: 'always' },
     'creator-approved': {
@@ -129,6 +145,12 @@ export const EVENTS = {
     },
     'submission-reviewed': {
         email: 'pref:creator',
+        // WhatsApp only when something needs fixing; an approved post waits for campaign-all-approved.
+        whatsapp: {
+            mode: 'optional',
+            template: (d) => (d.status === 'approved' ? null : 'submission_changes'),
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.campaignTitle || 'your campaign', 80), short(d.feedback || 'See the note in the campaign', 300)], buttons: d.campaignId ? [{ index: 0, param: d.campaignId }] : [] }),
+        },
         push: (d) => {
             const task = d.taskTitle || 'Your submission';
             const copy = {
@@ -144,7 +166,41 @@ export const EVENTS = {
             link: d.campaignUrl || '',
         }),
     },
-    'giveaway-entry': { email: 'always' },
+    // Once, when every required post a creator owes a campaign is approved (app and outreach campaigns).
+    'campaign-all-approved': {
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'all_posts_approved',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.campaignTitle || 'your campaign', 80), d.summary || 'All your posts'] }),
+        },
+        push: (d) => ({ title: `All posts approved: ${short(d.campaignTitle || 'campaign', 26)}`, body: 'That’s everything for this campaign. We’ll update you about your reward.', link: d.campaignUrl || '', tag: `campaign-${d.campaignId || ''}` }),
+        inApp: (d) => ({ title: `All posts approved: ${d.campaignTitle || 'campaign'}`, message: 'That’s everything for this campaign. We’ll update you about your reward.', type: 'campaign', link: d.campaignUrl || '' }),
+    },
+    'giveaway-entry': {
+        email: 'always',
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'giveaway_entry',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.giveawayName || 'the giveaway', 80), formatDate(d.endsAt) || 'Soon'] }),
+        },
+    },
+    // A volunteer marked confirmed for a gig (the in-app note is sent by the admin page).
+    'gig-selected': {
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'gig_selected',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.gigTitle || 'the gig', 80), short(d.reportAt || 'See the briefing group', 80), short(d.location || 'Shared in the briefing group', 80)] }),
+        },
+    },
+    // The day before an event, for every issued pass (api/mail.js daily worker).
+    'event-reminder': {
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'event_reminder',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'your event', 80), short(d.doors || 'See your pass', 60), short(d.venue || 'See your pass', 80)], buttons: d.ref ? [{ index: 0, param: d.ref }] : [] }),
+        },
+        push: (d) => ({ title: `Tomorrow: ${short(d.eventName || 'your event', 34)}`, body: `${join(d.doors, d.venue) || 'Your pass is ready'}. Show the QR code at the entrance.`, link: d.passUrl || '', tag: `pass-${d.ref || ''}` }),
+    },
     'payee-registered': { email: 'always' },
     welcome: { email: 'always' },
 };
@@ -209,20 +265,18 @@ export const notify = async (event, uid, data = {}, opts = {}) => {
         }
     }
 
-    // WhatsApp
-    if (config.whatsapp && !skip.has('whatsapp')) {
-        const wa = config.whatsapp;
-        const template = wa.template(payload);
+    // WhatsApp (an event can return no template for some cases, e.g. an approved post)
+    const waTemplate = config.whatsapp && !skip.has('whatsapp') ? config.whatsapp.template(payload) : null;
+    if (waTemplate) {
         const optedOut = person.channelPrefs.whatsapp === false;
         // A template is only used once the owner marks it approved in Meta by
         // setting WHATSAPP_TEMPLATE_<NAME> (its approved name), so nothing fails
         // while templates are still in review.
-        const templateLive = Boolean(process.env[`WHATSAPP_TEMPLATE_${template.toUpperCase()}`]);
         if (optedOut) results.whatsapp = skipped('Turned off WhatsApp');
-        else if (!templateLive) results.whatsapp = skipped('WhatsApp template not approved yet');
+        else if (!isTemplateLive(waTemplate)) results.whatsapp = skipped('WhatsApp template not approved yet');
         else if (!toE164(person.phone)) results.whatsapp = skipped('No WhatsApp number');
         else {
-            jobs.push(sendTemplate({ to: person.phone, template, ...wa.build(payload), event, uid, ref: opts.ref })
+            jobs.push(sendTemplate({ to: person.phone, template: waTemplate, ...config.whatsapp.build(payload), event, uid, ref: opts.ref })
                 .then(r => { results.whatsapp = { status: r.status, ...(r.messageId ? { messageId: r.messageId } : {}), ...(r.error ? { error: r.error } : {}) }; }));
         }
     }

@@ -207,6 +207,7 @@ const KINDS = {
     changes: { button: 'link' },
     city_group: { button: 'stop' },
     payout: {},
+    all_approved: {},
     inbox_text: { text: true },
 };
 
@@ -376,7 +377,7 @@ const afterSent = async (db, job, ctx, { at, messageId }) => {
 
 /* ── Queue any message ────────────────────────────────────────────────── */
 
-const ONCE = new Set(['invite', 'reminder', 'deliverables', 'payout', 'city_group']);
+const ONCE = new Set(['invite', 'reminder', 'deliverables', 'payout', 'city_group', 'all_approved']);
 
 /**
  * Queues one message. Kinds that go once per person (invite, reminder,

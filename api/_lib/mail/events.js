@@ -15,6 +15,10 @@ import { sendPush } from '../push.js';
 import { isCampaignCityMatch } from '../../../src/lib/constants.js';
 import { normalizeEmail, isValidEmail } from '../mailing.js';
 import { deliverGuestlistPass, ensureOrderPass, passUrl } from '../passes.js';
+import { isTemplateLive, sendTemplate } from '../whatsapp.js';
+import { sendTeamAlert, TICKET_TEAM, contactForAdmin, roleLabel } from '../teamAlerts.js';
+import { isRequiredTask } from '../../../src/lib/creator/tasks.js';
+import { approvedSummary } from '../../../src/lib/outreach/whatsappTemplate.js';
 
 // The admin has its own host; staff emails link there.
 const ADMIN_URL = 'https://admin.newbi.live';
@@ -104,6 +108,42 @@ export const sendOrderEmail = async (orderId, { event: eventDoc = null } = {}) =
         to: { email, phone: order.customerPhone, name: order.customerName },
         ref: { collection: 'ticket_orders', id: orderId },
     });
+    // The ticketing team hears about every order that waits for a payment check.
+    if (template === 'order-received') {
+        await sendTeamAlert(db, {
+            roles: TICKET_TEAM,
+            template: 'team_order_alert',
+            bodyParams: [String(data.eventName || 'An event').slice(0, 80), String(order.customerName || 'A buyer').slice(0, 60), data.totalAmount.toLocaleString('en-IN'), data.paymentRef || 'Free'],
+            event: 'team-order-alert',
+        });
+    }
+    return { delivery };
+};
+
+/* A ticket order the team rejected in Ticket sales (its payment couldn't be found): tell the buyer once. */
+const orderDeclined = async ({ orderId }, caller) => {
+    if (!caller.staff) throw new EventError('Forbidden', 403);
+    if (!idOk(orderId)) throw new EventError('Missing order.');
+    const db = getDb();
+    const orderRef = db.collection('ticket_orders').doc(orderId);
+    const snap = await orderRef.get();
+    if (!snap.exists) throw new EventError('Order not found.', 404);
+    const order = snap.data();
+    if (String(order.status || '').toLowerCase() !== 'rejected') throw new EventError('This order isn’t rejected.', 409);
+    // Free orders have no payment to find, so there's nothing to tell them.
+    if (order.paymentRef === 'FREE' || !Number(order.totalAmount)) return { skipped: 'free order' };
+    if (!(await claimOnce(orderRef, 'orderDeclinedAt'))) return { duplicate: true };
+    let ev = {};
+    if (order.eventId) {
+        const evSnap = await db.collection('upcoming_events').doc(order.eventId).get().catch(() => null);
+        ev = evSnap?.exists ? evSnap.data() : {};
+    }
+    const delivery = await notify('order-declined', order.userId || null, {
+        name: order.customerName,
+        eventName: ev.title || order.eventTitle,
+        paymentRef: order.paymentRef && order.paymentRef !== 'FREE' ? order.paymentRef : '',
+        orderId,
+    }, { to: { phone: order.customerPhone, name: order.customerName }, ref: { collection: 'ticket_orders', id: orderId } });
     return { delivery };
 };
 
@@ -291,7 +331,32 @@ const submissionReviewed = async ({ campaignId, reviews = [], campaignPath }, ca
         }, { idempotencyKey: `review_${campaignId}_${r.taskId}_${r.uid}_${status}_${Date.now() - (Date.now() % 60000)}` });
         results.push({ uid: r.uid, delivery });
     }
+    // Once a creator's last required post is approved, one "all approved" message (never one per post).
+    const approvedUids = [...new Set(list.filter(r => idOk(r.uid) && r.status === 'approved').map(r => r.uid))];
+    for (const uid of approvedUids) {
+        const done = await allPostsApproved(campaignId, campaign, uid);
+        if (done) results.push({ uid, allApproved: done });
+    }
     return { results };
+};
+
+/* Checks every required task for this creator (new submissions doc, else the older per-task record) and tells them once. */
+const allPostsApproved = async (campaignId, campaign, uid) => {
+    const required = (Array.isArray(campaign.tasks) ? campaign.tasks : []).filter(isRequiredTask);
+    if (!required.length) return null;
+    const db = getDb();
+    const subRef = db.collection('campaigns').doc(campaignId).collection('submissions').doc(uid);
+    const sub = (await subRef.get().catch(() => null))?.data() || {};
+    const statusOf = (t) => sub.tasks?.[t.id]?.status || t.submissions?.[uid]?.status || null;
+    if (!required.every(t => String(statusOf(t) || '').toLowerCase() === 'approved')) return null;
+    if (!(await claimOnce(subRef, 'allApprovedNotifiedAt'))) return null;
+    const delivery = await notify('campaign-all-approved', uid, {
+        campaignTitle: campaign.title,
+        campaignId,
+        summary: approvedSummary(required.map(t => t.title)),
+        campaignUrl: `${CAMPAIGN_ORIGIN}/c/${encodeURIComponent(campaignId)}`,
+    }, { idempotencyKey: `all_approved_${campaignId}_${uid}` });
+    return delivery;
 };
 
 /* ---------- Everything else ---------- */
@@ -346,8 +411,56 @@ const staffAuthorized = async ({ email, role }, caller) => {
     if (!isValidEmail(to)) throw new EventError('Invalid email.');
     const admins = await getDb().collection('admins').where('email', '==', to).limit(1).get();
     if (admins.empty) throw new EventError('That person isn’t on the team yet.', 409);
-    const result = await sendTransactional('staff-authorized', to, { role: String(role || admins.docs[0].data().role || '').slice(0, 40), adminUrl: `${ADMIN_URL}/admin` }, { idempotencyKey: `staff_${to}_${role}_${istDate()}` });
-    return { email: result.status, ok: result.ok };
+    const admin = admins.docs[0].data();
+    const result = await sendTransactional('staff-authorized', to, { role: String(role || admin.role || '').slice(0, 40), adminUrl: `${ADMIN_URL}/admin` }, { idempotencyKey: `staff_${to}_${role}_${istDate()}` });
+    // And on WhatsApp, when their number is known (admin record or verified account phone).
+    let whatsapp = 'skipped';
+    if (isTemplateLive('staff_authorized')) {
+        const contact = await contactForAdmin(getDb(), admin);
+        if (contact.phone) {
+            const r = await sendTemplate({ to: contact.phone, template: 'staff_authorized', bodyParams: [contact.name, roleLabel(role || admin.role), to], event: 'staff-authorized', autoRetry: false });
+            whatsapp = r.status;
+        }
+    }
+    return { email: result.status, ok: result.ok, whatsapp };
+};
+
+/* Volunteers the team marked confirmed for a gig (Volunteer gigs → responses): a WhatsApp each, once. */
+const gigSelected = async ({ responseIds = [] }, caller) => {
+    if (!caller.staff) throw new EventError('Forbidden', 403);
+    const ids = (Array.isArray(responseIds) ? responseIds : []).filter(idOk).slice(0, 100);
+    const db = getDb();
+    const gigs = new Map();
+    const results = [];
+    for (const id of ids) {
+        const ref = db.collection('form_responses').doc(id);
+        const snap = await ref.get();
+        if (!snap.exists) continue;
+        const resp = snap.data();
+        if (String(resp.status || '').toLowerCase() !== 'confirmed') continue;
+        if (!gigs.has(resp.formId)) {
+            const g = await db.collection('volunteer_gigs').where('formId', '==', resp.formId).limit(1).get().catch(() => null);
+            gigs.set(resp.formId, g && !g.empty ? g.docs[0].data() : null);
+        }
+        const gig = gigs.get(resp.formId);
+        if (!gig) continue;
+        if (!(await claimOnce(ref, 'gigSelectedNotifiedAt'))) continue;
+        const phoneField = (resp.fields || []).find(f => f.type === 'phone');
+        const dates = (Array.isArray(gig.dates) && gig.dates.length ? gig.dates : [gig.date]).filter(Boolean);
+        const delivery = await notify('gig-selected', resp.userId || null, {
+            name: resp.name,
+            gigTitle: gig.title,
+            reportAt: [dates.map(d => formatDay(d)).join(', '), gig.time].filter(Boolean).join(', '),
+            location: gig.location,
+        }, { to: { phone: phoneField ? resp.answers?.[phoneField.id] : '', name: resp.name }, ref: { collection: 'form_responses', id } });
+        results.push({ id, delivery });
+    }
+    return { results };
+};
+
+const formatDay = (d) => {
+    const t = Date.parse(`${String(d).slice(0, 10)}T12:00:00+05:30`);
+    return Number.isFinite(t) ? new Date(t).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' }) : String(d);
 };
 
 const invoicePayment = (event) => async ({ invoiceId }, caller) => {
@@ -376,6 +489,8 @@ const HANDLERS = {
     'giveaway-entry': giveawayEntry,
     'payee-registered': payeeRegistered,
     'staff-authorized': staffAuthorized,
+    'order-declined': orderDeclined,
+    'gig-selected': gigSelected,
     'payment-approved': invoicePayment('payment-approved'),
     'payment-declined': invoicePayment('payment-declined'),
 };
