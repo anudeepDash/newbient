@@ -13,17 +13,14 @@
  */
 import { getDb, FieldValue, nowIso } from './db.js';
 import { APP_ORIGIN, WA_CARDS } from '../../src/app/seo.js';
-import { waCardFor, waCardUrl } from './waCard.js';
 
 const API_VERSION = () => process.env.WHATSAPP_API_VERSION || 'v23.0';
 const RETRY_DELAYS_MIN = [5, 30, 120];
 
 /*
- * Templates approved with an image header. Each message gets a card drawn for
- * it (api/_lib/waCard.js: the event, campaign, date or amount); the fixed card
- * here (public/og/wa-*, drawn in scripts/og/cards.html) stands in when links
- * can't be signed. Meta rejects a send whose header doesn't match the approved
- * template, so these always get one.
+ * Templates approved with an image header, and the card each one carries
+ * (public/og/wa-*, drawn in scripts/og/cards.html). Meta rejects a send whose
+ * header doesn't match the approved template, so these always get theirs.
  */
 const IMAGE_HEADERS = {
     pass_confirmed: 'wa-pass',
@@ -39,11 +36,10 @@ const IMAGE_HEADERS = {
     creator_city_group: 'wa-city',
 };
 
-/** The image header for one message, or null when the template has none. */
-export const imageHeaderFor = (template, bodyParams = []) => {
+/** The image header for a template, or null when the template has none. */
+export const imageHeaderFor = (template) => {
     const card = WA_CARDS[IMAGE_HEADERS[template]];
-    if (!card) return null;
-    return { type: 'image', link: waCardUrl(waCardFor(template, bodyParams)) || `${APP_ORIGIN}${card.path}` };
+    return card ? { type: 'image', link: `${APP_ORIGIN}${card.path}` } : null;
 };
 
 export const isWhatsAppConfigured = () => Boolean(process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID);
@@ -135,7 +131,7 @@ export const sendTemplate = async ({ to, template, language, header: givenHeader
     const phone = toE164(to);
     if (!phone) return { ok: false, status: 'skipped', error: 'No valid WhatsApp number' };
 
-    const header = givenHeader || imageHeaderFor(template, bodyParams);
+    const header = givenHeader || imageHeaderFor(template);
     const name = templateName(template);
     const payload = {
         messaging_product: 'whatsapp',
