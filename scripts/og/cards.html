@@ -1,6 +1,7 @@
 <!doctype html>
 <!--
-  Link-preview cards (1200×630) for public/og/. One card per section of the site;
+  Link-preview cards (1200×630) for public/og/. One card per section of the site,
+  plus one per WhatsApp template (wa-*, the image header those messages carry);
   ?card=<name> shows one. Render them all with: node scripts/og/render.mjs
   The look follows the landing hero: neon wash, the sticker word, the N. mark
   with tags floating round it.
@@ -97,6 +98,54 @@
   .docs .line { font: 700 26px/1.3 'Manrope', sans-serif; color: #E4E4E7; letter-spacing: -0.005em; }
   .docs .line span { color: #39FF14; padding: 0 12px; }
   .docs .site { margin-top: 18px; font: 600 20px/1 'Inter', sans-serif; color: rgba(255,255,255,0.5); letter-spacing: 0.04em; }
+  /* WhatsApp header art. Seen at phone width, so the shapes are big and the words few. */
+  .stamp { position: absolute; right: 92px; top: 92px; width: 400px; height: 400px; border-radius: 50%; transform: rotate(-9deg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    background: #39FF14; color: #000; border: 5px solid #000;
+    box-shadow: 12px 12px 0 #000, 0 0 0 3px rgba(255,255,255,0.9), 0 40px 90px -20px rgba(57,255,20,0.65); }
+  .stamp::before { content: ''; position: absolute; inset: 22px; border-radius: 50%; border: 4px dashed rgba(0,0,0,0.75); }
+  .stamp svg { width: 132px; height: 132px; stroke-width: 2.2; }
+  .stamp b { font: 800 46px/1 'Manrope', sans-serif; letter-spacing: -0.03em; text-transform: uppercase; }
+  .stamp small { font: 800 17px/1 'Manrope', sans-serif; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.75; }
+  .stamp.dark { background: #111; color: #fff; border-color: rgba(255,255,255,0.9); box-shadow: 12px 12px 0 #39FF14, 12px 12px 0 5px #000, 0 40px 90px -20px rgba(0,0,0,0.9); }
+  .stamp.dark::before { border-color: rgba(255,255,255,0.35); }
+  .stamp.dark svg { color: #39FF14; }
+
+  .chat { position: absolute; right: 60px; top: 70px; width: 470px; display: flex; flex-direction: column; gap: 18px; }
+  .chat .group { display: flex; align-items: center; gap: 16px; padding: 18px 22px; border-radius: 28px; background: #111; border: 3px solid rgba(255,255,255,0.85); }
+  .chat .group .av { width: 64px; height: 64px; border-radius: 50%; background: #39FF14; border: 3px solid #000; display: grid; place-items: center; color: #000; }
+  .chat .group .av svg { width: 34px; height: 34px; }
+  .chat .group p { font: 800 26px/1.1 'Manrope', sans-serif; }
+  .chat .group span { display: block; font: 600 17px/1.3 'Inter', sans-serif; color: #A1A1AA; }
+  .bubble { max-width: 380px; padding: 18px 22px; border-radius: 26px 26px 26px 8px; background: #fff; color: #0A0A0A; border: 3px solid #000;
+    font: 700 22px/1.3 'Inter', sans-serif; box-shadow: 6px 6px 0 #000; }
+  .bubble.me { align-self: flex-end; border-radius: 26px 26px 8px 26px; background: #39FF14; }
+  .bubble small { display: block; margin-top: 6px; font: 600 15px/1 'Inter', sans-serif; color: #52525B; }
+
+  .post { position: absolute; right: 96px; top: 70px; width: 380px; height: 470px; transform: rotate(5deg); border-radius: 30px; background: #fff; color: #0A0A0A;
+    border: 4px solid #000; box-shadow: 10px 10px 0 #39FF14, 10px 10px 0 4px #000, 0 40px 80px -20px rgba(0,0,0,0.9); overflow: hidden; display: flex; flex-direction: column; }
+  .post .head { display: flex; align-items: center; gap: 12px; padding: 18px 20px; font: 800 19px/1 'Manrope', sans-serif; }
+  .post .head i { width: 40px; height: 40px; border-radius: 50%; background: #39FF14; border: 3px solid #000; }
+  .post .shot { flex: 1; margin: 0 20px; border-radius: 20px; border: 3px solid #000; display: grid; place-items: center;
+    background: radial-gradient(70% 70% at 30% 20%, rgba(57,255,20,0.55), transparent 70%), radial-gradient(60% 60% at 90% 90%, rgba(56,189,248,0.45), transparent 70%), #18181B; color: #fff; }
+  .post .shot svg { width: 110px; height: 110px; stroke-width: 2; }
+  .post .bar { display: flex; gap: 18px; padding: 18px 20px 22px; }
+  .post .bar svg { width: 32px; height: 32px; }
+  .note { position: absolute; padding: 22px 24px; width: 270px; border-radius: 18px; background: #FDE047; color: #0A0A0A; border: 4px solid #000;
+    font: 800 25px/1.15 'Manrope', sans-serif; box-shadow: 7px 7px 0 #000; transform: rotate(-7deg); }
+  .note small { display: block; margin-bottom: 8px; font: 800 14px/1 'Manrope', sans-serif; letter-spacing: 0.16em; text-transform: uppercase; color: #713F12; }
+
+  .receipt { position: absolute; right: 100px; top: 64px; width: 380px; padding: 34px 32px 40px; transform: rotate(4deg); background: #fff; color: #0A0A0A;
+    border: 4px solid #000; border-radius: 26px 26px 6px 6px; box-shadow: 10px 10px 0 #39FF14, 10px 10px 0 4px #000, 0 40px 80px -20px rgba(0,0,0,0.9); }
+  .receipt .kicker { font: 800 15px/1 'Manrope', sans-serif; letter-spacing: 0.16em; text-transform: uppercase; color: #52525B; }
+  .receipt .amt { margin-top: 16px; font: 800 92px/0.9 'Manrope', sans-serif; letter-spacing: -0.05em; }
+  .receipt .amt em { font-style: normal; color: #39FF14; -webkit-text-stroke: 0.04em #000; paint-order: stroke fill; text-shadow: 0.04em 0.05em 0 #000; }
+  .receipt .rows { margin-top: 26px; border-top: 3px dashed #D4D4D8; padding-top: 20px; display: grid; gap: 14px; }
+  .receipt .rows p { display: flex; justify-content: space-between; font: 700 18px/1 'Inter', sans-serif; color: #3F3F46; }
+  .receipt .rows b { font: 800 13px/1.4 'Manrope', sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: #A1A1AA; }
+  .receipt .paid { position: absolute; right: -26px; bottom: -30px; padding: 14px 22px; border-radius: 999px; background: #39FF14; border: 4px solid #000;
+    font: 800 24px/1 'Manrope', sans-serif; transform: rotate(-10deg); box-shadow: 5px 5px 0 #000; display: inline-flex; gap: 8px; align-items: center; }
+  .receipt .paid svg { width: 26px; height: 26px; }
 </style>
 </head>
 <body>
@@ -121,6 +170,14 @@ const ICONS = {
   send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
   camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
   arrow: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  check: '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  star: '<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>',
+  alarm: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/>',
+  pencil: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+  message: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  pin: '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
 };
 const icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
 
@@ -174,6 +231,79 @@ const CARDS = {
     tags: [['building', 'College fests'], ['send', 'Reply in a day', true], ['music', 'Live shows'], ['megaphone', 'Creator campaigns']],
   },
   docs: { docs: true },
+
+  // WhatsApp template headers (api/_lib/whatsapp.js IMAGE_HEADERS). No action pill: the message has its own button.
+  'wa-pass': {
+    lines: ['Your pass', 'is'], sticker: 'ready.', inline: true,
+    sub: 'Show the QR code at the entrance. It lives in the Newbi app.',
+    url: 'app.<b>newbi</b>.live',
+    art: 'ticket',
+    ticket: { kicker: 'Confirmed', big: 'You\'re on<br/>the <em>list</em>', meta: [['Entry', 'QR pass'], ['Saved in', 'Your app']], stub: 'Newbi pass', qr: true },
+    floats: [['check', 'Booking confirmed', true, 'left: 660px; top: 476px; transform: rotate(-4deg);']],
+  },
+  'wa-ticket': {
+    lines: ['Your ticket', 'is'], sticker: 'here.', inline: true,
+    sub: 'Your campaign ticket, ready to open. It\'s also inside the campaign.',
+    url: 'app.<b>newbi</b>.live',
+    art: 'ticket',
+    ticket: { kicker: 'Campaign ticket', big: 'Admit<br/>one <em>creator</em>', meta: [['For', 'Your campaign'], ['Open', 'In the app']], stub: 'Newbi creators' },
+    floats: [['ticket', 'Tap View ticket', true, 'left: 660px; top: 476px; transform: rotate(-4deg);']],
+  },
+  'wa-approved': {
+    lines: ["You're"], sticker: 'in.', inline: true,
+    sub: 'Your creator profile is approved. Apply to brand campaigns in your city.',
+    url: 'Newbi <b>Creators</b>',
+    art: 'stamp', stamp: { icon: 'check', word: 'Approved', small: 'Creator profile' },
+  },
+  'wa-invite': {
+    lines: ['New campaign'], sticker: 'for you.',
+    sub: 'A brand wants creators like you. Read the brief and apply in the app.',
+    url: 'Newbi <b>Creators</b>',
+    tags: [['megaphone', 'New brief', true], ['rupee', 'Paid or barter'], ['ticket', 'Show access'], ['camera', 'Reels & stories']],
+  },
+  'wa-shortlisted': {
+    lines: ["You're"], sticker: 'shortlisted.',
+    sub: 'Join the campaign group, then post your deliverables in the app.',
+    url: 'Newbi <b>Creators</b>',
+    art: 'stamp', stamp: { icon: 'star', word: 'Shortlisted', small: 'Campaign' }, dark: true,
+  },
+  'wa-shortlist': {
+    lines: ['Join the', 'creators'], sticker: 'group.', inline: true,
+    sub: 'The brief, passes and next steps are shared in the WhatsApp group.',
+    url: 'Newbi <b>Creators</b>',
+    art: 'chat', chat: { title: 'Campaign creators', meta: '48 creators · Newbi', bubbles: [['Brief and dates are pinned above.', 'Newbi team'], ['Joined ✅', '', true]] },
+  },
+  'wa-reminder': {
+    lines: ["Don't miss", 'the'], sticker: 'group.', inline: true,
+    sub: 'Your shortlist spot needs you in the creators group.',
+    url: 'Newbi <b>Creators</b>',
+    art: 'stamp', stamp: { icon: 'alarm', word: 'Reminder', small: 'Join today' }, dark: true,
+  },
+  'wa-deliverables': {
+    lines: ['Time to', 'send your'], sticker: 'posts.',
+    sub: 'Your personal link to send the campaign posts once they\'re live.',
+    url: 'Newbi <b>Creators</b>',
+    art: 'post', post: { icon: 'upload' },
+    floats: [['send', 'Send my posts', true, 'left: 600px; top: 540px; transform: rotate(-5deg);']],
+  },
+  'wa-changes': {
+    lines: ['One quick'], sticker: 'change.',
+    sub: 'Fix one thing on your post and send it again. The note says what.',
+    url: 'Newbi <b>Creators</b>',
+    art: 'post', post: { icon: 'camera' }, note: { small: 'Fix this', text: 'Tag the brand in the caption' },
+  },
+  'wa-payout': {
+    lines: ['Your payout', 'is'], sticker: 'sent.', inline: true,
+    sub: 'Thanks for creating with Newbi. The reference is in the message.',
+    url: 'Newbi <b>Creators</b>',
+    art: 'receipt',
+  },
+  'wa-city': {
+    lines: ["Your city's", 'creator'], sticker: 'crew.', inline: true,
+    sub: 'Gigs, guestlist passes and meetups with creators near you.',
+    url: 'Newbi <b>Community</b>',
+    tags: [['pin', 'Your city', true], ['users', 'Local creators'], ['ticket', 'Guestlist passes'], ['message', 'WhatsApp group']],
+  },
 };
 
 const name = new URLSearchParams(location.search).get('card') || 'home';
@@ -203,7 +333,30 @@ if (c.docs) {
     return `<div class="qr">${Array.from({ length: 49 }, (_, i) => `<i class="${bits[i % bits.length] === '1' ? '' : 'o'}"></i>`).join('')}</div>`;
   };
 
-  const art = c.art === 'ticket'
+  const stampArt = () => `<div class="stamp ${c.dark ? 'dark' : ''}">${icon(c.stamp.icon)}<b>${c.stamp.word}</b><small>${c.stamp.small}</small></div>`;
+  const chatArt = () => `<div class="chat">
+      <div class="group"><span class="av">${icon('users')}</span><p>${c.chat.title}<span>${c.chat.meta}</span></p></div>
+      ${c.chat.bubbles.map(([text, who, me]) => `<p class="bubble ${me ? 'me' : ''}">${text}${who ? `<small>${who}</small>` : ''}</p>`).join('')}
+    </div>`;
+  const postArt = () => `<div class="post">
+      <div class="head"><i></i>yourhandle</div>
+      <div class="shot">${icon(c.post.icon)}</div>
+      <div class="bar">${icon('heart')}${icon('message')}${icon('send')}</div>
+    </div>
+    ${c.note ? `<p class="note" style="left: 560px; top: 410px;"><small>${c.note.small}</small>${c.note.text}</p>` : ''}`;
+  const receiptArt = () => `<div class="receipt">
+      <p class="kicker">Creator payout</p>
+      <p class="amt"><em>₹</em>1,500</p>
+      <div class="rows"><p><b>Campaign</b>Your campaign</p><p><b>Paid by</b>Newbi</p><p><b>Reference</b>In the message</p></div>
+      <span class="paid">${icon('check')} Paid</span>
+    </div>`;
+  const floats = () => (c.floats || []).map(([ic, label, accent, style]) => `<span class="tag ${accent ? 'accent' : ''}" style="${style}">${icon(ic)} ${label}</span>`).join('');
+
+  const art = c.art === 'stamp' ? stampArt()
+    : c.art === 'chat' ? chatArt()
+    : c.art === 'post' ? postArt() + floats()
+    : c.art === 'receipt' ? receiptArt()
+    : c.art === 'ticket'
     ? `<div class="ticket">
          <div class="main">
            <p class="kicker">${c.ticket.kicker}</p>
@@ -226,7 +379,7 @@ if (c.docs) {
         <h1>${headline}</h1>
         <p class="sub">${c.sub}</p>
       </div>
-      <div class="foot"><span class="cta">${c.cta} ${icon('arrow')}</span><span class="url">${c.url}</span></div>
+      <div class="foot">${c.cta ? `<span class="cta">${c.cta} ${icon('arrow')}</span>` : ''}<span class="url">${c.url}</span></div>
       ${art}
       <div class="grain"></div>
     </div>`;

@@ -152,8 +152,8 @@ describe('review', () => {
         expect(app().deliverables.t_reel).toMatchObject({ status: 'rejected', reason: 'Tag @newbi.live in the caption.', reviewedBy: 'ops@newbi.live' });
         const msg = sent.at(-1);
         expect(msg.template.name).toBe('campaign_deliverable_changes');
-        expect(msg.template.components[0].parameters.map(p => p.text)).toEqual(['Riya', 'Instagram reel 1', 'Tag @newbi.live in the caption.']);
-        expect(msg.template.components[1]).toMatchObject({ sub_type: 'url', parameters: [{ text: link() }] });
+        expect(msg.template.components.find(c => c.type === 'body').parameters.map(p => p.text)).toEqual(['Riya', 'Instagram reel 1', 'Tag @newbi.live in the caption.']);
+        expect(msg.template.components.find(c => c.type === 'button')).toMatchObject({ sub_type: 'url', parameters: [{ text: link() }] });
         // The creator sees the reason and can send it again.
         const view = await call('outreach-deliverables', { token: link() }, { token: null });
         expect(view.body.tasks.find(t => t.id === 't_reel')).toMatchObject({ status: 'rejected', reason: 'Tag @newbi.live in the caption.' });
@@ -230,7 +230,7 @@ describe('payouts', () => {
         expect(app().payout.noticeSentAt).toBeTruthy();
         const notice = sent.at(-1);
         expect(notice.template.name).toBe('campaign_payout_sent');
-        expect(notice.template.components[0].parameters.map(p => p.text)).toEqual(['Riya', '1,500', 'Arijit Singh Live', '412345678901']);
+        expect(notice.template.components.find(c => c.type === 'body').parameters.map(p => p.text)).toEqual(['Riya', '1,500', 'Arijit Singh Live', '412345678901']);
         expect(audit()).toContainEqual(expect.objectContaining({ field: 'payout', to: 'paid', note: '₹1,500 by UPI, ref 412345678901' }));
         expect((await call('outreach-payout', PAY)).statusCode).toBe(409);
     });
@@ -257,7 +257,7 @@ describe('Joined, inbox and replies', () => {
         db.store.set('campaigns/c1/private/outreach', { ...db.store.get('campaigns/c1/private/outreach'), ticketRule: 'joined' });
         expect(await tap()).toBe('joined');
         const linkMsg = sent.find(m => m.template?.name === 'campaign_deliverables');
-        expect(linkMsg.template.components[1].parameters[0].text).toBe(link());
+        expect(linkMsg.template.components.find(c => c.type === 'button').parameters[0].text).toBe(link());
         expect(app().submitLinkSentAt).toBeTruthy();
         expect(releaseApplicationPass).not.toHaveBeenCalled();
         expect((await call('outreach-list', { campaignId: 'c1' })).body.settings.ticketRule).toBe('deliverables');

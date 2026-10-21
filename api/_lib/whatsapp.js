@@ -12,9 +12,35 @@
  * the same doc and, when the send had a `ref`, `{collection}/{id}.delivery.whatsapp`.
  */
 import { getDb, FieldValue, nowIso } from './db.js';
+import { APP_ORIGIN, WA_CARDS } from '../../src/app/seo.js';
 
 const API_VERSION = () => process.env.WHATSAPP_API_VERSION || 'v23.0';
 const RETRY_DELAYS_MIN = [5, 30, 120];
+
+/*
+ * Templates approved with an image header, and the card each one carries
+ * (public/og/wa-*, drawn in scripts/og/cards.html). Meta rejects a send whose
+ * header doesn't match the approved template, so these always get theirs.
+ */
+const IMAGE_HEADERS = {
+    pass_confirmed: 'wa-pass',
+    campaign_ticket_link: 'wa-ticket',
+    creator_approved: 'wa-approved',
+    campaign_invite: 'wa-invite',
+    campaign_shortlisted: 'wa-shortlisted',
+    campaign_shortlist: 'wa-shortlist',
+    campaign_join_reminder: 'wa-reminder',
+    campaign_deliverables: 'wa-deliverables',
+    campaign_deliverable_changes: 'wa-changes',
+    campaign_payout_sent: 'wa-payout',
+    creator_city_group: 'wa-city',
+};
+
+/** The image header for a template, or null when the template has none. */
+export const imageHeaderFor = (template) => {
+    const card = WA_CARDS[IMAGE_HEADERS[template]];
+    return card ? { type: 'image', link: `${APP_ORIGIN}${card.path}` } : null;
+};
 
 export const isWhatsAppConfigured = () => Boolean(process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID);
 
@@ -92,6 +118,7 @@ const PERMANENT_CODES = new Set([100, 131008, 131009, 131026, 131030, 131047, 13
 
 /**
  * sendTemplate({ to, template, language, header, bodyParams, buttons, event, uid, ref })
+ * Templates with an image header (IMAGE_HEADERS) get their card unless `header` is given.
  * → { ok, status: 'sent'|'failed'|'retry'|'skipped', messageId, error, errorCode, retriable, logId }
  * Never throws.
  *
@@ -99,11 +126,12 @@ const PERMANENT_CODES = new Set([100, 131008, 131009, 131026, 131030, 131047, 13
  * its own rate limit): a failure is logged as 'failed' and the daily worker
  * won't resend it. `retriable` says whether trying again could work.
  */
-export const sendTemplate = async ({ to, template, language, header, bodyParams = [], buttons = [], event = '', uid = null, ref = null, logId = null, autoRetry = true }) => {
+export const sendTemplate = async ({ to, template, language, header: givenHeader, bodyParams = [], buttons = [], event = '', uid = null, ref = null, logId = null, autoRetry = true }) => {
     if (!isWhatsAppConfigured()) return { ok: false, status: 'skipped', error: 'WhatsApp is not set up' };
     const phone = toE164(to);
     if (!phone) return { ok: false, status: 'skipped', error: 'No valid WhatsApp number' };
 
+    const header = givenHeader || imageHeaderFor(template);
     const name = templateName(template);
     const payload = {
         messaging_product: 'whatsapp',
