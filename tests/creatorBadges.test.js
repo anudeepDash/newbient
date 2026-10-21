@@ -45,6 +45,16 @@ describe('creatorBadges', () => {
         expect(earnedIds(creatorBadges({ creator: { ...creator, city: '' } }))).not.toContain('full_picture');
     });
 
+    it('lists Full Picture\'s missing parts and gives every non-secret badge but Collector a task', () => {
+        const full = creatorBadges({ creator: { uid: 'a', commercials: '500' }, profile: { city: 'Pune' } }).find(b => b.id === 'full_picture');
+        expect(full.todo).toBe('details');
+        expect(full.steps.filter(s => !s.done).map(s => s.id)).toEqual(['niche']);
+        expect(full).toMatchObject({ value: 2, target: 3, earned: false });
+        const untasked = BADGES.filter(b => !b.todo && !b.secret).map(b => b.id);
+        expect(untasked).toEqual(['day_one', 'collector']);
+        expect(BADGES.find(b => b.id === 'plugged_in').todo).toBe('instagram');
+    });
+
     it('keeps secret badges secret until earned and counts other badges for Collector', () => {
         const plain = creatorBadges({ creator: { uid: 'a' } });
         expect(plain.find(b => b.id === 'spotlight')).toMatchObject({ secret: true, earned: false });

@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import Lock from 'lucide-react/dist/esm/icons/lock';
+import Check from 'lucide-react/dist/esm/icons/check';
 import { cn } from '../../../lib/utils';
 import { BADGE_FAMILIES, BADGE_TIERS, byRarity } from '../../../lib/creator/achievements';
-import { Sheet } from '../../../components/app';
+import { Button, Sheet } from '../../../components/app';
 import { appPath } from '../../host';
 import { useT } from '../../../i18n';
 import BadgeMedal from './BadgeMedal';
@@ -135,7 +136,28 @@ export const Stage = ({ family, earned = true, className, children }) => {
 
 /* ── Badge detail ─────────────────────────────────────────────────── */
 
-export const BadgeSheet = ({ badge: current, onClose }) => {
+/* A badge's parts (Full Picture: niche, city, rates), ticked when done. */
+const BadgeSteps = ({ steps }) => {
+    const t = useT();
+    return (
+        <ul className="space-y-1.5 text-left">
+            {steps.map(s => (
+                <li key={s.id} className="flex items-center gap-2.5 text-[14px] font-semibold">
+                    <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-full', s.done ? 'bg-emerald-500 text-white dark:bg-neon-green dark:text-black' : 'border border-dashed border-black/20 dark:border-white/20')}>
+                        {s.done && <Check size={12} strokeWidth={3} />}
+                    </span>
+                    <span className={s.done ? 'text-gray-400 line-through dark:text-zinc-500' : ''}>{t(s.label)}</span>
+                </li>
+            ))}
+        </ul>
+    );
+};
+
+/*
+ * `actionFor(badge)` gives the button that takes the creator to the task
+ * ({ label, icon, onClick, loading }), or null when there's nothing to do.
+ */
+export const BadgeSheet = ({ badge: current, onClose, actionFor }) => {
     const t = useT();
     const open = Boolean(current);
     // Keep the last badge while the sheet animates closed.
@@ -143,6 +165,7 @@ export const BadgeSheet = ({ badge: current, onClose }) => {
     if (current) last.current = current;
     const badge = current || last.current;
     const secret = badge?.secret && !badge?.earned;
+    const action = badge && !badge.earned && !secret ? actionFor?.(badge) : null;
     return (
         <Sheet open={open} onClose={onClose} bleed width="sm" bodyClassName="p-0" backdrop={<div className="h-full bg-[#f7f7f3] dark:bg-[#0b0d12]" />}>
             {badge && (
@@ -172,7 +195,11 @@ export const BadgeSheet = ({ badge: current, onClose }) => {
                                     <span className="tabular-nums">{badge.value.toLocaleString('en-IN')} / {badge.target.toLocaleString('en-IN')}</span>
                                 </div>
                                 <ProgressBar ratio={badge.ratio} glow={FAMILY_GLOW[badge.family]} className="h-2" />
+                                {badge.steps && <div className="pt-2"><BadgeSteps steps={badge.steps} /></div>}
                             </div>
+                        )}
+                        {action && (
+                            <div className="mx-auto max-w-xs"><Button className="w-full" icon={action.icon} loading={action.loading} onClick={action.onClick}>{t(action.label)}</Button></div>
                         )}
                     </div>
                 </div>

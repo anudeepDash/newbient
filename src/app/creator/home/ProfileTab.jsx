@@ -24,7 +24,7 @@ import JoinCommunitySheet from '../../community/JoinCommunitySheet';
 import CompleteProfileSheet from '../../profile/CompleteProfileSheet';
 import { CITIES } from '../../community/welcomeForm';
 import DetailsStep, { validateDetails } from '../apply/DetailsStep';
-import { oauthErrorMessage } from '../apply/instagramCopy';
+import { useInstagramConnect } from '../useInstagramConnect';
 import { useT } from '../../../i18n';
 
 /*
@@ -66,33 +66,8 @@ const detailsFrom = (c) => ({
 
 const InstagramSection = ({ creator, settings }) => {
     const t = useT();
-    const [params, setParams] = useSearchParams();
-    const [busy, setBusy] = useState(false);
-    const [message, setMessage] = useState(null);
+    const { available, connect, busy, message } = useInstagramConnect({ creator, settings, returnPath: '/creator/profile' });
     const handle = handleOf(creator.instagram);
-
-    useEffect(() => {
-        const ig = params.get('ig');
-        if (!ig) return;
-        setMessage(ig !== 'connected'
-            ? { tone: 'error', text: oauthErrorMessage(params.get('reason'), params.get('handle')) }
-            : params.get('approved')
-                ? { tone: 'success', text: t('Instagram connected, and you’re verified. Your creator profile is live.') }
-                : { tone: 'success', text: t('Instagram connected. Your follower count now comes straight from Instagram.') });
-        const next = new URLSearchParams(params);
-        ['ig', 'reason', 'handle', 'approved'].forEach(k => next.delete(k));
-        setParams(next, { replace: true });
-        // eslint-disable-next-line
-    }, [params]);
-
-    const connect = async () => {
-        setBusy(true);
-        const res = await callCreatorApi('ig-connect', { handle, returnTo: appPath('/creator/profile'), origin: window.location.origin });
-        if (res.ok && res.data?.url) return window.location.assign(res.data.url);
-        setBusy(false);
-        setMessage({ tone: 'error', text: res.error });
-        return undefined;
-    };
 
     return (
         <div className="space-y-2">
@@ -102,7 +77,7 @@ const InstagramSection = ({ creator, settings }) => {
                 <Field label={t('Verified')} icon={BadgeCheck} value={creator.instagramVerified ? (creator.instagramVerifiedVia === 'oauth' ? t('Connected with Instagram') : t('Checked by Newbi')) : null} />
             </FieldCard>
             {message && <Notice tone={message.tone}>{message.text}</Notice>}
-            {settings?.metaVerification && creator.instagramVerifiedVia !== 'oauth' && (
+            {available && (
                 <div className="space-y-2">
                     <p className="px-1 text-[13px] text-gray-500 dark:text-zinc-400">{t('Connect a Professional (Creator or Business) account so brands see your real follower count.')}</p>
                     <Button variant="secondary" icon={Instagram} loading={busy} onClick={connect}>{t('Connect Instagram')}</Button>
@@ -174,6 +149,7 @@ const ProfileTab = ({ creator, profile, settings }) => {
     const [error, setError] = useState(null);
     const [saving, setSaving] = useState(false);
     const currentHandle = handleOf(creator.instagram) || '';
+    const [params, setParams] = useSearchParams();
 
     const openEdit = () => {
         const c = profile?.city || creator.city || '';
@@ -185,6 +161,16 @@ const ProfileTab = ({ creator, profile, settings }) => {
         setError(null);
         setEditing(true);
     };
+
+    // ?edit=details (a badge's "add them now") opens the details sheet straight away.
+    useEffect(() => {
+        if (params.get('edit') !== 'details') return;
+        openEdit();
+        const next = new URLSearchParams(params);
+        next.delete('edit');
+        setParams(next, { replace: true });
+        // eslint-disable-next-line
+    }, [params]);
 
     const save = async () => {
         const cleanHandle = handle.trim().replace(/^@+/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[/?#].*$/, '');

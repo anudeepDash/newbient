@@ -13,6 +13,11 @@ import { REFERRAL_TIERS } from './referralTiers';
  * bronze, silver, gold or legend) and a metric that returns how far along
  * the creator is, so locked badges can show progress. `secret` badges hide
  * their name and how to earn them until they're earned.
+ *
+ * `todo` names where a creator goes to work on a locked badge (the page
+ * turns it into a button): 'details' (the creator details sheet), 'instagram'
+ * (connect Instagram), 'openings', 'deliverables' or 'referrals'. `steps`
+ * lists the parts of a badge that has several, each done or not.
  */
 
 export const BADGE_FAMILIES = [
@@ -45,19 +50,19 @@ const COLLECTOR_TARGET = 10;
 export const BADGES = [
     // Getting started
     { id: 'day_one', family: 'debut', tier: 'bronze', emblem: 'rocket', name: 'Day One', how: 'Create your creator profile.', flavor: 'Every big creator had a day one. This is yours.', metric: () => flag(true) },
-    { id: 'full_picture', family: 'debut', tier: 'bronze', emblem: 'id-card', name: 'Full Picture', how: 'Add your niche, city and rates to your profile.', flavor: 'Brands know exactly who they’re working with.', metric: ({ creator, profile }) => count(profileParts(creator, profile), 3) },
-    { id: 'verified', family: 'debut', tier: 'silver', emblem: 'badge-check', name: 'Verified', how: 'Get your creator profile approved.', flavor: 'Checked, approved and ready for campaigns.', metric: ({ creator }) => flag(creator?.profileStatus === 'approved') },
-    { id: 'plugged_in', family: 'debut', tier: 'silver', emblem: 'instagram', name: 'Plugged In', how: 'Connect your Instagram Professional account.', flavor: 'Your numbers come straight from Instagram.', metric: ({ creator }) => flag(creator?.instagramVerifiedVia === 'oauth') },
+    { id: 'full_picture', family: 'debut', tier: 'bronze', emblem: 'id-card', name: 'Full Picture', how: 'Add your niche, city and rates to your profile.', flavor: 'Brands know exactly who they’re working with.', todo: 'details', steps: ({ creator, profile }) => profileSteps(creator, profile), metric: ({ creator, profile }) => count(profileSteps(creator, profile).filter(s => s.done).length, 3) },
+    { id: 'verified', family: 'debut', tier: 'silver', emblem: 'badge-check', name: 'Verified', how: 'Get your creator profile approved.', flavor: 'Checked, approved and ready for campaigns.', todo: 'instagram', metric: ({ creator }) => flag(creator?.profileStatus === 'approved') },
+    { id: 'plugged_in', family: 'debut', tier: 'silver', emblem: 'instagram', name: 'Plugged In', how: 'Connect your Instagram Professional account.', flavor: 'Your numbers come straight from Instagram.', todo: 'instagram', metric: ({ creator }) => flag(creator?.instagramVerifiedVia === 'oauth') },
 
     // Campaigns
-    { id: 'first_pitch', family: 'campaigns', tier: 'bronze', emblem: 'send', name: 'First Pitch', how: 'Apply to your first campaign.', flavor: 'Shot taken. Plenty more where that came from.', metric: ({ mine }) => count(mine.length, 1) },
-    { id: 'first_drop', family: 'campaigns', tier: 'bronze', emblem: 'clapperboard', name: 'First Drop', how: 'Get your first deliverable approved.', flavor: 'Your first post for a Newbi campaign is live.', metric: ({ mine }) => count(approvedTotal(mine), 1) },
-    { id: 'picked', family: 'campaigns', tier: 'silver', emblem: 'heart-handshake', name: 'Picked', how: 'Get shortlisted for a campaign.', flavor: 'Out of everyone who applied, they picked you.', metric: ({ mine }) => count(shortlistedTotal(mine), 1) },
-    { id: 'clean_sweep', family: 'campaigns', tier: 'silver', emblem: 'list-checks', name: 'Clean Sweep', how: 'Get every required deliverable in a campaign approved.', flavor: 'Brief done, start to finish. No loose ends.', metric: ({ mine }) => count(sweptTotal(mine), 1) },
-    { id: 'content_machine', family: 'campaigns', tier: 'silver', emblem: 'film', name: 'Content Machine', how: 'Get 10 deliverables approved.', flavor: 'Ten approved posts. The feed is yours.', metric: ({ mine }) => count(approvedTotal(mine), 10) },
-    { id: 'regular', family: 'campaigns', tier: 'gold', emblem: 'ticket', name: 'Regular', how: 'Get shortlisted for 5 campaigns.', flavor: 'Brands keep coming back to you.', metric: ({ mine }) => count(shortlistedTotal(mine), 5) },
-    { id: 'tour_veteran', family: 'campaigns', tier: 'gold', emblem: 'route', name: 'Tour Veteran', how: 'Complete 5 campaigns, every required deliverable approved.', flavor: 'Five campaigns, five clean finishes.', metric: ({ mine }) => count(sweptTotal(mine), 5) },
-    { id: 'headliner', family: 'campaigns', tier: 'legend', emblem: 'mic-vocal', name: 'Headliner', how: 'Get 25 deliverables approved.', flavor: 'Top of the bill. Twenty-five approved posts.', metric: ({ mine }) => count(approvedTotal(mine), 25) },
+    { id: 'first_pitch', family: 'campaigns', tier: 'bronze', emblem: 'send', name: 'First Pitch', how: 'Apply to your first campaign.', flavor: 'Shot taken. Plenty more where that came from.', todo: 'openings', metric: ({ mine }) => count(mine.length, 1) },
+    { id: 'first_drop', family: 'campaigns', tier: 'bronze', emblem: 'clapperboard', name: 'First Drop', how: 'Get your first deliverable approved.', flavor: 'Your first post for a Newbi campaign is live.', todo: 'deliverables', metric: ({ mine }) => count(approvedTotal(mine), 1) },
+    { id: 'picked', family: 'campaigns', tier: 'silver', emblem: 'heart-handshake', name: 'Picked', how: 'Get shortlisted for a campaign.', flavor: 'Out of everyone who applied, they picked you.', todo: 'openings', metric: ({ mine }) => count(shortlistedTotal(mine), 1) },
+    { id: 'clean_sweep', family: 'campaigns', tier: 'silver', emblem: 'list-checks', name: 'Clean Sweep', how: 'Get every required deliverable in a campaign approved.', flavor: 'Brief done, start to finish. No loose ends.', todo: 'deliverables', metric: ({ mine }) => count(sweptTotal(mine), 1) },
+    { id: 'content_machine', family: 'campaigns', tier: 'silver', emblem: 'film', name: 'Content Machine', how: 'Get 10 deliverables approved.', flavor: 'Ten approved posts. The feed is yours.', todo: 'deliverables', metric: ({ mine }) => count(approvedTotal(mine), 10) },
+    { id: 'regular', family: 'campaigns', tier: 'gold', emblem: 'ticket', name: 'Regular', how: 'Get shortlisted for 5 campaigns.', flavor: 'Brands keep coming back to you.', todo: 'openings', metric: ({ mine }) => count(shortlistedTotal(mine), 5) },
+    { id: 'tour_veteran', family: 'campaigns', tier: 'gold', emblem: 'route', name: 'Tour Veteran', how: 'Complete 5 campaigns, every required deliverable approved.', flavor: 'Five campaigns, five clean finishes.', todo: 'deliverables', metric: ({ mine }) => count(sweptTotal(mine), 5) },
+    { id: 'headliner', family: 'campaigns', tier: 'legend', emblem: 'mic-vocal', name: 'Headliner', how: 'Get 25 deliverables approved.', flavor: 'Top of the bill. Twenty-five approved posts.', todo: 'deliverables', metric: ({ mine }) => count(approvedTotal(mine), 25) },
 
     // Community: the referral tiers, plus the leaderboard
     ...REFERRAL_TIERS.map(t => ({
@@ -68,15 +73,16 @@ export const BADGES = [
         name: t.label,
         how: t.min === 1 ? 'Invite a creator who gets approved.' : `Invite ${t.min} creators who get approved.`,
         flavor: REFERRAL_BADGE[t.id]?.flavor || '',
+        todo: 'referrals',
         metric: ({ referrals }) => count(referrals?.me?.approved, t.min),
     })),
-    { id: 'podium', family: 'community', tier: 'gold', emblem: 'trophy', name: 'Podium', how: 'Finish in the top 3 of a referral leaderboard.', flavor: 'Top three. Everyone saw your name up there.', metric: ({ referrals }) => flag(onPodium(referrals?.me)) },
+    { id: 'podium', family: 'community', tier: 'gold', emblem: 'trophy', name: 'Podium', how: 'Finish in the top 3 of a referral leaderboard.', flavor: 'Top three. Everyone saw your name up there.', todo: 'referrals', metric: ({ referrals }) => flag(onPodium(referrals?.me)) },
 
     // Reach: Instagram followers
-    { id: 'club_1k', family: 'reach', tier: 'bronze', emblem: 'sprout', name: '1K Club', how: 'Reach 1,000 Instagram followers.', flavor: 'A thousand people want to see what you post.', metric: ({ creator }) => count(followersOf(creator), 1_000) },
-    { id: 'club_10k', family: 'reach', tier: 'silver', emblem: 'flame', name: '10K Club', how: 'Reach 10,000 Instagram followers.', flavor: 'Ten thousand. That’s a full stadium.', metric: ({ creator }) => count(followersOf(creator), 10_000) },
-    { id: 'club_100k', family: 'reach', tier: 'gold', emblem: 'zap', name: '100K Club', how: 'Reach 100,000 Instagram followers.', flavor: 'Six figures of followers. Big-room energy.', metric: ({ creator }) => count(followersOf(creator), 100_000) },
-    { id: 'club_1m', family: 'reach', tier: 'legend', emblem: 'crown', name: 'Million Club', how: 'Reach 1,000,000 Instagram followers.', flavor: 'A million followers. Legend status.', metric: ({ creator }) => count(followersOf(creator), 1_000_000) },
+    { id: 'club_1k', family: 'reach', tier: 'bronze', emblem: 'sprout', name: '1K Club', how: 'Reach 1,000 Instagram followers.', flavor: 'A thousand people want to see what you post.', todo: 'instagram', metric: ({ creator }) => count(followersOf(creator), 1_000) },
+    { id: 'club_10k', family: 'reach', tier: 'silver', emblem: 'flame', name: '10K Club', how: 'Reach 10,000 Instagram followers.', flavor: 'Ten thousand. That’s a full stadium.', todo: 'instagram', metric: ({ creator }) => count(followersOf(creator), 10_000) },
+    { id: 'club_100k', family: 'reach', tier: 'gold', emblem: 'zap', name: '100K Club', how: 'Reach 100,000 Instagram followers.', flavor: 'Six figures of followers. Big-room energy.', todo: 'instagram', metric: ({ creator }) => count(followersOf(creator), 100_000) },
+    { id: 'club_1m', family: 'reach', tier: 'legend', emblem: 'crown', name: 'Million Club', how: 'Reach 1,000,000 Instagram followers.', flavor: 'A million followers. Legend status.', todo: 'instagram', metric: ({ creator }) => count(followersOf(creator), 1_000_000) },
 
     // Special
     { id: 'collector', family: 'special', tier: 'gold', emblem: 'gem', name: 'Collector', how: `Collect ${COLLECTOR_TARGET} other badges.`, flavor: 'Ten badges deep. The shelf is filling up.', metric: ({ earnedOthers }) => count(earnedOthers, COLLECTOR_TARGET) },
@@ -96,24 +102,24 @@ const onPodium = (me) => [me?.rank, me?.monthRank].some(r => Number(r) >= 1 && N
 export const followersOf = (creator) => Number(creator?.instagramFollowers) || 0;
 
 const filled = (v) => (Array.isArray(v) ? v.length > 0 : String(v ?? '').trim() !== '');
-function profileParts(creator, profile) {
-    const niche = filled(creator?.niches) || filled(creator?.specializations) || filled(creator?.categories);
-    const city = filled(profile?.city) || filled(creator?.city);
-    const rates = filled(creator?.commercials) || filled(creator?.doBarter);
-    return [niche, city, rates].filter(Boolean).length;
-}
+const profileSteps = (creator, profile) => [
+    { id: 'niche', label: 'Your niche', done: filled(creator?.niches) || filled(creator?.specializations) || filled(creator?.categories) },
+    { id: 'city', label: 'Your city', done: filled(profile?.city) || filled(creator?.city) },
+    { id: 'rates', label: 'Your rates', done: filled(creator?.commercials) || filled(creator?.doBarter) },
+];
 
 /* ── Evaluation ───────────────────────────────────────────────────── */
 
 const evaluate = (badge, input) => {
     const { value, target } = badge.metric(input);
     const earned = value >= target;
-    return { ...badge, value: Math.min(value, target), target, earned, ratio: target ? Math.min(1, value / target) : 0 };
+    const steps = badge.steps ? badge.steps(input) : null;
+    return { ...badge, value: Math.min(value, target), target, earned, ratio: target ? Math.min(1, value / target) : 0, steps };
 };
 
 /*
  * Every badge with its state for one creator:
- *   { ...badge, earned, value, target, ratio }
+ *   { ...badge, earned, value, target, ratio, steps }
  * `mine` is useMyCampaigns' list ({ campaign, shortlisted, progress }),
  * `referrals` is the store's referrals (null until loaded).
  */
