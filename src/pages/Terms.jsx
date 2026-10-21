@@ -1,216 +1,236 @@
-import React, { useEffect, useState } from 'react';
-import { 
-    Shield, Scale, FileText, Gavel, CreditCard, 
-    AlertCircle, ExternalLink, RefreshCw, Clock, Key, Users, AlertTriangle
-} from 'lucide-react';
+import React from 'react';
+import LegalDoc, { P, UL, H3, A } from './legal/LegalDoc';
 
-const Terms = () => {
-    const [activeSection, setActiveSection] = useState(null);
+/*
+ * newbi.live/terms. Keep it in step with how the product works (manual UPI
+ * checkout with a UTR, creator campaigns and payouts, guestlists, giveaways),
+ * and update UPDATED with every change.
+ */
 
-    useEffect(() => {
-        if (typeof IntersectionObserver === 'undefined') return undefined;
-        const io = new IntersectionObserver((entries) => {
-            entries.forEach((e) => {
-                if (!e.isIntersecting) return;
-                const v = e.target.dataset.section;
-                setActiveSection(/^\d+$/.test(v) ? Number(v) : v);
-            });
-        }, { rootMargin: '-100px 0px -60% 0px' });
-        document.querySelectorAll('[data-section]').forEach((el) => io.observe(el));
-        return () => io.disconnect();
-    }, []);
+const UPDATED = '21 October 2026';
+const LEGAL = <A href="mailto:legal@newbi.live">legal@newbi.live</A>;
+const SUPPORT = <A href="mailto:support@newbi.live">support@newbi.live</A>;
 
-    const termsList = [
-        {
-            icon: <Key size={22} className="text-neon-blue" />,
-            title: "1. Account Security & Verification",
-            color: "blue",
-            bgGlow: "rgba(59,130,246,0.06)",
-            content: "You are responsible for keeping your account details accurate. To register or perform transactions, you must verify your phone number via SMS or WhatsApp OTP. Bypassing OTP systems or using virtual/throwaway numbers is strictly prohibited and will result in account termination."
-        },
-        {
-            icon: <CreditCard size={22} className="text-neon-green" />,
-            title: "2. Booking Payments & UTR Matching",
-            color: "green",
-            bgGlow: "rgba(16,185,129,0.06)",
-            content: "When using manual UPI checkout, you must provide the exact 12-digit UTR (Transaction ID) within the payment step. Submitting false, expired, or duplicate UTR codes constitutes fraud and will result in the immediate cancellation of your booking without refund, and potential suspension of your profile."
-        },
-        {
-            icon: <Users size={22} className="text-neon-pink" />,
-            title: "3. Creator Referrals & Leaderboard Rules",
-            color: "pink",
-            bgGlow: "rgba(236,72,153,0.06)",
-            content: "The Referral Program is designed for genuine creators. Any manipulation of referrals—including registering duplicate accounts, using bot networks, or presenting invalid social handles (Instagram/LinkedIn)—will result in disqualification from the leaderboard and the removal of referral rewards."
-        },
-        {
-            icon: <FileText size={22} className="text-gray-900 dark:text-white" />,
-            title: "4. Intellectual Property Rights",
-            color: "white",
-            bgGlow: "rgba(255,255,255,0.03)",
-            content: "All content, designs, graphics, code, and interfaces on the website and the services are proprietary to Newbi Entertainment. You may not copy, scrape, modify, or repurpose any assets without our express written consent."
-        },
-        {
-            icon: <Scale size={22} className="text-neon-blue" />,
-            title: "5. Information Accuracy Warranty",
-            color: "blue",
-            bgGlow: "rgba(59,130,246,0.06)",
-            content: "While we strive for accurate details regarding events and creator campaigns, neither we nor any third parties guarantee the complete accuracy, timeliness, or performance of site listings. Listings are subject to modifications without notice."
-        },
-        {
-            icon: <AlertTriangle size={22} className="text-neon-green" />,
-            title: "6. Prohibited Activities",
-            color: "green",
-            bgGlow: "rgba(16,185,129,0.06)",
-            content: "You agree not to use our systems for unlawful purposes, to host spam, or to attack our API endpoints. Disrupting services for other users will result in immediate bans and potential legal reports to local cyber cells."
-        },
-        {
-            icon: <ExternalLink size={22} className="text-neon-pink" />,
-            title: "7. Third-Party Links & Portal Integration",
-            color: "pink",
-            bgGlow: "rgba(236,72,153,0.06)",
-            content: "Our services might redirect you to external payment processors, social sites, or map coordinates. We are not responsible for the privacy practices, content, or transaction compliance of these external portals."
-        },
-        {
-            icon: <RefreshCw size={22} className="text-gray-900 dark:text-white" />,
-            title: "8. Refunds & Cancellations",
-            color: "white",
-            bgGlow: "rgba(255,255,255,0.03)",
-            content: "Bookings and tickets are generally non-refundable unless an event is officially cancelled by the organizers. If you are eligible for a refund, it will be processed through the original payment medium within our stipulated window (typically 5-7 business days)."
-        },
-        {
-            icon: <Clock size={22} className="text-neon-blue" />,
-            title: "9. Force Majeure & Cancellations",
-            color: "blue",
-            bgGlow: "rgba(59,130,246,0.06)",
-            content: "Neither party will be liable for failures to perform duties under these terms due to extreme acts of nature, pandemics, strikes, power outages, or other events beyond reasonable control."
-        },
-        {
-            icon: <Gavel size={22} className="text-neon-green" />,
-            title: "10. Governing Law & Jurisdictional Claims",
-            color: "green",
-            bgGlow: "rgba(16,185,129,0.06)",
-            content: "These terms and all related claims will be governed by the laws of India. Any litigation or legal filings must be processed through the courts of our registered corporate location."
-        }
-    ];
+const sections = [
+    {
+        id: 'agreement',
+        title: 'About these terms',
+        body: (
+            <>
+                <P>
+                    These terms are an agreement between you and <strong>Newbi Entertainment &amp; Marketing LLP</strong> (“Newbi”,
+                    “we”, “us”). They apply when you use newbi.live, the Newbi app at app.newbi.live, our WhatsApp number, and the
+                    ticketing, guestlist, creator and community services we run through them (together, “Newbi”).
+                </P>
+                <P>
+                    By creating an account or using Newbi you accept these terms and our <A href="/privacy">Privacy Policy</A>. Some
+                    listings (an event, a campaign, a giveaway) have their own rules on their page; those apply too, and win if they
+                    conflict with these terms on that listing.
+                </P>
+            </>
+        ),
+    },
+    {
+        id: 'accounts',
+        title: 'Your account',
+        body: (
+            <UL items={[
+                'You need to be 18 or older to create an account, or have your parent or guardian’s consent. Some shows and all creator campaigns are 18+ only.',
+                'Sign in with Google, email and password, or your phone number. Some features (guestlists, tickets, creator applications) need a verified phone number, which we confirm with a one-time code on WhatsApp or by SMS.',
+                'One person, one account. If we find two accounts that share a phone number or email, we can merge them. Using someone else’s number or a temporary number to get around limits isn’t allowed.',
+                'Keep your details accurate and your sign-in to yourself. You’re responsible for what happens on your account; tell us at once at support@newbi.live if you think someone else is using it.',
+            ]} />
+        ),
+    },
+    {
+        id: 'tickets',
+        title: 'Tickets, passes and guestlists',
+        body: (
+            <>
+                <H3>Buying tickets</H3>
+                <UL items={[
+                    'Prices are shown in Indian rupees before you pay and include any fee we charge, unless the listing says otherwise.',
+                    'You pay by UPI from your own app, then enter the UPI transaction reference (UTR). Your booking stays pending until our team matches the UTR to the payment, then your passes appear in your account.',
+                    'Each UTR can be used once. A false, reused or someone else’s UTR is fraud: we cancel the booking without a refund and may close the account.',
+                    'If an event uses an outside payment page, that provider’s terms apply to the payment itself.',
+                ]} />
+                <H3>Passes and entry</H3>
+                <UL items={[
+                    'Each pass has its own QR code and admits the number of people shown on it, once. Don’t share or resell it; a copied pass that has already been scanned won’t work.',
+                    'Guestlist spots are free unless the listing says otherwise, are limited, and can close early. Being on a guestlist doesn’t guarantee entry after the door time on the pass.',
+                    'The organiser and the venue set entry rules, such as age limits, ID, dress code and security checks, and can refuse entry to anyone who doesn’t meet them or puts others at risk. We follow their decision at the door.',
+                ]} />
+            </>
+        ),
+    },
+    {
+        id: 'refunds',
+        title: 'Cancellations and refunds',
+        body: (
+            <UL items={[
+                'Tickets can’t be cancelled or refunded once confirmed, unless the listing says otherwise.',
+                'If an event is cancelled, you get a full refund of what you paid for it. If it’s postponed or moved, your ticket stays valid for the new date or venue; if you can’t make it, you can ask for a refund within 7 days of the announcement.',
+                'Refunds go back by UPI to the account you paid from, usually within 5 to 7 working days after we confirm them.',
+                'No refund is due if you’re refused entry for breaking the organiser’s or venue’s rules, or if you don’t turn up.',
+            ]} />
+        ),
+    },
+    {
+        id: 'creators',
+        title: 'Creator campaigns',
+        body: (
+            <>
+                <H3>Applying and taking part</H3>
+                <UL items={[
+                    'Creator profiles and campaign applications are free. We review them and may approve, shortlist or decline them at our discretion; applying doesn’t guarantee a place.',
+                    'Your Instagram (or other) account must be yours, real and active. Bought followers, fake engagement or someone else’s account will get the application or profile removed.',
+                    'Once shortlisted, follow the campaign brief: the content, dates, tags and brand guidelines it sets. Join the campaign group when asked; that’s where the brief and updates are shared.',
+                ]} />
+                <H3>Your content</H3>
+                <UL items={[
+                    'You keep ownership of what you create. You give Newbi and the campaign’s brand a non-exclusive, royalty-free licence to share, repost and use your campaign posts, credited to you, on their channels for the purpose of that campaign, unless the brief says otherwise.',
+                    'Your posts must be your own work, follow Instagram’s rules and the law, and be clearly marked as paid or gifted (for example “#ad” or Instagram’s paid-partnership label), as the Advertising Standards Council of India (ASCI) requires.',
+                ]} />
+                <H3>Rewards and payouts</H3>
+                <UL items={[
+                    'Each campaign says what it offers (cash, a pass, products or a mix), which can depend on your follower tier at the time you apply.',
+                    'Cash is paid by UPI to the UPI ID you give us, after your posts are live and approved, unless we agree otherwise in writing. We can hold or cancel a payout if the posts don’t meet the brief, are taken down early, or break these terms.',
+                    'You’re responsible for any income tax on what you receive. Where the law requires us to deduct tax at source, we will, and we’ll share the details.',
+                ]} />
+            </>
+        ),
+    },
+    {
+        id: 'community',
+        title: 'Giveaways, gigs and referrals',
+        body: (
+            <UL items={[
+                'Each giveaway sets its own entry tasks, end date and prize on its page. Winners are picked as the page describes, and the winner’s name may be shown on it. Prizes can’t be swapped for cash.',
+                'Volunteer gigs list what they involve and what you get. If you’re picked, turn up on time, follow the crew lead, and treat guests and other volunteers with respect.',
+                'Referral points and leaderboards are for real people you bring in. Fake or duplicate accounts, bots or self-referrals get the points removed and can disqualify you.',
+            ]} />
+        ),
+    },
+    {
+        id: 'messages',
+        title: 'Messages from us',
+        body: (
+            <P>
+                By using Newbi you agree that we can send you messages about what you signed up for, such as codes, tickets,
+                passes, applications and payouts, by email, WhatsApp, push notification and in the app. Creator campaign updates on
+                WhatsApp only go to people who opted in; reply STOP to end them. Marketing emails have an unsubscribe link. See
+                the <A href="/privacy">Privacy Policy</A> for details.
+            </P>
+        ),
+    },
+    {
+        id: 'acceptable-use',
+        title: 'What’s not allowed',
+        body: (
+            <UL items={[
+                'Breaking the law, or using Newbi to harass, threaten or impersonate anyone.',
+                'Reselling passes or tickets, or selling access to guestlists, campaigns or giveaways.',
+                'Faking payments, UTRs, follower counts, engagement or referrals.',
+                'Scraping Newbi, overloading it, probing it for security holes, or getting around its limits or verification.',
+                'Uploading content that is illegal, hateful, sexually explicit, violent, or that you don’t have the rights to.',
+            ]} />
+        ),
+    },
+    {
+        id: 'ip',
+        title: 'Our content and brand',
+        body: (
+            <P>
+                The Newbi name, logos, designs, text, graphics and software are ours or licensed to us. You can share links to our
+                pages and listings, but you can’t copy, change or reuse our content or brand without our written permission. Event,
+                artist and brand names and artwork belong to their owners.
+            </P>
+        ),
+    },
+    {
+        id: 'third-parties',
+        title: 'Other services',
+        body: (
+            <P>
+                Newbi works with services run by others, such as Google sign-in, Instagram, WhatsApp, UPI apps and outside
+                payment pages. Their terms apply when you use them, and we aren’t responsible for how they work or for content on
+                sites we link to. Events are run with organisers, artists, venues and brands; where an event is run by someone
+                else, they are responsible for the event itself.
+            </P>
+        ),
+    },
+    {
+        id: 'liability',
+        title: 'Our responsibility to you',
+        body: (
+            <>
+                <P>
+                    We work to keep listings accurate and Newbi running, but event details (line-ups, timings, venues) can change,
+                    and we provide Newbi “as is”. We aren’t responsible for losses we couldn’t reasonably foresee, or for anything
+                    caused by events outside our control, such as weather, government orders, strikes, outages or an artist
+                    cancelling.
+                </P>
+                <P>
+                    As far as the law allows, our total responsibility to you for any claim is limited to what you paid us for the
+                    ticket or service the claim is about. Nothing in these terms limits your rights as a consumer under Indian law,
+                    or our responsibility where the law doesn’t allow it to be limited.
+                </P>
+            </>
+        ),
+    },
+    {
+        id: 'suspension',
+        title: 'Suspending or closing accounts',
+        body: (
+            <P>
+                We can suspend or close an account, cancel bookings or remove content if these terms are broken, if we suspect fraud,
+                or if the law requires it. Where we reasonably can, we’ll tell you why and give you a chance to respond. You can
+                close your account at any time; see <A href="/privacy#delete-your-data">Delete your data</A>.
+            </P>
+        ),
+    },
+    {
+        id: 'changes',
+        title: 'Changes to these terms',
+        body: (
+            <P>
+                We may update these terms as Newbi changes. We’ll update the date at the top, and tell you by email or in the app
+                before important changes apply. If you keep using Newbi after that, the new terms apply; if you don’t agree, you can
+                close your account.
+            </P>
+        ),
+    },
+    {
+        id: 'law',
+        title: 'Law and disputes',
+        body: (
+            <P>
+                These terms are governed by the laws of India. If something goes wrong, write to us first at {SUPPORT} and we’ll try
+                to sort it out within 30 days. If we can’t, the courts at New Delhi have jurisdiction, without affecting your right to
+                approach a consumer commission.
+            </P>
+        ),
+    },
+    {
+        id: 'contact',
+        title: 'Contact',
+        body: (
+            <P>
+                Questions about these terms: {LEGAL}. Help with a booking, pass or campaign: {SUPPORT}.
+            </P>
+        ),
+    },
+];
 
-    const scrollToSection = (idx) => {
-        const el = document.getElementById(`term-${idx}`);
-        if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setActiveSection(idx);
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-white dark:bg-black pt-32 pb-24 px-6 md:px-12 relative overflow-hidden">
-            {/* Background Ambient Glows */}
-            <div className="hidden md:block absolute top-0 right-1/4 w-[500px] h-[500px] bg-neon-blue/5 blur-[150px] pointer-events-none rounded-full" />
-            <div className="hidden md:block absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-neon-green/5 blur-[180px] pointer-events-none rounded-full" />
-
-            <div className="max-w-4xl mx-auto space-y-16 relative z-10">
-                {/* Hero Header */}
-                <div 
-                    className="text-center space-y-6"
-                >
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-widest text-zinc-400">
-                        <Scale size={10} className="text-neon-blue" />
-                        <span>LEGALLY BINDING AGREEMENT</span>
-                    </div>
-                    
-                    <h1 className="text-4xl sm:text-6xl md:text-7xl font-black font-heading tracking-tight text-gray-900 dark:text-white leading-none">
-                        Terms & <span className="text-neon-blue">Conditions</span>
-                    </h1>
-                    
-                    <p className="text-gray-500 text-xs sm:text-sm font-bold uppercase tracking-widest">
-                        Last Updated: June 10, 2026
-                    </p>
-
-                    <div className="mt-8 p-6 bg-gray-100 dark:bg-zinc-950/50 border border-black/10 dark:border-white/[0.08] md:backdrop-blur-3xl rounded-[2rem] max-w-2xl mx-auto text-left shadow-2xl relative overflow-hidden">
-                        <div className="hidden md:block absolute top-0 right-0 w-24 h-24 bg-neon-blue/5 blur-2xl" />
-                        <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm leading-relaxed">
-                            These Terms and Conditions, along with the privacy policy, constitute a binding agreement between <span className="text-gray-900 dark:text-white font-bold">Newbi Entertainment & Marketing LLP</span> (“Website Owner”, “we”, “us”, “our”) and you (“you”, “your”) regarding your access to services, tickets, and panels.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Quick Navigation Pills */}
-                <div className="flex flex-wrap justify-center gap-2.5 pb-4 border-b border-black/10 dark:border-white/5 select-none">
-                    {termsList.map((term, idx) => (
-                        <button
-                            key={idx}
-                            onClick={() => scrollToSection(idx)}
-                            className={`px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all border ${
-                                activeSection === idx 
-                                    ? "bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-md" 
-                                    : "bg-black/5 dark:bg-white/5 text-zinc-400 border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/10 hover:text-gray-900 dark:hover:text-white"
-                            }`}
-                        >
-                            {term.title.split('. ')[1]}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Important Notice Banner */}
-                <div className="p-8 bg-neon-blue/5 border border-neon-blue/20 rounded-[2.5rem] md:backdrop-blur-xl flex items-start gap-4">
-                    <AlertCircle size={24} className="text-neon-blue shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                        <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Please Read Carefully</h4>
-                        <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm leading-relaxed">
-                            By continuing to access our website and using the services, you acknowledge that you accept all sections of these Terms. We reserve the right to revise these terms without assigning reason. Periodic reviews are recommended.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Terms List Cards */}
-                <div className="space-y-8">
-                    {termsList.map((term, idx) => (
-                        <section
-                            id={`term-${idx}`}
-                            key={idx}
-                            data-section={idx}
-                            className="bg-gray-100 dark:bg-zinc-950/45 border border-black/10 dark:border-white/[0.08] md:backdrop-blur-3xl rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden group hover:border-black/20 dark:hover:border-white/15 transition-all duration-500"
-                        >
-                            {/* Decorative Radial Glow */}
-                            <div 
-                                className="hidden md:block absolute top-0 right-0 w-48 h-48 blur-[80px] -mr-24 -mt-24 pointer-events-none group-hover:scale-110 transition-transform duration-700" 
-                                style={{ backgroundColor: term.bgGlow }}
-                            />
-                            
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="w-12 h-12 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
-                                    {term.icon}
-                                </div>
-                                <h2 className="text-xl md:text-2xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight">
-                                    {term.title}
-                                </h2>
-                            </div>
-
-                            <p className="text-gray-600 dark:text-gray-400 font-medium text-xs sm:text-sm leading-relaxed relative z-10">
-                                {term.content}
-                            </p>
-                        </section>
-                    ))}
-                </div>
-
-                {/* Legal Contact Footer */}
-                <div 
-                    className="mt-20 text-center border-t border-black/10 dark:border-white/5 pt-12"
-                >
-                    <div className="inline-flex flex-col items-center gap-4">
-                        <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.25em]">
-                            For legal disputes or corporate clarification, reach us at
-                        </p>
-                        <a 
-                            href="mailto:legal@newbi.live" 
-                            className="px-6 py-3 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-white hover:text-black border border-black/10 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white transition-all shadow-xl"
-                        >
-                            legal@newbi.live
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
+const Terms = () => (
+    <LegalDoc
+        eyebrow="Terms"
+        title="Terms of"
+        highlight="service."
+        updated={UPDATED}
+        intro={<p>The rules for using Newbi: your account, tickets and passes, refunds, creator campaigns and payouts, giveaways and gigs, and what happens when something goes wrong.</p>}
+        sections={sections}
+    />
+);
 
 export default Terms;
