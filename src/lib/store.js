@@ -16,6 +16,7 @@ import { clearSessionHint } from './sessionHint';
 import { DEFAULT_CREATOR_GROUPS, isCampaignCityMatch } from './constants';
 import { TOAST_TYPES, toFriendlyMessage, getSupportHint, getToastDuration } from './toastCopy';
 import { indexAppSubmissions, mergeAppSubmissions, isAppSubmission } from './creator/appSubmissions';
+import { taskWindowFields } from './creator/tasks';
 import { ADMIN_ROLES } from '../constants/roles';
 
 /** A short, stable key for a push token (tokens are too long and odd-charactered to be field names). */
@@ -4124,15 +4125,16 @@ export const useStore = create((set, get) => ({
      * creator submitting at the same moment isn't lost.
      */
     /*
-     * Opens or closes one deliverable for submissions (task.submissionsOpen), from the
-     * Deliverables tab. A transaction on the tasks list, so submissions arriving meanwhile stay.
+     * Puts one deliverable in 'upcoming', 'open' or 'closed' (see taskWindow in
+     * src/lib/creator/tasks.js), from the Deliverables tab. A transaction on the
+     * tasks list, so submissions arriving meanwhile stay.
      */
-    setTaskSubmissionsOpen: async (campaignId, taskId, open) => {
+    setTaskWindow: async (campaignId, taskId, phase) => {
         const ref = doc(db, 'campaigns', campaignId);
         const tasks = await runTransaction(db, async (tx) => {
             const snap = await tx.get(ref);
             if (!snap.exists()) throw new Error('Campaign not found');
-            const next = (snap.data().tasks || []).map(t => (String(t.id) === String(taskId) ? { ...t, submissionsOpen: Boolean(open) } : t));
+            const next = (snap.data().tasks || []).map(t => (String(t.id) === String(taskId) ? { ...t, ...taskWindowFields(phase) } : t));
             tx.update(ref, { tasks: next });
             return next;
         });

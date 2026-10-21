@@ -1,4 +1,4 @@
-import { isRequiredTask } from '../creator/tasks.js';
+import { isRequiredTask, taskWindow } from '../creator/tasks.js';
 
 /*
  * Outreach deliverables (Phase 3): what each creator posts, checked against
@@ -40,8 +40,8 @@ export const deliverablesFor = (campaign) => (Array.isArray(campaign?.tasks) ? c
         required: isRequiredTask(t),
         deadline: t.deadline || '',
         proof: proofKind(t),
-        // Closed until the team opens it (src/lib/creator/tasks.js isTaskOpen).
-        open: t.submissionsOpen !== false,
+        // Not open until the team opens it, and not after they close it (src/lib/creator/tasks.js taskWindow).
+        open: taskWindow(t) === 'open',
     }));
 
 const POST_LINK = /^https:\/\/(?:www\.|m\.)?instagram\.com\/(?:[a-z0-9._]{1,30}\/)?(?:reel|reels|p|tv)\/[A-Za-z0-9_-]{5,}\/?(?:\?.*)?$/i;
