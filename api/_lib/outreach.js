@@ -56,6 +56,7 @@ import {
     handleInboxList, handleInboxThread, handleInboxReply, handleInboxTemplate, handleInboxState, handleInboxMedia,
 } from './outreachInbox.js';
 import { ticketRuleOf, TICKET_RULES } from '../../src/lib/outreach/deliverables.js';
+import { WA_CENTER_ACTIONS, handleWhatsAppCenterAction } from './whatsappCenter.js';
 
 export const OUTREACH_ACTIONS = new Set([
     'outreach-campaign', 'outreach-apply', 'outreach-list', 'outreach-status', 'outreach-settings', 'outreach-audit',
@@ -64,6 +65,8 @@ export const OUTREACH_ACTIONS = new Set([
     'outreach-review', 'outreach-ticket', 'outreach-payout', 'outreach-resend-link',
     'inbox-list', 'inbox-thread', 'inbox-reply', 'inbox-template', 'inbox-state', 'inbox-media',
     'outreach-city-notify', 'outreach-wame',
+    // The admin WhatsApp center (api/_lib/whatsappCenter.js).
+    ...WA_CENTER_ACTIONS,
 ]);
 const PUBLIC = new Set(['outreach-campaign', 'outreach-apply', 'outreach-deliverables', 'outreach-submit', 'outreach-upi', 'outreach-joined', 'outreach-mine']);
 
@@ -652,6 +655,7 @@ export const handleOutreachAction = async (action, req, res, { decodedToken, db 
         if (action === 'inbox-media') return await handleInboxMedia(req, res, withActor);
         if (action === 'outreach-city-notify') return await handleCityNotify(req, res, withActor);
         if (action === 'outreach-wame') return await handleWame(req, res, withActor);
+        if (WA_CENTER_ACTIONS.has(action)) return await handleWhatsAppCenterAction(action, req, res, withActor);
         return send(res, 400, { success: false, error: 'Unknown action.' });
     } catch (err) {
         // Never log request bodies: they carry phones and emails.
