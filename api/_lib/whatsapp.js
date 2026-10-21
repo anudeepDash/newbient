@@ -42,6 +42,9 @@ export const imageHeaderFor = (template) => {
     return card ? { type: 'image', link: `${APP_ORIGIN}${card.path}` } : null;
 };
 
+/** True once the owner marked a template approved in Meta by setting WHATSAPP_TEMPLATE_<NAME>. */
+export const isTemplateLive = (name) => Boolean(name && process.env[`WHATSAPP_TEMPLATE_${String(name).toUpperCase()}`]);
+
 export const isWhatsAppConfigured = () => Boolean(process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID);
 
 /**

@@ -8,6 +8,7 @@ import { sendTransactional, retryDeferredMail } from './_lib/mail/send.js';
 import { retryFailedWhatsApp } from './_lib/whatsapp.js';
 import { runQueue as runOutreachQueue, kickWorker as kickOutreachWorker } from './_lib/outreachQueue.js';
 import { handleEvent, isEvent } from './_lib/mail/events.js';
+import { runEventReminders } from './_lib/eventReminders.js';
 import { STAFF_TEMPLATES, hasTemplate } from './_lib/mail/templates/index.js';
 
 /*
@@ -86,10 +87,14 @@ const runWorker = async (req, { budgetMs = 48000, depth = 0 } = {}) => {
         : null;
     // More due than fits here: hand over to the outreach worker, which chains itself.
     if (outreach?.more && !outreach.capped) await kickOutreachWorker(req, 0);
+    // The day-before reminder for tomorrow's passes (each pass once per date).
+    const reminders = depth === 0
+        ? await runEventReminders({ deadline: Date.now() + 15000 }).catch(e => { console.error('[MAIL] event reminders failed:', e.message); return null; })
+        : null;
     const campaigns = await runCampaignWorker({ deadline: started + budgetMs }).catch(e => { console.error('[MAIL] campaign worker failed:', e); return { campaigns: 0, sent: 0, more: false }; });
     let chained = false;
     if (campaigns.more) chained = await chainWorker(req, depth);
-    return { retried, waRetried, outreachSent: outreach?.sent || 0, ...campaigns, chained, ms: Date.now() - started };
+    return { retried, waRetried, outreachSent: outreach?.sent || 0, remindersSent: reminders?.sent || 0, ...campaigns, chained, ms: Date.now() - started };
 };
 
 /* ---------- Free-form staff mail (the composer screens) ---------- */

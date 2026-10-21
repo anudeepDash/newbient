@@ -20,6 +20,7 @@ import { isWhatsAppConfigured, sendTemplate, toE164, imageHeaderFor } from './wh
 import { acquireSlot } from './outreachQueue.js';
 import { appendThreadMessage, contactIdFor } from './outreachThreads.js';
 import { maskPhone } from '../../src/lib/outreach/normalize.js';
+import { loadTeam } from './teamAlerts.js';
 import { STOP_PAYLOAD } from '../../src/lib/outreach/whatsappTemplate.js';
 import { APP_ORIGIN, OG_IMAGES } from '../../src/app/seo.js';
 
@@ -63,23 +64,6 @@ const fetchTemplates = async () => {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw Object.assign(new Error(data?.error?.message || `Meta answered ${res.status}`), { status: 502 });
     return (data.data || []).map(describeTemplate).sort((a, b) => a.name.localeCompare(b.name));
-};
-
-/* Team admins (the admins collection, not pending requests) with a WhatsApp number from their admin record or account. */
-const loadTeam = async (db) => {
-    const snap = await db.collection('admins').get();
-    const admins = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(a => a.role && a.role !== 'pending' && a.role !== 'unauthorized');
-    return Promise.all(admins.map(async (a) => {
-        let phone = toE164(a.phone);
-        let name = a.displayName && a.displayName !== 'UNNAMED_MEMBER' ? a.displayName : '';
-        if ((!phone || !name) && a.email) {
-            const u = await db.collection('users').where('email', '==', String(a.email).toLowerCase()).limit(1).get().catch(() => null);
-            const user = u && !u.empty ? u.docs[0].data() : {};
-            phone = phone || toE164(user.phoneVerified ? (user.phone || user.phoneNumber) : null);
-            name = name || user.displayName || '';
-        }
-        return { id: a.id, name: name || String(a.email || '').split('@')[0], email: a.email || '', role: a.role, phone };
-    }));
 };
 
 /* The header a send needs, from what the template was approved with. */

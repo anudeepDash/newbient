@@ -24,6 +24,7 @@ import { notifySpecificUser } from '../../../lib/notificationTriggers';
 import { answerText, responseFields, responseIdentity } from './formSchema';
 import { deleteFormResponses, subscribeToFormResponses, syncResponseCount, updateFormResponses } from './formResponses';
 import { BulkBar, InfoRow, SelectBox, SheetSection, formatDateTime, timeAgo, toDate, useConfirm } from './kit';
+import { notifyEvent } from '../../../lib/mailApi';
 
 /*
  * Every response to a built-in form, with search, export, bulk actions and a
@@ -176,6 +177,8 @@ const ResponsesSheet = ({ open, onClose, form, mode = 'form', gig, onCloseGig })
                 const [title, body] = NOTIFY_COPY[next](gig);
                 await Promise.all(targets.filter(x => x.r.userId).map(x => notifySpecificUser(x.r.userId, title, body, '/community', 'gig').then(() => { notified += 1; }).catch(() => {})));
             }
+            // Confirmed volunteers also get the gig details on WhatsApp (the server sends each one once).
+            if (volunteer && notify && next === 'confirmed') notifyEvent('gig-selected', { responseIds: targets.map(x => x.r.id) }).catch(() => {});
             const marked = `${targets.length === 1 ? (targets[0].who.name || 'Applicant') : `${targets.length} people`} marked ${VOLUNTEER_STATUS[next].label.toLowerCase()}`;
             if (notified) addToast(`${notified === 1 ? '1 person' : `${notified} people`} got a notification.`, 'success', { title: marked });
             else addToast(`${marked}.`, 'success');

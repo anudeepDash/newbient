@@ -48,6 +48,12 @@ export const WA_TEMPLATES = {
         body: '👋 *Thanks for applying to {{2}}, {{1}}!*\n\nJoin the Newbi *{{3}}* creators community on WhatsApp for gigs, guestlist passes and meetups:\n{{4}}\n\nSee you in there.',
         placeholders: ['first_name', 'campaign_title', 'city', 'city_group_link'],
     },
+    // Once, when every required deliverable is approved (never per post).
+    all_approved: {
+        name: 'all_posts_approved',
+        body: "🏁 *All your posts are approved, {{1}}*\n\n*Campaign:* {{2}}\n*Approved:* {{3}}\n\nThat's everything for this campaign. We'll message you here about your reward. Thanks for creating with Newbi!",
+        placeholders: ['first_name', 'campaign_title', 'approved_summary'],
+    },
     payout: {
         name: 'campaign_payout_sent',
         body: '💸 *Payout sent, {{1}}*\n\n*Amount:* ₹{{2}}\n*Campaign:* {{3}}\n*Reference:* {{4}}\n\nThanks for creating with Newbi!',
@@ -56,6 +62,14 @@ export const WA_TEMPLATES = {
 };
 
 export const NAME_FALLBACK = 'there';
+
+/** "Reel, Story 1 and Story 2" for a few posts, else "All 5 posts" (the all_posts_approved summary). */
+export const approvedSummary = (titles = []) => {
+    const list = titles.map(t => String(t || '').trim()).filter(Boolean);
+    if (!list.length) return 'All your posts';
+    if (list.length > 3) return `All ${list.length} posts`;
+    return list.length === 1 ? list[0] : `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`;
+};
 export const DEADLINE_FALLBACK = 'Details are in the group.';
 
 /** The template variables for one person, in order. `data` carries per-message values (task title, reason, amount, reference). */
@@ -71,6 +85,7 @@ export const templateParamsFor = (kind, { application, campaign, groupLink, data
         reference: String(data.reference || '').trim() || 'shared separately',
         city: String(data.city || application?.city || 'your city').trim(),
         city_group_link: String(data.groupUrl || '').trim(),
+        approved_summary: String(data.summary || '').trim() || 'All your posts',
     };
     return (WA_TEMPLATES[kind] || WA_TEMPLATES.invite).placeholders.map(p => values[p]);
 };

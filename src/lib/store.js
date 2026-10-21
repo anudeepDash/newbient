@@ -4667,6 +4667,8 @@ export const useStore = create((set, get) => ({
                 tx.update(couponRef, { usedCount: increment(-1) });
             }
         });
+        // Tell the buyer their payment couldn't be found (WhatsApp and the app; once per order, on the server).
+        notifyEvent('order-declined', { orderId: id }).catch(() => {});
     },
 
     // One check-in helper for the desk and the order list. Writes every field the

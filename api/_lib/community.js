@@ -206,12 +206,18 @@ const enterAction = async (db, body, caller) => {
     try {
         const appOrigin = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace(/\/+$/, '');
         await notify('giveaway-entry', caller.uid, {
-            giveawayName: g.name,
+            giveawayName: pick(g.name, g.title),
             name,
             prize: pick(g.prize, g.prizes) || '',
             endsAt: giveawayEndsAt(g)?.toISOString() || '',
             giveawayUrl: `${appOrigin}/community/giveaways/${encodeURIComponent(g.slug || g.id)}`,
-        }, { skip: ['whatsapp', 'push'], ref: { collection: 'giveaway_entries', id: entryRef.id }, idempotencyKey: `giveaway_${entryRef.id}` });
+        }, {
+            skip: ['push'],
+            // WhatsApp only to a number they proved (sign-in phone or a verified profile phone).
+            to: { phone: toE164(pick(caller.token?.phone_number, u.phoneVerified ? pick(u.phone, u.phoneNumber) : '')) || '' },
+            ref: { collection: 'giveaway_entries', id: entryRef.id },
+            idempotencyKey: `giveaway_${entryRef.id}`,
+        });
     } catch (err) {
         console.warn('[COMMUNITY] giveaway email not sent:', err.message);
     }
