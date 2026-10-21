@@ -1,0 +1,236 @@
+<!doctype html>
+<!--
+  Link-preview cards (1200×630) for public/og/. One card per section of the site;
+  ?card=<name> shows one. Render them all with: node scripts/og/render.mjs
+  The look follows the landing hero: neon wash, the sticker word, the N. mark
+  with tags floating round it.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Manrope:wght@600;700;800&display=block" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; background: #0A0A0A; }
+  body { font-family: 'Inter', system-ui, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
+
+  .card { position: relative; width: 1200px; height: 630px; overflow: hidden; isolation: isolate; }
+  .wash { position: absolute; inset: 0; z-index: -2;
+    background:
+      radial-gradient(48% 70% at 82% 30%, rgba(57,255,20,0.26), transparent 70%),
+      radial-gradient(40% 60% at 0% 100%, rgba(56,189,248,0.14), transparent 70%),
+      radial-gradient(30% 40% at 30% 0%, rgba(57,255,20,0.07), transparent 70%),
+      #0A0A0A; }
+  .dots { position: absolute; inset: 0; z-index: -1; opacity: 0.07;
+    background-image: radial-gradient(#fff 1.2px, transparent 1.2px); background-size: 24px 24px;
+    -webkit-mask-image: linear-gradient(100deg, #000 0%, transparent 55%); }
+  .grain { position: absolute; inset: 0; z-index: 5; pointer-events: none; opacity: 0.08; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  .logo { position: absolute; left: 64px; top: 46px; height: 54px; }
+
+  .copy { position: absolute; left: 64px; top: 134px; width: 640px; }
+  .copy.short { top: 166px; }
+  h1 { font: 800 84px/0.94 'Manrope', sans-serif; letter-spacing: -0.045em; }
+  h1 .line { display: block; white-space: nowrap; }
+  .sticker { display: inline-block; color: #39FF14; -webkit-text-stroke: 0.045em #000; paint-order: stroke fill;
+    text-shadow: 0.05em 0.06em 0 #000; padding-right: 0.08em; position: relative; isolation: isolate; transform: rotate(-2deg); transform-origin: left center; }
+  .sticker::before { content: attr(data-text); position: absolute; inset: 0; z-index: -1; color: #fff;
+    -webkit-text-stroke: 0.075em rgba(255,255,255,0.92); paint-order: stroke fill; text-shadow: 0.05em 0.06em 0 rgba(255,255,255,0.92); padding-right: 0.08em; }
+  .sub { margin-top: 24px; max-width: 580px; font: 500 25px/1.3 'Inter', sans-serif; color: #D4D4D8; letter-spacing: -0.01em; }
+
+  .foot { position: absolute; left: 64px; bottom: 46px; display: flex; align-items: center; gap: 22px; }
+  .cta { display: inline-flex; align-items: center; gap: 10px; height: 60px; padding: 0 28px; border-radius: 999px;
+    border: 3px solid #000; background: #39FF14; color: #000; font: 800 24px/1 'Manrope', sans-serif; letter-spacing: -0.01em;
+    box-shadow: 5px 5px 0 #000, 0 0 0 2px rgba(255,255,255,0.85), 0 18px 40px -12px rgba(57,255,20,0.7); }
+  .cta svg { width: 24px; height: 24px; }
+  .url { font: 700 22px/1 'Manrope', sans-serif; color: rgba(255,255,255,0.62); letter-spacing: 0.01em; }
+  .url b { color: #fff; font-weight: 800; }
+
+  /* Right-hand art: the N. mark as a sticker with tags around it (as on the landing hero). */
+  .art { position: absolute; right: 26px; top: 64px; width: 500px; height: 500px; }
+  .art .glow { position: absolute; inset: 14%; border-radius: 50%; background: rgba(57,255,20,0.22); filter: blur(60px); }
+  .art .frame { position: absolute; inset: 15%; border-radius: 56px; border: 1.5px solid rgba(255,255,255,0.12);
+    background-image: radial-gradient(rgba(255,255,255,0.13) 1.3px, transparent 1.3px); background-size: 20px 20px; }
+  .art .mark { position: absolute; left: 50%; top: 50%; width: 64%; transform: translate(-50%, -50%) rotate(-8deg);
+    filter: drop-shadow(0 26px 40px rgba(0,0,0,0.6)); }
+  .tag { position: absolute; display: inline-flex; align-items: center; gap: 9px; white-space: nowrap; padding: 13px 20px;
+    border-radius: 999px; border: 3px solid rgba(255,255,255,0.85); background: #111; color: #fff;
+    font: 800 20px/1 'Manrope', sans-serif; letter-spacing: -0.01em; box-shadow: 0 16px 34px -12px rgba(0,0,0,0.8); }
+  .tag.accent { border-color: #000; background: #39FF14; color: #000; box-shadow: 0 0 0 2px rgba(255,255,255,0.85), 0 16px 34px -12px rgba(57,255,20,0.6); }
+  .tag svg { width: 21px; height: 21px; flex: none; }
+  .t1 { left: -6px; top: 58px; transform: rotate(-6deg); }
+  .t2 { right: -4px; top: 132px; transform: rotate(5deg); }
+  .t3 { left: -14px; bottom: 118px; transform: rotate(4deg); }
+  .t4 { right: 6px; bottom: 44px; transform: rotate(-4deg); }
+
+  /* Ticket art (invite and app cards): a pass in the brand's sticker style. */
+  .ticket { position: absolute; right: 56px; top: 118px; width: 440px; height: 330px; transform: rotate(5deg);
+    display: flex; border-radius: 30px; background: #fff; color: #0A0A0A; border: 4px solid #000;
+    box-shadow: 10px 10px 0 #39FF14, 10px 10px 0 4px #000, 0 40px 80px -20px rgba(0,0,0,0.9); }
+  .ticket .main { flex: 1; padding: 30px 30px 26px; display: flex; flex-direction: column; }
+  .ticket .kicker { font: 800 15px/1 'Manrope', sans-serif; letter-spacing: 0.16em; text-transform: uppercase; color: #52525B; }
+  .ticket .big { margin-top: 16px; font: 800 54px/0.95 'Manrope', sans-serif; letter-spacing: -0.045em; }
+  .ticket .big em { font-style: normal; color: #39FF14; -webkit-text-stroke: 0.05em #000; paint-order: stroke fill; text-shadow: 0.05em 0.06em 0 #000; }
+  .ticket .meta { margin-top: auto; display: flex; gap: 22px; font: 700 15px/1.25 'Inter', sans-serif; color: #3F3F46; }
+  .ticket .meta b { display: block; font: 800 12px/1 'Manrope', sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: #A1A1AA; margin-bottom: 6px; }
+  .ticket .stub { position: relative; width: 128px; border-left: 4px dashed #0A0A0A; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: #39FF14; border-radius: 0 26px 26px 0; }
+  .ticket .stub::before, .ticket .stub::after { content: ''; position: absolute; left: -22px; width: 40px; height: 40px; border-radius: 50%; background: #0A0A0A; border: 4px solid #000; }
+  .ticket .stub::before { top: -24px; } .ticket .stub::after { bottom: -24px; }
+  .ticket .stub img { width: 82px; transform: rotate(-8deg); }
+  .ticket .stub span { font: 800 13px/1 'Manrope', sans-serif; letter-spacing: 0.18em; text-transform: uppercase; writing-mode: vertical-rl; transform: rotate(180deg); }
+  .ticket .qr { width: 86px; height: 86px; border-radius: 12px; background: #0A0A0A; padding: 9px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .ticket .qr i { background: #fff; border-radius: 1.5px; }
+  .ticket .qr i.o { background: transparent; }
+  .ticket .float { position: absolute; }
+
+  /* Paperwork: quieter, centred. */
+  .docs .wash { background:
+      radial-gradient(60% 80% at 50% 0%, rgba(57,255,20,0.14), transparent 70%),
+      radial-gradient(40% 60% at 100% 100%, rgba(56,189,248,0.10), transparent 70%), #0A0A0A; }
+  .docs .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .docs .center img { width: 430px; }
+  .docs .company { margin-top: 30px; font: 800 22px/1 'Manrope', sans-serif; letter-spacing: 0.24em; text-transform: uppercase; color: #fff; }
+  .docs .rule { margin: 30px 0 26px; width: 120px; height: 4px; border-radius: 4px; background: #39FF14; box-shadow: 0 0 18px rgba(57,255,20,0.7); }
+  .docs .line { font: 700 26px/1.3 'Manrope', sans-serif; color: #E4E4E7; letter-spacing: -0.005em; }
+  .docs .line span { color: #39FF14; padding: 0 12px; }
+  .docs .site { margin-top: 18px; font: 600 20px/1 'Inter', sans-serif; color: rgba(255,255,255,0.5); letter-spacing: 0.04em; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const LOGO = '../../src/assets/logo/newbi-logo.svg';
+const MARK = '../../src/assets/logo/newbi-icon.svg';
+
+// Lucide icon paths (the icon set the site uses).
+const ICONS = {
+  ticket: '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>',
+  megaphone: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  music: '<circle cx="8" cy="18" r="4"/><path d="M12 18V2l7 4"/>',
+  building: '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>',
+  gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  qr: '<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>',
+  rupee: '<path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3"/><path d="M9 13c6.667 0 6.667-10 0-10"/>',
+  sparkles: '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>',
+  heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+  cap: '<path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
+  send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  arrow: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+};
+const icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
+
+// Each card: headline lines (the last is the sticker word), a line under it,
+// the action pill, the address, and the tags round the mark (one accent).
+const CARDS = {
+  home: {
+    lines: ['We make', 'young India'], sticker: 'show up.',
+    sub: 'Campus activations, live shows and creator campaigns across India.',
+    cta: 'Work with us', url: '<b>newbi</b>.live',
+    tags: [['building', 'Campus activations'], ['megaphone', 'Creator campaigns', true], ['music', 'Artist shows'], ['ticket', 'Guestlists & passes']],
+  },
+  creator: {
+    lines: ['Create with', 'brands. Get into'], sticker: 'the shows.',
+    sub: 'Paid campaigns, products and passes, matched to your city and niche.',
+    cta: 'Apply in 45 seconds', url: 'Free · No agency cut',
+    tags: [['rupee', 'Paid campaigns'], ['ticket', 'Concert access', true], ['gift', 'Barter collabs'], ['camera', 'Reels & stories']],
+  },
+  invite: {
+    lines: ["You're", 'invited to'], sticker: 'create.',
+    sub: 'Brands and shows invite creators to campaigns for passes, products and paid work.',
+    cta: 'Accept the invite', url: 'Free · No agency cut',
+    art: 'ticket',
+    ticket: { kicker: 'Creator invite', big: 'Admit<br/>one <em>creator</em>', meta: [['Pays in', 'Cash, passes,<br/>products'], ['Joining fee', 'Zero']], stub: 'Newbi creators' },
+    floats: [['sparkles', 'Apply in 45 seconds', true, 'left: 640px; top: 470px; transform: rotate(-4deg);']],
+  },
+  community: {
+    lines: ['Get on', 'the'], sticker: 'list.', inline: true,
+    sub: 'Guestlists, backstage volunteer gigs and giveaways for shows near you. Free.',
+    cta: 'Join free', url: 'app.<b>newbi</b>.live',
+    tags: [['ticket', 'Guestlists', true], ['heart', 'Volunteer gigs'], ['gift', 'Giveaways'], ['qr', 'Passes in the app']],
+  },
+  app: {
+    lines: ['Every show.', 'One'], sticker: 'app.', inline: true,
+    sub: 'Your passes, guestlists, gigs, giveaways and creator campaigns in one place.',
+    cta: 'Open newbi.app', url: 'app.<b>newbi</b>.live',
+    art: 'ticket',
+    ticket: { kicker: 'Your pass', big: 'Show this<br/>at the <em>gate</em>', meta: [['Entry', 'QR pass'], ['Lands in', 'Your app']], stub: 'Newbi pass', qr: true },
+    floats: [['users', 'Guestlists & gigs', false, 'left: 650px; top: 480px; transform: rotate(-4deg);']],
+  },
+  campus: {
+    lines: ['Bring the show', 'to your'], sticker: 'campus.', inline: true,
+    sub: 'College fests, campus creators and student crews, run with Newbi.',
+    cta: 'Bring Newbi in', url: 'app.<b>newbi</b>.live/campus',
+    tags: [['music', 'College fests', true], ['camera', 'Campus creators'], ['users', 'Student crews'], ['megaphone', 'Brand activations']],
+  },
+  contact: {
+    lines: ["Let's make", 'some'], sticker: 'noise.', inline: true,
+    sub: 'College activations, live shows and creator campaigns. We reply within a working day.',
+    cta: 'Tell us the plan', url: '<b>newbi</b>.live/contact',
+    tags: [['building', 'College fests'], ['send', 'Reply in a day', true], ['music', 'Live shows'], ['megaphone', 'Creator campaigns']],
+  },
+  docs: { docs: true },
+};
+
+const name = new URLSearchParams(location.search).get('card') || 'home';
+const c = CARDS[name];
+const root = document.getElementById('root');
+
+if (c.docs) {
+  root.innerHTML = `
+    <div class="card docs"><div class="wash"></div><div class="dots" style="-webkit-mask-image: radial-gradient(60% 60% at 50% 50%, #000, transparent)"></div>
+      <div class="center">
+        <img src="${LOGO}" alt="" />
+        <p class="company">Newbi Entertainment &amp; Marketing</p>
+        <div class="rule"></div>
+        <p class="line">Concerts<span>·</span>College fests<span>·</span>Brand activations<span>·</span>Creator campaigns</p>
+        <p class="site">newbi.live</p>
+      </div>
+      <div class="grain"></div>
+    </div>`;
+} else {
+  const headline = c.inline
+    ? `${c.lines.slice(0, -1).map(l => `<span class="line">${l}</span>`).join('')}<span class="line">${c.lines.at(-1)} <span class="sticker" data-text="${c.sticker}">${c.sticker}</span></span>`
+    : `${c.lines.map(l => `<span class="line">${l}</span>`).join('')}<span class="line"><span class="sticker" data-text="${c.sticker}">${c.sticker}</span></span>`;
+
+  const qr = () => {
+    // A fixed, QR-looking pattern (decoration only).
+    const bits = '1110111100100110101111101001010010101111011101011100101110011101011';
+    return `<div class="qr">${Array.from({ length: 49 }, (_, i) => `<i class="${bits[i % bits.length] === '1' ? '' : 'o'}"></i>`).join('')}</div>`;
+  };
+
+  const art = c.art === 'ticket'
+    ? `<div class="ticket">
+         <div class="main">
+           <p class="kicker">${c.ticket.kicker}</p>
+           <p class="big">${c.ticket.big}</p>
+           <div class="meta">${c.ticket.meta.map(([k, v]) => `<p><b>${k}</b>${v}</p>`).join('')}</div>
+         </div>
+         <div class="stub">${c.ticket.qr ? qr() : `<img src="${MARK}" alt="" />`}<span>${c.ticket.stub}</span></div>
+       </div>
+       ${(c.floats || []).map(([ic, label, accent, style]) => `<span class="tag ${accent ? 'accent' : ''}" style="${style}">${icon(ic)} ${label}</span>`).join('')}`
+    : `<div class="art">
+         <div class="glow"></div><div class="frame"></div>
+         <img class="mark" src="${MARK}" alt="" />
+         ${c.tags.map(([ic, label, accent], i) => `<span class="tag t${i + 1} ${accent ? 'accent' : ''}">${icon(ic)} ${label}</span>`).join('')}
+       </div>`;
+
+  root.innerHTML = `
+    <div class="card"><div class="wash"></div><div class="dots"></div>
+      <img class="logo" src="${LOGO}" alt="" />
+      <div class="copy ${c.lines.length + (c.inline ? 0 : 1) < 3 ? 'short' : ''}">
+        <h1>${headline}</h1>
+        <p class="sub">${c.sub}</p>
+      </div>
+      <div class="foot"><span class="cta">${c.cta} ${icon('arrow')}</span><span class="url">${c.url}</span></div>
+      ${art}
+      <div class="grain"></div>
+    </div>`;
+}
+</script>
+</body>
+</html>

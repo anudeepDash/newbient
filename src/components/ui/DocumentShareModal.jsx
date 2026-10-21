@@ -11,7 +11,7 @@ import Sheet from '../admin/Sheet';
 import { cn } from '../../lib/utils';
 import { getDocumentShareMeta, getPdfPreviewImageUrl } from '../../lib/documentPreviewUtils';
 import { docTheme } from './docviewer/DocKit';
-import { DEFAULT_IMAGE } from '../../app/seo';
+import { isShareCard } from '../../app/seo';
 import { shareLinkWithCard, whenShareCard } from '../../lib/docShareCard';
 import { proposalEmail, proposalEmailText, proposalWhatsAppText } from '../../lib/proposals';
 
@@ -58,7 +58,7 @@ export default function DocumentShareModal({
     // The saved card (the document's first pages) is exactly what chats show.
     const card = fresh?.url || documentData?.previewImage || null;
     const preview = pdfPagePreview || getPdfPreviewImageUrl(documentData?.fileUrl, { width: 800, height: 1100 }) || meta.previewImage;
-    const hasRealPreview = preview && !preview.endsWith('/og-image.png') && !preview.endsWith(DEFAULT_IMAGE.path);
+    const hasRealPreview = preview && !preview.endsWith('/og-image.png') && !isShareCard(preview);
 
     useEffect(() => { setCanNativeShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function'); }, []);
     useEffect(() => { if (!isOpen) { setShowQr(false); setCopied(false); } }, [isOpen]);
