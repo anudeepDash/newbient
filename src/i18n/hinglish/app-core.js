@@ -372,6 +372,8 @@ export default {
     "{phone} verified (test mode)": "{phone} verified (test mode)",
     "This number": "This number",
     "Code sent to {phone}": "Code {phone} pe bheja gaya",
+    "Code sent on WhatsApp to {phone}": "Code WhatsApp pe {phone} ko bheja gaya",
+    "No WhatsApp? Get the code by SMS": "WhatsApp nahi hai? Code SMS pe mangao",
     "6-digit code": "6-digit code",
     "Change number": "Change number",
     "Verify": "Verify",

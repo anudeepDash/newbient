@@ -1,6 +1,6 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import {
-    initializeAuth, inMemoryPersistence, signInWithCredential, signInWithPopup, signInWithEmailAndPassword, signOut,
+    initializeAuth, inMemoryPersistence, signInWithCredential, signInWithCustomToken, signInWithPopup, signInWithEmailAndPassword, signOut,
     GoogleAuthProvider, EmailAuthProvider, linkWithCredential,
 } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
@@ -54,6 +54,8 @@ const prove = async (signIn, linkable = null) => {
 };
 
 export const proveWithCredential = (credential) => prove(p => signInWithCredential(p, credential));
+/* A WhatsApp code proved the number: the server hands back a sign-in to the account it belongs to. */
+export const proveWithCustomToken = (token) => prove(p => signInWithCustomToken(p, token));
 export const proveWithGoogle = () => prove(
     p => signInWithPopup(p, new GoogleAuthProvider()),
     result => GoogleAuthProvider.credentialFromResult(result),
