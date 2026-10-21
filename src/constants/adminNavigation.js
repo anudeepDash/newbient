@@ -36,7 +36,7 @@ import UserRound from 'lucide-react/dist/esm/icons/user-round';
 import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
 import Receipt from 'lucide-react/dist/esm/icons/receipt';
 import Wallet from 'lucide-react/dist/esm/icons/wallet';
-import MessagesSquare from 'lucide-react/dist/esm/icons/messages-square';
+import WhatsAppLogo from '../components/app/WhatsAppLogo';
 import { FINANCE_ROLES, FULL_ACCESS_ROLES, SCANNER_ROLES, CONTENT_ROLES } from './roles';
 
 const NOT_SCANNER = { deny: [...SCANNER_ROLES] };
@@ -56,7 +56,7 @@ export const ADMIN_NAV_GROUPS = [
             { id: 'dashboard', accent: 'green', name: 'Dashboard', path: '/admin', icon: LayoutDashboard, exact: true },
             { id: 'inbox', accent: 'blue', name: 'Inbox', path: '/admin/messages', icon: Mail, card: 'messages', ...OPERATIONS, badgeKey: 'inbox' },
             // Same roles the server allows (api/_lib/outreach.js OUTREACH_ROLES).
-            { id: 'whatsapp', accent: 'green', name: 'WhatsApp', path: '/admin/whatsapp', icon: MessagesSquare, roles: ['founder', 'super_admin', 'developer', 'admin'] },
+            { id: 'whatsapp', accent: 'green', name: 'WhatsApp', path: '/admin/whatsapp', icon: WhatsAppLogo, roles: ['founder', 'super_admin', 'developer', 'admin'] },
         ],
     },
     {
