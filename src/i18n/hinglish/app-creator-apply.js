@@ -242,6 +242,8 @@ export default {
     "Enter a valid WhatsApp number, like 98765 43210 or +91 98765 43210.": "Valid WhatsApp number daalo, jaise 98765 43210 ya +91 98765 43210.",
     "Enter your Instagram @handle or profile link.": "Apna Instagram @handle ya profile link daalo.",
     "Enter your follower count as a number, like 12500.": "Apna follower count number mein daalo, jaise 12500.",
+    "You need more followers for this campaign.": "Is campaign ke liye aur followers chahiye.",
+    "This campaign needs at least {count} followers.": "Is campaign ke liye kam se kam {count} followers chahiye.",
     "Enter your college or where you work.": "Apna college ya jahan kaam karte ho, wo daalo.",
     "Choose a city from the list.": "List mein se city choose karo.",
     "This campaign has no cities set yet.": "Is campaign ke liye abhi koi city set nahi hai.",

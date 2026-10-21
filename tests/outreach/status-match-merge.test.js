@@ -160,6 +160,13 @@ describe('validateApplication', () => {
         expect(tierFor(100000)).toBe('macro');
         expect(tierFor(6000, { micro: { minFollowers: 5000 } })).toBe('micro');
     });
+
+    it('turns away follower counts under the Nano "from" count', () => {
+        const strict = { ...campaign, perksByTier: { nano: { minFollowers: 3000 } } };
+        expect(validateApplication({ ...good, followerCount: '2999' }, strict).errors.followerCount).toBe('You need more followers for this campaign.');
+        expect(validateApplication({ ...good, followerCount: '3000' }, strict).ok).toBe(true);
+        expect(validateApplication({ ...good, followerCount: '10' }, { ...campaign, perksByTier: { nano: { minFollowers: '' } } }).ok).toBe(true);
+    });
 });
 
 describe('applicationsOpen', () => {

@@ -45,4 +45,5 @@ export const SKIP_REASON = {
     not_allowed: 'not allowed from their current status',
     not_found: 'no longer exists',
     no_phone: 'no phone number',
+    below_min: 'under the follower minimum',
 };
