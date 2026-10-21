@@ -13,6 +13,9 @@ export async function callCreatorApi(action, body = {}, { method = 'POST', timeo
     const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
     try {
         const headers = { 'Content-Type': 'application/json' };
+        // After a reload the signed-in user comes back from saved state before Firebase has
+        // restored the session; wait for it, or the first calls go out signed out.
+        if (auth?.authStateReady) await auth.authStateReady().catch(() => {});
         const token = await auth?.currentUser?.getIdToken?.().catch(() => null);
         if (token) headers.Authorization = `Bearer ${token}`;
         const params = new URLSearchParams({ action, ...(query || {}) });
