@@ -18,6 +18,7 @@ import { Button, Badge } from './ui';
 import { Field, Toggle, fieldCls } from './uploads/UploadKit';
 import { BuilderCard } from './events/EditorParts';
 import { appUrl } from '../../app/host';
+import { callCreatorApi } from '../../app/creator/api';
 
 /*
  * Creator program rules: who can apply, the Instagram follower gate, points,
@@ -64,6 +65,64 @@ const LINKS = [
     { label: 'Creator home', path: appUrl('/creator'), icon: LayoutDashboard, tone: 'blue' },
 ];
 const absolute = (path) => (/^https?:/.test(path) ? path : `${window.location.origin}${path}`);
+
+/*
+ * Accounts that can connect Instagram before the Meta switch is on (the App
+ * Review test account, the team). Kept on the server, not in site_settings,
+ * so the emails stay private; saved on its own button.
+ */
+const EarlyAccess = ({ addToast }) => {
+    const [text, setText] = useState('');
+    const [savedText, setSavedText] = useState('');
+    const [state, setState] = useState('loading');
+    useEffect(() => {
+        let live = true;
+        callCreatorApi('ig-connect-access', {}).then((res) => {
+            if (!live) return;
+            const value = res.ok ? (res.data.emails || []).join('\n') : '';
+            setText(value);
+            setSavedText(value);
+            setState(res.ok ? 'ready' : 'error');
+        });
+        return () => { live = false; };
+    }, []);
+    const save = async () => {
+        setState('saving');
+        const res = await callCreatorApi('ig-connect-access', { emails: text });
+        if (!res.ok) {
+            setState('ready');
+            addToast(res.error, 'error', { title: 'Early access not saved' });
+            return;
+        }
+        const value = (res.data.emails || []).join('\n');
+        setText(value);
+        setSavedText(value);
+        setState('ready');
+        addToast(res.data.emails.length ? `${res.data.emails.length} account${res.data.emails.length === 1 ? '' : 's'} can connect Instagram.` : 'Early access cleared.', 'success');
+    };
+    return (
+        <div>
+            <Field label="Early access to Connect Instagram" optional hint={state === 'error' ? 'Couldn’t load the list. Refresh to try again.' : 'Sign-in emails, one per line. These accounts see “Connect with Instagram” while the switch is off, like the Meta App Review test account.'}>
+                <textarea
+                    className={cn(fieldCls, 'min-h-[88px] py-2.5 font-mono text-[13px]')}
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="reviewer@example.com"
+                    disabled={state === 'loading' || state === 'error'}
+                    spellCheck={false}
+                />
+            </Field>
+            {text !== savedText && (
+                <div className="mt-2 flex gap-2">
+                    <Button size="sm" variant="primary" onClick={save} disabled={state === 'saving'}>
+                        {state === 'saving' && <Loader2 size={14} className="animate-spin" />} Save early access
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setText(savedText)} disabled={state === 'saving'}>Discard</Button>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const CreatorProgramSettingsManager = () => {
     useStoreSubscription(['siteSettings']);
@@ -199,12 +258,13 @@ const CreatorProgramSettingsManager = () => {
                                 <Toggle
                                     label="Verify through Instagram (Meta)"
                                     hint={form.instagramMetaVerification
-                                        ? 'Creators connect a Professional Instagram account. Followers come from Meta and verified creators over the minimum are approved straight away.'
-                                        : 'Off until the Meta app is set up. Creators type their handle and follower count, and every application comes to review.'}
+                                        ? 'Creators connect a Professional Instagram account or type their username. Followers come from Meta, and creators over the minimum are approved straight away.'
+                                        : 'Off until Meta approves the app. Creators type their username and followers are read from their public profile. Only the early access accounts below can connect Instagram.'}
                                     checked={form.instagramMetaVerification}
                                     onChange={set('instagramMetaVerification')}
                                 />
                             </div>
+                            {!form.instagramMetaVerification && <EarlyAccess addToast={addToast} />}
                         </div>
                     </BuilderCard>
 

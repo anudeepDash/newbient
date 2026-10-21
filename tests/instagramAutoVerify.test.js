@@ -5,7 +5,8 @@ const notified = [];
 vi.mock('../api/_lib/notify.js', () => ({ notify: async (event, uid) => { notified.push({ event, uid }); } }));
 vi.mock('../api/_lib/mail/send.js', () => ({ sendTransactional: async () => ({ ok: true }) }));
 
-const { handleApply, handleCallback, handleLookup, handleCron } = await import('../api/_lib/creatorApp.js');
+const { handleApply, handleCallback, handleLookup, handleCron, handleConnect, handleConnectAccess } = await import('../api/_lib/creatorApp.js');
+const { cleanAccessEmails } = await import('../api/_lib/instagram.js');
 const { makeSignedToken } = await import('../api/_lib/linkSign.js');
 
 /*
@@ -233,5 +234,67 @@ describe('the daily check for profiles nothing could read yet', () => {
         await cron();
         expect(db.dump('creators')[UID].profileStatus).toBe('pending');
         expect(fetch).not.toHaveBeenCalled();
+    });
+});
+
+describe('early access to Connect Instagram while the Meta switch is off', () => {
+    const metaOff = (extra = {}) => seed({ 'site_settings/general': { instagramMetaVerification: false, minInstagramFollowersToJoin: 1000 }, ...extra });
+    const listed = { 'private/instagram_connect': { emails: ['RIYA@example.com'] } };
+
+    it('offers Connect Instagram to listed accounts only', async () => {
+        db = metaOff(listed);
+        expect((await run(handleLookup, {})).body).toMatchObject({ metaVerification: false, oauthReady: true });
+        db = metaOff({ 'private/instagram_connect': { emails: ['someone@else.com'] } });
+        expect((await run(handleLookup, {})).body.oauthReady).toBe(false);
+    });
+
+    it('starts the Instagram login only for listed accounts', async () => {
+        db = metaOff();
+        expect((await run(handleConnect, {})).statusCode).toBe(409);
+        db = metaOff(listed);
+        const res = await run(handleConnect, {});
+        expect(res.statusCode).toBe(200);
+        expect(res.body.url).toMatch(/^https:\/\/www\.instagram\.com\/oauth\/authorize/);
+    });
+
+    it('never offers it when Instagram Login isn’t set up', async () => {
+        ['IG_APP_ID', 'IG_APP_SECRET', 'IG_REDIRECT_URI'].forEach(k => delete process.env[k]);
+        db = metaOff(listed);
+        expect((await run(handleLookup, {})).body.oauthReady).toBe(false);
+    });
+
+    it('lets the team read and replace the list, and no one else', async () => {
+        const staff = { uid: 'u-ops', email: 'ops@newbi.live' };
+        db = metaOff({ 'admins/ops@newbi.live': { email: 'ops@newbi.live', role: 'admin' } });
+        const call = async (tok, body) => { const res = fakeRes(); await handleConnectAccess(fakeReq({ body }), res, { db, token: tok }); return res; };
+        expect((await call(token, { emails: 'x@y.com' })).statusCode).toBe(403);
+        const saved = await call(staff, { emails: ' Reviewer@Example.com, not-an-email\nreviewer@example.com team@newbi.live ' });
+        expect(saved.body.emails).toEqual(['reviewer@example.com', 'team@newbi.live']);
+        expect((await call(staff, {})).body.emails).toEqual(['reviewer@example.com', 'team@newbi.live']);
+    });
+});
+
+describe('typing the username is always an option', () => {
+    it('approves a typed username with the Meta switch on, without asking to connect', async () => {
+        db = seed();
+        const res = await run(handleApply, { handle: 'riya.creates', city: 'Mumbai', niches: ['Tech & Gaming'] });
+        expect(res.statusCode).toBe(200);
+        expect(res.body.status).toBe('approved');
+        expect(db.dump('creators')[UID]).toMatchObject({ instagramVerified: true, instagramVerifiedVia: 'public' });
+    });
+
+    it('uses a connected account even while the switch is off (early access)', async () => {
+        db = seed({ 'site_settings/general': { instagramMetaVerification: false }, [`private/instagram_tokens/users/${UID}`]: storedToken() });
+        const res = await run(handleApply, { handle: 'riya.creates', city: 'Mumbai', niches: ['Tech & Gaming'] });
+        expect(res.body.status).toBe('approved');
+        expect(db.dump('creators')[UID].instagramVerifiedVia).toBe('oauth');
+    });
+});
+
+describe('cleanAccessEmails', () => {
+    it('keeps valid, lowercased, unique emails from a list or text', () => {
+        expect(cleanAccessEmails(['A@b.co', 'a@b.co', 'bad'])).toEqual(['a@b.co']);
+        expect(cleanAccessEmails('x@y.io; z@w.in\n')).toEqual(['x@y.io', 'z@w.in']);
+        expect(cleanAccessEmails(null)).toEqual([]);
     });
 });

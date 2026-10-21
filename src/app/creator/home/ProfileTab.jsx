@@ -64,9 +64,9 @@ const detailsFrom = (c) => ({
     twitter: c.twitter || '',
 });
 
-const InstagramSection = ({ creator, settings }) => {
+const InstagramSection = ({ creator }) => {
     const t = useT();
-    const { available, connect, busy, message } = useInstagramConnect({ creator, settings, returnPath: '/creator/profile' });
+    const { available, connect, busy, message } = useInstagramConnect({ creator, returnPath: '/creator/profile' });
     const handle = handleOf(creator.instagram);
 
     return (
@@ -136,7 +136,7 @@ const DeleteCreatorProfile = () => {
     );
 };
 
-const ProfileTab = ({ creator, profile, settings }) => {
+const ProfileTab = ({ creator, profile }) => {
     const t = useT();
     const [editing, setEditing] = useState(false);
     const [contactOpen, setContactOpen] = useState(false);
@@ -212,7 +212,7 @@ const ProfileTab = ({ creator, profile, settings }) => {
                 </Button>
             </div>
 
-            <InstagramSection creator={creator} settings={settings} />
+            <InstagramSection creator={creator} />
 
             <FieldCard title={t('Creator details')} always action={<Button variant="ghost" size="sm" onClick={openEdit}>{t('Edit')}</Button>}>
                 <Field label={t('Niche')} icon={Sparkles} value={nicheLabel(creator)} />

@@ -78,6 +78,28 @@ export const readCreatorSettings = async (db = getDb()) => {
 export const isLookupConfigured = () => Boolean(process.env.META_GRAPH_TOKEN && process.env.NEWBI_IG_USER_ID);
 export const isOauthConfigured = () => Boolean(process.env.IG_APP_ID && process.env.IG_APP_SECRET && process.env.IG_REDIRECT_URI);
 
+/*
+ * Accounts that can use Instagram Login while the Meta switch is off (the App
+ * Review test account, the team): private/instagram_connect.emails, edited
+ * from Creator settings. Server-only, so the list never reaches the browser.
+ */
+export const connectAccessRef = (db = getDb()) => db.collection('private').doc('instagram_connect');
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+export const cleanAccessEmails = (raw) => [...new Set((Array.isArray(raw) ? raw : String(raw || '').split(/[\s,;]+/))
+    .map(e => String(e || '').trim().toLowerCase())
+    .filter(e => EMAIL_RE.test(e)))].slice(0, 50);
+export const readConnectAccess = async (db = getDb()) => {
+    const snap = await connectAccessRef(db).get().catch(() => null);
+    return cleanAccessEmails(snap?.exists ? snap.data()?.emails : []);
+};
+/** Whether this person may connect Instagram: everyone once the Meta switch is on, else listed accounts only. */
+export const canConnectInstagram = async (settings, token, db = getDb()) => {
+    if (!isOauthConfigured()) return false;
+    if (settings.metaVerification) return true;
+    const email = String(token?.email || '').toLowerCase();
+    return Boolean(email) && (await readConnectAccess(db)).includes(email);
+};
+
 /** Errors go to integration_log (server-only), so admins can see why a check failed. */
 export const logIntegration = async (entry = {}, db = getDb()) => {
     try {

@@ -44,6 +44,8 @@ export default {
     "30 seconds.": "30 seconds.",
     "Connect your Instagram and you’re verified straight away.": "Apna Instagram connect karo aur tum turant verified ho jaoge.",
     "Type your Instagram. We fill in your profile from it.": "Bas apna Instagram type karo, profile hum khud fill kar denge.",
+    "Connect your Instagram, or type your username. We fill in your profile from it.": "Apna Instagram connect karo, ya username type karo. Profile hum khud fill kar denge.",
+    "or type your username": "ya username type karo",
     "Instagram username": "Instagram username",
     "yourhandle": "yourhandle",
     "Use letters, numbers, dots and underscores. No links.": "Letters, numbers, dots aur underscores use karo. Links nahi.",

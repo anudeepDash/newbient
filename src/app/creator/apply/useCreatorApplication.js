@@ -7,15 +7,14 @@ import { t } from '../../../i18n';
 /*
  * State for the one-screen creator application.
  *
- *   Instagram            when Instagram Login is switched on (`igStatus.oauthReady`),
- *                        the form starts with "Connect with Instagram": the
- *                        login proves the account, fills the handle and
- *                        followers, and the server approves automatically.
- *                        Otherwise:
- *   Instagram username   looked up while typing (Meta when it's switched on,
- *                        else the public profile); the result fills the live
- *                        creator pass. If it can't be read, the creator types
- *                        their follower count instead (reviewed by the team).
+ *   Instagram            two ways, either is enough:
+ *                        "Connect with Instagram" (when this account can use
+ *                        Instagram Login, `igStatus.oauthReady`): the login
+ *                        proves the account and fills the handle and followers.
+ *   Instagram username   or typed, and looked up while typing (Meta when it's
+ *                        switched on, else the public profile); the result fills
+ *                        the live creator pass. If it can't be read, the creator
+ *                        types their follower count instead (reviewed by the team).
  *   city                 one pick, prefilled from the profile
  *   niches               up to three
  *   college              only for campus niches
@@ -139,15 +138,15 @@ export function useCreatorApplication({ referredBy = '', initialCity = '', uid =
     const oauthReady = igStatus.oauthReady;
     const found = lookup.state === 'found' ? lookup : null;
     const connected = Boolean(found?.connected);
-    // With Instagram Login on, there's no typed fallback: the account is connected or it isn't.
-    const manualAllowed = !oauthReady && isValidHandle(handle) && MANUAL_STATES.includes(lookup.state);
+    // Typed username that couldn't be read automatically: the creator adds their follower count.
+    const manualAllowed = !connected && isValidHandle(handle) && MANUAL_STATES.includes(lookup.state);
     const manualCount = manualAllowed ? parseFollowersInput(manualFollowers) : 0;
     const manualBelowMin = Boolean(manualCount && lookup.minFollowers && manualCount < lookup.minFollowers);
     const steps = [
         {
             key: 'instagram',
-            done: oauthReady
-                ? connected && !found.alreadyRegistered && found.meetsMinimum !== false
+            done: connected
+                ? !found.alreadyRegistered && found.meetsMinimum !== false
                 : manualAllowed
                 ? manualCount > 0 && !manualBelowMin
                 : isValidHandle(handle) && !['invalid', 'not_professional', 'checking'].includes(lookup.state) && !lookup.alreadyRegistered && lookup.meetsMinimum !== false,
@@ -156,9 +155,8 @@ export function useCreatorApplication({ referredBy = '', initialCity = '', uid =
         { key: 'niche', done: niches.length > 0 && (!niches.includes('Others') || Boolean(customNiche.trim())) && (!campus || Boolean(collegeName.trim())) },
     ];
     const ready = steps.every(s => s.done);
-    // City and niches done: connecting Instagram is all that's left.
+    // City and niches done: after connecting Instagram, the application goes straight in.
     const readyButInstagram = steps.slice(1).every(s => s.done);
-    const needsConnect = oauthReady ? !connected : Boolean(found && !found.connected && found.oauthReady);
 
     /*
      * Instagram login. The page leaves; the draft is saved, and if the rest of
@@ -218,7 +216,7 @@ export function useCreatorApplication({ referredBy = '', initialCity = '', uid =
         whatsappOptIn, setWhatsappOptIn,
         manualFollowers, setManualFollowers, manualAllowed, manualCount, manualBelowMin,
         campus, steps, ready,
-        lookup, check, found, needsConnect, connected,
+        lookup, check, found, connected,
         igStatus, oauthReady, readyButInstagram,
         connect, connecting,
         submit, submitting,
