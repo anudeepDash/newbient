@@ -196,8 +196,16 @@ ${isPresent(block.total) && showPrice ? `<tr><td class="strong rule" style="padd
     if (block.stats) {
         const tiles = block.stats.filter(r => Array.isArray(r) && isPresent(r[1])).slice(0, 3);
         if (!tiles.length) return '';
-        const w = Math.floor(100 / tiles.length);
-        return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border-collapse:separate;border-spacing:0"><tr>${tiles.map(([label, value, tone], i) => `<td width="${w}%" valign="top" style="padding:${i === 0 ? '0 4px 0 0' : i === tiles.length - 1 ? '0 0 0 4px' : '0 4px'}"><table role="presentation" width="100%" height="100%" cellpadding="0" cellspacing="0" class="${tone === 'accent' ? 'tile tile-a' : 'tile'}" style="border-collapse:separate;background:#11161f;border:1px solid ${tone === 'accent' ? 'rgba(57,255,20,.35)' : '#232a36'};border-radius:14px"><tr><td style="padding:12px 12px 13px"><p class="muted" style="margin:0 0 5px;font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#8b94a3">${esc(label)}</p><p class="${tone === 'accent' ? 'acc' : 'strong'}" style="margin:0;font-size:14px;line-height:1.3;font-weight:800;color:${tone === 'accent' ? ctx.accent : '#ffffff'}">${esc(value)}</p></td></tr></table></td>`).join('')}</tr></table>`;
+        // One fixed-layout row: every tile gets the same width and the row's height,
+        // whatever its text. Glass: a see-through gradient, a light rim and a top
+        // highlight (blurred behind it where the mail app supports backdrop-filter).
+        const gap = 2;
+        const w = Math.floor(((100 - gap * (tiles.length - 1)) / tiles.length) * 100) / 100;
+        const tile = ([label, value, tone]) => {
+            const accent = tone === 'accent';
+            return `<td width="${w}%" valign="top" bgcolor="#121821" class="${accent ? 'tile tile-a' : 'tile'}" style="width:${w}%;padding:13px 13px 14px;background-color:#121821;background-image:radial-gradient(120% 90% at 0% 0%,${accent ? 'rgba(57,255,20,.22)' : 'rgba(255,255,255,.2)'} 0%,rgba(255,255,255,0) 55%),linear-gradient(160deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,.03) 50%,rgba(255,255,255,.06) 100%);border:1px solid ${accent ? 'rgba(57,255,20,.42)' : 'rgba(255,255,255,.2)'};border-radius:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.32),inset 0 -1px 0 rgba(255,255,255,.06),inset 0 0 18px rgba(255,255,255,.04),0 12px 30px rgba(0,0,0,.4);-webkit-backdrop-filter:blur(16px) saturate(140%);backdrop-filter:blur(16px) saturate(140%)"><p class="muted" style="margin:0 0 6px;font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#8b94a3">${esc(label)}</p><p class="${accent ? 'acc' : 'strong'}" style="margin:0;font-size:14px;line-height:1.3;font-weight:800;color:${accent ? ctx.accent : '#ffffff'}">${esc(value)}</p></td>`;
+        };
+        return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border-collapse:separate;border-spacing:0;table-layout:fixed"><tr>${tiles.map(tile).join(`<td width="${gap}%" style="width:${gap}%;font-size:0;line-height:0">&nbsp;</td>`)}</tr></table>`;
     }
     if (block.document) {
         const d = block.document;
@@ -299,7 +307,8 @@ body,.bg{background:#eef0f3!important}
 .txt{color:#3f4652!important}
 .muted{color:#6b7280!important}
 .acc{color:${brand.ink}!important}
-.card,.tile,.code{background:#f6f7f9!important;border-color:#e4e7ec!important}
+.card,.code{background:#f6f7f9!important;border-color:#e4e7ec!important}
+.tile{background:radial-gradient(120% 90% at 0% 0%,#ffffff 0%,rgba(255,255,255,0) 60%),linear-gradient(160deg,#fbfcfd 0%,#eef1f5 100%)!important;border-color:rgba(15,23,42,.08)!important;box-shadow:inset 0 1px 0 #ffffff,inset 0 -1px 0 rgba(15,23,42,.04),0 10px 26px rgba(15,23,42,.08)!important}
 .tile-a{border-color:rgba(21,128,61,.4)!important}
 .rule{border-color:#e4e7ec!important}
 .paper{border:1px solid #e4e7ec!important}.docbar{color:#0b0f17!important}
