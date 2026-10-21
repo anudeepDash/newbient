@@ -6,10 +6,11 @@ import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Upload from 'lucide-react/dist/esm/icons/upload';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
+import Lock from 'lucide-react/dist/esm/icons/lock';
 import { cn } from '../../../lib/utils';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { isPresent } from '../../../lib/present';
-import { isRequiredTask, isTaskOpen } from '../../../lib/creator/tasks';
+import { canSubmitTask, isRequiredTask, taskWindow } from '../../../lib/creator/tasks';
 import { cleanTaskDescription, extractTaskActionLinks, linkifyContent } from '../../../lib/taskLinks';
 import TaskLinks from './TaskLinks';
 import { Button } from '../../../components/app';
@@ -21,6 +22,10 @@ import { useT } from '../../../i18n';
  * One deliverable: what to make, its links, and (for shortlisted creators) its status and submit buttons.
  * A deliverable with a Google Form shows the form and "Mark as submitted" to shortlisted creators only;
  * everyone else sees what to make, not where to send it.
+ *
+ * Two ways a deliverable isn't taking submissions: not opened yet ("Opens soon", brief still shown so
+ * creators can plan), or closed by the team ("Closed": the brief goes, and anyone who sent something
+ * sees what they sent and where it stands).
  */
 
 const TYPES = {
@@ -49,13 +54,49 @@ const STATUS = {
 
 export const hasSubmitForm = (task) => /^https?:\/\//i.test(String(task?.googleFormLink || '').trim());
 
+/* What a creator sent for a closed deliverable: the link, the screenshot and their note. */
+const YourSubmission = ({ submission }) => {
+    const t = useT();
+    const link = isPresent(submission?.contentLink) && /^https?:/.test(submission.contentLink) ? submission.contentLink : null;
+    const proof = isPresent(submission?.proofUrl) && /^https:/.test(submission.proofUrl) ? submission.proofUrl : null;
+    const note = String(submission?.note || '').trim();
+    const sentOn = submission?.submittedAt ? new Date(submission.submittedAt) : null;
+    const viaForm = submission?.via === 'google_form' && !link && !proof;
+    return (
+        <div className="ml-[3.25rem] space-y-2 rounded-xl bg-black/[0.04] px-3 py-2.5 dark:bg-white/[0.05]">
+            <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500 dark:text-zinc-400">{t('Your submission')}</span>
+                {sentOn && !Number.isNaN(sentOn.getTime()) && (
+                    <span className="text-[12px] text-gray-500 dark:text-zinc-400">{t('Sent {date}', { date: sentOn.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) })}</span>
+                )}
+            </div>
+            {link && (
+                <a href={link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 truncate text-[13px] font-semibold text-emerald-700 dark:text-neon-green">
+                    <ExternalLink size={13} className="shrink-0" /> <span className="truncate">{link}</span>
+                </a>
+            )}
+            {proof && (
+                <a href={proof} target="_blank" rel="noopener noreferrer" className="block w-fit">
+                    <img src={proof} alt={t('Your screenshot')} className="max-h-40 rounded-lg object-cover ring-1 ring-black/[0.06] dark:ring-white/[0.08]" />
+                </a>
+            )}
+            {note && <p className="whitespace-pre-line text-[13px] text-gray-700 dark:text-zinc-300">{note}</p>}
+            {viaForm && <p className="text-[13px] text-gray-600 dark:text-zinc-400">{t('Sent through the Google Form.')}</p>}
+        </div>
+    );
+};
+
 const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, onMarkSubmitted, marking, highlight }) => {
     const t = useT();
     const required = isRequiredTask(task);
     const type = typeOf(task);
+    const phase = taskWindow(task);
+    const closed = phase === 'closed';
     // The team opens deliverables one at a time: until then it's shown, but can't be sent yet.
-    const opensSoon = !isTaskOpen(task) && status !== 'submitted' && status !== 'approved';
-    const canSend = canSubmit && !opensSoon;
+    const opensSoon = phase === 'upcoming' && status !== 'submitted' && status !== 'approved';
+    // Once closed, only a "Changes needed" one can still go back in.
+    const canSend = canSubmit && canSubmitTask(task, status);
+    const showBrief = !closed || canSend;
     const allLinks = useMemo(() => extractTaskActionLinks(task), [task]);
     const links = useMemo(() => (canSend ? allLinks : allLinks.filter(l => l.type !== 'google_form')), [allLinks, canSend]);
     const withForm = canSend && hasSubmitForm(task);
@@ -67,7 +108,8 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, onMark
     const caption = String(task.captionScript || '').trim();
     const [copied, setCopied] = useState(false);
     const copyCaption = () => copyToClipboard(caption).then(ok => { if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1800); } });
-    const due = dueLabel(task.deadline);
+    // Closed by the team: say so instead of the due date (which may not even be set).
+    const due = closed ? t('Submissions closed') : dueLabel(task.deadline);
 
     // One quiet line: what it is and when. "Required" is the norm, so only "Optional" is said.
     const line = [type ? t(type.label) : null, due, required ? null : t('Optional')].filter(Boolean).join(' · ');
@@ -91,12 +133,14 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, onMark
                 </div>
                 {opensSoon
                     ? <ToneChip tone="gray" className="shrink-0">{t('Opens soon')}</ToneChip>
-                    : meta && <ToneChip tone={meta.tone} className="shrink-0">{t(meta.label)}</ToneChip>}
-                {links.length === 1 && <TaskLinks links={links} compact className="shrink-0" />}
+                    : meta
+                        ? <ToneChip tone={meta.tone} className="shrink-0">{t(meta.label)}</ToneChip>
+                        : closed && <ToneChip tone="gray" icon={Lock} className="shrink-0">{t('Closed')}</ToneChip>}
+                {showBrief && links.length === 1 && <TaskLinks links={links} compact className="shrink-0" />}
             </div>
 
             {/* The deliverable's own brief, caption and extra links, lined up under the title. */}
-            {(description || caption || links.length > 1) && (
+            {showBrief && (description || caption || links.length > 1) && (
                 <div className="space-y-3 pl-[3.25rem]">
                     {description && <div className="nb-brief nb-brief-sm break-words" dangerouslySetInnerHTML={{ __html: description }} />}
                     {caption && (
@@ -115,7 +159,9 @@ const TaskCard = ({ task, index, status, submission, canSubmit, onSubmit, onMark
             {status === 'rejected' && isPresent(submission?.rejectionReason) && (
                 <p className="rounded-xl bg-amber-500/10 px-3 py-2 text-[13px] text-amber-900 dark:text-amber-200">{submission.rejectionReason}</p>
             )}
-            {isPresent(submission?.contentLink) && /^https?:/.test(submission.contentLink) && (
+            {closed && !showBrief && status !== 'not_started' ? (
+                <YourSubmission submission={submission} />
+            ) : isPresent(submission?.contentLink) && /^https?:/.test(submission.contentLink) && (
                 <a href={submission.contentLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 truncate text-[13px] font-semibold text-emerald-700 dark:text-neon-green">
                     <ExternalLink size={13} className="shrink-0" /> <span className="truncate">{submission.contentLink}</span>
                 </a>

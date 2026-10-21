@@ -24,6 +24,30 @@ export const requiredTasks = (tasks = []) => (tasks || []).filter(isRequiredTask
  * closed (submissionsOpen: false); older ones, saved before this existed, stay open.
  */
 export const isTaskOpen = (task = {}) => task?.submissionsOpen !== false;
+
+/*
+ * When a deliverable is done, the team closes it (submissionsClosed): creators see
+ * "Closed", the brief goes, and those who sent something see it and its status.
+ * The deadline alone never closes it. So a deliverable is in one of three states:
+ * 'upcoming' (not opened yet: "Opens soon"), 'open', or 'closed'.
+ */
+export const isTaskClosed = (task = {}) => task?.submissionsClosed === true;
+export const taskWindow = (task = {}) => {
+    if (isTaskClosed(task)) return 'closed';
+    return isTaskOpen(task) ? 'open' : 'upcoming';
+};
+/* The fields that put a deliverable in that state (campaign editor, Deliverables tab). */
+export const taskWindowFields = (phase) => ({ submissionsOpen: phase !== 'upcoming', submissionsClosed: phase === 'closed' });
+
+/*
+ * Whether a creator can send (or resend) this deliverable now: while it's open, or
+ * once it's closed only when the team asked for changes on what they'd already sent.
+ */
+export const canSubmitTask = (task = {}, status = 'not_started') => {
+    const phase = taskWindow(task);
+    return phase === 'open' || (phase === 'closed' && status === 'rejected');
+};
+
 export const optionalTasks = (tasks = []) => (tasks || []).filter(t => !isRequiredTask(t));
 
 /*

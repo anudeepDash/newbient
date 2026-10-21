@@ -65,7 +65,7 @@ import {
     STAGES, applicantsFor, orphanSubmitters, isSelected, campaignStatus, creatorHandle, creatorPhotoOf, creatorKeys, creatorRef, formatCount, formatDay,
     inr, stageMeta, taskTypeOf, platformOf, daysUntil, waNumber, isUniversalCity,
 } from './campaignModel';
-import { isRequiredTask, isTaskOpen } from '../../../lib/creator/tasks';
+import { isRequiredTask, taskWindow } from '../../../lib/creator/tasks';
 import OutreachTab from './outreach/OutreachTab';
 import { stripPastedStyles } from '../../../lib/taskLinks';
 import { canSeeOutreach } from './outreach/outreachApi';
@@ -405,11 +405,10 @@ const CampaignManage = ({
             tone: 'success',
         });
     };
-    const toggleTaskOpen = (task) => guard(async () => {
-        const open = !isTaskOpen(task);
+    const setTaskPhase = (task, phase) => guard(async () => {
         try {
-            await useStore.getState().setTaskSubmissionsOpen(campaign.id, task.id, open);
-            addToast(open ? `“${task.title}” is open: shortlisted creators can submit it now.` : `“${task.title}” is closed for submissions.`, 'success');
+            await useStore.getState().setTaskWindow(campaign.id, task.id, phase);
+            addToast(phase === 'open' ? `“${task.title}” is open: shortlisted creators can submit it now.` : `“${task.title}” is closed. Creators see what they sent and its status.`, 'success');
         } catch {
             addToast("Couldn't change it. Please try again.", 'error');
         }
@@ -532,19 +531,19 @@ const CampaignManage = ({
                                     {!isRequiredTask(task) && <span>Optional</span>}
                                     {task.deadline && <span className={cn(due !== null && due < 0 && 'font-semibold text-rose-600 dark:text-rose-300')}>Due {formatDay(task.deadline)}</span>}
                                     <span>{approved} of {rows.length} approved</span>
-                                    {isTaskOpen(task) ? <Badge tone="green">Open for submissions</Badge> : <Badge tone="gray">Closed</Badge>}
+                                    {{ open: <Badge tone="green">Open for submissions</Badge>, upcoming: <Badge tone="gray">Not open yet</Badge>, closed: <Badge tone="gray">Closed</Badge> }[taskWindow(task)]}
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
-                                {/* Deliverables open one at a time: creators can't submit a closed one. */}
+                                {/* Deliverables open one at a time, and the team closes each when it's done. */}
                                 <Button
                                     size="sm"
-                                    variant={isTaskOpen(task) ? 'secondary' : 'accent'}
-                                    onClick={() => toggleTaskOpen(task)}
+                                    variant={taskWindow(task) === 'upcoming' ? 'accent' : 'secondary'}
+                                    onClick={() => setTaskPhase(task, taskWindow(task) === 'open' ? 'closed' : 'open')}
                                     disabled={busy}
                                     className="h-10"
                                 >
-                                    {isTaskOpen(task) ? <><Lock size={14} /> Close</> : <><Unlock size={14} /> Open submissions</>}
+                                    {{ open: <><Lock size={14} /> Close</>, upcoming: <><Unlock size={14} /> Open submissions</>, closed: <><Unlock size={14} /> Reopen</> }[taskWindow(task)]}
                                 </Button>
                                 {pending.length > 1 && (
                                     <Button size="sm" variant="success" onClick={() => askApproveAll(task, pending.map(r => ({ entry: r.a, task })))} disabled={busy} className="h-10"><CheckCheck size={14} /> Approve all {pending.length}</Button>

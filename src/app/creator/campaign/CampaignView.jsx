@@ -9,6 +9,7 @@ import CalendarClock from 'lucide-react/dist/esm/icons/calendar-clock';
 import GraduationCap from 'lucide-react/dist/esm/icons/graduation-cap';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import Hourglass from 'lucide-react/dist/esm/icons/hourglass';
+import Lock from 'lucide-react/dist/esm/icons/lock';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 import { PosterGlow, BrandLayers, BRAND_GLASS, Button, CARD_TYPES, GlassChip, MetaPill, Sheet, Stat, StatRow, WhatsAppLogo } from '../../../components/app';
 import { useAppStore } from '../../../lib/store/appStore';
@@ -16,7 +17,7 @@ import { useStore as useLegacyStore } from '../../../lib/store.js';
 import { isPresent } from '../../../lib/present';
 import { isCampaignCityMatch } from '../../../lib/constants';
 import { linkifyContent } from '../../../lib/taskLinks';
-import { isTaskOpen, submissionFor, taskProgress } from '../../../lib/creator/tasks';
+import { canSubmitTask, submissionFor, taskProgress, taskWindow } from '../../../lib/creator/tasks';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { cn } from '../../../lib/utils';
 import { INTENTS, useAuthGate, useResumeIntent } from '../../auth/AuthGate';
@@ -208,8 +209,9 @@ const CampaignView = ({ campaign: source, variant = 'page', initialTaskId, onClo
     const min = Number(campaign.minInstagramFollowers) || 0;
     const brief = isPresent(String(campaign.description || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ')) ? linkifyContent(campaign.description) : null;
     const blocker = creator && !inCampaign && !tester ? blockerFor(campaign, creator, profile) : null;
-    // The next deliverable that's open for submissions (the team opens them one at a time).
-    const nextTask = canWork ? tasks.find(tk => isTaskOpen(tk) && ['not_started', 'rejected'].includes(submissionFor(tk, who)?.status || 'not_started')) : null;
+    // The next deliverable that's open for submissions (the team opens them one at a time; the deadline closes them).
+    const statusOf = (tk) => submissionFor(tk, who)?.status || 'not_started';
+    const nextTask = canWork ? tasks.find(tk => ['not_started', 'rejected'].includes(statusOf(tk)) && canSubmitTask(tk, statusOf(tk))) : null;
 
     /* ── Once you're in the campaign: your status (or the next thing to do) ── */
     let status = null;
@@ -223,8 +225,10 @@ const CampaignView = ({ campaign: source, variant = 'page', initialTaskId, onClo
             if (hasSubmitForm(nextTask)) {
                 status = <Button className="flex-1" size="lg" href={nextTask.googleFormLink} target="_blank" rel="noopener noreferrer">{t('Open the submission form')}</Button>;
             }
-        } else if (tasks.some(tk => !isTaskOpen(tk) && (submissionFor(tk, who)?.status || 'not_started') === 'not_started')) {
+        } else if (tasks.some(tk => taskWindow(tk) === 'upcoming' && statusOf(tk) === 'not_started')) {
             status = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-semibold text-gray-700 dark:text-zinc-300"><Hourglass size={17} className="shrink-0 text-sky-600 dark:text-sky-300" /> {t('Your next deliverable opens soon. We’ll let you know.')}</p>;
+        } else if (!tasks.some(tk => statusOf(tk) === 'submitted') && tasks.some(tk => taskWindow(tk) === 'closed')) {
+            status = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-semibold text-gray-700 dark:text-zinc-300"><Lock size={17} className="shrink-0 text-gray-500 dark:text-zinc-400" /> {t('Submissions are closed')}</p>;
         } else if (tasks.length) {
             status = <p className="flex min-h-[48px] flex-1 items-center gap-2 text-[14px] font-semibold text-gray-700 dark:text-zinc-300"><Hourglass size={17} className="shrink-0 text-sky-600 dark:text-sky-300" /> {t('Everything’s in review')}</p>;
         } else {
