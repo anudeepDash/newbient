@@ -70,13 +70,15 @@ const useUpcomingShows = () => {
     const community = useAppStore(s => s.communityFeed);
     return useMemo(() => {
         const byId = new Map();
-        (feed?.events || []).filter(e => e.showInApp !== false).forEach(e => byId.set(e.id, {
-            id: e.id, title: e.title, image: e.image, day: e.date, time: e.time, venue: e.location, city: e.city,
+        // An event card made from a guestlist is keyed by that list, so the two show once.
+        (feed?.events || []).filter(e => e.showInApp !== false).forEach(e => byId.set(e.guestlistId || e.id, {
+            id: e.guestlistId || e.id, title: e.title, image: e.image, day: e.date, time: e.time, venue: e.location, city: e.city,
             category: e.category, ticketed: e.isTicketed, guestlist: e.hasGuestlist,
         }));
         (community || []).filter(i => i.type === 'guestlist' && i.showInApp && i.date).forEach(i => {
             const day = i.date instanceof Date ? format(i.date, 'yyyy-MM-dd') : String(i.date).slice(0, 10);
-            if (!byId.has(i.id)) byId.set(i.id, { id: i.id, title: i.title, image: i.image, day, venue: i.venue, city: i.city, guestlist: true });
+            // The list's own details win over a copied event card (it has the time).
+            byId.set(i.id, { ...(byId.get(i.id) || {}), id: i.id, title: i.title, image: i.image || byId.get(i.id)?.image, day, time: i.time || byId.get(i.id)?.time, venue: i.venue, city: i.city, guestlist: true });
         });
         (ticketed || []).filter(e => e.showInApp !== false).forEach(e => byId.set(e.id, {
             ...(byId.get(e.id) || {}),

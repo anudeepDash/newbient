@@ -40,6 +40,7 @@ const normalise = (type, item, to, extra = {}) => {
         image: firstImage(item.hubImage, item.image, item.posterUrl, item.poster, item.thumbnail, item.coverImage),
         date,
         closesAt: closingDate(item),
+        time: isPresent(item.time) ? item.time : null,
         venue: item.venue || item.location || null,
         city: item.city || item.targetCity || null,
         label: isPresent(item.activeLabel) ? item.activeLabel : null,
@@ -71,7 +72,9 @@ const read = async (name) => {
 /*
  * One card per guestlist: an event with its list on, a standalone list, or a
  * gig that runs a list. A list that belongs to an event (same id, or eventId)
- * borrows the event's date and poster and shows once.
+ * borrows the event's date and poster and shows once. An event card made
+ * from a guestlist (it carries guestlistId) is that list's card on the site:
+ * the list stands for it here.
  */
 export const buildFeed = ({ events = [], guestlists = [], gigs = [], giveaways = [], forms = [] }, link = (p) => p) => {
     const eventsById = new Map(events.map(e => [e.id, e]));
@@ -81,6 +84,7 @@ export const buildFeed = ({ events = [], guestlists = [], gigs = [], giveaways =
 
     events.filter(e => e.isGuestlistEnabled && isOpen(e)).forEach(e => {
         seenLists.add(e.id);
+        if (e.guestlistId && e.guestlistId !== e.id) return;
         items.push(normalise('guestlist', e, link(`/community/g/${e.id}`)));
     });
     guestlists.filter(isOpen).forEach(gl => {

@@ -7,7 +7,7 @@
  *
  * Served by api/creator-join.js (creatorApp's router):
  *
- *   ?action=account-matches  POST { email? }   other accounts sharing your phone or email (masked hints only)
+ *   ?action=account-matches  POST { email?, phone? }   other accounts sharing your phone or email (masked hints only)
  *   ?action=account-merge    POST { proofToken, confirm? }
  *       Without confirm: what the other account holds and whether it can merge.
  *       With confirm: the merge.
@@ -94,9 +94,10 @@ const signInMethods = (authUser) => {
  * email they sign in with) and from profiles (one typed in). Hints are masked;
  * merging still needs a sign-in to that account.
  */
-export const findMatches = async ({ db, adminAuth, token, email: typedEmail }) => {
+export const findMatches = async ({ db, adminAuth, token, email: typedEmail, phone: typedPhone }) => {
     const me = await userDoc(db, token.uid);
-    const phones = [...new Set([token.phone_number, me.phoneVerified || me.isPhoneVerified ? (me.phone || me.phoneNumber) : null]
+    // A number typed into a form (not verified) is checked too, so it's never saved on a second account.
+    const phones = [...new Set([token.phone_number, me.phoneVerified || me.isPhoneVerified ? (me.phone || me.phoneNumber) : null, typedPhone]
         .map(toE164).filter(p => p.replace(/\D/g, '').length >= 10))];
     const emails = [...new Set([token.email, me.email, typedEmail].map(lower).filter(isEmail))];
 

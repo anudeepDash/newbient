@@ -13,13 +13,13 @@ export default (data = {}) => {
     return {
         sender: 'tickets',
         kind: 'transactional',
-        subject: rsvp ? `RSVP confirmed: ${event}` : `Your pass for ${event}`,
-        preheader: rsvp ? `Your RSVP for ${event} is confirmed.` : `Your pass for ${event} is ready. Show the QR code at the gate.`,
-        eyebrow: rsvp ? 'RSVP' : data.source === 'order' ? 'Tickets' : 'Guestlist',
-        title: rsvp ? 'Your RSVP is confirmed' : 'Your pass is ready',
+        subject: rsvp ? `You're on the list: ${event}` : `Your pass for ${event}`,
+        preheader: rsvp ? `Your spot at ${event} is saved.` : `Your pass for ${event} is ready. Show the QR code at the gate.`,
+        eyebrow: rsvp ? 'Guestlist' : data.source === 'order' ? 'Tickets' : 'Guestlist',
+        title: rsvp ? "You're on the list" : 'Your pass is ready',
         hero: data.image ? { url: data.image, alt: data.eventName || '' } : null,
         blocks: [
-            { p: `Hi ${firstName(data.name)}, ${rsvp ? `your RSVP for ${event} is confirmed.` : paid ? `your payment for ${event} is verified and your tickets are ready.` : `your place at ${event} is confirmed.`}` },
+            { p: `Hi ${firstName(data.name)}, ${rsvp ? `your spot at ${event} is saved. Give your name at the door.` : paid ? `your payment for ${event} is verified and your tickets are ready.` : `your place at ${event} is confirmed.`}` },
             { details: [['Event', data.eventName], ['Date', formatDate(data.date, { withTime: !data.time && /T\d\d:/.test(String(data.date || '')) })], ['Time', data.time], ['Venue', data.venue], ['Tier', data.tier], ['Guests', Number(data.qty) > 1 ? data.qty : ''], ['Coming with you', Array.isArray(data.guestNames) ? data.guestNames.filter(Boolean).join(', ') : ''], ['Payment ref', paid ? data.paymentRef : '']] },
             data.mapUrl ? { button: { label: 'Get directions', url: data.mapUrl } } : null,
             data.items && data.items.length ? { items: data.items, total: paid ? data.totalAmount : null, totalLabel: 'Total paid' } : null,

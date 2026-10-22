@@ -1041,7 +1041,8 @@ export const handleCron = async (req, res, { db }) => {
 export const handleAccountMatches = async (req, res, { db, token, adminAuth = defaultAdminAuth }) => {
     if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
     const email = str(req.body?.email, 200);
-    const { matches } = await findMatches({ db, adminAuth, token, email });
+    const phone = str(req.body?.phone, 20);
+    const { matches } = await findMatches({ db, adminAuth, token, email, phone });
     return send(res, 200, { success: true, matches });
 };
 

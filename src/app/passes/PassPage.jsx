@@ -87,11 +87,12 @@ const PassPage = ({ overlay = false }) => {
 
     const close = useCloseExpanded(appPath('/tickets'));
     if (overlay) {
-        // Over a list: the pass edge to edge in a sheet, like a campaign.
+        // Over a list: the ticket in a sheet.
         return (
-            <Sheet open onClose={close} size="full" width="sm" bleed header={<span className="sr-only">{t('Your pass')}</span>} bodyClassName="px-0 pb-6 pt-0 sm:px-0">
+            // Sized to the ticket, so there's no empty space under it.
+            <Sheet open onClose={close} size="auto" width="sm" bleed header={<span className="sr-only">{t('Your pass')}</span>} bodyClassName="px-3 pb-4 pt-3 sm:px-4">
                 {pass ? <PassView pass={pass} bare offline={fromCache && typeof navigator !== 'undefined' && navigator.onLine === false} />
-                    : <div className="px-5 pt-14">{error ? <PassMissing message={error} /> : <PassSkeleton />}</div>}
+                    : <div className="px-2 pt-12">{error ? <PassMissing message={error} /> : <PassSkeleton />}</div>}
             </Sheet>
         );
     }

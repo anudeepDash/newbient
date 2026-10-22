@@ -151,11 +151,11 @@ const GuestlistPage = ({ overlay = false }) => {
         ? <BarStatus icon={Hourglass} tone="warn">{t('Request sent. We’ll send your pass once you’re approved.')}</BarStatus>
         : me
             ? (me.ref
-                ? <Button className="flex-1" size="lg" icon={Ticket} to={appPath(`/p/${me.ref}`)}>{gl.mode === 'rsvp' ? t('Open my RSVP') : t('Open my pass')}</Button>
+                ? <Button className="flex-1" size="lg" icon={Ticket} to={appPath(`/p/${me.ref}`)}>{gl.mode === 'rsvp' ? t('View my spot') : t('Open my pass')}</Button>
                 : <Button className="flex-1" size="lg" variant="secondary" to={appPath('/community')}>{t('See My guestlists')}</Button>)
             : !gl.open
                 ? <BarStatus>{gl.past ? t('This event has happened.') : gl.full ? t('This guestlist is full.') : t('This guestlist is closed.')}</BarStatus>
-                : <Button className="flex-1" size="lg" icon={KindIcon} onClick={register} loading={submitting && !step}>{gl.mode === 'rsvp' ? t('RSVP') : t('Get on the list')}</Button>;
+                : <Button className="flex-1" size="lg" icon={KindIcon} onClick={register} loading={submitting && !step}>{gl.mode === 'rsvp' ? t('Reserve my spot') : t('Get on the list')}</Button>;
     const bar = <ActionBar onShare={share} shareLabel="Share guestlist">{action}</ActionBar>;
 
     const hero = (
@@ -175,13 +175,13 @@ const GuestlistPage = ({ overlay = false }) => {
             <ExpandedPage overlay={overlay} onClose={close} back={back} label={gl.title} hero={hero} bar={bar}>
                 <ExpandedTitle meta={[{ icon: CalendarDays, label: when }]} title={gl.title}>
                     <StatRow>
-                        <Stat label={t('Entry')} value={gl.mode === 'rsvp' ? t('RSVP') : t('QR pass')} icon={KindIcon} tone="accent" />
+                        <Stat label={t('Entry')} value={gl.mode === 'rsvp' ? t('Name on list') : t('QR pass')} icon={KindIcon} tone="accent" />
                         <Stat label={t('Spots left')} value={gl.open && gl.spotsLeft !== null ? gl.spotsLeft : null} icon={Users} allowZero />
                         <Stat label={t('Per person')} value={(gl.perUserLimit || 1) > 1 ? t('Up to {max}', { max: gl.perUserLimit }) : null} icon={Users} />
                     </StatRow>
                 </ExpandedTitle>
 
-                {me && me.status !== 'pending' && <Notice tone="success" title={t('You’re on the list.')}>{gl.mode === 'rsvp' ? t('Your RSVP is confirmed.') : t('Show your pass at the gate.')}</Notice>}
+                {me && me.status !== 'pending' && <Notice tone="success" title={t('You’re on the list.')}>{gl.mode === 'rsvp' ? t('Your spot is saved. Give your name at the door.') : t('Show your pass at the gate.')}</Notice>}
                 {!me && gl.open && gl.needsApproval && <Notice tone="info">{t('The team reviews requests before sending passes.')}</Notice>}
                 {error && !step && <Notice tone="error">{error}</Notice>}
 
@@ -220,7 +220,7 @@ const GuestlistPage = ({ overlay = false }) => {
                 onClose={() => !submitting && setStep(null)}
                 title={gl.task ? t('One more step') : t('How many of you?')}
                 subtitle={gl.title}
-                footer={<Button className="w-full" size="lg" onClick={submit} loading={submitting} disabled={uploading}>{gl.mode === 'rsvp' ? t('Confirm RSVP') : t('Get my pass')}</Button>}
+                footer={<Button className="w-full" size="lg" onClick={submit} loading={submitting} disabled={uploading}>{gl.mode === 'rsvp' ? t('Reserve my spot') : t('Get my pass')}</Button>}
             >
                 <div className="space-y-6">
                     {(gl.perUserLimit || 1) > 1 && (

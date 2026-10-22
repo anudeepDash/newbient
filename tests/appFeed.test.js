@@ -180,3 +180,21 @@ describe('handleAppFeed', () => {
         expect(res.statusCode).toBe(405);
     });
 });
+
+describe('app feed: an event card made from a guestlist', () => {
+    // The Séance night: a guestlist, the "add to home page" event copy (guestlistId), and the
+    // empty list a sign-up through that copy used to create.
+    const seance = {
+        events: [{ id: 'ev1', title: 'SÉANCE', date: '2030-10-24', isGuestlistEnabled: true, guestlistId: 'gl1', category: 'guestlist' }],
+        guestlists: [
+            { id: 'gl1', title: 'SÉANCE', date: '2030-10-24', time: '9PM', status: 'Open', showInApp: true },
+            { id: 'ev1', title: 'SÉANCE', date: '2030-10-24', status: 'Open', isEmbedded: true, eventId: 'ev1' },
+        ],
+    };
+
+    it('shows the night once, as the guestlist, with its time', () => {
+        const items = buildFeed(seance, (p) => p).filter(i => i.type === 'guestlist');
+        expect(items).toHaveLength(1);
+        expect(items[0]).toMatchObject({ id: 'gl1', to: '/community/g/gl1', time: '9PM' });
+    });
+});

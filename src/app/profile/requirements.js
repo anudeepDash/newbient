@@ -24,12 +24,13 @@ export const PROFILE_FIELDS = {
 
 /* What each flow needs from the shared profile (flow-specific questions live in the flow). */
 export const FLOW_REQUIREMENTS = {
-    guestlist: ['name', 'phoneVerified'],
+    // A number to send the pass to, without an SMS code (it put people off signing up).
+    guestlist: ['name', 'phone'],
     giveaway: ['name', 'city'],
     giveawayCampus: ['name', 'city', 'college'],
     creatorApply: ['name', 'email', 'phoneVerified', 'city'],
     creatorApplyCampus: ['name', 'email', 'phoneVerified', 'city', 'college'],
-    gig: ['name', 'phoneVerified'],
+    gig: ['name', 'phone'],
     // Email comes from the account; the ticket sheet asks for one itself when it's missing.
     tickets: ['name', 'phoneVerified'],
     community: ['name'],

@@ -61,4 +61,22 @@ describe('guestlist time, map link and guest names', () => {
         const stranger = await getPass(db, out.ref, 'someone-else');
         expect(stranger.pass.plusOneNames).toBeUndefined();
     });
+
+    it('signs people up on the guestlist an event card was made from', async () => {
+        await db.collection('upcoming_events').doc('ev2').set({ title: 'Copy', date: '2030-11-07', isGuestlistEnabled: true, guestlistId: 'gl1' });
+        expect((await resolveGuestlist(db, 'ev2')).id).toBe('gl1');
+        const out = await register(db, { guestlistId: 'ev2', guests: 1 });
+        expect(db.store.get(`passes/${out.ref}`)).toMatchObject({ sourceId: 'gl1' });
+        expect(Object.values(db.dump('guestlists/gl1/entries'))).toHaveLength(1);
+        expect(db.store.get('guestlists/ev2')).toBeUndefined();
+    });
+
+    it('needs a phone number, but no SMS check, to sign up', async () => {
+        await db.collection('users').doc('u2').set({ name: 'Ira', email: 'ira@example.com', phone: '9876500002' });
+        const out = await register(db, { guestlistId: 'gl1', guests: 1 }, 'u2');
+        expect(db.store.get(`passes/${out.ref}`)).toMatchObject({ holderPhone: '+919876500002' });
+
+        await db.collection('users').doc('u3').set({ name: 'No Phone', email: 'np@example.com' });
+        await expect(register(db, { guestlistId: 'gl1', guests: 1 }, 'u3')).rejects.toMatchObject({ code: 'PROFILE_INCOMPLETE' });
+    });
 });
