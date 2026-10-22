@@ -1,10 +1,13 @@
 {
     "functions": {
         "api/og.js": {
-            "includeFiles": "dist/**"
-        },
-        "api/forms.js": {
-            "includeFiles": "dist/**"
+            "includeFiles": "dist/app-shell.html"
+        }
+    },
+    "git": {
+        "deploymentEnabled": {
+            "**": false,
+            "main": true
         }
     },
     "crons": [
