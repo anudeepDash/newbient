@@ -25,7 +25,7 @@ const COLORS = [
 ];
 
 const EMPTY = {
-    title: '', date: '', location: '', description: '', status: 'Open',
+    title: '', date: '', time: '', location: '', locationUrl: '', description: '', status: 'Open',
     maxSpots: 100, currentSpots: 0, perUserLimit: 2,
     image: '', highlightColor: '#2ebfff', isPinned: false, imageTransform: { scale: 1.05, x: 0, y: 0 },
     guestlistEnabled: true, guestlistMode: 'qr', hasGuestlistTask: false, guestlistTask: null, externalLink: '',
@@ -35,7 +35,9 @@ const EMPTY = {
 const fromDoc = (gl) => ({
     title: gl.title || '',
     date: String(gl.date || '').slice(0, 10),
+    time: gl.time || '',
     location: gl.location || '',
+    locationUrl: gl.locationUrl || '',
     description: gl.description || '',
     status: gl.status || 'Open',
     maxSpots: gl.maxSpots ?? 100,
@@ -107,6 +109,7 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
         setProblem('');
         if (!form.title.trim()) return setProblem('Give the guestlist a name.');
         if (!form.location.trim()) return setProblem('Add where it happens.');
+        if (form.locationUrl.trim() && !/^https:\/\/\S+$/i.test(form.locationUrl.trim())) return setProblem('The map link should start with https://, like a Google Maps share link.');
         if (form.guestlistEnabled) {
             const max = Number(form.maxSpots);
             const per = Number(form.perUserLimit);
@@ -123,7 +126,9 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
             const data = {
                 ...form,
                 title: form.title.trim(),
+                time: form.time.trim(),
                 location: form.location.trim(),
+                locationUrl: form.locationUrl.trim(),
                 externalLink: form.externalLink.trim(),
                 maxSpots: Math.floor(Number(form.maxSpots)) || 0,
                 perUserLimit: Math.floor(Number(form.perUserLimit)) || 1,
@@ -191,8 +196,16 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
                         <Field label="Date" optional>
                             <input className={fieldCls} type="date" value={form.date} onChange={(e) => set({ date: e.target.value })} />
                         </Field>
+                        <Field label="Time" optional hint="Shown on the page and the pass">
+                            <input className={fieldCls} value={form.time} onChange={(e) => set({ time: e.target.value })} placeholder="8 PM onwards" maxLength={40} />
+                        </Field>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
                         <Field label="Where">
                             <input className={fieldCls} value={form.location} onChange={(e) => set({ location: e.target.value })} placeholder="Rooftop lounge, Bandra" />
+                        </Field>
+                        <Field label="Google Maps link" optional hint="Adds a Directions button">
+                            <input className={fieldCls} type="url" inputMode="url" autoCapitalize="off" value={form.locationUrl} onChange={(e) => set({ locationUrl: e.target.value })} placeholder="https://maps.app.goo.gl/…" />
                         </Field>
                     </div>
                     <Field label="Description" optional hint="Entry rules, age limit, dress code">

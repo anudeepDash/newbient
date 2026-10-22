@@ -3,6 +3,7 @@ import { downloadXlsx, downloadCsv, exportSubtitle } from '../../../lib/xlsx';
 import { safeFileName, toDate } from './format';
 
 const titleCase = (s) => String(s || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+const guestNames = (e) => (Array.isArray(e.plusOneNames) ? e.plusOneNames.filter(Boolean).join(', ') : '');
 
 // One row per order and per guestlist entry; both exports share it.
 const attendeeRows = (event, orders, guestEntries) => [
@@ -15,6 +16,7 @@ const attendeeRows = (event, orders, guestEntries) => [
         status: titleCase(o.status || 'pending'),
         checkedIn: SOLD_STATUSES.includes(o.status) && isOrderCheckedIn(o) ? 'Yes' : 'No',
         tickets: orderTicketCount(o),
+        guests: '',
         detail: orderItems(o).map(i => `${i.count}× ${i.name}`).join(', '),
         amount: o.totalAmount !== undefined ? Number(o.totalAmount) || 0 : 0,
         coupon: o.appliedCoupon?.code || '',
@@ -32,7 +34,8 @@ const attendeeRows = (event, orders, guestEntries) => [
         checkedIn: e.attended ? 'Yes' : 'No',
         list: e._glId || '',
         tickets: Number(e.guestsCount) || 1,
-        detail: Array.isArray(e.plusOneNames) && e.plusOneNames.filter(Boolean).length ? `With ${e.plusOneNames.filter(Boolean).join(', ')}` : 'Guest entry',
+        guests: guestNames(e),
+        detail: 'Guest entry',
         amount: null,
         coupon: '',
         paymentRef: '',
@@ -50,6 +53,7 @@ const COLUMNS = [
     { header: 'Status', key: 'status' },
     { header: 'Checked In', key: 'checkedIn' },
     { header: 'People', key: 'tickets', type: 'number' },
+    { header: 'Coming With Them', key: 'guests', width: 34 },
     { header: 'Tickets', key: 'detail', width: 34 },
     { header: 'Amount Paid', key: 'amount', type: 'money' },
     { header: 'Coupon', key: 'coupon' },
@@ -65,7 +69,8 @@ const spec = (event, orders, guestEntries) => {
         filename: `${safeFileName(event?.title)}_attendees`,
         sheetName: 'Attendees',
         title: event?.title || 'Event attendees',
-        subtitle: exportSubtitle(rows.length, 'booking', `${sold} checked in`),
+        // Where and when, with the map link, so the sheet works as the door list on its own.
+        subtitle: exportSubtitle(rows.length, 'booking', [`${sold} checked in`, event?.time, event?.location || event?.venue, event?.locationUrl].filter(Boolean).join(' · ')),
         columns: COLUMNS,
         rows,
         totals: { tickets: true, amount: true },
@@ -87,7 +92,7 @@ export const ordersSpec = (events, orders, label = 'Ticket orders') => {
         sheetName: 'Orders',
         title: label,
         subtitle: exportSubtitle(rows.length, 'order'),
-        columns: [{ header: 'Event', key: 'event', width: 28 }, ...COLUMNS.filter(c => c.key !== 'task')],
+        columns: [{ header: 'Event', key: 'event', width: 28 }, ...COLUMNS.filter(c => c.key !== 'task' && c.key !== 'guests')],
         rows,
         totals: { tickets: true, amount: true },
     };

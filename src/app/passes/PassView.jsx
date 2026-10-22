@@ -1,14 +1,14 @@
 import React from 'react';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
-import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Clock from 'lucide-react/dist/esm/icons/clock';
 import DoorOpen from 'lucide-react/dist/esm/icons/door-open';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import Ban from 'lucide-react/dist/esm/icons/ban';
+import Users from 'lucide-react/dist/esm/icons/users';
 import { AmbientBackdrop, Field, Stat, StatRow } from '../../components/app';
 import { isPresent } from '../../lib/present';
 import { cn } from '../../lib/utils';
-import { ExternalTicketButton, PassQr, entryLine, passWhen } from './passParts';
+import { ExternalTicketButton, PassQr, VenueField, entryLine, passWhen } from './passParts';
 import { useT } from '../../i18n';
 
 /*
@@ -90,8 +90,9 @@ const PassView = ({ pass, token, offline = false }) => {
                 <div className="divide-y divide-black/[0.05] rounded-2xl border border-black/[0.05] px-4 dark:divide-white/[0.06] dark:border-white/[0.07]">
                     <Field icon={CalendarDays} label={t('When')} value={when} />
                     <Field icon={Clock} label={t('Box office')} value={event.boxOffice} />
-                    <Field icon={MapPin} label={t('Venue')} value={[event.venue, event.city && !String(event.venue || '').includes(event.city) ? event.city : null].filter(Boolean).join(', ') || null} />
+                    <VenueField event={event} />
                     <Field icon={DoorOpen} label={t('Entry')} value={entryLine(event, pass.qr !== false)} />
+                    <Field icon={Users} label={t('Coming with you')} value={Array.isArray(pass.plusOneNames) ? pass.plusOneNames.filter(Boolean).join(', ') : null} />
                 </div>
 
                 <StatRow>

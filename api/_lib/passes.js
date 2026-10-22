@@ -6,7 +6,8 @@
  *                   status: 'issued' | 'checked_in' | 'revoked', qty, tier, note,
  *                   qr (a Newbi QR pass that the gate scanner accepts),
  *                   externalTicket? { kind: 'link' | 'pdf', url | storagePath, filename, provider, qty, tier, note },
- *                   event { title, date, time, venue, city, image }, campaignTitle?, mode: 'qr' | 'rsvp',
+ *                   plusOneNames? (the names of the people coming with them, guestlists only),
+ *                   event { title, date, time, venue, city, mapUrl, image }, campaignTitle?, mode: 'qr' | 'rsvp',
  *                   delivery { email, whatsapp, push, inApp }, issuedAt, issuedBy }
  *
  * Only this module writes passes (Admin SDK, in transactions). Holders read
@@ -17,7 +18,7 @@
  * function limit, so this lives inside an existing function):
  *
  *   GET  guestlist                {id}                         public view of a guestlist (+ your place)
- *   POST register-guestlist       {guestlistId, guests, taskSubmission}   signed in
+ *   POST register-guestlist       {guestlistId, guests, guestNames?, taskSubmission}   signed in
  *   GET  get                      {ref}                        a pass to show (holder/staff get everything)
  *   POST file                     {ref} or {token}             short-lived link to the ticket PDF / link
  *   GET  open-token               {token}                      the ticket behind a signed /t/<token> link
@@ -79,6 +80,8 @@ const intIn = (v, min, max, fallback) => {
 const present = (v) => v !== undefined && v !== null && String(v).trim() !== '' && !/^(—|-|tbd|tba|n\/a)$/i.test(String(v).trim());
 const pick = (...values) => values.find(present) ?? null;
 const compact = (obj) => Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== null && v !== ''));
+// A map link the app can open: https only, nothing else.
+const mapLink = (v) => (/^https:\/\/\S+$/i.test(str(v, 600)) ? str(v, 600) : undefined);
 const firstName = (name) => str(name).split(/\s+/)[0] || '';
 const CLOSED = /^(closed|archived|ended|expired|inactive|draft|hidden|cancel+ed|past)$/i;
 
@@ -201,6 +204,7 @@ export const resolveGuestlist = async (db, id) => {
         time: pick(ev?.time, gl?.time, gig?.time),
         venue: pick(ev?.location, ev?.venue, gl?.location, gl?.venue, gig?.location),
         city: pick(ev?.city, gl?.city, gig?.city),
+        mapUrl: mapLink(ev?.locationUrl) || mapLink(gl?.locationUrl) || mapLink(gig?.locationUrl) || null,
         mode: (pick(gl?.guestlistMode, ev?.guestlistMode) || 'qr') === 'rsvp' ? 'rsvp' : 'qr',
         perUserLimit: Math.max(1, Number(gl?.perUserLimit ?? ev?.perUserLimit) || 1),
         maxSpots,
@@ -227,7 +231,13 @@ export const resolveGuestlist = async (db, id) => {
     };
 };
 
-const eventSnapshot = (g) => compact({ title: g.title, date: g.date, time: g.time, venue: g.venue, city: g.city, image: g.image });
+const eventSnapshot = (g) => compact({ title: g.title, date: g.date, time: g.time, venue: g.venue, city: g.city, mapUrl: g.mapUrl, image: g.image });
+
+// Names of the people coming with the holder: one per extra spot, blanks dropped.
+const cleanGuestNames = (names, guests) => (Array.isArray(names) ? names : [])
+    .slice(0, Math.max(0, guests - 1))
+    .map(n => str(n, 80))
+    .filter(Boolean);
 
 const guestlistView = (g) => {
     const { raw, ...view } = g;
@@ -291,6 +301,7 @@ const passFromGuestlistEntry = (ref, g, gid, entryId, entry, issuedBy) => ({
     entryId,
     status: entry.attended ? 'checked_in' : 'issued',
     qty: Math.max(1, Number(entry.guestsCount) || 1),
+    plusOneNames: cleanGuestNames(entry.plusOneNames, Math.max(1, Number(entry.guestsCount) || 1)),
     tier: entry.tier || null,
     qr: g.mode !== 'rsvp',
     mode: g.mode,
@@ -366,6 +377,7 @@ const registerGuestlist = async (db, body, caller) => {
             phone: me.phone,
             customerPhone: me.phone,
             guestsCount: guests,
+            plusOneNames: cleanGuestNames(body.guestNames, guests),
             bookingRef: ref,
             passRef: ref,
             status,
@@ -453,8 +465,11 @@ export const deliverGuestlistPass = async (db, gid, entryId, { g = null, issuedB
         name: pass.holderName || entry.customerName || entry.name,
         eventName: pass.event?.title || entry.title,
         date: pass.event?.date,
+        time: pass.event?.time,
         venue: pass.event?.venue,
+        mapUrl: pass.event?.mapUrl,
         qty: pass.qty,
+        guestNames: pass.plusOneNames,
         tier: pass.tier,
         ref,
         mode: pass.mode === 'rsvp' ? 'rsvp' : 'qr',
@@ -495,7 +510,7 @@ export const ensureOrderPass = async (db, orderId, order, ev = {}) => {
         tier: (order.items || []).map(i => i.name).filter(Boolean).join(', ') || null,
         qr: true,
         mode: 'qr',
-        event: compact({ title: ev.title || order.eventTitle, date: toIso(ev.date), time: ev.time, venue: ev.location || ev.venue, city: ev.city, image: ev.hubImage || ev.image }),
+        event: compact({ title: ev.title || order.eventTitle, date: toIso(ev.date), time: ev.time, venue: ev.location || ev.venue, city: ev.city, mapUrl: mapLink(ev.locationUrl), image: ev.hubImage || ev.image }),
         issuedAt: nowIso(),
         issuedBy: 'order',
     }));
@@ -513,6 +528,7 @@ const publicPass = (pass, { full = false } = {}) => {
         sourceId: pass.source === 'campaign' ? pass.sourceId : undefined,
         status: pass.status,
         qty: Number(pass.qty) > 0 ? Number(pass.qty) : undefined,
+        plusOneNames: full && Array.isArray(pass.plusOneNames) && pass.plusOneNames.length ? pass.plusOneNames : undefined,
         tier: pass.tier || undefined,
         note: full ? pass.note || undefined : undefined,
         mode: pass.mode || 'qr',
@@ -558,6 +574,7 @@ const legacyPass = async (db, ref) => {
             qr: e.guestlistMode !== 'rsvp', mode: e.guestlistMode === 'rsvp' ? 'rsvp' : 'qr',
             status: e.status === 'rejected' ? 'revoked' : e.attended ? 'checked_in' : ok ? 'issued' : 'pending',
             qty: Number(e.guestsCount) || 1,
+            plusOneNames: cleanGuestNames(e.plusOneNames, Number(e.guestsCount) || 1),
         };
         eventId = e.eventId || e.guestlistId || entries.docs[0].ref.parent.parent?.id;
     }
@@ -566,7 +583,7 @@ const legacyPass = async (db, ref) => {
         if (g) rec.event = eventSnapshot(g);
         else {
             const ev = await db.collection('upcoming_events').doc(eventId).get();
-            if (ev.exists) rec.event = compact({ title: ev.data().title, date: toIso(ev.data().date), time: ev.data().time, venue: ev.data().location, image: ev.data().hubImage || ev.data().image });
+            if (ev.exists) rec.event = compact({ title: ev.data().title, date: toIso(ev.data().date), time: ev.data().time, venue: ev.data().location, mapUrl: mapLink(ev.data().locationUrl), image: ev.data().hubImage || ev.data().image });
         }
     }
     return rec;
@@ -583,6 +600,16 @@ const getAction = async (db, body, caller) => {
     if (!isPassRef(ref)) throw new PassError('NOT_FOUND', "We couldn't find this pass.", 404);
     const pass = (await loadPass(db, ref)) || (await legacyPass(db, ref));
     if (!pass) throw new PassError('NOT_FOUND', "We couldn't find this pass. Check the code, or ask the Newbi team.", 404);
+    // A guestlist's time, venue or map link may have been added or changed since the
+    // pass was issued: show the list's current details, and keep the pass's copy in step.
+    if (pass.source === 'guestlist' && pass.issuedAt && idOk(pass.sourceId)) {
+        const g = await resolveGuestlist(db, pass.sourceId).catch(() => null);
+        const fresh = g ? { ...(pass.event || {}), ...eventSnapshot(g) } : null;
+        if (fresh && JSON.stringify(fresh) !== JSON.stringify(pass.event || {})) {
+            pass.event = fresh;
+            db.collection('passes').doc(ref).set({ event: fresh, updatedAt: nowIso() }, { merge: true }).catch(() => {});
+        }
+    }
     const full = Boolean(caller.staff || (caller.uid && pass.holderUid === caller.uid));
     if (full && pass.source !== 'order' && !pass.delivery?.inApp?.seenAt && pass.holderUid === caller.uid) {
         db.collection('passes').doc(ref).set({ delivery: { inApp: { seenAt: nowIso() } } }, { merge: true }).catch(() => {});
@@ -634,7 +661,7 @@ const loadCampaignContext = async (db, campaignId) => {
         const ev = await db.collection('upcoming_events').doc(campaign.eventId).get();
         if (ev.exists) {
             const e = ev.data();
-            event = compact({ title: e.title, date: toIso(e.date), time: e.time, venue: e.location || e.venue, city: e.city, image: e.hubImage || e.image });
+            event = compact({ title: e.title, date: toIso(e.date), time: e.time, venue: e.location || e.venue, city: e.city, mapUrl: mapLink(e.locationUrl), image: e.hubImage || e.image });
         }
     }
     // The campaign's own details (editor → Event passes) fill in, or override, the linked event's:
@@ -1087,6 +1114,7 @@ const checkinAction = async (db, body, caller) => {
             type: pass.source === 'campaign' ? 'Creator ticket' : pass.source === 'order' ? 'Ticket' : pass.mode === 'rsvp' ? 'RSVP' : 'Guestlist',
             people: Math.max(1, Number(pass.qty) || 1),
             guestsCount: Math.max(1, Number(pass.qty) || 1),
+            ...(Array.isArray(pass.plusOneNames) && pass.plusOneNames.length ? { plusOneNames: pass.plusOneNames } : {}),
             ...(pass.tier ? { items: [{ name: pass.tier, count: Math.max(1, Number(pass.qty) || 1) }] } : {}),
         };
         const forThisEvent = lists.has(pass.eventId) || lists.has(pass.sourceId);

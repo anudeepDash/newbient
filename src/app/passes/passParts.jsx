@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
-import { Button } from '../../components/app';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import Navigation from 'lucide-react/dist/esm/icons/navigation';
+import { Button, Field } from '../../components/app';
 import { passesPost } from '../../lib/passesApi';
 import { isPresent } from '../../lib/present';
 import { cn } from '../../lib/utils';
@@ -19,6 +21,27 @@ export const passWhen = (event = {}) => {
     if (Number.isNaN(date.getTime())) return null;
     const time = isPresent(event.time) ? event.time : (/T\d\d:\d\d/.test(String(raw)) && !/T00:00/.test(String(raw)) ? format(date, 'h:mm a') : null);
     return [format(date, 'EEE d MMM yyyy'), time].filter(Boolean).join(' · ');
+};
+
+/* "Hard Rock Cafe, Mumbai" from a pass's event (or a guestlist), or null. */
+export const venueLine = (event = {}) => [event.venue, event.city && !String(event.venue || '').includes(event.city) ? event.city : null].filter(Boolean).join(', ') || null;
+
+/* The Venue row, with a Directions link when the event has a map link. */
+export const VenueField = ({ event = {} }) => {
+    const tr = useT();
+    const venue = venueLine(event);
+    const map = /^https:\/\//i.test(String(event.mapUrl || '')) ? event.mapUrl : null;
+    if (!venue && !map) return null;
+    return (
+        <Field icon={MapPin} label={tr('Venue')}>
+            {venue && <span className="block">{venue}</span>}
+            {map && (
+                <a href={map} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-[32px] items-center gap-1.5 text-[14px] font-bold text-emerald-700 dark:text-neon-green">
+                    <Navigation size={14} /> {tr('Get directions')}
+                </a>
+            )}
+        </Field>
+    );
 };
 
 /* Where to go at the venue (campaign editor → Event passes → Entry). */
