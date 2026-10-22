@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { FakeFirestore, fakeReq, fakeRes } from './helpers/fakeFirestore.js';
 import { setDbForTests } from '../api/_lib/db.js';
 import { setWhatsAppFetchForTests } from '../api/_lib/whatsapp.js';
-import { setCenterFetchForTests, describeTemplate } from '../api/_lib/whatsappCenter.js';
+import { setCenterFetchForTests, describeTemplate, verdictFor } from '../api/_lib/whatsappCenter.js';
 import { handleOutreachAction } from '../api/_lib/outreach.js';
 import { contactIdFor } from '../api/_lib/outreachThreads.js';
 
@@ -162,5 +162,50 @@ describe('WhatsApp center', () => {
 describe('describeTemplate', () => {
     it('handles templates without a header or buttons', () => {
         expect(describeTemplate(META_TEMPLATES[1])).toMatchObject({ header: null, bodyVars: 1, buttons: [] });
+    });
+});
+
+describe('the number’s status', () => {
+    const NUMBER = {
+        display_phone_number: '+91 80000 12345', verified_name: 'Newbi', name_status: 'PENDING_REVIEW', quality_rating: 'GREEN',
+        whatsapp_business_manager_messaging_limit: 'TIER_250',
+        health_status: { can_send_message: 'LIMITED', entities: [{ entity_type: 'PHONE_NUMBER', can_send_message: 'LIMITED', additional_info: ['Your display name has not been approved yet.'] }] },
+    };
+
+    it('reads Meta’s health check and name, and puts the last real send first', async () => {
+        const urls = [];
+        setCenterFetchForTests(async (url) => { urls.push(url); return { ok: true, status: 200, json: async () => NUMBER }; });
+        db.store.set('message_log/m1', { channel: 'whatsapp', status: 'failed', errorCode: 131037, error: 'needs display name approval', template: 'campaign_invite', updatedAt: '2026-10-23T01:00:00Z' });
+        db.store.set('message_log/m2', { channel: 'email', status: 'sent', updatedAt: '2026-10-23T02:00:00Z' });
+        const res = await call('wa-number');
+        expect(urls[0]).toContain('/123?fields=');
+        expect(res.body.number).toMatchObject({ phone: '+91 80000 12345', verifiedName: 'Newbi', nameStatus: 'PENDING_REVIEW', canSend: 'LIMITED', limit: 'TIER_250' });
+        expect(res.body.number.issues).toEqual([{ entity: 'phone number', canSend: 'LIMITED', text: 'Your display name has not been approved yet.', fix: null, code: null }]);
+        expect(res.body.lastSend).toMatchObject({ status: 'failed', errorCode: 131037, template: 'campaign_invite' });
+        expect(res.body.verdict).toMatchObject({ tone: 'rose', title: expect.stringMatching(/display name/) });
+    });
+
+    it('asks again with fewer fields when Meta refuses one', async () => {
+        const calls = [];
+        setCenterFetchForTests(async (url) => {
+            calls.push(url);
+            return calls.length === 1
+                ? { ok: false, status: 400, json: async () => ({ error: { code: 100, message: 'Tried accessing nonexisting field' } }) }
+                : { ok: true, status: 200, json: async () => ({ ...NUMBER, whatsapp_business_manager_messaging_limit: undefined }) };
+        });
+        const res = await call('wa-number');
+        expect(calls).toHaveLength(2);
+        expect(calls[1]).not.toContain('whatsapp_business_manager_messaging_limit');
+        expect(res.body.number.verifiedName).toBe('Newbi');
+    });
+
+    it('says when it can send, and when Meta’s view and the last send disagree', () => {
+        const failed = { status: 'failed', errorCode: 131037 };
+        expect(verdictFor({ canSend: 'AVAILABLE', nameStatus: 'APPROVED', lastSend: { status: 'read' } }).tone).toBe('green');
+        expect(verdictFor({ canSend: 'AVAILABLE', nameStatus: 'APPROVED', lastSend: failed }).tone).toBe('amber');
+        expect(verdictFor({ canSend: 'LIMITED', nameStatus: 'APPROVED', lastSend: null }).title).toMatch(/limits/);
+        expect(verdictFor({ canSend: 'AVAILABLE', nameStatus: 'DECLINED' }).title).toMatch(/not approved/);
+        expect(verdictFor({ canSend: 'BLOCKED' }).tone).toBe('rose');
+        expect(verdictFor({}).tone).toBe('gray');
     });
 });

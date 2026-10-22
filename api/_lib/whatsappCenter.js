@@ -11,6 +11,7 @@
  *        params: { body: [...], buttons: {index: ending}, headerUrl?, headerText?, campaignId? }
  *        A value like {first_name} or {campaign_title} is filled in for each person (src/lib/outreach/waFields.js).
  *   POST ?action=wa-log        { limit? }              the latest sends from message_log
+ *   POST ?action=wa-number     {}                      the number's state at Meta (health, display name) and the last send
  *
  * Same roles as outreach (checked by the router in api/_lib/outreach.js).
  * Sends share the outreach rate limit and daily cap, skip numbers that asked
@@ -29,7 +30,7 @@ import { loadTeam } from './teamAlerts.js';
 import { STOP_PAYLOAD } from '../../src/lib/outreach/whatsappTemplate.js';
 import { APP_ORIGIN, OG_IMAGES } from '../../src/app/seo.js';
 
-export const WA_CENTER_ACTIONS = new Set(['wa-templates', 'wa-team', 'wa-send', 'wa-log']);
+export const WA_CENTER_ACTIONS = new Set(['wa-templates', 'wa-team', 'wa-send', 'wa-log', 'wa-number']);
 
 const MAX_RECIPIENTS = 50;
 const send = (res, status, body) => res.status(status).json(body);
@@ -228,6 +229,94 @@ const handleSend = async (req, res, { db, actor }) => {
     return send(res, 200, { success: true, sent, results });
 };
 
+/* ── The number's state at Meta ───────────────────────────────────────── */
+
+const NUMBER_FIELDS = ['display_phone_number', 'verified_name', 'name_status', 'new_name_status', 'status', 'quality_rating',
+    'whatsapp_business_manager_messaging_limit', 'messaging_limit_tier', 'health_status'];
+// Fields every Graph version has, for when Meta refuses one of the newer ones.
+const CORE_FIELDS = ['display_phone_number', 'verified_name', 'name_status', 'quality_rating', 'health_status'];
+
+const fetchNumber = async () => {
+    const doFetch = testFetch || fetch;
+    const get = async (fields) => {
+        const url = `https://graph.facebook.com/${graphVersion()}/${encodeURIComponent(process.env.WHATSAPP_PHONE_NUMBER_ID)}?fields=${fields.join(',')}`;
+        const res = await doFetch(url, { headers: { Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}` } });
+        return { ok: res.ok, data: await res.json().catch(() => ({})), status: res.status };
+    };
+    let r = await get(NUMBER_FIELDS);
+    if (!r.ok && Number(r.data?.error?.code) === 100) r = await get(CORE_FIELDS);
+    if (!r.ok) throw Object.assign(new Error(r.data?.error?.message || `Meta answered ${r.status}`), { status: 502 });
+    return r.data;
+};
+
+/* What Meta's health check says about each part (number, account, business, app), in words. */
+const issuesOf = (health) => (health?.entities || []).flatMap((e) => {
+    const texts = [
+        ...(e.errors || []).map(x => ({ text: x.error_description || `Error ${x.error_code}`, fix: x.possible_solution || null, code: x.error_code || null })),
+        ...[].concat(e.additional_info || []).filter(Boolean).map(text => ({ text: String(text), fix: null, code: null })),
+    ];
+    return texts.map(t => ({ entity: String(e.entity_type || '').toLowerCase().replace(/_/g, ' '), canSend: e.can_send_message || null, ...t }));
+});
+
+/* "TIER_1K" and the like; Meta has sent this both as a string and as { current_limit }. */
+const limitOf = (n) => {
+    const v = n.whatsapp_business_manager_messaging_limit;
+    const raw = typeof v === 'string' ? v : v?.current_limit || n.messaging_limit_tier || null;
+    return typeof raw === 'string' ? raw : null;
+};
+
+const NAME_OK = new Set(['APPROVED', 'AVAILABLE_WITHOUT_REVIEW']);
+export const DISPLAY_NAME_ERROR = 131037;
+
+/*
+ * Can it send right now? Meta's health check and the name status can lag the
+ * truth for a day or two, so the last real send counts most.
+ * → { tone: 'green'|'amber'|'rose'|'gray', title, detail }
+ */
+export const verdictFor = ({ canSend = null, nameStatus = null, lastSend = null }) => {
+    const nameBlocked = lastSend?.status === 'failed' && Number(lastSend.errorCode) === DISPLAY_NAME_ERROR;
+    if (nameBlocked && (canSend !== 'AVAILABLE' || !NAME_OK.has(nameStatus))) {
+        return { tone: 'rose', title: 'Not sending: the display name isn’t active yet', detail: 'Meta refuses every message until the number’s display name is approved. After approval it can take 1–2 business days to apply.' };
+    }
+    if (nameBlocked) {
+        return { tone: 'amber', title: 'Meta now shows the name as approved', detail: 'The last message still failed on the display name. The next one will tell whether it has applied.' };
+    }
+    if (canSend === 'BLOCKED') return { tone: 'rose', title: 'Meta is blocking messages', detail: 'See what Meta says below.' };
+    if (nameStatus && !NAME_OK.has(nameStatus)) return { tone: 'amber', title: 'Display name not approved yet', detail: 'Messages may be refused until Meta approves it.' };
+    if (canSend === 'LIMITED') return { tone: 'amber', title: 'Sending, with limits', detail: 'Messages go out, with a lower daily limit. See what Meta says below.' };
+    if (canSend === 'AVAILABLE') return { tone: 'green', title: 'Sending normally', detail: lastSend?.status && lastSend.status !== 'failed' ? 'The last message went through.' : 'Meta says this number can send.' };
+    return { tone: 'gray', title: 'Status unknown', detail: 'Meta didn’t say whether this number can send.' };
+};
+
+/* The latest WhatsApp send that reached Meta's answer (sent, delivered, read or failed). */
+const lastSendOf = async (db) => {
+    const snap = await db.collection('message_log').orderBy('updatedAt', 'desc').limit(40).get();
+    const m = snap.docs.map(d => d.data()).find(x => x.channel === 'whatsapp' && ['sent', 'delivered', 'read', 'failed'].includes(x.status));
+    return m ? { status: m.status, at: m.updatedAt || m.createdAt || null, template: m.template || '', error: m.error || null, errorCode: m.errorCode || null } : null;
+};
+
+const handleNumber = async (req, res, { db }) => {
+    const [n, lastSend] = await Promise.all([fetchNumber(), lastSendOf(db).catch(() => null)]);
+    const canSend = n.health_status?.can_send_message || null;
+    return send(res, 200, {
+        success: true,
+        at: nowIso(),
+        number: {
+            phone: n.display_phone_number || '',
+            verifiedName: n.verified_name || '',
+            nameStatus: n.name_status || null,
+            newNameStatus: n.new_name_status || null,
+            status: n.status || null,
+            quality: n.quality_rating || null,
+            limit: limitOf(n),
+            canSend,
+            issues: issuesOf(n.health_status),
+        },
+        lastSend,
+        verdict: verdictFor({ canSend, nameStatus: n.name_status || null, lastSend }),
+    });
+};
+
 const handleLog = async (req, res, { db }) => {
     const limit = Math.min(200, Math.max(1, Number(req.body?.limit) || 100));
     const snap = await db.collection('message_log').orderBy('updatedAt', 'desc').limit(limit * 2).get();
@@ -256,6 +345,7 @@ export const handleWhatsAppCenterAction = async (action, req, res, ctx) => {
         }
         if (action === 'wa-send') return await handleSend(req, res, ctx);
         if (action === 'wa-log') return await handleLog(req, res, ctx);
+        if (action === 'wa-number') return await handleNumber(req, res, ctx);
     } catch (err) {
         if (err?.status) return send(res, err.status, { success: false, error: err.message });
         throw err;
