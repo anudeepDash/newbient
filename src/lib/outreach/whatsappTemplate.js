@@ -59,6 +59,20 @@ export const WA_TEMPLATES = {
         body: '💸 *Payout sent, {{1}}*\n\n*Amount:* ₹{{2}}\n*Campaign:* {{3}}\n*Reference:* {{4}}\n\nThanks for creating with Newbi!',
         placeholders: ['first_name', 'amount', 'campaign_title', 'reference'],
     },
+    // The day before a posting deadline, and the day after it if the posts still aren't in
+    // (api/_lib/postReminders.js). URL button: their posts link, like campaign_deliverables.
+    post_due: {
+        name: 'campaign_post_due',
+        body: "⏳ *Your post is due tomorrow, {{1}}*\n\n*Campaign:* {{2}}\n*Due:* {{3}}\n*Still to send:* {{4}}\n\nPost it, then tap *Send my posts* so we can check it. Reply here if you need more time.",
+        placeholders: ['first_name', 'campaign_title', 'due_at', 'still_to_send'],
+        button: 'Send my posts',
+    },
+    post_overdue: {
+        name: 'campaign_post_overdue',
+        body: "⚠️ *We haven't got your post yet, {{1}}*\n\n*Campaign:* {{2}}\n*Was due:* {{3}}\n\nSend it today to stay on the campaign. If something came up, reply here and tell us.",
+        placeholders: ['first_name', 'campaign_title', 'due_at'],
+        button: 'Send my posts',
+    },
 };
 
 export const NAME_FALLBACK = 'there';
@@ -86,6 +100,8 @@ export const templateParamsFor = (kind, { application, campaign, groupLink, data
         city: String(data.city || application?.city || 'your city').trim(),
         city_group_link: String(data.groupUrl || '').trim(),
         approved_summary: String(data.summary || '').trim() || 'All your posts',
+        due_at: String(data.dueAt || '').trim() || 'Soon',
+        still_to_send: String(data.stillToSend || '').trim() || 'Your posts',
     };
     return (WA_TEMPLATES[kind] || WA_TEMPLATES.invite).placeholders.map(p => values[p]);
 };

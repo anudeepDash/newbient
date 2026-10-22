@@ -14,10 +14,11 @@ import { createCampaign } from './campaigns.js';
 import { sendPush } from '../push.js';
 import { isCampaignCityMatch } from '../../../src/lib/constants.js';
 import { normalizeEmail, isValidEmail } from '../mailing.js';
-import { deliverGuestlistPass, ensureOrderPass, passUrl, resolveGuestlist } from '../passes.js';
+import { deliverGuestlistPass, ensureOrderPass, passUrl, resolveGuestlist, advanceWaitlist } from '../passes.js';
 import { isTemplateLive, sendTemplate } from '../whatsapp.js';
 import { sendTeamAlert, TICKET_TEAM, contactForAdmin, roleLabel } from '../teamAlerts.js';
 import { tellPassHolders, countPassHolders } from '../passHolders.js';
+import { queueCampaignInvites } from '../campaignInvites.js';
 import { isRequiredTask } from '../../../src/lib/creator/tasks.js';
 import { approvedSummary } from '../../../src/lib/outreach/whatsappTemplate.js';
 
@@ -98,6 +99,13 @@ const guestlistTaskChanges = async (body, caller) => {
         name: entry.customerName || entry.name, eventName: title, image, feedback: entry.taskFix?.note, guestlistId: body.guestlistId,
     }, { to: entryContact(entry) });
     return { delivery };
+};
+
+/* A place may have come free (a decline, a removal, more capacity): offer it to the waitlist. */
+const guestlistSpotFreed = async ({ guestlistId }, caller) => {
+    if (!caller.staff) throw new EventError('Forbidden', 403);
+    if (!idOk(guestlistId)) throw new EventError('Missing guestlist.');
+    return advanceWaitlist(getDb(), guestlistId);
 };
 
 /* Ticketing → Settings → Tell pass holders: a change, or the event is cancelled. Call again while `remaining` > 0. */
@@ -294,7 +302,11 @@ const campaignInvite = async ({ campaignId, again = false }, caller) => {
         }))));
         pushed += res.filter(r => r.ok).length;
     }
-    return { emailCampaignId: queued?.campaignId || null, emailed: queued?.queued || 0, pushed };
+
+    // WhatsApp to the same creators (verified numbers only), through the rate-limited send queue.
+    const whatsapp = await queueCampaignInvites({ db, campaign, creators, again: again === true, createdBy: caller.email || 'Newbi team' })
+        .catch((err) => { console.warn('[MAIL] campaign WhatsApp invites not queued:', err.message); return null; });
+    return { emailCampaignId: queued?.campaignId || null, emailed: queued?.queued || 0, pushed, whatsapp: whatsapp?.queued || 0 };
 };
 
 // Campaign pages live in the app (app.newbi.live/c/:id); the URL button suffix is the campaign id.
@@ -546,6 +558,7 @@ const HANDLERS = {
     'gig-selected': gigSelected,
     'guestlist-declined': guestlistDeclined,
     'guestlist-task-changes': guestlistTaskChanges,
+    'guestlist-spot-freed': guestlistSpotFreed,
     'event-changed': passHoldersNotice('changed'),
     'event-cancelled': passHoldersNotice('cancelled'),
     'payment-approved': invoicePayment('payment-approved'),

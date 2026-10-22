@@ -211,6 +211,8 @@ const KINDS = {
     city_group: { button: 'stop' },
     payout: {},
     all_approved: {},
+    post_due: { button: 'link' },
+    post_overdue: { button: 'link' },
     inbox_text: { text: true },
     // Any approved template, ready to send (WhatsApp center bulk sends): data { phone, name, template, language, header, bodyParams, buttons, text }.
     template: { custom: true },
@@ -284,6 +286,9 @@ const loadContext = async (db, job) => {
     }
     if (job.kind === 'deliverables' && !(campaign.tasks || []).length) return { skip: 'no_deliverables' };
     if (spec.button === 'link' && !submitToken(job.campaignId, job.appId)) return { skip: 'no_link_secret' };
+    // A deadline reminder is pointless once the posts it was about are in.
+    if ((job.kind === 'post_due' || job.kind === 'post_overdue')
+        && (job.data?.taskIds || []).every(id => ['submitted', 'approved'].includes(app.deliverables?.[id]?.status))) return { skip: 'posts_in' };
     return { campaign, settings, app };
 };
 
@@ -298,6 +303,7 @@ const SKIP_NOTE = {
     no_link_secret: 'LINK_SIGNING_SECRET isn’t set, so personal links can’t be made.',
     window_closed: 'More than 24 hours since their last message: WhatsApp only allows a template now.',
     opted_out: 'They asked to stop WhatsApp updates.',
+    posts_in: 'Their posts came in before the reminder went out.',
     unknown_kind: 'Unknown message type.',
     template_off: 'Its WhatsApp template isn’t switched on yet (WHATSAPP_TEMPLATE_<NAME> in Vercel).',
 };

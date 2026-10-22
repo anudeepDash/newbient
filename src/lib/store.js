@@ -380,6 +380,9 @@ const giveawayMirrorAnnouncement = (g) => ({
 });
 
 /* Cancels the pass issued for a guestlist sign-up, through the passes API (staff only). */
+// Guestlist sign-ups that count toward capacity (declined, waitlisted and expired offers don't).
+const holdsSpot = (status) => !['rejected', 'cancelled', 'waitlisted', 'waitlist_expired'].includes(String(status || ''));
+
 const revokeEntryPass = async (entry, reason) => {
     const ref = entry?.passRef || entry?.bookingRef;
     if (!ref) return;
@@ -3076,22 +3079,24 @@ export const useStore = create((set, get) => ({
             await notifyEvent('pass-confirmed', { guestlistId, entryId });
         }
 
-        // Rejected entries don't hold spots. Only move the counter when the
-        // entry actually crosses that line, so repeat clicks can't drift it.
-        const wasRejected = currentData.status === 'rejected';
-        const isRejected = status === 'rejected';
+        // Declined, waitlisted and expired entries don't hold spots. Only move the counter
+        // when the entry actually crosses that line, so repeat clicks can't drift it.
+        const heldBefore = holdsSpot(currentData.status);
+        const heldAfter = holdsSpot(status);
         // Declined: their pass stops working (approving again brings it back).
-        if (isRejected && !wasRejected) await revokeEntryPass(currentData, 'Declined');
-        if (entrySnap.exists() && wasRejected !== isRejected) {
+        if (status === 'rejected' && currentData.status !== 'rejected') await revokeEntryPass(currentData, 'Declined');
+        if (entrySnap.exists() && heldBefore !== heldAfter) {
             try {
                 const spots = Number(currentData.guestsCount) || 1;
                 await updateDoc(doc(db, 'guestlists', guestlistId), {
-                    currentSpots: increment(isRejected ? -spots : spots)
+                    currentSpots: increment(heldAfter ? spots : -spots)
                 });
             } catch (err) {
                 console.warn('Failed to update guestlist spots after a status change:', err);
             }
         }
+        // A place came free: the server offers it to the next person on the waitlist.
+        if (heldBefore && !heldAfter) await notifyEvent('guestlist-spot-freed', { guestlistId });
     },
     // Removes an entry and gives its spots back (rejected entries already did).
     deleteGuestlistEntry: async (guestlistId, entryId) => {
@@ -3102,12 +3107,13 @@ export const useStore = create((set, get) => ({
         await deleteDoc(entryRef);
         // Removed: the pass goes with the sign-up.
         await revokeEntryPass(data, 'Removed from the guestlist');
-        if (data.status !== 'rejected') {
+        if (holdsSpot(data.status)) {
             try {
                 await updateDoc(doc(db, 'guestlists', guestlistId), {
                     currentSpots: increment(-(Number(data.guestsCount) || 1))
                 });
             } catch { /* standalone entries may have no parent counter */ }
+            await notifyEvent('guestlist-spot-freed', { guestlistId });
         }
     },
 

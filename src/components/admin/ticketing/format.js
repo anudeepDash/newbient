@@ -50,6 +50,9 @@ export const ORDER_STATUS = {
 // Guestlist entries: approved (or never needed review), waiting, or declined.
 export const guestStatus = (entry) => {
     if (entry?.status === 'rejected') return 'rejected';
+    // Full lists: waiting in line (or offered a place that freed up), and offers that ran out.
+    if (entry?.status === 'waitlisted' || entry?.status === 'offered') return 'waitlist';
+    if (entry?.status === 'waitlist_expired') return 'expired';
     if (entry?.status === 'approved' || entry?.status === 'confirmed' || (!entry?.status && !entry?.hasTask)) return 'approved';
     return 'pending';
 };
@@ -58,6 +61,8 @@ export const GUEST_STATUS = {
     pending: { label: 'To review', tone: 'amber' },
     approved: { label: 'Approved', tone: 'green' },
     rejected: { label: 'Declined', tone: 'red' },
+    waitlist: { label: 'Waitlist', tone: 'violet' },
+    expired: { label: 'Offer expired', tone: 'gray' },
 };
 
 export const guestCount = (entry) => Math.max(1, Number(entry?.guestsCount) || 1);

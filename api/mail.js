@@ -9,6 +9,9 @@ import { retryFailedWhatsApp } from './_lib/whatsapp.js';
 import { runQueue as runOutreachQueue, kickWorker as kickOutreachWorker } from './_lib/outreachQueue.js';
 import { handleEvent, isEvent } from './_lib/mail/events.js';
 import { runEventReminders } from './_lib/eventReminders.js';
+import { runPostReminders } from './_lib/postReminders.js';
+import { runTeamDigest } from './_lib/teamDigest.js';
+import { runWaitlists } from './_lib/waitlistSweep.js';
 import { STAFF_TEMPLATES, hasTemplate } from './_lib/mail/templates/index.js';
 
 /*
@@ -81,6 +84,10 @@ const runWorker = async (req, { budgetMs = 48000, depth = 0 } = {}) => {
     const started = Date.now();
     const retried = await retryDeferredMail({ deadline: started + 8000 }).catch(e => { console.error('[MAIL] retry pass failed:', e.message); return 0; });
     const waRetried = await retryFailedWhatsApp({ deadline: started + 12000 }).catch(e => { console.error('[MAIL] WhatsApp retry failed:', e.message); return 0; });
+    // Posting deadline reminders (due tomorrow / overdue), queued so the run below sends them.
+    const posts = depth === 0
+        ? await runPostReminders().catch(e => { console.error('[MAIL] post reminders failed:', e.message); return null; })
+        : null;
     // Campaign outreach: leftover sends and due join reminders (the queue keeps to its own rate limit).
     const outreach = depth === 0
         ? await runOutreachQueue({ deadline: started + 20000 }).catch(e => { console.error('[MAIL] outreach queue failed:', e.message); return null; })
@@ -91,10 +98,16 @@ const runWorker = async (req, { budgetMs = 48000, depth = 0 } = {}) => {
     const reminders = depth === 0
         ? await runEventReminders({ deadline: Date.now() + 15000 }).catch(e => { console.error('[MAIL] event reminders failed:', e.message); return null; })
         : null;
+    // Waitlists: expired offers pass on, free places are offered.
+    if (depth === 0) await runWaitlists().catch(e => console.error('[MAIL] waitlists failed:', e.message));
+    // The morning team digest (once a day, only when something is waiting).
+    const digest = depth === 0
+        ? await runTeamDigest().catch(e => { console.error('[MAIL] team digest failed:', e.message); return null; })
+        : null;
     const campaigns = await runCampaignWorker({ deadline: started + budgetMs }).catch(e => { console.error('[MAIL] campaign worker failed:', e); return { campaigns: 0, sent: 0, more: false }; });
     let chained = false;
     if (campaigns.more) chained = await chainWorker(req, depth);
-    return { retried, waRetried, outreachSent: outreach?.sent || 0, remindersSent: reminders?.sent || 0, ...campaigns, chained, ms: Date.now() - started };
+    return { retried, waRetried, outreachSent: outreach?.sent || 0, remindersSent: reminders?.sent || 0, postReminders: posts, teamDigest: digest?.sent || 0, ...campaigns, chained, ms: Date.now() - started };
 };
 
 /* ---------- Free-form staff mail (the composer screens) ---------- */

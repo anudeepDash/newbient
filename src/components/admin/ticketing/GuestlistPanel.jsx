@@ -33,6 +33,7 @@ const FILTERS = [
     { value: 'approved', label: 'Approved' },
     { value: 'in', label: 'Checked in' },
     { value: 'tasks', label: 'With tasks' },
+    { value: 'waitlist', label: 'Waitlist' },
     { value: 'rejected', label: 'Declined' },
     { value: 'all', label: 'All' },
 ];
@@ -46,14 +47,14 @@ const DECLINE_REASONS = [
 
 /* The "tell them" part of the decline sheet. It writes the choice into `choice` (a ref) as it changes. */
 const DeclineNotice = ({ choice, many }) => {
-    const [tell, setTell] = useState(false);
+    const [tell, setTell] = useState(true);
     const [reason, setReason] = useState(DECLINE_REASONS[0]);
     choice.current = { tell, reason };
     return (
         <div className="space-y-2 rounded-xl border border-black/10 p-3 dark:border-white/10">
             <label className="flex items-start gap-2.5 text-[13px] font-semibold text-gray-800 dark:text-zinc-200">
                 <input type="checkbox" className="mt-0.5 h-4 w-4" checked={tell} onChange={(e) => setTell(e.target.checked)} />
-                <span>Tell {many ? 'each of them' : 'them'} on WhatsApp<span className="block text-[12px] font-normal text-gray-500">Only once that message is approved in Meta. Leave it off to decline quietly.</span></span>
+                <span>Tell {many ? 'each of them' : 'them'} on WhatsApp<span className="block text-[12px] font-normal text-gray-500">Untick to decline quietly.</span></span>
             </label>
             {tell && (
                 <select value={reason} onChange={(e) => setReason(e.target.value)} aria-label="Reason they're told"
@@ -72,6 +73,7 @@ const matches = (e, filter) => {
     if (filter === 'in') return s === 'approved' && Boolean(e.attended);
     if (filter === 'tasks') return hasTask(e);
     if (filter === 'rejected') return s === 'rejected';
+    if (filter === 'waitlist') return s === 'waitlist';
     return true;
 };
 
@@ -87,12 +89,12 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
     const [bulk, setBulk] = useState(null);
     const [busy, run] = useBusy();
     const [ask, confirmSheet] = useConfirm();
-    const declineChoice = useRef({ tell: false, reason: DECLINE_REASONS[0] });
+    const declineChoice = useRef({ tell: true, reason: DECLINE_REASONS[0] });
 
     const label = event?.guestlistMode === 'rsvp' ? 'RSVP' : 'guestlist';
     const maxSpots = Number(event?.maxSpots) || 0;
     const people = useMemo(() => {
-        const p = { approved: 0, pending: 0, rejected: 0, in: 0 };
+        const p = { approved: 0, pending: 0, rejected: 0, waitlist: 0, expired: 0, in: 0 };
         entries.forEach(e => {
             const s = guestStatus(e);
             p[s] += guestCount(e);
@@ -267,6 +269,7 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
                     <span className="inline-flex items-center gap-1.5"><span className={cn('h-2 w-2 rounded-full', accent('teal').dot)} />Checked in</span>
                     <span className="inline-flex items-center gap-1.5"><span className={cn('h-2 w-2 rounded-full', accent('green').dot)} />Approved</span>
                     <span className="inline-flex items-center gap-1.5"><span className={cn('h-2 w-2 rounded-full', accent('amber').dot)} />Waiting ({people.pending})</span>
+                    {people.waitlist > 0 && <span>{people.waitlist} on the waitlist</span>}
                     {people.rejected > 0 && <span>{people.rejected} declined</span>}
                 </div>
             </Panel>
@@ -336,6 +339,7 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
                                                 <Badge tone="fuchsia"><Users size={10} /> {n}</Badge>
                                                 {s === 'approved' && entry.attended && <Badge tone="teal"><UserCheck size={10} /> In</Badge>}
                                                 {entry.status === 'changes' && <Badge tone="blue"><Pencil size={10} /> Fix asked</Badge>}
+                                                {entry.status === 'offered' && <Badge tone="amber">Place offered{entry.offerExpiresAt ? ` until ${formatDateTime(entry.offerExpiresAt)}` : ''}</Badge>}
                                             </div>
                                             <ContactLinks phone={entry.customerPhone || entry.phone} email={entry.customerEmail || entry.email} className="mt-0.5" />
                                             {Array.isArray(entry.plusOneNames) && entry.plusOneNames.filter(Boolean).length > 0 && (
@@ -363,7 +367,7 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
                                                 <Check size={15} /> {working ? 'Approving…' : s === 'rejected' ? 'Approve instead' : 'Approve'}
                                             </Button>
                                         )}
-                                        {s === 'pending' && (
+                                        {(s === 'pending' || s === 'waitlist') && (
                                             <Button variant="secondary" className="h-11 w-11 px-0 text-red-600 dark:text-red-400" onClick={() => decline(entry)} disabled={Boolean(working)} aria-label={`Decline ${name}`}>
                                                 <X size={16} />
                                             </Button>
@@ -394,10 +398,10 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
                 onStatusChange={async (entryId, newStatus, extra) => {
                     const entry = entries.find(e => e.id === entryId);
                     if (!entry) throw new Error('This sign-up no longer exists.');
-                    // The review sheet has no "tell them" choice: a decline there stays quiet.
-                    declineChoice.current = { tell: false, reason: DECLINE_REASONS[0] };
                     await setStatus(entry, newStatus, extra);
                     if (newStatus === 'changes') await notifyEvent('guestlist-task-changes', { guestlistId: glOf(entry), entryId });
+                    // Declined from the task review: they're told, with the task as the reason.
+                    if (newStatus === 'rejected') await notifyEvent('guestlist-declined', { guestlistId: glOf(entry), entryId, reason: DECLINE_REASONS[1] });
                 }}
             />
             {confirmSheet}

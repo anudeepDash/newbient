@@ -50,6 +50,12 @@ export const FIELDS = {
     change: { label: 'What changed', example: 'Doors now open at 5:00 PM (was 4:00 PM)' },
     refund: { label: 'Refund', example: '₹1,499 back to your UPI in 5–7 working days' },
     scanned_at: { label: 'Scanned at', example: '5:42 PM' },
+    due_at: { label: 'Due', example: 'Thu, 12 Nov' },
+    still_to_send: { label: 'Still to send', example: '1 reel' },
+    orders_count: { label: 'Ticket orders to check', example: '3' },
+    signups_count: { label: 'Guestlist sign-ups to review', example: '12' },
+    posts_count: { label: 'Creator posts to review', example: '7' },
+    payouts_count: { label: 'Payouts to send', example: '5' },
     device: { label: 'Device', example: 'Chrome on Android, Pune' },
     when: { label: 'When', example: '23 Oct, 9:42 PM' },
     phone_last4: { label: 'New number ends in', example: '4321' },
@@ -84,9 +90,10 @@ const OURS = {
     new_sign_in: { body: ['first_name', 'device', 'when'] },
     phone_number_changed: { body: ['first_name', 'phone_last4', 'when'] },
     accounts_merged: { body: ['first_name', 'merged_in', 'moved_summary'] },
+    team_daily_brief: { body: ['orders_count', 'signups_count', 'posts_count', 'payouts_count'] },
     ...Object.fromEntries(Object.values(WA_TEMPLATES).map(t => [t.name, {
         body: t.placeholders,
-        ...(['campaign_deliverables', 'campaign_deliverable_changes'].includes(t.name) ? { button: 'submit_token' } : {}),
+        ...(['campaign_deliverables', 'campaign_deliverable_changes', 'campaign_post_due', 'campaign_post_overdue'].includes(t.name) ? { button: 'submit_token' } : {}),
     }])),
 };
 
