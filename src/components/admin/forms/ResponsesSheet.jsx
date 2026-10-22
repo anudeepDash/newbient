@@ -25,6 +25,7 @@ import { answerText, responseFields, responseIdentity } from './formSchema';
 import { deleteFormResponses, subscribeToFormResponses, syncResponseCount, updateFormResponses } from './formResponses';
 import { BulkBar, InfoRow, SelectBox, SheetSection, formatDateTime, timeAgo, toDate, useConfirm } from './kit';
 import { notifyEvent } from '../../../lib/mailApi';
+import WhatsAppSendSheet from '../whatsapp/WhatsAppSendSheet';
 
 /*
  * Every response to a built-in form, with search, export, bulk actions and a
@@ -89,6 +90,7 @@ const ResponsesSheet = ({ open, onClose, form, mode = 'form', gig, onCloseGig })
     const [search, setSearch] = useState('');
     const [status, setStatus] = useState('all');
     const [selected, setSelected] = useState(() => new Set());
+    const [waPeople, setWaPeople] = useState(null); // [{ name, phone }] for Send on WhatsApp
     const [detailId, setDetailId] = useState(null);
     const [busy, setBusy] = useState(false);
     const [notify, setNotify] = useState(true);
@@ -320,6 +322,7 @@ const ResponsesSheet = ({ open, onClose, form, mode = 'form', gig, onCloseGig })
                             </div>
                         )}
 
+                        <WhatsAppSendSheet open={Boolean(waPeople)} onClose={() => setWaPeople(null)} people={waPeople || []} />
                         {selected.size > 0 && (
                             <BulkBar count={selected.size} onClear={() => setSelected(new Set())}>
                                 {volunteer && (
@@ -330,6 +333,7 @@ const ResponsesSheet = ({ open, onClose, form, mode = 'form', gig, onCloseGig })
                                         <Button size="sm" variant="secondary" disabled={busy} onClick={() => setStatusFor([...selected], 'rejected')}>Decline</Button>
                                     </>
                                 )}
+                                <Button size="sm" variant="secondary" disabled={busy} onClick={() => setWaPeople(rows.filter(x => selected.has(x.r.id)).map(x => ({ name: x.who.name, phone: x.who.phone })))}><MessageCircle size={13} /> WhatsApp</Button>
                                 <Button size="sm" variant="danger" disabled={busy} onClick={() => remove([...selected])}><Trash2 size={13} /> Delete</Button>
                             </BulkBar>
                         )}

@@ -39,6 +39,7 @@ import WinnerDrawSheet from '../../components/admin/giveaways/WinnerDrawSheet';
 import { TASK_ICONS } from '../../components/admin/giveaways/GiveawayEditor';
 import { GIVEAWAY_STATE, entryPoints, findDuplicates, giveawayEndsAt, giveawayState, subscribeToEntries } from '../../components/admin/giveaways/giveawayUtils';
 import { BulkBar, InfoRow, SelectBox, SheetSection, formatDateTime, timeAgo, toDate, useConfirm } from '../../components/admin/forms/kit';
+import WhatsAppSendSheet from '../../components/admin/whatsapp/WhatsAppSendSheet';
 
 const FILTERS = ['all', 'winners', 'referrers', 'duplicates', 'disqualified'];
 const FILTER_LABEL = { all: 'All', winners: 'Winners', referrers: 'Referrers', duplicates: 'Possible duplicates', disqualified: 'Disqualified' };
@@ -65,6 +66,7 @@ const GiveawayParticipants = () => {
     const [sort, setSort] = useState('points');
     const [limit, setLimit] = useState(PAGE);
     const [selected, setSelected] = useState(() => new Set());
+    const [waPeople, setWaPeople] = useState(null); // [{ name, phone }] for Send on WhatsApp
     const [drawOpen, setDrawOpen] = useState(false);
     const [historyOpen, setHistoryOpen] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -434,11 +436,13 @@ const GiveawayParticipants = () => {
                 {selected.size > 0 && (
                     <BulkBar count={selected.size} onClear={() => setSelected(new Set())}>
                         <Button size="sm" variant="secondary" disabled={busy} onClick={() => openMailing(entries.filter(e => selected.has(e.id)))}><Mail size={13} /> Email</Button>
+                        <Button size="sm" variant="secondary" disabled={busy} onClick={() => setWaPeople(entries.filter(e => selected.has(e.id)).map(e => ({ name: e.name, phone: e.phone })))}><MessageCircle size={13} /> WhatsApp</Button>
                         <Button size="sm" variant="secondary" disabled={busy} onClick={() => setDisqualified([...selected], true)}><Ban size={13} /> Disqualify</Button>
                         <Button size="sm" variant="secondary" disabled={busy} onClick={() => setDisqualified([...selected], false)}><Undo2 size={13} /> Restore</Button>
                         <Button size="sm" variant="danger" disabled={busy} onClick={() => removeEntries([...selected])}><Trash2 size={13} /> Remove</Button>
                     </BulkBar>
                 )}
+                <WhatsAppSendSheet open={Boolean(waPeople)} onClose={() => setWaPeople(null)} people={waPeople || []} />
             </div>
 
             {/* Entry detail */}
@@ -498,7 +502,8 @@ const GiveawayParticipants = () => {
 
                         <div className="flex flex-wrap gap-2">
                             {detail.email && <Button variant="secondary" onClick={() => openMailing([detail], detail.isWinner)} className="h-11"><Mail size={14} /> Email</Button>}
-                            {detail.phone && <Button as="a" href={`https://wa.me/${waNumber(detail.phone)}`} target="_blank" rel="noopener noreferrer" variant="secondary" className="h-11"><MessageCircle size={14} /> WhatsApp</Button>}
+                            {detail.phone && <Button variant="secondary" onClick={() => setWaPeople([{ name: detail.name, phone: detail.phone }])} className="h-11"><MessageCircle size={14} /> WhatsApp template</Button>}
+                            {detail.phone && <Button as="a" href={`https://wa.me/${waNumber(detail.phone)}`} target="_blank" rel="noopener noreferrer" variant="ghost" className="h-11">Open chat</Button>}
                             {igHandle(detail) && <Button as="a" href={`https://instagram.com/${igHandle(detail)}`} target="_blank" rel="noopener noreferrer" variant="secondary" className="h-11"><Instagram size={14} /> @{igHandle(detail)}</Button>}
                         </div>
 

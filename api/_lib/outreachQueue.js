@@ -212,17 +212,29 @@ const KINDS = {
     payout: {},
     all_approved: {},
     inbox_text: { text: true },
+    // Any approved template, ready to send (WhatsApp center bulk sends): data { phone, name, template, language, header, bodyParams, buttons, text }.
+    template: { custom: true },
 };
+
+/*
+ * Meta answers that mean "not now" rather than "never": the message waits and
+ * tries again, without using up its attempts, for up to MAX_HOLD_MS. The first
+ * two block the whole number (display name not approved, payment problem), so
+ * the worker stops for that run instead of trying everyone.
+ */
+const HOLD_MIN = { 131037: 60, 131042: 60, 131048: 30, 131056: 10, 130429: 5 };
+const NUMBER_BLOCKED = new Set([131037, 131042]);
+export const MAX_HOLD_MS = 72 * 3600 * 1000;
 
 /*
  * A kind goes out only once the API is set up and, for a template, once the
  * owner marked it approved in Meta with WHATSAPP_TEMPLATE_<NAME> (as in
  * notify.js). Until then nothing is queued and the in-app path is used.
  */
-export const kindLive = (kind) => isWhatsAppConfigured() && Boolean(KINDS[kind] && (KINDS[kind].text || isTemplateLive(WA_TEMPLATES[kind]?.name)));
+export const kindLive = (kind) => isWhatsAppConfigured() && Boolean(KINDS[kind] && (KINDS[kind].text || KINDS[kind].custom || isTemplateLive(WA_TEMPLATES[kind]?.name)));
 
 /** { invite: true, reminder: false, … } for the admin, so it can show which templates are on. */
-export const liveKinds = () => Object.fromEntries(Object.keys(KINDS).filter(k => !KINDS[k].text).map(k => [k, kindLive(k)]));
+export const liveKinds = () => Object.fromEntries(Object.keys(KINDS).filter(k => !KINDS[k].text && !KINDS[k].custom).map(k => [k, kindLive(k)]));
 
 /** The env var that switches a kind's template on: WHATSAPP_TEMPLATE_CAMPAIGN_SHORTLIST etc. */
 export const switchFor = (kind) => `WHATSAPP_TEMPLATE_${String(WA_TEMPLATES[kind]?.name || kind).toUpperCase()}`;
@@ -239,6 +251,11 @@ const loadContext = async (db, job) => {
     if (!kindLive(job.kind)) return { skip: 'template_off' };
     const spec = KINDS[job.kind];
     if (!spec) return { skip: 'unknown_kind' };
+    if (spec.custom) {
+        const contact = await db.collection('creator_contacts').doc(contactIdFor(job.data?.phone)).get();
+        if (contact.exists && contact.data().whatsappOptOut?.at) return { skip: 'opted_out' };
+        return { custom: true };
+    }
     if (spec.text) {
         const tRef = db.collection('outreach_inbox').doc(String(job.data?.threadId || ''));
         const thread = await tRef.get();
@@ -314,6 +331,19 @@ export const sendJob = async (db, job, { now = Date.now() } = {}) => {
             text: job.data.text,
             ref: { collection: `outreach_inbox/${job.data.threadId}/inbox_messages`, id: job.data.messageId },
         });
+    } else if (spec.custom) {
+        ({ phone, text } = job.data);
+        result = await sendTemplate({
+            to: phone,
+            template: job.data.template,
+            language: job.data.language || undefined,
+            header: job.data.header || undefined,
+            bodyParams: job.data.bodyParams || [],
+            buttons: job.data.buttons || [],
+            event: 'admin-bulk',
+            autoRetry: false,
+            logId: logIdOf(job),
+        });
     } else {
         const { campaign, settings, app } = ctx;
         phone = app.phone;
@@ -331,6 +361,7 @@ export const sendJob = async (db, job, { now = Date.now() } = {}) => {
             event: `outreach-${job.kind}`,
             ref: spec.badge ? { collection: appsPath(job.campaignId), id: job.appId } : null,
             autoRetry: false,
+            logId: logIdOf(job),
         });
     }
     const at = iso(Date.now());
@@ -346,6 +377,19 @@ export const sendJob = async (db, job, { now = Date.now() } = {}) => {
         }
         await afterSent(db, job, ctx, { at, messageId: result.messageId });
         return 'sent';
+    }
+
+    // Meta says "not now" (the number is blocked for a while, or too many sends): wait without using up an attempt.
+    const holdMin = HOLD_MIN[Number(result.errorCode)];
+    const queuedFor = Date.now() - (Date.parse(job.createdAt || '') || Date.now());
+    if (holdMin && queuedFor < MAX_HOLD_MS) {
+        const next = iso(Date.now() + holdMin * 60_000);
+        await finishJob(ref, { status: 'queued', attempts: Number(job.attempts || 0), nextAttemptAt: next, heldAt: at, lastError: result.error || null, errorCode: result.errorCode || null });
+        if (!spec.text) await db.collection('message_log').doc(logIdOf(job)).set({ status: 'held', nextAttemptAt: next }, { merge: true }).catch(() => {});
+        if (spec.badge) {
+            await appRefOf(db, job).set({ delivery: { whatsapp: { status: 'retrying', at, error: result.error || null, nextAttemptAt: next } } }, { merge: true }).catch(() => {});
+        }
+        return NUMBER_BLOCKED.has(Number(result.errorCode)) ? 'blocked' : 'held';
     }
 
     if (result.retriable && attempts < MAX_ATTEMPTS) {
@@ -367,6 +411,9 @@ export const sendJob = async (db, job, { now = Date.now() } = {}) => {
     if (result.status === 'skipped') console.warn(`[outreach] ${job.kind} not sent to ${maskPhone(phone)}: ${result.error}`);
     return 'failed';
 };
+
+/* One message_log row per queued message, however many times it's tried. */
+const logIdOf = (job) => `q_${job.id}_${Date.parse(job.createdAt || '') || 0}`.slice(0, 400);
 
 /* What happens on the application once a message has gone out. */
 const afterSent = async (db, job, ctx, { at, messageId }) => {
@@ -442,7 +489,7 @@ const sleepFor = (ms) => new Promise(r => setTimeout(r, ms));
  * → { sent, retried, failed, cancelled, capped, more, dueLeft }
  */
 export const runQueue = async ({ db = getDb(), deadline = Date.now() + 45_000, sleep = sleepFor, clock = () => Date.now(), maxJobs = 500 } = {}) => {
-    const report = { sent: 0, retried: 0, failed: 0, cancelled: 0, capped: false, more: false, dueLeft: 0 };
+    const report = { sent: 0, retried: 0, failed: 0, cancelled: 0, held: 0, capped: false, blocked: false, more: false, dueLeft: 0 };
     if (!isWhatsAppConfigured()) return { ...report, notConfigured: true };
     let handled = 0;
     while (clock() < deadline && handled < maxJobs) {
@@ -465,12 +512,15 @@ export const runQueue = async ({ db = getDb(), deadline = Date.now() + 45_000, s
             const job = await claimJob(db, d.ref, clock());
             if (!job) continue; // another worker took it; the slot is spent, which only slows us down
             const outcome = await sendJob(db, job, { now: clock() });
-            report[{ sent: 'sent', retry: 'retried', failed: 'failed', cancelled: 'cancelled' }[outcome]] += 1;
+            report[{ sent: 'sent', retry: 'retried', failed: 'failed', cancelled: 'cancelled', held: 'held', blocked: 'held' }[outcome]] += 1;
             handled += 1;
             progressed = true;
+            // Meta is refusing the whole number: everyone else would get the same answer, so wait.
+            if (outcome === 'blocked') { report.blocked = true; break; }
         }
-        if (report.capped || report.more || !progressed) break;
+        if (report.capped || report.more || report.blocked || !progressed) break;
     }
+    if (report.blocked) return report;
     const left = await db.collection('outreach_queue').where('nextAttemptAt', '<=', iso(clock())).get();
     report.dueLeft = left.docs.filter(d => d.data().status === 'queued').length;
     if (report.dueLeft && !report.capped) report.more = true;
