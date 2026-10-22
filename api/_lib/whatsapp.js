@@ -217,6 +217,31 @@ export const sendText = async ({ to, text, event = 'inbox-reply', ref = null }) 
     return { ok: false, status: 'failed', error: message, errorCode: code || null, retriable: !permanent, logId: logRef.id };
 };
 
+let cachedBusinessNumber = null;
+/**
+ * Our own WhatsApp number as digits ("919876500000"), for wa.me links people
+ * message us on. WHATSAPP_DISPLAY_NUMBER if set, else asked from Meta once per
+ * instance. → null when WhatsApp isn't set up.
+ */
+export const businessNumber = async () => {
+    const fromEnv = String(process.env.WHATSAPP_DISPLAY_NUMBER || '').replace(/\D/g, '');
+    if (fromEnv.length >= 8) return fromEnv;
+    if (cachedBusinessNumber) return cachedBusinessNumber;
+    if (!isWhatsAppConfigured()) return null;
+    try {
+        const doFetch = testFetch || fetch;
+        const res = await doFetch(`https://graph.facebook.com/${API_VERSION()}/${process.env.WHATSAPP_PHONE_NUMBER_ID}?fields=display_phone_number`, {
+            headers: { Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}` },
+        });
+        const digits = String((await res.json())?.display_phone_number || '').replace(/\D/g, '');
+        if (res.ok && digits.length >= 8) cachedBusinessNumber = digits;
+    } catch (err) {
+        console.warn('[WHATSAPP] business number lookup failed:', err.message);
+    }
+    return cachedBusinessNumber;
+};
+export const resetBusinessNumberForTests = () => { cachedBusinessNumber = null; };
+
 /** Downloads media someone sent us (inbox). → { mimeType, base64 } or null. The token never leaves the server. */
 export const fetchWhatsAppMedia = async (mediaId, { maxBytes = 5 * 1024 * 1024 } = {}) => {
     if (!isWhatsAppConfigured() || !/^[A-Za-z0-9_-]{4,128}$/.test(String(mediaId || ''))) return null;
@@ -293,12 +318,3 @@ export const recordWhatsAppStatus = async (status) => {
     return { log: { id: docSnap.id, ...current }, kept: keep, error };
 };
 
-/** Phone verification link for new creators (template `creator_verification`, en_US). */
-export const sendCreatorVerification = (phone, creatorName, verificationUrl, { uid = null } = {}) => sendTemplate({
-    to: phone,
-    template: 'creator_verification',
-    language: process.env.WHATSAPP_TEMPLATE_LANG_CREATOR_VERIFICATION || 'en_US',
-    bodyParams: [creatorName || 'Creator', verificationUrl],
-    event: 'creator-verification',
-    uid,
-});

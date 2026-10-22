@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Calendar from 'lucide-react/dist/esm/icons/calendar';
 import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
@@ -8,7 +8,10 @@ import Unlock from 'lucide-react/dist/esm/icons/unlock';
 import Home from 'lucide-react/dist/esm/icons/home';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
+import Ban from 'lucide-react/dist/esm/icons/ban';
 import { useStore } from '../../../lib/store';
+import { notifyEvent } from '../../../lib/mailApi';
 import { Button, Badge } from '../ui';
 import PaymentSettingsPanel from './PaymentSettingsPanel';
 import { Panel, PanelTitle, useConfirm, useBusy } from './kit';
@@ -17,7 +20,8 @@ import { hasGuestlist } from './events';
 /*
  * Settings for one event in Ticketing. Each thing is edited in one place:
  * payments here; event details, ticket types and capacity in Events; a
- * standalone guestlist (made here, not in Events) here.
+ * standalone guestlist (made here, not in Events) here. "Tell pass holders"
+ * messages everyone with a pass about a change, or cancels the event.
  */
 
 const Row = ({ label, children }) => (
@@ -129,6 +133,99 @@ const StandaloneGuestlist = ({ gl, onEdit, onDeleted }) => {
     );
 };
 
+/* A text box inside a confirm sheet; what's typed goes into `into` (a ref). */
+const SheetText = ({ into, label, placeholder, hint }) => {
+    const [value, setValue] = useState('');
+    into.current = value;
+    return (
+        <div className="space-y-1.5">
+            <label htmlFor="pass-holders-text" className="block text-[13px] font-bold text-gray-800 dark:text-zinc-200">{label}</label>
+            <input id="pass-holders-text" value={value} onChange={(e) => setValue(e.target.value)} maxLength={200} autoFocus placeholder={placeholder}
+                className="h-11 w-full rounded-xl border border-black/10 bg-white px-3 text-[14px] dark:border-white/10 dark:bg-white/5" />
+            {hint && <p className="text-[12px] text-gray-500">{hint}</p>}
+        </div>
+    );
+};
+
+const ROUNDS = 8;
+
+const TellPassHolders = ({ event }) => {
+    const addToast = useStore(s => s.addToast);
+    const [ask, confirmSheet] = useConfirm();
+    const [count, setCount] = useState(null);
+    const text = useRef('');
+    const ids = { eventId: event.id, guestlistIds: event.guestlistIds || (event.guestlistDoc ? [event.guestlistDoc.id] : []) };
+
+    useEffect(() => {
+        let live = true;
+        notifyEvent('event-changed', { ...ids, countOnly: true }).then(r => { if (live && r?.success) setCount(r.count); });
+        return () => { live = false; };
+    }, [event.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Big events go in rounds; each pass is only ever sent one message per notice.
+    const send = async (kind, payload) => {
+        let sent = 0;
+        let res = null;
+        for (let i = 0; i < ROUNDS; i++) {
+            res = await notifyEvent(kind, { ...ids, ...payload });
+            if (!res?.success) throw new Error(res?.error || "Couldn't send that.");
+            sent += res.sent || 0;
+            if (!res.remaining) break;
+        }
+        return { sent, remaining: res?.remaining || 0 };
+    };
+
+    const who = count === null ? 'everyone with a pass' : `${count} ${count === 1 ? 'person' : 'people'} with a pass`;
+
+    const tellChange = () => ask({
+        title: 'Tell pass holders about a change',
+        body: (
+            <>
+                <p>Goes to {who} as a WhatsApp, a push and an in-app note. Their passes keep working. Change the event itself in Events first.</p>
+                <SheetText into={text} label="What changed" placeholder="Doors now open at 5:00 PM (was 4:00 PM)" hint="One line, said the way you'd tell a friend." />
+            </>
+        ),
+        confirmLabel: 'Send',
+        busyLabel: 'Sending…',
+        action: async () => {
+            if (text.current.trim().length < 5) throw new Error('Say what changed (a few words).');
+            const out = await send('event-changed', { change: text.current.trim() });
+            addToast(out.remaining ? `${out.remaining} still to send. Send it again to finish.` : `${out.sent} ${out.sent === 1 ? 'person was' : 'people were'} told.`, out.remaining ? 'warning' : 'success', { title: 'Change sent' });
+        },
+    });
+
+    const cancelEvent = () => ask({
+        title: `Cancel ${event.title || 'this event'}?`,
+        body: (
+            <>
+                <p>Every pass for it stops working, the guestlist closes to new sign-ups, and {who} {count === 1 ? 'is' : 'are'} told. Refunds are still sent by hand. Hide or delete the event page in Events afterwards.</p>
+                <SheetText into={text} label="Refund" placeholder="₹1,499 back to your UPI in 5–7 working days" hint="Leave it empty for free passes: they're told there's nothing to refund." />
+            </>
+        ),
+        confirmLabel: 'Cancel event',
+        cancelLabel: 'Keep it',
+        busyLabel: 'Cancelling…',
+        danger: true,
+        action: async () => {
+            const out = await send('event-cancelled', { refund: text.current.trim() });
+            setCount(0);
+            addToast(out.remaining ? `${out.remaining} still to tell. Run it again to finish.` : `${out.sent} ${out.sent === 1 ? 'pass' : 'passes'} cancelled and their holders told.`, out.remaining ? 'warning' : 'success', { title: 'Event cancelled' });
+        },
+    });
+
+    return (
+        <Panel className="p-4 sm:p-5">
+            <PanelTitle icon={Megaphone} tone="amber" title="Tell pass holders"
+                hint={count === null ? 'Message everyone holding a pass for this event.' : `${count} ${count === 1 ? 'person holds' : 'people hold'} a pass for this event.`} />
+            <div className="flex flex-wrap gap-2">
+                <Button variant="secondary" className="h-11" onClick={() => { text.current = ''; tellChange(); }} disabled={count === 0}><Megaphone size={14} /> Tell them about a change</Button>
+                <Button variant="ghost" className="h-11 text-red-600 dark:text-red-400" onClick={() => { text.current = ''; cancelEvent(); }}><Ban size={14} /> Cancel the event</Button>
+            </div>
+            {confirmSheet}
+        </Panel>
+    );
+};
+
 const SettingsPanel = ({ event, onEditGuestlist, onDeleted }) => {
     const fromEvents = event.source === 'event';
     return (
@@ -143,6 +240,8 @@ const SettingsPanel = ({ event, onEditGuestlist, onDeleted }) => {
             {event.guestlistDoc && (
                 <StandaloneGuestlist gl={event.guestlistDoc} onEdit={onEditGuestlist} onDeleted={onDeleted} />
             )}
+
+            <TellPassHolders event={event} />
 
             {fromEvents && (
                 <Panel className="p-4 sm:p-5">

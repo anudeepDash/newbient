@@ -8,6 +8,7 @@ import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import Hourglass from 'lucide-react/dist/esm/icons/hourglass';
 import Minus from 'lucide-react/dist/esm/icons/minus';
 import Plus from 'lucide-react/dist/esm/icons/plus';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
 import { Button, CARD_TYPES, Field, Section, Sheet, Stat, StatRow, TextInput } from '../../components/app';
 import { useAppStore } from '../../lib/store/appStore';
 import { passesGet, passesPost } from '../../lib/passesApi';
@@ -85,6 +86,8 @@ const GuestlistPage = ({ overlay = false }) => {
     useEffect(() => { if (authReady) load(); }, [load, authReady, uid]);
 
     const me = gl?.me || (!uid ? guestPlace : null);
+    // The team asked for a fix on the task: only the task is sent again (their guests stay as they were).
+    const fixing = me?.status === 'changes';
     // Signed in without an email (a phone sign-in): the form asks for one, for the pass and updates.
     const needsEmail = Boolean(uid) && profileLoaded && !isPresent(profile?.email);
     const needsDetailsStep = Boolean(gl?.task) || (gl?.perUserLimit || 1) > 1 || needsEmail;
@@ -122,6 +125,7 @@ const GuestlistPage = ({ overlay = false }) => {
         setSubmitting(false);
         if (res.ok) {
             setStep(null);
+            setTask({});
             const place = { ref: res.data.ref, status: res.data.status };
             if (asGuest) { saveGuestPlace(id, place); setGuestPlace(place); }
             setGl(g => ({ ...g, me: place }));
@@ -205,7 +209,9 @@ const GuestlistPage = ({ overlay = false }) => {
 
     // The action bar: your place once you're on the list, otherwise the way on.
     const declined = me?.status === 'declined';
-    const action = me?.status === 'pending'
+    const action = fixing
+        ? <Button className="flex-1" size="lg" icon={Pencil} onClick={() => { setError(''); setStep('details'); }}>{t('Send the task again')}</Button>
+        : me?.status === 'pending'
         ? <BarStatus icon={Hourglass} tone="warn">{t('Request sent. We’ll send your pass once you’re approved.')}</BarStatus>
         : declined
             ? <BarStatus>{t('The team couldn’t confirm your spot this time.')}</BarStatus>
@@ -241,7 +247,8 @@ const GuestlistPage = ({ overlay = false }) => {
                     </StatRow>
                 </ExpandedTitle>
 
-                {me && !['pending', 'declined'].includes(me.status) && <Notice tone="success" title={t('You’re on the list.')}>{gl.mode === 'rsvp' ? t('Your spot is saved. Give your name at the door.') : t('Show your pass at the gate.')}</Notice>}
+                {fixing && <Notice tone="warn" title={t('The team asked for a fix')}>{me.fix || t('Check the task below and send it again.')}</Notice>}
+                {me && !['pending', 'declined', 'changes'].includes(me.status) && <Notice tone="success" title={t('You’re on the list.')}>{gl.mode === 'rsvp' ? t('Your spot is saved. Give your name at the door.') : t('Show your pass at the gate.')}</Notice>}
                 {!me && gl.open && gl.needsApproval && <Notice tone="info">{t('The team reviews requests before sending passes.')}</Notice>}
                 {error && !step && <Notice tone="error">{error}</Notice>}
 
@@ -253,7 +260,7 @@ const GuestlistPage = ({ overlay = false }) => {
                     </div>
                 </Section>
 
-                {gl.task && !me && (
+                {gl.task && (!me || fixing) && (
                     <Section title={t('To get on the list')}>
                         <div className={`${ROW} px-4 py-3.5`}>
                             <p className="text-[15px] font-bold">{gl.task.title || t('A quick task')}</p>
@@ -278,9 +285,9 @@ const GuestlistPage = ({ overlay = false }) => {
             <Sheet
                 open={step === 'details' || step === 'guest'}
                 onClose={() => !submitting && setStep(null)}
-                title={step === 'guest' ? t('Reserve your spot') : gl.task ? t('One more step') : (gl.perUserLimit || 1) > 1 ? t('How many of you?') : t('Almost there')}
+                title={step === 'guest' ? t('Reserve your spot') : fixing ? t('Send the task again') : gl.task ? t('One more step') : (gl.perUserLimit || 1) > 1 ? t('How many of you?') : t('Almost there')}
                 subtitle={gl.title}
-                footer={<Button className="w-full" size="lg" onClick={submit} loading={submitting} disabled={uploading}>{gl.mode === 'rsvp' ? t('Reserve my spot') : t('Get my pass')}</Button>}
+                footer={<Button className="w-full" size="lg" onClick={submit} loading={submitting} disabled={uploading}>{fixing ? t('Send it') : gl.mode === 'rsvp' ? t('Reserve my spot') : t('Get my pass')}</Button>}
             >
                 <div className="space-y-6">
                     {step === 'details' && needsEmail && (
@@ -308,7 +315,8 @@ const GuestlistPage = ({ overlay = false }) => {
                             </button>
                         </div>
                     )}
-                    {(gl.perUserLimit || 1) > 1 && (
+                    {fixing && me.fix && <Notice tone="warn">{me.fix}</Notice>}
+                    {!fixing && (gl.perUserLimit || 1) > 1 && (
                         <div className="flex items-center justify-between gap-4">
                             <div>
                                 <p className="text-[16px] font-bold">{t('Guests')}</p>
@@ -321,7 +329,7 @@ const GuestlistPage = ({ overlay = false }) => {
                             </div>
                         </div>
                     )}
-                    {guests > 1 && (
+                    {!fixing && guests > 1 && (
                         <div className="space-y-3">
                             <div>
                                 <p className="text-[16px] font-bold">{t('Who’s coming with you?')}</p>

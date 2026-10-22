@@ -2,7 +2,6 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { sendTransactional } from './_lib/mail/send.js';
-import { sendCreatorVerification } from './_lib/whatsapp.js';
 import { isTicketAction, handleTicketAction } from './_lib/tickets.js';
 import { safeSiteOrigin } from './_lib/linkSign.js';
 import { cleanHandle as cleanInstagramHandle, lookupInstagram, readCreatorSettings } from './_lib/instagram.js';
@@ -12,6 +11,8 @@ import { buildCreatorReferrals } from './_lib/referrals.js';
 import { OUTREACH_ACTIONS, handleOutreachAction } from './_lib/outreach.js';
 import { HANDOFF_ACTIONS, handleHandoffAction } from './_lib/adminHandoff.js';
 import { OTP_ACTIONS, handleOtpAction } from './_lib/phoneOtp.js';
+import { WA_VERIFY_ACTIONS, handleWaVerifyAction } from './_lib/waVerify.js';
+import { SIGN_IN_ACTIONS, handleSignInSeen } from './_lib/securityAlerts.js';
 
 export const maxDuration = 60;
 
@@ -137,7 +138,6 @@ const formatFollowerCount = (num) => {
 };
 
 // WhatsApp sends live in _lib/whatsapp.js (templates only, logged to message_log).
-const sendWhatsAppVerification = (phone, creatorName, verificationUrl, uid = null) => sendCreatorVerification(phone, creatorName, verificationUrl, { uid });
 
 const DEFAULT_CREATOR_GROUPS = [
     {
@@ -387,7 +387,7 @@ const isCreatorOwner = (snap, decodedToken) => Boolean(
 );
 
 const ADMIN_ONLY_ACTIONS = new Set([
-    'whatsapp-verify', 'creator-group-add', 'creator-group-update', 'creator-group-delete',
+    'creator-group-add', 'creator-group-update', 'creator-group-delete',
     'creator-groups-sync', 'creator-group-bulk-add', 'creator-group-invite-sent', 'creator-group-bulk-invite-sent',
     'creator-delete'
 ]);
@@ -485,6 +485,16 @@ export default async function handler(req, res) {
     // Phone codes on WhatsApp: verifying a number and signing in with it (api/_lib/phoneOtp.js).
     if (OTP_ACTIONS.has(action)) {
         return handleOtpAction(action, req, res, { decodedToken, db: adminDb, adminAuth });
+    }
+
+    // Verifying a number by messaging us on WhatsApp (api/_lib/waVerify.js).
+    if (WA_VERIFY_ACTIONS.has(action)) {
+        return handleWaVerifyAction(action, req, res, { decodedToken, db: adminDb, adminAuth });
+    }
+
+    // The app reporting a sign-in, for the "new sign-in" alert (api/_lib/securityAlerts.js).
+    if (SIGN_IN_ACTIONS.has(action)) {
+        return handleSignInSeen(req, res, { db: adminDb, token: decodedToken, adminAuth });
     }
 
     if (!PUBLIC_ACTIONS.has(action) && !decodedToken) {
@@ -605,7 +615,7 @@ export default async function handler(req, res) {
             });
 
             // If already verified
-            if (data.isPhoneVerified && !data.verificationToken) {
+            if ((data.isEmailVerified || data.isPhoneVerified) && !data.verificationToken) {
                 return res.status(200).json({ success: true, alreadyVerified: true, creator: publicCreator(data) });
             }
 
@@ -615,12 +625,9 @@ export default async function handler(req, res) {
             }
 
             const now = new Date().toISOString();
-            // Verification confirms contact details only; it never changes the review status.
+            // The link only ever went to their email, so it confirms the email (never the phone, which
+            // is confirmed in the app). It never changes the review status either.
             const updates = {
-                isPhoneVerified: true,
-                phoneVerifiedAt: now,
-                phoneVerificationPending: false,
-                needsPhoneVerificationNotice: false,
                 isEmailVerified: true,
                 emailVerifiedAt: now,
                 verificationToken: null,
@@ -635,30 +642,6 @@ export default async function handler(req, res) {
             });
         } catch (err) {
             console.error('[API/CREATOR-JOIN] Verify error:', err);
-            return res.status(500).json({ success: false, error: err.message });
-        }
-    }
-
-    // ── ACTION: WHATSAPP VERIFY DISPATCH ────────────────────────────────────
-    if (action === 'whatsapp-verify') {
-        if (req.method !== 'POST') {
-            return res.status(405).json({ success: false, error: 'Method not allowed' });
-        }
-        const { phone, creatorName = 'Creator', verificationUrl } = req.body || {};
-        if (!phone || !verificationUrl) {
-            return res.status(400).json({ success: false, error: 'phone and verificationUrl are required.' });
-        }
-        let verifyOrigin = '';
-        try { verifyOrigin = new URL(verificationUrl).origin; } catch (e) { /* invalid URL */ }
-        if (!isAllowedOrigin(verifyOrigin)) {
-            return res.status(400).json({ success: false, error: 'verificationUrl must point to newbi.live.' });
-        }
-        try {
-            const sent = await sendWhatsAppVerification(phone, creatorName, verificationUrl);
-            if (!sent.ok) return res.status(sent.status === 'skipped' ? 400 : 502).json({ success: false, error: sent.error || 'WhatsApp message not sent' });
-            return res.status(200).json({ success: true, messageId: sent.messageId });
-        } catch (err) {
-            console.error('[API/CREATOR-JOIN] WhatsApp verify dispatch error:', err);
             return res.status(500).json({ success: false, error: err.message });
         }
     }
@@ -1477,19 +1460,14 @@ export default async function handler(req, res) {
         const siteOrigin = safeSiteOrigin(host.includes('localhost') ? `http://${host}` : `https://${host}`);
         const verificationUrl = `${siteOrigin}/verify-creator?id=${targetUid}&token=${verificationToken}`;
 
-        // Awaited: a serverless function can freeze as soon as it responds, which
-        // used to drop these. Neither failing stops the application.
+        // Awaited: a serverless function can freeze as soon as it responds. Failing doesn't stop the application.
+        // The link confirms the email only; a phone is confirmed in the app (a code, or messaging us on WhatsApp).
         const displayName = finalCreator.displayName || finalCreator.name || 'Creator';
-        await Promise.allSettled([
-            finalCreator.phone && !finalCreator.isPhoneVerified
-                ? sendWhatsAppVerification(finalCreator.phone, displayName, verificationUrl, targetUid)
-                : null,
-            sendWelcome && finalCreator.email
-                ? sendWelcomeEmail(finalCreator.email, displayName, verificationUrl, finalCreator, targetUid)
-                : null,
-        ]);
+        if (sendWelcome && finalCreator.email) {
+            await sendWelcomeEmail(finalCreator.email, displayName, verificationUrl, finalCreator, targetUid).catch(() => null);
+        }
 
-        // The token only travels by WhatsApp/email; returning it would let anyone verify without the message.
+        // The token only travels by email; returning it would let anyone verify without the message.
         const { verificationToken: _omitToken, ...creatorResponse } = finalCreator;
         return res.status(200).json({
             success: true,

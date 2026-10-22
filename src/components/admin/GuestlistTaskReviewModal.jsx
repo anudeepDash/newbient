@@ -14,6 +14,7 @@ import Phone from 'lucide-react/dist/esm/icons/phone';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Clock from 'lucide-react/dist/esm/icons/clock';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
 import { cn } from '../../lib/utils';
 import { useStore } from '../../lib/store';
 import Sheet from './Sheet';
@@ -24,7 +25,8 @@ import { formatDateTime } from './ticketing/format';
 /*
  * Review one guestlist task submission: what the event asked for, what the
  * guest sent (file preview, link, written answer) and big approve / reject
- * buttons. On a keyboard, A approves and R rejects.
+ * buttons. On a keyboard, A approves and R rejects. "Ask for a fix" sends the
+ * guest a note (WhatsApp, push, in-app) and lets them send the task again.
  */
 
 const withProtocol = (url) => (/^https?:\/\//i.test(url) ? url : `https://${url}`);
@@ -56,12 +58,15 @@ export const GuestlistTaskReviewModal = ({
     const [copiedRef, setCopiedRef] = useState(false);
     const [confirmReject, setConfirmReject] = useState(false);
     const [actionError, setActionError] = useState('');
+    const [fixing, setFixing] = useState(false);
+    const [fixNote, setFixNote] = useState('');
     const busyRef = useRef(false);
 
     const name = entry?.customerName || entry?.name || 'Guest';
     const currentStatus = entry ? (entry.status || (entry.hasTask ? 'pending' : 'approved')) : 'pending';
     const isApproved = currentStatus === 'approved' || currentStatus === 'confirmed';
     const isRejected = currentStatus === 'rejected';
+    const fixAsked = currentStatus === 'changes';
 
     const handleApprove = useCallback(async () => {
         if (!entry || busyRef.current) return;
@@ -101,7 +106,27 @@ export const GuestlistTaskReviewModal = ({
         }
     }, [entry, onStatusChange, onClose, confirmReject]);
 
-    useEffect(() => { setConfirmReject(false); setActionError(''); }, [entry?.id, isOpen]);
+    const handleAskFix = useCallback(async () => {
+        if (!entry || busyRef.current) return;
+        const note = fixNote.trim();
+        if (note.length < 5) { setActionError('Say what to fix (a few words).'); return; }
+        busyRef.current = true;
+        setActionLoading('changes');
+        setActionError('');
+        try {
+            await onStatusChange(entry.id, 'changes', { taskFix: { note: note.slice(0, 300), at: new Date().toISOString() } });
+            useStore.getState().addToast('They’ll be asked to send the task again.', 'success', { title: 'Fix requested' });
+            onClose();
+        } catch (error) {
+            console.error('Error asking for a fix:', error);
+            setActionError("Couldn't send that. Please try again.");
+        } finally {
+            busyRef.current = false;
+            setActionLoading(null);
+        }
+    }, [entry, fixNote, onStatusChange, onClose]);
+
+    useEffect(() => { setConfirmReject(false); setActionError(''); setFixing(false); setFixNote(''); }, [entry?.id, isOpen]);
 
     // A to approve, R to reject (ignored while typing or with modifier keys).
     useEffect(() => {
@@ -158,7 +183,9 @@ export const GuestlistTaskReviewModal = ({
         ? <Badge tone="green"><Check size={10} /> Approved</Badge>
         : isRejected
             ? <Badge tone="red"><X size={10} /> Declined</Badge>
-            : <Badge tone="amber"><Clock size={10} /> To review</Badge>;
+            : fixAsked
+                ? <Badge tone="blue"><Pencil size={10} /> Fix asked</Badge>
+                : <Badge tone="amber"><Clock size={10} /> To review</Badge>;
 
     const header = (
         <div className="min-w-0">
@@ -180,7 +207,30 @@ export const GuestlistTaskReviewModal = ({
     const footer = (
         <div className="space-y-2">
             {actionError && <p role="alert" className="text-[13px] font-semibold text-red-600 dark:text-red-400">{actionError}</p>}
-            {isApproved ? (
+            {fixAsked && entry.taskFix?.note && !fixing && (
+                <p className="text-[13px] text-gray-600 dark:text-zinc-400">Fix asked: “{entry.taskFix.note}”. It comes back here when they send it again.</p>
+            )}
+            {fixing ? (
+                <div className="space-y-2">
+                    <label htmlFor="task-fix-note" className="block text-[13px] font-bold">What should they fix?</label>
+                    <textarea
+                        id="task-fix-note"
+                        value={fixNote}
+                        onChange={(e) => setFixNote(e.target.value)}
+                        maxLength={300}
+                        rows={2}
+                        autoFocus
+                        placeholder="Your story didn't tag @newbi.live"
+                        className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-[14px] dark:border-white/10 dark:bg-white/5"
+                    />
+                    <div className="flex gap-2">
+                        <Button variant="secondary" className="h-12 flex-1" onClick={() => { setFixing(false); setActionError(''); }} disabled={!!actionLoading}>Cancel</Button>
+                        <Button variant="accent" className="h-12 flex-[2]" onClick={handleAskFix} disabled={!!actionLoading}>
+                            {actionLoading === 'changes' ? 'Sending…' : 'Send to them'}
+                        </Button>
+                    </div>
+                </div>
+            ) : isApproved ? (
                 <div className="flex gap-2">
                     <div className={cn('flex h-12 flex-1 items-center justify-center gap-2 rounded-xl text-[14px] font-bold', accent('green').chip)}>
                         <Check size={16} /> Approved
@@ -200,6 +250,11 @@ export const GuestlistTaskReviewModal = ({
                         <Check size={16} /> {actionLoading === 'approved' ? 'Approving…' : isRejected ? 'Approve instead' : 'Approve'}
                     </Button>
                 </div>
+            )}
+            {!fixing && !isApproved && !isRejected && (
+                <Button variant="ghost" className="h-11 w-full" onClick={() => { setFixing(true); setConfirmReject(false); setActionError(''); }} disabled={!!actionLoading}>
+                    <Pencil size={15} /> {fixAsked ? 'Ask for a different fix' : 'Ask for a fix'}
+                </Button>
             )}
             <p className="hidden text-center text-[11px] text-gray-500 md:block">
                 Shortcuts: {!isApproved && <><kbd className="rounded border border-black/15 px-1 font-mono dark:border-white/15">A</kbd> approve</>}

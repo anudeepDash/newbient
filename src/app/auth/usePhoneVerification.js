@@ -33,6 +33,13 @@ import { t } from '../../i18n';
  *   same send() falls back to an SMS through Firebase. `channel` says which
  *   one carried the code, and sendViaSms() switches to SMS on request.
  *
+ * messageUs() (adding a number, signed in)
+ *   Verify by sending us one WhatsApp message instead of typing a code
+ *   (api/_lib/waVerify.js). Status becomes 'awaiting' with `waMessage` =
+ *   { code, link }: the caller shows link as an "Open WhatsApp" button. The
+ *   hook polls until the message arrives; the number confirmed is the one
+ *   they messaged from. Works without any approved template.
+ *
  * The invisible reCAPTCHA lives in one off-screen container per hook that is
  * never removed mid-flow (iOS Safari loses the token if it is), and is torn
  * down when the component unmounts.
@@ -43,6 +50,8 @@ import { t } from '../../i18n';
  */
 
 const COOLDOWN_SECONDS = 30;
+const POLL_MS = 3000;
+const POLL_FOR_MS = 16 * 60 * 1000;
 
 const friendlyError = (err) => {
     const code = err?.code || err?.message || '';
@@ -68,12 +77,13 @@ const NO_SMS_FALLBACK = new Set(['rate_limited', 'cooldown', 'invalid_phone']);
 const isTestMode = () => import.meta.env.DEV && import.meta.env.VITE_PHONE_TEST_MODE === 'true';
 
 export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified } = {}) {
-    const [status, setStatus] = useState('idle'); // idle | sending | sent | verifying | conflict | verified
+    const [status, setStatus] = useState('idle'); // idle | sending | sent | awaiting | verifying | conflict | verified
     const [error, setError] = useState('');
     const [cooldown, setCooldown] = useState(0);
     const [phone, setPhone] = useState(null); // E.164 of the number in flight or verified
     const [conflict, setConflict] = useState(null); // { proof, preview }: the number signs in to another account
-    const [channel, setChannel] = useState(null); // 'whatsapp' | 'sms': what carried the code in flight
+    const [channel, setChannel] = useState(null); // 'whatsapp' | 'sms' | 'message': what carries the check in flight
+    const [waMessage, setWaMessage] = useState(null); // { code, link, startedAt }: verifying by messaging us
 
     const verifierRef = useRef(null);
     const containerRef = useRef(null);
@@ -272,6 +282,83 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         }
     }, [phone, finish]);
 
+    /* Verify by messaging us on WhatsApp (adding a number to the signed-in account). */
+    const messageUs = useCallback(async () => {
+        if (!auth?.currentUser) {
+            setError(t('Sign in first.'));
+            return false;
+        }
+        setError('');
+        setStatus('sending');
+        const started = await callCreatorApi('wa-verify-start', {});
+        if (!started.ok) {
+            setStatus('idle');
+            setError(started.code === 'whatsapp_unavailable' ? t('WhatsApp verification isn’t available right now. Get a code by SMS instead.') : started.error);
+            return false;
+        }
+        setWaMessage({ code: started.data.code, link: started.data.link, startedAt: Date.now() });
+        setChannel('message');
+        setStatus('awaiting');
+        return true;
+    }, []);
+
+    // While awaiting their message: ask the server every few seconds, and at once when they come back to the tab.
+    const polling = useRef(false);
+    useEffect(() => {
+        if (status !== 'awaiting' || !waMessage) return undefined;
+        let stopped = false;
+        const check = async () => {
+            if (stopped || polling.current) return;
+            if (Date.now() - waMessage.startedAt > POLL_FOR_MS) {
+                setStatus('idle');
+                setWaMessage(null);
+                setError(t('That code expired. Tap “Verify on WhatsApp” again.'));
+                return;
+            }
+            polling.current = true;
+            const res = await callCreatorApi('wa-verify-status', { code: waMessage.code }).catch(() => null);
+            polling.current = false;
+            if (stopped || !res?.ok) return;
+            const { state, phone: confirmed, proofToken } = res.data || {};
+            if (state === 'waiting') return;
+            stopped = true;
+            setWaMessage(null);
+            if (state === 'verified') {
+                setPhone(confirmed);
+                // The server put the number on this account; refresh so the ID token carries it.
+                await auth.currentUser?.reload();
+                await auth.currentUser?.getIdToken(true);
+                await finish(confirmed, { linked: true });
+                return;
+            }
+            if (state === 'conflict') {
+                setPhone(confirmed);
+                try {
+                    const proof = await proveWithCustomToken(proofToken);
+                    setConflict({ proof, preview: await previewMerge(proof) });
+                    setStatus('conflict');
+                } catch (err) {
+                    setStatus('idle');
+                    setError(err?.friendly || t('This number is on another Newbi account that can’t be merged from here.'));
+                }
+                return;
+            }
+            setStatus('idle');
+            setError({
+                taken: t('This number is on another Newbi account that can’t be merged from here.'),
+                expired: t('That code expired. Tap “Verify on WhatsApp” again.'),
+            }[state] || t('We couldn’t confirm your number. Try again, or get a code by SMS.'));
+        };
+        const timer = setInterval(check, POLL_MS);
+        const onVisible = () => { if (document.visibilityState === 'visible') check(); };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => {
+            stopped = true;
+            clearInterval(timer);
+            document.removeEventListener('visibilitychange', onVisible);
+        };
+    }, [status, waMessage, finish]);
+
     /* After MergeConfirm merged the other account: the number is on this one now. */
     const completeMerge = useCallback(async (result) => {
         setConflict(null);
@@ -285,6 +372,7 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         setPhone(null);
         setConflict(null);
         setChannel(null);
+        setWaMessage(null);
     }, []);
 
     /* "Get the code by SMS instead". */
@@ -299,11 +387,16 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         isSending: status === 'sending',
         isVerifying: status === 'verifying',
         codeSent: status === 'sent' || status === 'verifying',
+        awaitingMessage: status === 'awaiting',
+        waMessage: status === 'awaiting' ? waMessage : null,
+        // Messaging us adds a number to an account; it can't sign anyone in.
+        canMessageUs: (mode || (auth?.currentUser ? 'link' : 'signIn')) !== 'signIn',
         verified: status === 'verified',
         conflict: status === 'conflict' ? conflict : null,
         testMode: isTestMode() && (mode || (auth?.currentUser ? 'link' : 'signIn')) !== 'signIn',
         send,
         sendViaSms,
+        messageUs,
         verify,
         reset,
         completeMerge,

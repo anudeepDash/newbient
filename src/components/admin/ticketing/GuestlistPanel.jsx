@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import Check from 'lucide-react/dist/esm/icons/check';
 import X from 'lucide-react/dist/esm/icons/x';
 import Eye from 'lucide-react/dist/esm/icons/eye';
@@ -10,7 +10,9 @@ import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Undo2 from 'lucide-react/dist/esm/icons/undo-2';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
 import { useStore } from '../../../lib/store';
+import { notifyEvent } from '../../../lib/mailApi';
 import { cn } from '../../../lib/utils';
 import GuestlistTaskReviewModal from '../GuestlistTaskReviewModal';
 import { Button, Badge, SearchInput, SegmentedTabs, EmptyState, Menu, MenuItem, Avatar } from '../ui';
@@ -35,6 +37,34 @@ const FILTERS = [
     { value: 'all', label: 'All' },
 ];
 
+// What a declined guest is told, when the admin chooses to tell them.
+const DECLINE_REASONS = [
+    'The list filled up before we reached your sign-up',
+    'The task didn’t match what this list asked for',
+    'This list is for invited guests only this time',
+];
+
+/* The "tell them" part of the decline sheet. It writes the choice into `choice` (a ref) as it changes. */
+const DeclineNotice = ({ choice, many }) => {
+    const [tell, setTell] = useState(false);
+    const [reason, setReason] = useState(DECLINE_REASONS[0]);
+    choice.current = { tell, reason };
+    return (
+        <div className="space-y-2 rounded-xl border border-black/10 p-3 dark:border-white/10">
+            <label className="flex items-start gap-2.5 text-[13px] font-semibold text-gray-800 dark:text-zinc-200">
+                <input type="checkbox" className="mt-0.5 h-4 w-4" checked={tell} onChange={(e) => setTell(e.target.checked)} />
+                <span>Tell {many ? 'each of them' : 'them'} on WhatsApp<span className="block text-[12px] font-normal text-gray-500">Only once that message is approved in Meta. Leave it off to decline quietly.</span></span>
+            </label>
+            {tell && (
+                <select value={reason} onChange={(e) => setReason(e.target.value)} aria-label="Reason they're told"
+                    className="h-11 w-full rounded-xl border border-black/10 bg-white px-3 text-[13px] dark:border-white/10 dark:bg-white/5">
+                    {DECLINE_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+            )}
+        </div>
+    );
+};
+
 const matches = (e, filter) => {
     const s = guestStatus(e);
     if (filter === 'pending') return s === 'pending';
@@ -57,6 +87,7 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
     const [bulk, setBulk] = useState(null);
     const [busy, run] = useBusy();
     const [ask, confirmSheet] = useConfirm();
+    const declineChoice = useRef({ tell: false, reason: DECLINE_REASONS[0] });
 
     const label = event?.guestlistMode === 'rsvp' ? 'RSVP' : 'guestlist';
     const maxSpots = Number(event?.maxSpots) || 0;
@@ -97,9 +128,14 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
     // Approving more people than the list holds needs a second look.
     const overBy = (extra) => (maxSpots ? Math.max(0, people.approved + extra - maxSpots) : 0);
 
-    const setStatus = async (entry, status) => {
-        await updateGuestlistEntryStatus(glOf(entry), entry.id, status);
+    const setStatus = async (entry, status, extra) => {
+        await updateGuestlistEntryStatus(glOf(entry), entry.id, status, extra);
     };
+
+    // After a decline, if the admin ticked "tell them". Never blocks the decline.
+    const tellDeclined = (entry) => (declineChoice.current.tell
+        ? notifyEvent('guestlist-declined', { guestlistId: glOf(entry), entryId: entry.id, reason: declineChoice.current.reason })
+        : null);
 
     const approve = (entry) => {
         const go = () => run(entry.id, 'approve', async () => {
@@ -121,10 +157,15 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
 
     const decline = (entry) => ask({
         title: `Decline ${personName(entry)}?`,
-        body: `Their ${guestCount(entry) === 1 ? 'spot goes' : `${guestCount(entry)} spots go`} back to the list. They won't be able to get in with their pass.`,
+        body: (
+            <>
+                <p>Their {guestCount(entry) === 1 ? 'spot goes' : `${guestCount(entry)} spots go`} back to the list. They won't be able to get in with their pass.</p>
+                <DeclineNotice choice={declineChoice} />
+            </>
+        ),
         confirmLabel: 'Decline',
         danger: true,
-        action: async () => { await setStatus(entry, 'rejected'); addToast('Request declined.', 'info'); },
+        action: async () => { await setStatus(entry, 'rejected'); await tellDeclined(entry); addToast('Request declined.', 'info'); },
     });
 
     const remove = (entry) => ask({
@@ -143,7 +184,10 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
         let failed = 0;
         setBulk({ verb, done: 0, total: list.length });
         for (let i = 0; i < list.length; i++) {
-            try { await setStatus(list[i], status); } catch (err) { console.error(err); failed += 1; }
+            try {
+                await setStatus(list[i], status);
+                if (status === 'rejected') await tellDeclined(list[i]);
+            } catch (err) { console.error(err); failed += 1; }
             setBulk({ verb, done: i + 1, total: list.length });
         }
         setBulk(null);
@@ -174,7 +218,12 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
         const list = selectedEntries.filter(e => guestStatus(e) !== 'rejected');
         ask({
             title: `Decline ${list.length} ${list.length === 1 ? 'request' : 'requests'}?`,
-            body: 'Their spots go back to the list.',
+            body: (
+                <>
+                    <p>Their spots go back to the list.</p>
+                    <DeclineNotice choice={declineChoice} many />
+                </>
+            ),
             confirmLabel: 'Decline all',
             danger: true,
             action: async () => {
@@ -286,6 +335,7 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
                                                 <Badge tone={st.tone}>{st.label}</Badge>
                                                 <Badge tone="fuchsia"><Users size={10} /> {n}</Badge>
                                                 {s === 'approved' && entry.attended && <Badge tone="teal"><UserCheck size={10} /> In</Badge>}
+                                                {entry.status === 'changes' && <Badge tone="blue"><Pencil size={10} /> Fix asked</Badge>}
                                             </div>
                                             <ContactLinks phone={entry.customerPhone || entry.phone} email={entry.customerEmail || entry.email} className="mt-0.5" />
                                             {Array.isArray(entry.plusOneNames) && entry.plusOneNames.filter(Boolean).length > 0 && (
@@ -341,10 +391,13 @@ const GuestlistPanel = ({ event, entries, loading, error, initialFilter }) => {
                 onClose={() => setReviewingId(null)}
                 entry={reviewing}
                 event={event}
-                onStatusChange={async (entryId, newStatus) => {
+                onStatusChange={async (entryId, newStatus, extra) => {
                     const entry = entries.find(e => e.id === entryId);
                     if (!entry) throw new Error('This sign-up no longer exists.');
-                    await setStatus(entry, newStatus);
+                    // The review sheet has no "tell them" choice: a decline there stays quiet.
+                    declineChoice.current = { tell: false, reason: DECLINE_REASONS[0] };
+                    await setStatus(entry, newStatus, extra);
+                    if (newStatus === 'changes') await notifyEvent('guestlist-task-changes', { guestlistId: glOf(entry), entryId });
                 }}
             />
             {confirmSheet}

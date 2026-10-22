@@ -43,14 +43,25 @@ const eventOf = (d) => d.eventName || d.campaignTitle || 'your event';
 const when = (d) => formatDate(d.date).replace(/^\w+,\s*/, '');
 const join = (...parts) => parts.filter(Boolean).join(' · ');
 const rupees = (n) => (Number.isFinite(Number(n)) ? Number(n).toLocaleString('en-IN') : String(n || '-'));
+const rsvpTemplate = (d) => d.mode === 'rsvp' && isTemplateLive('guestlist_rsvp_confirmed');
+const extraGuests = (d) => Math.max(0, (Number(d.qty) || 1) - 1);
+// "Riya Sharma + 1": the name the door checks on an RSVP list.
+const doorName = (d) => `${String(d.name || '').trim() || 'Your name'}${extraGuests(d) ? ` + ${extraGuests(d)}` : ''}`;
+const comingLine = (d) => (extraGuests(d) ? `You + ${extraGuests(d)} ${extraGuests(d) === 1 ? 'guest' : 'guests'}` : 'Just you');
+const listLink = (d) => (d.guestlistId ? `${PASS_ORIGIN}/community/g/${encodeURIComponent(d.guestlistId)}` : `${PASS_ORIGIN}/community`);
+const listButton = (d) => (d.guestlistId ? [{ index: 0, param: d.guestlistId }] : []);
+const passButton = (d) => (d.ref ? [{ index: 0, param: d.ref }] : []);
 
 export const EVENTS = {
     'pass-confirmed': {
         email: 'always',
         whatsapp: {
             mode: 'always',
-            template: () => 'pass_confirmed',
-            build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'your event'), formatDate(d.date) || 'See pass', d.ref || '-'], buttons: d.ref ? [{ index: 0, param: d.ref }] : [] }),
+            // RSVP lists have no QR code, so they get guestlist_rsvp_confirmed once it's approved.
+            template: (d) => (rsvpTemplate(d) ? 'guestlist_rsvp_confirmed' : 'pass_confirmed'),
+            build: (d) => (rsvpTemplate(d)
+                ? { bodyParams: [firstName(d.name), short(d.eventName || 'your event'), formatDate(d.date) || 'See the guestlist', short(doorName(d), 80)] }
+                : { bodyParams: [firstName(d.name), short(d.eventName || 'your event'), formatDate(d.date) || 'See pass', d.ref || '-'], buttons: d.ref ? [{ index: 0, param: d.ref }] : [] }),
         },
         push: (d) => ({ title: `Your pass for ${short(eventOf(d), 30)}`, body: `${join(when(d), d.venue) || 'Saved in the app'}. Show the QR code at the entrance.`, link: passLink(d), tag: `pass-${d.ref || d.eventName || ''}` }),
         inApp: (d) => ({ title: `Pass ready: ${eventOf(d)}`, message: `${join(when(d), d.venue) ? `${join(when(d), d.venue)}. ` : ''}Show the QR code at the entrance.`, type: 'ticket', link: passLink(d) }),
@@ -200,6 +211,101 @@ export const EVENTS = {
             build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'your event', 80), short(d.doors || 'See your pass', 60), short(d.venue || 'See your pass', 80)], buttons: d.ref ? [{ index: 0, param: d.ref }] : [] }),
         },
         push: (d) => ({ title: `Tomorrow: ${short(d.eventName || 'your event', 34)}`, body: `${join(d.doors, d.venue) || 'Your pass is ready'}. Show the QR code at the entrance.`, link: d.passUrl || '', tag: `pass-${d.ref || ''}` }),
+    },
+    // Guestlists (api/_lib/passes.js, mail/events.js, passHolders.js). WhatsApp only once each template is approved.
+    // Signed up on a list the team reviews.
+    'guestlist-pending': {
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'guestlist_pending',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'the guestlist', 80), formatDate(d.date) || 'See the guestlist', comingLine(d)] }),
+        },
+    },
+    // The team asked for a fix on the task sent to get on the list.
+    'guestlist-task-changes': {
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'guestlist_task_changes',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'the guestlist', 80), short(d.feedback || 'See the note on the guestlist page', 300)], buttons: listButton(d) }),
+        },
+        push: (d) => ({ title: `Fix your task: ${short(d.eventName || 'guestlist', 28)}`, body: short(d.feedback || 'See what to change and send it again.', 120), link: listLink(d), tag: `guestlist-${d.guestlistId || ''}` }),
+        inApp: (d) => ({ title: `Task needs a fix: ${d.eventName || 'guestlist'}`, message: `${d.feedback ? `${short(d.feedback, 200)}. ` : ''}Send it again from the guestlist page to keep your place.`, type: 'ticket', link: listLink(d) }),
+    },
+    // Declined, when the admin ticks "tell them".
+    'guestlist-declined': {
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'guestlist_not_confirmed',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'the guestlist', 80), short(d.reason || 'The list filled up before we reached your sign-up', 120)] }),
+        },
+    },
+    // A place came free (sent by hand from the WhatsApp center until lists have a waitlist).
+    'guestlist-spot-opened': {
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'guestlist_spot_opened',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'the guestlist', 80), short(d.claimBy || 'Soon', 60)], buttons: listButton(d) }),
+        },
+    },
+    // The morning of an event whose guestlist has an entry cutoff (eventReminders.js).
+    'guestlist-entry-cutoff': {
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'guestlist_entry_cutoff',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'your event', 80), short(d.entryUntil, 40), short(d.venue || 'See your pass', 80)], buttons: passButton(d) }),
+        },
+        push: (d) => ({ title: `Tonight: ${short(d.eventName || 'your event', 34)}`, body: `Guestlist entry until ${short(d.entryUntil, 40)}${d.venue ? ` at ${short(d.venue, 60)}` : ''}.`, link: d.passUrl || '', tag: `pass-${d.ref || ''}` }),
+    },
+    // An admin told pass holders about a change (time, date, venue).
+    'event-changed': {
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'event_changed',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'your event', 80), short(d.change, 300)], buttons: passButton(d) }),
+        },
+        push: (d) => ({ title: `Change: ${short(d.eventName || 'your event', 34)}`, body: short(d.change, 140), link: d.passUrl || '', tag: `pass-${d.ref || ''}` }),
+        inApp: (d) => ({ title: `Change to ${d.eventName || 'your event'}`, message: `${short(d.change, 300)}. Your pass still works.`, type: 'ticket', link: d.passUrl || '' }),
+    },
+    // An admin cancelled the event: the pass is cancelled with it.
+    'event-cancelled': {
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'event_cancelled',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'your event', 80), formatDate(d.date) || 'The planned date', short(d.refund || 'Nothing to refund', 120)] }),
+        },
+        push: (d) => ({ title: `Cancelled: ${short(d.eventName || 'your event', 32)}`, body: `Your pass has been cancelled. ${short(d.refund || 'Nothing to refund', 100)}.`, link: '', tag: `pass-${d.ref || ''}` }),
+        inApp: (d) => ({ title: `Cancelled: ${d.eventName || 'your event'}`, message: `Your pass has been cancelled. Refund: ${short(d.refund || 'nothing to refund', 200)}.`, type: 'ticket', link: '' }),
+    },
+    // The gate checked a pass in: the holder hears at once, so a copied QR gets noticed.
+    'pass-checked-in': {
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'pass_checked_in',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'your event', 80), short(d.scannedAt || 'Just now', 60)] }),
+        },
+    },
+    // Account security (api/_lib/securityAlerts.js). Sent only to a verified number, WhatsApp only.
+    'new-sign-in': {
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'new_sign_in',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.device || 'A new device', 80), short(d.when || 'Just now', 40)] }),
+        },
+    },
+    // Goes to the old number, so its owner hears even if someone else made the change.
+    'phone-number-changed': {
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'phone_number_changed',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.last4 || '----', 8), short(d.when || 'Just now', 40)] }),
+        },
+    },
+    'accounts-merged': {
+        whatsapp: {
+            mode: 'optional',
+            template: () => 'accounts_merged',
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.mergedIn || 'Another account', 80), short(d.summary || 'Your account details', 120)] }),
+        },
     },
     'payee-registered': { email: 'always' },
     welcome: { email: 'always' },

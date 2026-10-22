@@ -82,8 +82,8 @@ const VerifyCreator = () => {
                             <LoadingSpinner size="md" color="emerald" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Verifying Contact & Profile...</h2>
-                            <p className="text-zinc-400 text-sm">Please wait while we automatically confirm your creator account.</p>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Confirming your email…</h2>
+                            <p className="text-zinc-400 text-sm">This takes a moment.</p>
                         </div>
                     </div>
                 )}
@@ -96,13 +96,13 @@ const VerifyCreator = () => {
                         <div>
                             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">
                                 <Sparkles size={12} />
-                                <span>Verified Creator</span>
+                                <span>Email confirmed</span>
                             </div>
                             <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-2">
-                                Phone & Profile Verified!
+                                Email confirmed
                             </h2>
                             <p className="text-zinc-400 text-sm leading-relaxed">
-                                Welcome aboard, <span className="text-gray-900 dark:text-white font-semibold">{creatorData?.displayName || creatorData?.name || 'Creator'}</span>! Your contact number has been automatically verified. You are now prioritized for live brand briefs and campaigns.
+                                Thanks, <span className="text-gray-900 dark:text-white font-semibold">{creatorData?.displayName || creatorData?.name || 'Creator'}</span>. Campaign updates will reach you at this email. If you haven't confirmed your phone number yet, do it in the Newbi app, on WhatsApp or with a code.
                             </p>
                         </div>
 
@@ -119,7 +119,7 @@ const VerifyCreator = () => {
                                 <div className="flex justify-between py-1">
                                     <span className="text-zinc-500">Status</span>
                                     <span className="text-emerald-400 font-bold flex items-center gap-1">
-                                        <ShieldCheck size={14} /> Active & Verified
+                                        <ShieldCheck size={14} /> Email confirmed
                                     </span>
                                 </div>
                             </div>
@@ -149,9 +149,9 @@ const VerifyCreator = () => {
                             <ShieldCheck size={42} />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Already Verified!</h2>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Already confirmed</h2>
                             <p className="text-zinc-400 text-sm leading-relaxed">
-                                Your Newbi Creator Profile is already active and verified. You're all set to apply for brand campaigns.
+                                This link was already used, so your email is confirmed. You're all set.
                             </p>
                         </div>
                         <Link

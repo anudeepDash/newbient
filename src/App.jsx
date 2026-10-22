@@ -86,6 +86,7 @@ const MaintenanceGuard = lazy(() => import('./components/MaintenanceGuard'));
 import NewbiToast from './components/ui/NewbiToast';
 
 import { safeLocalStorage } from './lib/storage';
+import { reportSignIn } from './lib/signInReport';
 
 // Redirect that keeps the query string (?ref=, ?campaignId=, ?taskId=) and fills
 // in :params, so old or hand-typed creator links still land in the right place.
@@ -216,6 +217,8 @@ function AppContent() {
   useEffect(() => {
     if (!auth) return undefined;
     return onAuthStateChanged(auth, (user) => {
+      // A fresh sign-in from a new device gets a WhatsApp security alert (no-op otherwise).
+      if (user) reportSignIn(user);
       const { checkUserRole } = useStore.getState();
       if (checkUserRole) {
         checkUserRole(user).then(() => {

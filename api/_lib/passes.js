@@ -216,6 +216,8 @@ export const resolveGuestlist = async (db, id, depth = 0) => {
         city: pick(ev?.city, gl?.city, gig?.city),
         mapUrl: mapLink(ev?.locationUrl) || mapLink(gl?.locationUrl) || mapLink(gig?.locationUrl) || null,
         mode: (pick(gl?.guestlistMode, ev?.guestlistMode) || 'qr') === 'rsvp' ? 'rsvp' : 'qr',
+        // "11:00 PM": guestlist entry closes then (nightlife lists); the morning of the event people are told.
+        entryUntil: str(pick(gl?.entryUntil, ev?.entryUntil), 40) || null,
         perUserLimit: Math.max(1, Number(gl?.perUserLimit ?? ev?.perUserLimit) || 1),
         maxSpots,
         spotsLeft: maxSpots > 0 ? Math.max(0, maxSpots - taken) : null,
@@ -272,7 +274,7 @@ const ownPlace = async (db, gid, uid) => {
         }
         if (!pass.exists && key.data().entryId) {
             const entry = await db.collection('guestlists').doc(gid).collection('entries').doc(key.data().entryId).get();
-            if (entry.exists && !['rejected', 'cancelled'].includes(String(entry.data().status))) return { ref: null, status: entry.data().status || 'pending' };
+            if (entry.exists && !['rejected', 'cancelled'].includes(String(entry.data().status))) return placeFor(entry.data(), null);
         }
     }
     // Registered before passes existed.
@@ -281,8 +283,14 @@ const ownPlace = async (db, gid, uid) => {
     const e = entries.find(x => !['rejected', 'cancelled'].includes(String(x.status)) && !x.passRevoked);
     if (!e) return entries.some(x => String(x.status) === 'rejected') ? { ref: null, status: 'declined' } : null;
     const confirmed = ['approved', 'confirmed', 'attended'].includes(String(e.status)) || e.attended;
-    return { ref: e.passRef || e.bookingRef || null, status: confirmed ? 'issued' : (e.status || 'pending'), legacy: true };
+    if (confirmed) return { ref: e.passRef || e.bookingRef || null, status: 'issued', legacy: true };
+    return { ...placeFor(e, e.passRef || e.bookingRef || null), legacy: true };
 };
+
+/* A sign-up still waiting: 'pending', or 'changes' with the team's note on what to fix. */
+const placeFor = (entry, ref) => (String(entry.status) === 'changes'
+    ? { ref, status: 'changes', fix: str(entry.taskFix?.note, 300) || null }
+    : { ref, status: entry.status || 'pending' });
 
 const guestlistAction = async (db, body, caller) => {
     const g = await resolveGuestlist(db, str(body.id, 128));
@@ -413,9 +421,16 @@ const signUpOnList = async (db, body, who) => {
                 return { duplicate: true, ref: passSnap.id, status: passSnap.data().status };
             }
         }
-        const mine = mineSnaps.flatMap(snap => snap.docs.map(d => d.data()));
-        const live = mine.find(e => !['rejected', 'cancelled'].includes(String(e.status)) && !e.passRevoked);
+        const mineDocs = mineSnaps.flatMap(snap => snap.docs);
+        const mine = mineDocs.map(d => d.data());
+        const liveDoc = mineDocs.find(d => !['rejected', 'cancelled'].includes(String(d.data().status)) && !d.data().passRevoked);
+        const live = liveDoc?.data();
         if (!live && mine.some(e => String(e.status) === 'rejected')) throw new PassError('DECLINED', 'The team couldn’t confirm your spot on this list.', 409);
+        // The team asked for a fix on their task: this is the task sent again, back in the queue.
+        if (live && String(live.status) === 'changes' && g.task) {
+            tx.set(liveDoc.ref, { taskSubmission, status: 'pending', statusUpdatedAt: nowIso(), taskFix: { resolvedAt: nowIso() } }, { merge: true });
+            return { resubmitted: true, ref: live.passRef || live.bookingRef || null, status: 'pending' };
+        }
         if (live) return { duplicate: true, ref: live.passRef || live.bookingRef || null, status: ['approved', 'confirmed', 'attended'].includes(String(live.status)) ? 'issued' : (live.status || 'pending') };
 
         const gl = glSnap.exists ? glSnap.data() : {};
@@ -474,12 +489,22 @@ const signUpOnList = async (db, body, who) => {
     });
 
     if (result.duplicate) return { success: true, duplicate: true, ref: result.ref, status: result.status };
+    if (result.resubmitted) return { success: true, resubmitted: true, ref: result.ref, status: result.status };
     let delivery = null;
     if (result.status === 'issued') {
         delivery = await deliverGuestlistPass(db, gid, result.entryId, { g }).catch((err) => {
             console.warn('[PASSES] guestlist delivery failed:', err.message);
             return null;
         });
+    } else {
+        // Waiting for the team: say we have it (WhatsApp only, once the template is approved).
+        delivery = await notify('guestlist-pending', who.uid, {
+            name: who.name, eventName: g.title, date: g.date, qty: guests, guestlistId: gid,
+        }, { to: { email: who.email, phone: who.phone, name: who.name } }).catch((err) => {
+            console.warn('[PASSES] pending notice failed:', err.message);
+            return null;
+        });
+        return { success: true, ref: result.ref, status: result.status, delivery };
     }
     return { success: true, ref: result.ref, status: result.status, delivery: delivery?.delivery || null };
 };
@@ -1173,7 +1198,7 @@ const checkinAction = async (db, body, caller) => {
     const passRef = db.collection('passes').doc(ref);
     const eventId = str(body.eventId, 128);
     const lists = new Set([eventId, ...(Array.isArray(body.guestlistIds) ? body.guestlistIds : [])].map(v => str(v, 128)).filter(Boolean));
-    return db.runTransaction(async (tx) => {
+    const out = await db.runTransaction(async (tx) => {
         const snap = await tx.get(passRef);
         if (!snap.exists) return { success: true, found: false };
         const pass = snap.data();
@@ -1217,8 +1242,23 @@ const checkinAction = async (db, body, caller) => {
         const now = nowIso();
         tx.update(passRef, { status: 'checked_in', checkedInAt: now, checkedInBy: caller.email || caller.uid });
         if (linkedRef && linked) tx.update(linkedRef, pass.source === 'order' ? { isScanned: true, scannedAt: now, attended: true, attendedAt: now } : { attended: true, attendedAt: now });
-        return { success: true, found: true, valid: true, scanned: false, reason: 'admitted', message: 'Entry granted.', data };
+        return { success: true, found: true, valid: true, scanned: false, reason: 'admitted', message: 'Entry granted.', data, pass };
     });
+    const { pass, ...result } = out;
+    if (result.reason === 'admitted' && pass) await tellCheckedIn(ref, pass);
+    return result;
+};
+
+const CHECKIN_NOTICE_MS = 2500;
+const scanTime = () => new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' }).toUpperCase();
+
+/* "Your pass was scanned" to the holder. The gate never waits more than a moment for it. */
+const tellCheckedIn = (ref, pass) => {
+    const send = notify('pass-checked-in', pass.holderUid || null, {
+        name: pass.holderName, eventName: pass.event?.title || pass.campaignTitle, scannedAt: scanTime(),
+    }, { to: { phone: pass.holderPhone, name: pass.holderName }, skip: ['email', 'push', 'inApp'] })
+        .catch(err => console.warn('[PASSES] check-in notice failed:', ref, err.message));
+    return Promise.race([send, new Promise(resolve => setTimeout(resolve, CHECKIN_NOTICE_MS))]);
 };
 
 /* ---------- listing (when the browser can't read passes from Firestore) ---------- */
