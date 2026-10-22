@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 import {
     Paper, SectionTitle, Label, Callout, Table, Steps, Bullets, Note, Chips, Blocks, Rich,
-    bodyText, HEADING_FONT, GREEN, NEON, INK, useProposalFonts,
+    bodyText, HEADING_FONT, GREEN, NEON, INK,
 } from './proposalDesign';
 
 export default function ProposalDocumentRenderer({ 
@@ -342,7 +342,6 @@ const deliverableRows = (rows = []) => rows.map(r => [
 
 /** One page of the built-in proposal, in the Pinnaca design. */
 function V2Page({ page, pageIdx, totalPages, formData, brand, renderSafeText, renderContent, isExporting, signatureArea }) {
-    useProposalFonts();
     const f = formData;
     const number = f.proposalNumber || 'NBQ-XXXX';
     const headers = Array.isArray(f.deliverablesTableHeaders) && f.deliverablesTableHeaders.length >= 4

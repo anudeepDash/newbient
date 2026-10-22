@@ -1,5 +1,4 @@
-/* Inter and Outfit load from index.html, not an @import here: an @import makes every
-   page wait on fonts.googleapis.com before any script runs. */
+/* Inter and Outfit are self-hosted (@fontsource), imported from src/main.jsx. */
 
 @tailwind base;
 @tailwind components;

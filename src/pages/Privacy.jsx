@@ -9,7 +9,7 @@ import LegalDoc, { P, UL, H3, Rows, A } from './legal/LegalDoc';
  * Meta as the app's data-deletion instructions.
  */
 
-const UPDATED = '21 October 2026';
+const UPDATED = '22 October 2026';
 const PRIVACY = <A href="mailto:privacy@newbi.live">privacy@newbi.live</A>;
 
 const sections = [
@@ -161,7 +161,7 @@ const sections = [
                     ['Cloudinary', 'Storing images and files you upload, such as profile photos and post screenshots.'],
                     ['Apify and RapidAPI', 'Backup lookups of public Instagram profiles by handle.'],
                     ['Google Gemini and OpenRouter', 'AI tools our team uses to write content, and translating our public listings into Hinglish. Your account data isn’t sent to them.'],
-                    ['Google Fonts, YouTube and Vimeo', 'Fonts on our pages, and videos embedded on some event pages. These may set their own cookies.'],
+                    ['YouTube and Vimeo', 'Videos embedded on some event pages. These may set their own cookies.'],
                 ]} />
                 <P>
                     Some of these providers store data outside India. We use providers with recognised security practices, and we

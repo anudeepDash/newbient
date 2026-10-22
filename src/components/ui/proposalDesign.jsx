@@ -1,4 +1,8 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import '@fontsource/manrope/500.css';
+import '@fontsource/manrope/600.css';
+import '@fontsource/manrope/700.css';
+import '@fontsource/manrope/800.css';
 import { cn } from '../../lib/utils';
 
 /*
@@ -20,20 +24,7 @@ export const NEON = '#39FF14';
 const BOX_BG = '#F5F6F5';
 const LINE = '#E8EAE8';
 
-const FONT_HREF = 'https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap';
-
-/** Loads Manrope (the heading face) once; Inter is already on every page. */
-export const useProposalFonts = () => {
-    useEffect(() => {
-        if (typeof document === 'undefined' || document.querySelector('link[data-proposal-fonts]')) return;
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = FONT_HREF;
-        link.setAttribute('data-proposal-fonts', '');
-        document.head.appendChild(link);
-    }, []);
-};
-
+/* Manrope (the heading face) is self-hosted and imported above; Inter is on every page. */
 export const HEADING_FONT = { fontFamily: "'Manrope', 'Inter', sans-serif" };
 export const BODY_FONT = { fontFamily: "'Inter', sans-serif" };
 

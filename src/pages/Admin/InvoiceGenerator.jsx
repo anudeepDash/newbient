@@ -55,6 +55,11 @@ import {
     amountInWords, BANK_FIELDS, parseBankDetails, composeBankDetails,
 } from '../../components/admin/invoices/builder/gst';
 import ThemedSelect from '../../components/admin/ThemedSelect';
+import '../../lib/documentFonts';
+import '@fontsource/inter/100.css';
+import '@fontsource/inter/200.css';
+import '@fontsource/inter/800.css';
+import '@fontsource/inter/900.css';
 
 /*
  * Invoice builder (/admin/create-invoice, /admin/edit-invoice/:id).
@@ -857,7 +862,6 @@ const InvoiceGenerator = () => {
     return (
         <div className="flex h-dvh flex-col overflow-hidden bg-[#f6f7f9] font-heading text-gray-900 dark:bg-[#07080b] dark:text-white">
             <style dangerouslySetInnerHTML={{ __html: `
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
                 .invoice-builder input::-webkit-outer-spin-button, .invoice-builder input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
                 .invoice-builder input[type=number] { -moz-appearance: textfield; }
             ` }} />
