@@ -19,7 +19,7 @@
  * Env: WHATSAPP_WABA_ID (the WhatsApp Business Account id, for the template list).
  */
 import { nowIso } from './db.js';
-import { isWhatsAppConfigured, sendTemplate, toE164, imageHeaderFor } from './whatsapp.js';
+import { isWhatsAppConfigured, sendTemplate, toE164, imageHeaderFor, headerImageUrl, campaignImageOf } from './whatsapp.js';
 import { acquireSlot, joinPayload, submitToken } from './outreachQueue.js';
 import { appendThreadMessage, contactIdFor } from './outreachThreads.js';
 import { maskPhone, firstNameOf } from '../../src/lib/outreach/normalize.js';
@@ -71,11 +71,13 @@ const fetchTemplates = async () => {
     return (data.data || []).map(describeTemplate).sort((a, b) => a.name.localeCompare(b.name));
 };
 
-/* The header a send needs, from what the template was approved with. */
-const headerFor = (tpl, params, bodyParams) => {
+/* The header a send needs, from what the template was approved with. An image header shows the link typed
+   in, else the person's campaign picture, else the template's card. */
+const headerFor = (tpl, params, campaign = null) => {
     const fmt = tpl.header?.format;
     const url = /^https:\/\//.test(String(params.headerUrl || '')) ? String(params.headerUrl) : '';
-    if (fmt === 'IMAGE') return { type: 'image', link: url || imageHeaderFor(tpl.name, bodyParams)?.link || `${APP_ORIGIN}${OG_IMAGES.app.path}` };
+    const picture = campaignImageOf(campaign);
+    if (fmt === 'IMAGE') return { type: 'image', link: url || imageHeaderFor(tpl.name, picture)?.link || headerImageUrl(picture) || `${APP_ORIGIN}${OG_IMAGES.app.path}` };
     if (fmt === 'DOCUMENT') return url ? { type: 'document', link: url, filename: String(params.headerFilename || 'document.pdf').slice(0, 120) } : 'missing';
     if (fmt === 'VIDEO') return 'unsupported';
     if (fmt === 'TEXT' && tpl.header.vars) return params.headerText ? { type: 'text', text: String(params.headerText) } : 'missing';
@@ -152,7 +154,7 @@ const handleSend = async (req, res, { db, actor }) => {
 
     const rawBody = Array.from({ length: tpl.bodyVars }, (_, i) => String(params.body?.[i] ?? '').trim());
     if (rawBody.some(v => !v)) return send(res, 400, { success: false, field: 'body', error: 'Fill in every variable.' });
-    const rawHeader = headerFor(tpl, params, rawBody);
+    const rawHeader = headerFor(tpl, params);
     if (rawHeader === 'missing') return send(res, 400, { success: false, field: 'header', error: 'This template needs a header: add its link or text.' });
     if (rawHeader === 'unsupported') return send(res, 400, { success: false, field: 'header', error: 'Video headers can’t be sent from here.' });
     if (buttonsFor(tpl, params).some(b => b.param === '')) return send(res, 400, { success: false, field: 'buttons', error: 'Fill in the link ending for each link button.' });
@@ -207,7 +209,7 @@ const handleSend = async (req, res, { db, actor }) => {
             results.push({ key: p.key, label: p.label, status: 'skipped', retry: !slot.capped, error: slot.capped ? 'Today’s WhatsApp limit is reached' : 'Sending too fast: send the rest in a minute' });
             continue;
         }
-        const header = headerFor(tpl, personParams, bodyParams);
+        const header = headerFor(tpl, personParams, p.campaign);
         const join = p.application && JOIN_TEMPLATES.has(tpl.name) ? joinPayload(p.campaign.id, p.appId) : null;
         const r = await sendTemplate({
             to: p.phone, template: tpl.name, language: tpl.language, header: header || undefined, bodyParams, buttons: buttonsFor(tpl, personParams, { join }),

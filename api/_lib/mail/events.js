@@ -14,7 +14,7 @@ import { createCampaign } from './campaigns.js';
 import { sendPush } from '../push.js';
 import { isCampaignCityMatch } from '../../../src/lib/constants.js';
 import { normalizeEmail, isValidEmail } from '../mailing.js';
-import { deliverGuestlistPass, ensureOrderPass, passUrl } from '../passes.js';
+import { deliverGuestlistPass, ensureOrderPass, passUrl, resolveGuestlist } from '../passes.js';
 import { isTemplateLive, sendTemplate } from '../whatsapp.js';
 import { sendTeamAlert, TICKET_TEAM, contactForAdmin, roleLabel } from '../teamAlerts.js';
 import { tellPassHolders, countPassHolders } from '../passHolders.js';
@@ -72,30 +72,30 @@ const loadEntry = async ({ guestlistId, entryId }, caller, wantStatus) => {
     if (!snap.exists) throw new EventError('Entry not found.', 404);
     const entry = snap.data();
     if (String(entry.status || '').toLowerCase() !== wantStatus) throw new EventError(`This sign-up isn’t ${wantStatus === 'rejected' ? 'declined' : 'waiting for a fix'}.`, 409);
-    const gl = await db.collection('guestlists').doc(guestlistId).get().catch(() => null);
-    return { ref, entry, title: (gl?.exists && gl.data().title) || entry.title || 'the guestlist' };
+    const g = await resolveGuestlist(db, guestlistId).catch(() => null);
+    return { ref, entry, title: g?.title || entry.title || 'the guestlist', image: g?.image || '' };
 };
 
 const entryContact = (entry) => ({ email: entry.customerEmail || entry.email, phone: entry.customerPhone || entry.phone, name: entry.customerName || entry.name });
 
 /* Declined, and the admin ticked "tell them": once per sign-up. */
 const guestlistDeclined = async (body, caller) => {
-    const { ref, entry, title } = await loadEntry(body, caller, 'rejected');
+    const { ref, entry, title, image } = await loadEntry(body, caller, 'rejected');
     if (!(await claimOnce(ref, 'declinedNoticeAt'))) return { duplicate: true };
     const delivery = await notify('guestlist-declined', entry.userId || null, {
-        name: entry.customerName || entry.name, eventName: title, reason: String(body.reason || '').trim().slice(0, 120),
+        name: entry.customerName || entry.name, eventName: title, image, reason: String(body.reason || '').trim().slice(0, 120),
     }, { to: entryContact(entry) });
     return { delivery };
 };
 
 /* The team asked for a fix on the task (entries/{id}.taskFix.note): once per request. */
 const guestlistTaskChanges = async (body, caller) => {
-    const { ref, entry, title } = await loadEntry(body, caller, 'changes');
+    const { ref, entry, title, image } = await loadEntry(body, caller, 'changes');
     const askedAt = entry.taskFix?.at;
     if (!askedAt || entry.mail?.taskFixFor === askedAt) return { duplicate: true };
     await ref.set({ mail: { taskFixFor: askedAt } }, { merge: true });
     const delivery = await notify('guestlist-task-changes', entry.userId || null, {
-        name: entry.customerName || entry.name, eventName: title, feedback: entry.taskFix?.note, guestlistId: body.guestlistId,
+        name: entry.customerName || entry.name, eventName: title, image, feedback: entry.taskFix?.note, guestlistId: body.guestlistId,
     }, { to: entryContact(entry) });
     return { delivery };
 };

@@ -1,7 +1,12 @@
 /**
  * Submits our WhatsApp templates to Meta for approval (guestlists and account
  * security alerts). On 23 Oct 2026 they were created by hand in WhatsApp
- * Manager with exactly this text, so this is the record of what Meta has. The code only uses each one once WHATSAPP_TEMPLATE_<NAME>
+ * Manager with exactly this text, so this is the record of what Meta has.
+ * The same day the 9 guestlist and event templates got an IMAGE header (each
+ * with its card from public/og as the sample; the code sends the event's own
+ * picture, else that card: api/_lib/whatsapp.js IMAGE_HEADERS). This script
+ * doesn't add headers: a new one would need its image header added in
+ * WhatsApp Manager the same way. The code only uses each one once WHATSAPP_TEMPLATE_<NAME>
  * is set, after Meta approves it.
  *
  *   node scripts/submit-wa-templates.mjs            checks every template, sends nothing

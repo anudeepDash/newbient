@@ -20,7 +20,7 @@
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { getDb, nowIso, istDate } from './db.js';
-import { sendTemplate, sendText, isWhatsAppConfigured, isTemplateLive } from './whatsapp.js';
+import { sendTemplate, sendText, isWhatsAppConfigured, isTemplateLive, campaignImageOf } from './whatsapp.js';
 import { makeSignedToken } from './linkSign.js';
 import { contactIdFor, appendThreadMessage, windowOpen } from './outreachThreads.js';
 import { canTransition, canSystemTransition } from '../../src/lib/outreach/status.js';
@@ -326,6 +326,8 @@ export const sendJob = async (db, job, { now = Date.now() } = {}) => {
         result = await sendTemplate({
             to: app.phone,
             template: WA_TEMPLATES[job.kind].name,
+            // The campaign's own picture on every campaign message (its card when it has none).
+            image: campaignImageOf(campaign),
             bodyParams: templateParamsFor(job.kind, tplCtx),
             buttons,
             event: `outreach-${job.kind}`,
