@@ -75,8 +75,11 @@ const GuestlistPage = ({ overlay = false }) => {
             const problem = validateTask(gl.task, task);
             if (problem) { setError(problem); return; }
         }
-        setSubmitting(true);
         const names = guestNames.slice(0, guests - 1).map(n => String(n || '').trim());
+        // Your own name is already on the list; these slots are for the people with you.
+        const own = String(profile?.name || '').trim().toLowerCase();
+        if (own && names.some(n => n.toLowerCase() === own)) { setError(t('That’s your name, and you’re already on the list. Add the names of the people coming with you.')); return; }
+        setSubmitting(true);
         const res = await passesPost('register-guestlist', { guestlistId: id, guests, guestNames: names, taskSubmission: gl?.task ? task : null });
         setSubmitting(false);
         if (res.ok) {
@@ -147,8 +150,11 @@ const GuestlistPage = ({ overlay = false }) => {
     const share = () => shareLink({ title: gl.title, url: window.location.href });
 
     // The action bar: your place once you're on the list, otherwise the way on.
+    const declined = me?.status === 'declined';
     const action = me?.status === 'pending'
         ? <BarStatus icon={Hourglass} tone="warn">{t('Request sent. We’ll send your pass once you’re approved.')}</BarStatus>
+        : declined
+            ? <BarStatus>{t('The team couldn’t confirm your spot this time.')}</BarStatus>
         : me
             ? (me.ref
                 ? <Button className="flex-1" size="lg" icon={Ticket} to={appPath(`/p/${me.ref}`)}>{gl.mode === 'rsvp' ? t('View my spot') : t('Open my pass')}</Button>
@@ -181,7 +187,7 @@ const GuestlistPage = ({ overlay = false }) => {
                     </StatRow>
                 </ExpandedTitle>
 
-                {me && me.status !== 'pending' && <Notice tone="success" title={t('You’re on the list.')}>{gl.mode === 'rsvp' ? t('Your spot is saved. Give your name at the door.') : t('Show your pass at the gate.')}</Notice>}
+                {me && !['pending', 'declined'].includes(me.status) && <Notice tone="success" title={t('You’re on the list.')}>{gl.mode === 'rsvp' ? t('Your spot is saved. Give your name at the door.') : t('Show your pass at the gate.')}</Notice>}
                 {!me && gl.open && gl.needsApproval && <Notice tone="info">{t('The team reviews requests before sending passes.')}</Notice>}
                 {error && !step && <Notice tone="error">{error}</Notice>}
 
@@ -240,19 +246,19 @@ const GuestlistPage = ({ overlay = false }) => {
                         <div className="space-y-3">
                             <div>
                                 <p className="text-[16px] font-bold">{t('Who’s coming with you?')}</p>
-                                <p className="text-[13px] text-gray-500 dark:text-zinc-400">{t('Their names go on the door list. You can leave these blank.')}</p>
+                                <p className="text-[13px] text-gray-500 dark:text-zinc-400">{t('Your name is already on the list, so don’t add it here. Only add the friends coming with you; their names go on the door list. You can leave these blank.')}</p>
                             </div>
                             {Array.from({ length: guests - 1 }, (_, i) => (
                                 <TextInput
                                     key={i}
                                     id={`guest-name-${i + 2}`}
-                                    label={t('Guest {n}', { n: i + 2 })}
+                                    label={t('Friend {n}', { n: i + 1 })}
                                     value={guestNames[i] || ''}
                                     onChange={(e) => setGuestNames(list => { const next = [...list]; next[i] = e.target.value; return next; })}
                                     maxLength={80}
                                     autoComplete="off"
                                     autoCapitalize="words"
-                                    placeholder={t('Full name')}
+                                    placeholder={t('Friend’s full name')}
                                 />
                             ))}
                         </div>
