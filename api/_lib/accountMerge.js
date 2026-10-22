@@ -33,6 +33,7 @@
  * simply be run again.
  */
 import { nowIso, FieldValue } from './db.js';
+import { tellAccountsMerged } from './securityAlerts.js';
 
 const PROOF_MAX_AGE_S = 10 * 60;
 
@@ -409,5 +410,10 @@ export const mergeAccounts = async ({ db, adminAuth, toUid, fromUid, tokenRef, o
 
     const merged = [...(to.mergedAccounts || []), { uid: fromUid, at: now }];
     await db.collection('users').doc(toUid).set({ mergingFrom: FieldValue.delete(), mergedAccounts: merged }, { merge: true });
+    // The kept account's verified number hears what came in (security alert; never stops the merge).
+    await tellAccountsMerged({
+        db, adminAuth, toUid, moved,
+        mergedIn: maskEmail(fromAuth?.email || from.email) || maskPhone(fromAuth?.phoneNumber || from.phone) || 'Another account',
+    }).catch(() => null);
     return { moved, phoneLinked, providers: (fromAuth?.providerData || []).map(p => p.providerId) };
 };

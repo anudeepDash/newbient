@@ -5,6 +5,7 @@ import { recordUnsubscribe, recordResubscribe, unsubscribePage, isValidEmail, no
 import { isValidSignature, isOwnHost, isValidUnsubscribeSig, readSignedToken } from './_lib/linkSign.js';
 import { recordWhatsAppStatus } from './_lib/whatsapp.js';
 import { onOutreachStatus, onOutreachInbound } from './_lib/outreachQueue.js';
+import { onVerifyMessage } from './_lib/waVerify.js';
 
 // The WhatsApp webhook signs the exact bytes Meta sent, so this function reads
 // the body itself (see readBody) instead of letting the runtime parse it.
@@ -141,8 +142,11 @@ const handleWhatsAppWebhook = async (req, res, raw, body) => {
             // Campaign outreach: a failed invite goes back under "To message".
             if (saved?.log) await onOutreachStatus(saved.log, st);
         }).map(p => p.catch(err => console.warn('[TRACK API] WhatsApp status not saved:', err.message))));
-        // Replies go to the outreach inbox; "Joined ✅" marks a creator joined, anything else replied.
+        // A "Verify my number for Newbi" code is answered here; other replies go to the outreach
+        // inbox, where "Joined ✅" marks a creator joined and anything else counts as a reply.
         for (const { m, name } of messages.slice(0, 50)) {
+            const verified = await onVerifyMessage(m).catch((err) => { console.warn('[TRACK API] WhatsApp verification not handled:', err.message); return false; });
+            if (verified) continue;
             await onOutreachInbound(m, { name }).catch(err => console.warn('[TRACK API] WhatsApp message not handled:', err.message));
         }
     } catch (err) {

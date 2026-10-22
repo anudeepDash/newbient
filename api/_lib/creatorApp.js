@@ -47,6 +47,7 @@ import { isTesterRole } from '../../src/constants/roles.js';
 import { sendShortlistWelcome } from './mail/events.js';
 import { taskWindow } from '../../src/lib/creator/tasks.js';
 import { FieldPath } from 'firebase-admin/firestore';
+import { tellPhoneChanged } from './securityAlerts.js';
 
 /* The app's own origin (links in emails, the OAuth fallback). PUBLIC_APP_URL overrides it on previews. */
 const APP_URL = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace(/\/+$/, '');
@@ -1205,6 +1206,10 @@ export const handleProfilePhone = async (req, res, { db, token, adminAuth = defa
     }
     const updated = PHONE_FIELDS.filter(k => u[k] !== patch[k]);
     if (updated.length) await ref.set({ ...patch, updatedAt: now }, { merge: true });
+    // A verified number was replaced: its owner hears about it on that number.
+    if (current && (u.phoneVerified || u.isPhoneVerified) && patch.phone !== current) {
+        await tellPhoneChanged({ uid: token.uid, user: u, oldPhone: current, newPhone: patch.phone });
+    }
     return send(res, 200, { success: true, phone: patch.phone, verified: patch.phoneVerified, updated });
 };
 

@@ -74,13 +74,13 @@ const ipLimited = async (db, req, now) => {
 };
 
 // Blocked or merged-away accounts never get a sign-in.
-const accountUsable = async (db, uid) => {
+export const accountUsable = async (db, uid) => {
     const snap = await db.collection('users').doc(uid).get();
     const data = snap.exists ? snap.data() || {} : {};
     return !data.isBlocked && !data.mergedInto;
 };
 
-const userByPhone = async (adminAuth, phone) => {
+export const userByPhone = async (adminAuth, phone) => {
     try {
         return await adminAuth.getUserByPhoneNumber(phone);
     } catch (err) {

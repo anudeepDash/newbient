@@ -17,6 +17,7 @@ import { normalizeEmail, isValidEmail } from '../mailing.js';
 import { deliverGuestlistPass, ensureOrderPass, passUrl } from '../passes.js';
 import { isTemplateLive, sendTemplate } from '../whatsapp.js';
 import { sendTeamAlert, TICKET_TEAM, contactForAdmin, roleLabel } from '../teamAlerts.js';
+import { tellPassHolders, countPassHolders } from '../passHolders.js';
 import { isRequiredTask } from '../../../src/lib/creator/tasks.js';
 import { approvedSummary } from '../../../src/lib/outreach/whatsappTemplate.js';
 
@@ -59,6 +60,56 @@ const passFromGuestlist = async ({ guestlistId, entryId }, caller) => {
     // Issues the pass (passes/{ref}) if it doesn't exist yet, then sends it once.
     const out = await deliverGuestlistPass(db, guestlistId, entryId, { issuedBy: caller.staff ? (caller.email || 'staff') : 'self' });
     return out.duplicate ? { duplicate: true } : { delivery: out.delivery, ref: out.ref };
+};
+
+/* A guestlist sign-up the team is acting on (staff only): the entry, its holder and its list's title. */
+const loadEntry = async ({ guestlistId, entryId }, caller, wantStatus) => {
+    if (!caller.staff) throw new EventError('Forbidden', 403);
+    if (!idOk(guestlistId) || !idOk(entryId)) throw new EventError('Missing guestlist entry.');
+    const db = getDb();
+    const ref = db.collection('guestlists').doc(guestlistId).collection('entries').doc(entryId);
+    const snap = await ref.get();
+    if (!snap.exists) throw new EventError('Entry not found.', 404);
+    const entry = snap.data();
+    if (String(entry.status || '').toLowerCase() !== wantStatus) throw new EventError(`This sign-up isn’t ${wantStatus === 'rejected' ? 'declined' : 'waiting for a fix'}.`, 409);
+    const gl = await db.collection('guestlists').doc(guestlistId).get().catch(() => null);
+    return { ref, entry, title: (gl?.exists && gl.data().title) || entry.title || 'the guestlist' };
+};
+
+const entryContact = (entry) => ({ email: entry.customerEmail || entry.email, phone: entry.customerPhone || entry.phone, name: entry.customerName || entry.name });
+
+/* Declined, and the admin ticked "tell them": once per sign-up. */
+const guestlistDeclined = async (body, caller) => {
+    const { ref, entry, title } = await loadEntry(body, caller, 'rejected');
+    if (!(await claimOnce(ref, 'declinedNoticeAt'))) return { duplicate: true };
+    const delivery = await notify('guestlist-declined', entry.userId || null, {
+        name: entry.customerName || entry.name, eventName: title, reason: String(body.reason || '').trim().slice(0, 120),
+    }, { to: entryContact(entry) });
+    return { delivery };
+};
+
+/* The team asked for a fix on the task (entries/{id}.taskFix.note): once per request. */
+const guestlistTaskChanges = async (body, caller) => {
+    const { ref, entry, title } = await loadEntry(body, caller, 'changes');
+    const askedAt = entry.taskFix?.at;
+    if (!askedAt || entry.mail?.taskFixFor === askedAt) return { duplicate: true };
+    await ref.set({ mail: { taskFixFor: askedAt } }, { merge: true });
+    const delivery = await notify('guestlist-task-changes', entry.userId || null, {
+        name: entry.customerName || entry.name, eventName: title, feedback: entry.taskFix?.note, guestlistId: body.guestlistId,
+    }, { to: entryContact(entry) });
+    return { delivery };
+};
+
+/* Ticketing → Settings → Tell pass holders: a change, or the event is cancelled. Call again while `remaining` > 0. */
+const passHoldersNotice = (kind) => async ({ eventId, guestlistIds = [], change, refund, countOnly }, caller) => {
+    if (!caller.staff) throw new EventError('Forbidden', 403);
+    if (!idOk(eventId)) throw new EventError('Missing event.');
+    const lists = (Array.isArray(guestlistIds) ? guestlistIds : []).filter(idOk).slice(0, 10);
+    const db = getDb();
+    if (countOnly) return { count: await countPassHolders(db, { eventId, guestlistIds: lists }) };
+    const out = await tellPassHolders(db, { eventId, guestlistIds: lists, kind, change, refund, staffEmail: caller.email || 'staff' });
+    if (out.error) throw new EventError(out.error);
+    return out;
 };
 
 const orderItems = (order) => (Array.isArray(order.items) && order.items.length
@@ -493,6 +544,10 @@ const HANDLERS = {
     'staff-authorized': staffAuthorized,
     'order-declined': orderDeclined,
     'gig-selected': gigSelected,
+    'guestlist-declined': guestlistDeclined,
+    'guestlist-task-changes': guestlistTaskChanges,
+    'event-changed': passHoldersNotice('changed'),
+    'event-cancelled': passHoldersNotice('cancelled'),
     'payment-approved': invoicePayment('payment-approved'),
     'payment-declined': invoicePayment('payment-declined'),
 };

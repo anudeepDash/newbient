@@ -764,6 +764,9 @@ const UpcomingEventsManager = () => {
                                         { value: 'rsvp', label: 'RSVP only', hint: 'Just a headcount, no QR' },
                                     ]} />
                                 </Field>
+                                <Field label="Guestlist entry until" optional hint="On the day, guests are reminded of this time (for clubs that charge cover after it)">
+                                    <input className={cn(fieldCls, 'max-w-[10rem]')} value={newEvent.entryUntil || ''} maxLength={40} placeholder="11:00 PM" onChange={(e) => set({ entryUntil: e.target.value })} />
+                                </Field>
                                 <Field label="Spots per person" hint="The most one person can request (5 if blank)">
                                     <input className={cn(fieldCls, 'max-w-[10rem]')} type="number" inputMode="numeric" min="1" value={newEvent.perUserLimit || ''} onChange={(e) => set({ perUserLimit: parseInt(e.target.value, 10) || 1 })} />
                                 </Field>

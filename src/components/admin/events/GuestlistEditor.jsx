@@ -29,7 +29,7 @@ const EMPTY = {
     title: '', date: '', time: '', location: '', city: '', locationUrl: '', description: '', status: 'Open',
     maxSpots: 100, currentSpots: 0, perUserLimit: 2,
     image: '', highlightColor: '#2ebfff', isPinned: false, imageTransform: { scale: 1.05, x: 0, y: 0 },
-    guestlistEnabled: true, guestlistMode: 'qr', hasGuestlistTask: false, guestlistTask: null, externalLink: '',
+    guestlistEnabled: true, guestlistMode: 'qr', entryUntil: '', hasGuestlistTask: false, guestlistTask: null, externalLink: '',
     showOnSite: true, showInApp: true,
 };
 
@@ -51,6 +51,7 @@ const fromDoc = (gl) => ({
     imageTransform: gl.imageTransform || { scale: 1.05, x: 0, y: 0 },
     guestlistEnabled: gl.guestlistEnabled !== undefined ? gl.guestlistEnabled : true,
     guestlistMode: gl.guestlistMode || 'qr',
+    entryUntil: gl.entryUntil || '',
     hasGuestlistTask: !!gl.hasGuestlistTask,
     guestlistTask: gl.guestlistTask || null,
     externalLink: gl.externalLink || '',
@@ -133,6 +134,7 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
                 city: cleanCity(form.city),
                 locationUrl: form.locationUrl.trim(),
                 externalLink: form.externalLink.trim(),
+                entryUntil: String(form.entryUntil || '').trim().slice(0, 40),
                 maxSpots: Math.floor(Number(form.maxSpots)) || 0,
                 perUserLimit: Math.floor(Number(form.perUserLimit)) || 1,
                 isGuestlistEnabled: true, // read by Ticketing and the scanner
@@ -248,6 +250,9 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
                                     { value: 'qr', label: 'QR passes', hint: 'Scanned at the door' },
                                     { value: 'rsvp', label: 'RSVP only', hint: 'Name on a list, no QR' },
                                 ]} />
+                            </Field>
+                            <Field label="Guestlist entry until" optional hint="On the day, guests are reminded of this time (for clubs that charge cover after it)">
+                                <input className={fieldCls} value={form.entryUntil || ''} maxLength={40} placeholder="11:00 PM" onChange={(e) => set({ entryUntil: e.target.value })} />
                             </Field>
                             <GuestlistTaskConfig
                                 enabled={form.hasGuestlistTask}
