@@ -15,6 +15,7 @@ import { isPresent } from '../../lib/present';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
 import { useAuthGate, useResumeIntent, INTENTS, clearPendingIntent } from '../auth/AuthGate';
 import { useStore as useLegacyStore } from '../../lib/store.js';
+import { auth } from '../../lib/firebase';
 import CompleteProfileSheet from '../profile/CompleteProfileSheet';
 import { missingFields, requirementsFor } from '../profile/requirements';
 import { appPath } from '../host';
@@ -156,7 +157,9 @@ const GuestlistPage = ({ overlay = false }) => {
     useEffect(() => {
         if (signInOpen || !askedSignIn.current) return;
         askedSignIn.current = false;
-        if (uid) return; // signed in: the intent picks it up
+        // Signed in: the intent picks it up. Firebase knows at once; the app's copy of the user
+        // can arrive a moment after the sheet closes (a phone code, say), so ask Firebase.
+        if (uid || auth?.currentUser) return;
         clearPendingIntent();
         setError('');
         setStep('guest');
