@@ -1,6 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import './landing.css';
 import LandingApp from './LandingApp';
 import { findRoute } from './routes';
@@ -28,6 +30,9 @@ const app = (
         <BrowserRouter>
             <LandingApp />
         </BrowserRouter>
+        {/* Vercel Web Analytics + Speed Insights; both render nothing, so hydration is unaffected. */}
+        <Analytics />
+        <SpeedInsights />
     </StrictMode>
 );
 
