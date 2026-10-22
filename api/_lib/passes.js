@@ -170,8 +170,12 @@ const loadProfile = async (db, caller) => {
 
 /* ---------- guestlists ---------- */
 
-/** A guestlist, merged with its event (or gig) for the details people see. */
-export const resolveGuestlist = async (db, id) => {
+/**
+ * A guestlist, merged with its event (or gig) for the details people see.
+ * An event card made from a guestlist (it carries guestlistId) is that list:
+ * its id resolves to the list, so sign-ups never split into a second one.
+ */
+export const resolveGuestlist = async (db, id, depth = 0) => {
     if (!idOk(id)) return null;
     const [glSnap, evSnap, gigSnap] = await Promise.all([
         db.collection('guestlists').doc(id).get(),
@@ -183,6 +187,10 @@ export const resolveGuestlist = async (db, id) => {
     if (!ev && gl?.eventId && idOk(gl.eventId) && gl.eventId !== id) {
         const s = await db.collection('upcoming_events').doc(gl.eventId).get();
         if (s.exists) ev = { id: gl.eventId, ...s.data() };
+    }
+    if (ev?.id === id && idOk(ev.guestlistId) && ev.guestlistId !== id && depth < 2) {
+        const linked = await resolveGuestlist(db, ev.guestlistId, depth + 1);
+        if (linked) return linked;
     }
     const gig = gigSnap.exists ? gigSnap.data() : null;
     if (!gl && !ev?.isGuestlistEnabled && !gig?.guestlistEnabled) return null;
@@ -312,15 +320,17 @@ const passFromGuestlistEntry = (ref, g, gid, entryId, entry, issuedBy) => ({
 
 const registerGuestlist = async (db, body, caller) => {
     requireUser(caller);
-    const gid = str(body.guestlistId, 128);
-    const g = await resolveGuestlist(db, gid);
+    const g = await resolveGuestlist(db, str(body.guestlistId, 128));
     if (!g) throw new PassError('NOT_FOUND', "We couldn't find this guestlist.", 404);
+    // The list it resolved to (an event card made from a guestlist signs people up on that list).
+    const gid = g.id;
     if (g.closed) throw new PassError('CLOSED', 'This guestlist is closed.', 409);
     if (g.past) throw new PassError('CLOSED', 'This event has already happened.', 409);
 
     const me = await loadProfile(db, caller);
-    const missing = [!present(me.name) && 'name', !me.phoneVerified && 'phoneVerified'].filter(Boolean);
-    if (missing.length) throw new PassError('PROFILE_INCOMPLETE', 'Add your name and verify your phone number first.', 422, { missing });
+    // A phone number to send the pass to; it isn't checked by SMS (that step put people off).
+    const missing = [!present(me.name) && 'name', !present(me.phone) && 'phone'].filter(Boolean);
+    if (missing.length) throw new PassError('PROFILE_INCOMPLETE', 'Add your name and phone number first.', 422, { missing });
 
     const taskSubmission = cleanTaskSubmission(body.taskSubmission);
     if (g.task) {

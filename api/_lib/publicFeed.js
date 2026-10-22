@@ -104,7 +104,9 @@ function upcomingEvents(list, guestlists = []) {
     const lists = guestlists
         .filter((g) => g.showOnSite === true && !g.isEmbedded && !g.eventId && !g.linkedEventId && String(g.status || '').toLowerCase() !== 'closed')
         .map((g) => ({ ...g, isGuestlistEnabled: true, isTicketed: false, standaloneList: true }));
-    return [...list.filter((e) => e.showOnSite !== false), ...lists]
+    // An event card made from a guestlist (guestlistId) is that list: when the list shows itself, the card doesn't.
+    const listed = new Set(lists.map((g) => g.id));
+    return [...list.filter((e) => e.showOnSite !== false && !listed.has(e.guestlistId)), ...lists]
         .filter((e) => !isHidden(e) && str(e.title))
         .map((e) => ({ e, day: eventDay(e.date) }))
         .filter(({ day }) => day && day >= today)
@@ -121,6 +123,8 @@ function upcomingEvents(list, guestlists = []) {
             category: str(e.category || e.performanceType, 40),
             isTicketed: Boolean(e.isTicketed),
             hasGuestlist: Boolean(e.isGuestlistEnabled || e.guestlistEnabled),
+            // The guestlist an event card was made from, so links open (and sign up on) that list.
+            guestlistId: str(e.guestlistId, 128) || undefined,
             // Guestlists opt in to the app's Home; events opt out.
             showInApp: e.standaloneList ? e.showInApp === true : e.showInApp !== false,
         }));
@@ -307,11 +311,11 @@ const DAY_MS = 24 * 3600 * 1000;
 // Every field the app's buildFeed (src/lib/store/community.js) reads. Nothing else is sent.
 export const COMMUNITY_FIELDS = [
     'title', 'name', 'description', 'subtitle',
-    'date', 'dates', 'eventDate', 'startDate', 'endsAt', 'endDate', 'closesAt', 'deadline',
+    'date', 'time', 'dates', 'eventDate', 'startDate', 'endsAt', 'endDate', 'closesAt', 'deadline',
     'status', 'activeLabel', 'isActive', 'hidden', 'isPinned', 'showInApp',
     'hubImage', 'image', 'posterUrl', 'poster', 'thumbnail', 'coverImage',
     'venue', 'location', 'city', 'targetCity',
-    'isGuestlistEnabled', 'guestlistEnabled', 'eventId', 'isEmbedded',
+    'isGuestlistEnabled', 'guestlistEnabled', 'eventId', 'isEmbedded', 'guestlistId',
     'formId', 'applyType', 'applyLink', 'interestedCount', 'slots', 'totalSlots', 'maxVolunteers', 'slug',
 ];
 

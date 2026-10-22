@@ -65,8 +65,8 @@ export const proveWithPassword = (email, password) => prove(
     () => EmailAuthProvider.credential(email, password),
 );
 
-export const findOtherAccounts = async (email) => {
-    const res = await callCreatorApi('account-matches', email ? { email } : {});
+export const findOtherAccounts = async (email, phone) => {
+    const res = await callCreatorApi('account-matches', { ...(email ? { email } : {}), ...(phone ? { phone } : {}) });
     return res.ok ? res.data.matches || [] : [];
 };
 

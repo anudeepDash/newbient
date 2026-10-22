@@ -34,7 +34,7 @@ const ticketMask = (() => {
 const kindOf = (pass) => {
     if (pass.source === 'campaign') return { type: 'campaign', label: pass.qr === false && !pass.externalTicket ? 'Confirmation' : 'Creator ticket' };
     if (pass.source === 'order') return { type: 'event', label: 'Ticket' };
-    return { type: 'guestlist', label: pass.mode === 'rsvp' ? 'RSVP' : 'Guestlist pass' };
+    return { type: 'guestlist', label: pass.mode === 'rsvp' ? 'Guestlist' : 'Guestlist pass' };
 };
 
 const StubCell = ({ label, value, accent, mono, className }) => (

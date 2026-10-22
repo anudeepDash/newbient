@@ -17,6 +17,9 @@ import Clock from 'lucide-react/dist/esm/icons/clock';
 import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
 import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
 import Pencil from 'lucide-react/dist/esm/icons/pencil';
+import Share2 from 'lucide-react/dist/esm/icons/share-2';
+import ShareDraftsSheet from '../../components/admin/share/ShareDraftsSheet';
+import { APP_ORIGIN } from '../../app/host';
 import TicketSaleEditor from '../../components/admin/ticketing/TicketSaleEditor';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import { Button, Badge, SearchInput, Select, SegmentedTabs, EmptyState, StatTile, ViewToggle, useViewMode } from '../../components/admin/ui';
@@ -301,6 +304,7 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
     const selectedEventId = params.get('eventId');
     const rawTab = params.get('tab');
     const [editor, setEditor] = useState(null); // { guestlist } | { guestlist: null } for new
+    const [sharing, setSharing] = useState(false);
     const [saleEditor, setSaleEditor] = useState(null); // { event } | { event: null } for a new ticket sale
 
     const events = useOperationalEvents();
@@ -440,6 +444,9 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
                             <Button variant="secondary" className="h-11" onClick={() => setSaleEditor({ event })}><Pencil size={14} /> Edit sale</Button>
                         )}
                         {!isScanner && (
+                            <Button variant="secondary" className="h-11" onClick={() => setSharing(true)}><Share2 size={14} /> Share</Button>
+                        )}
+                        {!isScanner && (
                             <ExportMenu
                                 label="Export"
                                 size="md"
@@ -468,6 +475,19 @@ const TicketingManagement = ({ mode = 'tickets' }) => {
             {activeTab === 'checkin' && <CheckInDesk eventId={event.id} orders={orders} guestEntries={guestEntries} />}
             {activeTab === 'coupons' && <CouponsPanel eventId={event.id} coupons={coupons || []} orders={orders} canSeeMoney={canSeeMoney} />}
             {activeTab === 'settings' && <SettingsPanel event={event} onEditGuestlist={(gl) => setEditor({ guestlist: gl })} onDeleted={closeEvent} />}
+            <ShareDraftsSheet
+                open={sharing}
+                onClose={() => setSharing(false)}
+                item={sharing ? {
+                    ...event,
+                    date: event.when || event.date,
+                    // A guestlist links to its sign-up page; a ticket sale to Tickets.
+                    guestlist: hasGuestlist(event) && !event.isTicketed,
+                    link: hasGuestlist(event) && !event.isTicketed
+                        ? `${APP_ORIGIN}/community/g/${encodeURIComponent(event.guestlistId || event.id)}`
+                        : `${APP_ORIGIN}/tickets?event=${encodeURIComponent(event.id)}`,
+                } : null}
+            />
             {editorSheet}
             {saleSheet}
         </AdminCommunityHubLayout>
