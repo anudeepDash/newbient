@@ -19,6 +19,8 @@
  *
  *   GET  guestlist                {id}                         public view of a guestlist (+ your place)
  *   POST register-guestlist       {guestlistId, guests, guestNames?, taskSubmission}   signed in
+ *   POST register-guestlist-guest {guestlistId, name, email, phone, guests, guestNames?, taskSubmission}
+ *                                 without an account (closed sign-in); one place per phone/email
  *   GET  get                      {ref}                        a pass to show (holder/staff get everything)
  *   POST file                     {ref} or {token}             short-lived link to the ticket PDF / link
  *   GET  open-token               {token}                      the ticket behind a signed /t/<token> link
@@ -325,19 +327,56 @@ const passFromGuestlistEntry = (ref, g, gid, entryId, entry, issuedBy) => ({
     issuedBy,
 });
 
+/* Signed in: the account's name, and a phone or an email to send the pass to (no SMS check). */
 const registerGuestlist = async (db, body, caller) => {
     requireUser(caller);
+    const me = await loadProfile(db, caller);
+    const missing = [!present(me.name) && 'name', !present(me.phone) && !present(me.email) && 'phone'].filter(Boolean);
+    if (missing.length) throw new PassError('PROFILE_INCOMPLETE', 'Add your name first.', 422, { missing });
+    return signUpOnList(db, body, { uid: caller.uid, name: me.name, email: me.email, phone: me.phone, key: caller.uid, mine: [['userId', caller.uid]] });
+};
+
+const GUEST_WINDOW_MS = 10 * 60 * 1000;
+const guestHits = new Map();
+// Best-effort, per warm instance: 8 no-account sign-ups per IP per 10 minutes.
+const tooManyGuests = (ip) => {
+    if (!ip) return false;
+    const now = Date.now();
+    const hits = (guestHits.get(ip) || []).filter(at => now - at < GUEST_WINDOW_MS);
+    hits.push(now);
+    guestHits.set(ip, hits);
+    if (guestHits.size > 5000) guestHits.clear();
+    return hits.length > 8;
+};
+const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || ''));
+
+/*
+ * Without an account (they closed sign-in): name, email and phone typed into
+ * the form. The pass is emailed and sent on WhatsApp; it isn't tied to an
+ * account, so one person (phone or email) gets one place per list.
+ */
+const registerGuestlistGuest = async (db, body, caller) => {
+    if (caller.uid) return registerGuestlist(db, body, caller);
+    if (tooManyGuests(caller.ip)) throw new PassError('RATE_LIMITED', 'Too many sign-ups from here. Try again in a few minutes.', 429);
+    const name = str(body.name, 120);
+    const email = normalizeEmail(body.email) || '';
+    const phone = toE164(body.phone) || '';
+    if (name.length < 2) throw new PassError('VALIDATION', 'Add your name.', 422);
+    if (!isEmail(email)) throw new PassError('VALIDATION', 'Add a valid email address.', 422);
+    if (phone.replace(/\D/g, '').length < 10) throw new PassError('VALIDATION', 'Add a valid phone number.', 422);
+    const key = `c_${crypto.createHash('sha256').update(phone).digest('hex').slice(0, 24)}`;
+    return signUpOnList(db, body, { uid: null, name, email, phone, key, mine: [['customerPhone', phone], ['customerEmail', email]] });
+};
+
+/* One sign-up on a list, for an account (uid) or a guest: capacity, duplicates, the entry and the pass. */
+const signUpOnList = async (db, body, who) => {
+    const me = who;
     const g = await resolveGuestlist(db, str(body.guestlistId, 128));
     if (!g) throw new PassError('NOT_FOUND', "We couldn't find this guestlist.", 404);
     // The list it resolved to (an event card made from a guestlist signs people up on that list).
     const gid = g.id;
     if (g.closed) throw new PassError('CLOSED', 'This guestlist is closed.', 409);
     if (g.past) throw new PassError('CLOSED', 'This event has already happened.', 409);
-
-    const me = await loadProfile(db, caller);
-    // A phone number to send the pass to; it isn't checked by SMS (that step put people off).
-    const missing = [!present(me.name) && 'name', !present(me.phone) && 'phone'].filter(Boolean);
-    if (missing.length) throw new PassError('PROFILE_INCOMPLETE', 'Add your name and phone number first.', 422, { missing });
 
     const taskSubmission = cleanTaskSubmission(body.taskSubmission);
     if (g.task) {
@@ -353,14 +392,14 @@ const registerGuestlist = async (db, body, caller) => {
     const guests = intIn(body.guests, 1, g.perUserLimit, 1);
     const status = g.needsApproval ? 'pending' : 'confirmed';
     const glRef = db.collection('guestlists').doc(gid);
-    const keyRef = db.collection('pass_keys').doc(`guestlist_${gid}_${caller.uid}`);
+    const keyRef = db.collection('pass_keys').doc(`guestlist_${gid}_${who.key}`);
     const entryRef = glRef.collection('entries').doc();
 
     const result = await db.runTransaction(async (tx) => {
-        const [glSnap, keySnap, legacySnap] = await Promise.all([
+        const [glSnap, keySnap, ...mineSnaps] = await Promise.all([
             tx.get(glRef),
             tx.get(keyRef),
-            tx.get(glRef.collection('entries').where('userId', '==', caller.uid).limit(5)),
+            ...who.mine.map(([field, value]) => tx.get(glRef.collection('entries').where(field, '==', value).limit(5))),
         ]);
         if (keySnap.exists && keySnap.data().ref) {
             const passSnap = await tx.get(db.collection('passes').doc(keySnap.data().ref));
@@ -371,7 +410,7 @@ const registerGuestlist = async (db, body, caller) => {
                 return { duplicate: true, ref: passSnap.id, status: passSnap.data().status };
             }
         }
-        const mine = legacySnap.docs.map(d => d.data());
+        const mine = mineSnaps.flatMap(snap => snap.docs.map(d => d.data()));
         const live = mine.find(e => !['rejected', 'cancelled'].includes(String(e.status)) && !e.passRevoked);
         if (!live && mine.some(e => String(e.status) === 'rejected')) throw new PassError('DECLINED', 'The team couldn’t confirm your spot on this list.', 409);
         if (live) return { duplicate: true, ref: live.passRef || live.bookingRef || null, status: ['approved', 'confirmed', 'attended'].includes(String(live.status)) ? 'issued' : (live.status || 'pending') };
@@ -391,7 +430,7 @@ const registerGuestlist = async (db, body, caller) => {
 
         const now = nowIso();
         const entry = {
-            userId: caller.uid,
+            userId: who.uid,
             name: me.name,
             customerName: me.name,
             email: me.email,
@@ -413,7 +452,7 @@ const registerGuestlist = async (db, body, caller) => {
             taskSubmission,
             appliedAt: now,
             createdAt: now,
-            source: 'app',
+            source: who.uid ? 'app' : 'app-guest',
         };
         if (!glSnap.exists) {
             // An event or gig with its guestlist switched on, but no list doc yet.
@@ -427,7 +466,7 @@ const registerGuestlist = async (db, body, caller) => {
         }
         tx.set(entryRef, entry);
         if (status === 'confirmed') tx.set(db.collection('passes').doc(ref), passFromGuestlistEntry(ref, g, gid, entryRef.id, entry, 'self'));
-        tx.set(keyRef, { ref, entryId: entryRef.id, source: 'guestlist', sourceId: gid, uid: caller.uid, at: now });
+        tx.set(keyRef, { ref, entryId: entryRef.id, source: 'guestlist', sourceId: gid, uid: who.uid, at: now });
         return { ref, status: status === 'confirmed' ? 'issued' : 'pending', entryId: entryRef.id };
     });
 
@@ -1220,6 +1259,7 @@ const staffListAction = async (db, body, caller) => {
 const ACTIONS = {
     guestlist: guestlistAction,
     'register-guestlist': registerGuestlist,
+    'register-guestlist-guest': registerGuestlistGuest,
     get: getAction,
     file: fileAction,
     'open-token': openTokenAction,
@@ -1235,7 +1275,7 @@ const ACTIONS = {
     revoke: revokeAction,
     checkin: checkinAction,
 };
-const POST_ONLY = new Set(['register-guestlist', 'file', 'issue-campaign', 'issue-campaign-external', 'upload-start', 'upload-finish', 'upload-pdf', 'resend', 'retier', 'revoke', 'checkin', 'staff-list']);
+const POST_ONLY = new Set(['register-guestlist', 'register-guestlist-guest', 'file', 'issue-campaign', 'issue-campaign-external', 'upload-start', 'upload-finish', 'upload-pdf', 'resend', 'retier', 'revoke', 'checkin', 'staff-list']);
 
 export const handlePasses = async (req, res) => {
     const action = str(req.query?.action, 40);
@@ -1245,7 +1285,7 @@ export const handlePasses = async (req, res) => {
     const body = { ...(req.query || {}), ...(req.body && typeof req.body === 'object' ? req.body : {}) };
     try {
         const db = getDb();
-        const caller = await callerFrom(req);
+        const caller = { ...(await callerFrom(req)), ip: String(req.headers?.['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || '' };
         const result = await fn(db, body, caller);
         res.setHeader('Cache-Control', 'private, no-store');
         return res.status(200).json(result);

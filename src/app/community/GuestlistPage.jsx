@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
 import Users from 'lucide-react/dist/esm/icons/users';
@@ -13,7 +13,8 @@ import { useAppStore } from '../../lib/store/appStore';
 import { passesGet, passesPost } from '../../lib/passesApi';
 import { isPresent } from '../../lib/present';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
-import { useAuthGate, useResumeIntent, INTENTS } from '../auth/AuthGate';
+import { useAuthGate, useResumeIntent, INTENTS, clearPendingIntent } from '../auth/AuthGate';
+import { useStore as useLegacyStore } from '../../lib/store.js';
 import CompleteProfileSheet from '../profile/CompleteProfileSheet';
 import { missingFields, requirementsFor } from '../profile/requirements';
 import { appPath } from '../host';
@@ -36,6 +37,15 @@ import { useLocalizedField } from '../../i18n/useHinglish';
  * My guestlists.
  */
 
+// A spot reserved without an account: kept on this device so the page shows it.
+const GUEST_PLACE_KEY = (id) => `nb_guestlist_place_${id}`;
+const readGuestPlace = (id) => {
+    try { return JSON.parse(window.localStorage.getItem(GUEST_PLACE_KEY(id)) || 'null'); } catch { return null; }
+};
+const saveGuestPlace = (id, place) => {
+    try { window.localStorage.setItem(GUEST_PLACE_KEY(id), JSON.stringify(place)); } catch { /* storage blocked */ }
+};
+
 const GuestlistPage = ({ overlay = false }) => {
     const t = useT();
     const { id } = useParams();
@@ -47,7 +57,12 @@ const GuestlistPage = ({ overlay = false }) => {
 
     const [gl, setGl] = useState(null);
     const [loadError, setLoadError] = useState('');
-    const [step, setStep] = useState(null); // null | 'profile' | 'details'
+    const [step, setStep] = useState(null); // null | 'profile' | 'details' | 'guest' (no account)
+    const [contact, setContact] = useState({ name: '', email: '', phone: '' });
+    // A spot reserved without an account, remembered on this device.
+    const [guestPlace, setGuestPlace] = useState(() => readGuestPlace(id));
+    const signInOpen = useLegacyStore(s => s.isAuthOpen);
+    const askedSignIn = useRef(false);
     const [wantStart, setWantStart] = useState(false);
     const [guests, setGuests] = useState(1);
     const [guestNames, setGuestNames] = useState([]);
@@ -66,7 +81,7 @@ const GuestlistPage = ({ overlay = false }) => {
 
     useEffect(() => { if (authReady) load(); }, [load, authReady, uid]);
 
-    const me = gl?.me || null;
+    const me = gl?.me || (!uid ? guestPlace : null);
     const needsDetailsStep = Boolean(gl?.task) || (gl?.perUserLimit || 1) > 1;
 
     const submit = async () => {
@@ -75,17 +90,28 @@ const GuestlistPage = ({ overlay = false }) => {
             const problem = validateTask(gl.task, task);
             if (problem) { setError(problem); return; }
         }
+        const asGuest = step === 'guest';
+        if (asGuest) {
+            if (contact.name.trim().length < 2) { setError(t('Add your name.')); return; }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(contact.email.trim())) { setError(t('Add a valid email address.')); return; }
+            if (contact.phone.replace(/\D/g, '').length < 10) { setError(t('Add your phone number.')); return; }
+        }
         const names = guestNames.slice(0, guests - 1).map(n => String(n || '').trim());
         // Your own name is already on the list; these slots are for the people with you.
-        const own = String(profile?.name || '').trim().toLowerCase();
+        const own = String((asGuest ? contact.name : profile?.name) || '').trim().toLowerCase();
         if (own && names.some(n => n.toLowerCase() === own)) { setError(t('That’s your name, and you’re already on the list. Add the names of the people coming with you.')); return; }
         setSubmitting(true);
-        const res = await passesPost('register-guestlist', { guestlistId: id, guests, guestNames: names, taskSubmission: gl?.task ? task : null });
+        const body = { guestlistId: id, guests, guestNames: names, taskSubmission: gl?.task ? task : null };
+        const res = asGuest
+            ? await passesPost('register-guestlist-guest', { ...body, name: contact.name.trim(), email: contact.email.trim(), phone: contact.phone.trim() })
+            : await passesPost('register-guestlist', body);
         setSubmitting(false);
         if (res.ok) {
             setStep(null);
-            setGl(g => ({ ...g, me: { ref: res.data.ref, status: res.data.status } }));
-            load();
+            const place = { ref: res.data.ref, status: res.data.status };
+            if (asGuest) { saveGuestPlace(id, place); setGuestPlace(place); }
+            setGl(g => ({ ...g, me: place }));
+            if (!asGuest) load();
             return;
         }
         if (res.code === 'PROFILE_INCOMPLETE') {
@@ -120,9 +146,21 @@ const GuestlistPage = ({ overlay = false }) => {
         }
     }, [wantStart, uid, profileLoaded, gl]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // One account sheet: sign in and any missing details (name, verified phone), then register.
-    const register = () => gate.run({ type: INTENTS.guestlistRegister, payload: { id } }, () => setWantStart(true), { require: requirementsFor('guestlist') });
+    // Signed in: straight on (a Google sign-in isn't asked for a phone). Signed out: the account
+    // sheet (Google, email, phone); closing it without signing in opens the form instead.
+    const register = () => {
+        if (!uid) askedSignIn.current = true;
+        gate.run({ type: INTENTS.guestlistRegister, payload: { id } }, () => setWantStart(true), { require: requirementsFor('guestlist') });
+    };
     useResumeIntent(INTENTS.guestlistRegister, () => setWantStart(true));
+    useEffect(() => {
+        if (signInOpen || !askedSignIn.current) return;
+        askedSignIn.current = false;
+        if (uid) return; // signed in: the intent picks it up
+        clearPendingIntent();
+        setError('');
+        setStep('guest');
+    }, [signInOpen, uid]);
 
     const when = gl ? passWhen({ date: gl.date, time: gl.time }) : null;
     const hiDescription = useLocalizedField('guestlist', id, 'description', gl?.description);
@@ -222,13 +260,24 @@ const GuestlistPage = ({ overlay = false }) => {
             />
 
             <Sheet
-                open={step === 'details'}
+                open={step === 'details' || step === 'guest'}
                 onClose={() => !submitting && setStep(null)}
-                title={gl.task ? t('One more step') : t('How many of you?')}
+                title={step === 'guest' ? t('Reserve your spot') : gl.task ? t('One more step') : t('How many of you?')}
                 subtitle={gl.title}
                 footer={<Button className="w-full" size="lg" onClick={submit} loading={submitting} disabled={uploading}>{gl.mode === 'rsvp' ? t('Reserve my spot') : t('Get my pass')}</Button>}
             >
                 <div className="space-y-6">
+                    {step === 'guest' && (
+                        // Closed sign-in: reserve with your details instead. The pass comes by email and WhatsApp.
+                        <div className="space-y-3">
+                            <TextInput id="guest-name" label={t('Your name')} autoComplete="name" autoCapitalize="words" placeholder={t('Full name')} value={contact.name} onChange={(e) => setContact(c => ({ ...c, name: e.target.value }))} />
+                            <TextInput id="guest-email" label={t('Email')} type="email" inputMode="email" autoComplete="email" autoCapitalize="none" placeholder="you@example.com" value={contact.email} onChange={(e) => setContact(c => ({ ...c, email: e.target.value }))} />
+                            <TextInput id="guest-phone" label={t('Phone number')} type="tel" inputMode="tel" autoComplete="tel" placeholder="98765 43210" hint={t('Your pass comes here on WhatsApp and to your email.')} value={contact.phone} onChange={(e) => setContact(c => ({ ...c, phone: e.target.value }))} />
+                            <button type="button" onClick={() => { setStep(null); register(); }} className="text-[13px] font-bold text-gray-700 underline decoration-neon-green decoration-2 underline-offset-4 dark:text-zinc-300">
+                                {t('Sign in instead, to keep your passes in the app')}
+                            </button>
+                        </div>
+                    )}
                     {(gl.perUserLimit || 1) > 1 && (
                         <div className="flex items-center justify-between gap-4">
                             <div>
