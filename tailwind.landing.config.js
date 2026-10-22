@@ -15,6 +15,7 @@ export default {
         './src/components/ui/HorizontalCarousel.jsx',
         './src/components/brand/**/*.{js,jsx}',
         './src/components/consent/**/*.{js,jsx}',
+        './src/components/app/BrandLayers.jsx',
     ],
     safelist: [],
 };
