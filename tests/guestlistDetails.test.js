@@ -71,13 +71,47 @@ describe('guestlist time, map link and guest names', () => {
         expect(db.store.get('guestlists/ev2')).toBeUndefined();
     });
 
-    it('needs a phone number, but no SMS check, to sign up', async () => {
-        await db.collection('users').doc('u2').set({ name: 'Ira', email: 'ira@example.com', phone: '9876500002' });
-        const out = await register(db, { guestlistId: 'gl1', guests: 1 }, 'u2');
-        expect(db.store.get(`passes/${out.ref}`)).toMatchObject({ holderPhone: '+919876500002' });
+    it('signs up with a name and a phone or an email, no SMS check', async () => {
+        await db.collection('users').doc('u2').set({ name: 'Ira', phone: '9876500002' });
+        const byPhone = await register(db, { guestlistId: 'gl1', guests: 1 }, 'u2');
+        expect(db.store.get(`passes/${byPhone.ref}`)).toMatchObject({ holderPhone: '+919876500002' });
 
-        await db.collection('users').doc('u3').set({ name: 'No Phone', email: 'np@example.com' });
-        await expect(register(db, { guestlistId: 'gl1', guests: 1 }, 'u3')).rejects.toMatchObject({ code: 'PROFILE_INCOMPLETE' });
+        // A Google sign-in: name and email, no phone.
+        await db.collection('users').doc('u3').set({ name: 'Gia', email: 'gia@example.com' });
+        const byEmail = await register(db, { guestlistId: 'gl1', guests: 1 }, 'u3');
+        expect(db.store.get(`passes/${byEmail.ref}`)).toMatchObject({ holderEmail: 'gia@example.com', holderPhone: '' });
+
+        await db.collection('users').doc('u4').set({ name: 'No Contact' });
+        await expect(register(db, { guestlistId: 'gl1', guests: 1 }, 'u4')).rejects.toMatchObject({ code: 'PROFILE_INCOMPLETE' });
+    });
+
+    describe('without an account', () => {
+        const guest = (body, ip = '1.2.3.4') => _internal.actions['register-guestlist-guest'](db, { guestlistId: 'gl1', guests: 1, ...body }, { ip });
+        const details = { name: 'Neha Kapoor', email: 'Neha@Example.com', phone: '98765 00009' };
+
+        it('reserves a spot from the form and sends the pass', async () => {
+            const out = await guest({ ...details, guests: 2, guestNames: ['Rohan'] });
+            expect(out).toMatchObject({ success: true, status: 'issued' });
+            expect(db.store.get(`passes/${out.ref}`)).toMatchObject({ holderUid: null, holderName: 'Neha Kapoor', holderEmail: 'neha@example.com', holderPhone: '+919876500009', qty: 2, plusOneNames: ['Rohan'] });
+            expect(notify).toHaveBeenCalledWith('pass-confirmed', null, expect.anything(), expect.objectContaining({ to: expect.objectContaining({ email: 'neha@example.com', phone: '+919876500009' }) }));
+        });
+
+        it('gives one place per phone or email', async () => {
+            const first = await guest(details);
+            expect(await guest(details)).toMatchObject({ duplicate: true, ref: first.ref });
+            expect(await guest({ ...details, phone: '9000000000' })).toMatchObject({ duplicate: true, ref: first.ref });
+        });
+
+        it('needs a name, a valid email and a phone number', async () => {
+            await expect(guest({ ...details, name: '' })).rejects.toMatchObject({ code: 'VALIDATION' });
+            await expect(guest({ ...details, email: 'nope' })).rejects.toMatchObject({ code: 'VALIDATION' });
+            await expect(guest({ ...details, phone: '123' })).rejects.toMatchObject({ code: 'VALIDATION' });
+        });
+
+        it('limits sign-ups from one place', async () => {
+            for (let i = 0; i < 8; i++) await guest({ ...details, email: `p${i}@example.com`, phone: `98765100${String(i).padStart(2, '0')}` }, '9.9.9.9');
+            await expect(guest({ ...details, email: 'p9@example.com', phone: '9876510099' }, '9.9.9.9')).rejects.toMatchObject({ code: 'RATE_LIMITED' });
+        });
     });
 
     describe('a pass follows its sign-up', () => {
