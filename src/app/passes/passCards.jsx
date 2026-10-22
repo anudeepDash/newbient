@@ -25,7 +25,8 @@ const time = (p) => {
 };
 export const bySoonest = (a, b) => time(a) - time(b);
 
-export const passCard = (pass) => {
+/* from: the current location, so the pass opens as a sheet over the list. */
+export const passCard = (pass, { from = null } = {}) => {
     const campaign = pass.source === 'campaign';
     return {
         type: campaign ? 'campaign' : 'guestlist',
@@ -42,5 +43,6 @@ export const passCard = (pass) => {
         ],
         cta: { label: campaign ? t('Open ticket') : pass.mode === 'rsvp' ? t('Open RSVP') : t('Open pass') },
         to: appPath(`/p/${pass.ref}`),
+        linkState: from ? { backgroundLocation: from } : undefined,
     };
 };

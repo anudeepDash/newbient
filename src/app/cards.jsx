@@ -72,7 +72,10 @@ export function campaignCard(c, { applied = false, from = null, progress = null 
 
 const FEED_CTA = { guestlist: 'Get on the list', gig: 'View gig', giveaway: 'Enter giveaway', form: 'Open form' };
 
-export function feedCard(item) {
+/* from: the current location, so the guestlist, giveaway or form opens as a sheet over the list. */
+export function feedCard(item, { from = null } = {}) {
+    // Gigs open their sheet on the Community page (?gig=ID).
+    const to = item.to || (item.type === 'gig' ? `${appPath('/community')}?gig=${encodeURIComponent(item.id)}` : undefined);
     return {
         type: item.type,
         image: item.image,
@@ -83,7 +86,7 @@ export function feedCard(item) {
         meta: [{ icon: CalendarDays, label: dateLabel(item.date) }],
         stats: [{ label: t('Venue'), value: item.venue, icon: MapPin }],
         cta: { label: t(FEED_CTA[item.type] || 'Open') },
-        // Gigs open their sheet on the Community page (?gig=ID).
-        to: item.to || (item.type === 'gig' ? `${appPath('/community')}?gig=${encodeURIComponent(item.id)}` : undefined),
+        to,
+        linkState: from && to && item.type !== 'gig' ? { backgroundLocation: from } : undefined,
     };
 }

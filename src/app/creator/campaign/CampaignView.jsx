@@ -11,7 +11,8 @@ import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import Hourglass from 'lucide-react/dist/esm/icons/hourglass';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
-import { PosterGlow, BrandLayers, BRAND_GLASS, Button, CARD_TYPES, GlassChip, MetaPill, Sheet, Stat, StatRow, WhatsAppLogo } from '../../../components/app';
+import { Button, CARD_TYPES, MetaPill, Stat, StatRow, WhatsAppLogo } from '../../../components/app';
+import ExpandedCard, { ExpandedHero } from '../../pages/ExpandedCard';
 import { useAppStore } from '../../../lib/store/appStore';
 import { useStore as useLegacyStore } from '../../../lib/store.js';
 import { isPresent } from '../../../lib/present';
@@ -267,28 +268,15 @@ const CampaignView = ({ campaign: source, variant = 'page', initialTaskId, onClo
     /* The campaign card, expanded: the 16:9 poster starts at the very top, bleeds to the edges, and
        a soft light in the poster's own colour glows out behind it and fades into the popup. */
     const hero = (
-        <div className="relative aspect-video w-full shrink-0">
-            <PosterGlow image={campaign.thumbnail} height="200%" />
-            <div className="absolute inset-0" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 65%, transparent 100%)', maskImage: 'linear-gradient(to bottom, #000 65%, transparent 100%)' }}>
-                {campaign.thumbnail ? (
-                    <>
-                        <img src={campaign.thumbnail} alt="" className="relative h-full w-full object-cover" />
-                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_50%,_rgba(0,0,0,0.35)_100%)]" />
-                    </>
-                ) : (
-                    <div className="flex h-full w-full items-center justify-center"><KindIcon size={64} strokeWidth={1.25} className="text-emerald-600/25 dark:text-neon-green/20" /></div>
-                )}
-            </div>
-            <div className="absolute left-4 top-4 z-10 flex max-w-[75%] flex-wrap items-center gap-2">
-                <GlassChip icon={KindIcon} />
-                {isPresent(city) && <GlassChip icon={MapPin} label={city} />}
-                {isPresent(campaign.targetCollege) && <GlassChip icon={GraduationCap} label={campaign.targetCollege} />}
-            </div>
-        </div>
+        <ExpandedHero
+            image={campaign.thumbnail}
+            icon={KindIcon}
+            chips={[{ icon: MapPin, label: city }, { icon: GraduationCap, label: campaign.targetCollege }]}
+        />
     );
 
     const content = (
-        <div className="relative space-y-6 px-5 pb-6 sm:px-7">
+        <>
             <div className="space-y-3">
                 {shownMeta.length > 0 && (
                     <div className="flex flex-wrap items-center gap-2">
@@ -372,7 +360,7 @@ const CampaignView = ({ campaign: source, variant = 'page', initialTaskId, onClo
             {!brief && !tasks.length && (
                 <p className="flex items-center gap-2 text-[14px] text-gray-500 dark:text-zinc-400"><Megaphone size={16} /> {t('The full brief is shared with picked creators.')}</p>
             )}
-        </div>
+        </>
     );
 
     const sheets = (
@@ -404,44 +392,12 @@ const CampaignView = ({ campaign: source, variant = 'page', initialTaskId, onClo
         </>
     );
 
-    if (variant === 'sheet') {
-        return (
-            <>
-                <Sheet
-                    open
-                    onClose={onClose}
-                    size="full"
-                    width="lg"
-                    bleed
-                    header={<span className="sr-only">{campaign.title}</span>}
-                    footer={bar}
-                    bodyClassName="px-0 pb-0 pt-0 sm:px-0"
-                >
-                    {hero}
-                    {content}
-                </Sheet>
-                {sheets}
-            </>
-        );
-    }
-
-    // Opened from a shared link: the same expanded card, centred on the page, with the apply bar pinned.
+    // Over a list it's a sheet; from a shared link, the same expanded card centred on the page.
     return (
         <>
-            <article className={cn('mx-auto max-w-2xl rounded-[2rem]', BRAND_GLASS)}>
-                <BrandLayers soft mark={false} />
-                {hero}
+            <ExpandedCard overlay={variant === 'sheet'} onClose={onClose} label={campaign.title} hero={hero} bar={bar}>
                 {content}
-                {/* Desktop: pinned to the card's bottom edge. */}
-                <div className="sticky bottom-0 z-20 hidden rounded-b-[2rem] border-t border-black/[0.06] bg-[#f7f7f3]/90 px-7 py-4 backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0b0d12]/90 lg:block">
-                    {bar}
-                </div>
-                <div className="h-4 lg:hidden" aria-hidden="true" />
-            </article>
-            {/* Phones: the apply bar docks at the bottom edge (the tab pill steps aside on this page). */}
-            <div className="fixed inset-x-0 bottom-0 z-40 border-t border-black/[0.06] bg-[#f7f7f3]/90 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0b0d12]/90 lg:hidden">
-                <div className="mx-auto max-w-2xl">{bar}</div>
-            </div>
+            </ExpandedCard>
             {sheets}
         </>
     );

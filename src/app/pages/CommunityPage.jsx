@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import Users from 'lucide-react/dist/esm/icons/users';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
@@ -12,13 +12,16 @@ import { useAppStore } from '../../lib/store/appStore';
 import { guestlistPasses } from '../../lib/store/passes';
 import { communityPost } from '../../lib/passesApi';
 import { isPresent } from '../../lib/present';
-import { Card, Button, Field, Sheet, WhatsAppLogo } from '../../components/app';
+import { Card, Button, CARD_TYPES, Field, Section, Stat, StatRow, WhatsAppLogo } from '../../components/app';
+import ExpandedCard, { ActionBar, BarStatus, ExpandedHero, ExpandedTitle } from './ExpandedCard';
+import { ROW } from './DetailLayout';
+import { Notice } from '../creator/ui';
 import { useAuthGate, useResumeIntent, INTENTS } from '../auth/AuthGate';
 import { useAppContent } from '../useAppContent';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
 import { feedCard, dateLabel } from '../cards';
 import { appPath } from '../host';
-import { plainText } from '../community/communityParts';
+import { plainText, shareLink } from '../community/communityParts';
 import { isUpcomingPass, passCard } from '../passes/passCards';
 import PageHeader, { PageBody } from './PageHeader';
 import { requirementsFor } from '../profile/requirements';
@@ -63,35 +66,38 @@ const GigSheet = ({ gig, onClose }) => {
             : /^https?:\/\//.test(gig.applyLink || '') ? { label: t('Apply'), icon: ExternalLink, href: gig.applyLink } : null;
     const description = plainText(gig.description);
 
+    const action = state === 'saved'
+        ? (next
+            ? <Button className="flex-1" size="lg" icon={next.icon} href={next.href} to={next.to} target={next.href ? '_blank' : undefined} rel={next.href ? 'noopener noreferrer' : undefined}>{next.label}</Button>
+            : <BarStatus icon={CircleCheck} tone="success">{t('Saved. The team can see you’re interested.')}</BarStatus>)
+        : <Button className="flex-1" size="lg" icon={HeartHandshake} loading={state === 'saving'} onClick={interested}>{t('I’m interested')}</Button>;
+    const share = () => shareLink({ title: gig.title, url: `${window.location.origin}${appPath('/community')}?gig=${encodeURIComponent(gig.id)}` });
+
     return (
-        <Sheet
-            open
+        <ExpandedCard
+            overlay
             onClose={onClose}
-            title={gig.title}
-            subtitle={t('Volunteer gig')}
-            footer={state === 'saved' ? (
-                next ? <Button className="w-full" size="lg" icon={next.icon} href={next.href} to={next.to} target={next.href ? '_blank' : undefined} rel={next.href ? 'noopener noreferrer' : undefined}>{next.label}</Button>
-                    : <Button className="w-full" size="lg" variant="secondary" onClick={onClose}>{t('Done')}</Button>
-            ) : (
-                <Button className="w-full" size="lg" icon={HeartHandshake} loading={state === 'saving'} onClick={interested}>{t('I’m interested')}</Button>
-            )}
+            label={gig.title}
+            hero={<ExpandedHero image={isPresent(gig.image) ? gig.image : null} icon={CARD_TYPES.gig.icon} chips={[{ icon: MapPin, label: gig.city }]} />}
+            bar={<ActionBar onShare={share} shareLabel="Share gig">{action}</ActionBar>}
         >
-            <div className="space-y-4">
-                {isPresent(gig.image) && <img src={gig.image} alt="" className="aspect-video w-full rounded-2xl object-cover" />}
-                <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
+            <ExpandedTitle meta={[{ icon: CalendarDays, label: dateLabel(gig.date) }]} eyebrow={<p className="text-[11px] font-black uppercase tracking-widest text-emerald-700 dark:text-neon-green">{t('Volunteer gig')}</p>} title={gig.title}>
+                <StatRow>
+                    <Stat label={t('Spots')} value={gig.slots || null} icon={Users} />
+                </StatRow>
+            </ExpandedTitle>
+            {state === 'saved' && next && <Notice tone="success">{t('Saved. The team can see you’re interested.')}</Notice>}
+            {error && <Notice tone="error">{error}</Notice>}
+            <Section title={t('Details')}>
+                <div className={`divide-y divide-black/[0.05] px-4 dark:divide-white/[0.06] ${ROW}`}>
                     <Field icon={CalendarDays} label={t('When')} value={dateLabel(gig.date)} />
                     <Field icon={MapPin} label={t('Where')} value={[gig.venue, gig.city].filter(Boolean).join(', ') || null} />
-                    <Field icon={Users} label={t('Spots')} value={gig.slots || null} />
                 </div>
-                {description && <p className="whitespace-pre-line text-[15px] text-gray-700 dark:text-zinc-300">{description}</p>}
-                {state === 'saved' && (
-                    <p className="flex items-center gap-2 rounded-2xl bg-emerald-500/10 px-4 py-3 text-[15px] font-semibold text-emerald-800 dark:text-neon-green">
-                        <CircleCheck size={17} /> {t('Saved. The team can see you’re interested.')}
-                    </p>
-                )}
-                {error && <p role="alert" className="text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
-            </div>
-        </Sheet>
+            </Section>
+            <Section title={t('About')}>
+                {description && <p className="whitespace-pre-line text-[15px] leading-relaxed text-gray-700 dark:text-zinc-300">{description}</p>}
+            </Section>
+        </ExpandedCard>
     );
 };
 
@@ -180,6 +186,7 @@ const CommunityPage = () => {
     const t = useT();
     useDynamicMeta({ page: 'community' });
     useAppContent({ campaigns: false });
+    const location = useLocation();
     const authUser = useAppStore(s => s.authUser);
     const feed = useLocalizedFeed(useAppStore(s => s.communityFeed));
     const loaded = useAppStore(s => s.communityFeedLoaded);
@@ -206,7 +213,7 @@ const CommunityPage = () => {
             {myGuestlists.length > 0 && (
                 <section className="space-y-3">
                     <SectionHeader title={t('My guestlists')} />
-                    <Rail>{myGuestlists.map(pass => <Card key={pass.ref} {...passCard(pass)} />)}</Rail>
+                    <Rail>{myGuestlists.map(pass => <Card key={pass.ref} {...passCard(pass, { from: location })} />)}</Rail>
                 </section>
             )}
 
@@ -228,7 +235,7 @@ const CommunityPage = () => {
                     return (
                         <section key={type} className="space-y-3">
                             <SectionHeader title={t(title)} />
-                            <CardGrid>{items.map(item => <Card key={item.key} {...feedCard(item)} />)}</CardGrid>
+                            <CardGrid>{items.map(item => <Card key={item.key} {...feedCard(item, { from: location })} />)}</CardGrid>
                         </section>
                     );
                 })

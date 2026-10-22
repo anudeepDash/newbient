@@ -1,5 +1,5 @@
 import React, { useMemo, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
@@ -55,6 +55,7 @@ export const ticketCard = (e, onOpen) => ({
 });
 
 const TicketsPage = () => {
+    const location = useLocation();
     const t = useT();
     useDynamicMeta({ page: 'tickets' });
     const { events, loaded } = useTicketedEvents();
@@ -90,7 +91,7 @@ const TicketsPage = () => {
             {mine.length > 0 && (
                 <section className="space-y-3">
                     <SectionHeader title={mine.length === 1 ? t('Your ticket') : t('Your tickets')} />
-                    <Rail>{mine.map(p => <Card key={p.ref} {...passCard(p)} />)}</Rail>
+                    <Rail>{mine.map(p => <Card key={p.ref} {...passCard(p, { from: location })} />)}</Rail>
                 </section>
             )}
 

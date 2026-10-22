@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Share from 'lucide-react/dist/esm/icons/share';
 import TicketX from 'lucide-react/dist/esm/icons/ticket-x';
-import { Button } from '../../components/app';
+import { Button, Sheet } from '../../components/app';
+import { useCloseExpanded } from '../pages/ExpandedCard';
 import { useAppStore } from '../../lib/store/appStore';
 import { cachePass, cachedPass, passesGet } from '../../lib/passesApi';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
@@ -49,7 +50,7 @@ export const AddToHomeHint = () => {
     );
 };
 
-const PassPage = () => {
+const PassPage = ({ overlay = false }) => {
     const t = useT();
     const { ref: rawRef } = useParams();
     const ref = String(rawRef || '').trim().toUpperCase();
@@ -83,6 +84,17 @@ const PassPage = () => {
     useEffect(() => {
         if (pass && !fromCache) warmOfflineCache();
     }, [pass, fromCache]);
+
+    const close = useCloseExpanded(appPath('/tickets'));
+    if (overlay) {
+        // Over a list: the pass edge to edge in a sheet, like a campaign.
+        return (
+            <Sheet open onClose={close} size="full" width="sm" bleed header={<span className="sr-only">{t('Your pass')}</span>} bodyClassName="px-0 pb-6 pt-0 sm:px-0">
+                {pass ? <PassView pass={pass} bare offline={fromCache && typeof navigator !== 'undefined' && navigator.onLine === false} />
+                    : <div className="px-5 pt-14">{error ? <PassMissing message={error} /> : <PassSkeleton />}</div>}
+            </Sheet>
+        );
+    }
 
     return (
         <PageBody>

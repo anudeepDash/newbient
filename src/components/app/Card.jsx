@@ -42,6 +42,20 @@ export const CARD_TYPES = {
     form: { icon: ClipboardList, label: 'Form', cta: 'Open form' },
 };
 
+/*
+ * Stat tile widths: short values ("3", "₹500") keep their size and a long one
+ * (a venue) takes the rest of the row and wraps, so tiles never squeeze into
+ * each other. With nothing long, the first tile takes the rest.
+ */
+const statColumns = (stats) => {
+    const cols = stats.map((st) => {
+        const v = st.format ? st.format(st.value) : st.value;
+        return (typeof v === 'string' || typeof v === 'number') && String(v).length > 10 ? 'minmax(0,1fr)' : 'auto';
+    });
+    if (!cols.includes('minmax(0,1fr)')) cols[0] = 'minmax(0,1fr)';
+    return cols.join(' ');
+};
+
 const TONES = {
     default: 'bg-black/[0.02] text-gray-600 border-black/[0.06] dark:bg-white/[0.04] dark:text-zinc-400 dark:border-white/[0.07]',
     accent: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:bg-neon-green/10 dark:text-neon-green dark:border-neon-green/20',
@@ -222,7 +236,7 @@ const Card = ({
 
                 {/* The key numbers as tiles (Reward, Tasks, Min. followers…). A custom CTA node sits under them. */}
                 {shownStats.length > 0 && (
-                    <div className={cn('relative z-10 mt-auto grid gap-2', shownStats.length >= 3 ? 'grid-cols-[minmax(0,1fr)_auto_auto]' : shownStats.length === 2 ? 'grid-cols-[minmax(0,1fr)_auto]' : 'grid-cols-1')}>
+                    <div className="relative z-10 mt-auto grid gap-2" style={{ gridTemplateColumns: statColumns(shownStats.slice(0, 3)) }}>
                         {shownStats.slice(0, 3).map((st, i) => (
                             // Content centred, so a short value next to a two-line one never leaves a gap.
                             <div key={st.label || i} className="flex min-w-[3.75rem] flex-col justify-center rounded-xl bg-white/60 px-2.5 py-2 ring-1 ring-inset ring-black/[0.06] dark:bg-white/[0.04] dark:ring-white/[0.08]">

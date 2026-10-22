@@ -19,7 +19,8 @@ import { useT } from '../../i18n';
 
 const SOURCE_LABEL = { guestlist: 'Guestlist pass', campaign: 'Creator ticket', order: 'Ticket' };
 
-const PassView = ({ pass, token, offline = false }) => {
+/* bare: no card frame of its own, for inside a sheet. */
+const PassView = ({ pass, token, offline = false, bare = false }) => {
     const t = useT();
     const event = pass.event || {};
     const title = event.title || pass.campaignTitle || t('Your pass');
@@ -33,7 +34,7 @@ const PassView = ({ pass, token, offline = false }) => {
     const qty = Number(pass.qty) > 1 ? Number(pass.qty) : null;
 
     return (
-        <article className="relative mx-auto w-full max-w-md overflow-hidden rounded-[2rem] border border-black/[0.06] bg-white shadow-[0_20px_60px_-20px_rgba(0,0,0,0.25)] dark:border-white/[0.08] dark:bg-[#0c0e14]">
+        <article className={cn('relative mx-auto w-full overflow-hidden', bare ? '' : 'max-w-md rounded-[2rem] border border-black/[0.06] bg-white shadow-[0_20px_60px_-20px_rgba(0,0,0,0.25)] dark:border-white/[0.08] dark:bg-[#0c0e14]')}>
             <AmbientBackdrop image={event.image} />
             {isPresent(event.image) && (
                 <div className="relative aspect-video w-full overflow-hidden" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 55%, transparent)', maskImage: 'linear-gradient(to bottom, #000 55%, transparent)' }}>
