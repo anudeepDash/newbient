@@ -12,6 +12,7 @@ import { fieldCls } from '../../components/admin/uploads/UploadKit';
 import InboxPanel from '../../components/admin/campaigns/outreach/InboxPanel';
 import { callOutreach } from '../../components/admin/campaigns/outreach/outreachApi';
 import { when } from '../../components/admin/campaigns/outreach/parts';
+import { ConfirmSheet } from '../../components/admin/campaigns/parts';
 import { FIELDS, fieldsFor, isAuto, token, fillTokens } from '../../lib/outreach/waFields';
 import { STATUSES, STATUS_META, isOnShortlist } from '../../lib/outreach/status';
 
@@ -90,7 +91,7 @@ const SendPanel = ({ templatesState, prefill, onSent }) => {
     const [applicants, setApplicants] = useState({ loading: false, list: [], groupLink: '' });
     const [appPicked, setAppPicked] = useState(() => new Set());
     const [audienceFilter, setAudienceFilter] = useState('shortlist');
-    const [armed, setArmed] = useState(false);
+    const [confirming, setConfirming] = useState(false);
     const [sending, setSending] = useState(false);
     const [results, setResults] = useState(null);
     const [lastRecipients, setLastRecipients] = useState({});
@@ -137,7 +138,7 @@ const SendPanel = ({ templatesState, prefill, onSent }) => {
     useEffect(() => {
         setBody(tpl ? autofill(fields.body, aud) : []);
         setButtons(tpl && fields.button && isAuto(fields.button, aud) ? Object.fromEntries(tpl.buttons.filter(b => b.dynamic).map(b => [b.index, token(fields.button)])) : {});
-        setHeaderUrl(''); setHeaderText(''); setArmed(false); setResults(null);
+        setHeaderUrl(''); setHeaderText(''); setConfirming(false); setResults(null);
     }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
     // Choosing a campaign or applicants can make more fields fill themselves; what was typed stays.
     useEffect(() => {
@@ -191,14 +192,13 @@ const SendPanel = ({ templatesState, prefill, onSent }) => {
             params: { body, buttons, headerUrl: headerUrl.trim() || undefined, headerText: headerText.trim() || undefined, campaignId: campaignId || undefined },
         });
         setSending(false);
-        setArmed(false);
+        setConfirming(false);
         if (!r.ok) { addToast(r.error, 'error', { title: 'Not sent' }); return; }
         setResults(r.data.results);
         setLastRecipients(Object.fromEntries(list.map(x => [x.key, x])));
         addToast(`${r.data.sent} of ${list.length} sent.`, r.data.sent ? 'success' : 'warning', { title: `“${tpl.name}” sent` });
         onSent?.();
     };
-    const submit = () => { if (!armed) { setArmed(true); return; } send(recipients); };
     const rest = (results || []).filter(x => x.retry && lastRecipients[x.key]).map(x => lastRecipients[x.key]);
 
     if (templatesState.loading) return <Card className="p-6 text-[13px] text-gray-500">Loading templates…</Card>;
@@ -358,12 +358,26 @@ const SendPanel = ({ templatesState, prefill, onSent }) => {
                 </label>
 
                 <div className="flex flex-wrap items-center gap-3">
-                    <Button variant={armed ? 'danger' : 'success'} disabled={!ready || sending} onClick={submit}>
-                        <Send size={14} /> {sending ? 'Sending…' : armed ? `Confirm: send to ${recipients.length}` : `Send to ${recipients.length || '…'}`}
+                    <Button variant="success" disabled={!ready || sending} onClick={() => setConfirming(true)}>
+                        <Send size={14} /> {sending ? 'Sending…' : `Send to ${recipients.length || '…'}`}
                     </Button>
-                    {armed && <Button variant="ghost" onClick={() => setArmed(false)}>Cancel</Button>}
                     <p className="text-[12px] text-gray-500">{tooMany ? `Up to ${MAX_RECIPIENTS} people at a time: pick fewer.` : 'Each message is billed by Meta. People who replied STOP are skipped.'}</p>
                 </div>
+
+                {tpl && (
+                    <ConfirmSheet
+                        open={confirming}
+                        onClose={() => setConfirming(false)}
+                        title={`Send “${tpl.name}” to ${recipients.length}?`}
+                        message="It goes out on WhatsApp straight away and can’t be taken back."
+                        confirmLabel={`Send to ${recipients.length}`}
+                        tone="success"
+                        busy={sending}
+                        onConfirm={() => send(recipients)}
+                    >
+                        <div className="whitespace-pre-wrap rounded-2xl bg-[#dcf8c6] p-3 text-[13.5px] text-gray-900 dark:bg-[#005c4b] dark:text-white">{formatted(fill(tpl.body, body.map(v => fillTokens(v, sample))))}</div>
+                    </ConfirmSheet>
+                )}
 
                 {results && (
                     <div className="space-y-2">
