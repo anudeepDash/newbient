@@ -10,6 +10,7 @@ import Sheet from '../Sheet';
 import { Avatar, Badge, Button } from '../ui';
 import { formatDateTime, formatDay, relativeTime, whatsappLink } from './format';
 import { interestLabel } from '../../../app/community/welcomeForm';
+import AccountFixes from './AccountFixes';
 
 /** Coloured tags for what someone is to Newbi (creator, team, tribe…). */
 export const memberTags = (m) => {
@@ -38,7 +39,7 @@ const Row = ({ label, children }) => (
     </div>
 );
 
-const MemberSheet = ({ open, onClose, member, onSuspend, onReinstate, onSignOut, canModerate }) => {
+const MemberSheet = ({ open, onClose, member, onSuspend, onReinstate, onSignOut, canModerate, onConfirm, notify }) => {
     if (!member) return <Sheet open={false} onClose={onClose} />;
     const wa = whatsappLink(member.phone, `Hi ${String(member.displayName || '').split(' ')[0] || 'there'},`);
     return (
@@ -102,7 +103,7 @@ const MemberSheet = ({ open, onClose, member, onSuspend, onReinstate, onSignOut,
                 <Row label="Account">{member.hasAccount ? (member.isBlocked ? 'Suspended' : 'Active') : 'No sign-in account'}</Row>
             </section>
 
-            {!member.hasAccount && (
+            {onConfirm ? <AccountFixes member={member} open={open} onConfirm={onConfirm} notify={notify} /> : !member.hasAccount && (
                 <p className="text-[13px] leading-relaxed text-gray-500">
                     We know this person from a ticket, newsletter or creator form, but they haven't made a sign-in account, so there's nothing to suspend or sign out.
                 </p>

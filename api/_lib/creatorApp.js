@@ -17,6 +17,8 @@
  *   ?action=account-matches  POST { email? }  other accounts with your phone or email (api/_lib/accountMerge.js)
  *   ?action=account-merge    POST { proofToken, confirm? } merges one of them into this account
  *   ?action=ig-connect-access POST { emails? } (staff) the accounts that can connect Instagram while the switch is off
+ *   ?action=admin-accounts / admin-account-merge / admin-creator-link / admin-account-email
+ *                             (staff) fix a person's accounts from the admin (api/_lib/adminAccounts.js)
  *
  * Instagram verification is behind site_settings/general.instagramMetaVerification.
  * Creators either connect Instagram (Instagram Login proves the account) or type
@@ -39,6 +41,7 @@ import {
 import { NICHE_IDS, COLLAB_IDS, BIO_MAX, isCollegeNiche } from '../../src/lib/creator/options.js';
 import { isCampaignCityMatch } from '../../src/lib/constants.js';
 import { findMatches, readProof, checkMergeable, describeAccount, mergeAccounts, MergeError } from './accountMerge.js';
+import { lookupPerson, checkAdminMerge, linkCreatorProfile, setProfileEmail } from './adminAccounts.js';
 import { isStaffCaller, staffRoleOf } from './mailing.js';
 import { isTesterRole } from '../../src/constants/roles.js';
 import { sendShortlistWelcome } from './mail/events.js';
@@ -52,6 +55,7 @@ export const CREATOR_APP_ACTIONS = new Set([
     'ig-lookup', 'ig-connect', 'ig-callback', 'instagram-cron', 'creator-apply', 'campaign-apply', 'campaign-submit',
     'creator-self-delete', 'creator-sync-profile', 'account-matches', 'account-merge', 'profile-phone',
     'my-submission', 'submissions-list', 'submissions-review', 'submissions-delete', 'submissions-guests', 'ig-connect-access',
+    'admin-accounts', 'admin-account-merge', 'admin-creator-link', 'admin-account-email',
 ]);
 /* Actions that don't take a Firebase ID token (they carry their own proof). */
 export const CREATOR_APP_PUBLIC = new Set(['ig-callback', 'instagram-cron']);
@@ -1069,6 +1073,66 @@ export const handleAccountMerge = async (req, res, { db, token, adminAuth = defa
     }
 };
 
+/* ── admin: fixing a person's accounts ────────────────────────────────── */
+
+// The roles that open People in the admin; merging and linking move data, so only the senior ones.
+const ACCOUNT_VIEW_ROLES = new Set(['developer', 'founder', 'super_admin', 'content_admin']);
+const ACCOUNT_FIX_ROLES = new Set(['developer', 'founder', 'super_admin']);
+const accountStaff = async (token, db, roles) => roles.has(await staffRoleOf(token, db));
+const mergeErrorOr = (res, err) => {
+    if (err instanceof MergeError) return send(res, err.status, { success: false, code: err.code, error: err.message, ...(err.otherUid ? { otherUid: err.otherUid } : {}) });
+    throw err;
+};
+
+export const handleAdminAccounts = async (req, res, { db, token, adminAuth = defaultAdminAuth }) => {
+    if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
+    if (!(await accountStaff(token, db, ACCOUNT_VIEW_ROLES))) return send(res, 403, { success: false, error: 'Only the Newbi team can do this.' });
+    const ids = (Array.isArray(req.body?.ids) ? req.body.ids : []).slice(0, 5);
+    const result = await lookupPerson({ db, adminAuth, email: str(req.body?.email, 200), phone: str(req.body?.phone, 20), ids });
+    return send(res, 200, { success: true, canFix: await accountStaff(token, db, ACCOUNT_FIX_ROLES), ...result });
+};
+
+export const handleAdminAccountMerge = async (req, res, { db, token, adminAuth = defaultAdminAuth }) => {
+    if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
+    if (!(await accountStaff(token, db, ACCOUNT_FIX_ROLES))) return send(res, 403, { success: false, error: 'Only founders and super admins can merge accounts.' });
+    const keepUid = str(req.body?.keepUid, 128);
+    const mergeUid = str(req.body?.mergeUid, 128);
+    try {
+        const { mergeAuth } = await checkAdminMerge({ db, adminAuth, keepUid, mergeUid });
+        if (!req.body?.confirm) {
+            return send(res, 200, { success: true, preview: { holds: await describeAccount(db, mergeUid), phone: mergeAuth.phoneNumber || null } });
+        }
+        const result = await mergeAccounts({ db, adminAuth, toUid: keepUid, fromUid: mergeUid, tokenRef, ownerRef });
+        await db.collection('users').doc(mergeUid).set({ mergedBy: token.email || token.uid }, { merge: true });
+        return send(res, 200, { success: true, ...result });
+    } catch (err) {
+        return mergeErrorOr(res, err);
+    }
+};
+
+export const handleAdminCreatorLink = async (req, res, { db, token, adminAuth = defaultAdminAuth }) => {
+    if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
+    if (!(await accountStaff(token, db, ACCOUNT_FIX_ROLES))) return send(res, 403, { success: false, error: 'Only founders and super admins can link creator profiles.' });
+    try {
+        const result = await linkCreatorProfile({ db, adminAuth, creatorId: str(req.body?.creatorId, 128), uid: str(req.body?.uid, 128), tokenRef, ownerRef });
+        if (result.linked) await db.collection('creators').doc(str(req.body.uid, 128)).set({ linkedBy: token.email || token.uid, linkedAt: nowIso() }, { merge: true });
+        return send(res, 200, { success: true, ...result });
+    } catch (err) {
+        return mergeErrorOr(res, err);
+    }
+};
+
+export const handleAdminAccountEmail = async (req, res, { db, token, adminAuth = defaultAdminAuth }) => {
+    if (req.method !== 'POST') return send(res, 405, { success: false, error: 'Method not allowed' });
+    if (!(await accountStaff(token, db, ACCOUNT_VIEW_ROLES))) return send(res, 403, { success: false, error: 'Only the Newbi team can do this.' });
+    try {
+        const result = await setProfileEmail({ db, adminAuth, uid: str(req.body?.uid, 128), email: str(req.body?.email, 200) });
+        return send(res, 200, { success: true, ...result });
+    } catch (err) {
+        return mergeErrorOr(res, err);
+    }
+};
+
 /* ── creator-sync-profile ─────────────────────────────────────────────── */
 
 /*
@@ -1234,6 +1298,10 @@ export const handleCreatorAppAction = async (action, req, res, { decodedToken })
         if (action === 'submissions-delete') return await handleSubmissionsDelete(req, res, ctx);
         if (action === 'submissions-guests') return await handleSubmissionsGuests(req, res, ctx);
         if (action === 'ig-connect-access') return await handleConnectAccess(req, res, ctx);
+        if (action === 'admin-accounts') return await handleAdminAccounts(req, res, ctx);
+        if (action === 'admin-account-merge') return await handleAdminAccountMerge(req, res, ctx);
+        if (action === 'admin-creator-link') return await handleAdminCreatorLink(req, res, ctx);
+        if (action === 'admin-account-email') return await handleAdminAccountEmail(req, res, ctx);
         return send(res, 400, { success: false, error: 'Unknown action.' });
     } catch (err) {
         console.error(`[creatorApp] ${action}:`, err);
