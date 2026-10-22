@@ -21,7 +21,7 @@
 import { nowIso } from './db.js';
 import { readSignedToken } from './linkSign.js';
 import { releaseApplicationPass, revokePassForOutreach, ticketLinkFor } from './passes.js';
-import { enqueueJob, sendSoon, submitUrlFor } from './outreachQueue.js';
+import { enqueueJob, sendSoon, submitUrlFor, kindLive, switchFor } from './outreachQueue.js';
 import { canTransition, canSystemTransition, isOnShortlist } from '../../src/lib/outreach/status.js';
 import { firstNameOf } from '../../src/lib/outreach/normalize.js';
 import { approvedSummary } from '../../src/lib/outreach/whatsappTemplate.js';
@@ -440,6 +440,7 @@ export const handleResendLink = async (req, res, { db, actor }) => {
     const campaignId = str(req.body?.campaignId, 120);
     const ids = [...new Set((Array.isArray(req.body?.appIds) ? req.body.appIds : []).map(id => str(id, 120)).filter(Boolean))].slice(0, 200);
     if (!campaignId || !ids.length) return send(res, 400, { success: false, error: 'Choose at least one person.' });
+    if (!kindLive('deliverables')) return send(res, 409, { success: false, error: `The posts-link template isn’t switched on yet (${switchFor('deliverables')}).` });
     let queued = 0;
     for (const appId of ids) {
         const id = await enqueueJob(db, { campaignId, appId, kind: 'deliverables', createdBy: actor.actorEmail, again: true });

@@ -20,7 +20,7 @@
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { getDb, nowIso, istDate } from './db.js';
-import { sendTemplate, sendText, isWhatsAppConfigured } from './whatsapp.js';
+import { sendTemplate, sendText, isWhatsAppConfigured, isTemplateLive } from './whatsapp.js';
 import { makeSignedToken } from './linkSign.js';
 import { contactIdFor, appendThreadMessage, windowOpen } from './outreachThreads.js';
 import { canTransition, canSystemTransition } from '../../src/lib/outreach/status.js';
@@ -127,6 +127,7 @@ export const enqueueInvites = async (db, { campaignId, appIds, actor, now = Date
     const at = iso(now);
     const queued = [];
     const skipped = [];
+    if (!kindLive('invite')) return { queued, skipped: appIds.map(id => ({ id, reason: 'template_off' })) };
     for (const appId of appIds) {
         const appRef = db.collection(appsPath(campaignId)).doc(appId);
         const jobRef = db.collection('outreach_queue').doc(jobId(campaignId, appId, 'invite'));
@@ -211,6 +212,19 @@ const KINDS = {
     inbox_text: { text: true },
 };
 
+/*
+ * A kind goes out only once the API is set up and, for a template, once the
+ * owner marked it approved in Meta with WHATSAPP_TEMPLATE_<NAME> (as in
+ * notify.js). Until then nothing is queued and the in-app path is used.
+ */
+export const kindLive = (kind) => isWhatsAppConfigured() && Boolean(KINDS[kind] && (KINDS[kind].text || isTemplateLive(WA_TEMPLATES[kind]?.name)));
+
+/** { invite: true, reminder: false, … } for the admin, so it can show which templates are on. */
+export const liveKinds = () => Object.fromEntries(Object.keys(KINDS).filter(k => !KINDS[k].text).map(k => [k, kindLive(k)]));
+
+/** The env var that switches a kind's template on: WHATSAPP_TEMPLATE_CAMPAIGN_SHORTLIST etc. */
+export const switchFor = (kind) => `WHATSAPP_TEMPLATE_${String(WA_TEMPLATES[kind]?.name || kind).toUpperCase()}`;
+
 /** Their personal "send your posts" token (linkSign, 60 days). '' when no signing key is set. */
 export const submitToken = (campaignId, appId) => makeSignedToken({ k: 'd', c: campaignId, a: appId }, SUBMIT_LINK_TTL);
 export const submitUrlFor = (campaignId, appId) => {
@@ -220,6 +234,7 @@ export const submitUrlFor = (campaignId, appId) => {
 
 /** Loads what the message needs, or { skip } when it shouldn't go out any more. */
 const loadContext = async (db, job) => {
+    if (!kindLive(job.kind)) return { skip: 'template_off' };
     const spec = KINDS[job.kind];
     if (!spec) return { skip: 'unknown_kind' };
     if (spec.text) {
@@ -265,6 +280,7 @@ const SKIP_NOTE = {
     window_closed: 'More than 24 hours since their last message: WhatsApp only allows a template now.',
     opted_out: 'They asked to stop WhatsApp updates.',
     unknown_kind: 'Unknown message type.',
+    template_off: 'Its WhatsApp template isn’t switched on yet (WHATSAPP_TEMPLATE_<NAME> in Vercel).',
 };
 
 const appRefOf = (db, job) => db.collection(appsPath(job.campaignId)).doc(job.appId);
@@ -386,6 +402,7 @@ const ONCE = new Set(['invite', 'reminder', 'deliverables', 'payout', 'city_grou
  * → the job id, or null when one is already waiting
  */
 export const enqueueJob = async (db, { campaignId = null, appId = null, kind, data = {}, createdBy = null, dueAt = Date.now(), again = false, id = null }) => {
+    if (!kindLive(kind)) return null;
     const jobKey = id || (ONCE.has(kind) ? jobId(campaignId, appId, kind) : `${campaignId || 'inbox'}_${appId || data.threadId || 'x'}_${kind}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`);
     const ref = db.collection('outreach_queue').doc(jobKey);
     return db.runTransaction(async (tx) => {

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import MessagesSquare from 'lucide-react/dist/esm/icons/messages-square';
 import Send from 'lucide-react/dist/esm/icons/send';
 import History from 'lucide-react/dist/esm/icons/history';
@@ -6,11 +7,13 @@ import LayoutTemplate from 'lucide-react/dist/esm/icons/layout-template';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import { cn } from '../../lib/utils';
 import { useStore } from '../../lib/store';
-import { Card, Button, Badge, EmptyState, SegmentedTabs } from '../../components/admin/ui';
+import { Card, Button, Badge, EmptyState, SegmentedTabs, Select } from '../../components/admin/ui';
 import { fieldCls } from '../../components/admin/uploads/UploadKit';
 import InboxPanel from '../../components/admin/campaigns/outreach/InboxPanel';
 import { callOutreach } from '../../components/admin/campaigns/outreach/outreachApi';
 import { when } from '../../components/admin/campaigns/outreach/parts';
+import { FIELDS, fieldsFor, isAuto, token, fillTokens } from '../../lib/outreach/waFields';
+import { STATUSES, STATUS_META, isOnShortlist } from '../../lib/outreach/status';
 
 /*
  * The WhatsApp center (/admin/whatsapp): every conversation on the Newbi
@@ -57,8 +60,23 @@ const useTemplates = () => {
 
 /* ── Send a template ──────────────────────────────────────────────────── */
 
+const MAX_RECIPIENTS = 50;
+const AUDIENCE_FILTERS = [
+    { value: 'shortlist', label: 'On the shortlist' },
+    { value: 'all', label: 'Everyone who applied' },
+    ...STATUSES.map(s => ({ value: s, label: STATUS_META[s].label })),
+];
+
+/* Each variable's value: {first_name}-style when it can be filled in for each person, else what was typed (or ''). */
+const autofill = (fields, aud, current = null) => fields.map((k, i) => {
+    const prev = current?.[i];
+    if (prev !== undefined && prev !== null && prev !== '' && !/^\{[a-z_]+\}$/.test(prev)) return prev;
+    return k && isAuto(k, aud) ? token(k) : '';
+});
+
 const SendPanel = ({ templatesState, prefill, onSent }) => {
     const addToast = useStore(s => s.addToast);
+    const campaigns = useStore(s => s.campaigns);
     const approved = templatesState.templates.filter(t => t.status === 'APPROVED');
     const [key, setKey] = useState('');
     const [body, setBody] = useState([]);
@@ -68,45 +86,120 @@ const SendPanel = ({ templatesState, prefill, onSent }) => {
     const [team, setTeam] = useState({ loading: true, members: [] });
     const [picked, setPicked] = useState(() => new Set());
     const [others, setOthers] = useState('');
+    const [campaignId, setCampaignId] = useState('');
+    const [applicants, setApplicants] = useState({ loading: false, list: [], groupLink: '' });
+    const [appPicked, setAppPicked] = useState(() => new Set());
+    const [audienceFilter, setAudienceFilter] = useState('shortlist');
     const [armed, setArmed] = useState(false);
     const [sending, setSending] = useState(false);
     const [results, setResults] = useState(null);
+    const [lastRecipients, setLastRecipients] = useState({});
 
     useEffect(() => {
         callOutreach('wa-team').then(r => setTeam({ loading: false, members: r.ok ? r.data.team : [], error: r.ok ? '' : r.error }));
     }, []);
-    useEffect(() => { if (prefill?.phone) setOthers(prefill.phone); }, [prefill]);
+    // The campaign list comes from the admin store; open it here when this is the first page visited.
+    useEffect(() => {
+        if (campaigns.length) return undefined;
+        const unsub = useStore.getState().subscribeToCampaigns?.();
+        return () => { if (typeof unsub === 'function') unsub(); };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        if (!prefill) return;
+        if (prefill.phone) setOthers(prefill.phone);
+        if (prefill.campaignId) {
+            setCampaignId(prefill.campaignId);
+            setAppPicked(new Set(prefill.appIds || []));
+            setAudienceFilter(prefill.appIds?.length ? 'all' : 'shortlist');
+        }
+        if (prefill.template) {
+            const t = approved.find(x => x.name === prefill.template);
+            if (t) setKey(`${t.name}|${t.language}`);
+        }
+    }, [prefill, templatesState.loading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // A campaign's applicants, through the outreach API (it checks the role and never exposes more than this list).
+    useEffect(() => {
+        if (!campaignId) { setApplicants({ loading: false, list: [], groupLink: '' }); return; }
+        let live = true;
+        setApplicants(a => ({ ...a, loading: true }));
+        callOutreach('outreach-list', { campaignId }).then(r => {
+            if (!live) return;
+            setApplicants({ loading: false, list: r.ok ? r.data.applications : [], groupLink: r.ok ? r.data.settings?.whatsappGroupLink || '' : '', error: r.ok ? '' : r.error });
+        });
+        return () => { live = false; };
+    }, [campaignId]);
 
     const tpl = approved.find(t => `${t.name}|${t.language}` === key) || null;
-    useEffect(() => {
-        setBody(tpl ? Array.from({ length: tpl.bodyVars }, () => '') : []);
-        setButtons({}); setHeaderUrl(''); setHeaderText(''); setArmed(false); setResults(null);
-    }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+    const fields = useMemo(() => (tpl ? fieldsFor(tpl) : { body: [], button: null }), [tpl]);
+    const aud = { campaign: Boolean(campaignId), applicants: appPicked.size > 0 };
 
+    useEffect(() => {
+        setBody(tpl ? autofill(fields.body, aud) : []);
+        setButtons(tpl && fields.button && isAuto(fields.button, aud) ? Object.fromEntries(tpl.buttons.filter(b => b.dynamic).map(b => [b.index, token(fields.button)])) : {});
+        setHeaderUrl(''); setHeaderText(''); setArmed(false); setResults(null);
+    }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Choosing a campaign or applicants can make more fields fill themselves; what was typed stays.
+    useEffect(() => {
+        if (!tpl) return;
+        setBody(b => autofill(fields.body, aud, b));
+        if (fields.button && isAuto(fields.button, aud)) {
+            setButtons(x => ({ ...Object.fromEntries(tpl.buttons.filter(b => b.dynamic).map(b => [b.index, x[b.index] || token(fields.button)])) }));
+        }
+    }, [aud.campaign, aud.applicants]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const campaign = campaigns.find(c => c.id === campaignId) || null;
+    const shownApplicants = applicants.list.filter(a => {
+        const st = a.status || 'applied';
+        if (audienceFilter === 'shortlist') return isOnShortlist(st);
+        if (audienceFilter === 'all') return st !== 'removed';
+        return st === audienceFilter;
+    });
     const otherPhones = others.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
-    const recipients = [...[...picked].map(id => ({ type: 'team', id })), ...otherPhones.map(phone => ({ type: 'phone', phone }))];
+    const recipients = [
+        ...[...picked].map(id => ({ key: `team:${id}`, type: 'team', id })),
+        ...[...appPicked].map(appId => ({ key: `app:${campaignId}:${appId}`, type: 'applicant', campaignId, appId })),
+        ...otherPhones.map(phone => ({ key: `phone:${phone}`, type: 'phone', phone })),
+    ];
     const reachable = team.members.filter(m => m.phone);
-    const ready = tpl && recipients.length > 0 && body.every(v => v.trim())
+    const tooMany = recipients.length > MAX_RECIPIENTS;
+    const ready = tpl && recipients.length > 0 && !tooMany && body.every(v => v.trim())
         && tpl.buttons.filter(b => b.dynamic).every(b => String(buttons[b.index] || '').trim())
         && (tpl.header?.format !== 'DOCUMENT' || /^https:\/\//.test(headerUrl))
         && !(tpl.header?.format === 'TEXT' && tpl.header.vars && !headerText.trim());
 
-    const toggle = (id) => setPicked(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+    // What the preview fills the {tokens} with: the first person on the list, else examples.
+    const sampleApp = applicants.list.find(a => appPicked.has(a.id));
+    const sampleMember = team.members.find(m => picked.has(m.id));
+    const sampleName = sampleApp?.fullName || sampleMember?.name || '';
+    const sample = {
+        ...Object.fromEntries(Object.entries(FIELDS).map(([k, f]) => [k, f.example])),
+        ...(sampleName ? { first_name: sampleName.split(/\s+/)[0], full_name: sampleName } : {}),
+        ...(campaign ? { campaign_title: campaign.title, campaign_id: campaign.id } : {}),
+        ...(applicants.groupLink ? { group_link: applicants.groupLink } : {}),
+        ...(sampleApp?.city ? { city: sampleApp.city } : {}),
+    };
 
-    const submit = async () => {
-        if (!armed) { setArmed(true); return; }
+    const toggle = (id) => setPicked(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+    const toggleApp = (id) => setAppPicked(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+    const allShownPicked = shownApplicants.length > 0 && shownApplicants.every(a => appPicked.has(a.id));
+
+    const send = async (list) => {
         setSending(true);
         const r = await callOutreach('wa-send', {
-            template: tpl.name, language: tpl.language, recipients,
-            params: { body, buttons, headerUrl: headerUrl.trim() || undefined, headerText: headerText.trim() || undefined },
+            template: tpl.name, language: tpl.language, recipients: list.map(({ key: _k, ...rest }) => rest),
+            params: { body, buttons, headerUrl: headerUrl.trim() || undefined, headerText: headerText.trim() || undefined, campaignId: campaignId || undefined },
         });
         setSending(false);
         setArmed(false);
         if (!r.ok) { addToast(r.error, 'error', { title: 'Not sent' }); return; }
         setResults(r.data.results);
-        addToast(`${r.data.sent} of ${recipients.length} sent.`, r.data.sent ? 'success' : 'warning', { title: `“${tpl.name}” sent` });
+        setLastRecipients(Object.fromEntries(list.map(x => [x.key, x])));
+        addToast(`${r.data.sent} of ${list.length} sent.`, r.data.sent ? 'success' : 'warning', { title: `“${tpl.name}” sent` });
         onSent?.();
     };
+    const submit = () => { if (!armed) { setArmed(true); return; } send(recipients); };
+    const rest = (results || []).filter(x => x.retry && lastRecipients[x.key]).map(x => lastRecipients[x.key]);
 
     if (templatesState.loading) return <Card className="p-6 text-[13px] text-gray-500">Loading templates…</Card>;
     if (!approved.length) {
@@ -116,6 +209,18 @@ const SendPanel = ({ templatesState, prefill, onSent }) => {
             </Card>
         );
     }
+
+    const fieldHint = (k, value, onUse) => {
+        if (!k) return null;
+        const f = FIELDS[k];
+        if (/^\{[a-z_]+\}$/.test(value)) {
+            return <span className="text-[12px] text-emerald-700 dark:text-neon-green">Filled in for each person · <button type="button" className="font-semibold underline" onClick={() => onUse('')}>type it instead</button></span>;
+        }
+        if (isAuto(k, aud)) return <button type="button" className="text-[12px] font-semibold text-emerald-700 dark:text-neon-green" onClick={() => onUse(token(k))}>Use each person’s {f.label.toLowerCase()}</button>;
+        if (f?.auto === 'campaign') return <span className="text-[12px] text-gray-500">Choose a campaign below to fill this in.</span>;
+        if (f?.auto === 'applicant') return <span className="text-[12px] text-gray-500">Pick campaign applicants below to fill this in for each.</span>;
+        return null;
+    };
 
     return (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -148,18 +253,32 @@ const SendPanel = ({ templatesState, prefill, onSent }) => {
                                 <input className={fieldCls} value={headerText} onChange={e => setHeaderText(e.target.value)} maxLength={60} />
                             </label>
                         )}
-                        {body.map((v, i) => (
-                            <label key={i} className="block space-y-1.5">
-                                <span className="text-[13px] font-bold">{`{{${i + 1}}}`}</span>
-                                <input className={fieldCls} value={v} onChange={e => setBody(b => b.map((x, j) => (j === i ? e.target.value : x)))} placeholder={tpl.examples[i] ? `e.g. ${tpl.examples[i]}` : ''} maxLength={900} />
-                            </label>
-                        ))}
-                        {tpl.buttons.filter(b => b.dynamic).map(b => (
-                            <label key={b.index} className="block space-y-1.5">
-                                <span className="text-[13px] font-bold">“{b.text}” link ending</span>
-                                <input className={fieldCls} value={buttons[b.index] || ''} onChange={e => setButtons(x => ({ ...x, [b.index]: e.target.value }))} placeholder={b.url.replace('{{1}}', '…')} />
-                            </label>
-                        ))}
+                        {body.map((v, i) => {
+                            const k = fields.body[i];
+                            const set = (val) => setBody(b => b.map((x, j) => (j === i ? val : x)));
+                            return (
+                                <div key={i} className="space-y-1.5">
+                                    <label className="block space-y-1.5">
+                                        <span className="text-[13px] font-bold">{`{{${i + 1}}}`}{k ? <span className="font-normal text-gray-500"> · {FIELDS[k]?.label || k}</span> : null}</span>
+                                        <input className={fieldCls} value={v} onChange={e => set(e.target.value)} placeholder={tpl.examples[i] ? `e.g. ${tpl.examples[i]}` : (k && FIELDS[k] ? `e.g. ${FIELDS[k].example}` : '')} maxLength={900} />
+                                    </label>
+                                    {fieldHint(k, v, set)}
+                                </div>
+                            );
+                        })}
+                        {tpl.buttons.filter(b => b.dynamic).map(b => {
+                            const set = (val) => setButtons(x => ({ ...x, [b.index]: val }));
+                            return (
+                                <div key={b.index} className="space-y-1.5">
+                                    <label className="block space-y-1.5">
+                                        <span className="text-[13px] font-bold">“{b.text}” link ending{fields.button ? <span className="font-normal text-gray-500"> · {FIELDS[fields.button]?.label}</span> : null}</span>
+                                        <input className={fieldCls} value={buttons[b.index] || ''} onChange={e => set(e.target.value)} placeholder={b.url.replace('{{1}}', '…')} />
+                                    </label>
+                                    {fieldHint(fields.button, buttons[b.index] || '', set)}
+                                </div>
+                            );
+                        })}
+                        <p className="text-[12px] text-gray-500">Fields like <code>{'{first_name}'}</code> are filled in for each person. You can also type them into any field.</p>
                     </>
                 )}
 
@@ -188,6 +307,51 @@ const SendPanel = ({ templatesState, prefill, onSent }) => {
                     </ul>
                 </div>
 
+                <div className="space-y-2">
+                    <span className="block text-[13px] font-bold">Campaign <span className="font-normal text-gray-500">(fills in the campaign’s details, and lets you message its applicants)</span></span>
+                    <div className="flex flex-wrap gap-2">
+                        <Select
+                            label="Campaign"
+                            className="w-full sm:w-72"
+                            value={campaignId}
+                            onChange={(v) => { setCampaignId(v); setAppPicked(new Set()); }}
+                            options={[{ value: '', label: 'No campaign' }, ...[...campaigns].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).map(c => ({ value: c.id, label: c.title || c.name || c.id }))]}
+                        />
+                        {campaignId && <Select label="Who" className="w-full sm:w-56" value={audienceFilter} onChange={setAudienceFilter} options={AUDIENCE_FILTERS} />}
+                    </div>
+                    {campaignId && applicants.loading && <p className="text-[13px] text-gray-500">Loading applicants…</p>}
+                    {campaignId && applicants.error && <p className="text-[13px] text-rose-600">{applicants.error}</p>}
+                    {campaignId && !applicants.loading && !applicants.error && (
+                        shownApplicants.length ? (
+                            <>
+                                <div className="flex items-center justify-between gap-2 text-[12.5px]">
+                                    <span className="text-gray-500">{appPicked.size} of {applicants.list.length} applicants picked</span>
+                                    <button type="button" className="font-semibold text-emerald-700 dark:text-neon-green" onClick={() => setAppPicked(p => {
+                                        const n = new Set(p);
+                                        shownApplicants.forEach(a => (allShownPicked ? n.delete(a.id) : n.add(a.id)));
+                                        return n;
+                                    })}>
+                                        {allShownPicked ? 'Clear these' : `Select all ${shownApplicants.length}`}
+                                    </button>
+                                </div>
+                                <ul className="grid max-h-72 gap-1.5 overflow-y-auto sm:grid-cols-2">
+                                    {shownApplicants.map(a => (
+                                        <li key={a.id}>
+                                            <label className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-xl border border-black/10 px-3 py-2 text-[13px] dark:border-white/10">
+                                                <input type="checkbox" checked={appPicked.has(a.id)} onChange={() => toggleApp(a.id)} />
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="block truncate font-semibold">{a.fullName || 'No name'}</span>
+                                                    <span className="block truncate text-[12px] text-gray-500">{STATUS_META[a.status || 'applied']?.label}{a.city ? ` · ${a.city}` : ''}{a.whatsappOptOut ? ' · stopped updates' : ''}</span>
+                                                </span>
+                                            </label>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        ) : <p className="text-[13px] text-gray-500">Nobody here yet.</p>
+                    )}
+                </div>
+
                 <label className="block space-y-1.5">
                     <span className="text-[13px] font-bold">Other numbers <span className="font-normal text-gray-500">(one per line or comma-separated)</span></span>
                     <textarea className={cn(fieldCls, 'min-h-[72px] py-2.5')} value={others} onChange={e => setOthers(e.target.value)} placeholder="98765 43210" />
@@ -198,33 +362,41 @@ const SendPanel = ({ templatesState, prefill, onSent }) => {
                         <Send size={14} /> {sending ? 'Sending…' : armed ? `Confirm: send to ${recipients.length}` : `Send to ${recipients.length || '…'}`}
                     </Button>
                     {armed && <Button variant="ghost" onClick={() => setArmed(false)}>Cancel</Button>}
-                    <p className="text-[12px] text-gray-500">Each message is billed by Meta. People who replied STOP are skipped.</p>
+                    <p className="text-[12px] text-gray-500">{tooMany ? `Up to ${MAX_RECIPIENTS} people at a time: pick fewer.` : 'Each message is billed by Meta. People who replied STOP are skipped.'}</p>
                 </div>
 
                 {results && (
-                    <ul className="divide-y divide-black/[0.05] rounded-xl border border-black/[0.06] dark:divide-white/[0.06] dark:border-white/[0.08]">
-                        {results.map((r, i) => (
-                            <li key={i} className="flex items-center justify-between gap-3 px-3 py-2 text-[13px]">
-                                <span className="truncate">{r.label}</span>
-                                <span className="flex items-center gap-2">
-                                    {r.error && <span className="text-[12px] text-gray-500">{r.error}</span>}
-                                    <Badge tone={SEND_TONE[r.status] || 'gray'}>{r.status}</Badge>
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
+                    <div className="space-y-2">
+                        {rest.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-3 rounded-xl bg-amber-500/10 px-3 py-2 text-[13px]">
+                                <span className="flex-1">{rest.length} weren’t sent yet: WhatsApp allows a few a minute.</span>
+                                <Button size="sm" variant="success" disabled={sending} onClick={() => send(rest)}><Send size={13} /> Send the rest</Button>
+                            </div>
+                        )}
+                        <ul className="divide-y divide-black/[0.05] rounded-xl border border-black/[0.06] dark:divide-white/[0.06] dark:border-white/[0.08]">
+                            {results.map((r, i) => (
+                                <li key={i} className="flex items-center justify-between gap-3 px-3 py-2 text-[13px]">
+                                    <span className="truncate">{r.label}</span>
+                                    <span className="flex items-center gap-2">
+                                        {r.error && <span className="text-[12px] text-gray-500">{r.error}</span>}
+                                        <Badge tone={SEND_TONE[r.status] || 'gray'}>{r.status}</Badge>
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 )}
             </Card>
 
-            <Card className="h-fit p-4">
-                <p className="mb-3 text-[12px] font-bold uppercase tracking-wide text-gray-500">Preview</p>
+            <Card className="h-fit p-4 lg:sticky lg:top-4">
+                <p className="mb-3 text-[12px] font-bold uppercase tracking-wide text-gray-500">Preview{sampleName ? ` · for ${sampleName.split(/\s+/)[0]}` : ''}</p>
                 {tpl ? (
                     <div className="rounded-2xl bg-[#efeae2] p-3 dark:bg-[#0b141a]">
                         <div className="overflow-hidden rounded-xl bg-white text-[14px] leading-snug text-gray-900 shadow-sm dark:bg-[#202c33] dark:text-white">
                             {tpl.header?.format === 'IMAGE' && <div className="flex aspect-[1.91/1] items-center justify-center bg-gray-200 text-[12px] text-gray-500 dark:bg-white/10">{headerUrl ? 'Your image' : 'Newbi card'}</div>}
                             {tpl.header?.format === 'DOCUMENT' && <div className="bg-gray-100 px-3 py-4 text-[12px] font-semibold dark:bg-white/10">PDF document</div>}
-                            {tpl.header?.format === 'TEXT' && <p className="px-3 pt-2 font-bold">{fill(tpl.header.text, [headerText])}</p>}
-                            <p className="whitespace-pre-wrap px-3 py-2">{formatted(fill(tpl.body, body))}</p>
+                            {tpl.header?.format === 'TEXT' && <p className="px-3 pt-2 font-bold">{fill(tpl.header.text, [fillTokens(headerText, sample)])}</p>}
+                            <p className="whitespace-pre-wrap px-3 py-2">{formatted(fill(tpl.body, body.map(v => fillTokens(v, sample))))}</p>
                             {tpl.footer && <p className="px-3 pb-2 text-[12px] text-gray-500">{tpl.footer}</p>}
                             {tpl.buttons.map(b => <p key={b.index} className="border-t border-black/[0.06] py-2 text-center text-[13px] font-semibold text-sky-600 dark:border-white/10">{b.text}</p>)}
                         </div>
@@ -295,10 +467,15 @@ const TemplatesPanel = ({ state, reload }) => (
 
 /* ── Page ─────────────────────────────────────────────────────────────── */
 
+/* Other screens open the Send tab with people picked: navigate('/admin/whatsapp', { state: { whatsappSend: { campaignId, appIds, phone, template, at } } }). */
+
 const WhatsAppCenter = () => {
-    const [tab, setTab] = useState('inbox');
+    const location = useLocation();
+    const handoff = location.state?.whatsappSend || null;
+    const [tab, setTab] = useState(handoff ? 'send' : 'inbox');
     const [templatesState, reloadTemplates] = useTemplates();
-    const [prefill, setPrefill] = useState(null);
+    const [prefill, setPrefill] = useState(handoff);
+    useEffect(() => { if (handoff) { setPrefill(handoff); setTab('send'); } }, [handoff?.at]); // eslint-disable-line react-hooks/exhaustive-deps
     const [logKey, setLogKey] = useState(0);
     const counts = useMemo(() => ({
         approved: templatesState.templates.filter(t => t.status === 'APPROVED').length,

@@ -20,6 +20,13 @@ const META_TEMPLATES = [
         ],
     },
     { name: 'pass_ready', language: 'en', status: 'PENDING', category: 'MARKETING', components: [{ type: 'BODY', text: 'Hi {{1}}.' }] },
+    {
+        name: 'campaign_shortlist', language: 'en', status: 'APPROVED', category: 'UTILITY',
+        components: [
+            { type: 'BODY', text: "You're shortlisted, {{1}}! {{2}} {{3}} {{4}}" },
+            { type: 'BUTTONS', buttons: [{ type: 'QUICK_REPLY', text: 'Joined' }, { type: 'QUICK_REPLY', text: 'Stop updates' }] },
+        ],
+    },
 ];
 
 let db;
@@ -44,6 +51,10 @@ beforeEach(() => {
         'admins/a4': { email: 'quiet@newbi.live', role: 'admin', displayName: 'Quiet One', phone: '+919876500004' },
         'users/u2': { email: 'dev@newbi.live', displayName: 'Dev', phone: '+919876500002', phoneVerified: true },
         [`creator_contacts/${contactIdFor('+919876500004')}`]: { whatsappOptOut: { at: '2026-10-01T00:00:00Z' } },
+        'campaigns/c1': { title: 'Arijit Singh Live' },
+        'campaigns/c1/private/outreach': { whatsappGroupLink: 'https://chat.whatsapp.com/AbC' },
+        'campaigns/c1/applications/p1': { fullName: 'riya sharma', phone: '+919876500011', city: 'Bengaluru', status: 'shortlisted' },
+        'campaigns/c1/applications/p2': { fullName: 'rj_kabir', phone: '+919876500012', status: 'message_sent' },
     });
     setDbForTests(db);
     sent = [];
@@ -100,6 +111,32 @@ describe('WhatsApp center', () => {
         // The send shows in their inbox thread.
         const thread = db.store.get(`outreach_inbox/${contactIdFor('+919876500001')}`);
         expect(thread.lastText).toContain('Gate opens at 6');
+    });
+
+    it('fills {first_name} and the campaign for each applicant, sends their Joined payload and moves them on', async () => {
+        const res = await call('wa-send', {
+            template: 'campaign_shortlist', language: 'en',
+            recipients: [{ type: 'applicant', campaignId: 'c1', appId: 'p1' }, { type: 'applicant', campaignId: 'c1', appId: 'p2' }, { type: 'team', id: 'a1' }],
+            params: { body: ['{first_name}', '{campaign_title}', '{group_link}', 'Post by {city}'] },
+        });
+        expect(res.body.sent).toBe(1);
+        expect(res.body.results.find(r => r.key === 'app:c1:p2')).toMatchObject({ status: 'skipped', error: 'No city for them' });
+        expect(res.body.results.find(r => r.key === 'team:a1')).toMatchObject({ status: 'skipped', error: expect.stringMatching(/campaign/) });
+        const [, body, joined, stop] = sent[0].template.components; // its Newbi card header first
+        expect(body.parameters.map(p => p.text)).toEqual(['Riya', 'Arijit Singh Live', 'https://chat.whatsapp.com/AbC', 'Post by Bengaluru']);
+        expect(joined.parameters[0].payload).toMatch(/^j1\.c1\.p1\./);
+        expect(stop.parameters[0].payload).toBe('stop');
+        expect(db.store.get('campaigns/c1/applications/p1')).toMatchObject({ status: 'message_sent' });
+    });
+
+    it('fills the campaign for team members when one is chosen, and greets unclear names as “there”', async () => {
+        const res = await call('wa-send', {
+            template: 'team_update', language: 'en',
+            recipients: [{ type: 'team', id: 'a1' }, { type: 'phone', phone: '+919876500099' }],
+            params: { body: ['{first_name}: {campaign_title} is live', 'Ops'], buttons: { 0: 'x' }, campaignId: 'c1' },
+        });
+        expect(res.body.sent).toBe(2);
+        expect(sent.map(m => m.template.components[1].parameters[0].text).sort()).toEqual(['Ops: Arijit Singh Live is live', 'there: Arijit Singh Live is live']);
     });
 
     it('refuses templates that aren’t approved and missing variables', async () => {

@@ -15,7 +15,7 @@
  */
 import { nowIso } from './db.js';
 import { fetchWhatsAppMedia, isWhatsAppConfigured } from './whatsapp.js';
-import { enqueueJob, sendSoon, submitUrlFor } from './outreachQueue.js';
+import { enqueueJob, sendSoon, submitUrlFor, kindLive, switchFor } from './outreachQueue.js';
 import { windowOpen, WINDOW_MS } from './outreachThreads.js';
 import { maskPhone } from '../../src/lib/outreach/normalize.js';
 
@@ -130,6 +130,7 @@ export const handleInboxTemplate = async (req, res, { db, actor }) => {
     const threadId = str(req.body?.threadId, 128);
     const kind = ['deliverables', 'reminder'].includes(req.body?.kind) ? req.body.kind : null;
     if (!ID.test(threadId) || !kind) return send(res, 400, { success: false, error: 'Choose a message.' });
+    if (!kindLive(kind)) return send(res, 409, { success: false, error: `That template isn’t switched on yet (${switchFor(kind)}).` });
     const tSnap = await db.collection('outreach_inbox').doc(threadId).get();
     const t = tSnap.data();
     if (!tSnap.exists || !t.lastCampaignId || !t.lastAppId) return send(res, 409, { success: false, error: 'This conversation isn’t linked to a campaign application.' });

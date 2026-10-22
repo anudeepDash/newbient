@@ -26,6 +26,14 @@ const ApiSendCard = ({ api, campaign, settings, sendable, onSend, onStop }) => {
             </Card>
         );
     }
+    if (api.templates && !api.templates.invite) {
+        return (
+            <Card className="p-4 text-[13px] text-gray-600 dark:text-zinc-400">
+                <p className="font-semibold text-gray-900 dark:text-white">Sending by hand for now</p>
+                <p>The WhatsApp API is set up, but the <span className="font-mono">campaign_shortlist</span> template isn’t switched on. Once Meta approves it, add WHATSAPP_TEMPLATE_CAMPAIGN_SHORTLIST=campaign_shortlist in Vercel and redeploy. Until then, use Open WhatsApp or the in-app notice.</p>
+            </Card>
+        );
+    }
     const { queue = {}, rate = {} } = api;
     const active = (queue.queued || 0) + (queue.sending || 0);
     const preview = sendable[0]

@@ -38,6 +38,7 @@ beforeEach(() => {
     vi.setSystemTime(START);
     vi.stubEnv('WHATSAPP_ACCESS_TOKEN', 'test-token');
     vi.stubEnv('WHATSAPP_PHONE_NUMBER_ID', '123');
+    ['campaign_shortlist', 'campaign_join_reminder', 'campaign_deliverables', 'campaign_deliverable_changes', 'creator_city_group', 'all_posts_approved', 'campaign_payout_sent'].forEach(t => vi.stubEnv(`WHATSAPP_TEMPLATE_${t.toUpperCase()}`, t));
     vi.stubEnv('OUTREACH_WA_PER_MINUTE', '3');
     vi.stubEnv('OUTREACH_WA_DAILY_CAP', '50');
     vi.stubEnv('LINK_SIGNING_SECRET', 'test-secret');
@@ -296,6 +297,24 @@ describe('admin actions', () => {
         expect((await call('outreach-send', { campaignId: 'c1', appIds: ['a1'] })).statusCode).toBe(409);
         vi.stubEnv('WHATSAPP_ACCESS_TOKEN', '');
         expect((await call('outreach-send', { campaignId: 'c1', appIds: ['a1'] })).body.error).toMatch(/isn’t set up/);
+    });
+
+    it('waits for each template’s switch: nothing is queued until it is on, and a queued one is stopped if it goes off', async () => {
+        vi.stubEnv('WHATSAPP_TEMPLATE_CAMPAIGN_SHORTLIST', '');
+        const off = await call('outreach-send', { campaignId: 'c1', appIds: ['a1'] });
+        expect(off.statusCode).toBe(409);
+        expect(off.body.error).toMatch(/WHATSAPP_TEMPLATE_CAMPAIGN_SHORTLIST/);
+        expect((await enqueueInvites(db, { campaignId: 'c1', appIds: ['a1'], actor: ADMIN })).skipped).toEqual([{ id: 'a1', reason: 'template_off' }]);
+        expect(job('a1')).toBeUndefined();
+        const list = await call('outreach-list', { campaignId: 'c1' });
+        expect(list.body.whatsappApi.templates).toMatchObject({ invite: false, reminder: true });
+
+        vi.stubEnv('WHATSAPP_TEMPLATE_CAMPAIGN_SHORTLIST', 'campaign_shortlist');
+        await enqueueInvites(db, { campaignId: 'c1', appIds: ['a1'], actor: ADMIN });
+        vi.stubEnv('WHATSAPP_TEMPLATE_CAMPAIGN_SHORTLIST', '');
+        await runQueue({ db, clock, sleep });
+        expect(job('a1')).toMatchObject({ status: 'cancelled', lastError: expect.stringMatching(/switched on/) });
+        expect(sent).toHaveLength(0);
     });
 
     it('runs the worker for the cron secret, and admins only otherwise', async () => {

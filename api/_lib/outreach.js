@@ -42,7 +42,7 @@ import { canTransition, isStatus, isOnShortlist } from '../../src/lib/outreach/s
 import { maskPhone, normalizePhone } from '../../src/lib/outreach/normalize.js';
 import { unknownPlaceholders, DEFAULT_TEMPLATE } from '../../src/lib/outreach/template.js';
 import {
-    contactIdFor, enqueueInvites, cancelQueued, runQueue, queueStatus, rateStatus, kickWorker, defaultReminderHours, enqueueJob, sendSoon,
+    contactIdFor, enqueueInvites, cancelQueued, runQueue, queueStatus, rateStatus, kickWorker, defaultReminderHours, enqueueJob, sendSoon, kindLive, liveKinds, switchFor,
 } from './outreachQueue.js';
 import { notify } from './notify.js';
 import { cityGroupFor } from '../../src/lib/outreach/cityGroups.js';
@@ -296,7 +296,7 @@ export const handleApply = async (req, res, { db, token, now = nowIso() }) => {
         await notify('outreach-city-group', uid, {
             name: value.fullName, city: cityGroup.city, groupTitle: cityGroup.title, groupUrl: cityGroup.url, campaignTitle: campaign.title,
         }, { skip: ['email', 'whatsapp'], ref: { collection: apps.path, id: result.appId } }).catch(e => console.warn('[outreach] city group notice failed:', e.message));
-        if (isWhatsAppConfigured() && !result.optedOut) {
+        if (kindLive('city_group') && !result.optedOut) {
             const id = await enqueueJob(db, { campaignId: campDoc.id, appId: result.appId, kind: 'city_group', data: { city: cityGroup.city, groupUrl: cityGroup.url }, createdBy: 'WhatsApp API' });
             await sendSoon(db, id).catch(() => null);
         }
@@ -337,7 +337,7 @@ const handleList = async (req, res, { db }) => {
             updatedAt: priv.updatedAt || null,
             updatedBy: priv.updatedBy || null,
         },
-        whatsappApi: { configured, queue, rate },
+        whatsappApi: { configured, queue, rate, templates: configured ? liveKinds() : {} },
         wame: await wameStatus(db),
     });
 };
@@ -472,7 +472,7 @@ const afterShortlisted = async (req, db, campaignId, ids, actor) => {
     const [campSnap, privSnap] = await Promise.all([campRef.get(), privateRef(campRef).get()]);
     const campaign = campSnap.data() || {};
     const groupLink = privSnap.exists ? privSnap.data().whatsappGroupLink || '' : '';
-    const apiOn = isWhatsAppConfigured();
+    const apiOn = kindLive('invite');
     const out = { inApp: 0, api: 0, byHand: 0 };
     for (const appId of ids) {
         const snap = await campRef.collection('applications').doc(appId).get();
@@ -588,6 +588,7 @@ const startWorker = async (req, db) => {
 
 const handleSend = async (req, res, { db, token }) => {
     if (!isWhatsAppConfigured()) return send(res, 409, { success: false, error: 'The WhatsApp API isn’t set up yet. Use Open WhatsApp instead.' });
+    if (!kindLive('invite')) return send(res, 409, { success: false, error: `The shortlist template isn’t switched on yet (${switchFor('invite')}). Use Open WhatsApp instead.` });
     const campaignId = str(req.body?.campaignId, 120);
     const ids = [...new Set((Array.isArray(req.body?.appIds) ? req.body.appIds : []).map(id => str(id, 120)).filter(Boolean))];
     if (!campaignId || !ids.length) return send(res, 400, { success: false, error: 'Choose at least one person.' });

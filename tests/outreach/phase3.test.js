@@ -44,6 +44,7 @@ beforeEach(() => {
     vi.setSystemTime(Date.parse('2026-11-01T06:00:00Z'));
     vi.stubEnv('WHATSAPP_ACCESS_TOKEN', 'test-token');
     vi.stubEnv('WHATSAPP_PHONE_NUMBER_ID', '123');
+    ['campaign_shortlist', 'campaign_join_reminder', 'campaign_deliverables', 'campaign_deliverable_changes', 'creator_city_group', 'all_posts_approved', 'campaign_payout_sent'].forEach(t => vi.stubEnv(`WHATSAPP_TEMPLATE_${t.toUpperCase()}`, t));
     vi.stubEnv('LINK_SIGNING_SECRET', 'test-secret');
     vi.stubEnv('OUTREACH_WA_PER_MINUTE', '50');
     vi.stubEnv('CRON_SECRET', '');
