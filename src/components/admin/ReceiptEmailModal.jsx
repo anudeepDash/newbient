@@ -15,7 +15,7 @@ const ReceiptEmailModal = ({ isOpen, onClose, receipt, onSend }) => {
         messageBody: `<p>Hi,</p>
 <p>We've paid <strong>₹${amount}</strong> to <strong>${payee}</strong>.</p>
 <p>The receipt is below. You can check the payment online by scanning its QR code or using the button.</p>
-<p>Thank you!<br/>Newbi Entertainment</p>`,
+<p>Thank you!<br/>Newbi Entertainment &amp; Marketing LLP</p>`,
         theme: 'dark',
     }), [receipt, amount, payee]);
 

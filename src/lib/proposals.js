@@ -129,7 +129,7 @@ export const proposalWhatsAppText = (p, link) => {
         `${n.validUntil ? `The quote is valid until ${n.validUntil}. ` : ''}If you'd like anything changed, just reply here and we'll update it.`,
         '',
         'Thanks,',
-        'Team Newbi Entertainment',
+        'Team Newbi Entertainment & Marketing LLP',
     ].join('\n');
 };
 
@@ -147,7 +147,7 @@ export const proposalEmail = (p) => {
             `<p>Hi${n.greet ? ` <strong>${escapeHtml(n.greet)}</strong>` : ''},</p>`,
             `<p>${introLine(n, (t) => `<strong>${escapeHtml(t)}</strong>`, escapeHtml)}</p>`,
             `<p>You can read it in full and accept it online using the button below. If you'd like anything changed, just reply to this email.</p>`,
-            `<p>Best regards,<br/>Newbi Entertainment</p>`,
+            `<p>Best regards,<br/>Newbi Entertainment &amp; Marketing LLP</p>`,
         ].join('\n'),
     };
 };
@@ -166,6 +166,6 @@ export const proposalEmailText = (p, link) => {
         `${n.validUntil ? `The quote is valid until ${n.validUntil}. ` : ''}If you'd like anything changed, just reply to this email.`,
         '',
         'Best regards,',
-        'Newbi Entertainment',
+        'Newbi Entertainment & Marketing LLP',
     ].join('\n');
 };

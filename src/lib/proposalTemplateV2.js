@@ -21,7 +21,7 @@ export const DEFAULT_V2_PROPOSAL_DATA = {
     campaignSubtitle: "India Tour 2026–27",
     showDuration: true,
     campaignDuration: "OCT '26 – MAR '27",
-    introParagraph: "NewBi Entertainment & Marketing LLP is pleased to present this multi-city promotion proposal for Sonu Nigam's Revolution India Tour — Three Decades, One Voice — across 75 cities. Our approach combines online community engagement and creator-led content to build awareness and support ticket sales in every tour city, with NewBi managing overall execution in Bengaluru directly.",
+    introParagraph: "Newbi Entertainment & Marketing LLP is pleased to present this multi-city promotion proposal for Sonu Nigam's Revolution India Tour — Three Decades, One Voice — across 75 cities. Our approach combines online community engagement and creator-led content to build awareness and support ticket sales in every tour city, with Newbi managing overall execution in Bengaluru directly.",
     showWhatsInside: true,
     whatsInside: [
         { num: '01', title: 'Executive Summary & Objective' },
@@ -40,8 +40,8 @@ export const DEFAULT_V2_PROPOSAL_DATA = {
     strategySub: 'STRATEGIC OUTLINE',
     strategyTitle: 'Executive Summary',
     executiveParagraphs: [
-        "This proposal outlines the multi-city marketing plan NewBi will execute for Sonu Nigam's Revolution India Tour 2026–27 — Three Decades, One Voice — presented by ITW Playworks, across a network of 75 cities nationally, anchored by key markets including Bengaluru, Pune, Surat, Indore, Bhopal, Nagpur, Lucknow, Chandigarh, and Jodhpur. NewBi is an entertainment and youth marketing company that builds online engagement, connecting the artist's wide, multi-generational fan base with student, youth, and music audiences across the tour.",
-        "Through a combination of fan community engagement, creator marketing, and campus outreach at national scale, our objective is to build awareness of the tour and support ticket sales across all 75 cities. Bengaluru, as the tour's primary market, will be managed directly by NewBi, with overall coordination and oversight handled from the ground up."
+        "This proposal outlines the multi-city marketing plan Newbi will execute for Sonu Nigam's Revolution India Tour 2026–27 — Three Decades, One Voice — presented by ITW Playworks, across a network of 75 cities nationally, anchored by key markets including Bengaluru, Pune, Surat, Indore, Bhopal, Nagpur, Lucknow, Chandigarh, and Jodhpur. Newbi is an entertainment and youth marketing company that builds online engagement, connecting the artist's wide, multi-generational fan base with student, youth, and music audiences across the tour.",
+        "Through a combination of fan community engagement, creator marketing, and campus outreach at national scale, our objective is to build awareness of the tour and support ticket sales across all 75 cities. Bengaluru, as the tour's primary market, will be managed directly by Newbi, with overall coordination and oversight handled from the ground up."
     ],
     showPrimaryObjective: true,
     primaryObjectiveTitle: 'PRIMARY OBJECTIVE',
@@ -73,7 +73,7 @@ export const DEFAULT_V2_PROPOSAL_DATA = {
             title: "Promoting Across City Pages, Campuses, and Creators",
             bullets: [
                 "City pages: city-specific announcements and locally relevant content, released in stages for each tour stop, along with tour creative assets shared across all pages.",
-                "Campus pages: college-specific content using NewBi's existing campus network across all 75 tour cities.",
+                "Campus pages: college-specific content using Newbi's existing campus network across all 75 tour cities.",
                 "Larger creators: 1–2 well-known influencers engaged per city to lend credibility and reach a wide audience.",
                 "Smaller creators: a larger number of smaller creators engaged, mostly on a barter or ticket basis, to build authentic, wide-reaching content across each city.",
                 "Regional-language content prepared for Indore, Bhopal, Nagpur, Lucknow, Chandigarh, and Jodhpur, in addition to the standard English-language content."
@@ -91,7 +91,7 @@ export const DEFAULT_V2_PROPOSAL_DATA = {
             stepNumber: 4,
             title: "WhatsApp Outreach in Campuses",
             bullets: [
-                "City-wise WhatsApp messages sent through NewBi's campus ambassador network, covering early-bird pricing, group offers, and countdown reminders.",
+                "City-wise WhatsApp messages sent through Newbi's campus ambassador network, covering early-bird pricing, group offers, and countdown reminders.",
                 "Simple, shareable messages prepared for students to forward to one another.",
                 "A separate WhatsApp and alumni network outreach for the wider, older audience in each city, outside the campus network."
             ]
@@ -122,7 +122,7 @@ export const DEFAULT_V2_PROPOSAL_DATA = {
     deliverablesTableNote: 'FIGURES ARE INDICATIVE AND MAY CHANGE BASED ON CREATORS ENGAGED AND BUDGET',
     showCityNote: true,
     cityNoteTitle: 'NOTE ON BENGALURU',
-    cityNoteText: 'Bengaluru is treated as the primary market for this campaign. NewBi will manage overall execution in Bengaluru directly, in addition to the digital promotion plan applied across all 75 cities.',
+    cityNoteText: 'Bengaluru is treated as the primary market for this campaign. Newbi will manage overall execution in Bengaluru directly, in addition to the digital promotion plan applied across all 75 cities.',
 
     // Page 6: Commercials / Pricing Structure
     showCommercials: true,
@@ -150,21 +150,21 @@ export const DEFAULT_V2_PROPOSAL_DATA = {
     showDeepDive: true,
     deepDiveSub: 'CITY DEEP-DIVE · BENGALURU',
     deepDiveTitle: '05 · Bengaluru Management',
-    deepDiveIntro: 'Bengaluru is the tour\'s primary market. NewBi will manage overall execution in Bengaluru directly, in addition to the digital promotion plan applied across the wider city network.',
+    deepDiveIntro: 'Bengaluru is the tour\'s primary market. Newbi will manage overall execution in Bengaluru directly, in addition to the digital promotion plan applied across the wider city network.',
     deepDiveSubsections: [
         {
             badge: '5.1',
             title: 'Direct Management',
             bullets: [
-                'NewBi will take direct ownership of the Bengaluru campaign, coordinating fan-page activation, creator engagement, and campus outreach for the city.',
-                'A single point of contact from NewBi will be assigned to ITW Playworks for all Bengaluru-related coordination and updates.'
+                'Newbi will take direct ownership of the Bengaluru campaign, coordinating fan-page activation, creator engagement, and campus outreach for the city.',
+                'A single point of contact from Newbi will be assigned to ITW Playworks for all Bengaluru-related coordination and updates.'
             ]
         },
         {
             badge: '5.2',
             title: 'Campus Network',
             bullets: [
-                'Outreach across 8–12 partner colleges in Bengaluru, using NewBi\'s existing campus relationships and fan-page network.',
+                'Outreach across 8–12 partner colleges in Bengaluru, using Newbi\'s existing campus relationships and fan-page network.',
                 'Campus ambassadors assigned to manage WhatsApp distribution, society outreach, and local announcements.'
             ]
         },
@@ -182,7 +182,7 @@ export const DEFAULT_V2_PROPOSAL_DATA = {
     closingSub: 'CLOSING',
     closingTitle: '06 · Next Steps',
     closingText: "We'd welcome the opportunity to walk ITW Playworks through this plan in detail and confirm city scope, creator mix, and budget against the final tour schedule and city list.",
-    preparedBy: 'NewBi Entertainment & Marketing LLP',
+    preparedBy: 'Newbi Entertainment & Marketing LLP',
     showSignatures: false,
     showSeal: false,
     ourSignature: null,

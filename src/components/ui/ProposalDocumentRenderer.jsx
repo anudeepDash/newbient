@@ -255,7 +255,7 @@ export default function ProposalDocumentRenderer({
                                 <div className="flex items-center justify-between border-t border-gray-200 pt-6">
                                     <div>
                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Prepared By</p>
-                                        <p className="text-[13px] font-bold text-black">{formData.preparedBy || 'NewBi Entertainment & Marketing LLP'}</p>
+                                        <p className="text-[13px] font-bold text-black">{formData.preparedBy || 'Newbi Entertainment & Marketing LLP'}</p>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Quote Reference</p>
@@ -317,11 +317,11 @@ export default function ProposalDocumentRenderer({
 const pillText = (t) => (!t || /^official strategic quotation$/i.test(String(t).trim()) ? 'Official Strategic Proposal' : t);
 
 /* The intro opens with our name in bold, as on the reference design. */
-const COMPANY = 'NewBi Entertainment & Marketing LLP';
+const COMPANY = 'Newbi Entertainment & Marketing LLP';
 const boldCompany = (text) => {
     const t = String(text || '');
     if (!t || t.includes('**')) return t;
-    const re = /^(NewBi Entertainment & Marketing LLP)/i;
+    const re = /^(Newbi Entertainment & Marketing LLP)/i;
     return t.replace(re, '**$1**');
 };
 

@@ -53,7 +53,7 @@ export const STUDIO_KINDS = {
         examples: [
             'Service contract for social media management for 12 months, ₹50,000 total value',
             'NDA and service contract for a brand collaboration with Sunrise Studios',
-            'MOU for a joint venture between Newbi Entertainment and a production house',
+            'MOU for a joint venture between Newbi Entertainment & Marketing LLP and a production house',
             'Freelancer contract for video editing, 6-month engagement, ₹25,000 a month',
             'Content licensing contract for YouTube channel management',
         ],
@@ -192,7 +192,7 @@ export const buildProposal = (ai = {}, previous = null) => {
         paymentScalingText: pick('paymentScalingText', 'terms'),
         deepDiveIntro: pick('deepDiveIntro'),
         closingText: pick('closingText'),
-        preparedBy: pick('preparedBy') || 'NewBi Entertainment & Marketing LLP',
+        preparedBy: pick('preparedBy') || 'Newbi Entertainment & Marketing LLP',
     };
     // Headings the AI may rewrite for this client.
     ['strategyTitle', 'blueprintTitle', 'deliverablesTitle', 'commercialsTitle', 'deepDiveSub', 'deepDiveTitle', 'closingTitle', 'cityNoteTitle']
@@ -264,7 +264,7 @@ export const blankContract = () => ({
     status: 'Draft',
     effectiveDate: todayKey(),
     parties: {
-        firstParty: { name: 'Newbi Entertainment', address: 'Bangalore, India', role: 'Service Provider', email: '' },
+        firstParty: { name: 'Newbi Entertainment & Marketing LLP', address: 'Bangalore, India', role: 'Service Provider', email: '' },
         secondParty: { name: '', address: '', role: 'Client', email: '' },
     },
     details: { projectName: '', purpose: '', duration: '', territory: 'India' },
@@ -310,7 +310,7 @@ export const buildContract = (ai = {}, previous = null) => {
         parties: {
             firstParty: {
                 ...base.parties.firstParty,
-                name: keep(fp.name, base.parties.firstParty.name) || 'Newbi Entertainment',
+                name: keep(fp.name, base.parties.firstParty.name) || 'Newbi Entertainment & Marketing LLP',
                 address: keep(fp.address, base.parties.firstParty.address),
                 role: keep(fp.role, base.parties.firstParty.role),
                 email: keep(fp.email, base.parties.firstParty.email),

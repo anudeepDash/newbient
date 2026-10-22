@@ -237,7 +237,7 @@ export default function SharedDocumentViewer({
         type === 'proposal' && documentData.validUntil && { label: 'Valid until', value: fmtDate(documentData.validUntil) },
     ].filter(Boolean);
 
-    const fromName = documentData.senderName || documentData.parties?.firstParty?.name || 'Newbi Entertainment';
+    const fromName = documentData.senderName || documentData.parties?.firstParty?.name || 'Newbi Entertainment & Marketing LLP';
     const fromEmail = documentData.senderEmail || documentData.parties?.firstParty?.email;
     const toName = documentData.clientName || documentData.parties?.secondParty?.name || 'Client';
     const toEmail = documentData.clientEmail || documentData.parties?.secondParty?.email;

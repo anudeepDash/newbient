@@ -162,7 +162,7 @@ const AgreementManagement = () => {
     const share = async (a) => {
         if (navigator.share) {
             try {
-                await navigator.share({ title: `Contract for ${contractParty(a) || 'you'}`, text: 'Your contract from Newbi Entertainment.', url: urlFor(a, 'share') });
+                await navigator.share({ title: `Contract for ${contractParty(a) || 'you'}`, text: 'Your contract from Newbi Entertainment & Marketing LLP.', url: urlFor(a, 'share') });
                 markShared(a, 'share');
                 return;
             } catch (err) {
@@ -173,7 +173,7 @@ const AgreementManagement = () => {
     };
     const whatsapp = (a) => {
         const name = contractParty(a);
-        const text = `Hi${name ? ` ${name}` : ''}, here is your contract from Newbi Entertainment: ${urlFor(a, 'whatsapp')}`;
+        const text = `Hi${name ? ` ${name}` : ''}, here is your contract from Newbi Entertainment & Marketing LLP: ${urlFor(a, 'whatsapp')}`;
         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
         markShared(a, 'whatsapp');
     };
