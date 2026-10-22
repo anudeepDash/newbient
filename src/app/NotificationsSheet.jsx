@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import CheckCheck from 'lucide-react/dist/esm/icons/check-check';
@@ -11,9 +11,32 @@ import { Sheet, Button } from '../components/app';
 import { appPath, isAppHost, landingUrl } from './host';
 import { legacyAppPath } from './redirects';
 import AuthGate from './auth/AuthGate';
+import { requestNotificationPermission } from '../lib/notifications';
 import { useT } from '../i18n';
 
 /* The bell's list: your notifications plus global announcements. */
+
+// Push on this device: offered here, and the browser asks only after a tap on "Turn on".
+const PushOffer = () => {
+    const t = useT();
+    const supported = typeof window !== 'undefined' && 'Notification' in window;
+    const [permission, setPermission] = useState(() => (supported ? window.Notification.permission : 'unsupported'));
+    const [busy, setBusy] = useState(false);
+    if (permission !== 'default') return null;
+    const turnOn = async () => {
+        setBusy(true);
+        await requestNotificationPermission();
+        setBusy(false);
+        setPermission(window.Notification.permission);
+    };
+    return (
+        <div className="mb-4 flex items-center gap-3 rounded-2xl bg-black/[0.03] p-4 dark:bg-white/[0.04]">
+            <Bell size={20} className="shrink-0 text-gray-500 dark:text-zinc-400" />
+            <p className="min-w-0 flex-1 text-[14px] leading-snug text-gray-600 dark:text-zinc-400">{t('Get updates about your passes and campaigns on this device. You can turn them off any time.')}</p>
+            <Button size="sm" onClick={turnOn} loading={busy}>{t('Turn on')}</Button>
+        </div>
+    );
+};
 
 const timeAgo = (value) => {
     const date = value ? new Date(value) : null;
@@ -67,6 +90,7 @@ const NotificationsSheet = ({ open, onClose }) => {
             )}
         >
             <AuthGate title={t('Your notifications')} message={t('Sign in to see updates about your passes, campaigns and giveaways.')}>
+                <PushOffer />
                 {notifications.length === 0 ? (
                     <div className="flex flex-col items-center gap-3 py-12 text-center text-gray-500 dark:text-zinc-500">
                         <Bell size={28} />

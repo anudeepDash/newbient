@@ -1,8 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from '@vercel/speed-insights/react';
+import ConsentedAnalytics from '../components/consent/ConsentedAnalytics';
+import ConsentBanner from '../components/consent/ConsentBanner';
 import './landing.css';
 import LandingApp from './LandingApp';
 import { findRoute } from './routes';
@@ -30,9 +30,9 @@ const app = (
         <BrowserRouter>
             <LandingApp />
         </BrowserRouter>
-        {/* Vercel Web Analytics + Speed Insights; both render nothing, so hydration is unaffected. */}
-        <Analytics />
-        <SpeedInsights />
+        {/* Analytics (only after consent) and the consent banner render nothing until mounted, so hydration is unaffected. */}
+        <ConsentedAnalytics />
+        <ConsentBanner />
     </StrictMode>
 );
 
@@ -50,11 +50,12 @@ const route = findRoute(window.location.pathname);
 });
 
 // A new deploy renames chunks; reload once instead of leaving a broken page.
-window.addEventListener('vite:preloadError', () => {
+window.addEventListener('vite:preloadError', (event) => {
     try {
         const last = Number(sessionStorage.getItem('nb-landing-reload') || 0);
         if (Date.now() - last > 10000) {
             sessionStorage.setItem('nb-landing-reload', String(Date.now()));
+            event.preventDefault();
             window.location.reload();
         }
     } catch { /* storage blocked: leave the page as it is */ }

@@ -18,6 +18,11 @@ import Heart from 'lucide-react/dist/esm/icons/heart';
 import UserRound from 'lucide-react/dist/esm/icons/user-round';
 import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
 import Globe from 'lucide-react/dist/esm/icons/globe';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import Cookie from 'lucide-react/dist/esm/icons/cookie';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import { openConsentSettings } from '../../lib/consent';
 import { Link } from 'react-router-dom';
 import { useAppStore, hasCapability } from '../../lib/store/appStore';
 import { useTheme } from '../../hooks/useTheme';
@@ -65,6 +70,14 @@ const ProfileDetails = () => {
         { to: appPath('/tickets'), icon: Ticket, label: 'Tickets', hint: 'Shows on sale' },
         // The landing site is another page load (and another host in production), so a plain link.
         { href: landingUrl('/'), icon: Globe, label: 'newbi.live', hint: 'What we do, our work and contact' },
+    ];
+
+    // Your data: the policies, the cookie choice, and how to get a copy or delete it.
+    const privacyLinks = [
+        { href: landingUrl('/privacy'), icon: Lock, label: 'Privacy Policy', hint: 'What we collect and why. We never sell it.' },
+        { href: landingUrl('/terms'), icon: FileText, label: 'Terms of Service', hint: 'The rules for using Newbi' },
+        { onClick: openConsentSettings, icon: Cookie, label: 'Cookie settings', hint: 'Choose what this browser allows' },
+        { href: 'mailto:privacy@newbi.live?subject=My%20Newbi%20data', icon: Trash2, label: 'Get a copy or delete your data', hint: 'Write to privacy@newbi.live; we reply within 7 days' },
     ];
 
     return (
@@ -133,6 +146,26 @@ const ProfileDetails = () => {
                             return (
                             <li key={label}>
                                 <Row {...(href ? { href } : { to })} className={`flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-white dark:hover:bg-white/[0.08] ${ROW}`}>
+                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black/[0.05] text-gray-700 dark:bg-white/[0.08] dark:text-zinc-300"><Icon size={18} /></span>
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block text-[15px] font-bold">{t(label)}</span>
+                                        <span className="block truncate text-[13px] text-gray-500 dark:text-zinc-400">{t(hint)}</span>
+                                    </span>
+                                    <ChevronRight size={17} className="shrink-0 text-gray-400" />
+                                </Row>
+                            </li>
+                            );
+                        })}
+                    </ul>
+                </Panel>
+
+                <Panel label={t('Privacy and your data')}>
+                    <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                        {privacyLinks.map(({ href, onClick, icon: Icon, label, hint }) => {
+                            const Row = href ? 'a' : 'button';
+                            return (
+                            <li key={label}>
+                                <Row {...(href ? { href } : { type: 'button', onClick })} className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white dark:hover:bg-white/[0.08] ${ROW}`}>
                                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black/[0.05] text-gray-700 dark:bg-white/[0.08] dark:text-zinc-300"><Icon size={18} /></span>
                                     <span className="min-w-0 flex-1">
                                         <span className="block text-[15px] font-bold">{t(label)}</span>

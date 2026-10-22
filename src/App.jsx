@@ -219,7 +219,9 @@ function AppContent() {
       const { checkUserRole } = useStore.getState();
       if (checkUserRole) {
         checkUserRole(user).then(() => {
-          if (user) {
+          // Refresh this device's push token only if notifications are already allowed;
+          // the browser's prompt shows only when someone taps "Turn on" (NotificationsSheet).
+          if (user && typeof window !== 'undefined' && window.Notification?.permission === 'granted') {
             requestNotificationPermission();
           }
         }).catch(err => console.warn("Auth state check warning:", err));

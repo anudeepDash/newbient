@@ -4,14 +4,15 @@ import './index.css'
 import App from './App.jsx'
 import { initLang } from './i18n'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
-import { Analytics } from '@vercel/analytics/react'
-import { SpeedInsights } from '@vercel/speed-insights/react'
+import ConsentedAnalytics from './components/consent/ConsentedAnalytics.jsx'
+import ConsentBanner from './components/consent/ConsentBanner.jsx'
 
 import { reloadForNewChunks } from './lib/chunkReload'
 
-// Handle dynamic import failures (common after new deployments)
-window.addEventListener('vite:preloadError', () => {
-  reloadForNewChunks();
+// A page chunk or its CSS failed to load (usually right after a deploy). While a reload is
+// on its way, don't let the error reach the page: it would flash the error screen first.
+window.addEventListener('vite:preloadError', (event) => {
+  if (reloadForNewChunks()) event.preventDefault();
 });
 initLang()
 
@@ -20,9 +21,9 @@ createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <App />
     </ErrorBoundary>
-    {/* Vercel Web Analytics + Speed Insights; they only report on Vercel deployments. */}
-    <Analytics />
-    <SpeedInsights />
+    {/* Vercel Web Analytics + Speed Insights, only after the visitor allows analytics. */}
+    <ConsentedAnalytics />
+    <ConsentBanner />
   </>
 )
 

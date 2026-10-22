@@ -18,6 +18,8 @@ import NotificationsSheet from './NotificationsSheet';
 import SignInSheet from './auth/SignInSheet';
 import NewbiLogo from '../components/brand/NewbiLogo';
 import SplashHold from '../components/ui/SplashHold';
+import ErrorBoundary from '../components/ErrorBoundary';
+import AppFooter from './AppFooter';
 import LangToggle from '../i18n/LangToggle';
 import { useT } from '../i18n';
 
@@ -169,9 +171,13 @@ const AppLayout = () => {
 
             {/* ── Page ── */}
             <main className="min-w-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-[calc(3.5rem+env(safe-area-inset-top))] lg:pb-16 lg:pt-[4.5rem]">
-                <Suspense fallback={<PageFallback />}>
-                    <Outlet />
-                </Suspense>
+                {/* A page that crashes shows its error here, inside the shell; another tab clears it. */}
+                <ErrorBoundary inline resetKey={location.pathname}>
+                    <Suspense fallback={<PageFallback />}>
+                        <Outlet />
+                    </Suspense>
+                </ErrorBoundary>
+                <AppFooter />
             </main>
 
             {/* ── Tab bar (phones and tablets): a floating glass pill; only the active tab shows its label ── */}

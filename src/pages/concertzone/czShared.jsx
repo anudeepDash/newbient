@@ -8,6 +8,7 @@ import Moon from 'lucide-react/dist/esm/icons/moon';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../hooks/useTheme';
 import { cn } from '../../lib/utils';
+import { useConsent } from '../../lib/consent';
 
 /*
  * ConcertZone is its own brand (its own header, wordmark and footer), so it
@@ -48,7 +49,8 @@ export const getVideoEmbedUrl = (url) => {
     else if (url.includes('youtube.com/shorts/')) id = url.split('shorts/')[1]?.split('?')[0]?.split('&')[0];
     else if (url.includes('youtube.com/embed/')) id = url.split('embed/')[1]?.split('?')[0]?.split('&')[0];
 
-    if (id) return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&playsinline=1&showinfo=0&rel=0&modestbranding=1`;
+    // youtube-nocookie: YouTube's privacy-enhanced mode, which sets fewer cookies.
+    if (id) return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&playsinline=1&showinfo=0&rel=0&modestbranding=1`;
     if (url.includes('vimeo.com/')) {
         const vid = url.split('/').pop()?.split('?')[0];
         return `https://player.vimeo.com/video/${vid}?autoplay=1&muted=1&background=1&loop=1&byline=0&title=0`;
@@ -61,8 +63,11 @@ export const getVideoEmbedUrl = (url) => {
 };
 
 // The post's cover (with the framing set in the editor), or its video when `video` is on.
+// A YouTube, Vimeo or Instagram video plays only with the visitor's OK for embedded videos
+// (src/lib/consent.js); otherwise the cover shows.
 export function PostMedia({ post, video = false, eager = false, className = '' }) {
-    if (video && post.videoUrl) {
+    const consent = useConsent();
+    if (video && post.videoUrl && (isRawVideo(post.videoUrl) || consent?.media)) {
         return isRawVideo(post.videoUrl) ? (
             <video src={post.videoUrl} poster={post.coverImage || undefined} autoPlay muted loop playsInline className={cn('w-full h-full object-cover', className)} />
         ) : (
