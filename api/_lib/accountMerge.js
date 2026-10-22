@@ -42,7 +42,7 @@ export class MergeError extends Error {
 
 const str = (v, max = 500) => String(v ?? '').trim().slice(0, max);
 const lower = (v) => str(v, 200).toLowerCase();
-const toE164 = (phone) => {
+export const toE164 = (phone) => {
     const raw = String(phone || '').trim();
     const digits = raw.replace(/\D/g, '');
     if (!digits) return '';
@@ -50,7 +50,7 @@ const toE164 = (phone) => {
     if (digits.length === 10) return `+91${digits}`;
     return `+${digits}`;
 };
-const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+export const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
 
 export const maskPhone = (e164) => {
     const d = String(e164 || '').replace(/\D/g, '');
@@ -65,14 +65,14 @@ export const maskEmail = (email) => {
 };
 const firstName = (u) => str(u?.name || u?.displayName, 120).split(/\s+/)[0] || '';
 
-const authUserOr = async (adminAuth, fn) => {
+export const authUserOr = async (adminAuth, fn) => {
     try { return await fn(adminAuth); } catch (e) {
         if (String(e?.code || '').includes('user-not-found')) return null;
         throw e;
     }
 };
 
-const userDoc = async (db, uid) => {
+export const userDoc = async (db, uid) => {
     const snap = await db.collection('users').doc(uid).get();
     return snap.exists ? snap.data() : {};
 };
@@ -153,7 +153,7 @@ export const readProof = async ({ token, proofToken, verifyProof }) => {
 
 /* ── what the other account holds ─────────────────────────────────────── */
 
-const ownCreatorDocs = async (db, uid) => {
+export const ownCreatorDocs = async (db, uid) => {
     const direct = await db.collection('creators').doc(uid).get();
     const legacy = await db.collection('creators').where('uid', '==', uid).get();
     return [direct, ...legacy.docs].filter((d, i, all) => d.exists && all.findIndex(o => o.ref.path === d.ref.path) === i);
@@ -171,7 +171,7 @@ export const describeAccount = async (db, uid) => {
     return { passes, ticketOrders: orders, giveawayEntries: entries, creatorProfile: creators.length > 0 };
 };
 
-const isStaff = async (db, u, authUser) => {
+export const isStaff = async (db, u, authUser) => {
     if (u.role) return true;
     const email = lower(authUser?.email || u.email);
     if (!email) return false;
@@ -255,7 +255,7 @@ const rekey = async (col, field, from, to, { idFor, extra = {} } = {}) => {
 const suffixId = (from, to) => (id) => (id.endsWith(`_${from}`) ? `${id.slice(0, -from.length)}${to}` : null);
 
 /* The creator profile and everything that points at it (see scripts/migrate-creators-to-uid.mjs). */
-const moveCreator = async ({ db, fromUid, toUid, fromCreators, fromUser, tokenRef, ownerRef }) => {
+export const moveCreator = async ({ db, fromUid, toUid, fromCreators, fromUser, tokenRef, ownerRef }) => {
     if (!fromCreators.length) return false;
     const [main, ...rest] = fromCreators;
     const data = main.data();

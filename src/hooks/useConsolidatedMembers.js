@@ -48,7 +48,8 @@ export function useConsolidatedMembers() {
 
     const members = useMemo(() => {
         const combined = [
-            ...(allUsers || []),
+            // A profile merged into another account is only a pointer now.
+            ...(allUsers || []).filter(u => !u.mergedInto),
             ...(creators || []).map(c => ({
                 id: c.uid || c.id,
                 email: c.email,

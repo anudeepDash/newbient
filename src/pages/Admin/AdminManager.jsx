@@ -207,15 +207,21 @@ const AdminManager = ({ view = 'team' }) => {
     const enriched = useMemo(() => {
         const byId = new Map();
         const byEmail = new Map();
+        const byPhone = new Map();
         (allUsers || []).forEach(u => {
+            if (u.mergedInto) return;
             byId.set(u.id, u);
             if (u.email) byEmail.set(String(u.email).toLowerCase(), u);
+            const digits = String(u.phone || u.phoneNumber || '').replace(/\D/g, '').slice(-10);
+            if (digits.length === 10) byPhone.set(digits, u);
         });
         const teamByEmail = new Map();
         admins.forEach(a => { if (a.email && a.role !== 'pending') teamByEmail.set(String(a.email).toLowerCase(), a); });
         return members.map(m => {
             const email = String(m.email || '').toLowerCase();
-            const account = byId.get(m.id) || (email ? byEmail.get(email) : null) || null;
+            // Phone sign-ins have no email, so a creator form or ticket is matched to them by number.
+            const digits = String(m.phone || '').replace(/\D/g, '').slice(-10);
+            const account = byId.get(m.id) || (email ? byEmail.get(email) : null) || (digits.length === 10 ? byPhone.get(digits) : null) || null;
             const adm = email ? teamByEmail.get(email) : null;
             return {
                 ...m,
@@ -900,6 +906,8 @@ const AdminManager = ({ view = 'team' }) => {
                 onSuspend={askSuspend}
                 onReinstate={reinstate}
                 onSignOut={askSignOutMember}
+                onConfirm={setConfirm}
+                notify={addToast}
             />
 
             <ConfirmSheet
