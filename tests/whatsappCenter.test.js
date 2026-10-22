@@ -126,7 +126,7 @@ describe('WhatsApp center', () => {
         expect(body.parameters.map(p => p.text)).toEqual(['Riya', 'Arijit Singh Live', 'https://chat.whatsapp.com/AbC', 'Post by Bengaluru']);
         expect(joined.parameters[0].payload).toMatch(/^j1\.c1\.p1\./);
         expect(stop.parameters[0].payload).toBe('stop');
-        expect(db.store.get('campaigns/c1/applications/p1')).toMatchObject({ status: 'message_sent' });
+        expect(db.store.get('campaigns/c1/applications/p1')).toMatchObject({ status: 'message_sent', delivery: { whatsapp: { status: 'sent' } } });
     });
 
     it('fills the campaign for team members when one is chosen, and greets unclear names as “there”', async () => {

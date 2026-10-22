@@ -107,5 +107,8 @@ export const DELIVERY_META = {
     cancelled: { label: 'Send stopped', tone: 'gray' },
 };
 
+/* Shortlisted while the template was off: told in the Newbi app only, so the WhatsApp invite can still go. */
+export const toldInAppOnly = (app) => app?.status === 'message_sent' && app.messageSentBy === 'Newbi app' && !app.delivery?.whatsapp?.status && !app.joinedAt;
+
 /* Has this person got an API message on its way or delivered? */
 export const IN_FLIGHT = new Set(['queued', 'retrying', 'sent', 'delivered', 'read']);
