@@ -24,7 +24,8 @@ import JoinPaths from './JoinPaths';
 import { useAppContent } from '../useAppContent';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
 import { campaignCard, feedCard } from '../cards';
-import { bySoonest, isUpcomingPass, passCard } from '../passes/passCards';
+import { bySoonest, isUpcomingPass } from '../passes/passCards';
+import PassTicket from '../passes/PassTicket';
 import { PageBody } from './PageHeader';
 import { SectionHeader, Rail, CardSkeleton, EmptyState, HeroPanel, GLASS } from './parts';
 import { cn } from '../../lib/utils';
@@ -196,7 +197,7 @@ const HomePage = () => {
             {upcoming.length > 0 && (
                 <section className="space-y-3">
                     <SectionHeader title={upcoming.length === 1 ? t('Your pass') : t('Your passes')} />
-                    <Rail>{upcoming.map(pass => <Card key={pass.ref} {...passCard(pass, { from: location })} />)}</Rail>
+                    <Rail>{upcoming.map(pass => <PassTicket key={pass.ref} pass={pass} from={location} />)}</Rail>
                 </section>
             )}
 

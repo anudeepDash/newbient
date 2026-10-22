@@ -23,6 +23,7 @@ import { accent } from '../theme';
 import { Button } from '../ui';
 import { BuilderCard, ImageSlot } from '../events/EditorParts';
 import { Field, Toggle, Choice, fieldCls, areaCls } from '../uploads/UploadKit';
+import CityInput, { cleanCity } from '../CityInput';
 import { EditorBar, PhoneBar, formatDay, slugify, todayKey, useConfirm, useImageField, useUnsavedWarning } from '../forms/kit';
 import { TASK_PRESETS, TASK_PRESET_MAP, giveawayEndsAt } from './giveawayUtils';
 
@@ -51,6 +52,7 @@ const EMPTY = {
     ticketCategories: [],
     venueLayout: '',
     location: '',
+    city: '',
     buttonText: 'PARTICIPATE NOW',
 };
 
@@ -184,6 +186,7 @@ const GiveawayEditor = ({ giveaway, giveaways, onDone }) => {
             slug: data.slug,
             description: data.description.trim(),
             prize: String(data.prize || '').trim(),
+            city: cleanCity(data.city),
             ticketsAvailable: Number(data.ticketsAvailable) || 0,
             ticketCategories: (data.ticketCategories || []).map(c => ({ ...c, price: Number(c.price) || 0 })),
             tasks: tasks.map(t => ({ ...t, label: t.label.trim(), entryScore: Math.round(Number(t.entryScore) || 0), config: { ...(t.config || {}), url: String(t.config?.url || '').trim() } })),
@@ -254,6 +257,9 @@ const GiveawayEditor = ({ giveaway, giveaways, onDone }) => {
                             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
                                 <Field label="Prize" optional hint="Used in the winner's notification">
                                     <input className={fieldCls} value={data.prize || ''} onChange={(e) => set({ prize: e.target.value })} placeholder="e.g. 2 GA passes" />
+                                </Field>
+                                <Field label="City" optional hint="Leave empty if it's open everywhere">
+                                    <CityInput className={fieldCls} value={data.city} onChange={(v) => set({ city: v })} />
                                 </Field>
                                 <Field label="Number available" hint="Shown as “N available”">
                                     <input className={cn(fieldCls, bad('ticketsAvailable'))} type="number" min="0" inputMode="numeric" value={data.ticketsAvailable} onChange={(e) => set({ ticketsAvailable: e.target.value })} />

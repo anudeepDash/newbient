@@ -18,6 +18,7 @@ import GuestlistTaskConfig from '../../components/admin/GuestlistTaskConfig';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import { Card as PanelCard, Badge, SegmentedTabs, Menu, MenuItem, Button as AdminButton } from '../../components/admin/ui';
 import { Field, Toggle, Choice, fieldCls, areaCls } from '../../components/admin/uploads/UploadKit';
+import CityInput, { cleanCity } from '../../components/admin/CityInput';
 import { BuilderCard, ImageSlot, splitDateTime } from '../../components/admin/events/EditorParts';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import { computeAvailability } from '../../lib/ticketing';
@@ -134,6 +135,7 @@ const UpcomingEventsManager = () => {
         category: '',
         description: '',
         location: '',
+        city: '',
         locationUrl: '',
         buttonText: '',
         image: '',
@@ -181,7 +183,7 @@ const UpcomingEventsManager = () => {
 
     const resetForm = () => {
         setNewEvent({
-            title: '', date: '', time: '', category: '', description: '', location: '', locationUrl: '', buttonText: '', image: '', hubImage: '', link: '', venueLayout: '', alsoPostToAnnouncements: false,
+            title: '', date: '', time: '', category: '', description: '', location: '', city: '', locationUrl: '', buttonText: '', image: '', hubImage: '', link: '', venueLayout: '', alsoPostToAnnouncements: false,
             isTicketed: false, ticketMode: 'qr', isGuestlistEnabled: false, guestlistMode: 'qr', perUserLimit: 5,
             hasGuestlistTask: false, guestlistTask: null, ticketCategories: [],
             imageTransform: { scale: 1, x: 0, y: 0 },
@@ -424,6 +426,7 @@ const UpcomingEventsManager = () => {
                 venueLayout: venueLayoutUrl || '', 
                 videoUrl: videoUrl || '',
                 buttonText: newEvent.buttonText || "LEARN MORE",
+                city: cleanCity(newEvent.city),
                 updatedAt: new Date().toISOString()
             };
 
@@ -545,10 +548,13 @@ const UpcomingEventsManager = () => {
                                 <Field label="Venue">
                                     <input className={fieldCls} required value={newEvent.location || ''} onChange={(e) => set({ location: e.target.value })} placeholder="e.g. Jayamahal Palace, Bengaluru" />
                                 </Field>
-                                <Field label="Google Maps link" optional>
-                                    <input className={fieldCls} inputMode="url" autoCapitalize="off" value={newEvent.locationUrl || ''} onChange={(e) => set({ locationUrl: e.target.value })} placeholder="https://maps.app.goo.gl/…" />
+                                <Field label="City" optional hint="Shown on the card; Community filters by it">
+                                    <CityInput className={fieldCls} value={newEvent.city} onChange={(v) => set({ city: v })} />
                                 </Field>
                             </div>
+                            <Field label="Google Maps link" optional>
+                                <input className={fieldCls} inputMode="url" autoCapitalize="off" value={newEvent.locationUrl || ''} onChange={(e) => set({ locationUrl: e.target.value })} placeholder="https://maps.app.goo.gl/…" />
+                            </Field>
                             <Field label="Category" optional>
                                 <ThemedSelect className={selectCls} value={newEvent.category || ''} onChange={(e) => set({ category: e.target.value })}>
                                     <option value="">No category</option>

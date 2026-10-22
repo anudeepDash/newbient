@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAppStore } from '../../lib/store/appStore';
@@ -99,7 +100,7 @@ const FormPage = ({ overlay = false }) => {
             onClose={close}
             back={back}
             label={form.title}
-            hero={<ExpandedHero image={isPresent(form.image) ? form.image : null} icon={FormIcon} chips={[{ label: closed ? t('Closed') : null }]} />}
+            hero={<ExpandedHero image={isPresent(form.image) ? form.image : null} icon={FormIcon} chips={[{ icon: MapPin, label: form.city }, { label: closed ? t('Closed') : null }]} />}
             bar={bar}
         >
             <ExpandedTitle title={form.title} />

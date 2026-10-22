@@ -94,6 +94,7 @@ const publicGiveaway = (g) => ({
     description: str(g.description, 4000),
     posterUrl: g.posterUrl || null,
     prize: pick(g.prize, g.prizes) || null,
+    city: str(g.city, 80) || null,
     endsAt: giveawayEndsAt(g)?.toISOString() || null,
     ended: giveawayHasEnded(g),
     question: str(g.question || g.entryQuestion, 300) || null,
