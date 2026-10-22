@@ -11,6 +11,7 @@ import { useStore } from '../../../lib/store';
 import { notifyAllUsers } from '../../../lib/notificationTriggers';
 import { cn } from '../../../lib/utils';
 import WhereItShows from '../ticketing/WhereItShows';
+import CityInput, { cleanCity } from '../CityInput';
 
 /*
  * Create or edit a standalone guestlist (one that isn't part of an event made
@@ -25,7 +26,7 @@ const COLORS = [
 ];
 
 const EMPTY = {
-    title: '', date: '', time: '', location: '', locationUrl: '', description: '', status: 'Open',
+    title: '', date: '', time: '', location: '', city: '', locationUrl: '', description: '', status: 'Open',
     maxSpots: 100, currentSpots: 0, perUserLimit: 2,
     image: '', highlightColor: '#2ebfff', isPinned: false, imageTransform: { scale: 1.05, x: 0, y: 0 },
     guestlistEnabled: true, guestlistMode: 'qr', hasGuestlistTask: false, guestlistTask: null, externalLink: '',
@@ -37,6 +38,7 @@ const fromDoc = (gl) => ({
     date: String(gl.date || '').slice(0, 10),
     time: gl.time || '',
     location: gl.location || '',
+    city: gl.city || '',
     locationUrl: gl.locationUrl || '',
     description: gl.description || '',
     status: gl.status || 'Open',
@@ -128,6 +130,7 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
                 title: form.title.trim(),
                 time: form.time.trim(),
                 location: form.location.trim(),
+                city: cleanCity(form.city),
                 locationUrl: form.locationUrl.trim(),
                 externalLink: form.externalLink.trim(),
                 maxSpots: Math.floor(Number(form.maxSpots)) || 0,
@@ -204,10 +207,13 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
                         <Field label="Where">
                             <input className={fieldCls} value={form.location} onChange={(e) => set({ location: e.target.value })} placeholder="Rooftop lounge, Bandra" />
                         </Field>
-                        <Field label="Google Maps link" optional hint="Adds a Directions button">
-                            <input className={fieldCls} type="url" inputMode="url" autoCapitalize="off" value={form.locationUrl} onChange={(e) => set({ locationUrl: e.target.value })} placeholder="https://maps.app.goo.gl/…" />
+                        <Field label="City" optional hint="Shown on the card; Community filters by it">
+                            <CityInput className={fieldCls} value={form.city} onChange={(v) => set({ city: v })} />
                         </Field>
                     </div>
+                    <Field label="Google Maps link" optional hint="Adds a Directions button">
+                        <input className={fieldCls} type="url" inputMode="url" autoCapitalize="off" value={form.locationUrl} onChange={(e) => set({ locationUrl: e.target.value })} placeholder="https://maps.app.goo.gl/…" />
+                    </Field>
                     <Field label="Description" optional hint="Entry rules, age limit, dress code">
                         <textarea className={cn(areaCls, 'min-h-[110px]')} value={form.description} onChange={(e) => set({ description: e.target.value })} />
                     </Field>

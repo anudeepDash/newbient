@@ -22,7 +22,8 @@ import useDynamicMeta from '../../hooks/useDynamicMeta';
 import { feedCard, dateLabel } from '../cards';
 import { appPath } from '../host';
 import { plainText, shareLink } from '../community/communityParts';
-import { isUpcomingPass, passCard } from '../passes/passCards';
+import { isUpcomingPass } from '../passes/passCards';
+import PassTicket from '../passes/PassTicket';
 import PageHeader, { PageBody } from './PageHeader';
 import { requirementsFor } from '../profile/requirements';
 import JoinCommunitySheet from '../community/JoinCommunitySheet';
@@ -213,7 +214,7 @@ const CommunityPage = () => {
             {myGuestlists.length > 0 && (
                 <section className="space-y-3">
                     <SectionHeader title={t('My guestlists')} />
-                    <Rail>{myGuestlists.map(pass => <Card key={pass.ref} {...passCard(pass, { from: location })} />)}</Rail>
+                    <Rail>{myGuestlists.map(pass => <PassTicket key={pass.ref} pass={pass} from={location} />)}</Rail>
                 </section>
             )}
 

@@ -17,6 +17,7 @@ import LivePreview from '../../components/admin/LivePreview';
 import { Button, EmptyState, SegmentedTabs } from '../../components/admin/ui';
 import { BuilderCard, ImageSlot, splitDateTime } from '../../components/admin/events/EditorParts';
 import { Field, Toggle, Choice, fieldCls, areaCls } from '../../components/admin/uploads/UploadKit';
+import CityInput, { cleanCity } from '../../components/admin/CityInput';
 import FormRenderer from '../../components/admin/forms/FormRenderer';
 import { FieldPalette, QuestionCard } from '../../components/admin/forms/BuilderParts';
 import { builderProblems, copyField, newField, starterFields } from '../../components/admin/forms/formSchema';
@@ -27,6 +28,7 @@ const EMPTY = {
     description: '',
     activeLabel: 'Live',
     bottomText: '',
+    city: '',
     buttonText: '',
     formUrl: '',
     requiresExternal: false,
@@ -189,6 +191,7 @@ const FormBuilder = () => {
         const payload = {
             ...rest,
             title: form.title.trim(),
+            city: cleanCity(form.city),
             formUrl: mode === 'google' ? cleanUrl(form.formUrl) : (form.formUrl || ''),
             fields: mode === 'native' ? fields.map(f => ({ ...f, label: String(f.label || '').trim(), options: f.options ? f.options.map(o => String(o).trim()) : undefined })).map(f => JSON.parse(JSON.stringify(f))) : [],
             responseLimit: form.responseLimit === '' ? null : Number(form.responseLimit),
@@ -273,6 +276,9 @@ const FormBuilder = () => {
                                         <input className={fieldCls} value={form.buttonText || ''} onChange={(e) => set({ buttonText: e.target.value })} placeholder="e.g. Fill form" />
                                     </Field>
                                 </div>
+                                <Field label="City" optional hint="For a form about one city. Community filters by it">
+                                    <CityInput className={fieldCls} value={form.city} onChange={(v) => set({ city: v })} />
+                                </Field>
                             </div>
                         </BuilderCard>
 

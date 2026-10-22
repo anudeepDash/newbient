@@ -11,7 +11,8 @@ import { isPresent } from '../../lib/present';
 import { useAppStore } from '../../lib/store/appStore';
 import PageHeader, { PageBody } from '../pages/PageHeader';
 import { CardGrid, CardSkeleton, EmptyState, Rail, SectionHeader } from '../pages/parts';
-import { bySoonest, isUpcomingPass, passCard } from '../passes/passCards';
+import { bySoonest, isUpcomingPass } from '../passes/passCards';
+import PassTicket from '../passes/PassTicket';
 import { fromPrice, useTicketedEvents } from './useTicketedEvents';
 import { useAuthGate, useResumeIntent } from '../auth/AuthGate';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
@@ -22,8 +23,9 @@ import TicketSheet from './TicketSheet';
  * /tickets: upcoming shows that sell tickets. Tapping one opens the ticket
  * flow in a sheet over the list (?event=ID, so the link can be shared and
  * Back closes it). The flow (tiers, coupons, UPI payment, the booking
- * reference) is TicketSheet; a confirmed order becomes a pass at /p/{ref},
- * listed here under Your tickets.
+ * reference) is TicketSheet; a confirmed order becomes a pass at /p/{ref}.
+ * Every pass you hold (tickets, guestlist passes, RSVPs, creator tickets) is
+ * listed here as a ticket, upcoming first and past ones at the end.
  */
 
 const TICKET_INTENT = 'tickets-buy';
@@ -76,7 +78,9 @@ const TicketsPage = () => {
     const openEvent = (id) => gate.run({ type: TICKET_INTENT, payload: { id } }, () => showEvent(id), { require: ['name'] });
     useResumeIntent(TICKET_INTENT, (payload) => payload?.id && showEvent(payload.id));
     const passes = useAppStore(s => s.passes);
-    const mine = useMemo(() => (passes || []).filter(p => p.source === 'order' && isUpcomingPass(p)).sort(bySoonest), [passes]);
+    // Every pass you hold: bought tickets, guestlist passes and RSVPs, creator tickets.
+    const mine = useMemo(() => (passes || []).filter(isUpcomingPass).sort(bySoonest), [passes]);
+    const past = useMemo(() => (passes || []).filter(p => p.status !== 'revoked' && !isUpcomingPass(p)).sort((a, b) => bySoonest(b, a)).slice(0, 12), [passes]);
 
     const close = () => {
         const next = new URLSearchParams(params);
@@ -91,7 +95,7 @@ const TicketsPage = () => {
             {mine.length > 0 && (
                 <section className="space-y-3">
                     <SectionHeader title={mine.length === 1 ? t('Your ticket') : t('Your tickets')} />
-                    <Rail>{mine.map(p => <Card key={p.ref} {...passCard(p, { from: location })} />)}</Rail>
+                    <Rail>{mine.map(p => <PassTicket key={p.ref} pass={p} from={location} />)}</Rail>
                 </section>
             )}
 
@@ -103,6 +107,13 @@ const TicketsPage = () => {
                 </CardGrid>
             ) : (
                 <EmptyState icon={Ticket} title={t('No ticket sales right now')} message={t('Shows with tickets on sale appear here first.')} />
+            )}
+
+            {past.length > 0 && (
+                <section className="space-y-3">
+                    <SectionHeader title={t('Past tickets')} />
+                    <Rail>{past.map(p => <PassTicket key={p.ref} pass={p} from={location} />)}</Rail>
+                </section>
             )}
 
             {/* The ticket flow, over the list. An unknown or past event just closes. */}

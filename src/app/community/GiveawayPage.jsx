@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import Gift from 'lucide-react/dist/esm/icons/gift';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import CircleCheck from 'lucide-react/dist/esm/icons/circle-check';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Share2 from 'lucide-react/dist/esm/icons/share-2';
@@ -184,7 +185,7 @@ const GiveawayPage = ({ overlay = false }) => {
         <ExpandedHero
             image={g.posterUrl}
             icon={Gift}
-            chips={[{ label: g.ended ? t('Ended') : null }]}
+            chips={[{ icon: MapPin, label: g.city }, { label: g.ended ? t('Ended') : null }]}
         />
     );
 

@@ -11,6 +11,7 @@ import LivePreview from '../LivePreview';
 import { Button } from '../ui';
 import { BuilderCard, ImageSlot } from '../events/EditorParts';
 import { Field, Toggle, Choice, fieldCls, areaCls } from '../uploads/UploadKit';
+import CityInput, { cleanCity } from '../CityInput';
 import { isNativeForm, formState } from '../forms/formSchema';
 import { ColorDots, EditorBar, PhoneBar, dayKeyOf, formatDay, todayKey, useConfirm, useImageField, useUnsavedWarning } from '../forms/kit';
 import ThemedSelect from '../ThemedSelect';
@@ -26,6 +27,7 @@ const EMPTY = {
     dates: [],
     time: '',
     location: '',
+    city: '',
     description: '',
     status: 'Open',
     applyType: 'link',
@@ -130,6 +132,7 @@ const GigEditor = ({ gig, forms, onDone }) => {
             dates: data.dates,
             time: data.time || '',
             location: data.location.trim(),
+            city: cleanCity(data.city),
             description: data.description || '',
             status: data.status || 'Open',
             applyType: data.applyType,
@@ -252,9 +255,12 @@ const GigEditor = ({ gig, forms, onDone }) => {
                                     <input className={fieldCls} type="time" value={data.time || ''} onChange={(e) => set({ time: e.target.value })} />
                                 </Field>
                                 <Field label="Location">
-                                    <input className={cn(fieldCls, err('location') && 'border-red-500/60')} value={data.location || ''} onChange={(e) => set({ location: e.target.value })} placeholder="e.g. Jayamahal Palace, Bengaluru" />
+                                    <input className={cn(fieldCls, err('location') && 'border-red-500/60')} value={data.location || ''} onChange={(e) => set({ location: e.target.value })} placeholder="e.g. Jayamahal Palace" />
                                 </Field>
                             </div>
+                            <Field label="City" optional hint="Shown on the card; Community filters by it">
+                                <CityInput className={fieldCls} value={data.city} onChange={(v) => set({ city: v })} />
+                            </Field>
                         </div>
                     </BuilderCard>
 
