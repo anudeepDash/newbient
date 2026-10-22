@@ -27,7 +27,7 @@ export const LANDING_ROUTES = [
         featureId: 'home',
         Page: lazyPage(() => import('./pages/HomePage.jsx')),
         meta: {
-            title: 'newbi.live — We build the nights you remember',
+            title: 'newbi.live — We bring you the nights you remember',
             description: 'Concerts, college fests, brand activations and creator campaigns across India, planned, produced and run end to end by the Newbi crew.',
         },
     },

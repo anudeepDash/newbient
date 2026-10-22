@@ -285,7 +285,7 @@ const SiteContentManager = ({ view = 'site' }) => {
                                     <div className="grid gap-4 sm:grid-cols-2">
                                         <label className="block">
                                             <LabelRow label="Site title" right={<CharCount value={form.title} ideal={30} max={60} />} />
-                                            <input className={fieldCls} value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Newbi — We build the nights you remember" />
+                                            <input className={fieldCls} value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Newbi — We bring you the nights you remember" />
                                         </label>
                                         <label className="block">
                                             <LabelRow label="Tagline" />
@@ -299,7 +299,7 @@ const SiteContentManager = ({ view = 'site' }) => {
                                     <div className="rounded-xl border border-black/[0.06] p-3 dark:border-white/[0.08]">
                                         <p className="mb-1 text-[11px] font-bold text-gray-500">Search result preview</p>
                                         <p className="truncate text-[12px] text-emerald-700 dark:text-neon-green">newbi.live</p>
-                                        <p className="truncate text-[17px] font-medium text-sky-700 dark:text-neon-blue">{form.title || 'Newbi — We build the nights you remember'}</p>
+                                        <p className="truncate text-[17px] font-medium text-sky-700 dark:text-neon-blue">{form.title || 'Newbi — We bring you the nights you remember'}</p>
                                         <p className="line-clamp-2 text-[13px] text-gray-600 dark:text-zinc-400">{form.description || 'Your description will appear here.'}</p>
                                     </div>
                                     <p className="text-[12px] text-gray-500">These are saved for the team. The website's own page title is set in its code, so changing them here doesn't change Google results yet.</p>
