@@ -33,7 +33,7 @@ const message = (text, from = FROM) => onVerifyMessage({ type: 'text', from, tex
 
 const start = async () => (await call('wa-verify-start')).body;
 
-const ENV = { WHATSAPP_ACCESS_TOKEN: 't', WHATSAPP_PHONE_NUMBER_ID: '1', WHATSAPP_DISPLAY_NUMBER: '+91 80000 12345', LINK_SIGNING_SECRET: 'test-secret' };
+const ENV = { WHATSAPP_ACCESS_TOKEN: 't', WHATSAPP_PHONE_NUMBER_ID: '1', WHATSAPP_DISPLAY_NUMBER: '+91 80000 12345', LINK_SIGNING_SECRET: 'test-secret', WHATSAPP_PHONE_VERIFY: 'on' };
 const saved = {};
 
 beforeEach(() => {
@@ -50,6 +50,14 @@ afterEach(() => {
 });
 
 describe('verify by messaging us', () => {
+    it('stays off until WHATSAPP_PHONE_VERIFY is on', async () => {
+        process.env.WHATSAPP_PHONE_VERIFY = '';
+        const res = fakeRes();
+        await handleWaVerifyAction('wa-verify-start', fakeReq({ body: {} }), res, { db, decodedToken: { uid: 'u1' }, adminAuth: {}, canSign: () => true });
+        expect(res.statusCode).toBe(503);
+        expect(db.dump('wa_verify')).toEqual({});
+    });
+
     it('gives a one-use code and a wa.me link to our number with the message typed, keeping only a hash', async () => {
         const out = await start();
         expect(out.code).toMatch(/^NEWBI-[A-HJ-NP-Z2-9]{6}$/);

@@ -38,8 +38,7 @@ const sections = [
                 <P>We only collect what a feature needs. What that is depends on what you use:</P>
                 <H3>Your account</H3>
                 <UL items={[
-                    'How you sign in: Google, email and password, or your phone number. For phone sign-in and phone verification we send a one-time code on WhatsApp or by SMS. You can also verify your number by sending us a WhatsApp message with a code we show you; the number you send it from is the one we confirm.',
-                    'The devices you sign in from: a random id your browser keeps (we store only a scrambled version of it), a label such as “Chrome on Android” and when it was first and last used, for your 20 most recent devices. We use it only to warn you about a sign-in from a new device.',
+                    'How you sign in: Google, email and password, or your phone number. For phone sign-in and phone verification we send a one-time code by SMS.',
                     'Your profile: name, photo, email, phone number (and whether it’s verified), city, college, whether you’re a student, occupation, gender and interests if you choose to share them, and your notification preferences.',
                     'If two accounts turn out to share a phone number or email, we merge them into one at your request, so one person has one account.',
                 ]} />
@@ -100,9 +99,8 @@ const sections = [
         body: (
             <>
                 <P>
-                    We send WhatsApp messages from our business number through Meta’s WhatsApp Business Platform: sign-in and
-                    verification codes, security alerts to your verified number (a sign-in from a new device, your phone number
-                    changing, accounts being merged), tickets and passes, and, if you’re a creator who opted in, campaign updates (shortlists,
+                    We send WhatsApp messages from our business number through Meta’s WhatsApp Business Platform:
+                    tickets and passes, order and guestlist updates, and, if you’re a creator who opted in, campaign updates (shortlists,
                     group invites, reminders, deliverable requests and payouts). Meta processes these messages under its own terms
                     and policies.
                 </P>
@@ -191,7 +189,7 @@ const sections = [
         body: (
             <>
                 <UL items={[
-                    'Sign-in and verification codes: only a scrambled (hashed) version is stored, for 10 minutes (15 for the code you send us on WhatsApp), and each code works once.',
+                    'Sign-in and verification codes: only a scrambled (hashed) version is stored, for 10 minutes, and each code works once.',
                     'WhatsApp messages in our inbox: 12 months, then deleted automatically.',
                     'Your account, profile, tickets, passes and applications: for as long as your account is open, then deleted or anonymised as described below.',
                     'Instagram access tokens: until you delete your creator profile or disconnect; Instagram tokens also expire after 60 days unless refreshed.',
