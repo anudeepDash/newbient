@@ -48,6 +48,7 @@ import {
     formatContractDate, parseContractDate,
 } from '../../components/admin/contracts/contractRules';
 import ThemedSelect from '../../components/admin/ThemedSelect';
+import '../../lib/documentFonts';
 
 const STEPS = [
     { id: 'parties', label: 'Parties', icon: Users, desc: 'Who the contract is between', page: 'intro' },
@@ -542,8 +543,6 @@ const ContractGenerator = () => {
     return (
         <div className="flex h-dvh flex-col overflow-hidden bg-[#f6f7f9] font-heading text-gray-900 dark:bg-[#07080b] dark:text-white admin-hub-content-container">
             <style dangerouslySetInnerHTML={{ __html: `
-                @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
-                @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,200..900;1,200..900&display=swap');
                 .font-signature { font-family: 'Caveat', cursive; }
                 .font-formal { font-family: 'Crimson Pro', serif; }
             `}} />

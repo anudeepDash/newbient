@@ -42,6 +42,7 @@ import ReviewSection from '../../components/admin/proposals/builder/ReviewSectio
 import PreviewPane from '../../components/admin/proposals/builder/PreviewPane';
 import { AiSheet, RefineSheet } from '../../components/admin/proposals/builder/AiSheet';
 import { exportProposalPdf } from '../../components/admin/proposals/builder/exportPdf';
+import '../../lib/documentFonts';
 import {
     CLIENT_OWNED_FIELDS, applyAiDraft, applyRevision, aiItems, checkBeforeSharing, computeTotals, contentForAi, getProposalPages,
     isPlaceholderItem, isV2Proposal, loadForEditing, newProposalData,
@@ -480,7 +481,7 @@ const ProposalGenerator = () => {
     return (
         <div className="flex h-dvh flex-col overflow-hidden bg-[#f6f7f9] font-heading text-gray-900 dark:bg-[#07080b] dark:text-white">
             {/* Fonts the document paper uses. */}
-            <style dangerouslySetInnerHTML={{ __html: "@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&family=Caveat:wght@400..700&display=swap'); .font-signature{font-family:'Caveat',cursive;}" }} />
+            <style dangerouslySetInnerHTML={{ __html: ".font-signature{font-family:'Caveat',cursive;}" }} />
 
             <header className="relative z-30 shrink-0 border-b border-black/[0.06] bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#07080b]/90">
                 <div className="flex h-14 items-center gap-1.5 px-2 sm:gap-2 sm:px-4">

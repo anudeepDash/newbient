@@ -162,7 +162,7 @@ const sections = [
                     ['Cloudinary', 'Storing images and files you upload, such as profile photos and post screenshots.'],
                     ['Apify and RapidAPI', 'Backup lookups of public Instagram profiles by handle.'],
                     ['Google Gemini and OpenRouter', 'AI tools our team uses to write content, and translating our public listings into Hinglish. Your account data isn’t sent to them.'],
-                    ['Google Fonts, YouTube, Vimeo and Instagram', 'Fonts on our pages, and videos embedded on some event and ConcertZone pages. Videos load only if you allow embedded videos, and these services may then set their own cookies.'],
+                    ['YouTube, Vimeo and Instagram', 'Videos embedded on some event and ConcertZone pages. They load only if you allow embedded videos, and these services may then set their own cookies.'],
                 ]} />
                 <P>
                     Some of these providers store data outside India. We use providers with recognised security practices, and we
