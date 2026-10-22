@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { checkedSheetSpec, creatorEntriesFor, deliverablesSheetSpec, doneRowNote, readDeliverablesCsv } from '../src/components/admin/campaigns/shortlistModel';
-import { applicantsFor } from '../src/components/admin/campaigns/campaignModel';
+import { applicantsFor, guestKeyFor, orphanSubmitters } from '../src/components/admin/campaigns/campaignModel';
 import { buildXlsx } from '../src/lib/xlsx';
 
 const campaign = {
@@ -66,9 +66,58 @@ describe('readDeliverablesCsv', () => {
         expect(asha.member).toBe('in');
         expect(asha.marked.map(m => m.state)).toEqual(['both', 'both']);
         expect(asha.save).toHaveLength(2);
-        expect(doneRowNote(asha)).toBe('In the campaign · Story: done in the app and the sheet · Reel: done in the app and the sheet');
-        expect(nobody.status).toBe('unknown');
+        expect(doneRowNote(asha)).toBe('Registered, in the campaign · Story: done in the app and the sheet · Reel: done in the app and the sheet');
+        // Not on Newbi: added to the campaign by handle, to invite later.
+        expect(nobody.status).toBe('guest');
+        expect(nobody.guest).toMatchObject({ key: 'sheet-ig-nobody_here', instagram: 'nobody_here' });
+        expect(nobody.save.map(m => m.task.id)).toEqual(['t1']);
         expect(bilal.status).toBe('nothing');
+    });
+
+    it('reads handles typed as links without https', () => {
+        const csv = 'Instagram\ninstagram.com/asha\nwww.instagram.com/Zoya.K/?hl=en';
+        const [asha, zoya] = readDeliverablesCsv(csv, entries, campaign, 't2').rows;
+        expect(asha.entry.key).toBe('a');
+        expect(zoya.entry.key).toBe('z');
+    });
+
+    it('adds people not on Newbi as guests, by handle or phone, and finds them on the next sheet', () => {
+        const csv = 'Name,Instagram,Phone,Link\nRiya,@riya.s,,https://instagram.com/reel/r\nArjun,,+91 98765 43210,\nNo One,,,';
+        const [riya, arjun, none] = readDeliverablesCsv(csv, entries, campaign, 't2').rows;
+        expect(riya).toMatchObject({ status: 'guest', member: 'newGuest', label: 'Riya' });
+        expect(riya.guest.key).toBe('sheet-ig-riya-s');
+        expect(riya.save[0].link).toBe('https://instagram.com/reel/r');
+        expect(doneRowNote(riya)).toBe('Not on Newbi yet: added to the campaign, invite them later · Reel: done from the sheet');
+        expect(arjun.guest).toMatchObject({ key: 'sheet-p-9876543210', phone: '9876543210' });
+        expect(none.status).toBe('unknown');
+
+        // Saved: the store merges the guest's record into the task as submissions['sheet-ig-riya-s'].
+        const withGuest = {
+            ...campaign,
+            tasks: campaign.tasks.map(t => (t.id === 't2' ? { ...t, submissions: { ...t.submissions, 'sheet-ig-riya-s': {
+                status: 'approved', contentLink: 'https://instagram.com/reel/r', via: 'sheet', store: 'app', guest: { instagram: 'riya.s', name: 'Riya' },
+            } } } : t)),
+        };
+        const orphan = orphanSubmitters(withGuest, everyone).find(o => o.creator.guest);
+        expect(orphan.creator).toMatchObject({ guest: true, name: 'Riya', instagram: 'riya.s' });
+        const list = creatorEntriesFor(withGuest, everyone, applicantsFor(withGuest, everyone));
+        const again = readDeliverablesCsv('Instagram\nriya.s', list, withGuest, 't2').rows[0];
+        expect(again).toMatchObject({ status: 'already', member: 'guest' });
+        // The Story is new for them: still a guest, so it goes to their guest record.
+        const story = readDeliverablesCsv('Instagram\nriya.s', list, withGuest, 't1').rows[0];
+        expect(story.status).toBe('ready');
+        expect(story.entry.guest).toBe(true);
+        expect(story.save.map(m => m.task.id)).toEqual(['t1']);
+
+        const spec = deliverablesSheetSpec(withGuest, orphanSubmitters(withGuest, everyone), helpers);
+        const row = Object.fromEntries(spec.columns.map(c => [c.header, c.value(spec.rows.find(r => r.creator.guest))]));
+        expect(row).toMatchObject({ 'Newbi ID': 'Not on Newbi', Name: 'Riya', Instagram: '@riya.s', '2. Reel': 'Done (sheet)' });
+    });
+
+    it('makes guest keys only from a real handle or a 10-digit phone', () => {
+        expect(guestKeyFor({ handle: 'a.b_c' })).toBe('sheet-ig-a-b_c');
+        expect(guestKeyFor({ handle: 'not a handle', phone: '12345' })).toBe(null);
+        expect(guestKeyFor({ phone: '919876543210' })).toBe('sheet-p-9876543210');
     });
 
     it('reads the downloaded deliverables sheet back without marking "To review" as done', () => {
@@ -114,8 +163,8 @@ describe('readDeliverablesCsv', () => {
         const spec = checkedSheetSpec(parsed, 'from agency.csv');
         expect(spec.filename).toBe('from_agency_checked');
         const row = (r) => Object.fromEntries(spec.columns.map(c => [c.header, c.value(r)]));
-        expect(row(spec.rows[0])).toMatchObject({ Instagram: 'zoya.k', Notes: 'hi', 'Newbi status': 'Mark done', 'Newbi check': 'New, added to the campaign · Story: done from the sheet' });
-        expect(row(spec.rows[1])['Newbi check']).toBe('Not on Newbi');
+        expect(row(spec.rows[0])).toMatchObject({ Instagram: 'zoya.k', Notes: 'hi', 'Newbi status': 'Mark done', 'Newbi check': 'Registered, added to the campaign · Story: done from the sheet' });
+        expect(row(spec.rows[1])['Newbi check']).toBe('Not on Newbi yet: added to the campaign, invite them later · Story: done from the sheet');
     });
 
     it('asks for a handle column, and for the deliverable when the sheet has no columns', () => {

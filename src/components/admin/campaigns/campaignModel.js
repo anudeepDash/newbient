@@ -19,6 +19,9 @@ import { isRequiredTask } from '../../../lib/creator/tasks';
  *   task.submissions  { [creator uid or id]: { status: 'submitted' | 'approved' | 'rejected', contentLink, proofUrl, … } }
  *                     App submissions live in campaigns/{id}/submissions/{uid}; the store merges
  *                     them in here (store: 'app'), so these screens read both.
+ *                     Sheet guests (people from an uploaded sheet who aren't on Newbi) are kept there
+ *                     too, as submissions/sheet-ig-{handle} or sheet-p-{phone}: staff-only, so their
+ *                     contact details never reach the public campaign doc. See guestCreatorFor.
  *   creator doc       joinedCampaigns[] (applied), shortlistedCampaigns[] (shortlisted by the team: sees and
  *                     submits the deliverables; applying never adds to it)
  * New, admin-only, on the creator doc:
@@ -267,6 +270,23 @@ export const applicantsFor = (campaign, creators) => {
         });
 };
 
+/* ---------- sheet guests ---------- */
+
+export const isGuestKey = (key) => /^sheet-(ig|p)-/.test(String(key || ''));
+/** A sheet guest's key: their handle (dots as dashes, since IG handles never have a dash), or their phone. */
+export const guestKeyFor = ({ handle, phone } = {}) => {
+    const h = String(handle || '').toLowerCase();
+    if (/^[a-z0-9._]{1,30}$/.test(h)) return `sheet-ig-${h.replace(/\./g, '-')}`;
+    const p = String(phone || '').replace(/\D/g, '').slice(-10);
+    return p.length === 10 ? `sheet-p-${p}` : null;
+};
+/** A stand-in creator for a sheet guest, from what their sheet records carry ({ name, instagram }). */
+export const guestCreatorFor = (campaign, key) => {
+    const info = (campaign?.tasks || []).map(t => t?.submissions?.[key]?.guest).find(Boolean) || {};
+    const handle = info.instagram || (String(key).startsWith('sheet-ig-') ? String(key).slice(9).replace(/-/g, '.') : '');
+    return { id: key, uid: key, name: info.name || '', instagram: handle, orphan: true, guest: true };
+};
+
 /**
  * Submissions whose key matches no creator profile: an old profile that was never
  * linked to the person's login (scripts/migrate-creators-to-uid.mjs fixes those).
@@ -277,7 +297,7 @@ export const orphanSubmitters = (campaign, creators) => {
     const known = new Set();
     (creators || []).forEach(c => creatorKeys(c).forEach(k => known.add(k)));
     return [...submitterKeys(campaign)].filter(k => !known.has(k)).map(key => {
-        const creator = { id: key, uid: key, name: '', orphan: true };
+        const creator = isGuestKey(key) ? guestCreatorFor(campaign, key) : { id: key, uid: key, name: '', orphan: true };
         const progress = progressFor(campaign, creator);
         return { creator, key, progress, stage: progress.toReview > 0 ? 'review' : 'applied', criteria: { eligible: false }, payout: null, orphan: true };
     });
@@ -301,7 +321,7 @@ export const indexApplicants = (creators, campaigns = []) => {
         const byKey = new Map();
         (creators || []).forEach(c => creatorKeys(c).forEach(k => byKey.set(k, c)));
         campaigns.forEach(campaign => submitterKeys(campaign).forEach(k => {
-            add(campaign.id, byKey.get(k) || { id: k, uid: k, name: '', orphan: true });
+            add(campaign.id, byKey.get(k) || (isGuestKey(k) ? guestCreatorFor(campaign, k) : { id: k, uid: k, name: '', orphan: true }));
         }));
     }
     return map;

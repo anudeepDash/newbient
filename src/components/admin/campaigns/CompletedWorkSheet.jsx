@@ -10,7 +10,7 @@ import { Avatar, Badge, Button, SearchInput, SegmentedTabs } from '../ui';
 import { Toggle, fieldCls } from '../uploads/UploadKit';
 import { CheckBox, Spinner } from './parts';
 import { creatorHandle, creatorKeys, creatorPhotoOf, isSelected } from './campaignModel';
-import { DONE_ROW_STATUS, checkedSheetSpec, creatorEntriesFor, doneRowNote, newbiIdOf, readDeliverablesCsv } from './shortlistModel';
+import { DONE_ROW_STATUS, MEMBER_BADGE, checkedSheetSpec, creatorEntriesFor, doneRowNote, newbiIdOf, readDeliverablesCsv } from './shortlistModel';
 
 /*
  * "Add completed work": creators who already did a deliverable (the client sent
@@ -26,8 +26,10 @@ import { DONE_ROW_STATUS, checkedSheetSpec, creatorEntriesFor, doneRowNote, newb
  * marked as such, work they haven't started is completed from the sheet (with
  * its link), and work they already did in the app is marked done in both.
  * "Checked sheet" downloads the upload back with what was found per row.
- * Anyone not in the campaign yet is added to it. The welcome is off by default
- * here, since the work is already done.
+ * Anyone not in the campaign yet is added to it, including people who aren't on
+ * Newbi (a sheet guest, by Instagram handle or phone: see addSheetGuests), so
+ * they can be invited after. The welcome is off by default here, since the work
+ * is already done.
  */
 const taskTitle = (task, idx) => task.title || `Deliverable ${idx + 1}`;
 // "instagram.com/reel/…" typed without https:// still counts; anything else that isn't a link is dropped.
@@ -76,7 +78,8 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
     );
     useEffect(() => { setError(parsed?.error || null); }, [parsed]);
     const rows = useMemo(() => parsed?.rows || [], [parsed]);
-    const saves = (r) => (r.status === 'ready' || r.status === 'both') && !skipped.has(r.row);
+    const canSkip = (r) => ['ready', 'both', 'guest'].includes(r.status);
+    const saves = (r) => canSkip(r) && !skipped.has(r.row);
     const ready = rows.filter(saves);
     const counts = rows.reduce((m, r) => ({ ...m, [r.status]: (m[r.status] || 0) + 1 }), {});
     const chosen = tasks.find(t => String(t.id) === forTask);
@@ -117,15 +120,24 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
         taskId: task.id, creatorUid: entry.key, keys: creatorKeys(entry.creator), link: cleanLink(link),
     }));
 
+    // Not on Newbi: a new guest from this sheet, or one an earlier sheet added.
+    const guestOf = (r) => {
+        const items = r.save.map(m => ({ taskId: m.task.id, link: cleanLink(m.link) }));
+        if (r.guest) return { ...r.guest, items };
+        return { key: r.entry.key, instagram: r.entry.creator.instagram || '', name: r.entry.creator.name || '', items };
+    };
+
     const save = async () => {
         if (saving) return;
+        const isGuest = (r) => r.guest || r.entry?.guest;
         const batch = mode === 'upload'
-            ? ready.map(r => ({ entry: r.entry, adds: r.adds, items: itemsFor(r.entry, r.save) }))
+            ? ready.filter(r => !isGuest(r)).map(r => ({ entry: r.entry, adds: r.adds, items: itemsFor(r.entry, r.save) }))
             : person ? [{ entry: person, adds: personAdds, items: itemsFor(person, personDone.map(t => ({ task: t, link: ticks[String(t.id)] }))) }] : [];
-        if (!batch.some(b => b.adds || b.items.length)) return;
+        const guests = mode === 'upload' ? ready.filter(isGuest).map(guestOf).filter(g => g.items.length) : [];
+        if (!batch.some(b => b.adds || b.items.length) && !guests.length) return;
         setSaving(true);
         try {
-            await onSave({ adds: batch.filter(b => b.adds).map(b => b.entry), items: batch.flatMap(b => b.items), welcome, sheet: mode === 'upload' ? name : null });
+            await onSave({ adds: batch.filter(b => b.adds).map(b => b.entry), items: batch.flatMap(b => b.items), guests, welcome, sheet: mode === 'upload' ? name : null });
             onClose();
         } catch {
             // onSave shows the error; keep the sheet open to try again.
@@ -137,6 +149,7 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
     const uploadCount = ready.reduce((n, r) => n + r.done.length, 0);
     const bothCount = ready.reduce((n, r) => n + r.marked.filter(m => m.state === 'both').length, 0);
     const addCount = ready.filter(r => r.adds).length;
+    const guestCount = ready.filter(r => r.guest).length;
     const label = mode === 'upload'
         ? (ready.length ? `Save ${ready.length} creator${ready.length === 1 ? '' : 's'}` : 'Save')
         : personDone.length ? `Mark ${personDone.length} done` : personAdds ? 'Add to campaign' : 'Save';
@@ -232,19 +245,22 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
                                 <ul className="space-y-1.5 sm:max-h-[40dvh] sm:overflow-y-auto">
                                     {rows.map(r => {
                                         const off = !saves(r);
-                                        const canSkip = r.status === 'ready' || r.status === 'both';
+                                        const member = MEMBER_BADGE[r.member];
                                         return (
                                             <li key={r.row} className={cn('flex min-h-[52px] items-center gap-3 rounded-xl border px-3 py-2', off ? 'border-black/[0.05] bg-black/[0.02] dark:border-white/[0.06] dark:bg-white/[0.02]' : 'border-black/[0.08] dark:border-white/[0.1]')}>
                                                 <span className="w-12 shrink-0 text-[11px] font-semibold text-gray-400">Row {r.row}</span>
-                                                {r.entry && <Avatar src={creatorPhotoOf(r.entry.creator)} name={r.entry.creator.name} size={30} />}
+                                                <Avatar src={r.entry ? creatorPhotoOf(r.entry.creator) : ''} name={String(r.label).replace(/^@/, '')} size={30} />
                                                 <span className="min-w-0 flex-1">
-                                                    <span className={cn('block truncate text-[14px] font-semibold', off && 'text-gray-500')}>{r.label}</span>
-                                                    {r.entry && r.marked.length > 0 && (
+                                                    <span className="flex min-w-0 items-center gap-1.5">
+                                                        <span className={cn('truncate text-[14px] font-semibold', off && 'text-gray-500')}>{r.label}</span>
+                                                        {member && <Badge tone={member.tone} className="shrink-0">{member.label}</Badge>}
+                                                    </span>
+                                                    {(r.entry || r.guest || r.status === 'unknown') && (
                                                         <span className="block text-[12px] leading-snug text-gray-500">{doneRowNote(r)}</span>
                                                     )}
                                                 </span>
                                                 <Badge tone={skipped.has(r.row) ? 'gray' : DONE_ROW_STATUS[r.status].tone}>{skipped.has(r.row) ? 'Skipped' : DONE_ROW_STATUS[r.status].label}</Badge>
-                                                {canSkip && (
+                                                {canSkip(r) && (
                                                     <button
                                                         type="button"
                                                         onClick={() => setSkipped(s => { const n = new Set(s); if (n.has(r.row)) n.delete(r.row); else n.add(r.row); return n; })}
@@ -258,8 +274,11 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
                                         );
                                     })}
                                 </ul>
+                                {counts.guest > 0 && (
+                                    <p className="text-[12px] text-amber-700 dark:text-amber-300">“Not on Newbi” rows are added to the campaign by their Instagram handle, with the work marked done. Invite them from the Deliverables tab after; when they sign up, their work moves to their account.</p>
+                                )}
                                 {counts.unknown > 0 && (
-                                    <p className="text-[12px] text-amber-700 dark:text-amber-300">Rows marked “Not on Newbi” didn’t match any creator profile. Check the handle, or ask them to sign up as a creator first.</p>
+                                    <p className="text-[12px] text-rose-600 dark:text-rose-300">“Can’t add” rows have no Instagram handle or phone number to add them by. Fill one in and upload again.</p>
                                 )}
                                 {ready.length > 0 && (
                                     <p className="text-[12px] text-gray-500">
@@ -267,6 +286,7 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
                                             uploadCount > 0 && `${uploadCount} deliverable${uploadCount === 1 ? '' : 's'} marked done`,
                                             bothCount > 0 && `${bothCount} already done in the app, marked done in both`,
                                             addCount > 0 && `${addCount} added to the campaign`,
+                                            guestCount > 0 && `${guestCount} not on Newbi added to invite later`,
                                         ].filter(Boolean).join(' · ')}.
                                     </p>
                                 )}

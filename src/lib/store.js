@@ -4362,6 +4362,84 @@ export const useStore = create((set, get) => ({
         return toReview.length + toWrite.length;
     },
 
+    /*
+     * People from an uploaded sheet who aren't on Newbi: added to the campaign as
+     * sheet guests, so the work counts now and they can be invited later. Each is
+     * campaigns/{id}/submissions/{key} (key from guestKeyFor), staff-only like the
+     * app's submissions, so phone and email never reach the public campaign doc:
+     *   { uid: key, guest: { instagram, name, phone, email, file, addedAt, addedBy },
+     *     tasks: { [taskId]: { status: 'approved', contentLink, via: 'sheet', guest: { instagram, name }, … } } }
+     *   guests: [{ key, instagram, name, phone, email, items: [{ taskId, link }] }]
+     */
+    addSheetGuests: async (campaignId, guests = [], { sheet = null } = {}) => {
+        const list = guests.filter(g => /^sheet-(ig|p)-[\w-]{1,64}$/.test(g.key || '') && g.items?.length);
+        if (!list.length) return 0;
+        const now = new Date().toISOString();
+        const by = get().user?.email || null;
+        const known = appSubmissionIndex[campaignId] || {};
+        const recordOf = (g) => {
+            const prev = known[g.key]?.guest || {};
+            const pick = (field) => g[field] || prev[field] || '';
+            return {
+                uid: g.key,
+                guest: { instagram: pick('instagram'), name: pick('name'), phone: pick('phone'), email: pick('email'), file: sheet || prev.file || '', addedAt: prev.addedAt || now, addedBy: prev.addedBy || by },
+                tasks: Object.fromEntries(g.items.map(i => {
+                    const old = known[g.key]?.tasks?.[String(i.taskId)];
+                    return [String(i.taskId), {
+                        status: 'approved', contentLink: i.link || old?.contentLink || '', proofUrl: '', rejectionReason: '',
+                        submittedAt: old?.submittedAt || now, reviewedAt: now, reviewedBy: by, via: 'sheet',
+                        guest: { instagram: pick('instagram'), name: pick('name') },
+                    }];
+                })),
+                updatedAt: now,
+            };
+        };
+        const records = list.map(g => ({ key: g.key, data: recordOf(g) }));
+        const batch = writeBatch(db);
+        records.forEach(r => batch.set(doc(db, 'campaigns', campaignId, 'submissions', r.key), r.data, { merge: true }));
+        try {
+            await batch.commit();
+        } catch (error) {
+            if (error?.code !== 'permission-denied') throw error;
+            // The Firestore rules don't allow it from the browser: through the server.
+            const res = await callCreatorApi('submissions-guests', { campaignId, guests: records.map(r => ({ key: r.key, ...r.data })) });
+            if (!res.ok) throw new Error(res.error);
+        }
+        await reloadAppSubmissions?.();
+        return records.reduce((n, r) => n + Object.keys(r.data.tasks).length, 0);
+    },
+
+    /*
+     * A sheet guest who has since joined Newbi: their sheet work moves to their
+     * account (marked done from the sheet, link kept) and the guest record is
+     * emptied, with linkedTo pointing at the creator.
+     *   links: [{ guestKey, creatorUid, keys, items: [{ taskId, link }] }]
+     */
+    linkSheetGuests: async (campaignId, links = []) => {
+        if (!links.length) return 0;
+        const known = appSubmissionIndex[campaignId] || {};
+        const items = links.flatMap(l => l.items.map(i => ({ taskId: i.taskId, creatorUid: l.creatorUid, keys: l.keys, link: i.link || '' })));
+        const file = links.map(l => known[l.guestKey]?.guest?.file).find(Boolean) || 'sheet';
+        await get().markDeliverablesDone(campaignId, items, { sheet: file });
+        const removals = links.flatMap(l => l.items.map(i => ({ uid: l.guestKey, taskId: String(i.taskId) })));
+        const now = new Date().toISOString();
+        const batch = writeBatch(db);
+        links.forEach(l => {
+            const ref = doc(db, 'campaigns', campaignId, 'submissions', l.guestKey);
+            batch.update(ref, ...l.items.flatMap(i => [new FieldPath('tasks', String(i.taskId)), deleteField()]),
+                new FieldPath('guest', 'linkedTo'), l.creatorUid, new FieldPath('guest', 'linkedAt'), now, 'updatedAt', now);
+        });
+        try {
+            await batch.commit();
+        } catch (error) {
+            if (error?.code !== 'permission-denied') throw error;
+            const res = await callCreatorApi('submissions-delete', { campaignId, items: removals });
+            if (!res.ok) throw new Error(res.error);
+        }
+        await reloadAppSubmissions?.();
+        return links.length;
+    },
+
     // Giveaways
     addGiveaway: async (giveaway) => {
         const giveawayData = {
