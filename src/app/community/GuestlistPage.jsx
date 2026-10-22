@@ -1,14 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
-import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Mic2 from 'lucide-react/dist/esm/icons/mic-vocal';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import Hourglass from 'lucide-react/dist/esm/icons/hourglass';
 import Minus from 'lucide-react/dist/esm/icons/minus';
 import Plus from 'lucide-react/dist/esm/icons/plus';
-import { Button, Field, GlassChip, Section, Sheet } from '../../components/app';
+import { Button, Field, GlassChip, Section, Sheet, TextInput } from '../../components/app';
 import { useAppStore } from '../../lib/store/appStore';
 import { passesGet, passesPost } from '../../lib/passesApi';
 import { isPresent } from '../../lib/present';
@@ -19,7 +18,7 @@ import { missingFields, requirementsFor } from '../profile/requirements';
 import { appPath } from '../host';
 import { PageBody } from '../pages/PageHeader';
 import DetailLayout, { BackLink, DetailSkeleton, Panel, ROW } from '../pages/DetailLayout';
-import { passWhen } from '../passes/passParts';
+import { VenueField, passWhen } from '../passes/passParts';
 import GuestlistTaskFields, { validateTask } from './GuestlistTaskFields';
 import { plainText, shareLink } from './communityParts';
 import { useT } from '../../i18n';
@@ -49,6 +48,7 @@ const GuestlistPage = () => {
     const [step, setStep] = useState(null); // null | 'profile' | 'details'
     const [wantStart, setWantStart] = useState(false);
     const [guests, setGuests] = useState(1);
+    const [guestNames, setGuestNames] = useState([]);
     const [task, setTask] = useState({});
     const [uploading, setUploading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -74,7 +74,8 @@ const GuestlistPage = () => {
             if (problem) { setError(problem); return; }
         }
         setSubmitting(true);
-        const res = await passesPost('register-guestlist', { guestlistId: id, guests, taskSubmission: gl?.task ? task : null });
+        const names = guestNames.slice(0, guests - 1).map(n => String(n || '').trim());
+        const res = await passesPost('register-guestlist', { guestlistId: id, guests, guestNames: names, taskSubmission: gl?.task ? task : null });
         setSubmitting(false);
         if (res.ok) {
             setStep(null);
@@ -119,7 +120,6 @@ const GuestlistPage = () => {
     useResumeIntent(INTENTS.guestlistRegister, () => setWantStart(true));
 
     const when = gl ? passWhen({ date: gl.date, time: gl.time }) : null;
-    const venue = gl ? [gl.venue, gl.city && !String(gl.venue || '').includes(gl.city) ? gl.city : null].filter(Boolean).join(', ') : null;
     const hiDescription = useLocalizedField('guestlist', id, 'description', gl?.description);
     const description = useMemo(() => plainText(hiDescription), [hiDescription]);
 
@@ -194,7 +194,7 @@ const GuestlistPage = () => {
                 <Panel>
                     <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
                         <Field icon={CalendarDays} label={t('When')} value={when} />
-                        <Field icon={MapPin} label={t('Venue')} value={venue} />
+                        <VenueField event={gl} />
                         <Field icon={Users} label={t('Spots left')} value={gl.open && gl.spotsLeft !== null ? gl.spotsLeft : null} />
                         <Field icon={Mic2} label={t('Line-up')} value={(gl.artists || []).join(', ')} />
                     </div>
@@ -242,6 +242,27 @@ const GuestlistPage = () => {
                                 <span className="w-6 text-center text-[20px] font-black tabular-nums">{guests}</span>
                                 <button type="button" aria-label={t('More guests')} disabled={guests >= gl.perUserLimit || (gl.spotsLeft !== null && guests >= gl.spotsLeft)} onClick={() => setGuests(g => Math.min(gl.perUserLimit, g + 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-black/[0.1] disabled:opacity-40 dark:border-white/[0.12]"><Plus size={16} /></button>
                             </div>
+                        </div>
+                    )}
+                    {guests > 1 && (
+                        <div className="space-y-3">
+                            <div>
+                                <p className="text-[16px] font-bold">{t('Who’s coming with you?')}</p>
+                                <p className="text-[13px] text-gray-500 dark:text-zinc-400">{t('Their names go on the door list. You can leave these blank.')}</p>
+                            </div>
+                            {Array.from({ length: guests - 1 }, (_, i) => (
+                                <TextInput
+                                    key={i}
+                                    id={`guest-name-${i + 2}`}
+                                    label={t('Guest {n}', { n: i + 2 })}
+                                    value={guestNames[i] || ''}
+                                    onChange={(e) => setGuestNames(list => { const next = [...list]; next[i] = e.target.value; return next; })}
+                                    maxLength={80}
+                                    autoComplete="off"
+                                    autoCapitalize="words"
+                                    placeholder={t('Full name')}
+                                />
+                            ))}
                         </div>
                     )}
                     {gl.task && <GuestlistTaskFields task={gl.task} value={task} onChange={setTask} onUploading={setUploading} />}

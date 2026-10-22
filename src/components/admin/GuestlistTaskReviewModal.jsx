@@ -223,7 +223,7 @@ export const GuestlistTaskReviewModal = ({
             <div className="flex flex-wrap gap-x-4 gap-y-2 text-[13px] text-gray-600 dark:text-zinc-400">
                 {email && <a href={`mailto:${email}`} className="inline-flex min-w-0 items-center gap-1.5 hover:text-gray-900 dark:hover:text-white"><Mail size={13} /><span className="truncate">{email}</span></a>}
                 {phone && <a href={`tel:${String(phone).replace(/\s/g, '')}`} className="inline-flex items-center gap-1.5 hover:text-gray-900 dark:hover:text-white"><Phone size={13} />{phone}</a>}
-                <span className="inline-flex items-center gap-1.5"><Users size={13} />{guests} {guests > 1 ? 'people' : 'person'}</span>
+                <span className="inline-flex items-center gap-1.5"><Users size={13} />{guests} {guests > 1 ? 'people' : 'person'}{Array.isArray(entry.plusOneNames) && entry.plusOneNames.filter(Boolean).length > 0 && ` · with ${entry.plusOneNames.filter(Boolean).join(', ')}`}</span>
                 {submittedAt && <span className="inline-flex items-center gap-1.5"><Clock size={13} />{submittedAt}</span>}
             </div>
 

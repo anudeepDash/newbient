@@ -3,7 +3,7 @@ import { firstName, formatDate } from '../layout.js';
 /**
  * A confirmed place: guestlist spot, RSVP, free ticket or a paid order the
  * team has dispatched. Merges the old guestlist, free ticket and booking emails.
- * data: { name, eventName, date, venue, qty, tier, ref, passUrl, mode: 'qr'|'rsvp',
+ * data: { name, eventName, date, time, venue, mapUrl, qty, guestNames, tier, ref, passUrl, mode: 'qr'|'rsvp',
  *         source: 'guestlist'|'order', items, totalAmount, paymentRef }
  */
 export default (data = {}) => {
@@ -20,7 +20,8 @@ export default (data = {}) => {
         hero: data.image ? { url: data.image, alt: data.eventName || '' } : null,
         blocks: [
             { p: `Hi ${firstName(data.name)}, ${rsvp ? `your RSVP for ${event} is confirmed.` : paid ? `your payment for ${event} is verified and your tickets are ready.` : `your place at ${event} is confirmed.`}` },
-            { details: [['Event', data.eventName], ['Date', formatDate(data.date, { withTime: /T\d\d:/.test(String(data.date || '')) })], ['Venue', data.venue], ['Tier', data.tier], ['Guests', Number(data.qty) > 1 ? data.qty : ''], ['Payment ref', paid ? data.paymentRef : '']] },
+            { details: [['Event', data.eventName], ['Date', formatDate(data.date, { withTime: !data.time && /T\d\d:/.test(String(data.date || '')) })], ['Time', data.time], ['Venue', data.venue], ['Tier', data.tier], ['Guests', Number(data.qty) > 1 ? data.qty : ''], ['Coming with you', Array.isArray(data.guestNames) ? data.guestNames.filter(Boolean).join(', ') : ''], ['Payment ref', paid ? data.paymentRef : '']] },
+            data.mapUrl ? { button: { label: 'Get directions', url: data.mapUrl } } : null,
             data.items && data.items.length ? { items: data.items, total: paid ? data.totalAmount : null, totalLabel: 'Total paid' } : null,
             !rsvp ? { qr: { value: data.ref, caption: 'Show this at the gate.' } } : null,
             { code: data.ref, label: rsvp ? 'Reference' : 'Pass code' },
