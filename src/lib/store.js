@@ -379,6 +379,19 @@ const giveawayMirrorAnnouncement = (g) => ({
     link: `/giveaway/${g.slug || ''}`
 });
 
+/* Cancels the pass issued for a guestlist sign-up, through the passes API (staff only). */
+const revokeEntryPass = async (entry, reason) => {
+    const ref = entry?.passRef || entry?.bookingRef;
+    if (!ref) return;
+    try {
+        const { passesPost } = await import('./passesApi');
+        const res = await passesPost('revoke', { ref, reason });
+        if (!res.ok && res.code !== 'NOT_FOUND') console.warn('[store] pass not cancelled:', res.error);
+    } catch (err) {
+        console.warn('[store] pass not cancelled:', err);
+    }
+};
+
 export const useStore = create((set, get) => ({
     // ... existing state ...
     
@@ -3067,6 +3080,8 @@ export const useStore = create((set, get) => ({
         // entry actually crosses that line, so repeat clicks can't drift it.
         const wasRejected = currentData.status === 'rejected';
         const isRejected = status === 'rejected';
+        // Declined: their pass stops working (approving again brings it back).
+        if (isRejected && !wasRejected) await revokeEntryPass(currentData, 'Declined');
         if (entrySnap.exists() && wasRejected !== isRejected) {
             try {
                 const spots = Number(currentData.guestsCount) || 1;
@@ -3085,6 +3100,8 @@ export const useStore = create((set, get) => ({
         if (!snap.exists()) return;
         const data = snap.data();
         await deleteDoc(entryRef);
+        // Removed: the pass goes with the sign-up.
+        await revokeEntryPass(data, 'Removed from the guestlist');
         if (data.status !== 'rejected') {
             try {
                 await updateDoc(doc(db, 'guestlists', guestlistId), {

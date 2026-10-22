@@ -261,7 +261,13 @@ const ownPlace = async (db, gid, uid) => {
     const key = await db.collection('pass_keys').doc(`guestlist_${gid}_${uid}`).get();
     if (key.exists && key.data().ref) {
         const pass = await db.collection('passes').doc(key.data().ref).get();
-        if (pass.exists && pass.data().status !== 'revoked') return { ref: pass.id, status: pass.data().status };
+        if (pass.exists && pass.data().status !== 'revoked') {
+            // The pass stands only while its sign-up does: removed means free to sign up again, declined means declined.
+            const entryId = pass.data().entryId || key.data().entryId;
+            const entry = entryId ? await db.collection('guestlists').doc(gid).collection('entries').doc(entryId).get() : null;
+            if (!entry || (entry.exists && String(entry.data().status) !== 'rejected')) return { ref: pass.id, status: pass.data().status };
+            if (entry.exists) return { ref: null, status: 'declined' };
+        }
         if (!pass.exists && key.data().entryId) {
             const entry = await db.collection('guestlists').doc(gid).collection('entries').doc(key.data().entryId).get();
             if (entry.exists && !['rejected', 'cancelled'].includes(String(entry.data().status))) return { ref: null, status: entry.data().status || 'pending' };
@@ -269,8 +275,9 @@ const ownPlace = async (db, gid, uid) => {
     }
     // Registered before passes existed.
     const legacy = await db.collection('guestlists').doc(gid).collection('entries').where('userId', '==', uid).limit(5).get();
-    const e = legacy.docs.map(d => d.data()).find(x => !['rejected', 'cancelled'].includes(String(x.status)) && !x.passRevoked);
-    if (!e) return null;
+    const entries = legacy.docs.map(d => d.data());
+    const e = entries.find(x => !['rejected', 'cancelled'].includes(String(x.status)) && !x.passRevoked);
+    if (!e) return entries.some(x => String(x.status) === 'rejected') ? { ref: null, status: 'declined' } : null;
     const confirmed = ['approved', 'confirmed', 'attended'].includes(String(e.status)) || e.attended;
     return { ref: e.passRef || e.bookingRef || null, status: confirmed ? 'issued' : (e.status || 'pending'), legacy: true };
 };
@@ -357,11 +364,16 @@ const registerGuestlist = async (db, body, caller) => {
         ]);
         if (keySnap.exists && keySnap.data().ref) {
             const passSnap = await tx.get(db.collection('passes').doc(keySnap.data().ref));
-            if (passSnap.exists && passSnap.data().status !== 'revoked') {
+            const keyEntryId = passSnap.exists ? passSnap.data().entryId : null;
+            // A pass whose sign-up was removed in the admin doesn't count as a place.
+            const keyEntry = keyEntryId ? await tx.get(glRef.collection('entries').doc(keyEntryId)) : null;
+            if (passSnap.exists && passSnap.data().status !== 'revoked' && (!keyEntry || keyEntry.exists)) {
                 return { duplicate: true, ref: passSnap.id, status: passSnap.data().status };
             }
         }
-        const live = legacySnap.docs.map(d => d.data()).find(e => !['rejected', 'cancelled'].includes(String(e.status)) && !e.passRevoked);
+        const mine = legacySnap.docs.map(d => d.data());
+        const live = mine.find(e => !['rejected', 'cancelled'].includes(String(e.status)) && !e.passRevoked);
+        if (!live && mine.some(e => String(e.status) === 'rejected')) throw new PassError('DECLINED', 'The team couldn’t confirm your spot on this list.', 409);
         if (live) return { duplicate: true, ref: live.passRef || live.bookingRef || null, status: ['approved', 'confirmed', 'attended'].includes(String(live.status)) ? 'issued' : (live.status || 'pending') };
 
         const gl = glSnap.exists ? glSnap.data() : {};
@@ -387,7 +399,8 @@ const registerGuestlist = async (db, body, caller) => {
             phone: me.phone,
             customerPhone: me.phone,
             guestsCount: guests,
-            plusOneNames: cleanGuestNames(body.guestNames, guests),
+            // The holder is already on the list under their own name.
+            plusOneNames: cleanGuestNames(body.guestNames, guests).filter(n => n.toLowerCase() !== String(me.name || '').trim().toLowerCase()),
             bookingRef: ref,
             passRef: ref,
             status,
@@ -446,7 +459,14 @@ export const ensureGuestlistPass = async (db, gid, entryId, { issuedBy = 'staff'
         const candidates = [entry.passRef, entry.bookingRef].map(r => str(r, 16).toUpperCase()).filter(isPassRef);
         for (const r of candidates) {
             const p = await tx.get(db.collection('passes').doc(r));
-            if (p.exists && p.data().sourceId === gid) return { ref: r, pass: p.data(), entry };
+            if (!p.exists || p.data().sourceId !== gid) continue;
+            if (p.data().status !== 'revoked') return { ref: r, pass: p.data(), entry };
+            // Declined, then approved after all: the same pass works again.
+            const restored = { ...p.data(), status: entry.attended ? 'checked_in' : 'issued', revokedAt: null, revokedBy: null, revokeReason: null };
+            tx.set(db.collection('passes').doc(r), restored);
+            tx.set(entryRef, { passRevoked: false }, { merge: true });
+            if (entry.userId) tx.set(db.collection('pass_keys').doc(`guestlist_${gid}_${entry.userId}`), { ref: r, entryId, source: 'guestlist', sourceId: gid, uid: entry.userId, at: nowIso() }, { merge: true });
+            return { ref: r, pass: restored, entry };
         }
         let ref = candidates.find(Boolean) || makePassRef();
         if ((await tx.get(db.collection('passes').doc(ref))).exists) ref = makePassRef();
@@ -1142,6 +1162,9 @@ const checkinAction = async (db, body, caller) => {
         if (linkedRef) {
             const l = await tx.get(linkedRef);
             linked = l.exists ? l.data() : null;
+        }
+        if (pass.source === 'guestlist' && pass.entryId && (!linked || String(linked.status) === 'rejected' || linked.passRevoked)) {
+            return { success: true, found: true, valid: false, reason: 'rejected', message: linked ? 'This sign-up was declined.' : 'This sign-up was removed from the list.', data };
         }
         if (pass.source === 'order' && linked && ['pending', 'rejected'].includes(String(linked.status))) {
             return { success: true, found: true, valid: false, reason: linked.status === 'pending' ? 'unpaid' : 'rejected', message: linked.status === 'pending' ? "Payment hasn't been verified yet." : 'This order was cancelled.', data };

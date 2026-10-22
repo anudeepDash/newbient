@@ -8,7 +8,7 @@ vi.mock('../api/_lib/notify.js', () => ({
 import { FakeFirestore } from './helpers/fakeFirestore.js';
 import { setDbForTests } from '../api/_lib/db.js';
 import { notify } from '../api/_lib/notify.js';
-import { resolveGuestlist, _internal } from '../api/_lib/passes.js';
+import { resolveGuestlist, ensureGuestlistPass, _internal } from '../api/_lib/passes.js';
 
 const register = (db, body, uid = 'u1') => _internal.actions['register-guestlist'](db, body, { uid });
 const getPass = (db, ref, uid = 'u1') => _internal.actions.get(db, { ref }, { uid });
@@ -78,5 +78,37 @@ describe('guestlist time, map link and guest names', () => {
 
         await db.collection('users').doc('u3').set({ name: 'No Phone', email: 'np@example.com' });
         await expect(register(db, { guestlistId: 'gl1', guests: 1 }, 'u3')).rejects.toMatchObject({ code: 'PROFILE_INCOMPLETE' });
+    });
+
+    describe('a pass follows its sign-up', () => {
+        const staff = { uid: 'staff', staff: true, email: 'ops@newbi.live' };
+        const place = async (uid = 'u1') => (await _internal.actions.guestlist(db, { id: 'gl1' }, { uid })).guestlist.me;
+        const scan = (ref) => _internal.actions.checkin(db, { code: ref, eventId: 'gl1', guestlistIds: ['gl1'] }, staff);
+        const entryRef = () => db.collection('guestlists').doc('gl1').collection('entries').doc(Object.keys(db.dump('guestlists/gl1/entries'))[0]);
+
+        it('removed in the admin: the pass stops working and they can sign up again', async () => {
+            const out = await register(db, { guestlistId: 'gl1', guests: 3 });
+            await entryRef().delete();
+            expect(await place()).toBeNull();
+            expect(await scan(out.ref)).toMatchObject({ valid: false, reason: 'rejected' });
+            const again = await register(db, { guestlistId: 'gl1', guests: 1 });
+            expect(again.duplicate).toBeUndefined();
+            expect(again.ref).not.toBe(out.ref);
+        });
+
+        it('declined: no entry at the gate, no signing up again, and approving brings the pass back', async () => {
+            const out = await register(db, { guestlistId: 'gl1', guests: 1 });
+            const ref = entryRef();
+            await ref.set({ status: 'rejected' }, { merge: true });
+            await _internal.actions.revoke(db, { ref: out.ref, reason: 'Declined' }, staff);
+            expect(await place()).toMatchObject({ status: 'declined' });
+            expect(await scan(out.ref)).toMatchObject({ valid: false });
+            await expect(register(db, { guestlistId: 'gl1', guests: 1 })).rejects.toMatchObject({ code: 'DECLINED' });
+
+            await ref.set({ status: 'approved' }, { merge: true });
+            await ensureGuestlistPass(db, 'gl1', ref.path.split('/').pop());
+            expect(db.store.get(`passes/${out.ref}`)).toMatchObject({ status: 'issued' });
+            expect(await place()).toMatchObject({ ref: out.ref, status: 'issued' });
+        });
     });
 });

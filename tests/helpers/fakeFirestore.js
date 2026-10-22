@@ -113,6 +113,7 @@ export class FakeFirestore {
                 return refOrQuery.get();
             },
             set: (ref, data, opts) => { wrote = true; writes.push(() => this._write(ref.path, data, opts)); },
+            delete: (ref) => { wrote = true; writes.push(() => this.store.delete(ref.path)); },
             update: (ref, data) => {
                 wrote = true;
                 writes.push(() => {

@@ -2,7 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Share from 'lucide-react/dist/esm/icons/share';
 import TicketX from 'lucide-react/dist/esm/icons/ticket-x';
-import { Button, Sheet } from '../../components/app';
+import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
+import X from 'lucide-react/dist/esm/icons/x';
+import { Button } from '../../components/app';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { useCloseExpanded } from '../pages/ExpandedCard';
 import { useAppStore } from '../../lib/store/appStore';
 import { cachePass, cachedPass, passesGet } from '../../lib/passesApi';
@@ -26,6 +30,46 @@ export const PassSkeleton = () => (
         <div className="mx-auto h-64 w-64 animate-pulse rounded-3xl bg-black/[0.05] dark:bg-white/[0.05]" />
     </div>
 );
+
+/*
+ * Over a list: just the ticket, floating on a dimmed backdrop (no sheet around
+ * it). Tap outside, the close button or Escape to go back to the list.
+ */
+const TicketOverlay = ({ onClose, label, children }) => {
+    const t = useT();
+    useBodyScrollLock(true);
+    useEffect(() => {
+        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [onClose]);
+    return createPortal(
+        <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label={label}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-[70] overflow-y-auto overscroll-contain bg-black/70 backdrop-blur-md"
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
+            <div className="flex min-h-full items-center justify-center px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(4.5rem+env(safe-area-inset-top))]" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+                <motion.div initial={{ opacity: 0, y: 24, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 380, damping: 32 }} className="relative w-full max-w-sm">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label={t('Close')}
+                        className="absolute -top-14 right-0 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-inset ring-white/20 backdrop-blur-xl transition-colors hover:bg-white/25"
+                    >
+                        <X size={20} />
+                    </button>
+                    {children}
+                </motion.div>
+            </div>
+        </motion.div>,
+        document.body
+    );
+};
 
 export const PassMissing = ({ message }) => {
     const t = useT();
@@ -87,13 +131,11 @@ const PassPage = ({ overlay = false }) => {
 
     const close = useCloseExpanded(appPath('/tickets'));
     if (overlay) {
-        // Over a list: the ticket in a sheet.
         return (
-            // Sized to the ticket, so there's no empty space under it.
-            <Sheet open onClose={close} size="auto" width="sm" bleed header={<span className="sr-only">{t('Your pass')}</span>} bodyClassName="px-3 pb-4 pt-3 sm:px-4">
+            <TicketOverlay onClose={close} label={t('Your pass')}>
                 {pass ? <PassView pass={pass} bare offline={fromCache && typeof navigator !== 'undefined' && navigator.onLine === false} />
-                    : <div className="px-2 pt-12">{error ? <PassMissing message={error} /> : <PassSkeleton />}</div>}
-            </Sheet>
+                    : error ? <PassMissing message={error} /> : <PassSkeleton />}
+            </TicketOverlay>
         );
     }
 
