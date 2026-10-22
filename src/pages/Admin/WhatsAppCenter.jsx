@@ -26,13 +26,14 @@ import { STATUSES, STATUS_META, isOnShortlist } from '../../lib/outreach/status'
  */
 
 const STATUS_TONE = { APPROVED: 'green', PENDING: 'amber', IN_APPEAL: 'amber', REJECTED: 'rose', PAUSED: 'rose', DISABLED: 'gray' };
-const SEND_TONE = { sent: 'blue', delivered: 'teal', read: 'green', failed: 'rose', retry: 'amber', skipped: 'gray' };
+const SEND_TONE = { sent: 'blue', delivered: 'teal', read: 'green', failed: 'rose', retry: 'amber', held: 'amber', skipped: 'gray' };
 
 const statusLabel = (s) => String(s || '').toLowerCase().replace(/_/g, ' ');
 
 /* Where a send came from, in words. */
 const eventLabel = (e = '') => {
     if (e === 'admin-manual') return 'Sent by hand';
+    if (e === 'admin-bulk') return 'Sent to many (campaign message)';
     if (e.startsWith('outreach-')) return 'Campaign outreach';
     if (e.startsWith('otp-')) return 'Sign-in code';
     if (e === 'creator-verification') return 'Number check';
@@ -447,7 +448,7 @@ const LogPanel = ({ refreshKey }) => {
                             <span className="block truncate font-semibold">{r.template || 'Text reply'}</span>
                             <span className="block truncate text-[12px] text-gray-500">{eventLabel(r.event)}{r.error ? ` · ${r.error}` : ''}</span>
                         </span>
-                        <Badge tone={SEND_TONE[r.status] || 'gray'}>{r.status || '—'}</Badge>
+                        <Badge tone={SEND_TONE[r.status] || 'gray'}>{r.status === 'held' ? 'waiting' : r.status || '—'}</Badge>
                     </li>
                 ))}
             </ul>
@@ -479,6 +480,120 @@ const TemplatesPanel = ({ state, reload }) => (
     </div>
 );
 
+/* ── The number's state at Meta ───────────────────────────────────────── */
+
+const NAME_STATUS = {
+    APPROVED: 'Approved',
+    AVAILABLE_WITHOUT_REVIEW: 'In use, no review needed',
+    PENDING_REVIEW: 'Waiting for Meta’s review',
+    DECLINED: 'Rejected',
+    EXPIRED: 'Expired',
+    NONE: 'Not submitted',
+};
+const QUALITY = { GREEN: 'High', YELLOW: 'Medium', RED: 'Low' };
+const CAN_SEND = { AVAILABLE: 'Can send', LIMITED: 'Limited', BLOCKED: 'Blocked' };
+const DOT = { green: 'bg-emerald-500', amber: 'bg-amber-500', rose: 'bg-rose-500', gray: 'bg-gray-400' };
+const RING = { green: 'border-emerald-500/30', amber: 'border-amber-500/30', rose: 'border-rose-500/40', gray: '' };
+
+/* "TIER_1K" → "1,000 people a day". */
+const limitLabel = (tier) => {
+    const m = String(tier || '').match(/^TIER_(\d+)(K)?$/i);
+    if (m) return `${(Number(m[1]) * (m[2] ? 1000 : 1)).toLocaleString('en-IN')} people a day`;
+    if (/UNLIMITED/i.test(tier || '')) return 'No daily limit';
+    return tier ? String(tier).replace(/_/g, ' ').toLowerCase() : null;
+};
+
+const Fact = ({ label, children }) => (children ? (
+    <div className="min-w-0">
+        <p className="text-[11.5px] font-semibold uppercase tracking-wide text-gray-500">{label}</p>
+        <p className="text-[13px] font-semibold">{children}</p>
+    </div>
+) : null);
+
+/*
+ * Whether the number can send right now: Meta's health check, the display name
+ * and its review, quality and limit, and how the last real message went
+ * (api/_lib/whatsappCenter.js, wa-number).
+ */
+const NumberStatus = () => {
+    const addToast = useStore(s => s.addToast);
+    const [state, setState] = useState({ loading: true });
+    const [pushing, setPushing] = useState(false);
+    const load = useCallback(async () => {
+        setState(s => ({ ...s, loading: true }));
+        const r = await callOutreach('wa-number');
+        setState(r.ok ? { loading: false, ...r.data } : { loading: false, error: r.error });
+        return r.ok ? r.data : null;
+    }, []);
+    // Send what's waiting now (it also runs on its own); held messages try again here too.
+    const sendWaiting = useCallback(async ({ quiet = false } = {}) => {
+        setPushing(true);
+        const r = await callOutreach('outreach-queue-run');
+        setPushing(false);
+        if (!quiet) {
+            if (!r.ok) addToast(r.error, 'error', { title: 'Couldn’t send' });
+            else if (r.data.blocked) addToast('Meta is still refusing the number, so they keep waiting.', 'warning', { title: `${r.data.held} tried, still waiting` });
+            else addToast(`${r.data.sent} sent${r.data.more ? ', the rest carry on in the background' : ''}.`, r.data.sent ? 'success' : 'info');
+        }
+        load();
+    }, [addToast, load]);
+    // Opening the page gives waiting messages a push.
+    useEffect(() => { load().then(d => { if (d?.queue?.waiting) sendWaiting({ quiet: true }); }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    if (state.error) return <Card className="p-4 text-[13px] text-gray-500">Couldn’t read the number’s status from Meta: {state.error}</Card>;
+    if (!state.verdict) return <Card className="p-4 text-[13px] text-gray-500">Checking the number with Meta…</Card>;
+    const { number: n, verdict: v, lastSend, queue } = state;
+    return (
+        <Card className={cn('space-y-3 p-4', RING[v.tone])}>
+            <div className="flex items-start gap-3">
+                <span className={cn('mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full', DOT[v.tone])} aria-hidden="true" />
+                <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-bold">{v.title}</p>
+                    <p className="text-[12.5px] text-gray-500">{v.detail}</p>
+                </div>
+                <Button size="sm" variant="ghost" onClick={load} disabled={state.loading} aria-label="Check again">
+                    <RefreshCw size={13} className={state.loading ? 'animate-spin' : undefined} /> Check again
+                </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 border-t border-black/[0.06] pt-3 sm:grid-cols-4 dark:border-white/[0.08]">
+                <Fact label="Display name">{n.verifiedName ? `${n.verifiedName}${n.nameStatus ? ` · ${NAME_STATUS[n.nameStatus] || n.nameStatus}` : ''}` : (NAME_STATUS[n.nameStatus] || n.nameStatus)}</Fact>
+                <Fact label="Meta says">{CAN_SEND[n.canSend] || n.canSend}</Fact>
+                <Fact label="Quality">{QUALITY[n.quality] || (n.quality && n.quality !== 'UNKNOWN' ? n.quality : null)}</Fact>
+                <Fact label="Limit">{limitLabel(n.limit)}</Fact>
+            </div>
+            {n.newNameStatus && n.newNameStatus !== 'NONE' && n.newNameStatus !== n.nameStatus && (
+                <p className="text-[12.5px] text-gray-500">A new display name is {String(NAME_STATUS[n.newNameStatus] || n.newNameStatus).toLowerCase()}.</p>
+            )}
+            {n.issues?.length > 0 && (
+                <ul className="space-y-1.5 text-[12.5px]">
+                    {n.issues.map((x, i) => (
+                        <li key={i} className="rounded-xl bg-black/[0.03] px-3 py-2 dark:bg-white/[0.04]">
+                            <span className="font-semibold">{x.entity.charAt(0).toUpperCase() + x.entity.slice(1)}</span>: {x.text}
+                            {x.fix && <span className="block text-gray-500">{x.fix}</span>}
+                        </li>
+                    ))}
+                </ul>
+            )}
+            {queue?.waiting > 0 && (
+                <div className="flex flex-wrap items-center gap-3 rounded-xl bg-amber-500/10 px-3 py-2 text-[12.5px]">
+                    <span className="flex-1">
+                        {queue.waiting} message{queue.waiting === 1 ? '' : 's'} waiting to go out
+                        {queue.held ? ` (${queue.held} held while Meta refuses the number)` : ''}
+                        {queue.nextAt ? ` · next try ${when(queue.nextAt)}` : ''}
+                    </span>
+                    <Button size="sm" variant="success" disabled={pushing} onClick={() => sendWaiting()}>{pushing ? 'Sending…' : 'Send now'}</Button>
+                </div>
+            )}
+            {lastSend && (
+                <p className="text-[12.5px] text-gray-500">
+                    Last message {when(lastSend.at)}{lastSend.template ? ` (${lastSend.template})` : ''}: <span className={cn('font-semibold', lastSend.status === 'failed' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-neon-green')}>{lastSend.status}</span>
+                    {lastSend.status === 'failed' && lastSend.error ? ` · ${lastSend.error}` : ''}
+                </p>
+            )}
+        </Card>
+    );
+};
+
 /* ── Page ─────────────────────────────────────────────────────────────── */
 
 /* Other screens open the Send tab with people picked: navigate('/admin/whatsapp', { state: { whatsappSend: { campaignId, appIds, phone, template, at } } }). */
@@ -502,6 +617,7 @@ const WhatsAppCenter = () => {
 
     return (
         <div className="space-y-5">
+            <NumberStatus />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <SegmentedTabs
                     value={tab}

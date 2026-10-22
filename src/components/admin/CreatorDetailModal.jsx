@@ -18,6 +18,7 @@ import { creatorHasCollegeNiche } from '../../lib/constants';
 import EmailPreviewIframe from '../ui/EmailPreviewIframe';
 import EditCreatorModal from '../creator/EditCreatorModal';
 import Sheet from './Sheet';
+import WhatsAppSendSheet from './whatsapp/WhatsAppSendSheet';
 import { Button, Badge, SegmentedTabs, Menu, MenuItem } from './ui';
 
 // ─── Badges ─────────────────────────────────────────────────────────────────
@@ -108,6 +109,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
     const [adminBadges, setAdminBadges] = useState(creator?.adminBadges || []);
 
     const [commMode, setCommMode] = useState('email');
+    const [waOpen, setWaOpen] = useState(false);
     const [emailSubject, setEmailSubject] = useState('Partnership update from Newbi Entertainment');
     const [emailBody, setEmailBody] = useState('');
     const [messageText, setMessageText] = useState('');
@@ -517,9 +519,12 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                     { value: 'email', label: 'Email' },
                                     { value: 'notify', label: 'App notification' },
                                 ]} />
-                                {commMode === 'email' && (
-                                    <Button variant="ghost" size="sm" onClick={() => setShowPreview(v => !v)}><Eye size={13} /> {showPreview ? 'Hide preview' : 'Preview'}</Button>
-                                )}
+                                <div className="flex items-center gap-1">
+                                    {creatorData.phone && <Button variant="secondary" size="sm" onClick={() => setWaOpen(true)}><MessageCircle size={13} /> WhatsApp template</Button>}
+                                    {commMode === 'email' && (
+                                        <Button variant="ghost" size="sm" onClick={() => setShowPreview(v => !v)}><Eye size={13} /> {showPreview ? 'Hide preview' : 'Preview'}</Button>
+                                    )}
+                                </div>
                             </div>
 
                             {commMode === 'email' ? (
@@ -627,6 +632,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                     }}
                 />
             )}
+            <WhatsAppSendSheet open={waOpen} onClose={() => setWaOpen(false)} people={[{ name: creatorData?.name, phone: creatorData?.phone }]} title={`WhatsApp ${creatorData?.name || 'creator'}`} />
         </>
     );
 };

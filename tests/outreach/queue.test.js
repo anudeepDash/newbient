@@ -222,6 +222,38 @@ describe('the worker', () => {
     });
 });
 
+describe('when Meta refuses the number for now', () => {
+    const blocked = () => metaError(400, 131037, 'WhatsApp provided number needs display name approval before message can be sent.');
+
+    it('holds the message without using an attempt, stops the run, and sends everyone once it clears', async () => {
+        await enqueueInvites(db, { campaignId: 'c1', appIds: ['a1', 'a2'], actor: ADMIN });
+        respond = blocked;
+        const r1 = await runQueue({ db, clock, sleep });
+        expect(r1).toMatchObject({ sent: 0, held: 1, blocked: true, failed: 0, more: false });
+        expect(job('a1')).toMatchObject({ status: 'queued', attempts: 0, errorCode: 131037, heldAt: expect.any(String) });
+        expect(job('a2')).toMatchObject({ status: 'queued', attempts: 0 });
+        expect(job('a2').heldAt).toBeUndefined();
+        expect(Object.values(db.dump('message_log')).find(m => m.status === 'held')).toBeTruthy();
+
+        advance(61 * 60_000);
+        respond = () => metaOk(sent.length);
+        const r2 = await runQueue({ db, clock, sleep });
+        expect(r2.sent).toBe(2);
+        expect(job('a1')).toMatchObject({ status: 'sent' });
+        // Still one log row for a1's message, now sent.
+        expect(Object.values(db.dump('message_log')).filter(m => m.status === 'held')).toHaveLength(0);
+    });
+
+    it('stops holding after 72 hours and marks it not sent', async () => {
+        await enqueueInvites(db, { campaignId: 'c1', appIds: ['a1'], actor: ADMIN });
+        respond = blocked;
+        advance(73 * 3600_000);
+        const r = await runQueue({ db, clock, sleep });
+        expect(r.failed).toBe(1);
+        expect(job('a1')).toMatchObject({ status: 'failed' });
+    });
+});
+
 describe('Joined, replies and reminders', () => {
     const sendAll = async (ids = ['a1', 'a2', 'a3']) => {
         await enqueueInvites(db, { campaignId: 'c1', appIds: ids, actor: ADMIN });

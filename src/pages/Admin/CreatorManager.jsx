@@ -51,6 +51,7 @@ import { SEARCH_FIELDS, matchesCreatorSearch, creatorNiches, creatorJoinedAt } f
 import { CreatorCard, CreatorRow, CreatorListHeader } from '../../components/admin/creators/CreatorListItems';
 import ConfirmSheet from '../../components/admin/creators/ConfirmSheet';
 import BulkEmailModal from '../../components/admin/creators/BulkEmailModal';
+import WhatsAppSendSheet from '../../components/admin/whatsapp/WhatsAppSendSheet';
 import ImportCreatorsSheet from '../../components/admin/creators/ImportCreatorsSheet';
 import CreatorLeaderboard from '../../components/admin/creators/CreatorLeaderboard';
 
@@ -188,6 +189,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
     const [busyIds, setBusyIds] = useState(() => new Set());
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [emailRecipients, setEmailRecipients] = useState(null); // { list, fromSelection }
+    const [waPeople, setWaPeople] = useState(null); // [{ name, phone }] for Send on WhatsApp
     const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [cityInvite, setCityInvite] = useState(null); // { city, uids }
@@ -779,6 +781,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                 <div className="flex items-center gap-2">
                                     <Button size="sm" variant="success" onClick={() => requestBulk('approved')} className="h-10 flex-1 sm:flex-none"><Check size={14} /> Verify</Button>
                                     <Button size="sm" variant="accent" onClick={() => setEmailRecipients({ list: selectedCreators, fromSelection: true })} className="h-10 flex-1 sm:flex-none"><Mail size={14} /> Email</Button>
+                                    <Button size="sm" variant="secondary" onClick={() => setWaPeople(selectedCreators.map(c => ({ name: c.name, phone: c.phone })))} className="h-10 flex-1 sm:flex-none"><MessageCircle size={14} /> WhatsApp</Button>
                                     <Button size="sm" variant="secondary" onClick={() => setCityInvite({ city: cities.length === 1 ? cities[0] : (selectedCreators[0]?.city || 'Bengaluru'), uids: [...selected] })} className="h-10 flex-1 sm:flex-none">
                                         <Send size={14} /> <span className="sm:hidden">Invite</span><span className="hidden sm:inline">Group invites</span>
                                     </Button>
@@ -873,6 +876,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                     onClose={(sent) => { if (sent && emailRecipients.fromSelection) setSelected(new Set()); setEmailRecipients(null); }}
                 />
             )}
+            <WhatsAppSendSheet open={Boolean(waPeople)} onClose={() => setWaPeople(null)} people={waPeople || []} />
             {isBroadcastOpen && <BroadcastGroupsModal onClose={() => setIsBroadcastOpen(false)} />}
             <ImportCreatorsSheet open={isImportOpen} onClose={() => setIsImportOpen(false)} creators={creators} />
             {cityInvite && (

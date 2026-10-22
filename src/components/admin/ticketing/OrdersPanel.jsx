@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import Check from 'lucide-react/dist/esm/icons/check';
 import X from 'lucide-react/dist/esm/icons/x';
 import Send from 'lucide-react/dist/esm/icons/send';
@@ -17,6 +18,7 @@ import { Button, Badge, SearchInput, SegmentedTabs, EmptyState, Menu, MenuItem, 
 import { accent } from '../theme';
 import { Panel, ContactLinks, CopyChip, SelectBox, useConfirm, useBusy } from './kit';
 import { inr, formatDateTime, ORDER_STATUS, personName } from './format';
+import WhatsAppSendSheet from '../whatsapp/WhatsAppSendSheet';
 
 /*
  * Ticket orders for one event: verify payments (match the UTR with the bank),
@@ -90,6 +92,7 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
     const [filter, setFilter] = useState(() => initialFilter || (counts.pending ? 'pending' : 'all'));
     const [search, setSearch] = useState('');
     const [selected, setSelected] = useState(() => new Set());
+    const [waPeople, setWaPeople] = useState(null); // [{ name, phone }] for Send on WhatsApp
     const [openId, setOpenId] = useState(null);
     const [bulk, setBulk] = useState(null); // { label, done, total }
     const [busy, run] = useBusy();
@@ -299,6 +302,7 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
                 />
             </div>
 
+            <WhatsAppSendSheet open={Boolean(waPeople)} onClose={() => setWaPeople(null)} people={waPeople || []} />
             {canReview && (selected.size > 0 || bulk) && (
                 <div className={cn('sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 flex flex-wrap items-center gap-2 rounded-2xl border p-2.5 backdrop-blur lg:top-2', accent('orange').border, 'bg-white/95 dark:bg-[#0d0f15]/95')}>
                     {bulk ? (
@@ -309,6 +313,7 @@ const OrdersPanel = ({ event, orders, initialFilter, canSeeMoney = true, canRevi
                             {selPending > 0 && <Button variant="success" size="sm" className="h-10" onClick={bulkVerify}><Check size={14} /> Verify {selPending}</Button>}
                             {selApproved.length > 0 && <Button variant="accent" size="sm" className="h-10" onClick={() => sendTo(selApproved)}><Send size={14} /> Send {selApproved.length}</Button>}
                             {selRejectable > 0 && <Button variant="secondary" size="sm" className="h-10 text-red-600 dark:text-red-400" onClick={bulkReject}><X size={14} /> Reject {selRejectable}</Button>}
+                            <Button variant="secondary" size="sm" className="h-10" onClick={() => setWaPeople(selectedOrders.map(o => ({ name: personName(o, ''), phone: o.customerPhone || o.phone })))}><MessageCircle size={14} /> WhatsApp</Button>
                             <Button variant="ghost" size="sm" className="ml-auto h-10" onClick={() => setSelected(new Set())}>Clear</Button>
                         </>
                     )}

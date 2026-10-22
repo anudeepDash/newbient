@@ -11,6 +11,11 @@
  *        params: { body: [...], buttons: {index: ending}, headerUrl?, headerText?, campaignId? }
  *        A value like {first_name} or {campaign_title} is filled in for each person (src/lib/outreach/waFields.js).
  *   POST ?action=wa-log        { limit? }              the latest sends from message_log
+ *   POST ?action=wa-number     {}                      the number's state at Meta (health, display name) and the last send
+ *   POST ?action=wa-bulk       { template, language, campaignId?, recipients: [{ phone, name }], params }
+ *        queues one approved template for many people (up to 500). The send queue
+ *        (api/_lib/outreachQueue.js) sends them at the rate limit, retries, and holds
+ *        them while Meta refuses the number, so they go out once it can send.
  *
  * Same roles as outreach (checked by the router in api/_lib/outreach.js).
  * Sends share the outreach rate limit and daily cap, skip numbers that asked
@@ -20,7 +25,7 @@
  */
 import { nowIso } from './db.js';
 import { isWhatsAppConfigured, sendTemplate, toE164, imageHeaderFor, headerImageUrl, campaignImageOf } from './whatsapp.js';
-import { acquireSlot, joinPayload, submitToken } from './outreachQueue.js';
+import { acquireSlot, joinPayload, submitToken, enqueueJob, kickWorker, runQueue } from './outreachQueue.js';
 import { appendThreadMessage, contactIdFor } from './outreachThreads.js';
 import { maskPhone, firstNameOf } from '../../src/lib/outreach/normalize.js';
 import { deadlineLineFor } from '../../src/lib/outreach/template.js';
@@ -29,9 +34,10 @@ import { loadTeam } from './teamAlerts.js';
 import { STOP_PAYLOAD } from '../../src/lib/outreach/whatsappTemplate.js';
 import { APP_ORIGIN, OG_IMAGES } from '../../src/app/seo.js';
 
-export const WA_CENTER_ACTIONS = new Set(['wa-templates', 'wa-team', 'wa-send', 'wa-log']);
+export const WA_CENTER_ACTIONS = new Set(['wa-templates', 'wa-team', 'wa-send', 'wa-log', 'wa-number', 'wa-bulk']);
 
 const MAX_RECIPIENTS = 50;
+const MAX_BULK = 500;
 const send = (res, status, body) => res.status(status).json(body);
 const graphVersion = () => process.env.WHATSAPP_API_VERSION || 'v23.0';
 
@@ -230,6 +236,165 @@ const handleSend = async (req, res, { db, actor }) => {
     return send(res, 200, { success: true, sent, results });
 };
 
+/* ── Bulk: queue one template for many people ─────────────────────────── */
+
+/* The template, checked with Meta, and the parts every person shares. Throws { status, field } for the form. */
+const approvedTemplate = async ({ template, language }) => {
+    if (!template) throw Object.assign(new Error('Pick a template.'), { status: 400, field: 'template' });
+    const tpl = (await fetchTemplates()).find(t => t.name === template && (!language || t.language === language));
+    if (!tpl) throw Object.assign(new Error('That template isn’t in WhatsApp Manager.'), { status: 404, field: 'template' });
+    if (tpl.status !== 'APPROVED') throw Object.assign(new Error(`“${tpl.name}” is ${String(tpl.status).toLowerCase().replace('_', ' ')}, so it can’t be sent yet.`), { status: 409, field: 'template' });
+    return tpl;
+};
+
+const handleBulk = async (req, res, { db, actor }) => {
+    const { template, language, recipients = [], params = {} } = req.body || {};
+    let tpl;
+    try { tpl = await approvedTemplate({ template, language }); } catch (err) {
+        if (!err.field) throw err;
+        return send(res, err.status, { success: false, field: err.field, error: err.message });
+    }
+    const rawBody = Array.from({ length: tpl.bodyVars }, (_, i) => String(params.body?.[i] ?? '').trim());
+    if (rawBody.some(v => !v)) return send(res, 400, { success: false, field: 'body', error: 'Fill in every variable.' });
+    const rawHeader = headerFor(tpl, params);
+    if (rawHeader === 'missing') return send(res, 400, { success: false, field: 'header', error: 'This template needs a header: add its link or text.' });
+    if (rawHeader === 'unsupported') return send(res, 400, { success: false, field: 'header', error: 'Video headers can’t be sent from here.' });
+    if (buttonsFor(tpl, params).some(b => b.param === '')) return send(res, 400, { success: false, field: 'buttons', error: 'Fill in the link ending for each link button.' });
+    if (!Array.isArray(recipients) || !recipients.length) return send(res, 400, { success: false, field: 'recipients', error: 'Choose who to send it to.' });
+    if (recipients.length > MAX_BULK) return send(res, 400, { success: false, field: 'recipients', error: `Up to ${MAX_BULK} people at a time.` });
+
+    const campaignId = String(params.campaignId || req.body?.campaignId || '').slice(0, 120) || null;
+    const campaign = await campaignLoader(db)(campaignId);
+    const createdBy = actor?.actorEmail || 'Newbi team';
+    const queued = [];
+    const skipped = [];
+    const seen = new Set();
+    for (const r of recipients) {
+        const phone = toE164(r?.phone);
+        const label = String(r?.name || '').trim() || (phone ? maskPhone(phone) : 'No number');
+        if (!phone) { skipped.push({ label, error: 'No WhatsApp number' }); continue; }
+        if (seen.has(phone)) continue;
+        seen.add(phone);
+        const values = valuesFor({ name: r?.name, campaign });
+        const bodyParams = rawBody.map(v => fillTokens(v, values));
+        const personParams = {
+            ...params,
+            headerText: params.headerText ? fillTokens(params.headerText, values) : params.headerText,
+            buttons: Object.fromEntries(Object.entries(params.buttons || {}).map(([i, v]) => [i, fillTokens(v, values)])),
+        };
+        const missing = [...new Set([...bodyParams, personParams.headerText, ...Object.values(personParams.buttons)].flatMap(missingTokens))];
+        if (missing.length) { skipped.push({ label, error: MISSING_WHY(missing) }); continue; }
+        const header = headerFor(tpl, personParams, campaign);
+        const id = await enqueueJob(db, {
+            campaignId, kind: 'template', createdBy,
+            data: { phone, name: r?.name || null, template: tpl.name, language: tpl.language, header: header || null, bodyParams, buttons: buttonsFor(tpl, personParams), text: fill(tpl.body, bodyParams) },
+        });
+        if (id) queued.push(label); else skipped.push({ label, error: 'Already waiting to go out' });
+    }
+    // Start sending now: in the background with CRON_SECRET, else a first batch in this request.
+    let worker = { started: false };
+    if (queued.length) worker = (await kickWorker(req, 0)) ? { started: true } : { started: false, report: await runQueue({ db, deadline: Date.now() + 20_000 }) };
+    return send(res, 200, { success: true, queued: queued.length, skipped, worker });
+};
+
+/* ── The number's state at Meta ───────────────────────────────────────── */
+
+const NUMBER_FIELDS = ['display_phone_number', 'verified_name', 'name_status', 'new_name_status', 'status', 'quality_rating',
+    'whatsapp_business_manager_messaging_limit', 'messaging_limit_tier', 'health_status'];
+// Fields every Graph version has, for when Meta refuses one of the newer ones.
+const CORE_FIELDS = ['display_phone_number', 'verified_name', 'name_status', 'quality_rating', 'health_status'];
+
+const fetchNumber = async () => {
+    const doFetch = testFetch || fetch;
+    const get = async (fields) => {
+        const url = `https://graph.facebook.com/${graphVersion()}/${encodeURIComponent(process.env.WHATSAPP_PHONE_NUMBER_ID)}?fields=${fields.join(',')}`;
+        const res = await doFetch(url, { headers: { Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}` } });
+        return { ok: res.ok, data: await res.json().catch(() => ({})), status: res.status };
+    };
+    let r = await get(NUMBER_FIELDS);
+    if (!r.ok && Number(r.data?.error?.code) === 100) r = await get(CORE_FIELDS);
+    if (!r.ok) throw Object.assign(new Error(r.data?.error?.message || `Meta answered ${r.status}`), { status: 502 });
+    return r.data;
+};
+
+/* What Meta's health check says about each part (number, account, business, app), in words. */
+const issuesOf = (health) => (health?.entities || []).flatMap((e) => {
+    const texts = [
+        ...(e.errors || []).map(x => ({ text: x.error_description || `Error ${x.error_code}`, fix: x.possible_solution || null, code: x.error_code || null })),
+        ...[].concat(e.additional_info || []).filter(Boolean).map(text => ({ text: String(text), fix: null, code: null })),
+    ];
+    return texts.map(t => ({ entity: String(e.entity_type || '').toLowerCase().replace(/_/g, ' '), canSend: e.can_send_message || null, ...t }));
+});
+
+/* "TIER_1K" and the like; Meta has sent this both as a string and as { current_limit }. */
+const limitOf = (n) => {
+    const v = n.whatsapp_business_manager_messaging_limit;
+    const raw = typeof v === 'string' ? v : v?.current_limit || n.messaging_limit_tier || null;
+    return typeof raw === 'string' ? raw : null;
+};
+
+const NAME_OK = new Set(['APPROVED', 'AVAILABLE_WITHOUT_REVIEW']);
+export const DISPLAY_NAME_ERROR = 131037;
+
+/*
+ * Can it send right now? Meta's health check and the name status can lag the
+ * truth for a day or two, so the last real send counts most.
+ * → { tone: 'green'|'amber'|'rose'|'gray', title, detail }
+ */
+export const verdictFor = ({ canSend = null, nameStatus = null, lastSend = null }) => {
+    const nameBlocked = ['failed', 'held'].includes(lastSend?.status) && Number(lastSend.errorCode) === DISPLAY_NAME_ERROR;
+    if (nameBlocked && (canSend !== 'AVAILABLE' || !NAME_OK.has(nameStatus))) {
+        return { tone: 'rose', title: 'Not sending: the display name isn’t active yet', detail: 'Meta refuses every message until the number’s display name is approved. After approval it can take 1–2 business days to apply.' };
+    }
+    if (nameBlocked) {
+        return { tone: 'amber', title: 'Meta now shows the name as approved', detail: 'The last message still failed on the display name. The next one will tell whether it has applied.' };
+    }
+    if (canSend === 'BLOCKED') return { tone: 'rose', title: 'Meta is blocking messages', detail: 'See what Meta says below.' };
+    if (nameStatus && !NAME_OK.has(nameStatus)) return { tone: 'amber', title: 'Display name not approved yet', detail: 'Messages may be refused until Meta approves it.' };
+    if (canSend === 'LIMITED') return { tone: 'amber', title: 'Sending, with limits', detail: 'Messages go out, with a lower daily limit. See what Meta says below.' };
+    if (canSend === 'AVAILABLE') return { tone: 'green', title: 'Sending normally', detail: lastSend?.status && lastSend.status !== 'failed' ? 'The last message went through.' : 'Meta says this number can send.' };
+    return { tone: 'gray', title: 'Status unknown', detail: 'Meta didn’t say whether this number can send.' };
+};
+
+/* The latest WhatsApp send that reached Meta's answer (sent, delivered, read or failed). */
+const lastSendOf = async (db) => {
+    const snap = await db.collection('message_log').orderBy('updatedAt', 'desc').limit(40).get();
+    const m = snap.docs.map(d => d.data()).find(x => x.channel === 'whatsapp' && ['sent', 'delivered', 'read', 'failed', 'held'].includes(x.status));
+    return m ? { status: m.status, at: m.updatedAt || m.createdAt || null, template: m.template || '', error: m.error || null, errorCode: m.errorCode || null } : null;
+};
+
+/* Messages waiting in the send queue, and how many are held because Meta refused them for now. */
+const waitingOf = async (db) => {
+    const snap = await db.collection('outreach_queue').where('status', '==', 'queued').get();
+    const jobs = snap.docs.map(d => d.data()).filter(j => j.kind !== 'reminder');
+    const held = jobs.filter(j => j.heldAt);
+    const nextAt = jobs.map(j => j.nextAttemptAt).filter(Boolean).sort()[0] || null;
+    return { waiting: jobs.length, held: held.length, nextAt };
+};
+
+const handleNumber = async (req, res, { db }) => {
+    const [n, lastSend, queue] = await Promise.all([fetchNumber(), lastSendOf(db).catch(() => null), waitingOf(db).catch(() => null)]);
+    const canSend = n.health_status?.can_send_message || null;
+    return send(res, 200, {
+        success: true,
+        at: nowIso(),
+        number: {
+            phone: n.display_phone_number || '',
+            verifiedName: n.verified_name || '',
+            nameStatus: n.name_status || null,
+            newNameStatus: n.new_name_status || null,
+            status: n.status || null,
+            quality: n.quality_rating || null,
+            limit: limitOf(n),
+            canSend,
+            issues: issuesOf(n.health_status),
+        },
+        lastSend,
+        queue,
+        verdict: verdictFor({ canSend, nameStatus: n.name_status || null, lastSend }),
+    });
+};
+
 const handleLog = async (req, res, { db }) => {
     const limit = Math.min(200, Math.max(1, Number(req.body?.limit) || 100));
     const snap = await db.collection('message_log').orderBy('updatedAt', 'desc').limit(limit * 2).get();
@@ -258,6 +423,8 @@ export const handleWhatsAppCenterAction = async (action, req, res, ctx) => {
         }
         if (action === 'wa-send') return await handleSend(req, res, ctx);
         if (action === 'wa-log') return await handleLog(req, res, ctx);
+        if (action === 'wa-number') return await handleNumber(req, res, ctx);
+        if (action === 'wa-bulk') return await handleBulk(req, res, ctx);
     } catch (err) {
         if (err?.status) return send(res, err.status, { success: false, error: err.message });
         throw err;
