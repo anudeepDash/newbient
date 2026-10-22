@@ -34,7 +34,7 @@ export const OG_IMAGES = {
     app: ogCard('app', 'newbi.app: every show, one app'),
     campus: ogCard('campus', 'Newbi Campus: bring the show to your campus'),
     contact: ogCard('contact', "Let's make some noise with Newbi"),
-    docs: ogCard('docs', 'Newbi Entertainment & Marketing'),
+    docs: ogCard('docs', 'Newbi Entertainment & Marketing LLP'),
 };
 
 // Image headers for the WhatsApp templates (api/_lib/whatsapp.js), one per message, drawn in the
@@ -185,7 +185,7 @@ export const PAGES = {
     'verify-payout': {
         site: 'landing', path: '/verify-payout', noindex: true, image: 'docs',
         title: 'Verify a payout',
-        description: 'Check that a payout receipt was issued by Newbi Entertainment.',
+        description: 'Check that a payout receipt was issued by Newbi Entertainment & Marketing LLP.',
     },
     'register-payment': {
         site: 'landing', path: '/register-payment', noindex: true, image: 'docs',
@@ -195,22 +195,22 @@ export const PAGES = {
     proposal: {
         site: 'landing', path: '/proposal/:id', noindex: true, image: 'docs',
         title: 'Proposal',
-        description: 'A proposal from Newbi Entertainment & Marketing.',
+        description: 'A proposal from Newbi Entertainment & Marketing LLP.',
     },
     invoice: {
         site: 'landing', path: '/invoice/:id', noindex: true, image: 'docs',
         title: 'Tax Invoice',
-        description: 'A tax invoice from Newbi Entertainment & Marketing.',
+        description: 'A tax invoice from Newbi Entertainment & Marketing LLP.',
     },
     agreement: {
         site: 'landing', path: '/agreement/:id', noindex: true, image: 'docs',
         title: 'Agreement',
-        description: 'A service agreement from Newbi Entertainment & Marketing.',
+        description: 'A service agreement from Newbi Entertainment & Marketing LLP.',
     },
     doc: {
         site: 'landing', path: '/doc/:id', noindex: true, image: 'docs',
         title: 'Official Document',
-        description: 'An official document issued by Newbi Entertainment & Marketing.',
+        description: 'An official document issued by Newbi Entertainment & Marketing LLP.',
     },
 
     // admin.newbi.live/admin

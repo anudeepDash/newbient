@@ -17,7 +17,7 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
         messageBody: `<p>Hi${invoice.clientName ? ` <strong>${invoice.clientName}</strong>` : ''},</p>
 <p>Here's invoice <strong>${invoice.invoiceNumber || ''}</strong> for <strong>₹${money(total)}</strong>${partlyPaid ? `, with <strong>₹${money(balance)}</strong> still to pay` : ''}${invoice.dueDate ? `, due ${new Date(invoice.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}.</p>
 <p>You can view it, download the PDF and pay using the button below.</p>
-<p>Thank you for your business!<br/>Newbi Entertainment</p>`,
+<p>Thank you for your business!<br/>Newbi Entertainment &amp; Marketing LLP</p>`,
         theme: 'light',
     }), [invoice, total, balance, partlyPaid]);
 

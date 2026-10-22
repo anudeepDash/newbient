@@ -330,7 +330,7 @@ const Agreement = () => {
         fileUrl: displayAgreement.fileUrl,
         clientName: displayAgreement.parties?.secondParty?.name || displayAgreement.clientName,
         clientEmail: displayAgreement.parties?.secondParty?.email || displayAgreement.clientEmail,
-        senderName: displayAgreement.parties?.firstParty?.name || 'Newbi Entertainment',
+        senderName: displayAgreement.parties?.firstParty?.name || 'Newbi Entertainment & Marketing LLP',
         senderEmail: displayAgreement.parties?.firstParty?.email || 'legal@newbi.live',
         amount: displayAgreement.commercials?.totalValue,
         clientSignature: displayAgreement.approvalMetadata?.clientSignature || displayAgreement.clientSignature,

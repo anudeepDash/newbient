@@ -420,7 +420,7 @@ const loaders = {
         const data = snap.data();
         return {
             title: `${stripHtml(data.proposalNumber) || 'Proposal'} | ${stripHtml(data.clientName) || 'Valued Partner'}`,
-            description: `Proposal for ${stripHtml(data.campaignName) || 'your campaign'} from Newbi Entertainment & Marketing.`,
+            description: `Proposal for ${stripHtml(data.campaignName) || 'your campaign'} from Newbi Entertainment & Marketing LLP.`,
             // The proposal's own first pages, saved by src/lib/docShareCard.js.
             image: data.previewImage,
             alt: `${stripHtml(data.proposalNumber) || 'Proposal'} for ${stripHtml(data.clientName) || 'a client'}`,
@@ -433,7 +433,7 @@ const loaders = {
         const data = snap.data();
         return {
             title: `${stripHtml(data.invoiceNumber) || 'Tax Invoice'} | ${stripHtml(data.clientName) || 'Valued Partner'}`,
-            description: `Tax invoice for ${stripHtml(data.campaignName) || 'services'} from Newbi Entertainment & Marketing.`,
+            description: `Tax invoice for ${stripHtml(data.campaignName) || 'services'} from Newbi Entertainment & Marketing LLP.`,
         };
     },
 
@@ -443,7 +443,7 @@ const loaders = {
         const data = snap.data();
         return {
             title: `${stripHtml(data.agreementNumber) || 'Agreement'} | ${stripHtml(data.clientName) || 'Valued Partner'}`,
-            description: `Service agreement for ${stripHtml(data.campaignName) || 'services'} from Newbi Entertainment & Marketing.`,
+            description: `Service agreement for ${stripHtml(data.campaignName) || 'services'} from Newbi Entertainment & Marketing LLP.`,
         };
     },
 
@@ -453,7 +453,7 @@ const loaders = {
         const data = snap.data();
         return {
             title: stripHtml(data.title) || 'Official Document',
-            description: `${stripHtml(data.documentType) || 'Official document'} #${stripHtml(data.docNumber) || id}, issued by Newbi Entertainment & Marketing.`,
+            description: `${stripHtml(data.documentType) || 'Official document'} #${stripHtml(data.docNumber) || id}, issued by Newbi Entertainment & Marketing LLP.`,
         };
     },
 };

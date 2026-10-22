@@ -15,9 +15,10 @@ const AppFooter = () => {
     return (
         <footer className="mx-auto mt-12 max-w-6xl px-4 lg:px-8">
             <div className="flex flex-col items-center gap-1 border-t border-black/[0.06] pt-4 text-center dark:border-white/[0.06] sm:flex-row sm:justify-between sm:text-left">
-                <p className="text-[12px] text-gray-500 dark:text-zinc-500">
-                    © {new Date().getFullYear()} Newbi Entertainment &amp; Marketing LLP · {t('We never sell your data.')}
-                </p>
+                <div className="text-[12px] text-gray-500 dark:text-zinc-500">
+                    <p>© {new Date().getFullYear()} newbi.live. All rights reserved. {t('We never sell your data.')}</p>
+                    <p>newbi.live is owned and operated by Newbi Entertainment &amp; Marketing LLP.</p>
+                </div>
                 <nav aria-label={t('Legal')} className="-mx-2 flex flex-wrap justify-center">
                     <a href={landingUrl('/privacy')} className={link}>{t('Privacy')}</a>
                     <a href={landingUrl('/terms')} className={link}>{t('Terms')}</a>

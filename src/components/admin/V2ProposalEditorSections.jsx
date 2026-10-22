@@ -100,7 +100,7 @@ export function V2CoverEditor({ formData, setFormData, onRefine }) {
                         rows={5}
                         value={formData.introParagraph}
                         onChange={v => set({ introParagraph: v })}
-                        placeholder="NewBi Entertainment & Marketing LLP is pleased to present…"
+                        placeholder="Newbi Entertainment & Marketing LLP is pleased to present…"
                         onRefine={() => onRefine?.({ label: 'Introduction', value: formData.introParagraph, apply: (t) => set({ introParagraph: t }) })}
                         hint="Use **double stars** for bold."
                     />
@@ -419,7 +419,7 @@ export function V2ClosingEditor({ formData, setFormData, onRefine }) {
                 <div className="space-y-3">
                     <KickerTitle formData={formData} set={set} kickerKey="closingSub" titleKey="closingTitle" kickerPlaceholder="CLOSING" titlePlaceholder="06 · Next Steps" />
                     <TextArea label="Closing note" rows={4} value={formData.closingText} onChange={v => set({ closingText: v })} placeholder="We'd welcome the opportunity to walk you through…" onRefine={() => onRefine?.({ label: 'Closing note', value: formData.closingText, apply: (t) => set({ closingText: t }) })} />
-                    <TextInput label="Prepared by" value={formData.preparedBy} onChange={v => set({ preparedBy: v })} placeholder="NewBi Entertainment & Marketing LLP" />
+                    <TextInput label="Prepared by" value={formData.preparedBy} onChange={v => set({ preparedBy: v })} placeholder="Newbi Entertainment & Marketing LLP" />
                 </div>
             )}
         </BuilderCard>

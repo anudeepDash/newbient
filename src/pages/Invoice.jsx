@@ -376,13 +376,13 @@ const Invoice = () => {
     };
 
     const handleShareWhatsApp = () => {
-        const text = `Here is your invoice from Newbi Entertainment: ${window.location.href}`;
+        const text = `Here is your invoice from Newbi Entertainment & Marketing LLP: ${window.location.href}`;
         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     };
 
     const handleShareEmail = () => {
-        const subject = `Invoice #${displayInvoice.invoiceNumber || displayInvoice.id} from Newbi Entertainment`;
-        const body = `Hi,\n\nPlease find your invoice here: ${window.location.href}\n\nThanks,\nNewbi Entertainment`;
+        const subject = `Invoice #${displayInvoice.invoiceNumber || displayInvoice.id} from Newbi Entertainment & Marketing LLP`;
+        const body = `Hi,\n\nPlease find your invoice here: ${window.location.href}\n\nThanks,\nNewbi Entertainment & Marketing LLP`;
         window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
     };
 
