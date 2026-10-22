@@ -427,7 +427,7 @@ const ContractGenerator = () => {
                 setFormData(prev => normalizeContract({
                     ...prev,
                     parties: {
-                        firstParty: { ...prev.parties.firstParty, ...(data.parties?.firstParty || {}), name: prev.parties.firstParty.name || data.parties?.firstParty?.name || 'Newbi Entertainment', address: prev.parties.firstParty.address || data.parties?.firstParty?.address || '' },
+                        firstParty: { ...prev.parties.firstParty, ...(data.parties?.firstParty || {}), name: prev.parties.firstParty.name || data.parties?.firstParty?.name || 'Newbi Entertainment & Marketing LLP', address: prev.parties.firstParty.address || data.parties?.firstParty?.address || '' },
                         secondParty: { ...prev.parties.secondParty, ...(data.parties?.secondParty || {}) },
                     },
                     details: { ...prev.details, ...(data.details || {}) },

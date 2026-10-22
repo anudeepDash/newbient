@@ -99,8 +99,9 @@ const Footer = () => {
                 {/* Bottom Bar */}
                 <div className="pt-12 border-t border-gray-200 dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex flex-col md:flex-row items-center gap-6 md:gap-12">
-                        <div className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400">
-                            &copy; {new Date().getFullYear()} NEWBI ENTERTAINMENT & MARKETING LLP. ALL RIGHTS RESERVED.
+                        <div className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400 text-center md:text-left space-y-2">
+                            <p>&copy; {new Date().getFullYear()} NEWBI.LIVE. ALL RIGHTS RESERVED.</p>
+                            <p>NEWBI.LIVE IS OWNED AND OPERATED BY NEWBI ENTERTAINMENT & MARKETING LLP.</p>
                         </div>
                         
                         <div className="flex items-center gap-6">

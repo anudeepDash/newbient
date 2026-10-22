@@ -570,7 +570,7 @@ const SpendsManagement = () => {
                         </div>
                     </div>
 
-                    <p className="mt-4 text-center text-[10px] text-white/30">Newbi Entertainment Pvt. Ltd.</p>
+                    <p className="mt-4 text-center text-[10px] text-white/30">Newbi Entertainment & Marketing LLP</p>
                 </div>
 
                 {/* Torn bottom edge */}
@@ -610,7 +610,7 @@ const SpendsManagement = () => {
         
         const verifyUrl = `${window.location.origin}/verify-payout?ref=${encodeURIComponent(activeSlipData.reference || 'N/A')}&amt=${activeSlipData.amount}&payee=${encodeURIComponent(activeSlipData.receiverName)}${(activeSlipData.receiptUrl || activeSlipData.proofUrl) ? `&proof=${encodeURIComponent(activeSlipData.receiptUrl || activeSlipData.proofUrl)}` : ''}`;
         
-        const message = `*NEWBI ENTERTAINMENT — PAYOUT RECEIPT*\n\n💰 Amount: ₹${Number(activeSlipData.amount).toLocaleString('en-IN')}\n👤 Payee: ${activeSlipData.receiverName}\n📋 Ref: ${activeSlipData.reference || 'N/A'}\n📅 Date: ${activeSlipData.date}\n✅ Status: VERIFIED & PAID\n\n🔗 Verify this payment:\n${verifyUrl}\n\n— Newbi Entertainment Pvt. Ltd.`;
+        const message = `*NEWBI ENTERTAINMENT — PAYOUT RECEIPT*\n\n💰 Amount: ₹${Number(activeSlipData.amount).toLocaleString('en-IN')}\n👤 Payee: ${activeSlipData.receiverName}\n📋 Ref: ${activeSlipData.reference || 'N/A'}\n📅 Date: ${activeSlipData.date}\n✅ Status: VERIFIED & PAID\n\n🔗 Verify this payment:\n${verifyUrl}\n\n— Newbi Entertainment & Marketing LLP`;
 
         // Try to share with receipt PNG via Web Share API
         const receiptElement = document.getElementById('thermal-receipt-body');

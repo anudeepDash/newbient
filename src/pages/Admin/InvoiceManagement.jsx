@@ -163,7 +163,7 @@ const InvoiceManagement = () => {
     const share = async (inv) => {
         if (navigator.share) {
             try {
-                await navigator.share({ title: `Invoice ${inv.invoiceNumber || ''}`.trim(), text: 'Your invoice from Newbi Entertainment.', url: shareUrl(inv, 'share') });
+                await navigator.share({ title: `Invoice ${inv.invoiceNumber || ''}`.trim(), text: 'Your invoice from Newbi Entertainment & Marketing LLP.', url: shareUrl(inv, 'share') });
                 return;
             } catch (err) {
                 if (err?.name === 'AbortError') return;
@@ -173,7 +173,7 @@ const InvoiceManagement = () => {
     };
 
     const whatsapp = (inv) => {
-        const text = `Hi${inv.clientName ? ` ${inv.clientName}` : ''}, here is invoice ${inv.invoiceNumber || ''} from Newbi Entertainment: ${shareUrl(inv, 'whatsapp')}`;
+        const text = `Hi${inv.clientName ? ` ${inv.clientName}` : ''}, here is invoice ${inv.invoiceNumber || ''} from Newbi Entertainment & Marketing LLP: ${shareUrl(inv, 'whatsapp')}`;
         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
     };
 

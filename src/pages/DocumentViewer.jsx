@@ -235,8 +235,9 @@ const DocumentViewer = () => {
                             </span>
                         )}
                         <div className="h-6 w-px bg-black/10 dark:bg-white/10 hidden md:block" />
-                        <span className="text-[9px] font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-gray-900 dark:from-white/40 to-gray-900 dark:to-white/90 tracking-[0.3em] font-heading pl-2">
-                            NEWBI ENTERTAINMENT
+                        {/* Phones get the legal name in the "Issued by" line at the bottom instead. */}
+                        <span className="hidden md:inline whitespace-nowrap text-[9px] font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-gray-900 dark:from-white/40 to-gray-900 dark:to-white/90 tracking-[0.3em] font-heading pl-2">
+                            NEWBI ENTERTAINMENT & MARKETING LLP
                         </span>
                     </div>
                 </motion.header>
@@ -379,7 +380,7 @@ const DocumentViewer = () => {
                 {/* Branding */}
                 <div className="mt-8 text-center">
                     <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.3em]">
-                        POWERED BY NEWBI ENTERTAINMENT
+                        ISSUED BY NEWBI ENTERTAINMENT & MARKETING LLP
                     </p>
                 </div>
             </motion.div>

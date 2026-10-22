@@ -66,7 +66,11 @@ export default function LandingFooter() {
                 </nav>
             </div>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 border-t border-black/[0.06] dark:border-white/[0.06] flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-gray-500 dark:text-zinc-500">
-                <span>© <span suppressHydrationWarning>{new Date().getFullYear()}</span> Newbi Entertainment &amp; Marketing LLP</span>
+                {/* Legal line, kept in English on purpose: it names the entity behind the site. */}
+                <div className="space-y-0.5">
+                    <p>© <span suppressHydrationWarning>{new Date().getFullYear()}</span> newbi.live. All rights reserved.</p>
+                    <p>newbi.live is owned and operated by Newbi Entertainment &amp; Marketing LLP.</p>
+                </div>
                 <LangToggle up />
                 {/* Staff only, kept quiet: same size as the copyright, fainter until hovered. */}
                 <a href={ADMIN_URL} rel="nofollow" className="-my-3 inline-flex min-h-[44px] items-center px-2 -mr-2 font-mono text-[11px] uppercase tracking-[0.2em] text-gray-400/70 dark:text-zinc-600 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors">

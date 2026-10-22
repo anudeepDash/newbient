@@ -13,7 +13,7 @@ const AgreementEmailModal = ({ isOpen, onClose, agreement, onSend }) => {
         messageBody: `<p>Hi <strong>${party}</strong>,</p>
 <p>The contract for <strong>${project}</strong> (ref <strong>${agreement.agreementNumber || ''}</strong>) is ready for you.</p>
 <p>You can read it and sign online using the button below.</p>
-<p>Best regards,<br/>Newbi Entertainment</p>`,
+<p>Best regards,<br/>Newbi Entertainment &amp; Marketing LLP</p>`,
         theme: 'light',
     }), [agreement, party, project]);
 
