@@ -52,6 +52,8 @@ export const FIELDS = {
     scanned_at: { label: 'Scanned at', example: '5:42 PM' },
     due_at: { label: 'Due', example: 'Thu, 12 Nov' },
     still_to_send: { label: 'Still to send', example: '1 reel' },
+    opens_at: { label: 'Can go up from', example: 'tomorrow, Thursday, 12 November' },
+    what_to_post: { label: 'Post', example: 'Reel and Story' },
     orders_count: { label: 'Ticket orders to check', example: '3' },
     signups_count: { label: 'Guestlist sign-ups to review', example: '12' },
     posts_count: { label: 'Creator posts to review', example: '7' },
@@ -93,7 +95,7 @@ const OURS = {
     team_daily_brief: { body: ['orders_count', 'signups_count', 'posts_count', 'payouts_count'] },
     ...Object.fromEntries(Object.values(WA_TEMPLATES).map(t => [t.name, {
         body: t.placeholders,
-        ...(['campaign_deliverables', 'campaign_deliverable_changes', 'campaign_post_due', 'campaign_post_overdue'].includes(t.name) ? { button: 'submit_token' } : {}),
+        ...(['campaign_deliverables', 'campaign_deliverable_changes', 'campaign_post_due', 'campaign_post_overdue', 'campaign_posts_open'].includes(t.name) ? { button: 'submit_token' } : {}),
     }])),
 };
 

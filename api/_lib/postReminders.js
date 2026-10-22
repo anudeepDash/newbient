@@ -18,12 +18,12 @@ import { formatDeadline } from '../../src/lib/outreach/template.js';
 import { approvedSummary } from '../../src/lib/outreach/whatsappTemplate.js';
 
 // In the creators group, posts not all approved yet.
-const WAITING_ON_POSTS = new Set(['message_sent', 'replied', 'joined']);
-const IN = new Set(['submitted', 'approved']);
+export const WAITING_ON_POSTS = new Set(['message_sent', 'replied', 'joined']);
+export const IN = new Set(['submitted', 'approved']);
 const DAY = 86_400_000;
 const MAX_CAMPAIGNS = 300;
 
-const dayOf = (v) => (String(v || '').match(/^\d{4}-\d{2}-\d{2}/) || [''])[0];
+export const dayOf = (v) => (String(v || '').match(/^\d{4}-\d{2}-\d{2}/) || [''])[0];
 
 /* Required tasks grouped by the day they're due: { '2026-11-12': [task, …] } */
 const dueDays = (campaign) => {

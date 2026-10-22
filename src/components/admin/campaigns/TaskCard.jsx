@@ -85,6 +85,7 @@ const TaskCard = ({
                         <span className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[12px] text-gray-500">
                             <span className="inline-flex items-center gap-1"><PlatformIcon size={12} /> {platformOf(task.platform).label}</span>
                             <span>{type.label}</span>
+                            {taskWindow(task) === 'upcoming' && task.opensOn && <span>Opens {formatDay(task.opensOn)}</span>}
                             {task.deadline && (
                                 <span className={cn(due !== null && due < 0 && 'font-semibold text-rose-600 dark:text-rose-300')}>
                                     Due {formatDay(task.deadline)}
@@ -150,8 +151,14 @@ const TaskCard = ({
                                 { value: 'closed', label: 'Closed', hint: 'Brief hidden; changes-needed can resend' },
                             ]}
                         />
-                        <span className="mt-1 block text-[11px] leading-snug text-gray-500">Open deliverables one at a time as the campaign goes, and close each when it’s done. The deadline doesn’t close it.</span>
+                        <span className="mt-1 block text-[11px] leading-snug text-gray-500">Open deliverables one at a time as the campaign goes, and close each when it’s done. The deadline doesn’t close it. Opening one tells the creators on WhatsApp.</span>
                     </div>
+                    {taskWindow(task) === 'upcoming' && (
+                        <Field label="Opens on" optional>
+                            <input className={fieldCls} type="date" value={toDayInput(task.opensOn)} onChange={(e) => set({ opensOn: e.target.value })} />
+                            <span className="mt-1 block text-[11px] leading-snug text-gray-500">Creators get a WhatsApp the day before (“your post can go up from tomorrow”), and it opens by itself at 9 AM that day.</span>
+                        </Field>
+                    )}
 
                     <div className="space-y-2">
                         <div>
