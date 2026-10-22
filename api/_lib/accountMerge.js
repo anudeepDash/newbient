@@ -295,12 +295,13 @@ const moveCreator = async ({ db, fromUid, toUid, fromCreators, fromUser, tokenRe
         let changed = false;
         const next = tasks.map((task) => {
             const out = { ...task };
-            if (task.submissions && typeof task.submissions === 'object') {
+            for (const field of ['submissions', 'sheetDone']) {
+                if (!task[field] || typeof task[field] !== 'object') continue;
                 const subs = {};
-                for (const [key, value] of Object.entries(task.submissions)) {
-                    if (oldIds.has(key) && !task.submissions[toUid]) { subs[toUid] = value; changed = true; } else subs[key] = value;
+                for (const [key, value] of Object.entries(task[field])) {
+                    if (oldIds.has(key) && !task[field][toUid]) { subs[toUid] = value; changed = true; } else subs[key] = value;
                 }
-                out.submissions = subs;
+                out[field] = subs;
             }
             for (const field of ['completedBy', 'verifiedBy']) {
                 if (!Array.isArray(task[field])) continue;

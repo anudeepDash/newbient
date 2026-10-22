@@ -278,7 +278,7 @@ const stripUndefinedDeep = (value) => {
 // The campaign editor holds a copy of the deliverables from when it opened.
 // Creators keep submitting (and admins keep reviewing) meanwhile, so progress
 // always comes from the stored campaign, never from the editor's copy.
-const TASK_PROGRESS_FIELDS = ['submissions', 'completedBy', 'verifiedBy'];
+const TASK_PROGRESS_FIELDS = ['submissions', 'completedBy', 'verifiedBy', 'sheetDone'];
 const mergeLiveTaskProgress = (formTasks, liveTasks) => {
     const live = new Map((liveTasks || []).map(t => [String(t.id), t]));
     return (formTasks || []).map(t => {
@@ -4296,21 +4296,28 @@ export const useStore = create((set, get) => ({
      * one person added by hand). A creator who already submitted is approved as
      * usual; anyone else gets an approved record on the campaign doc, marked
      * via: 'admin', with the link when we have one.
+     *
+     * From a sheet (`sheet` is its file name), every row is also recorded on the
+     * deliverable as task.sheetDone[uid] = { at, by, file, link }, so work done in
+     * the app and in the sheet shows as done in both, and the sheet's link stands
+     * in when the app submission has none.
      *   items: [{ taskId, creatorUid, keys, link }]
      */
-    markDeliverablesDone: async (campaignId, items = []) => {
+    markDeliverablesDone: async (campaignId, items = [], { sheet = null } = {}) => {
         if (!items.length) return 0;
+        const keysOf = (r) => Array.from(new Set([...(r.keys || []), r.creatorUid].filter(Boolean)));
         const existing = (campaign, r) => {
             const task = (campaign?.tasks || []).find(t => String(t.id) === String(r.taskId));
-            return Array.from(new Set([...(r.keys || []), r.creatorUid].filter(Boolean))).some(k => task?.submissions?.[k]?.status);
+            return keysOf(r).map(k => task?.submissions?.[k]).find(sub => sub?.status) || null;
         };
         const current = (get().campaigns || []).find(c => c.id === campaignId);
-        const toReview = items.filter(r => existing(current, r));
+        const toReview = items.filter(r => existing(current, r) && existing(current, r).status !== 'approved');
         const toWrite = items.filter(r => !existing(current, r));
         if (toReview.length) {
             await get().reviewTaskSubmissions(campaignId, toReview.map(r => ({ ...r, status: 'approved' })));
         }
-        if (!toWrite.length) return toReview.length;
+        const toRecord = sheet ? items : toWrite;
+        if (!toRecord.length) return toReview.length;
 
         const now = new Date().toISOString();
         const by = get().user?.email || null;
@@ -4319,19 +4326,28 @@ export const useStore = create((set, get) => ({
             const snap = await tx.get(ref);
             if (!snap.exists()) throw new Error('Campaign not found');
             const next = (snap.data().tasks || []).map(t => {
-                const mine = toWrite.filter(r => String(r.taskId) === String(t.id));
+                const mine = toRecord.filter(r => String(r.taskId) === String(t.id));
                 if (!mine.length) return t;
                 const submissions = { ...(t.submissions || {}) };
+                const sheetDone = { ...(t.sheetDone || {}) };
                 mine.forEach(r => {
-                    const prev = submissions[r.creatorUid];
-                    submissions[r.creatorUid] = prev?.status
-                        ? { ...prev, status: 'approved', rejectionReason: '', reviewedAt: now, reviewedBy: by, contentLink: prev.contentLink || r.link || '' }
-                        : { status: 'approved', contentLink: r.link || '', proofUrl: '', submittedAt: now, reviewedAt: now, reviewedBy: by, rejectionReason: '', via: 'admin' };
+                    // Submissions on the campaign doc; app ones live in their own docs and keep theirs.
+                    const key = keysOf(r).find(k => submissions[k]?.status);
+                    const prev = key ? submissions[key] : null;
+                    if (toWrite.includes(r)) {
+                        submissions[r.creatorUid] = prev
+                            ? { ...prev, status: 'approved', rejectionReason: '', reviewedAt: now, reviewedBy: by, contentLink: prev.contentLink || r.link || '' }
+                            : { status: 'approved', contentLink: r.link || '', proofUrl: '', submittedAt: now, reviewedAt: now, reviewedBy: by, rejectionReason: '', via: 'admin' };
+                    } else if (prev && !prev.contentLink && r.link) {
+                        submissions[key] = { ...prev, contentLink: r.link };
+                    }
+                    if (sheet) sheetDone[r.creatorUid] = { at: now, by, file: sheet, link: r.link || sheetDone[r.creatorUid]?.link || '' };
                 });
-                const keys = mine.map(r => r.creatorUid);
+                const keys = mine.filter(r => toWrite.includes(r)).map(r => r.creatorUid);
                 return {
                     ...t,
                     submissions,
+                    ...(sheet ? { sheetDone } : {}),
                     completedBy: Array.from(new Set([...(t.completedBy || []), ...keys])),
                     verifiedBy: Array.from(new Set([...(t.verifiedBy || []), ...keys])),
                 };

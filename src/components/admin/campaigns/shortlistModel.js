@@ -1,5 +1,5 @@
 import { parseCSV } from '../creators/creatorData';
-import { stageMeta, creatorHandle, creatorNiches, creatorRef, isSelected, progressFor } from './campaignModel';
+import { stageMeta, creatorHandle, creatorKeys, creatorNiches, creatorRef, hasApplied, isSelected, progressFor } from './campaignModel';
 import { isRequiredTask } from '../../../lib/creator/tasks';
 
 /*
@@ -48,6 +48,13 @@ const DELIVERABLE_STATUS = { approved: 'Done', submitted: 'To review', rejected:
 
 const deliverableLink = (sub) => [sub?.contentLink, sub?.proofUrl, sub?.screenshotUrl].find(l => /^https?:\/\//i.test(String(l || ''))) || '';
 
+// Done work says where it came from: the app, an uploaded sheet, or both.
+const deliverableStatus = (item, sheet) => {
+    if (item.status !== 'approved') return DELIVERABLE_STATUS[item.status] || 'Not started';
+    if (!sheet) return 'Done';
+    return item.sub?.via === 'admin' ? 'Done (sheet)' : 'Done (app + sheet)';
+};
+
 /**
  * ExportMenu spec for the deliverables: one row per shortlisted creator (or anyone
  * who sent work in), with each deliverable's status, link and date. No phone or
@@ -87,8 +94,8 @@ export const deliverablesSheetSpec = (campaign, entries, { fileDate, exportSubti
             ...tasks.flatMap((task, idx) => {
                 const name = `${idx + 1}. ${task.title || `Deliverable ${idx + 1}`}`;
                 return [
-                    { header: name, width: 16, value: a => DELIVERABLE_STATUS[item(a, idx).status] || 'Not started' },
-                    { header: `${name} · link`, width: 36, value: a => deliverableLink(item(a, idx).sub) },
+                    { header: name, width: 18, value: a => deliverableStatus(item(a, idx), sheetMarkOf(task, a)) },
+                    { header: `${name} · link`, width: 36, value: a => deliverableLink(item(a, idx).sub) || sheetMarkOf(task, a)?.link || '' },
                     { header: `${name} · sent on`, type: 'date', value: a => item(a, idx).sub?.submittedAt || null },
                 ];
             }),
@@ -181,16 +188,33 @@ export const readShortlistCsv = (text, entries) => {
 /* ---------- completed deliverables coming back ---------- */
 
 const DONE = new Set([...YES, 'done', 'complete', 'completed', 'posted', 'live', 'uploaded']);
+// "Done (app + sheet)" from a downloaded deliverables sheet still reads as done.
+const isDoneWord = (v) => DONE.has(v) || /^done\b/.test(v);
 const LINK_HEADERS = ['link', 'links', 'post link', 'content link', 'url', 'post url', 'reel link', 'story link'];
 const isUrl = (v) => /^https?:\/\//i.test(String(v || '').trim());
 const taskName = (v) => String(v || '').trim().toLowerCase().replace(/^\d+[.)]\s*/, '').replace(/\s+/g, ' ');
 
 export const DONE_ROW_STATUS = {
     ready: { label: 'Mark done', tone: 'green' },
-    already: { label: 'Already done', tone: 'blue' },
+    both: { label: 'Done in both', tone: 'blue' },
+    already: { label: 'Already uploaded', tone: 'gray' },
     nothing: { label: 'Nothing marked', tone: 'gray' },
     duplicate: { label: 'Repeated row', tone: 'gray' },
     unknown: { label: 'Not on Newbi', tone: 'amber' },
+};
+
+/*
+ * What the sheet means for one deliverable of one creator:
+ *   new       not started (or changes asked) in the app: the sheet completes it
+ *   sent      sent in the app, waiting for review: the sheet approves it
+ *   both      done in the app and in the sheet: marked as done in both
+ *   uploaded  already marked done from a sheet or by hand
+ */
+export const DONE_ITEM_NOTE = {
+    new: 'done from the sheet',
+    sent: 'sent in the app, approved from the sheet',
+    both: 'done in the app and the sheet',
+    uploaded: 'already marked done',
 };
 
 /** Every creator as an entry the matcher can use, applicants first so their stage carries over. */
@@ -202,15 +226,27 @@ export const creatorEntriesFor = (campaign, creators, applicants = []) => {
     ];
 };
 
+/** The sheet record for a creator's deliverable ({ at, link, file }), if a sheet marked it. */
+export const sheetMarkOf = (task, entry) => [entry?.key, ...creatorKeys(entry?.creator)]
+    .map(k => (k ? task?.sheetDone?.[k] : null))
+    .find(Boolean) || null;
+
 /**
- * CSV text → { rows, error, byColumn }.
- * A column named after a deliverable ("Reel", or "2. Reel" from the deliverables
- * sheet) marks it done with yes / done / a link; "Reel · link" gives its link.
- * Without such columns, every row counts as done for `pickedTaskIds`, and a
- * "Link" column fills the link.
- * Row: { row, label, status, entry, adds, done: [{ task, link }] }
+ * CSV text → { rows, error, byColumn, header }.
+ *
+ * With `forTaskId`, the sheet is for that one deliverable: every row counts as
+ * done for it (unless a column for it says otherwise, like the downloaded sheet's
+ * "Not started"), and the first post link in the row is its link.
+ * Without it, a column named after a deliverable ("Reel", or "2. Reel" from the
+ * deliverables sheet) marks it done with yes / done / a link; "Reel · link" gives
+ * its link.
+ *
+ * Row: { row, cells, label, status, entry, adds, member, marked, done, save }
+ *   marked  every deliverable the sheet says is done: [{ task, link, state }]
+ *   done    the ones not approved yet (new or sent)
+ *   save    the ones with something to write (completion, link or the sheet mark)
  */
-export const readDeliverablesCsv = (text, entries, campaign, pickedTaskIds = []) => {
+export const readDeliverablesCsv = (text, entries, campaign, forTaskId = null) => {
     const tasks = campaign.tasks || [];
     const table = parseCSV(text);
     if (table.length < 2) return { rows: [], error: 'The file has no rows. Add one row per creator with their Instagram handle.' };
@@ -232,38 +268,87 @@ export const readDeliverablesCsv = (text, entries, campaign, pickedTaskIds = [])
         if (linkOf && linkOf[1]) linkCol[task.id] = i;
         else statusCol[task.id] = i;
     });
-    const byColumn = Object.keys(statusCol).length > 0 || Object.keys(linkCol).length > 0;
+    const only = forTaskId ? tasks.find(t => String(t.id) === String(forTaskId)) : null;
+    const byColumn = !only && (Object.keys(statusCol).length > 0 || Object.keys(linkCol).length > 0);
+    if (!only && !byColumn) {
+        return { rows: [], error: 'Pick which deliverable this sheet is for, or add a column per deliverable.' };
+    }
     const anyLink = header.findIndex(h => LINK_HEADERS.includes(h));
-    const picked = tasks.filter(t => pickedTaskIds.map(String).includes(String(t.id)));
+    // Profile links and contact details are never a post link.
+    const idCols = new Set(header.map((h, i) => (Object.values(HEADERS).some(names => names.includes(h)) ? i : -1)).filter(i => i >= 0));
+
+    const otherTaskCols = new Set([...Object.entries(statusCol), ...Object.entries(linkCol)]
+        .filter(([id]) => !only || String(id) !== String(only.id)).map(([, idx]) => idx));
 
     const match = matcherFor(entries);
     const seen = new Set();
     const rows = table.slice(1)
-        .filter(r => r.some(v => String(v ?? '').trim()))
-        .map((r, i) => {
+        .map((r, i) => ({ r, row: i + 2 }))
+        .filter(({ r }) => r.some(v => String(v ?? '').trim()))
+        .map(({ r, row }) => {
             const at = (idx) => (idx === undefined || idx < 0 ? '' : String(r[idx] ?? '').trim());
             const cells = Object.fromEntries(Object.entries(col).map(([k, idx]) => [k, at(idx)]));
             const entry = match(cells);
-            const label = entry?.creator?.name || cells.name || cells.instagram || cells.id || cells.email || cells.phone || `Row ${i + 2}`;
-            const marked = byColumn
-                ? tasks.flatMap(t => {
+            const label = entry?.creator?.name || cells.name || cells.instagram || cells.id || cells.email || cells.phone || `Row ${row}`;
+            const markedTasks = only
+                ? (() => {
+                    const value = at(statusCol[only.id]);
+                    if (value && !isDoneWord(value.toLowerCase()) && !isUrl(value)) return [];
+                    const rest = r.map((_, idx) => idx).filter(idx => !idCols.has(idx) && !otherTaskCols.has(idx));
+                    const link = [at(linkCol[only.id]), value, at(anyLink), ...rest.map(at)].find(isUrl) || '';
+                    return [{ task: only, link }];
+                })()
+                : tasks.flatMap(t => {
                     // A link means done, unless the status column says otherwise ("To review" plus a link isn't done).
                     const value = at(statusCol[t.id]);
                     const link = [at(linkCol[t.id]), value].find(isUrl) || '';
-                    const isDone = value ? DONE.has(value.toLowerCase()) || isUrl(value) : Boolean(link);
+                    const isDone = value ? isDoneWord(value.toLowerCase()) || isUrl(value) : Boolean(link);
                     return isDone ? [{ task: t, link }] : [];
-                })
-                : picked.map(t => ({ task: t, link: isUrl(at(anyLink)) ? at(anyLink) : '' }));
-            const approved = (t) => entry?.progress?.items?.find(x => String(x.task.id) === String(t.id))?.status === 'approved';
-            const done = marked.filter(m => !approved(m.task));
+                });
+            const itemOf = (t) => entry?.progress?.items?.find(x => String(x.task.id) === String(t.id));
+            const marked = markedTasks.map(m => {
+                const item = itemOf(m.task);
+                const status = item?.status || 'not_started';
+                const state = status === 'approved' ? (item.sub?.via === 'admin' ? 'uploaded' : 'both') : status === 'submitted' ? 'sent' : 'new';
+                const sheet = sheetMarkOf(m.task, entry);
+                const hasLink = Boolean(deliverableLink(item?.sub) || sheet?.link);
+                const needs = state === 'new' || state === 'sent' || !sheet || Boolean(m.link && !hasLink);
+                return { ...m, state, needs };
+            });
+            const done = marked.filter(m => m.state === 'new' || m.state === 'sent');
+            const save = marked.filter(m => m.needs);
             const adds = Boolean(entry) && !isSelected(campaign, entry.creator);
+            const member = !entry ? null : !adds ? 'in' : hasApplied(campaign, entry.creator) ? 'applied' : 'new';
             let status;
             if (!entry) status = 'unknown';
             else if (seen.has(entry.key)) status = 'duplicate';
             else if (!marked.length) status = 'nothing';
-            else status = done.length || adds ? 'ready' : 'already';
+            else if (done.length || adds) status = 'ready';
+            else status = save.length ? 'both' : 'already';
             if (entry && marked.length) seen.add(entry.key);
-            return { row: i + 2, label, status, entry, adds, done };
+            return { row, cells: r, label, status, entry, adds, member, marked, done, save };
         });
-    return { rows, error: null, byColumn };
+    return { rows, error: null, byColumn, header: table[0] };
 };
+
+const MEMBER_NOTE = { in: 'In the campaign', applied: 'Applied, added to the campaign', new: 'New, added to the campaign' };
+
+/** One line on what happens to a row, for the preview and the checked sheet. */
+export const doneRowNote = (r) => {
+    if (r.status === 'unknown') return 'Not on Newbi';
+    if (r.status === 'duplicate') return 'Repeated row';
+    if (r.status === 'nothing') return 'Nothing marked done';
+    return [MEMBER_NOTE[r.member], ...r.marked.map(m => `${m.task.title || 'Deliverable'}: ${DONE_ITEM_NOTE[m.state]}`)].filter(Boolean).join(' · ');
+};
+
+/** downloadCsv spec: the uploaded sheet as it was, plus what Newbi found for each row. */
+export const checkedSheetSpec = (parsed, fileName = 'sheet') => ({
+    filename: `${String(fileName).replace(/\.csv$/i, '').replace(/[^\w-]+/g, '_').slice(0, 40)}_checked`,
+    rows: parsed.rows,
+    columns: [
+        ...parsed.header.map((h, idx) => ({ header: String(h || ''), value: r => r.cells[idx] ?? '' })),
+        { header: 'Newbi ID', value: r => (r.entry ? newbiIdOf(r.entry.creator) : '') },
+        { header: 'Newbi status', value: r => DONE_ROW_STATUS[r.status].label },
+        { header: 'Newbi check', value: r => doneRowNote(r) },
+    ],
+});

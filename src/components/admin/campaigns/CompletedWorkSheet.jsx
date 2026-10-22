@@ -10,17 +10,22 @@ import { Avatar, Badge, Button, SearchInput, SegmentedTabs } from '../ui';
 import { Toggle, fieldCls } from '../uploads/UploadKit';
 import { CheckBox, Spinner } from './parts';
 import { creatorHandle, creatorKeys, creatorPhotoOf, isSelected } from './campaignModel';
-import { DONE_ROW_STATUS, creatorEntriesFor, newbiIdOf, readDeliverablesCsv } from './shortlistModel';
+import { DONE_ROW_STATUS, checkedSheetSpec, creatorEntriesFor, doneRowNote, newbiIdOf, readDeliverablesCsv } from './shortlistModel';
 
 /*
  * "Add completed work": creators who already did a deliverable (the client sent
  * a sheet, or someone posted without submitting in the app).
  *
- *   Upload sheet: a CSV with Instagram handles. Columns named after a deliverable
- *   ("Reel", or the deliverables sheet as downloaded) say which ones are done;
- *   a plain list of handles marks the deliverables picked here.
+ *   Upload sheet: pick the deliverable the sheet is for ("Reel") and upload a
+ *   CSV of Instagram handles, with the post link if there is one. Or pick
+ *   "A column each" for a sheet with a column per deliverable (like the
+ *   deliverables sheet as downloaded).
  *   One person: find a creator, tick what they did, add a link if there is one.
  *
+ * Everything is checked against this campaign only: someone already in it is
+ * marked as such, work they haven't started is completed from the sheet (with
+ * its link), and work they already did in the app is marked done in both.
+ * "Checked sheet" downloads the upload back with what was found per row.
  * Anyone not in the campaign yet is added to it. The welcome is off by default
  * here, since the work is already done.
  */
@@ -39,7 +44,7 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
     const [name, setName] = useState('');
     const [text, setText] = useState('');
     const [error, setError] = useState(null);
-    const [picked, setPicked] = useState([]);
+    const [forTask, setForTask] = useState(null); // the deliverable the sheet is for, or 'columns'
     const [skipped, setSkipped] = useState(() => new Set());
     const [query, setQuery] = useState('');
     const [person, setPerson] = useState(null);
@@ -50,7 +55,7 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
     useEffect(() => {
         if (!open) return;
         setMode('upload'); setName(''); setText(''); setError(null); setSkipped(new Set());
-        setPicked(tasks.length === 1 ? [String(tasks[0].id)] : []);
+        setForTask(tasks.length === 1 ? String(tasks[0].id) : null);
         setQuery(''); setPerson(null); setTicks({}); setWelcome(false); setSaving(false);
     }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -65,21 +70,27 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
         setText(await file.text());
         setSkipped(new Set());
     };
-    const parsed = useMemo(() => (text ? readDeliverablesCsv(text, entries, campaign, picked) : null), [text, entries, campaign, picked]);
-    useEffect(() => { if (parsed) setError(parsed.error); }, [parsed]);
+    const parsed = useMemo(
+        () => (text && forTask ? readDeliverablesCsv(text, entries, campaign, forTask === 'columns' ? null : forTask) : null),
+        [text, entries, campaign, forTask],
+    );
+    useEffect(() => { setError(parsed?.error || null); }, [parsed]);
     const rows = useMemo(() => parsed?.rows || [], [parsed]);
-    const ready = rows.filter(r => r.status === 'ready' && !skipped.has(r.row));
+    const saves = (r) => (r.status === 'ready' || r.status === 'both') && !skipped.has(r.row);
+    const ready = rows.filter(saves);
     const counts = rows.reduce((m, r) => ({ ...m, [r.status]: (m[r.status] || 0) + 1 }), {});
-    const needsPick = parsed && !parsed.error && !parsed.byColumn;
+    const chosen = tasks.find(t => String(t.id) === forTask);
 
     const downloadTemplate = () => downloadCsv({
-        filename: `${(campaign.title || 'campaign').replace(/[^\w-]+/g, '_').slice(0, 40)}_deliverables_template`,
+        filename: `${(campaign.title || 'campaign').replace(/[^\w-]+/g, '_').slice(0, 40)}_${chosen ? `${String(chosen.title || 'deliverable').replace(/[^\w-]+/g, '_').slice(0, 20)}_` : ''}template`,
         rows: [{}],
-        columns: [
-            { header: 'Instagram', value: () => '@handle' },
-            ...tasks.map((t, idx) => ({ header: taskTitle(t, idx), value: () => (idx === 0 ? 'Done' : '') })),
-            ...tasks.map((t, idx) => ({ header: `${taskTitle(t, idx)} · link`, value: () => '' })),
-        ],
+        columns: chosen
+            ? [{ header: 'Instagram', value: () => '@handle' }, { header: 'Link', value: () => 'https://instagram.com/reel/…' }]
+            : [
+                { header: 'Instagram', value: () => '@handle' },
+                ...tasks.map((t, idx) => ({ header: taskTitle(t, idx), value: () => (idx === 0 ? 'Done' : '') })),
+                ...tasks.map((t, idx) => ({ header: `${taskTitle(t, idx)} · link`, value: () => '' })),
+            ],
     });
 
     /* ---------- one person ---------- */
@@ -109,12 +120,12 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
     const save = async () => {
         if (saving) return;
         const batch = mode === 'upload'
-            ? ready.map(r => ({ entry: r.entry, adds: r.adds, items: itemsFor(r.entry, r.done) }))
+            ? ready.map(r => ({ entry: r.entry, adds: r.adds, items: itemsFor(r.entry, r.save) }))
             : person ? [{ entry: person, adds: personAdds, items: itemsFor(person, personDone.map(t => ({ task: t, link: ticks[String(t.id)] }))) }] : [];
         if (!batch.some(b => b.adds || b.items.length)) return;
         setSaving(true);
         try {
-            await onSave({ adds: batch.filter(b => b.adds).map(b => b.entry), items: batch.flatMap(b => b.items), welcome });
+            await onSave({ adds: batch.filter(b => b.adds).map(b => b.entry), items: batch.flatMap(b => b.items), welcome, sheet: mode === 'upload' ? name : null });
             onClose();
         } catch {
             // onSave shows the error; keep the sheet open to try again.
@@ -124,6 +135,8 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
     };
 
     const uploadCount = ready.reduce((n, r) => n + r.done.length, 0);
+    const bothCount = ready.reduce((n, r) => n + r.marked.filter(m => m.state === 'both').length, 0);
+    const addCount = ready.filter(r => r.adds).length;
     const label = mode === 'upload'
         ? (ready.length ? `Save ${ready.length} creator${ready.length === 1 ? '' : 's'}` : 'Save')
         : personDone.length ? `Mark ${personDone.length} done` : personAdds ? 'Add to campaign' : 'Save';
@@ -163,59 +176,75 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
 
                 {mode === 'upload' ? (
                     <>
+                        {tasks.length > 1 && (
+                            <div className="space-y-1.5">
+                                <p className="text-[12px] font-bold text-gray-500">This sheet is for</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {[...tasks.map((t, idx) => ({ value: String(t.id), label: taskTitle(t, idx) })), { value: 'columns', label: 'A column each' }].map(o => (
+                                        <button
+                                            key={o.value}
+                                            type="button"
+                                            onClick={() => { setForTask(o.value); setSkipped(new Set()); }}
+                                            aria-pressed={forTask === o.value}
+                                            className={cn(
+                                                'h-10 rounded-full border px-3.5 text-[13px] font-semibold transition-colors',
+                                                forTask === o.value
+                                                    ? 'border-transparent bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                                                    : 'border-black/[0.1] text-gray-600 hover:bg-black/[0.04] dark:border-white/[0.12] dark:text-gray-300 dark:hover:bg-white/[0.05]',
+                                            )}
+                                        >
+                                            {o.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         <div className="grid grid-cols-2 gap-2">
-                            <Button onClick={downloadTemplate} className="h-11 sm:justify-start"><Download size={14} /> Template</Button>
-                            <Button onClick={() => input.current?.click()} disabled={saving} className="h-11 sm:justify-start"><Upload size={14} /> {name ? 'Choose another' : 'Choose CSV'}</Button>
+                            <Button onClick={downloadTemplate} disabled={!forTask} className="h-11 sm:justify-start"><Download size={14} /> Template</Button>
+                            <Button onClick={() => input.current?.click()} disabled={saving || !forTask} className="h-11 sm:justify-start"><Upload size={14} /> {name ? 'Choose another' : 'Choose CSV'}</Button>
                             <input ref={input} type="file" accept=".csv,text/csv" className="hidden" onChange={e => { read(e.target.files?.[0]); e.target.value = ''; }} />
                         </div>
                         <div
                             onDragOver={e => e.preventDefault()}
-                            onDrop={e => { e.preventDefault(); read(e.dataTransfer.files?.[0]); }}
+                            onDrop={e => { e.preventDefault(); if (forTask) read(e.dataTransfer.files?.[0]); }}
                             className="rounded-xl border-black/10 text-[13px] text-gray-500 dark:border-white/10 sm:border-2 sm:border-dashed sm:px-4 sm:py-4 sm:text-center"
                         >
-                            <span className="hidden sm:inline">Drop the CSV here. </span>
-                            One row per creator with their Instagram handle. Add a column per deliverable (write Done or the post link), or just list the handles and pick the deliverables below.
+                            {!forTask ? 'Pick the deliverable this sheet is for first.' : (
+                                <>
+                                    <span className="hidden sm:inline">Drop the CSV here. </span>
+                                    {chosen
+                                        ? `One row per creator who did the ${taskTitle(chosen, tasks.indexOf(chosen))}: their Instagram handle, and the post link if you have it.`
+                                        : 'One row per creator with their Instagram handle, and a column per deliverable (write Done or the post link).'}
+                                </>
+                            )}
                         </div>
                         {error && <p role="alert" className="text-[13px] font-semibold text-rose-600 dark:text-rose-300">{error}</p>}
-
-                        {needsPick && (
-                            <div className="space-y-1.5">
-                                <p className="text-[12px] font-bold text-gray-500">No deliverable columns found. Everyone in the file did:</p>
-                                {tasks.map((t, idx) => {
-                                    const on = picked.includes(String(t.id));
-                                    return (
-                                        <div key={t.id} className="flex items-center gap-1 rounded-xl border border-black/[0.08] pr-3 dark:border-white/[0.1]">
-                                            <CheckBox checked={on} label={taskTitle(t, idx)} onChange={v => setPicked(p => (v ? [...p, String(t.id)] : p.filter(x => x !== String(t.id))))} />
-                                            <span className="text-[14px] font-semibold">{taskTitle(t, idx)}</span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
 
                         {rows.length > 0 && (
                             <>
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className="truncate text-[13px] font-semibold">{name}</span>
+                                    <span className="min-w-0 truncate text-[13px] font-semibold">{name}</span>
                                     {Object.entries(counts).map(([k, n]) => <Badge key={k} tone={DONE_ROW_STATUS[k].tone}>{n} {DONE_ROW_STATUS[k].label.toLowerCase()}</Badge>)}
+                                    <Button size="sm" variant="ghost" onClick={() => downloadCsv(checkedSheetSpec(parsed, name))} className="ml-auto h-9">
+                                        <Download size={13} /> Checked sheet
+                                    </Button>
                                 </div>
                                 <ul className="space-y-1.5 sm:max-h-[40dvh] sm:overflow-y-auto">
                                     {rows.map(r => {
-                                        const off = r.status !== 'ready' || skipped.has(r.row);
+                                        const off = !saves(r);
+                                        const canSkip = r.status === 'ready' || r.status === 'both';
                                         return (
                                             <li key={r.row} className={cn('flex min-h-[52px] items-center gap-3 rounded-xl border px-3 py-2', off ? 'border-black/[0.05] bg-black/[0.02] dark:border-white/[0.06] dark:bg-white/[0.02]' : 'border-black/[0.08] dark:border-white/[0.1]')}>
                                                 <span className="w-12 shrink-0 text-[11px] font-semibold text-gray-400">Row {r.row}</span>
                                                 {r.entry && <Avatar src={creatorPhotoOf(r.entry.creator)} name={r.entry.creator.name} size={30} />}
                                                 <span className="min-w-0 flex-1">
                                                     <span className={cn('block truncate text-[14px] font-semibold', off && 'text-gray-500')}>{r.label}</span>
-                                                    {r.status === 'ready' && (
-                                                        <span className="block truncate text-[12px] text-gray-500">
-                                                            {[r.adds && 'Added to campaign', r.done.map(d => d.task.title).join(', ')].filter(Boolean).join(' · ')}
-                                                        </span>
+                                                    {r.entry && r.marked.length > 0 && (
+                                                        <span className="block text-[12px] leading-snug text-gray-500">{doneRowNote(r)}</span>
                                                     )}
                                                 </span>
                                                 <Badge tone={skipped.has(r.row) ? 'gray' : DONE_ROW_STATUS[r.status].tone}>{skipped.has(r.row) ? 'Skipped' : DONE_ROW_STATUS[r.status].label}</Badge>
-                                                {r.status === 'ready' && (
+                                                {canSkip && (
                                                     <button
                                                         type="button"
                                                         onClick={() => setSkipped(s => { const n = new Set(s); if (n.has(r.row)) n.delete(r.row); else n.add(r.row); return n; })}
@@ -232,7 +261,15 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
                                 {counts.unknown > 0 && (
                                     <p className="text-[12px] text-amber-700 dark:text-amber-300">Rows marked “Not on Newbi” didn’t match any creator profile. Check the handle, or ask them to sign up as a creator first.</p>
                                 )}
-                                {ready.length > 0 && <p className="text-[12px] text-gray-500">{uploadCount} deliverable{uploadCount === 1 ? '' : 's'} marked done for {ready.length} creator{ready.length === 1 ? '' : 's'}.</p>}
+                                {ready.length > 0 && (
+                                    <p className="text-[12px] text-gray-500">
+                                        {[
+                                            uploadCount > 0 && `${uploadCount} deliverable${uploadCount === 1 ? '' : 's'} marked done`,
+                                            bothCount > 0 && `${bothCount} already done in the app, marked done in both`,
+                                            addCount > 0 && `${addCount} added to the campaign`,
+                                        ].filter(Boolean).join(' · ')}.
+                                    </p>
+                                )}
                                 {welcomeToggle}
                             </>
                         )}

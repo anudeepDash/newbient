@@ -344,7 +344,7 @@ const CampaignManage = ({
     const approve = (entry, task) => guard(() => review([{ entry, task }], 'approved').catch(() => {}));
 
     // From "Add completed work": add anyone new to the campaign, then mark their deliverables done.
-    const saveCompleted = async ({ adds, items, welcome }) => {
+    const saveCompleted = async ({ adds, items, welcome, sheet }) => {
         try {
             let added = [];
             if (adds.length) {
@@ -353,11 +353,12 @@ const CampaignManage = ({
                 const failed = new Set(result.failed);
                 items = items.filter(i => !failed.has(i.creatorUid));
             }
-            if (items.length) await useStore.getState().markDeliverablesDone(campaign.id, items);
-            const people = new Set(items.map(i => i.creatorUid)).size;
+            const done = items.length ? await useStore.getState().markDeliverablesDone(campaign.id, items, { sheet }) : 0;
+            const both = items.length - done; // done in the app already: now marked from the sheet too
             addToast([
                 added.length && `${added.length} added to the campaign`,
-                items.length && `${items.length} deliverable${items.length === 1 ? '' : 's'} marked done for ${people} creator${people === 1 ? '' : 's'}`,
+                done && `${done} deliverable${done === 1 ? '' : 's'} marked done`,
+                both > 0 && `${both} done in the app and the sheet`,
             ].filter(Boolean).join(' · ') || 'Nothing to change.', 'success');
             if (welcome && added.length) await sendWelcome(added);
         } catch (error) {
