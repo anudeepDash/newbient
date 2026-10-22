@@ -16,6 +16,7 @@ import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Star from 'lucide-react/dist/esm/icons/star';
 import UserCheck from 'lucide-react/dist/esm/icons/user-check';
+import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
 import UserX from 'lucide-react/dist/esm/icons/user-x';
 import Inbox from 'lucide-react/dist/esm/icons/inbox';
 import CheckCheck from 'lucide-react/dist/esm/icons/check-check';
@@ -55,6 +56,7 @@ import { MessageSheet, PayoutSheet, ChangesSheet } from './ActionSheets';
 import TicketsSheet from './TicketsSheet';
 import ShortlistUploadSheet from './ShortlistUploadSheet';
 import CompletedWorkSheet from './CompletedWorkSheet';
+import InviteGuestsSheet from './InviteGuestsSheet';
 import { clientSheetSpec, deliverablesSheetSpec, newbiIdOf } from './shortlistModel';
 import CampaignTickets from './CampaignTickets';
 import { canGetTicket, passFor, passesByCreator, useCampaignPasses } from './ticketModel';
@@ -118,6 +120,7 @@ const CampaignManage = ({
     const [ticketsFor, setTicketsFor] = useState(null); // entries for the Send tickets sheet
     const [uploadOpen, setUploadOpen] = useState(false); // the client's shortlist CSV
     const [doneOpen, setDoneOpen] = useState(false); // work already done: a sheet or one person
+    const [guestsOpen, setGuestsOpen] = useState(false); // sheet guests: people not on Newbi, to invite
     const { passes, loaded: passesLoaded, error: passesError } = useCampaignPasses(campaign?.id);
     const passMap = useMemo(() => passesByCreator(passes), [passes]);
 
@@ -127,6 +130,7 @@ const CampaignManage = ({
     // Work sent in under a login with no creator profile linked: reviewable in Deliverables only.
     const orphans = useMemo(() => (campaign ? orphanSubmitters(campaign, creators) : []), [campaign, creators]);
     const deliverableEntries = useMemo(() => [...applicants, ...orphans], [applicants, orphans]);
+    const guests = useMemo(() => orphans.filter(a => a.creator.guest && a.progress.items.some(i => i.sub)), [orphans]);
     const hasSubmissions = deliverableEntries.some(a => a.progress.items.some(i => i.sub));
     const byKey = useMemo(() => new Map(applicants.map(a => [a.key, a])), [applicants]);
 
@@ -344,8 +348,9 @@ const CampaignManage = ({
     const approve = (entry, task) => guard(() => review([{ entry, task }], 'approved').catch(() => {}));
 
     // From "Add completed work": add anyone new to the campaign, then mark their deliverables done.
-    const saveCompleted = async ({ adds, items, welcome, sheet }) => {
+    const saveCompleted = async ({ adds, items, guests: newGuests = [], welcome, sheet }) => {
         try {
+            const guestWork = newGuests.length ? await useStore.getState().addSheetGuests(campaign.id, newGuests, { sheet }) : 0;
             let added = [];
             if (adds.length) {
                 const result = await useStore.getState().bulkShortlistCreators(campaign.id, adds.map(e => e.key), true);
@@ -359,10 +364,24 @@ const CampaignManage = ({
                 added.length && `${added.length} added to the campaign`,
                 done && `${done} deliverable${done === 1 ? '' : 's'} marked done`,
                 both > 0 && `${both} done in the app and the sheet`,
+                guestWork > 0 && `${newGuests.length} not on Newbi added (invite them from Not on Newbi)`,
             ].filter(Boolean).join(' · ') || 'Nothing to change.', 'success');
             if (welcome && added.length) await sendWelcome(added);
         } catch (error) {
             addToast('Check your connection and try again.', 'error', { title: "Couldn't save the completed work" });
+            throw error;
+        }
+    };
+
+    // Sheet guests who have joined Newbi since: their account takes the sheet work.
+    const linkGuests = async (links) => {
+        try {
+            const adds = links.filter(l => !isSelected(campaign, l.account)).map(l => l.creatorUid);
+            if (adds.length) await useStore.getState().bulkShortlistCreators(campaign.id, Array.from(new Set(adds)), true);
+            await useStore.getState().linkSheetGuests(campaign.id, links);
+            addToast(`${links.length} moved to their Newbi account${links.length === 1 ? '' : 's'}.`, 'success');
+        } catch (error) {
+            addToast('Check your connection and try again.', 'error', { title: "Couldn't move their work" });
             throw error;
         }
     };
@@ -530,6 +549,9 @@ const CampaignManage = ({
                     {tasks.length > 0 && (
                         <Button variant="secondary" onClick={() => setDoneOpen(true)} className="h-11"><CheckCheck size={14} /> Add completed work</Button>
                     )}
+                    {guests.length > 0 && (
+                        <Button variant="secondary" onClick={() => setGuestsOpen(true)} className="h-11"><UserPlus size={14} /> Not on Newbi · {guests.length}</Button>
+                    )}
                     {tasks.length > 0 && (
                         <ExportMenu
                             getSpec={() => deliverablesSheetSpec(campaign, deliverableEntries, { fileDate, exportSubtitle })}
@@ -598,12 +620,13 @@ const CampaignManage = ({
                                 return (
                                     <li key={a.key} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center">
                                         <button type="button" onClick={() => !a.orphan && setParam('creator', a.key)} disabled={a.orphan} className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-default">
-                                            <Avatar src={creatorPhotoOf(a.creator)} name={a.creator.name || '?'} size={36} />
+                                            <Avatar src={creatorPhotoOf(a.creator)} name={a.creator.name || a.creator.instagram || '?'} size={36} />
                                             <span className="min-w-0">
                                                 <span className="block truncate text-[14px] font-semibold">
-                                                    {a.orphan ? (sub?.test ? `Test by ${sub.tester || 'a developer'}` : 'No creator profile linked') : a.creator.name || 'Creator'}
+                                                    {a.creator.guest ? (a.creator.name || `@${a.creator.instagram}`) : a.orphan ? (sub?.test ? `Test by ${sub.tester || 'a developer'}` : 'No creator profile linked') : a.creator.name || 'Creator'}
                                                 </span>
-                                                {a.orphan && !sub?.test && <span className="block truncate font-mono text-[11px] text-gray-400" title="Their login ID. Run scripts/migrate-creators-to-uid.mjs to link their old profile.">Login {a.key.slice(0, 10)}…</span>}
+                                                {a.creator.guest && <span className="block truncate text-[12px] text-gray-500">{[a.creator.name && a.creator.instagram && `@${a.creator.instagram}`, 'Not on Newbi yet, from a sheet'].filter(Boolean).join(' · ')}</span>}
+                                                {a.orphan && !a.creator.guest && !sub?.test && <span className="block truncate font-mono text-[11px] text-gray-400" title="Their login ID. Run scripts/migrate-creators-to-uid.mjs to link their old profile.">Login {a.key.slice(0, 10)}…</span>}
                                                 <span className="flex flex-wrap items-center gap-x-2 text-[12px] text-gray-500">
                                                     <Badge tone={st === 'approved' ? 'green' : st === 'submitted' ? 'amber' : st === 'rejected' ? 'rose' : 'gray'}>
                                                         {st === 'approved' ? 'Approved' : st === 'submitted' ? 'To review' : st === 'rejected' ? 'Changes asked' : 'Not started'}
@@ -1032,6 +1055,14 @@ const CampaignManage = ({
                 creators={creators}
                 applicants={applicants}
                 onSave={saveCompleted}
+            />
+            <InviteGuestsSheet
+                open={guestsOpen}
+                onClose={() => setGuestsOpen(false)}
+                campaign={campaign}
+                guests={guests}
+                creators={creators}
+                onLink={linkGuests}
             />
 
             <MessageSheet open={Boolean(messageTo)} onClose={() => setMessageTo(null)} campaign={campaign} entries={messageTo || []} />

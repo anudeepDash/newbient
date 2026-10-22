@@ -51,7 +51,7 @@ const APP_URL = (process.env.PUBLIC_APP_URL || 'https://app.newbi.live').replace
 export const CREATOR_APP_ACTIONS = new Set([
     'ig-lookup', 'ig-connect', 'ig-callback', 'instagram-cron', 'creator-apply', 'campaign-apply', 'campaign-submit',
     'creator-self-delete', 'creator-sync-profile', 'account-matches', 'account-merge', 'profile-phone',
-    'my-submission', 'submissions-list', 'submissions-review', 'submissions-delete', 'ig-connect-access',
+    'my-submission', 'submissions-list', 'submissions-review', 'submissions-delete', 'submissions-guests', 'ig-connect-access',
 ]);
 /* Actions that don't take a Firebase ID token (they carry their own proof). */
 export const CREATOR_APP_PUBLIC = new Set(['ig-callback', 'instagram-cron']);
@@ -903,6 +903,41 @@ export const handleSubmissionsDelete = async (req, res, { db, token }) => {
     return send(res, 200, { success: true, removed: items.length });
 };
 
+/*
+ * Staff: people from an uploaded sheet who aren't on Newbi, added to a campaign
+ * as sheet guests (the store's addSheetGuests, when the browser can't write):
+ *   {campaignId, guests: [{ key: 'sheet-ig-…' | 'sheet-p-…', guest: {…}, tasks: { [taskId]: {…} } }]}
+ * Every task record is an approved one from the sheet, whatever the browser sent.
+ */
+export const handleSubmissionsGuests = async (req, res, { db, token }) => {
+    if (!(await isStaffCaller(token, db))) return send(res, 403, { success: false, error: 'Only the Newbi team can do this.' });
+    const campaignId = str(req.body?.campaignId, 128);
+    const at = nowIso();
+    const guests = (Array.isArray(req.body?.guests) ? req.body.guests : []).slice(0, 500)
+        .map(g => ({
+            key: str(g?.key, 80),
+            guest: {
+                instagram: str(g?.guest?.instagram, 60), name: str(g?.guest?.name, 120), phone: str(g?.guest?.phone, 20),
+                email: str(g?.guest?.email, 200), file: str(g?.guest?.file, 200), addedAt: str(g?.guest?.addedAt, 40) || at, addedBy: token.email || null,
+            },
+            tasks: Object.fromEntries(Object.entries(g?.tasks && typeof g.tasks === 'object' ? g.tasks : {}).slice(0, 50)
+                .filter(([taskId]) => /^[\w-]{1,128}$/.test(taskId))
+                .map(([taskId, t]) => [taskId, {
+                    status: 'approved', contentLink: /^https?:\/\//i.test(str(t?.contentLink, 600)) ? str(t.contentLink, 600) : '', proofUrl: '', rejectionReason: '',
+                    submittedAt: str(t?.submittedAt, 40) || at, reviewedAt: at, reviewedBy: token.email || null, via: 'sheet',
+                    guest: { instagram: str(g?.guest?.instagram, 60), name: str(g?.guest?.name, 120) },
+                }])),
+        }))
+        .filter(g => /^sheet-(ig|p)-[\w-]{1,64}$/.test(g.key) && Object.keys(g.tasks).length);
+    if (!/^[\w-]{1,128}$/.test(campaignId) || !guests.length) return send(res, 400, { success: false, error: 'Nobody to add.' });
+    const batch = db.batch();
+    guests.forEach(g => batch.set(db.collection('campaigns').doc(campaignId).collection('submissions').doc(g.key),
+        { uid: g.key, guest: g.guest, tasks: g.tasks, updatedAt: at }, { merge: true }));
+    await batch.commit();
+    console.log(`[creator-app] ${token.email || token.uid} added ${guests.length} sheet guest(s) to ${campaignId}`);
+    return send(res, 200, { success: true, added: guests.length });
+};
+
 /* ── instagram-cron ───────────────────────────────────────────────────── */
 
 const isCronCall = (req) => {
@@ -1196,6 +1231,7 @@ export const handleCreatorAppAction = async (action, req, res, { decodedToken })
         if (action === 'submissions-list') return await handleSubmissionsList(req, res, ctx);
         if (action === 'submissions-review') return await handleSubmissionsReview(req, res, ctx);
         if (action === 'submissions-delete') return await handleSubmissionsDelete(req, res, ctx);
+        if (action === 'submissions-guests') return await handleSubmissionsGuests(req, res, ctx);
         if (action === 'ig-connect-access') return await handleConnectAccess(req, res, ctx);
         return send(res, 400, { success: false, error: 'Unknown action.' });
     } catch (err) {

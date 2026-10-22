@@ -1,5 +1,5 @@
 import { parseCSV } from '../creators/creatorData';
-import { stageMeta, creatorHandle, creatorKeys, creatorNiches, creatorRef, hasApplied, isSelected, progressFor } from './campaignModel';
+import { stageMeta, creatorHandle, creatorKeys, creatorNiches, creatorRef, guestCreatorFor, guestKeyFor, hasApplied, isGuestKey, isSelected, progressFor, submitterKeys } from './campaignModel';
 import { isRequiredTask } from '../../../lib/creator/tasks';
 
 /*
@@ -51,6 +51,7 @@ const deliverableLink = (sub) => [sub?.contentLink, sub?.proofUrl, sub?.screensh
 // Done work says where it came from: the app, an uploaded sheet, or both.
 const deliverableStatus = (item, sheet) => {
     if (item.status !== 'approved') return DELIVERABLE_STATUS[item.status] || 'Not started';
+    if (item.sub?.via === 'sheet') return 'Done (sheet)';
     if (!sheet) return 'Done';
     return item.sub?.via === 'admin' ? 'Done (sheet)' : 'Done (app + sheet)';
 };
@@ -82,8 +83,8 @@ export const deliverablesSheetSpec = (campaign, entries, { fileDate, exportSubti
         rows,
         totals: { done: true },
         columns: [
-            { header: 'Newbi ID', value: a => (a.orphan ? '' : newbiIdOf(a.creator)) },
-            { header: 'Name', width: 24, value: a => (a.orphan ? 'No creator profile linked' : a.creator.name || '') },
+            { header: 'Newbi ID', value: a => (a.creator.guest ? 'Not on Newbi' : a.orphan ? '' : newbiIdOf(a.creator)) },
+            { header: 'Name', width: 24, value: a => (a.creator.guest ? a.creator.name || '' : a.orphan ? 'No creator profile linked' : a.creator.name || '') },
             { header: 'Instagram', value: a => (creatorHandle(a.creator) ? `@${creatorHandle(a.creator)}` : '') },
             { header: 'Instagram link', width: 32, value: a => instagramUrl(a.creator) },
             { header: 'Followers', type: 'number', value: a => a.criteria?.followers ?? null },
@@ -108,7 +109,8 @@ export const deliverablesSheetSpec = (campaign, entries, { fileDate, exportSubti
 const digits = (v) => String(v || '').replace(/\D/g, '');
 const phoneKey = (v) => { const d = digits(v); return d.length >= 10 ? d.slice(-10) : ''; };
 const emailKey = (v) => { const e = String(v || '').trim().toLowerCase(); return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : ''; };
-const handleKey = (v) => String(v || '').trim().replace(/^@+/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[/?#].*$/, '').toLowerCase();
+// "@asha", "asha", "instagram.com/asha", "https://www.instagram.com/asha/?hl=en" all read as "asha".
+const handleKey = (v) => String(v || '').trim().replace(/^@+/, '').replace(/^(https?:\/\/)?(www\.|m\.)?instagram\.com\//i, '').replace(/[/?#].*$/, '').replace(/^@+/, '').trim().toLowerCase();
 const idKey = (v) => String(v || '').trim().toUpperCase();
 
 const HEADERS = {
@@ -199,8 +201,9 @@ export const DONE_ROW_STATUS = {
     both: { label: 'Done in both', tone: 'blue' },
     already: { label: 'Already uploaded', tone: 'gray' },
     nothing: { label: 'Nothing marked', tone: 'gray' },
+    guest: { label: 'Not on Newbi · add', tone: 'amber' },
     duplicate: { label: 'Repeated row', tone: 'gray' },
-    unknown: { label: 'Not on Newbi', tone: 'amber' },
+    unknown: { label: 'Can’t add', tone: 'rose' },
 };
 
 /*
@@ -217,12 +220,20 @@ export const DONE_ITEM_NOTE = {
     uploaded: 'already marked done',
 };
 
-/** Every creator as an entry the matcher can use, applicants first so their stage carries over. */
+/**
+ * Every creator as an entry the matcher can use, applicants first so their stage
+ * carries over, then the campaign's sheet guests (so a second sheet finds them).
+ */
 export const creatorEntriesFor = (campaign, creators, applicants = []) => {
     const byKey = new Map(applicants.map(a => [a.key, a]));
+    const guests = [...submitterKeys(campaign)].filter(isGuestKey).map(key => {
+        const creator = guestCreatorFor(campaign, key);
+        return { creator, key, progress: progressFor(campaign, creator), stage: 'guest', guest: true };
+    });
     return [
         ...applicants.filter(a => !a.orphan),
         ...(creators || []).filter(c => !byKey.has(creatorRef(c))).map(c => ({ creator: c, key: creatorRef(c), progress: progressFor(campaign, c), stage: 'none' })),
+        ...guests,
     ];
 };
 
@@ -281,6 +292,7 @@ export const readDeliverablesCsv = (text, entries, campaign, forTaskId = null) =
         .filter(([id]) => !only || String(id) !== String(only.id)).map(([, idx]) => idx));
 
     const match = matcherFor(entries);
+    const guestsByKey = new Map(entries.filter(e => e.guest).map(e => [e.key, e]));
     const seen = new Set();
     const rows = table.slice(1)
         .map((r, i) => ({ r, row: i + 2 }))
@@ -288,7 +300,7 @@ export const readDeliverablesCsv = (text, entries, campaign, forTaskId = null) =
         .map(({ r, row }) => {
             const at = (idx) => (idx === undefined || idx < 0 ? '' : String(r[idx] ?? '').trim());
             const cells = Object.fromEntries(Object.entries(col).map(([k, idx]) => [k, at(idx)]));
-            const entry = match(cells);
+            const entry = match(cells) || guestsByKey.get(guestKeyFor({ handle: handleKey(cells.instagram), phone: phoneKey(cells.phone) })) || null;
             const label = entry?.creator?.name || cells.name || cells.instagram || cells.id || cells.email || cells.phone || `Row ${row}`;
             const markedTasks = only
                 ? (() => {
@@ -309,33 +321,55 @@ export const readDeliverablesCsv = (text, entries, campaign, forTaskId = null) =
             const marked = markedTasks.map(m => {
                 const item = itemOf(m.task);
                 const status = item?.status || 'not_started';
-                const state = status === 'approved' ? (item.sub?.via === 'admin' ? 'uploaded' : 'both') : status === 'submitted' ? 'sent' : 'new';
+                const state = status === 'approved' ? (['admin', 'sheet'].includes(item.sub?.via) ? 'uploaded' : 'both') : status === 'submitted' ? 'sent' : 'new';
                 const sheet = sheetMarkOf(m.task, entry);
                 const hasLink = Boolean(deliverableLink(item?.sub) || sheet?.link);
-                const needs = state === 'new' || state === 'sent' || !sheet || Boolean(m.link && !hasLink);
+                // A guest's own record is the sheet record (guests get no sheetDone on the public doc).
+                const needs = state === 'new' || state === 'sent' || (!sheet && !entry?.guest) || Boolean(m.link && !hasLink);
                 return { ...m, state, needs };
             });
             const done = marked.filter(m => m.state === 'new' || m.state === 'sent');
             const save = marked.filter(m => m.needs);
-            const adds = Boolean(entry) && !isSelected(campaign, entry.creator);
-            const member = !entry ? null : !adds ? 'in' : hasApplied(campaign, entry.creator) ? 'applied' : 'new';
+            const adds = Boolean(entry) && !entry.guest && !isSelected(campaign, entry.creator);
+            // Not on Newbi: added to the campaign as a sheet guest, by handle (or phone), to invite later.
+            const guestKey = entry ? null : guestKeyFor({ handle: handleKey(cells.instagram), phone: phoneKey(cells.phone) });
+            const guest = guestKey ? {
+                key: guestKey, instagram: handleKey(cells.instagram) || '', name: cells.name || '', phone: phoneKey(cells.phone), email: emailKey(cells.email),
+            } : null;
+            const member = guest ? 'newGuest' : !entry ? null : entry.guest ? 'guest' : !adds ? 'in' : hasApplied(campaign, entry.creator) ? 'applied' : 'new';
+            const seenKey = entry?.key || guestKey;
             let status;
-            if (!entry) status = 'unknown';
-            else if (seen.has(entry.key)) status = 'duplicate';
+            if (!entry && !guest) status = 'unknown';
+            else if (seen.has(seenKey)) status = 'duplicate';
+            else if (guest) status = marked.length ? 'guest' : 'nothing';
             else if (!marked.length) status = 'nothing';
             else if (done.length || adds) status = 'ready';
             else status = save.length ? 'both' : 'already';
-            if (entry && marked.length) seen.add(entry.key);
-            return { row, cells: r, label, status, entry, adds, member, marked, done, save };
+            if (seenKey && marked.length) seen.add(seenKey);
+            return { row, cells: r, label: guest ? (cells.name || (guest.instagram ? `@${guest.instagram}` : label)) : label, status, entry, adds, guest, member, marked, done, save };
         });
     return { rows, error: null, byColumn, header: table[0] };
 };
 
-const MEMBER_NOTE = { in: 'In the campaign', applied: 'Applied, added to the campaign', new: 'New, added to the campaign' };
+const MEMBER_NOTE = {
+    in: 'Registered, in the campaign',
+    applied: 'Registered and applied, added to the campaign',
+    new: 'Registered, added to the campaign',
+    guest: 'Not on Newbi yet, in the campaign from a sheet',
+    newGuest: 'Not on Newbi yet: added to the campaign, invite them later',
+};
+/** The short form of MEMBER_NOTE, for a badge. */
+export const MEMBER_BADGE = {
+    in: { label: 'Registered', tone: 'blue' },
+    applied: { label: 'Registered', tone: 'blue' },
+    new: { label: 'Registered', tone: 'blue' },
+    guest: { label: 'From a sheet', tone: 'gray' },
+    newGuest: { label: 'Not on Newbi', tone: 'amber' },
+};
 
 /** One line on what happens to a row, for the preview and the checked sheet. */
 export const doneRowNote = (r) => {
-    if (r.status === 'unknown') return 'Not on Newbi';
+    if (r.status === 'unknown') return 'Not on Newbi, and no Instagram handle or phone to add them by';
     if (r.status === 'duplicate') return 'Repeated row';
     if (r.status === 'nothing') return 'Nothing marked done';
     return [MEMBER_NOTE[r.member], ...r.marked.map(m => `${m.task.title || 'Deliverable'}: ${DONE_ITEM_NOTE[m.state]}`)].filter(Boolean).join(' · ');
