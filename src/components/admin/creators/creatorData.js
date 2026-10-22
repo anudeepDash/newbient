@@ -93,6 +93,14 @@ export const nicheTone = (niche) => {
 
 /* ── CSV ─────────────────────────────────────────────────────────────────── */
 
+// Excel in some locales saves "CSV" with semicolons, and copies from Sheets are tab-separated.
+const delimiterOf = (input) => {
+    const first = input.slice(0, input.search(/\r?\n|$/)).replace(/"[^"]*"/g, '');
+    if (first.includes(',')) return ',';
+    if (first.includes('\t')) return '\t';
+    return first.includes(';') ? ';' : ',';
+};
+
 // RFC 4180-ish parser: quoted fields, escaped quotes, commas/newlines in quotes, CRLF.
 export const parseCSV = (text) => {
     const rows = [];
@@ -100,6 +108,7 @@ export const parseCSV = (text) => {
     let field = '';
     let inQuotes = false;
     const input = String(text || '').replace(/^﻿/, '');
+    const sep = delimiterOf(input);
     for (let i = 0; i < input.length; i++) {
         const ch = input[i];
         if (inQuotes) {
@@ -107,7 +116,7 @@ export const parseCSV = (text) => {
                 if (input[i + 1] === '"') { field += '"'; i++; } else inQuotes = false;
             } else field += ch;
         } else if (ch === '"') inQuotes = true;
-        else if (ch === ',') { row.push(field); field = ''; }
+        else if (ch === sep) { row.push(field); field = ''; }
         else if (ch === '\n' || ch === '\r') {
             if (ch === '\r' && input[i + 1] === '\n') i++;
             row.push(field); field = '';

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkedSheetSpec, creatorEntriesFor, deliverablesSheetSpec, doneRowNote, readDeliverablesCsv } from '../src/components/admin/campaigns/shortlistModel';
+import { checkedSheetSpec, creatorEntriesFor, deliverablesSheetSpec, doneRowNote, handleIn, readDeliverablesCsv } from '../src/components/admin/campaigns/shortlistModel';
 import { applicantsFor, guestKeyFor, orphanSubmitters } from '../src/components/admin/campaigns/campaignModel';
 import { buildXlsx } from '../src/lib/xlsx';
 
@@ -112,6 +112,42 @@ describe('readDeliverablesCsv', () => {
         const spec = deliverablesSheetSpec(withGuest, orphanSubmitters(withGuest, everyone), helpers);
         const row = Object.fromEntries(spec.columns.map(c => [c.header, c.value(spec.rows.find(r => r.creator.guest))]));
         expect(row).toMatchObject({ 'Newbi ID': 'Not on Newbi', Name: 'Riya', Instagram: '@riya.s', '2. Reel': 'Done (sheet)' });
+    });
+
+    it('reads sheets people make themselves: Google Forms headers, messy handles, semicolons', () => {
+        const form = 'Timestamp,Email Address,Your Name,Instagram ID (eg @newbi.live),Mobile Number,Reel Link\n'
+            + '22/10/2026,asha@x.com,Asha,@asha – 12k,,https://instagram.com/reel/a\n'
+            + '22/10/2026,riya@x.com,Riya,Riya (@riya.s),98765 43210,\n'
+            + '22/10/2026,n@x.com,Nobody,not sure,123,';
+        const { rows, columns } = readDeliverablesCsv(form, entries, campaign, 't2');
+        expect(columns).toMatchObject({ email: 1, name: 2, instagram: 3, phone: 4 });
+        const [asha, riya, nobody] = rows;
+        expect(asha.entry.key).toBe('a');
+        expect(asha.save[0].link).toBe('https://instagram.com/reel/a');
+        expect(riya).toMatchObject({ status: 'guest', label: 'Riya' });
+        expect(riya.guest).toMatchObject({ instagram: 'riya.s', phone: '9876543210' });
+        expect(nobody.status).toBe('unknown');
+        expect(doneRowNote(nobody)).toBe('Not on Newbi, and “not sure” isn’t an Instagram handle');
+
+        const semi = readDeliverablesCsv('Name;Insta handle\nZoya;zoya.k', entries, campaign, 't2');
+        expect(semi.rows[0].entry.key).toBe('z');
+    });
+
+    it('uses the columns picked by hand', () => {
+        const csv = 'Creator,Account,Notes\nZoya,zoya.k,x';
+        expect(readDeliverablesCsv(csv, entries, campaign, 't2').error).toMatch(/pick the column/);
+        const picked = readDeliverablesCsv(csv, entries, campaign, 't2', { columns: { instagram: 1 } });
+        expect(picked.rows[0].entry.key).toBe('z');
+        expect(readDeliverablesCsv('Instagram,Phone\nzz,9876543210', entries, campaign, 't2', { columns: { instagram: -1 } }).rows[0].guest.key).toBe('sheet-p-9876543210');
+    });
+
+    it('finds the handle in what people type', () => {
+        expect(handleIn('@Riya.S ')).toBe('riya.s');
+        expect(handleIn('https://www.instagram.com/riya.s/?igsh=abc')).toBe('riya.s');
+        expect(handleIn('Riya (@riya.s)')).toBe('riya.s');
+        expect(handleIn('https://instagram.com/reel/xyz')).toBe('');
+        expect(handleIn('riya@gmail.com')).toBe('');
+        expect(handleIn('Riya Sharma')).toBe('');
     });
 
     it('makes guest keys only from a real handle or a 10-digit phone', () => {
