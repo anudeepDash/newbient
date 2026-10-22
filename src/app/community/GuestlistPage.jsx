@@ -16,6 +16,7 @@ import useDynamicMeta from '../../hooks/useDynamicMeta';
 import { useAuthGate, useResumeIntent, INTENTS, clearPendingIntent } from '../auth/AuthGate';
 import { useStore as useLegacyStore } from '../../lib/store.js';
 import { auth } from '../../lib/firebase';
+import { findOtherAccounts } from '../auth/accountMerge';
 import CompleteProfileSheet from '../profile/CompleteProfileSheet';
 import { missingFields, requirementsFor } from '../profile/requirements';
 import { appPath } from '../host';
@@ -54,6 +55,7 @@ const GuestlistPage = ({ overlay = false }) => {
     const authReady = useAppStore(s => s.authReady);
     const profile = useAppStore(s => s.profile);
     const profileLoaded = useAppStore(s => s.profileLoaded);
+    const updateProfile = useAppStore(s => s.updateProfile);
     const gate = useAuthGate();
 
     const [gl, setGl] = useState(null);
@@ -83,7 +85,9 @@ const GuestlistPage = ({ overlay = false }) => {
     useEffect(() => { if (authReady) load(); }, [load, authReady, uid]);
 
     const me = gl?.me || (!uid ? guestPlace : null);
-    const needsDetailsStep = Boolean(gl?.task) || (gl?.perUserLimit || 1) > 1;
+    // Signed in without an email (a phone sign-in): the form asks for one, for the pass and updates.
+    const needsEmail = Boolean(uid) && profileLoaded && !isPresent(profile?.email);
+    const needsDetailsStep = Boolean(gl?.task) || (gl?.perUserLimit || 1) > 1 || needsEmail;
 
     const submit = async () => {
         setError('');
@@ -101,8 +105,17 @@ const GuestlistPage = ({ overlay = false }) => {
         // Your own name is already on the list; these slots are for the people with you.
         const own = String((asGuest ? contact.name : profile?.name) || '').trim().toLowerCase();
         if (own && names.some(n => n.toLowerCase() === own)) { setError(t('That’s your name, and you’re already on the list. Add the names of the people coming with you.')); return; }
+        const email = contact.email.trim().toLowerCase();
+        if (!asGuest && needsEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { setError(t('Add a valid email address.')); return; }
         setSubmitting(true);
-        const body = { guestlistId: id, guests, guestNames: names, taskSubmission: gl?.task ? task : null };
+        if (!asGuest && needsEmail) {
+            // Saved on the account too, unless another account has it (Home's banner offers the merge then).
+            try {
+                const taken = (await findOtherAccounts(email)).some(m => m.matchedBy?.includes('email'));
+                if (!taken) await updateProfile({ email });
+            } catch { /* the pass still goes to it */ }
+        }
+        const body = { guestlistId: id, guests, guestNames: names, taskSubmission: gl?.task ? task : null, ...(!asGuest && needsEmail ? { email } : {}) };
         const res = asGuest
             ? await passesPost('register-guestlist-guest', { ...body, name: contact.name.trim(), email: contact.email.trim(), phone: contact.phone.trim() })
             : await passesPost('register-guestlist', body);
@@ -265,11 +278,25 @@ const GuestlistPage = ({ overlay = false }) => {
             <Sheet
                 open={step === 'details' || step === 'guest'}
                 onClose={() => !submitting && setStep(null)}
-                title={step === 'guest' ? t('Reserve your spot') : gl.task ? t('One more step') : t('How many of you?')}
+                title={step === 'guest' ? t('Reserve your spot') : gl.task ? t('One more step') : (gl.perUserLimit || 1) > 1 ? t('How many of you?') : t('Almost there')}
                 subtitle={gl.title}
                 footer={<Button className="w-full" size="lg" onClick={submit} loading={submitting} disabled={uploading}>{gl.mode === 'rsvp' ? t('Reserve my spot') : t('Get my pass')}</Button>}
             >
                 <div className="space-y-6">
+                    {step === 'details' && needsEmail && (
+                        <TextInput
+                            id="account-email"
+                            label={t('Email')}
+                            type="email"
+                            inputMode="email"
+                            autoComplete="email"
+                            autoCapitalize="none"
+                            placeholder="you@example.com"
+                            hint={t('Your pass and any updates about the night come here.')}
+                            value={contact.email}
+                            onChange={(e) => setContact(c => ({ ...c, email: e.target.value }))}
+                        />
+                    )}
                     {step === 'guest' && (
                         // Closed sign-in: reserve with your details instead. The pass comes by email and WhatsApp.
                         <div className="space-y-3">

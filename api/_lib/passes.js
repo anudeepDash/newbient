@@ -331,6 +331,9 @@ const passFromGuestlistEntry = (ref, g, gid, entryId, entry, issuedBy) => ({
 const registerGuestlist = async (db, body, caller) => {
     requireUser(caller);
     const me = await loadProfile(db, caller);
+    // An account without an email (a phone sign-in) can give one in the form; the pass goes there too.
+    const typedEmail = normalizeEmail(body.email);
+    if (!me.email && typedEmail && isEmail(typedEmail)) me.email = typedEmail;
     const missing = [!present(me.name) && 'name', !present(me.phone) && !present(me.email) && 'phone'].filter(Boolean);
     if (missing.length) throw new PassError('PROFILE_INCOMPLETE', 'Add your name first.', 422, { missing });
     return signUpOnList(db, body, { uid: caller.uid, name: me.name, email: me.email, phone: me.phone, key: caller.uid, mine: [['userId', caller.uid]] });

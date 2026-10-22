@@ -85,6 +85,15 @@ describe('guestlist time, map link and guest names', () => {
         await expect(register(db, { guestlistId: 'gl1', guests: 1 }, 'u4')).rejects.toMatchObject({ code: 'PROFILE_INCOMPLETE' });
     });
 
+    it('sends the pass to an email typed into the form when the account has none', async () => {
+        await db.collection('users').doc('u5').set({ name: 'Kabir', phone: '+919876500012', phoneVerified: true });
+        const out = await register(db, { guestlistId: 'gl1', guests: 1, email: 'Kabir@Example.com' }, 'u5');
+        expect(db.store.get(`passes/${out.ref}`)).toMatchObject({ holderEmail: 'kabir@example.com', holderPhone: '+919876500012' });
+        // An account that has an email keeps it.
+        const own = await register(db, { guestlistId: 'gl1', guests: 1, email: 'other@example.com' }, 'u1');
+        expect(db.store.get(`passes/${own.ref}`)).toMatchObject({ holderEmail: 'asha@example.com' });
+    });
+
     describe('without an account', () => {
         const guest = (body, ip = '1.2.3.4') => _internal.actions['register-guestlist-guest'](db, { guestlistId: 'gl1', guests: 1, ...body }, { ip });
         const details = { name: 'Neha Kapoor', email: 'Neha@Example.com', phone: '98765 00009' };
