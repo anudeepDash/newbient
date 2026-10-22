@@ -239,13 +239,16 @@ export const EVENTS = {
             build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'the guestlist', 80), short(d.reason || 'The list filled up before we reached your sign-up', 120)] }),
         },
     },
-    // A place came free (sent by hand from the WhatsApp center until lists have a waitlist).
+    // A place came free for someone on the waitlist (passes.js advanceWaitlist). The button and links carry
+    // a signed claim (claimParam: "<list id>?claim=<token>") that confirms the place without signing in.
     'guestlist-spot-opened': {
         whatsapp: {
             mode: 'optional',
             template: () => 'guestlist_spot_opened',
-            build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'the guestlist', 80), short(d.claimBy || 'Soon', 60)], buttons: listButton(d) }),
+            build: (d) => ({ bodyParams: [firstName(d.name), short(d.eventName || 'the guestlist', 80), short(d.claimBy || 'Soon', 60)], buttons: d.claimParam ? [{ index: 0, param: d.claimParam }] : listButton(d) }),
         },
+        push: (d) => ({ title: `A place is free: ${short(d.eventName || 'guestlist', 30)}`, body: `Confirm it before ${short(d.claimBy || 'the time runs out', 40)} or it goes to the next person.`, link: d.claimParam ? `${PASS_ORIGIN}/community/g/${d.claimParam}` : listLink(d), tag: `guestlist-${d.guestlistId || ''}` }),
+        inApp: (d) => ({ title: `A place is free: ${d.eventName || 'guestlist'}`, message: `Confirm it before ${d.claimBy || 'the time runs out'} or it goes to the next person on the waitlist.`, type: 'ticket', link: d.claimParam ? `${PASS_ORIGIN}/community/g/${d.claimParam}` : listLink(d) }),
     },
     // The morning of an event whose guestlist has an entry cutoff (eventReminders.js).
     'guestlist-entry-cutoff': {

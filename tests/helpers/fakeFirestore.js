@@ -7,10 +7,12 @@
 let autoId = 0;
 const nextId = () => `auto${String(++autoId).padStart(5, '0')}`;
 const clone = (v) => (v === undefined ? undefined : structuredClone(v));
-// FieldValue.delete() and friends: objects with isEqual(). Only delete is supported.
+// FieldValue.delete() and friends: objects with isEqual(). Supported: delete, and increment (it has a numeric operand).
 const isSentinel = (v) => v !== null && typeof v === 'object' && typeof v.isEqual === 'function';
+const isIncrement = (v) => isSentinel(v) && typeof v.operand === 'number';
 const stripSentinels = (data) => Object.fromEntries(Object.entries(data || {}).filter(([, v]) => !isSentinel(v)));
-const deletedKeys = (data) => Object.entries(data || {}).filter(([, v]) => isSentinel(v)).map(([k]) => k);
+const deletedKeys = (data) => Object.entries(data || {}).filter(([, v]) => isSentinel(v) && !isIncrement(v)).map(([k]) => k);
+const incrementKeys = (data) => Object.entries(data || {}).filter(([, v]) => isIncrement(v));
 const isPlain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date);
 // set(..., { merge: true }) merges nested maps, like Firestore.
 const deepMerge = (a, b) => {
@@ -25,8 +27,10 @@ const applyPaths = (base, data) => {
         const parts = k.split('.');
         let node = out;
         parts.slice(0, -1).forEach(p => { if (!isPlain(node[p])) node[p] = {}; node = node[p]; });
-        if (isSentinel(v)) delete node[parts[parts.length - 1]];
-        else node[parts[parts.length - 1]] = clone(v);
+        const last = parts[parts.length - 1];
+        if (isIncrement(v)) node[last] = (Number(node[last]) || 0) + v.operand;
+        else if (isSentinel(v)) delete node[last];
+        else node[last] = clone(v);
     });
     return out;
 };
@@ -97,6 +101,7 @@ export class FakeFirestore {
         const prev = this.store.get(path);
         const next = opts?.merge && prev ? deepMerge(prev, clone(stripSentinels(data))) : clone(stripSentinels(data));
         deletedKeys(data).forEach(k => delete next[k]);
+        incrementKeys(data).forEach(([k, v]) => { next[k] = (opts?.merge && prev ? Number(prev[k]) || 0 : 0) + v.operand; });
         this.store.set(path, next);
     }
 

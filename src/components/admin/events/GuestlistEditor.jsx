@@ -9,6 +9,7 @@ import GuestlistTaskConfig from '../GuestlistTaskConfig';
 import LivePreview from '../LivePreview';
 import { useStore } from '../../../lib/store';
 import { notifyAllUsers } from '../../../lib/notificationTriggers';
+import { notifyEvent } from '../../../lib/mailApi';
 import { cn } from '../../../lib/utils';
 import WhereItShows from '../ticketing/WhereItShows';
 import CityInput, { cleanCity } from '../CityInput';
@@ -144,6 +145,8 @@ const GuestlistEditor = ({ open, onClose, guestlist, onSaved }) => {
             let id = guestlist?.id;
             if (editing) {
                 await useStore.getState().updateGuestlist(id, data);
+                // More places than before: offer them to the waitlist.
+                if ((data.maxSpots || 0) > (Number(guestlist?.maxSpots) || 0)) notifyEvent('guestlist-spot-freed', { guestlistId: id });
             } else {
                 id = await useStore.getState().addGuestlist({ ...data, currentSpots: 0 });
                 if (notify) {

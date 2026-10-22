@@ -111,7 +111,7 @@ const EventOverview = ({ event, orders, guestEntries, coupons, canSeeMoney, onJu
         const sold = orders.filter(o => SOLD_STATUSES.includes(o.status));
         const pending = orders.filter(o => o.status === 'pending');
         const ticketsIn = sold.filter(isOrderCheckedIn).reduce((a, o) => a + orderTicketCount(o), 0);
-        const guests = { approved: 0, pending: 0, rejected: 0, in: 0, pendingEntries: 0 };
+        const guests = { approved: 0, pending: 0, rejected: 0, waitlist: 0, expired: 0, in: 0, pendingEntries: 0 };
         guestEntries.forEach(e => {
             const s = guestStatus(e);
             guests[s] += guestCount(e);

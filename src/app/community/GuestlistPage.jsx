@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
 import Users from 'lucide-react/dist/esm/icons/users';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
@@ -52,6 +52,10 @@ const saveGuestPlace = (id, place) => {
 const GuestlistPage = ({ overlay = false }) => {
     const t = useT();
     const { id } = useParams();
+    // ?claim=…: the signed link in a waitlist offer, which confirms the place without signing in.
+    const [searchParams] = useSearchParams();
+    const claim = searchParams.get('claim');
+    const waitlistRef = useRef(false); // this sign-up joins the waitlist (the list is full)
     const uid = useAppStore(s => s.authUser?.uid);
     const authReady = useAppStore(s => s.authReady);
     const profile = useAppStore(s => s.profile);
@@ -118,7 +122,7 @@ const GuestlistPage = ({ overlay = false }) => {
                 if (!taken) await updateProfile({ email });
             } catch { /* the pass still goes to it */ }
         }
-        const body = { guestlistId: id, guests, guestNames: names, taskSubmission: gl?.task ? task : null, ...(!asGuest && needsEmail ? { email } : {}) };
+        const body = { guestlistId: id, guests, guestNames: names, taskSubmission: gl?.task ? task : null, ...(!asGuest && needsEmail ? { email } : {}), ...(waitlistRef.current ? { waitlist: true } : {}) };
         const res = asGuest
             ? await passesPost('register-guestlist-guest', { ...body, name: contact.name.trim(), email: contact.email.trim(), phone: contact.phone.trim() })
             : await passesPost('register-guestlist', body);
@@ -126,7 +130,7 @@ const GuestlistPage = ({ overlay = false }) => {
         if (res.ok) {
             setStep(null);
             setTask({});
-            const place = { ref: res.data.ref, status: res.data.status };
+            const place = { ref: res.data.ref, status: res.data.status, ...(res.data.position ? { position: res.data.position } : {}) };
             if (asGuest) { saveGuestPlace(id, place); setGuestPlace(place); }
             setGl(g => ({ ...g, me: place }));
             if (!asGuest) load();
@@ -166,7 +170,8 @@ const GuestlistPage = ({ overlay = false }) => {
 
     // Signed in: straight on (a Google sign-in isn't asked for a phone). Signed out: the account
     // sheet (Google, email, phone); closing it without signing in opens the form instead.
-    const register = () => {
+    const register = (toWaitlist = false) => {
+        waitlistRef.current = toWaitlist === true;
         if (!uid) askedSignIn.current = true;
         gate.run({ type: INTENTS.guestlistRegister, payload: { id } }, () => setWantStart(true), { require: requirementsFor('guestlist') });
     };
@@ -207,9 +212,29 @@ const GuestlistPage = ({ overlay = false }) => {
     const statusChip = gl.past ? t('Ended') : gl.closed ? t('Closed') : gl.full ? t('Full') : gl.spotsLeft !== null && gl.spotsLeft <= 20 ? t('{count} spots left', { count: gl.spotsLeft }) : null;
     const share = () => shareLink({ title: gl.title, url: window.location.href });
 
+    // Confirms a place offered from the waitlist (signed in, or with the link's claim).
+    const confirmPlace = async () => {
+        setError('');
+        setSubmitting(true);
+        const res = await passesPost('confirm-waitlist', { guestlistId: id, ...(claim ? { claim } : {}) });
+        setSubmitting(false);
+        if (!res.ok) { setError(res.error); load(); return; }
+        const place = { ref: res.data.ref, status: res.data.status };
+        if (!uid) { saveGuestPlace(id, place); setGuestPlace(place); }
+        setGl(g => ({ ...g, me: place }));
+        if (uid) load();
+    };
+
     // The action bar: your place once you're on the list, otherwise the way on.
     const declined = me?.status === 'declined';
-    const action = fixing
+    const confirmed = ['issued', 'pending', 'confirmed'].includes(me?.status);
+    const offered = me?.status === 'offered' || (Boolean(claim) && !confirmed);
+    const offerUntil = me?.offerExpiresAt ? new Date(me.offerExpiresAt).toLocaleString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+    const action = offered
+        ? <Button className="flex-1" size="lg" icon={Ticket} onClick={confirmPlace} loading={submitting}>{t('Confirm my place')}</Button>
+        : me?.status === 'waitlisted'
+        ? <BarStatus icon={Hourglass} tone="warn">{me.position ? t('You’re #{n} on the waitlist. We’ll message you if a place opens.', { n: me.position }) : t('You’re on the waitlist. We’ll message you if a place opens.')}</BarStatus>
+        : fixing
         ? <Button className="flex-1" size="lg" icon={Pencil} onClick={() => { setError(''); setStep('details'); }}>{t('Send the task again')}</Button>
         : me?.status === 'pending'
         ? <BarStatus icon={Hourglass} tone="warn">{t('Request sent. We’ll send your pass once you’re approved.')}</BarStatus>
@@ -219,9 +244,11 @@ const GuestlistPage = ({ overlay = false }) => {
             ? (me.ref
                 ? <Button className="flex-1" size="lg" icon={Ticket} to={appPath(`/p/${me.ref}`)}>{gl.mode === 'rsvp' ? t('View my spot') : t('Open my pass')}</Button>
                 : <Button className="flex-1" size="lg" variant="secondary" to={appPath('/community')}>{t('See My guestlists')}</Button>)
+            : !gl.open && gl.waitlistOpen
+                ? <Button className="flex-1" size="lg" variant="secondary" icon={Hourglass} onClick={() => register(true)} loading={submitting && !step}>{t('Join the waitlist')}</Button>
             : !gl.open
                 ? <BarStatus>{gl.past ? t('This event has happened.') : gl.full ? t('This guestlist is full.') : t('This guestlist is closed.')}</BarStatus>
-                : <Button className="flex-1" size="lg" icon={KindIcon} onClick={register} loading={submitting && !step}>{gl.mode === 'rsvp' ? t('Reserve my spot') : t('Get on the list')}</Button>;
+                : <Button className="flex-1" size="lg" icon={KindIcon} onClick={() => register(false)} loading={submitting && !step}>{gl.mode === 'rsvp' ? t('Reserve my spot') : t('Get on the list')}</Button>;
     const bar = <ActionBar onShare={share} shareLabel="Share guestlist">{action}</ActionBar>;
 
     const hero = (
@@ -248,7 +275,9 @@ const GuestlistPage = ({ overlay = false }) => {
                 </ExpandedTitle>
 
                 {fixing && <Notice tone="warn" title={t('The team asked for a fix')}>{me.fix || t('Check the task below and send it again.')}</Notice>}
-                {me && !['pending', 'declined', 'changes'].includes(me.status) && <Notice tone="success" title={t('You’re on the list.')}>{gl.mode === 'rsvp' ? t('Your spot is saved. Give your name at the door.') : t('Show your pass at the gate.')}</Notice>}
+                {offered && <Notice tone="warn" title={t('A place is free for you')}>{offerUntil ? t('Confirm it before {time}, or it goes to the next person on the waitlist.', { time: offerUntil }) : t('Confirm it soon, or it goes to the next person on the waitlist.')}</Notice>}
+                {!offered && gl.waitlistOpen && !me && <Notice tone="info">{t('This guestlist is full. Join the waitlist and we’ll message you on WhatsApp if a place opens.')}</Notice>}
+                {me && !['pending', 'declined', 'changes', 'waitlisted', 'offered'].includes(me.status) && <Notice tone="success" title={t('You’re on the list.')}>{gl.mode === 'rsvp' ? t('Your spot is saved. Give your name at the door.') : t('Show your pass at the gate.')}</Notice>}
                 {!me && gl.open && gl.needsApproval && <Notice tone="info">{t('The team reviews requests before sending passes.')}</Notice>}
                 {error && !step && <Notice tone="error">{error}</Notice>}
 
@@ -287,7 +316,7 @@ const GuestlistPage = ({ overlay = false }) => {
                 onClose={() => !submitting && setStep(null)}
                 title={step === 'guest' ? t('Reserve your spot') : fixing ? t('Send the task again') : gl.task ? t('One more step') : (gl.perUserLimit || 1) > 1 ? t('How many of you?') : t('Almost there')}
                 subtitle={gl.title}
-                footer={<Button className="w-full" size="lg" onClick={submit} loading={submitting} disabled={uploading}>{fixing ? t('Send it') : gl.mode === 'rsvp' ? t('Reserve my spot') : t('Get my pass')}</Button>}
+                footer={<Button className="w-full" size="lg" onClick={submit} loading={submitting} disabled={uploading}>{fixing ? t('Send it') : waitlistRef.current ? t('Join the waitlist') : gl.mode === 'rsvp' ? t('Reserve my spot') : t('Get my pass')}</Button>}
             >
                 <div className="space-y-6">
                     {step === 'details' && needsEmail && (
@@ -310,7 +339,7 @@ const GuestlistPage = ({ overlay = false }) => {
                             <TextInput id="guest-name" label={t('Your name')} autoComplete="name" autoCapitalize="words" placeholder={t('Full name')} value={contact.name} onChange={(e) => setContact(c => ({ ...c, name: e.target.value }))} />
                             <TextInput id="guest-email" label={t('Email')} type="email" inputMode="email" autoComplete="email" autoCapitalize="none" placeholder="you@example.com" value={contact.email} onChange={(e) => setContact(c => ({ ...c, email: e.target.value }))} />
                             <TextInput id="guest-phone" label={t('Phone number')} type="tel" inputMode="tel" autoComplete="tel" placeholder="98765 43210" hint={t('Your pass comes here on WhatsApp and to your email.')} value={contact.phone} onChange={(e) => setContact(c => ({ ...c, phone: e.target.value }))} />
-                            <button type="button" onClick={() => { setStep(null); register(); }} className="text-[13px] font-bold text-gray-700 underline decoration-neon-green decoration-2 underline-offset-4 dark:text-zinc-300">
+                            <button type="button" onClick={() => { setStep(null); register(waitlistRef.current); }} className="text-[13px] font-bold text-gray-700 underline decoration-neon-green decoration-2 underline-offset-4 dark:text-zinc-300">
                                 {t('Sign in instead, to keep your passes in the app')}
                             </button>
                         </div>

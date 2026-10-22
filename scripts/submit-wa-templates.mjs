@@ -93,6 +93,29 @@ export const TEMPLATES = [
         body: "🔗 *Your Newbi accounts are now one, {{1}}*\n\n*Merged in:* {{2}}\n*Moved over:* {{3}}\n\nEverything is in this account now. Reply here if you didn't ask for this.",
         samples: ['Riya', 'r•••••@example.com', '3 passes and your creator profile'],
     },
+    // Added with the automation work (campaign creators and the team). The two post reminders have an IMAGE
+    // header (sample: public/og/wa-deliverables-v1.jpg) added in WhatsApp Manager, like the guestlist ones.
+    {
+        name: 'campaign_post_due',
+        body: "⏳ *Your post is due tomorrow, {{1}}*\n\n*Campaign:* {{2}}\n*Due:* {{3}}\n*Still to send:* {{4}}\n\nPost it, then tap *Send my posts* so we can check it. Reply here if you need more time.",
+        samples: ['Riya', 'Bacardi NH7 Hype', 'Thursday, 12 November', 'Reel and Story'],
+        buttons: [{ type: 'URL', text: 'Send my posts', url: `${APP}/d/{{1}}`, example: [`${APP}/d/sample-token`] }],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
+        name: 'campaign_post_overdue',
+        body: "⚠️ *We haven't got your post yet, {{1}}*\n\n*Campaign:* {{2}}\n*Was due:* {{3}}\n\nSend it today to stay on the campaign. If something came up, reply here and tell us.",
+        samples: ['Riya', 'Bacardi NH7 Hype', 'Tuesday, 10 November'],
+        buttons: [{ type: 'URL', text: 'Send my posts', url: `${APP}/d/{{1}}`, example: [`${APP}/d/sample-token`] }],
+        footer: 'Newbi Creators · app.newbi.live',
+    },
+    {
+        name: 'team_daily_brief',
+        body: "☀️ *Today's to-do at Newbi*\n\n*Ticket orders to check:* {{1}}\n*Guestlist sign-ups to review:* {{2}}\n*Creator posts to review:* {{3}}\n*Payouts to send:* {{4}}\n\nOpen the admin panel to clear them. The numbers there are live, so they may have changed since this message.",
+        samples: ['3', '12', '7', '5'],
+        buttons: [{ type: 'URL', text: 'Open admin', url: 'https://admin.newbi.live/admin' }],
+        footer: 'Newbi team · admin.newbi.live',
+    },
 ];
 
 /* What Meta checks before review: numbered variables in order, one sample each, none at the edges or touching. */
@@ -116,7 +139,7 @@ export const payloadFor = (t) => ({
     category: 'UTILITY',
     components: [
         { type: 'BODY', text: t.body, example: { body_text: [t.samples] } },
-        { type: 'FOOTER', text: MEMBER_FOOTER },
+        { type: 'FOOTER', text: t.footer || MEMBER_FOOTER },
         ...(t.buttons?.length ? [{ type: 'BUTTONS', buttons: t.buttons }] : []),
     ],
 });

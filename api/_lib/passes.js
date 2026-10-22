@@ -258,6 +258,8 @@ const guestlistView = (g) => {
         ...view,
         full: g.spotsLeft === 0,
         open: !g.closed && !g.past && g.spotsLeft !== 0,
+        // Full but still running: people can join the waitlist.
+        waitlistOpen: !g.closed && !g.past && g.spotsLeft === 0 && g.maxSpots > 0,
     };
 };
 
@@ -274,30 +276,157 @@ const ownPlace = async (db, gid, uid) => {
         }
         if (!pass.exists && key.data().entryId) {
             const entry = await db.collection('guestlists').doc(gid).collection('entries').doc(key.data().entryId).get();
-            if (entry.exists && !['rejected', 'cancelled'].includes(String(entry.data().status))) return placeFor(entry.data(), null);
+            if (entry.exists && !GONE.has(String(entry.data().status))) return placeFor(entry.data(), null);
         }
     }
     // Registered before passes existed.
     const legacy = await db.collection('guestlists').doc(gid).collection('entries').where('userId', '==', uid).limit(5).get();
     const entries = legacy.docs.map(d => d.data());
-    const e = entries.find(x => !['rejected', 'cancelled'].includes(String(x.status)) && !x.passRevoked);
+    const e = entries.find(x => !GONE.has(String(x.status)) && !x.passRevoked);
     if (!e) return entries.some(x => String(x.status) === 'rejected') ? { ref: null, status: 'declined' } : null;
     const confirmed = ['approved', 'confirmed', 'attended'].includes(String(e.status)) || e.attended;
     if (confirmed) return { ref: e.passRef || e.bookingRef || null, status: 'issued', legacy: true };
     return { ...placeFor(e, e.passRef || e.bookingRef || null), legacy: true };
 };
 
-/* A sign-up still waiting: 'pending', or 'changes' with the team's note on what to fix. */
-const placeFor = (entry, ref) => (String(entry.status) === 'changes'
-    ? { ref, status: 'changes', fix: str(entry.taskFix?.note, 300) || null }
-    : { ref, status: entry.status || 'pending' });
+/* A sign-up still waiting: 'pending', 'changes' (with the team's note), 'waitlisted', or 'offered' (with until when). */
+const placeFor = (entry, ref) => {
+    const status = String(entry.status || 'pending');
+    if (status === 'changes') return { ref, status, fix: str(entry.taskFix?.note, 300) || null };
+    if (status === 'offered') return { ref, status, offerExpiresAt: toIso(entry.offerExpiresAt) || null };
+    return { ref, status };
+};
 
 const guestlistAction = async (db, body, caller) => {
     const g = await resolveGuestlist(db, str(body.id, 128));
     if (!g) throw new PassError('NOT_FOUND', "We couldn't find this guestlist.", 404);
-    const view = guestlistView(g);
+    // A list with a waitlist moves along whenever it's looked at (expired offers pass to the next person).
+    if (g.raw.gl?.hasWaitlist) await advanceWaitlist(db, g.id, { g }).catch(err => console.warn('[PASSES] waitlist not advanced:', err.message));
+    const view = guestlistView(g.raw.gl?.hasWaitlist ? (await resolveGuestlist(db, g.id)) || g : g);
     if (caller.uid) view.me = await ownPlace(db, g.id, caller.uid);
+    if (view.me?.status === 'waitlisted') view.me.position = await waitlistPosition(db, g.id, caller.uid);
     return { success: true, guestlist: view };
+};
+
+/* ---------- waitlist (full guestlists) ----------
+ *
+ *   waitlisted   joined while the list was full; holds no place
+ *   offered      a place came free and is held for them until offerExpiresAt
+ *   waitlist_expired   the offer ran out and passed to the next person
+ *
+ * advanceWaitlist runs when a place frees up (a decline or removal, more
+ * capacity), when the list is looked at, and from the daily worker. It first
+ * releases expired offers, then offers free places in sign-up order. The offer
+ * goes on WhatsApp (guestlist_spot_opened), push and in-app, with a signed
+ * link that confirms the place even without signing in.
+ */
+const GONE = new Set(['rejected', 'cancelled', 'waitlist_expired']);
+export const OFFER_HOURS = 6;
+const CLAIM_TTL = OFFER_HOURS * 3600 + 3600;
+const millisOf = (v) => (typeof v?.toMillis === 'function' ? v.toMillis() : Date.parse(v || '') || 0);
+
+/* "Today, 6:00 PM" / "Sat, 5 Dec, 6:00 PM" in IST, for the offer message. */
+const claimByText = (ms, now = Date.now()) => {
+    const day = (t) => new Date(t).toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' });
+    const time = new Date(ms).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' }).toUpperCase();
+    if (day(ms) === day(now)) return `Today, ${time}`;
+    if (day(ms) === day(now + 86_400_000)) return `Tomorrow, ${time}`;
+    return `${new Date(ms).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'short', day: 'numeric', month: 'short' })}, ${time}`;
+};
+
+/* Their place in line (1 = next), by sign-up time. */
+const waitlistPosition = async (db, gid, uid, entryId = null) => {
+    const snap = await db.collection('guestlists').doc(gid).collection('entries').where('status', '==', 'waitlisted').get();
+    const line = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+    const i = line.findIndex(e => (entryId ? e.id === entryId : uid && e.userId === uid));
+    return i < 0 ? null : i + 1;
+};
+
+/* A link ending for the offer button: "<list id>?claim=<signed token>". */
+export const claimParam = (gid, entryId) => {
+    const token = makeSignedToken({ k: 'w', g: gid, e: entryId }, CLAIM_TTL);
+    return token ? `${gid}?claim=${token}` : gid;
+};
+
+export const advanceWaitlist = async (db, gid, { now = Date.now(), g: known = null, send = notify } = {}) => {
+    const glRef = db.collection('guestlists').doc(gid);
+    const entries = glRef.collection('entries');
+    const out = { expired: 0, offered: 0 };
+
+    // 1. Offers that ran out give their place back.
+    const offered = await entries.where('status', '==', 'offered').get();
+    for (const d of offered.docs) {
+        if (millisOf(d.data().offerExpiresAt) > now) continue;
+        const done = await db.runTransaction(async (tx) => {
+            const cur = await tx.get(d.ref);
+            if (cur.data()?.status !== 'offered' || millisOf(cur.data().offerExpiresAt) > now) return false;
+            tx.update(d.ref, { status: 'waitlist_expired', statusUpdatedAt: new Date(now).toISOString() });
+            tx.update(glRef, { currentSpots: FieldValue.increment(-Math.max(1, Number(cur.data().guestsCount) || 1)) });
+            return true;
+        });
+        if (done) out.expired += 1;
+    }
+
+    // 2. Free places go to the waitlist, in order, while they fit.
+    const g = known || await resolveGuestlist(db, gid);
+    if (!g || g.closed || g.past) return out;
+    for (let i = 0; i < 20; i++) {
+        const offer = await db.runTransaction(async (tx) => {
+            const [glSnap, waiting] = await Promise.all([tx.get(glRef), tx.get(entries.where('status', '==', 'waitlisted'))]);
+            const gl = glSnap.exists ? glSnap.data() : {};
+            const next = waiting.docs.sort((a, b) => String(a.data().createdAt).localeCompare(String(b.data().createdAt)))[0];
+            if (!next) {
+                if (gl.hasWaitlist && !offered.docs.some(d => d.data().status === 'offered')) tx.set(glRef, { hasWaitlist: false }, { merge: true });
+                return null;
+            }
+            const max = Number(gl.maxSpots ?? g.maxSpots) || 0;
+            const guests = Math.max(1, Number(next.data().guestsCount) || 1);
+            if (max > 0 && (Number(gl.currentSpots) || 0) + guests > max) return null;
+            const expiresAt = new Date(now + OFFER_HOURS * 3600_000).toISOString();
+            tx.update(next.ref, { status: 'offered', offeredAt: new Date(now).toISOString(), offerExpiresAt: expiresAt, statusUpdatedAt: new Date(now).toISOString() });
+            tx.update(glRef, { currentSpots: FieldValue.increment(guests) });
+            return { id: next.id, entry: next.data(), expiresAt };
+        });
+        if (!offer) break;
+        out.offered += 1;
+        const e = offer.entry;
+        const param = claimParam(gid, offer.id);
+        await send('guestlist-spot-opened', e.userId || null, {
+            name: e.customerName || e.name, eventName: g.title, image: g.image, guestlistId: gid, claimParam: param,
+            claimBy: claimByText(Date.parse(offer.expiresAt), now),
+        }, { to: { email: e.customerEmail || e.email, phone: e.customerPhone || e.phone, name: e.customerName || e.name } })
+            .catch(err => console.warn('[PASSES] waitlist offer notice failed:', err.message));
+    }
+    return out;
+};
+
+/* POST confirm-waitlist { guestlistId, claim? }: take the offered place (signed in, or with the offer link). */
+const confirmWaitlistAction = async (db, body, caller) => {
+    const gid = str(body.guestlistId, 128);
+    if (!idOk(gid)) throw new PassError('VALIDATION', 'Missing guestlist.', 400);
+    let entryId = null;
+    const claim = body.claim ? readSignedToken(body.claim) : null;
+    if (claim && claim.k === 'w' && claim.g === gid && idOk(claim.e)) entryId = claim.e;
+    else if (caller.uid) entryId = (await db.collection('pass_keys').doc(`guestlist_${gid}_${caller.uid}`).get()).data()?.entryId || null;
+    if (!entryId) throw new PassError(body.claim ? 'EXPIRED' : 'AUTH', body.claim ? 'This link has expired.' : 'Sign in to continue.', body.claim ? 410 : 401);
+    const g = await resolveGuestlist(db, gid);
+    if (!g) throw new PassError('NOT_FOUND', "We couldn't find this guestlist.", 404);
+    const ref = db.collection('guestlists').doc(gid).collection('entries').doc(entryId);
+    const status = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        const e = snap.exists ? snap.data() : null;
+        if (!e || (caller.uid && !claim && e.userId && e.userId !== caller.uid)) throw new PassError('NOT_FOUND', 'We couldn’t find your place.', 404);
+        if (e.status !== 'offered') throw new PassError('NO_OFFER', e.status === 'waitlist_expired' ? 'The time to confirm ran out, so the place went to the next person.' : 'There’s no place waiting for you to confirm.', 409);
+        if (millisOf(e.offerExpiresAt) <= Date.now()) throw new PassError('NO_OFFER', 'The time to confirm ran out, so the place went to the next person.', 409);
+        const next = g.needsApproval ? 'pending' : 'confirmed';
+        tx.update(ref, { status: next, statusUpdatedAt: nowIso(), confirmedFromWaitlistAt: nowIso() });
+        return next;
+    });
+    if (status === 'confirmed') {
+        const out = await deliverGuestlistPass(db, gid, entryId, { g }).catch(() => null);
+        return { success: true, status: 'issued', ref: out?.ref || null };
+    }
+    return { success: true, status: 'pending' };
 };
 
 const cleanTaskSubmission = (s) => {
@@ -423,7 +552,7 @@ const signUpOnList = async (db, body, who) => {
         }
         const mineDocs = mineSnaps.flatMap(snap => snap.docs);
         const mine = mineDocs.map(d => d.data());
-        const liveDoc = mineDocs.find(d => !['rejected', 'cancelled'].includes(String(d.data().status)) && !d.data().passRevoked);
+        const liveDoc = mineDocs.find(d => !GONE.has(String(d.data().status)) && !d.data().passRevoked);
         const live = liveDoc?.data();
         if (!live && mine.some(e => String(e.status) === 'rejected')) throw new PassError('DECLINED', 'The team couldn’t confirm your spot on this list.', 409);
         // The team asked for a fix on their task: this is the task sent again, back in the queue.
@@ -437,9 +566,11 @@ const signUpOnList = async (db, body, who) => {
         if (glSnap.exists && CLOSED.test(String(gl.status || '').trim())) throw new PassError('CLOSED', 'This guestlist is closed.', 409);
         const max = Number(gl.maxSpots ?? g.maxSpots) || 0;
         const taken = Math.max(0, Number(gl.currentSpots) || 0);
-        if (max > 0 && taken + guests > max) {
+        // Full: the waitlist when they asked for it (holds no place), else say so.
+        const waitlisted = max > 0 && taken + guests > max && body.waitlist === true;
+        if (max > 0 && taken + guests > max && !waitlisted) {
             const left = Math.max(0, max - taken);
-            throw new PassError('FULL', left ? `Only ${left} ${left === 1 ? 'spot is' : 'spots are'} left.` : 'This guestlist is full.', 409, { spotsLeft: left });
+            throw new PassError('FULL', left ? `Only ${left} ${left === 1 ? 'spot is' : 'spots are'} left.` : 'This guestlist is full.', 409, { spotsLeft: left, waitlist: true });
         }
 
         let ref = makePassRef();
@@ -460,7 +591,7 @@ const signUpOnList = async (db, body, who) => {
             plusOneNames: cleanGuestNames(body.guestNames, guests).filter(n => n.toLowerCase() !== String(me.name || '').trim().toLowerCase()),
             bookingRef: ref,
             passRef: ref,
-            status,
+            status: waitlisted ? 'waitlisted' : status,
             title: g.title || 'Guestlist',
             attended: false,
             guestlistMode: g.mode,
@@ -472,7 +603,9 @@ const signUpOnList = async (db, body, who) => {
             createdAt: now,
             source: who.uid ? 'app' : 'app-guest',
         };
-        if (!glSnap.exists) {
+        if (waitlisted) {
+            tx.set(glRef, { hasWaitlist: true }, { merge: true });
+        } else if (!glSnap.exists) {
             // An event or gig with its guestlist switched on, but no list doc yet.
             tx.set(glRef, {
                 id: gid, title: g.title || 'Guestlist', date: g.date || null, status: 'Open', createdAt: now,
@@ -483,13 +616,16 @@ const signUpOnList = async (db, body, who) => {
             tx.update(glRef, { currentSpots: FieldValue.increment(guests) });
         }
         tx.set(entryRef, entry);
-        if (status === 'confirmed') tx.set(db.collection('passes').doc(ref), passFromGuestlistEntry(ref, g, gid, entryRef.id, entry, 'self'));
+        if (status === 'confirmed' && !waitlisted) tx.set(db.collection('passes').doc(ref), passFromGuestlistEntry(ref, g, gid, entryRef.id, entry, 'self'));
         tx.set(keyRef, { ref, entryId: entryRef.id, source: 'guestlist', sourceId: gid, uid: who.uid, at: now });
-        return { ref, status: status === 'confirmed' ? 'issued' : 'pending', entryId: entryRef.id };
+        return { ref, status: waitlisted ? 'waitlisted' : status === 'confirmed' ? 'issued' : 'pending', entryId: entryRef.id };
     });
 
     if (result.duplicate) return { success: true, duplicate: true, ref: result.ref, status: result.status };
     if (result.resubmitted) return { success: true, resubmitted: true, ref: result.ref, status: result.status };
+    if (result.status === 'waitlisted') {
+        return { success: true, ref: result.ref, status: 'waitlisted', position: await waitlistPosition(db, gid, null, result.entryId) };
+    }
     let delivery = null;
     if (result.status === 'issued') {
         delivery = await deliverGuestlistPass(db, gid, result.entryId, { g }).catch((err) => {
@@ -1317,8 +1453,9 @@ const ACTIONS = {
     resend: resendAction,
     revoke: revokeAction,
     checkin: checkinAction,
+    'confirm-waitlist': confirmWaitlistAction,
 };
-const POST_ONLY = new Set(['register-guestlist', 'register-guestlist-guest', 'file', 'issue-campaign', 'issue-campaign-external', 'upload-start', 'upload-finish', 'upload-pdf', 'resend', 'retier', 'revoke', 'checkin', 'staff-list']);
+const POST_ONLY = new Set(['register-guestlist', 'register-guestlist-guest', 'confirm-waitlist', 'file', 'issue-campaign', 'issue-campaign-external', 'upload-start', 'upload-finish', 'upload-pdf', 'resend', 'retier', 'revoke', 'checkin', 'staff-list']);
 
 export const handlePasses = async (req, res) => {
     const action = str(req.query?.action, 40);
