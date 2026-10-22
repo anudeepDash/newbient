@@ -79,6 +79,8 @@ export const handleSignInSeen = async (req, res, { db = getDb(), token, adminAut
     if (!token?.uid) return reply(401, { success: false, error: 'Please sign in to continue.' });
     const device = String(req.body?.device || '');
     if (!/^[A-Za-z0-9-]{8,64}$/.test(device)) return reply(400, { success: false, error: 'Missing device.' });
+    // Nothing is stored while the alert is off. Once it's on, a first sign-in only records the device (no alert).
+    if (!live('new-sign-in')) return reply(200, { success: true, alerted: false });
     const authTime = Number(token.auth_time || 0);
     if (!authTime || now() / 1000 - authTime > FRESH_SIGN_IN_S) return reply(200, { success: true, alerted: false, fresh: false });
 
@@ -100,8 +102,7 @@ export const handleSignInSeen = async (req, res, { db = getDb(), token, adminAut
         tx.set(ref, { knownDevices: list, ...(alert ? { lastSignInAlertFor: authTime } : {}) }, { merge: true });
         return { alert, user: u };
     });
-    // Devices are remembered even while the template is off, so turning it on doesn't alert every first sign-in.
-    if (!outcome.alert || !live('new-sign-in')) return reply(200, { success: true, alerted: false });
+    if (!outcome.alert) return reply(200, { success: true, alerted: false });
     const phone = await verifiedPhoneOf(db, adminAuth, uid, outcome.user);
     if (phone) await send('new-sign-in', uid, { name: nameOf(outcome.user), device: label, when: whenText(now()) }, phone, sendFn);
     return reply(200, { success: true, alerted: Boolean(phone) });

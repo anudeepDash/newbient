@@ -389,8 +389,8 @@ export function usePhoneVerification({ mode, defaultCountry = '+91', onVerified 
         codeSent: status === 'sent' || status === 'verifying',
         awaitingMessage: status === 'awaiting',
         waMessage: status === 'awaiting' ? waMessage : null,
-        // Messaging us adds a number to an account; it can't sign anyone in.
-        canMessageUs: (mode || (auth?.currentUser ? 'link' : 'signIn')) !== 'signIn',
+        // Messaging us adds a number to an account; it can't sign anyone in. Off until VITE_WHATSAPP_PHONE_VERIFY=on (api/_lib/waVerify.js).
+        canMessageUs: import.meta.env.VITE_WHATSAPP_PHONE_VERIFY === 'on' && (mode || (auth?.currentUser ? 'link' : 'signIn')) !== 'signIn',
         verified: status === 'verified',
         conflict: status === 'conflict' ? conflict : null,
         testMode: isTestMode() && (mode || (auth?.currentUser ? 'link' : 'signIn')) !== 'signIn',

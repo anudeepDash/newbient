@@ -18,6 +18,9 @@
  * they typed; the app shows the one that was confirmed. Only an HMAC of a code is
  * stored (wa_verify/{hmac}). A code lives 15 minutes, is used once, and
  * starting one is limited per account (30 s apart, 6 an hour).
+ *
+ * Off until WHATSAPP_PHONE_VERIFY=on (and VITE_WHATSAPP_PHONE_VERIFY=on for the
+ * app's button): numbers are verified by SMS code only until then.
  */
 import { createHash, createHmac, randomInt } from 'node:crypto';
 import { getDb } from './db.js';
@@ -26,6 +29,8 @@ import { businessNumber, sendText, toE164 } from './whatsapp.js';
 import { accountUsable, userByPhone } from './phoneOtp.js';
 
 export const WA_VERIFY_ACTIONS = new Set(['wa-verify-start', 'wa-verify-status']);
+
+export const waVerifyOn = () => process.env.WHATSAPP_PHONE_VERIFY === 'on';
 
 const COLLECTION = 'wa_verify';
 const CODE_TTL_MS = 15 * 60 * 1000;
@@ -81,7 +86,7 @@ export async function handleWaVerifyAction(action, req, res, {
     const uid = decodedToken.uid;
 
     if (action === 'wa-verify-start') {
-        const ours = await businessNumber();
+        const ours = waVerifyOn() ? await businessNumber() : null;
         if (!ours || !canSign || !adminAuth) return fail(res, 503, 'whatsapp_unavailable', 'WhatsApp verification isn’t available right now.');
         const at = now();
         const limited = await startLimited(db, uid, at);

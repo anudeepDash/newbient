@@ -80,11 +80,12 @@ describe('new sign-in', () => {
         expect(sent).toHaveLength(0);
     });
 
-    it('stays quiet until the template is approved', async () => {
+    it('stays quiet and stores no device until the template is switched on', async () => {
         vi.stubEnv('WHATSAPP_TEMPLATE_NEW_SIGN_IN', '');
         await seen();
         await seen({ device: 'device-eeee-5555' });
         expect(sent).toHaveLength(0);
+        expect(Object.values(db.dump('users')).some(u => u.knownDevices)).toBe(false);
     });
 
     it('needs a device id and a signed-in account', async () => {
