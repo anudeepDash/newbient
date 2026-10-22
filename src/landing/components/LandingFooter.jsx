@@ -5,6 +5,7 @@ import { usePublicFeed } from '../feed';
 import { ADMIN_URL } from '../links';
 import LangToggle from '../../i18n/LangToggle';
 import { useT } from '../../i18n';
+import { openConsentSettings } from '../../lib/consent';
 
 const col = 'flex flex-col';
 const item = 'inline-flex items-center min-h-[44px] text-sm text-gray-600 dark:text-zinc-400 hover:text-gray-950 dark:hover:text-white transition-colors';
@@ -61,6 +62,7 @@ export default function LandingFooter() {
                     <p className={heading}>{t('Legal')}</p>
                     <Link to="/terms" className={item}>{t('Terms')}</Link>
                     <Link to="/privacy" className={item}>{t('Privacy')}</Link>
+                    <button type="button" onClick={openConsentSettings} className={`${item} text-left`}>{t('Cookie settings')}</button>
                 </nav>
             </div>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 border-t border-black/[0.06] dark:border-white/[0.06] flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-gray-500 dark:text-zinc-500">

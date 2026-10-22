@@ -14,6 +14,7 @@ export default {
         './src/pages/legal/**/*.{js,jsx}',
         './src/components/ui/HorizontalCarousel.jsx',
         './src/components/brand/**/*.{js,jsx}',
+        './src/components/consent/**/*.{js,jsx}',
     ],
     safelist: [],
 };

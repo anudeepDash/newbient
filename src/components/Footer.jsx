@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useStore } from '../lib/store';
 import { Instagram, Linkedin, Twitter, ArrowUp, Mail, MapPin, ExternalLink, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { openConsentSettings } from '../lib/consent';
 
 const Footer = () => {
     const { siteDetails } = useStore();
@@ -105,6 +106,7 @@ const Footer = () => {
                         <div className="flex items-center gap-6">
                             <Link to="/terms" className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">TERMS</Link>
                             <Link to="/privacy" className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">PRIVACY</Link>
+                            <button type="button" onClick={openConsentSettings} className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">COOKIES</button>
                         </div>
                     </div>
                     

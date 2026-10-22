@@ -9,7 +9,7 @@ import LegalDoc, { P, UL, H3, Rows, A } from './legal/LegalDoc';
  * Meta as the app's data-deletion instructions.
  */
 
-const UPDATED = '21 October 2026';
+const UPDATED = '22 October 2026';
 const PRIVACY = <A href="mailto:privacy@newbi.live">privacy@newbi.live</A>;
 
 const sections = [
@@ -66,8 +66,9 @@ const sections = [
                     'When you sign or view a proposal, agreement or invoice we share with you, we record your IP address as part of the record.',
                     'Push notification tokens for the devices where you turned on notifications.',
                     'Basic technical logs kept by our hosting provider for security and troubleshooting.',
+                    'Only if you allow analytics: page views and page load times, counted with Vercel Web Analytics and Speed Insights. They use no cookies, aren’t linked to your account, and we strip codes and references from the page addresses before they’re sent.',
                 ]} />
-                <P>We don’t use advertising trackers or third-party analytics (no Google Analytics, no Meta Pixel).</P>
+                <P>We don’t use advertising trackers (no Google Analytics, no Meta Pixel), and we never sell your personal data.</P>
             </>
         ),
     },
@@ -155,13 +156,13 @@ const sections = [
                 <H3>Service providers</H3>
                 <Rows rows={[
                     ['Google Firebase and Google Cloud', 'Sign-in, database, file storage, push notifications and the reCAPTCHA check on SMS codes.'],
-                    ['Vercel', 'Hosting for our website, app and servers.'],
+                    ['Vercel', 'Hosting for our website, app and servers, and, only if you allow analytics, counting page visits and load times.'],
                     ['Meta', 'WhatsApp messages and codes (WhatsApp Business Platform) and Instagram connection and lookups.'],
                     ['Google Workspace', 'Sending and receiving our email.'],
                     ['Cloudinary', 'Storing images and files you upload, such as profile photos and post screenshots.'],
                     ['Apify and RapidAPI', 'Backup lookups of public Instagram profiles by handle.'],
                     ['Google Gemini and OpenRouter', 'AI tools our team uses to write content, and translating our public listings into Hinglish. Your account data isn’t sent to them.'],
-                    ['Google Fonts, YouTube and Vimeo', 'Fonts on our pages, and videos embedded on some event pages. These may set their own cookies.'],
+                    ['Google Fonts, YouTube, Vimeo and Instagram', 'Fonts on our pages, and videos embedded on some event and ConcertZone pages. Videos load only if you allow embedded videos, and these services may then set their own cookies.'],
                 ]} />
                 <P>
                     Some of these providers store data outside India. We use providers with recognised security practices, and we
@@ -253,14 +254,27 @@ const sections = [
         title: 'Cookies and storage on your device',
         body: (
             <>
-                <P>We use a few first-party cookies and your browser’s storage to make the site work:</P>
+                <P>The first time you visit, we ask what you’re happy with. Saying no is as easy as saying yes, and nothing optional loads until you choose.</P>
+                <H3>Essential (always on)</H3>
+                <P>These make the site work, so they don’t need your consent:</P>
                 <UL items={[
                     'Keeping you signed in (Firebase stores this in your browser).',
                     'Your language and theme choice, shared across newbi.live so the site and the app agree.',
                     'A small “signed in” hint with your first name and photo, so newbi.live can greet you.',
+                    'Your cookie choice itself, so we don’t ask again on every page (kept for 6 months).',
                     'Offline copies of your passes, so they open at the gate without signal, and drafts of forms you haven’t finished.',
                 ]} />
-                <P>We don’t use advertising or analytics cookies. Clearing your browser data removes all of these.</P>
+                <H3>Optional (only with your OK)</H3>
+                <UL items={[
+                    'Analytics: page views and load times with Vercel Web Analytics and Speed Insights. No cookies, no ads, not linked to your account.',
+                    'Embedded videos: videos from YouTube, Vimeo and Instagram on some pages. These services set their own cookies; without your OK you see a cover image instead.',
+                ]} />
+                <P>
+                    If your browser sends a Global Privacy Control signal, we treat it as a no to everything optional. You can change
+                    your choice any time from “Cookie settings” at the bottom of every page and on your profile in the app. Push
+                    notifications are only turned on when you tap “Turn on” and your browser asks you. We don’t use advertising
+                    cookies, and clearing your browser data removes all of the above.
+                </P>
             </>
         ),
     },
