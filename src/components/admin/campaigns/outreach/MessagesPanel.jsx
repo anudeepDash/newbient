@@ -10,7 +10,7 @@ import { copyToClipboard } from '../../../../lib/clipboard';
 import { Button, Card, EmptyState, Menu, MenuItem } from '../../ui';
 import { renderMessage, waLink } from '../../../../lib/outreach/template';
 import { TRANSITIONS } from '../../../../lib/outreach/status';
-import { IN_FLIGHT } from '../../../../lib/outreach/whatsappTemplate';
+import { IN_FLIGHT, toldInAppOnly } from '../../../../lib/outreach/whatsappTemplate';
 import { StatusBadge, Handle, STATUS_ACTIONS, when } from './parts';
 import ApiSendCard, { DeliveryNote } from './ApiSendCard';
 
@@ -113,7 +113,7 @@ const MessageCard = ({ app, text, canSend: canSendIn, capReached, onQueue, onMar
     );
 };
 
-const MessagesPanel = ({ campaign, applications, settings, api, wame, onStatus, onOpen, onSetup, onSendApi, onStopApi }) => {
+const MessagesPanel = ({ campaign, applications, settings, api, wame, onStatus, onOpen, onSetup, onSendApi, onStopApi, onSentNow }) => {
     const capReached = Boolean(wame && wame.usedToday >= wame.cap);
     const [show, setShow] = useState('to_message');
     const template = settings?.messageTemplate;
@@ -123,6 +123,8 @@ const MessagesPanel = ({ campaign, applications, settings, api, wame, onStatus, 
     const toMessage = applications.filter(a => TO_MESSAGE.has(a.status));
     const sendable = toMessage.filter(a => !IN_FLIGHT.has(a.delivery?.whatsapp?.status) && !a.whatsappOptOut);
     const byHand = toMessage.filter(a => !a.uid && !a.whatsappOptOut);
+    // Told only in the Newbi app (shortlisted while the WhatsApp template was off): they can still get it on WhatsApp.
+    const appOnly = applications.filter(a => toldInAppOnly(a) && !a.whatsappOptOut);
     const messaged = applications.filter(a => MESSAGED.has(a.status));
     const list = show === 'to_message' ? toMessage : messaged;
 
@@ -142,7 +144,7 @@ const MessagesPanel = ({ campaign, applications, settings, api, wame, onStatus, 
                     <Button variant="accent" onClick={onSetup}>Set it up</Button>
                 </Card>
             )}
-            <ApiSendCard api={api} campaign={campaign} settings={settings} sendable={linkMissing ? [] : sendable} onSend={onSendApi} onStop={onStopApi} />
+            <ApiSendCard api={api} campaign={campaign} settings={settings} sendable={linkMissing ? [] : sendable} appOnly={linkMissing ? [] : appOnly} onSend={onSendApi} onStop={onStopApi} onSentNow={onSentNow} />
             {wame && byHand.length > 0 && (
                 <Card className={cn('p-4 text-[13.5px]', capReached && 'border-amber-500/30')}>
                     <p className="font-semibold">{byHand.length} {byHand.length === 1 ? 'person has' : 'people have'} no Newbi account, so only you can message them.</p>

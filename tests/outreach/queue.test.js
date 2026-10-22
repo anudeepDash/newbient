@@ -116,6 +116,17 @@ describe('template variables', () => {
 });
 
 describe('enqueue', () => {
+    it('also queues people only told in the app while the template was off, but not ones messaged otherwise', async () => {
+        db.store.set('campaigns/c1/applications/a1', { ...db.store.get('campaigns/c1/applications/a1'), status: 'message_sent', messageSentBy: 'Newbi app' });
+        db.store.set('campaigns/c1/applications/a2', { ...db.store.get('campaigns/c1/applications/a2'), status: 'message_sent', messageSentBy: 'ops@newbi.live' });
+        const r = await enqueueInvites(db, { campaignId: 'c1', appIds: ['a1', 'a2'], actor: ADMIN });
+        expect(r.queued).toEqual(['a1']);
+        expect(r.skipped).toEqual([{ id: 'a2', reason: 'not_allowed' }]);
+        expect(db.store.get('campaigns/c1/applications/a1')).toMatchObject({ status: 'message_queued' });
+        await runQueue({ db, clock, sleep });
+        expect(db.store.get('campaigns/c1/applications/a1')).toMatchObject({ status: 'message_sent', delivery: { whatsapp: { status: 'sent' } } });
+    });
+
     it('queues shortlisted people, moves them to To send, audits it, and never queues twice', async () => {
         const r = await enqueueInvites(db, { campaignId: 'c1', appIds: ['a1', 'a2', 'a9'], actor: ADMIN });
         expect(r.queued).toEqual(['a1', 'a2']);

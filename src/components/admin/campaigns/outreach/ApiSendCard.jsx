@@ -3,7 +3,10 @@ import Zap from 'lucide-react/dist/esm/icons/zap';
 import CircleStop from 'lucide-react/dist/esm/icons/circle-stop';
 import { Button, Card, Badge } from '../../ui';
 import { ConfirmSheet } from '../parts';
-import { renderTemplatePreview, JOIN_BUTTON, DELIVERY_META } from '../../../../lib/outreach/whatsappTemplate';
+import { renderTemplatePreview, JOIN_BUTTON, DELIVERY_META, WA_TEMPLATES } from '../../../../lib/outreach/whatsappTemplate';
+import { token } from '../../../../lib/outreach/waFields';
+import { useStore } from '../../../../lib/store';
+import { callOutreach } from './outreachApi';
 import { when } from './parts';
 
 /*
@@ -11,11 +14,101 @@ import { when } from './parts';
  * waiting for a message; the server sends them at the configured rate with the
  * approved template and a "Joined" button. Shows the queue while it runs, with
  * a way to stop it. Opening WhatsApp by hand still works for anyone.
+ *
+ * Until the shortlist template's switch (WHATSAPP_TEMPLATE_CAMPAIGN_SHORTLIST)
+ * is on, nothing goes out by itself; the card sends it now instead, through
+ * the WhatsApp center (api/_lib/whatsappCenter.js), which checks with Meta
+ * that the template is approved before each send.
  */
 
 const time = (iso) => (iso ? new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) : '');
 
-const ApiSendCard = ({ api, campaign, settings, sendable, onSend, onStop }) => {
+const BATCH = 50;
+const INVITE = WA_TEMPLATES.invite;
+
+/* The shortlist message, sent now (not queued) with each person's details filled in. → { sent, left: [ids], errors } */
+const sendShortlistNow = async (campaignId, ids) => {
+    let sent = 0;
+    const left = [];
+    const errors = [];
+    for (let i = 0; i < ids.length; i += BATCH) {
+        const batch = ids.slice(i, i + BATCH);
+        const r = await callOutreach('wa-send', {
+            template: INVITE.name,
+            recipients: batch.map(appId => ({ type: 'applicant', campaignId, appId })),
+            params: { body: INVITE.placeholders.map(token) },
+        });
+        if (!r.ok) return { sent, left: [...left, ...ids.slice(i)], errors: [...errors, r.error], stopped: true };
+        sent += r.data.sent;
+        r.data.results.forEach(x => {
+            const id = String(x.key || '').split(':')[2];
+            if (x.retry && id) left.push(id);
+            else if (x.status !== 'sent' && x.error) errors.push(`${x.label}: ${x.error}`);
+        });
+        if (left.length) return { sent, left: [...left, ...ids.slice(i + BATCH)], errors };
+    }
+    return { sent, left, errors };
+};
+
+const SendNowCard = ({ campaign, settings, sendable, appOnly, onSentNow }) => {
+    const addToast = useStore(s => s.addToast);
+    const [confirm, setConfirm] = useState(false);
+    const [sending, setSending] = useState(false);
+    const [left, setLeft] = useState([]);
+    const people = [...sendable, ...appOnly];
+    const preview = people[0] ? renderTemplatePreview('invite', { application: people[0], campaign, groupLink: settings?.whatsappGroupLink }) : '';
+
+    const run = async (ids) => {
+        setSending(true);
+        const r = await sendShortlistNow(campaign.id, ids);
+        setSending(false);
+        setConfirm(false);
+        setLeft(r.left);
+        if (r.stopped) addToast(r.errors[0] || 'Please try again.', 'error', { title: r.sent ? `${r.sent} sent, then it stopped` : 'Not sent' });
+        else if (r.left.length) addToast(`${r.sent} sent. WhatsApp allows a few a minute: send the other ${r.left.length} in a minute.`, 'warning', { title: 'Shortlist message' });
+        else if (r.errors.length) addToast(r.errors.slice(0, 3).join(' · '), r.sent ? 'warning' : 'error', { title: `${r.sent} sent` });
+        else addToast(`${r.sent} sent on WhatsApp.`, 'success', { title: 'Shortlist message' });
+        onSentNow?.();
+    };
+
+    return (
+        <Card className="space-y-3 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 space-y-0.5">
+                    <p className="flex items-center gap-2 text-[14px] font-bold"><Zap size={15} className="text-emerald-500" /> Shortlist message on WhatsApp</p>
+                    <p className="text-[12.5px] text-gray-500">
+                        Sends the approved <span className="font-mono">{INVITE.name}</span> template now, with a “{JOIN_BUTTON}” button.
+                        {appOnly.length > 0 && ` Includes ${appOnly.length} only told in the Newbi app so far.`}
+                    </p>
+                </div>
+                <Button variant="success" disabled={!people.length || !settings?.whatsappGroupLink || sending} onClick={() => (left.length ? run(left) : setConfirm(true))}>
+                    <Zap size={14} /> {sending ? 'Sending…' : left.length ? `Send the other ${left.length}` : people.length ? `Send to ${people.length}` : 'Nobody to send to'}
+                </Button>
+            </div>
+            {!settings?.whatsappGroupLink && people.length > 0 && <p className="text-[12.5px] font-semibold text-amber-600 dark:text-amber-300">Add the group link in Message setup first.</p>}
+            <p className="text-[12px] text-gray-500">To have it go out by itself when you shortlist someone, add WHATSAPP_TEMPLATE_CAMPAIGN_SHORTLIST=campaign_shortlist in Vercel and redeploy.</p>
+            <ConfirmSheet
+                open={confirm}
+                onClose={() => setConfirm(false)}
+                title={`Send the shortlist message to ${people.length}?`}
+                message={`They get the approved “${INVITE.name}” template with a “${JOIN_BUTTON}” button. WhatsApp allows a few a minute, so a long list goes out in parts.`}
+                confirmLabel={sending ? 'Sending…' : `Send to ${people.length}`}
+                tone="success"
+                onConfirm={() => run(people.map(a => a.id))}
+            >
+                {preview && (
+                    <div className="space-y-1">
+                        <p className="text-[12px] font-bold text-gray-500">{people[0].fullName} gets</p>
+                        <div className="whitespace-pre-wrap rounded-2xl bg-[#dcf8c6] p-3 text-[13.5px] text-gray-900 dark:bg-[#005c4b] dark:text-white">{preview}</div>
+                        <p className="text-center text-[12.5px] font-semibold text-sky-600">{JOIN_BUTTON}</p>
+                    </div>
+                )}
+            </ConfirmSheet>
+        </Card>
+    );
+};
+
+const ApiSendCard = ({ api, campaign, settings, sendable: waiting, appOnly = [], onSend, onStop, onSentNow }) => {
     const [confirm, setConfirm] = useState(false);
     const [stopping, setStopping] = useState(false);
     if (!api?.configured) {
@@ -27,13 +120,10 @@ const ApiSendCard = ({ api, campaign, settings, sendable, onSend, onStop }) => {
         );
     }
     if (api.templates && !api.templates.invite) {
-        return (
-            <Card className="p-4 text-[13px] text-gray-600 dark:text-zinc-400">
-                <p className="font-semibold text-gray-900 dark:text-white">Sending by hand for now</p>
-                <p>The WhatsApp API is set up, but the <span className="font-mono">campaign_shortlist</span> template isn’t switched on. Once Meta approves it, add WHATSAPP_TEMPLATE_CAMPAIGN_SHORTLIST=campaign_shortlist in Vercel and redeploy. Until then, use Open WhatsApp or the in-app notice.</p>
-            </Card>
-        );
+        return <SendNowCard campaign={campaign} settings={settings} sendable={waiting} appOnly={appOnly} onSentNow={onSentNow} />;
     }
+    // Everyone shortlisted who hasn't had it on WhatsApp, including people only told in the app.
+    const sendable = [...waiting, ...appOnly];
     const { queue = {}, rate = {} } = api;
     const active = (queue.queued || 0) + (queue.sending || 0);
     const preview = sendable[0]

@@ -212,6 +212,8 @@ const handleSend = async (req, res, { db, actor }) => {
         const r = await sendTemplate({
             to: p.phone, template: tpl.name, language: tpl.language, header: header || undefined, bodyParams, buttons: buttonsFor(tpl, personParams, { join }),
             event: 'admin-manual', autoRetry: false,
+            // An applicant's badge in the Outreach tab follows sent → delivered → read.
+            ref: p.application ? { collection: `campaigns/${p.campaign.id}/applications`, id: p.appId } : null,
         });
         if (r.ok) {
             await appendThreadMessage(db, {

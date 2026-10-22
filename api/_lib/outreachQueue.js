@@ -24,7 +24,7 @@ import { sendTemplate, sendText, isWhatsAppConfigured, isTemplateLive } from './
 import { makeSignedToken } from './linkSign.js';
 import { contactIdFor, appendThreadMessage, windowOpen } from './outreachThreads.js';
 import { canTransition, canSystemTransition } from '../../src/lib/outreach/status.js';
-import { templateParamsFor, renderTemplatePreview, WA_TEMPLATES, STOP_PAYLOAD } from '../../src/lib/outreach/whatsappTemplate.js';
+import { templateParamsFor, renderTemplatePreview, WA_TEMPLATES, STOP_PAYLOAD, toldInAppOnly } from '../../src/lib/outreach/whatsappTemplate.js';
 import { maskPhone } from '../../src/lib/outreach/normalize.js';
 
 export const BACKOFF_MIN = [1, 5, 30, 120];
@@ -118,9 +118,10 @@ const moveApplication = async (db, campaignId, appId, to, { source, note = null,
 const ACTIVE = new Set(['queued', 'sending', 'sent']);
 
 /**
- * Queues the invite for these applications. Shortlisted people move to
- * "To send"; people already there (opened by hand, or a failed send) are
- * queued as they are. Someone with an invite already queued or sent is skipped.
+ * Queues the invite for these applications. Shortlisted people (and people
+ * only told in the app) move to "To send"; people already there (opened by
+ * hand, or a failed send) are queued as they are. Someone with an invite
+ * already queued or sent is skipped.
  * → { queued: [appId], skipped: [{ id, reason }] }
  */
 export const enqueueInvites = async (db, { campaignId, appIds, actor, now = Date.now() }) => {
@@ -136,7 +137,8 @@ export const enqueueInvites = async (db, { campaignId, appIds, actor, now = Date
             if (!appSnap.exists) return { reason: 'not_found' };
             const app = appSnap.data();
             const from = app.status || 'applied';
-            if (!['shortlisted', 'message_queued'].includes(from)) return { reason: 'not_allowed' };
+            const inAppOnly = toldInAppOnly(app);
+            if (!['shortlisted', 'message_queued'].includes(from) && !inAppOnly) return { reason: 'not_allowed' };
             if (!app.phone) return { reason: 'no_phone' };
             if (jobSnap.exists && ACTIVE.has(jobSnap.data().status)) return { reason: 'already' };
             tx.set(jobRef, {
@@ -144,7 +146,7 @@ export const enqueueInvites = async (db, { campaignId, appIds, actor, now = Date
                 nextAttemptAt: at, createdAt: at, createdBy: actor.actorEmail || null, lastError: null, errorCode: null,
             });
             const patch = { updatedAt: at, delivery: { ...(app.delivery || {}), whatsapp: { status: 'queued', at, error: null } } };
-            if (from === 'shortlisted') {
+            if (from === 'shortlisted' || inAppOnly) {
                 tx.update(appRef, { ...patch, status: 'message_queued', statusUpdatedAt: at, statusUpdatedBy: actor.actorEmail, messageQueuedAt: at, messageQueuedBy: actor.actorEmail });
                 tx.set(auditRef(db, campaignId), { appId, field: 'status', from, to: 'message_queued', source: 'whatsapp_api', note: 'Queued to send with the WhatsApp API', ...actor, at });
             } else {
