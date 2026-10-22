@@ -88,7 +88,7 @@ const useUpcomingShows = () => {
     }, [ticketed, loaded, feed, community]);
 };
 
-const showCard = (e, t) => ({
+const showCard = (e, t, from) => ({
     type: 'event',
     image: e.image || null,
     title: e.title,
@@ -104,6 +104,8 @@ const showCard = (e, t) => ({
     ],
     cta: e.ticketed || e.guestlist ? { label: e.ticketed ? t('Get tickets') : t('Get on the list') } : false,
     to: e.ticketed ? `${appPath('/tickets')}?event=${encodeURIComponent(e.id)}` : e.guestlist ? appPath(`/community/g/${e.id}`) : undefined,
+    // A guestlist opens as a sheet over Home.
+    linkState: !e.ticketed && e.guestlist && from ? { backgroundLocation: from } : undefined,
 });
 
 const HomePage = () => {
@@ -194,7 +196,7 @@ const HomePage = () => {
             {upcoming.length > 0 && (
                 <section className="space-y-3">
                     <SectionHeader title={upcoming.length === 1 ? t('Your pass') : t('Your passes')} />
-                    <Rail>{upcoming.map(pass => <Card key={pass.ref} {...passCard(pass)} />)}</Rail>
+                    <Rail>{upcoming.map(pass => <Card key={pass.ref} {...passCard(pass, { from: location })} />)}</Rail>
                 </section>
             )}
 
@@ -217,7 +219,7 @@ const HomePage = () => {
                     {!showsLoaded ? (
                         <Rail><CardSkeleton /><CardSkeleton /></Rail>
                     ) : (
-                        <Rail>{shows.map(e => <Card key={e.id} {...showCard(e, t)} />)}</Rail>
+                        <Rail>{shows.map(e => <Card key={e.id} {...showCard(e, t, location)} />)}</Rail>
                     )}
                 </section>
             )}
@@ -228,7 +230,7 @@ const HomePage = () => {
                     {!feedLoaded ? (
                         <Rail><CardSkeleton /><CardSkeleton /></Rail>
                     ) : (
-                        <Rail>{feed.slice(0, 6).map(item => <Card key={item.key} {...feedCard(item)} />)}</Rail>
+                        <Rail>{feed.slice(0, 6).map(item => <Card key={item.key} {...feedCard(item, { from: location })} />)}</Rail>
                     )}
                 </section>
             )}

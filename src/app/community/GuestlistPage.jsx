@@ -2,12 +2,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
 import Users from 'lucide-react/dist/esm/icons/users';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Mic2 from 'lucide-react/dist/esm/icons/mic-vocal';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import Hourglass from 'lucide-react/dist/esm/icons/hourglass';
 import Minus from 'lucide-react/dist/esm/icons/minus';
 import Plus from 'lucide-react/dist/esm/icons/plus';
-import { Button, Field, GlassChip, Section, Sheet, TextInput } from '../../components/app';
+import { Button, CARD_TYPES, Field, Section, Sheet, Stat, StatRow, TextInput } from '../../components/app';
 import { useAppStore } from '../../lib/store/appStore';
 import { passesGet, passesPost } from '../../lib/passesApi';
 import { isPresent } from '../../lib/present';
@@ -16,8 +17,9 @@ import { useAuthGate, useResumeIntent, INTENTS } from '../auth/AuthGate';
 import CompleteProfileSheet from '../profile/CompleteProfileSheet';
 import { missingFields, requirementsFor } from '../profile/requirements';
 import { appPath } from '../host';
-import { PageBody } from '../pages/PageHeader';
-import DetailLayout, { BackLink, DetailSkeleton, Panel, ROW } from '../pages/DetailLayout';
+import { ROW } from '../pages/DetailLayout';
+import { ActionBar, BackButton, BarStatus, ExpandedHero, ExpandedMissing, ExpandedPage, ExpandedSkeleton, ExpandedTitle, useCloseExpanded } from '../pages/ExpandedCard';
+import { Notice } from '../creator/ui';
 import { VenueField, passWhen } from '../passes/passParts';
 import GuestlistTaskFields, { validateTask } from './GuestlistTaskFields';
 import { plainText, shareLink } from './communityParts';
@@ -34,7 +36,7 @@ import { useLocalizedField } from '../../i18n/useHinglish';
  * My guestlists.
  */
 
-const GuestlistPage = () => {
+const GuestlistPage = ({ overlay = false }) => {
     const t = useT();
     const { id } = useParams();
     const uid = useAppStore(s => s.authUser?.uid);
@@ -123,97 +125,87 @@ const GuestlistPage = () => {
     const hiDescription = useLocalizedField('guestlist', id, 'description', gl?.description);
     const description = useMemo(() => plainText(hiDescription), [hiDescription]);
 
-    if (loadError && !gl) {
+    const close = useCloseExpanded(appPath('/community'));
+    const back = !overlay ? <BackButton to={appPath('/community')}>{t('Community')}</BackButton> : null;
+    const KindIcon = CARD_TYPES.guestlist.icon;
+
+    if (!gl) {
         return (
-            <PageBody>
-                <div className="mx-auto max-w-md space-y-4 rounded-3xl border border-dashed border-black/[0.1] px-6 py-10 text-center dark:border-white/[0.1]">
-                    <p className="text-[17px] font-bold">{t('Guestlist not found')}</p>
-                    <p className="text-[15px] text-gray-600 dark:text-zinc-400">{loadError}</p>
-                    <Button variant="secondary" to={appPath('/community')}>{t('See what’s on')}</Button>
-                </div>
-            </PageBody>
+            <ExpandedPage
+                overlay={overlay}
+                onClose={close}
+                back={back}
+                label={t('Guestlist')}
+                body={loadError
+                    ? <ExpandedMissing title={t('Guestlist not found')} message={loadError} action={<Button variant="secondary" to={appPath('/community')}>{t('See what’s on')}</Button>} />
+                    : <ExpandedSkeleton />}
+            />
         );
     }
 
-    if (!gl) return <DetailSkeleton />;
-
     const statusChip = gl.past ? t('Ended') : gl.closed ? t('Closed') : gl.full ? t('Full') : gl.spotsLeft !== null && gl.spotsLeft <= 20 ? t('{count} spots left', { count: gl.spotsLeft }) : null;
+    const share = () => shareLink({ title: gl.title, url: window.location.href });
 
-    const action = (() => {
-        if (me?.status === 'pending') {
-            return (
-                <div className="flex items-start gap-3 rounded-2xl bg-amber-500/10 px-4 py-3 text-amber-900 dark:text-amber-200">
-                    <Hourglass size={18} className="mt-0.5 shrink-0" />
-                    <div>
-                        <p className="text-[15px] font-bold">{t('Request sent')}</p>
-                        <p className="text-[14px]">{t('We’ll send your pass by email and WhatsApp once you’re approved.')}</p>
-                    </div>
-                </div>
-            );
-        }
-        if (me) {
-            return (
-                <div className="space-y-3">
-                    <p className="text-center text-[15px] font-bold text-emerald-700 dark:text-neon-green">{t('You’re on the list.')}</p>
-                    {me.ref
-                        ? <Button size="lg" className="w-full" icon={Ticket} to={appPath(`/p/${me.ref}`)}>{gl.mode === 'rsvp' ? t('Open my RSVP') : t('Open my pass')}</Button>
-                        : <Button size="lg" variant="secondary" className="w-full" to={appPath('/community')}>{t('See My guestlists')}</Button>}
-                </div>
-            );
-        }
-        if (!gl.open) {
-            return <p className="rounded-2xl bg-black/[0.04] px-4 py-3 text-center text-[15px] font-semibold text-gray-600 dark:bg-white/[0.05] dark:text-zinc-400">{gl.past ? t('This event has happened.') : gl.full ? t('This guestlist is full.') : t('This guestlist is closed.')}</p>;
-        }
-        return (
-            <div className="space-y-2">
-                <Button size="lg" className="w-full" onClick={register} loading={submitting && !step}>
-                    {gl.mode === 'rsvp' ? t('RSVP') : t('Get on the list')}
-                </Button>
-                {gl.needsApproval && <p className="text-center text-[13px] text-gray-500 dark:text-zinc-400">{t('The team reviews requests before sending passes.')}</p>}
-                {error && !step && <p role="alert" className="text-center text-[14px] font-medium text-red-600 dark:text-red-400">{error}</p>}
-            </div>
-        );
-    })();
+    // The action bar: your place once you're on the list, otherwise the way on.
+    const action = me?.status === 'pending'
+        ? <BarStatus icon={Hourglass} tone="warn">{t('Request sent. We’ll send your pass once you’re approved.')}</BarStatus>
+        : me
+            ? (me.ref
+                ? <Button className="flex-1" size="lg" icon={Ticket} to={appPath(`/p/${me.ref}`)}>{gl.mode === 'rsvp' ? t('Open my RSVP') : t('Open my pass')}</Button>
+                : <Button className="flex-1" size="lg" variant="secondary" to={appPath('/community')}>{t('See My guestlists')}</Button>)
+            : !gl.open
+                ? <BarStatus>{gl.past ? t('This event has happened.') : gl.full ? t('This guestlist is full.') : t('This guestlist is closed.')}</BarStatus>
+                : <Button className="flex-1" size="lg" icon={KindIcon} onClick={register} loading={submitting && !step}>{gl.mode === 'rsvp' ? t('RSVP') : t('Get on the list')}</Button>;
+    const bar = <ActionBar onShare={share} shareLabel="Share guestlist">{action}</ActionBar>;
 
-    const badges = (
-        <>
-            <GlassChip icon={Ticket} label={gl.mode === 'rsvp' ? t('RSVP') : t('Guestlist')} />
-            {statusChip && <GlassChip label={statusChip} tone={gl.open ? 'warn' : 'default'} />}
-        </>
+    const hero = (
+        <ExpandedHero
+            image={gl.image}
+            icon={KindIcon}
+            chips={[
+                { icon: MapPin, label: gl.city },
+                { label: statusChip, tone: gl.open ? 'warn' : 'default' },
+            ]}
+        />
     );
+    const lineUp = (gl.artists || []).join(', ');
 
     return (
         <>
-            <DetailLayout
-                back={<BackLink to={appPath('/community')}>{t('Community')}</BackLink>}
-                image={gl.image}
-                badges={badges}
-                title={gl.title}
-                onShare={() => shareLink({ title: gl.title, url: window.location.href })}
-            >
-                <Panel>
-                    <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
+            <ExpandedPage overlay={overlay} onClose={close} back={back} label={gl.title} hero={hero} bar={bar}>
+                <ExpandedTitle meta={[{ icon: CalendarDays, label: when }]} title={gl.title}>
+                    <StatRow>
+                        <Stat label={t('Entry')} value={gl.mode === 'rsvp' ? t('RSVP') : t('QR pass')} icon={KindIcon} tone="accent" />
+                        <Stat label={t('Spots left')} value={gl.open && gl.spotsLeft !== null ? gl.spotsLeft : null} icon={Users} allowZero />
+                        <Stat label={t('Per person')} value={(gl.perUserLimit || 1) > 1 ? t('Up to {max}', { max: gl.perUserLimit }) : null} icon={Users} />
+                    </StatRow>
+                </ExpandedTitle>
+
+                {me && me.status !== 'pending' && <Notice tone="success" title={t('You’re on the list.')}>{gl.mode === 'rsvp' ? t('Your RSVP is confirmed.') : t('Show your pass at the gate.')}</Notice>}
+                {!me && gl.open && gl.needsApproval && <Notice tone="info">{t('The team reviews requests before sending passes.')}</Notice>}
+                {error && !step && <Notice tone="error">{error}</Notice>}
+
+                <Section title={t('Details')}>
+                    <div className={`divide-y divide-black/[0.05] px-4 dark:divide-white/[0.06] ${ROW}`}>
                         <Field icon={CalendarDays} label={t('When')} value={when} />
                         <VenueField event={gl} />
-                        <Field icon={Users} label={t('Spots left')} value={gl.open && gl.spotsLeft !== null ? gl.spotsLeft : null} />
-                        <Field icon={Mic2} label={t('Line-up')} value={(gl.artists || []).join(', ')} />
+                        <Field icon={Mic2} label={t('Line-up')} value={lineUp} />
                     </div>
-                    <div className="pt-1">{action}</div>
-                </Panel>
-
-                <Section title={t('About')}>
-                    {description && <p className="whitespace-pre-line px-1 text-[15px] leading-relaxed text-gray-700 dark:text-zinc-300 lg:text-[16px]">{description}</p>}
                 </Section>
 
-                <Section title={t('To get on the list')}>
-                    {gl.task && !me && (
+                {gl.task && !me && (
+                    <Section title={t('To get on the list')}>
                         <div className={`${ROW} px-4 py-3.5`}>
                             <p className="text-[15px] font-bold">{gl.task.title || t('A quick task')}</p>
                             {isPresent(gl.task.description) && <p className="mt-1 whitespace-pre-line text-[14px] text-gray-600 dark:text-zinc-400">{gl.task.description}</p>}
                         </div>
-                    )}
+                    </Section>
+                )}
+
+                <Section title={t('About')}>
+                    {description && <p className="whitespace-pre-line text-[15px] leading-relaxed text-gray-700 dark:text-zinc-300">{description}</p>}
                 </Section>
-            </DetailLayout>
+            </ExpandedPage>
 
             <CompleteProfileSheet
                 open={step === 'profile'}

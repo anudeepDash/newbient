@@ -11,15 +11,15 @@ import LegacyRedirect from './redirects';
  * here are relative.
  *
  * Pages that open over a list (the campaign page /c/:id, the creator
- * application /creator/apply) are linked with
+ * application /creator/apply, a guestlist, giveaway, form or pass) are linked with
  * state { backgroundLocation }: the list keeps rendering underneath and the
  * page shows as a sheet. Opened from a shared link, the same page renders
  * over its own default background.
  */
-const OVERLAY_PATHS = ['c/:id', 'creator/apply'];
+const OVERLAY_PATHS = ['c/:id', 'creator/apply', 'community/g/:id', 'community/giveaways/:slug', 'forms/:id', 'p/:ref'];
 
-// The campaign sheet's code loads while the browser is idle, so a tap opens it at once.
-const prefetchCampaignPage = () => import('./creator/campaign/CampaignPage');
+// The campaign and guestlist sheets' code loads while the browser is idle, so a tap opens them at once.
+const prefetchCampaignPage = () => Promise.all([import('./creator/campaign/CampaignPage'), import('./community/GuestlistPage')]);
 
 const AppRoutes = () => {
     const location = useLocation();
