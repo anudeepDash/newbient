@@ -1,5 +1,5 @@
 /* Landing site only (newbi.live marketing pages), built with its own Tailwind config. */
-/* Fonts load from landing.html (non-blocking), not an @import: see src/index.css. */
+/* Fonts are self-hosted (@fontsource), imported from src/landing/main.jsx. */
 @config "../../tailwind.landing.config.js";
 
 @tailwind base;

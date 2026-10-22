@@ -19,6 +19,7 @@ import Sheet from '../admin/Sheet';
 import { docTheme, StatusChip, fmtDate, fmtMoney, Row, DocButton } from './docviewer/DocKit';
 import { invoiceState, invoiceBalance } from '../../lib/invoicing';
 import { proposalState } from '../../lib/proposals';
+import '../../lib/documentFonts';
 
 // Safely render content that might be HTML (e.g. from rich text editor) or plain text
 const decodeEntities = (s) => s
@@ -347,9 +348,6 @@ export default function SharedDocumentViewer({
     return (
         <div className={cn('min-h-dvh bg-[#eef0f3] font-sans text-gray-900 dark:bg-[#07080b] dark:text-gray-100', theme.selection)}>
             <style dangerouslySetInnerHTML={{ __html: `
-                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-                @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
-                @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300..700;1,300..700&display=swap');
                 body { font-family: 'Outfit', sans-serif; }
                 .font-signature { font-family: 'Caveat', cursive; }
                 .font-formal { font-family: 'Crimson Pro', serif; }

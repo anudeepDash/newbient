@@ -53,6 +53,7 @@ import ProposalDocumentRenderer from '../components/ui/ProposalDocumentRenderer'
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { getDocumentShareMeta } from '../lib/documentPreviewUtils';
 import { CARD_MESSAGE, canSaveShareCard, renderPdfFirstPage, syncShareCard } from '../lib/docShareCard';
+import '../lib/documentFonts';
 
 const isHtmlEmpty = (html) => {
     if (!html) return true;
@@ -546,7 +547,7 @@ const Proposal = () => {
                     backgroundColor: '#FFFFFF',
                     onclone: (clonedDoc) => {
                         const style = clonedDoc.createElement('style');
-                        style.innerHTML = `@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap'); * { font-family: 'Outfit', sans-serif !important; }`;
+                        style.innerHTML = `* { font-family: 'Outfit', sans-serif !important; }`;
                         clonedDoc.head.appendChild(style);
                     }
                 });
