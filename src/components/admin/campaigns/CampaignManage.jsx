@@ -79,6 +79,15 @@ const SORTS = [
     { value: 'name', label: 'Name A–Z' },
 ];
 
+// Deliverables tab filters, and the order people are listed in under each deliverable.
+const TASK_FILTERS = {
+    all: { label: 'Everyone', test: () => true },
+    review: { label: 'To review', test: s => s === 'submitted', empty: 'All caught up', hint: 'Nothing is waiting for review. New submissions appear here.' },
+    approved: { label: 'Approved', test: s => s === 'approved', empty: 'Nothing approved yet', hint: 'Approved work, and work marked done from a sheet, shows here.' },
+    todo: { label: 'Not done', test: s => s === 'not_started' || s === 'rejected', empty: 'Everyone has sent theirs', hint: 'Shortlisted creators who haven’t sent a deliverable, or were asked for changes, show here.' },
+};
+const DELIVERABLE_ORDER = { submitted: 0, rejected: 1, approved: 2, not_started: 3 };
+
 const CampaignManage = ({
     campaignId, onBack, onEdit, onDuplicate, onDelete, onSetStatus, onTogglePin, onPatch, onAnnounce, onCopyLink, onCopyTaskLink, busyId,
 }) => {
@@ -115,7 +124,7 @@ const CampaignManage = ({
     const [changes, setChanges] = useState(null);
     const [confirm, setConfirm] = useState(null);
     const [confirmToggle, setConfirmToggle] = useState(true);
-    const [taskFilter, setTaskFilter] = useState('review');
+    const [taskFilter, setTaskFilter] = useState('all'); // a key of TASK_FILTERS
     const [showBrief, setShowBrief] = useState(false);
     const [ticketsFor, setTicketsFor] = useState(null); // entries for the Send tickets sheet
     const [uploadOpen, setUploadOpen] = useState(false); // the client's shortlist CSV
@@ -140,6 +149,15 @@ const CampaignManage = ({
         return c;
     }, [applicants]);
     const totalToReview = deliverableEntries.reduce((n, a) => n + a.progress.toReview, 0);
+    // Each deliverable's people: everyone shortlisted, plus anyone who sent work in. To review first.
+    const deliverableRows = useMemo(() => new Map((campaign?.tasks || []).map(task => [task.id, deliverableEntries
+        .filter(a => (!a.orphan && isSelected(campaign, a.creator)) || a.progress.items.find(i => i.task.id === task.id)?.sub)
+        .map(a => ({ a, item: a.progress.items.find(i => i.task.id === task.id) }))
+        .sort((x, y) => (DELIVERABLE_ORDER[x.item?.status] ?? 3) - (DELIVERABLE_ORDER[y.item?.status] ?? 3))])), [campaign, deliverableEntries]);
+    const filterCounts = useMemo(() => {
+        const all = [...deliverableRows.values()].flat();
+        return Object.fromEntries(Object.entries(TASK_FILTERS).map(([k, f]) => [k, all.filter(r => f.test(r.item?.status || 'not_started')).length]));
+    }, [deliverableRows]);
     const paidOut = applicants.reduce((n, a) => n + (a.payout?.status === 'paid' ? Number(a.payout.amount) || 0 : 0), 0);
     // Actually shortlisted (or paid): someone not shortlisted can have work "to review" too.
     const chosen = (a) => !a.orphan && (isSelected(campaign, a.creator) || a.stage === 'paid');
@@ -541,10 +559,9 @@ const CampaignManage = ({
     const tasksTab = (
         <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <SegmentedTabs value={taskFilter} onChange={setTaskFilter} items={[
-                    { value: 'review', label: 'To review', count: totalToReview, highlight: totalToReview > 0 },
-                    { value: 'all', label: 'Everyone' },
-                ]} />
+                <SegmentedTabs value={taskFilter} onChange={setTaskFilter} items={Object.entries(TASK_FILTERS).map(([value, f]) => ({
+                    value, label: f.label, count: filterCounts[value], highlight: value === 'review' && totalToReview > 0,
+                }))} />
                 <div className="flex flex-wrap items-center gap-2">
                     {tasks.length > 0 && (
                         <Button variant="secondary" onClick={() => setDoneOpen(true)} className="h-11"><CheckCheck size={14} /> Add completed work</Button>
@@ -571,15 +588,13 @@ const CampaignManage = ({
                     <EmptyState icon={UserCheck} title="Nobody selected yet" description="Select creators from the applicants, and their submissions show up here." action={<Button variant="accent" onClick={() => setParam('tab', 'applicants')}>Go to applicants</Button>} />
                 </Card>
             ) : tasks.map((task, idx) => {
-                const rows = deliverableEntries
-                    .filter(a => (!a.orphan && isSelected(campaign, a.creator)) || a.progress.items.find(i => i.task.id === task.id)?.sub)
-                    .map(a => ({ a, item: a.progress.items.find(i => i.task.id === task.id) }));
+                const rows = deliverableRows.get(task.id) || [];
                 const pending = rows.filter(r => r.item?.status === 'submitted');
                 const approved = rows.filter(r => r.item?.status === 'approved').length;
-                const shown = taskFilter === 'review' ? pending : rows;
+                const shown = rows.filter(r => TASK_FILTERS[taskFilter].test(r.item?.status || 'not_started'));
                 const TypeIcon = taskTypeOf(task.taskType).icon;
                 const due = daysUntil(task.deadline);
-                if (taskFilter === 'review' && pending.length === 0) return null;
+                if (taskFilter !== 'all' && shown.length === 0) return null;
                 return (
                     <Card key={task.id || idx} className="overflow-hidden rounded-2xl">
                         <div className="flex flex-wrap items-center gap-3 border-b border-black/[0.06] p-4 dark:border-white/[0.06]">
@@ -666,9 +681,9 @@ const CampaignManage = ({
                     </Card>
                 );
             })}
-            {taskFilter === 'review' && totalToReview === 0 && tasks.length > 0 && (selectedCount > 0 || hasSubmissions) && (
+            {taskFilter !== 'all' && filterCounts[taskFilter] === 0 && tasks.length > 0 && (selectedCount > 0 || hasSubmissions) && (
                 <Card className="rounded-2xl">
-                    <EmptyState icon={CheckCheck} tone="green" title="All caught up" description="Nothing is waiting for review. New submissions appear here." action={<Button onClick={() => setTaskFilter('all')}>See everyone</Button>} />
+                    <EmptyState icon={CheckCheck} tone="green" title={TASK_FILTERS[taskFilter].empty} description={TASK_FILTERS[taskFilter].hint} action={<Button onClick={() => setTaskFilter('all')}>See everyone</Button>} />
                 </Card>
             )}
         </div>
