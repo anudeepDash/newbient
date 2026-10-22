@@ -47,6 +47,7 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
     const [text, setText] = useState('');
     const [error, setError] = useState(null);
     const [forTask, setForTask] = useState(null); // the deliverable the sheet is for, or 'columns'
+    const [cols, setCols] = useState({}); // columns picked by hand: { instagram: index | -1, phone, … }
     const [skipped, setSkipped] = useState(() => new Set());
     const [query, setQuery] = useState('');
     const [person, setPerson] = useState(null);
@@ -56,7 +57,7 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
 
     useEffect(() => {
         if (!open) return;
-        setMode('upload'); setName(''); setText(''); setError(null); setSkipped(new Set());
+        setMode('upload'); setName(''); setText(''); setError(null); setSkipped(new Set()); setCols({});
         setForTask(tasks.length === 1 ? String(tasks[0].id) : null);
         setQuery(''); setPerson(null); setTicks({}); setWelcome(false); setSaving(false);
     }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -71,10 +72,11 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
         setName(file.name);
         setText(await file.text());
         setSkipped(new Set());
+        setCols({});
     };
     const parsed = useMemo(
-        () => (text && forTask ? readDeliverablesCsv(text, entries, campaign, forTask === 'columns' ? null : forTask) : null),
-        [text, entries, campaign, forTask],
+        () => (text && forTask ? readDeliverablesCsv(text, entries, campaign, forTask === 'columns' ? null : forTask, { columns: cols }) : null),
+        [text, entries, campaign, forTask, cols],
     );
     useEffect(() => { setError(parsed?.error || null); }, [parsed]);
     const rows = useMemo(() => parsed?.rows || [], [parsed]);
@@ -233,6 +235,24 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
                         </div>
                         {error && <p role="alert" className="text-[13px] font-semibold text-rose-600 dark:text-rose-300">{error}</p>}
 
+                        {parsed?.header && (
+                            <div className="grid grid-cols-2 gap-2">
+                                {[{ key: 'instagram', label: 'Instagram handle from' }, { key: 'phone', label: 'Phone from' }].map(({ key, label: what }) => (
+                                    <label key={key} className="min-w-0 space-y-1">
+                                        <span className="block text-[12px] font-bold text-gray-500">{what}</span>
+                                        <select
+                                            className={cn(fieldCls, 'h-11')}
+                                            value={parsed.columns?.[key] ?? -1}
+                                            onChange={e => { setCols(c => ({ ...c, [key]: Number(e.target.value) })); setSkipped(new Set()); }}
+                                        >
+                                            <option value={-1}>No column</option>
+                                            {parsed.header.map((h, idx) => <option key={idx} value={idx}>{String(h || '').trim() || `Column ${idx + 1}`}</option>)}
+                                        </select>
+                                    </label>
+                                ))}
+                            </div>
+                        )}
+
                         {rows.length > 0 && (
                             <>
                                 <div className="flex flex-wrap items-center gap-2">
@@ -278,7 +298,7 @@ const CompletedWorkSheet = ({ open, onClose, campaign, creators, applicants, onS
                                     <p className="text-[12px] text-amber-700 dark:text-amber-300">“Not on Newbi” rows are added to the campaign by their Instagram handle, with the work marked done. Invite them from the Deliverables tab after; when they sign up, their work moves to their account.</p>
                                 )}
                                 {counts.unknown > 0 && (
-                                    <p className="text-[12px] text-rose-600 dark:text-rose-300">“Can’t add” rows have no Instagram handle or phone number to add them by. Fill one in and upload again.</p>
+                                    <p className="text-[12px] text-rose-600 dark:text-rose-300">“Can’t add” rows have no Instagram handle or phone number we could read. Check the columns above point at the right ones, or fix those rows and upload again.</p>
                                 )}
                                 {ready.length > 0 && (
                                     <p className="text-[12px] text-gray-500">

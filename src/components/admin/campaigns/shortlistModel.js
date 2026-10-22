@@ -111,6 +111,21 @@ const phoneKey = (v) => { const d = digits(v); return d.length >= 10 ? d.slice(-
 const emailKey = (v) => { const e = String(v || '').trim().toLowerCase(); return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : ''; };
 // "@asha", "asha", "instagram.com/asha", "https://www.instagram.com/asha/?hl=en" all read as "asha".
 const handleKey = (v) => String(v || '').trim().replace(/^@+/, '').replace(/^(https?:\/\/)?(www\.|m\.)?instagram\.com\//i, '').replace(/[/?#].*$/, '').replace(/^@+/, '').trim().toLowerCase();
+const HANDLE = /^[a-z0-9._]{1,30}$/;
+const NOT_PROFILES = new Set(['p', 'reel', 'reels', 'stories', 'tv', 'explore', 'accounts']);
+/**
+ * The handle in a cell people typed by hand: "@riya.s – 12k", "Riya (@riya.s)",
+ * "riya.s " or a profile link anywhere in it. '' when there isn't one.
+ */
+export const handleIn = (v) => {
+    const plain = handleKey(v);
+    if (HANDLE.test(plain) && !NOT_PROFILES.has(plain)) return plain;
+    const s = String(v || '');
+    const url = s.match(/instagram\.com\/([A-Za-z0-9._]{1,30})/i);
+    if (url && !NOT_PROFILES.has(url[1].toLowerCase())) return url[1].toLowerCase();
+    const at = s.match(/@([A-Za-z0-9._]{1,30})/);
+    return at && !/@[^\s]+\.[a-z]{2,}$/i.test(s.trim()) ? at[1].toLowerCase() : '';
+};
 const idKey = (v) => String(v || '').trim().toUpperCase();
 
 const HEADERS = {
@@ -139,7 +154,7 @@ const matcherFor = (entries) => {
         add(`p:${phoneKey(c.whatsapp)}`, e);
     });
     return (cells) => (cells.id && by.get(`id:${idKey(cells.id)}`))
-        || (cells.instagram && handleKey(cells.instagram) && by.get(`h:${handleKey(cells.instagram)}`))
+        || (cells.instagram && handleIn(cells.instagram) && by.get(`h:${handleIn(cells.instagram)}`))
         || (cells.email && emailKey(cells.email) && by.get(`e:${emailKey(cells.email)}`))
         || (cells.phone && phoneKey(cells.phone) && by.get(`p:${phoneKey(cells.phone)}`))
         || null;
@@ -193,6 +208,33 @@ const DONE = new Set([...YES, 'done', 'complete', 'completed', 'posted', 'live',
 // "Done (app + sheet)" from a downloaded deliverables sheet still reads as done.
 const isDoneWord = (v) => DONE.has(v) || /^done\b/.test(v);
 const LINK_HEADERS = ['link', 'links', 'post link', 'content link', 'url', 'post url', 'reel link', 'story link'];
+
+/*
+ * Columns in sheets people make themselves ("Instagram ID", "Insta handle (eg
+ * @newbi.live)", "Mobile number", "Email address"), when no header is exactly a
+ * known one. Post-link columns are never the handle column.
+ */
+const FUZZY = {
+    instagram: (h) => /insta|\big\b|handle|user ?name|profile/.test(h) && !/reel|post|story|stories|content|video|proof|screenshot|follower/.test(h),
+    phone: (h) => /phone|mobile|whats ?app|contact|number|\bmob\b/.test(h) && !/mail|follower|count|roll|reg|id\b|aadhar|upi|serial|^s\.? ?no|^sr\b/.test(h),
+    email: (h) => /e-?mail/.test(h),
+    name: (h) => /name/.test(h) && !/user ?name|insta|handle|college|brand|campaign|company|file/.test(h),
+};
+export const SHEET_COLUMNS = ['instagram', 'phone', 'email', 'name'];
+const detectColumns = (header, skip) => {
+    const col = {};
+    ['id', 'instagram', 'email', 'phone', 'name'].forEach(key => {
+        const i = header.findIndex((h, idx) => !skip.has(idx) && HEADERS[key].includes(h));
+        if (i >= 0) col[key] = i;
+    });
+    Object.entries(FUZZY).forEach(([key, test]) => {
+        if (col[key] !== undefined) return;
+        const taken = new Set(Object.values(col));
+        const i = header.findIndex((h, idx) => !skip.has(idx) && !taken.has(idx) && test(h));
+        if (i >= 0) col[key] = i;
+    });
+    return col;
+};
 const isUrl = (v) => /^https?:\/\//i.test(String(v || '').trim());
 const taskName = (v) => String(v || '').trim().toLowerCase().replace(/^\d+[.)]\s*/, '').replace(/\s+/g, ' ');
 
@@ -257,19 +299,11 @@ export const sheetMarkOf = (task, entry) => [entry?.key, ...creatorKeys(entry?.c
  *   done    the ones not approved yet (new or sent)
  *   save    the ones with something to write (completion, link or the sheet mark)
  */
-export const readDeliverablesCsv = (text, entries, campaign, forTaskId = null) => {
+export const readDeliverablesCsv = (text, entries, campaign, forTaskId = null, { columns = {} } = {}) => {
     const tasks = campaign.tasks || [];
     const table = parseCSV(text);
     if (table.length < 2) return { rows: [], error: 'The file has no rows. Add one row per creator with their Instagram handle.' };
-    const header = table[0].map(h => String(h || '').trim().toLowerCase());
-    const col = {};
-    ['id', 'instagram', 'email', 'phone', 'name'].forEach(key => {
-        const i = header.findIndex(h => HEADERS[key].includes(h));
-        if (i >= 0) col[key] = i;
-    });
-    if (col.id === undefined && col.instagram === undefined && col.email === undefined && col.phone === undefined) {
-        return { rows: [], error: 'Add an "Instagram" column (or Newbi ID, email or phone) so we can find each creator.' };
-    }
+    const header = table[0].map(h => String(h || '').trim().toLowerCase().replace(/\s+/g, ' '));
     const statusCol = {};
     const linkCol = {};
     header.forEach((h, i) => {
@@ -279,6 +313,16 @@ export const readDeliverablesCsv = (text, entries, campaign, forTaskId = null) =
         if (linkOf && linkOf[1]) linkCol[task.id] = i;
         else statusCol[task.id] = i;
     });
+    const col = detectColumns(header, new Set([...Object.values(statusCol), ...Object.values(linkCol)]));
+    // Picked by hand in the sheet ("Instagram from …"): -1 means none.
+    Object.entries(columns).forEach(([key, idx]) => {
+        if (!SHEET_COLUMNS.includes(key)) return;
+        if (idx === -1 || idx === null) delete col[key];
+        else if (Number.isInteger(idx) && idx >= 0 && idx < header.length) col[key] = idx;
+    });
+    if (col.id === undefined && col.instagram === undefined && col.email === undefined && col.phone === undefined) {
+        return { rows: [], header: table[0], columns: col, error: 'Add an "Instagram" column (or Newbi ID, email or phone) so we can find each creator, or pick the column below.' };
+    }
     const only = forTaskId ? tasks.find(t => String(t.id) === String(forTaskId)) : null;
     const byColumn = !only && (Object.keys(statusCol).length > 0 || Object.keys(linkCol).length > 0);
     if (!only && !byColumn) {
@@ -286,7 +330,10 @@ export const readDeliverablesCsv = (text, entries, campaign, forTaskId = null) =
     }
     const anyLink = header.findIndex(h => LINK_HEADERS.includes(h));
     // Profile links and contact details are never a post link.
-    const idCols = new Set(header.map((h, i) => (Object.values(HEADERS).some(names => names.includes(h)) ? i : -1)).filter(i => i >= 0));
+    const idCols = new Set([
+        ...Object.values(col),
+        ...header.map((h, i) => (Object.values(HEADERS).some(names => names.includes(h)) ? i : -1)).filter(i => i >= 0),
+    ]);
 
     const otherTaskCols = new Set([...Object.entries(statusCol), ...Object.entries(linkCol)]
         .filter(([id]) => !only || String(id) !== String(only.id)).map(([, idx]) => idx));
@@ -300,7 +347,7 @@ export const readDeliverablesCsv = (text, entries, campaign, forTaskId = null) =
         .map(({ r, row }) => {
             const at = (idx) => (idx === undefined || idx < 0 ? '' : String(r[idx] ?? '').trim());
             const cells = Object.fromEntries(Object.entries(col).map(([k, idx]) => [k, at(idx)]));
-            const entry = match(cells) || guestsByKey.get(guestKeyFor({ handle: handleKey(cells.instagram), phone: phoneKey(cells.phone) })) || null;
+            const entry = match(cells) || guestsByKey.get(guestKeyFor({ handle: handleIn(cells.instagram), phone: phoneKey(cells.phone) })) || null;
             const label = entry?.creator?.name || cells.name || cells.instagram || cells.id || cells.email || cells.phone || `Row ${row}`;
             const markedTasks = only
                 ? (() => {
@@ -332,9 +379,9 @@ export const readDeliverablesCsv = (text, entries, campaign, forTaskId = null) =
             const save = marked.filter(m => m.needs);
             const adds = Boolean(entry) && !entry.guest && !isSelected(campaign, entry.creator);
             // Not on Newbi: added to the campaign as a sheet guest, by handle (or phone), to invite later.
-            const guestKey = entry ? null : guestKeyFor({ handle: handleKey(cells.instagram), phone: phoneKey(cells.phone) });
+            const guestKey = entry ? null : guestKeyFor({ handle: handleIn(cells.instagram), phone: phoneKey(cells.phone) });
             const guest = guestKey ? {
-                key: guestKey, instagram: handleKey(cells.instagram) || '', name: cells.name || '', phone: phoneKey(cells.phone), email: emailKey(cells.email),
+                key: guestKey, instagram: handleIn(cells.instagram), name: cells.name || '', phone: phoneKey(cells.phone), email: emailKey(cells.email),
             } : null;
             const member = guest ? 'newGuest' : !entry ? null : entry.guest ? 'guest' : !adds ? 'in' : hasApplied(campaign, entry.creator) ? 'applied' : 'new';
             const seenKey = entry?.key || guestKey;
@@ -346,9 +393,9 @@ export const readDeliverablesCsv = (text, entries, campaign, forTaskId = null) =
             else if (done.length || adds) status = 'ready';
             else status = save.length ? 'both' : 'already';
             if (seenKey && marked.length) seen.add(seenKey);
-            return { row, cells: r, label: guest ? (cells.name || (guest.instagram ? `@${guest.instagram}` : label)) : label, status, entry, adds, guest, member, marked, done, save };
+            return { row, cells: r, read: cells, label: guest ? (cells.name || (guest.instagram ? `@${guest.instagram}` : label)) : label, status, entry, adds, guest, member, marked, done, save };
         });
-    return { rows, error: null, byColumn, header: table[0] };
+    return { rows, error: null, byColumn, header: table[0], columns: col };
 };
 
 const MEMBER_NOTE = {
@@ -369,7 +416,14 @@ export const MEMBER_BADGE = {
 
 /** One line on what happens to a row, for the preview and the checked sheet. */
 export const doneRowNote = (r) => {
-    if (r.status === 'unknown') return 'Not on Newbi, and no Instagram handle or phone to add them by';
+    if (r.status === 'unknown') {
+        // Say what was in the row, so a wrong column or a mistyped handle is easy to spot.
+        const ig = String(r.read?.instagram || '').trim();
+        const phone = String(r.read?.phone || '').trim();
+        if (ig) return `Not on Newbi, and “${ig.slice(0, 40)}” isn’t an Instagram handle`;
+        if (phone) return `Not on Newbi, and “${phone.slice(0, 20)}” isn’t a 10-digit phone number`;
+        return 'Not on Newbi, and this row has no Instagram handle or phone';
+    }
     if (r.status === 'duplicate') return 'Repeated row';
     if (r.status === 'nothing') return 'Nothing marked done';
     return [MEMBER_NOTE[r.member], ...r.marked.map(m => `${m.task.title || 'Deliverable'}: ${DONE_ITEM_NOTE[m.state]}`)].filter(Boolean).join(' · ');
