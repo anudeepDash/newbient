@@ -88,11 +88,12 @@ export default function LandingNav() {
                 <div className="flex items-center gap-1 sm:gap-1.5">
                     <LangToggle className="hidden md:block" />
                     <ThemeToggle className="hidden sm:flex" />
-                    {/* Into the app: sign in, passes, campaigns. Signed in already: their name, straight to the app. */}
+                    {/* Into the app: sign in, passes, campaigns. Signed in already: their photo and Open app, straight in. */}
                     {signedIn ? (
-                        <a href={APP_LINKS.home} aria-label={signedIn.name ? t('Open the app, signed in as {name}', { name: signedIn.name }) : t('Open the app')} className="h-11 pl-1.5 pr-3 sm:pr-4 inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-white/70 dark:bg-white/[0.08] ring-1 ring-inset ring-black/10 dark:ring-white/15 text-gray-950 dark:text-white font-heading text-sm font-bold hover:bg-white dark:hover:bg-white/[0.14] transition-colors">
+                        <a href={APP_LINKS.home} title={signedIn.name || undefined} aria-label={signedIn.name ? t('Open the app, signed in as {name}', { name: signedIn.name }) : t('Open the app')} className="h-11 pl-1.5 pr-3 sm:pr-4 inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-white/70 dark:bg-white/[0.08] ring-1 ring-inset ring-black/10 dark:ring-white/15 text-gray-950 dark:text-white font-heading text-sm font-bold hover:bg-white dark:hover:bg-white/[0.14] transition-colors">
                             <Avatar hint={signedIn} size={32} />
-                            <span className="max-w-[5.5rem] truncate sm:max-w-[8rem]">{signedIn.name || t('Open app')}</span>
+                            <span>{t('Open app')}</span>
+                            <ArrowUpRight size={15} aria-hidden="true" className="hidden sm:block -ml-1" />
                         </a>
                     ) : (
                         <a href={APP_LINKS.home} className="h-11 px-3 sm:px-4 xl:px-5 inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white/70 dark:bg-white/[0.08] ring-1 ring-inset ring-black/10 dark:ring-white/15 text-gray-950 dark:text-white font-heading text-sm font-bold hover:bg-white dark:hover:bg-white/[0.14] transition-colors">
