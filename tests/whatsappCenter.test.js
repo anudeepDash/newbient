@@ -209,3 +209,34 @@ describe('the number’s status', () => {
         expect(verdictFor({}).tone).toBe('gray');
     });
 });
+
+describe('bulk sends from a campaign', () => {
+    it('queues the template for each creator with their details filled in, and sends', async () => {
+        db.store.set('campaigns/c1', { title: 'Arijit Singh Live' });
+        const res = await call('wa-bulk', {
+            template: 'team_update', language: 'en',
+            recipients: [
+                { phone: '98765 00021', name: 'Riya Sharma' },
+                { phone: '+919876500021', name: 'Riya again' },
+                { phone: '', name: 'No Number' },
+                { phone: '+919876500022', name: 'rj_kabir' },
+            ],
+            params: { body: ['{first_name}', '{campaign_title} brief is out'], buttons: { 0: '{campaign_id}' }, campaignId: 'c1' },
+        });
+        expect(res.body).toMatchObject({ success: true, queued: 2 });
+        expect(res.body.skipped).toEqual([{ label: 'No Number', error: 'No WhatsApp number' }]);
+        expect(res.body.worker.report.sent).toBe(2);
+        const bodies = sent.map(m => m.template.components.find(c => c.type === 'body').parameters.map(p => p.text));
+        expect(bodies).toEqual([['Riya', 'Arijit Singh Live brief is out'], ['there', 'Arijit Singh Live brief is out']]);
+        expect(sent[0].template.components.find(c => c.sub_type === 'url').parameters[0].text).toBe('c1');
+        const jobs = Object.values(db.dump('outreach_queue'));
+        expect(jobs.every(j => j.kind === 'template' && j.status === 'sent' && j.campaignId === 'c1')).toBe(true);
+    });
+
+    it('refuses templates that aren’t approved, and empty variables', async () => {
+        expect((await call('wa-bulk', { template: 'pass_ready', recipients: [{ phone: '+919876500021' }], params: { body: ['x'] } })).statusCode).toBe(409);
+        expect((await call('wa-bulk', { template: 'team_update', recipients: [{ phone: '+919876500021' }], params: { body: ['only one'], buttons: { 0: 'x' } } })).body.field).toBe('body');
+        expect(sent).toHaveLength(0);
+    });
+});
+

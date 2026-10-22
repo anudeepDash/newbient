@@ -26,13 +26,14 @@ import { STATUSES, STATUS_META, isOnShortlist } from '../../lib/outreach/status'
  */
 
 const STATUS_TONE = { APPROVED: 'green', PENDING: 'amber', IN_APPEAL: 'amber', REJECTED: 'rose', PAUSED: 'rose', DISABLED: 'gray' };
-const SEND_TONE = { sent: 'blue', delivered: 'teal', read: 'green', failed: 'rose', retry: 'amber', skipped: 'gray' };
+const SEND_TONE = { sent: 'blue', delivered: 'teal', read: 'green', failed: 'rose', retry: 'amber', held: 'amber', skipped: 'gray' };
 
 const statusLabel = (s) => String(s || '').toLowerCase().replace(/_/g, ' ');
 
 /* Where a send came from, in words. */
 const eventLabel = (e = '') => {
     if (e === 'admin-manual') return 'Sent by hand';
+    if (e === 'admin-bulk') return 'Sent to many (campaign message)';
     if (e.startsWith('outreach-')) return 'Campaign outreach';
     if (e.startsWith('otp-')) return 'Sign-in code';
     if (e === 'creator-verification') return 'Number check';
@@ -447,7 +448,7 @@ const LogPanel = ({ refreshKey }) => {
                             <span className="block truncate font-semibold">{r.template || 'Text reply'}</span>
                             <span className="block truncate text-[12px] text-gray-500">{eventLabel(r.event)}{r.error ? ` · ${r.error}` : ''}</span>
                         </span>
-                        <Badge tone={SEND_TONE[r.status] || 'gray'}>{r.status || '—'}</Badge>
+                        <Badge tone={SEND_TONE[r.status] || 'gray'}>{r.status === 'held' ? 'waiting' : r.status || '—'}</Badge>
                     </li>
                 ))}
             </ul>
@@ -515,17 +516,33 @@ const Fact = ({ label, children }) => (children ? (
  * (api/_lib/whatsappCenter.js, wa-number).
  */
 const NumberStatus = () => {
+    const addToast = useStore(s => s.addToast);
     const [state, setState] = useState({ loading: true });
+    const [pushing, setPushing] = useState(false);
     const load = useCallback(async () => {
         setState(s => ({ ...s, loading: true }));
         const r = await callOutreach('wa-number');
         setState(r.ok ? { loading: false, ...r.data } : { loading: false, error: r.error });
+        return r.ok ? r.data : null;
     }, []);
-    useEffect(() => { load(); }, [load]);
+    // Send what's waiting now (it also runs on its own); held messages try again here too.
+    const sendWaiting = useCallback(async ({ quiet = false } = {}) => {
+        setPushing(true);
+        const r = await callOutreach('outreach-queue-run');
+        setPushing(false);
+        if (!quiet) {
+            if (!r.ok) addToast(r.error, 'error', { title: 'Couldn’t send' });
+            else if (r.data.blocked) addToast('Meta is still refusing the number, so they keep waiting.', 'warning', { title: `${r.data.held} tried, still waiting` });
+            else addToast(`${r.data.sent} sent${r.data.more ? ', the rest carry on in the background' : ''}.`, r.data.sent ? 'success' : 'info');
+        }
+        load();
+    }, [addToast, load]);
+    // Opening the page gives waiting messages a push.
+    useEffect(() => { load().then(d => { if (d?.queue?.waiting) sendWaiting({ quiet: true }); }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (state.error) return <Card className="p-4 text-[13px] text-gray-500">Couldn’t read the number’s status from Meta: {state.error}</Card>;
     if (!state.verdict) return <Card className="p-4 text-[13px] text-gray-500">Checking the number with Meta…</Card>;
-    const { number: n, verdict: v, lastSend } = state;
+    const { number: n, verdict: v, lastSend, queue } = state;
     return (
         <Card className={cn('space-y-3 p-4', RING[v.tone])}>
             <div className="flex items-start gap-3">
@@ -556,6 +573,16 @@ const NumberStatus = () => {
                         </li>
                     ))}
                 </ul>
+            )}
+            {queue?.waiting > 0 && (
+                <div className="flex flex-wrap items-center gap-3 rounded-xl bg-amber-500/10 px-3 py-2 text-[12.5px]">
+                    <span className="flex-1">
+                        {queue.waiting} message{queue.waiting === 1 ? '' : 's'} waiting to go out
+                        {queue.held ? ` (${queue.held} held while Meta refuses the number)` : ''}
+                        {queue.nextAt ? ` · next try ${when(queue.nextAt)}` : ''}
+                    </span>
+                    <Button size="sm" variant="success" disabled={pushing} onClick={() => sendWaiting()}>{pushing ? 'Sending…' : 'Send now'}</Button>
+                </div>
             )}
             {lastSend && (
                 <p className="text-[12.5px] text-gray-500">
